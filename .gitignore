@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+logs/
+
+# Data & models (large files)
+*.h5
+*.pkl
+*.pt
+*.onnx
+data/raw/
+models/trained/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Coverage & testing
+.coverage
+htmlcov/
+.pytest_cache/
