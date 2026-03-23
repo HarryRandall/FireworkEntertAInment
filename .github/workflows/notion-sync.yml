@@ -1,0 +1,17 @@
+name: sync-notion-to-github
+
+on:
+  schedule:
+    - cron: '0 22 * * 0'  # Monday 9am AEDT  (Sun 22:00 UTC)
+    - cron: '0 1 * * 1'   # Monday 12pm AEDT (Mon 01:00 UTC)
+    - cron: '0 6 * * 1'   # Monday 5pm AEDT  (Mon 06:00 UTC)
+  workflow_dispatch:       # keep this so you can trigger manually anytime
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: notion-sync
+        uses: YouXam/Notion-GitHub-Sync@v2
+        with:
+          notion_token: ${{ secrets.NOTION_TOKEN }}
