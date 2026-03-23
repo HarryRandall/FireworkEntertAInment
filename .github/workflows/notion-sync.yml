@@ -33,4 +33,3 @@ jobs:
         uses: YouXam/Notion-GitHub-Sync@v2
         with:
           notion_token: ${{ secrets.NOTION_TOKEN }}
-          author: 'Notion Sync Bot <actions@github.com>'
