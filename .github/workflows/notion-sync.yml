@@ -7,6 +7,9 @@ on:
     - cron: '0 6 * * 1'   # Monday 5pm AEDT  (Mon 06:00 UTC)
   workflow_dispatch:       # keep this so you can trigger manually anytime
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
