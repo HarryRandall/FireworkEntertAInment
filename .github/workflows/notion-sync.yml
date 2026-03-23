@@ -1,20 +1,36 @@
-name: sync-notion-to-github
+# ──────────────────────────────────────────────
+# Notion → GitHub Documentation Sync
+# Runs every Monday at 9am, 12pm, and 5pm AEDT.
+# Scans the repo for markdown files with a `notion-url`
+# front-matter field and replaces their content with
+# the latest version from Notion.
+# ──────────────────────────────────────────────
+
+name: Notion Documentation Sync
 
 on:
   schedule:
-    - cron: '0 22 * * 0'  # Monday 9am AEDT  (Sun 22:00 UTC)
-    - cron: '0 1 * * 1'   # Monday 12pm AEDT (Mon 01:00 UTC)
-    - cron: '0 6 * * 1'   # Monday 5pm AEDT  (Mon 06:00 UTC)
-  workflow_dispatch:       # keep this so you can trigger manually anytime
+    - cron: '0 22 * * 0'  # Monday 9:00am  AEDT (Sunday 22:00 UTC)
+    - cron: '0 1 * * 1'   # Monday 12:00pm AEDT (Monday 01:00 UTC)
+    - cron: '0 6 * * 1'   # Monday 5:00pm  AEDT (Monday 06:00 UTC)
+  workflow_dispatch:       # Allow manual runs from the Actions tab
 
 permissions:
   contents: write
 
 jobs:
   sync:
+    name: Sync docs from Notion
     runs-on: ubuntu-latest
+
     steps:
-      - name: notion-sync
+      - name: Configure git identity
+        run: |
+          git config --global user.name "Notion Sync Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Sync Notion pages to markdown
         uses: YouXam/Notion-GitHub-Sync@v2
         with:
           notion_token: ${{ secrets.NOTION_TOKEN }}
+          author: 'Notion Sync Bot <actions@github.com>'
