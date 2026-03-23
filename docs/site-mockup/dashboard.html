@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ShowCrafter Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#62400f",
+                        "surface-container": "#201f1f",
+                        "background": "#131313",
+                        "on-secondary-fixed-variant": "#62400f",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#3a3939",
+                        "surface": "#131313",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#f0bd82",
+                        "tertiary-container": "#1abdff",
+                        "outline": "#a08e7a",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#e5e2e1",
+                        "on-secondary-container": "#ddac72",
+                        "tertiary-fixed-dim": "#7fd0ff",
+                        "tertiary-fixed": "#c5e7ff",
+                        "primary-fixed": "#ffddb8",
+                        "error": "#ffb4ab",
+                        "on-primary": "#472a00",
+                        "surface-variant": "#353534",
+                        "on-secondary": "#472a00",
+                        "primary-fixed-dim": "#ffb95f",
+                        "surface-container-highest": "#353534",
+                        "on-surface-variant": "#d8c3ad",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary-fixed": "#2a1700",
+                        "on-primary-fixed-variant": "#653e00",
+                        "on-surface": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "on-tertiary": "#00344a",
+                        "secondary-fixed": "#ffddb8",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-container": "#004966",
+                        "primary": "#ffc174",
+                        "tertiary": "#8fd5ff",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-tertiary-fixed-variant": "#004c6a",
+                        "outline-variant": "#534434",
+                        "secondary": "#f0bd82",
+                        "primary-container": "#f59e0b",
+                        "on-tertiary-fixed": "#001e2d",
+                        "surface-container-low": "#1c1b1b",
+                        "inverse-primary": "#855300",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-primary-container": "#613b00",
+                        "surface-tint": "#ffb95f",
+                        "inverse-on-surface": "#313030"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(42, 42, 42, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
+<script>if(!sessionStorage.getItem('showcrafter_logged_in'))window.location.href='login.html';</script>
+<!-- TopNavBar -->
+<header class="bg-[#131313] dark:bg-[#131313] font-['Inter'] antialiased tracking-tight text-sm font-medium fixed top-0 w-full z-50 border-b border-[#534434]/15">
+<div class="flex justify-between items-center h-16 px-6 lg:px-12 max-w-[1200px] mx-auto">
+<a href="index.html" class="text-xl font-semibold tracking-tighter text-[#FFC174] dark:text-[#FFC174]">
+                ShowCrafter
+            </a>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-[#F59E0B] border-b-2 border-[#F59E0B] pb-1 transition-all duration-300" href="dashboard.html">Dashboard</a>
+<a class="text-[#D8C3AD] hover:text-[#FFC174] transition-colors transition-all duration-300" href="new-show.html">New Show</a>
+</nav>
+<div class="flex items-center gap-4">
+<button onclick="sessionStorage.removeItem('showcrafter_logged_in'); window.location.href='index.html'" class="text-[#D8C3AD] hover:text-[#FFC174] transition-colors px-4 py-2 scale-95 active:scale-90 transition-transform text-sm">Logout</button>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-32 pb-20 px-6 max-w-[1200px] mx-auto w-full">
+<!-- Dashboard Header -->
+<section class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+<div class="space-y-1">
+<h1 class="text-4xl font-bold tracking-tight text-on-surface">Your Shows</h1>
+<p class="text-on-surface-variant text-lg">Manage your choreographed pyrotechnic displays.</p>
+</div>
+<a href="new-show.html" class="bg-primary-container text-on-primary-container px-8 py-3 rounded-full font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary-container/20 inline-flex">
+<span class="material-symbols-outlined">add_circle</span>
+                New Show
+            </a>
+</section>
+<!-- Bento Grid Content -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<a href="show-results.html?show=midnight-galaxy" class="group relative bg-surface-container-low rounded-xl p-6 transition-all duration-300 hover:bg-surface-container-high outline-variant/15 outline outline-1 cursor-pointer block">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">music_note</span>
+</div>
+<span class="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary">Complete</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-primary transition-colors">Midnight Galaxy</h3>
+<p class="text-on-surface-variant text-sm mb-6">M83 - Outro</p>
+<div class="grid grid-cols-2 gap-4 pt-6 border-t border-outline-variant/10">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Duration</p>
+<p class="text-sm font-medium">04:12</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Budget</p>
+<p class="text-sm font-medium">$4,500</p>
+</div>
+<div class="col-span-2">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Last Edited</p>
+<p class="text-sm font-medium">Oct 24, 2023</p>
+</div>
+</div>
+</a>
+<!-- Card 2 -->
+<a href="show-results.html?show=summer-solstice" class="group relative bg-surface-container-low rounded-xl p-6 transition-all duration-300 hover:bg-surface-container-high outline-variant/15 outline outline-1 cursor-pointer block">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<span class="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-surface-container-highest text-on-surface-variant">Draft</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-primary transition-colors">Summer Solstice</h3>
+<p class="text-on-surface-variant text-sm mb-6">Vivaldi - Summer</p>
+<div class="grid grid-cols-2 gap-4 pt-6 border-t border-outline-variant/10">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Duration</p>
+<p class="text-sm font-medium">09:45</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Budget</p>
+<p class="text-sm font-medium">$12,200</p>
+</div>
+<div class="col-span-2">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Last Edited</p>
+<p class="text-sm font-medium">Nov 02, 2023</p>
+</div>
+</div>
+</a>
+<!-- Card 3 -->
+<a href="show-results.html?show=neon-horizon" class="group relative bg-surface-container-low rounded-xl p-6 transition-all duration-300 hover:bg-surface-container-high outline-variant/15 outline outline-1 cursor-pointer block">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">electric_bolt</span>
+</div>
+<span class="px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary">Complete</span>
+</div>
+<h3 class="text-xl font-bold mb-1 group-hover:text-primary transition-colors">Neon Horizon</h3>
+<p class="text-on-surface-variant text-sm mb-6">The Midnight - Los Angeles</p>
+<div class="grid grid-cols-2 gap-4 pt-6 border-t border-outline-variant/10">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Duration</p>
+<p class="text-sm font-medium">05:20</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Budget</p>
+<p class="text-sm font-medium">$6,800</p>
+</div>
+<div class="col-span-2">
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">Last Edited</p>
+<p class="text-sm font-medium">Oct 15, 2023</p>
+</div>
+</div>
+</a>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-[#0E0E0E] dark:bg-[#0E0E0E] font-['Inter'] text-xs uppercase tracking-widest w-full py-8 mt-auto border-t border-[#534434]/15">
+<div class="flex flex-col md:flex-row justify-between items-center px-6 max-w-[1200px] mx-auto gap-4">
+<div class="text-[#D8C3AD]/60">
+                &copy; 2026 ShowCrafter AI. All rights reserved.
+            </div>
+<div class="flex gap-8">
+<a class="text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">About</a>
+<a class="text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">Contact</a>
+<a class="text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+</body></html>
