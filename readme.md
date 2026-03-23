@@ -6,20 +6,17 @@ Built in partnership with [ICON Pyrotechnics International](http://www.iconpyro.
 
 ## About
 
-The USA allows consumers to freely purchase fireworks from specialist retail stores. As fireworks and electronic ignition methods evolve, consumers are creating increasingly sophisticated shows — including pyromusicals (shows synced to music). This project aims to build an AI tool that helps non-experts quickly design their own firework shows with their purchased fireworks, while enhancing the overall consumer firework purchasing experience.
+This repository contains the Firework EntertAInment project and supporting prototype components.  
+One current component is the audio analysis script at `scripts/audio-analyser/`, used to extract musical structure and cue timings from songs.
 
 ## Repository Structure
 
 ```
-src/                  — application source code (TBD)
-tests/                — test suite
-data/                 — sample data, firework specs, assets
-docs/
-  meeting-notes/      — stakeholder & team meeting notes
-  research/           — research documents & references
-scripts/              — utility scripts
+docs/                      — project documentation and meeting notes
+data/media/audio/          — example tracks used by the analyser
+scripts/audio-analyser/    — ShowCrafter script + requirements + component README
 ```
 
-## Getting Started
+## Components
 
-Setup instructions will be added once the tech stack is decided.
+- `scripts/audio-analyser/`: song analysis pipeline (MIR prototype)

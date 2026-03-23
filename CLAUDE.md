@@ -19,9 +19,9 @@ TBD — setup instructions will go here once the stack is chosen.
 ## Repository Structure
 
 ```
-src/            — application source code
-docs/           — project documentation & meeting notes
-data/           — sample data, firework specs, etc.
-tests/          — test suite
-scripts/        — utility scripts
+src/              — application source code
+docs/             — project documentation & meeting notes
+data/             — sample data, firework specs, example audio, etc.
+tests/            — test suite
+audio-analyser/   — song-analysis CLI (ShowCrafter) + requirements
 ```
