@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>New Show Setup - ShowCrafter</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#62400f",
+                        "surface-container": "#201f1f",
+                        "background": "#131313",
+                        "on-secondary-fixed-variant": "#62400f",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#3a3939",
+                        "surface": "#131313",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#f0bd82",
+                        "tertiary-container": "#1abdff",
+                        "outline": "#a08e7a",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#e5e2e1",
+                        "on-secondary-container": "#ddac72",
+                        "tertiary-fixed-dim": "#7fd0ff",
+                        "tertiary-fixed": "#c5e7ff",
+                        "primary-fixed": "#ffddb8",
+                        "error": "#ffb4ab",
+                        "on-primary": "#472a00",
+                        "surface-variant": "#353534",
+                        "on-secondary": "#472a00",
+                        "primary-fixed-dim": "#ffb95f",
+                        "surface-container-highest": "#353534",
+                        "on-surface-variant": "#d8c3ad",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary-fixed": "#2a1700",
+                        "on-primary-fixed-variant": "#653e00",
+                        "on-surface": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "on-tertiary": "#00344a",
+                        "secondary-fixed": "#ffddb8",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-container": "#004966",
+                        "primary": "#ffc174",
+                        "tertiary": "#8fd5ff",
+                        "on-secondary-fixed": "#2a1700",
+                        "on-tertiary-fixed-variant": "#004c6a",
+                        "outline-variant": "#534434",
+                        "secondary": "#f0bd82",
+                        "primary-container": "#f59e0b",
+                        "on-tertiary-fixed": "#001e2d",
+                        "surface-container-low": "#1c1b1b",
+                        "inverse-primary": "#855300",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-primary-container": "#613b00",
+                        "surface-tint": "#ffb95f",
+                        "inverse-on-surface": "#313030"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #131313;
+            color: #e5e2e1;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(42, 42, 42, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #ffc174;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #353534;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+<script>if(!sessionStorage.getItem('showcrafter_logged_in'))window.location.href='login.html';</script>
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#131313]">
+<div class="flex justify-between items-center h-16 px-6 lg:px-12 max-w-[1200px] mx-auto">
+<a href="index.html" class="text-xl font-semibold tracking-tighter text-[#FFC174]">ShowCrafter</a>
+<div class="hidden md:flex items-center gap-8 font-['Inter'] antialiased tracking-tight text-sm font-medium">
+<a class="text-[#D8C3AD] hover:text-[#FFC174] transition-colors" href="dashboard.html">Dashboard</a>
+<a class="text-[#F59E0B] border-b-2 border-[#F59E0B] pb-1" href="new-show.html">New Show</a>
+</div>
+<div class="flex items-center gap-4">
+<button onclick="sessionStorage.removeItem('showcrafter_logged_in'); window.location.href='index.html'" class="text-[#D8C3AD] hover:text-[#FFC174] transition-colors font-medium text-sm">Logout</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-32 pb-24 px-6 max-w-[1200px] mx-auto w-full">
+<!-- Header Section -->
+<header class="mb-16">
+<span class="text-primary font-medium tracking-widest text-xs uppercase mb-3 block">Step 01 / 03</span>
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-4">Craft Your Spectacle</h1>
+<p class="text-on-surface-variant text-lg max-w-2xl leading-relaxed">Let AI orchestrate the perfect synchrony between light and sound. Complete the setup to begin generating your fireworks choreography.</p>
+</header>
+<form id="show-form" class="space-y-12">
+<!-- Section 1: Choose a song -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<div class="lg:col-span-4">
+<h2 class="text-2xl font-semibold text-on-surface mb-2">Choose a song</h2>
+<p class="text-on-surface-variant text-sm">The foundation of your choreography. Upload high-fidelity audio or describe the mood.</p>
+</div>
+<div class="lg:col-span-8 space-y-6">
+<div class="group relative flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/30 rounded-xl p-10 bg-surface-container-low hover:bg-surface-container transition-all cursor-pointer" id="drop-zone">
+<span class="material-symbols-outlined text-primary text-4xl mb-4">cloud_upload</span>
+<p class="text-on-surface font-medium" id="drop-text">Drag and drop your audio file</p>
+<p class="text-on-surface-variant text-xs mt-1">MP3, WAV, or AAC (Max 50MB)</p>
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file" id="file-input" accept="audio/*"/>
+</div>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+<span class="material-symbols-outlined text-outline text-xl">music_note</span>
+</div>
+<input id="vibe-input" class="w-full h-11 pl-11 bg-surface-container-highest border-none rounded-md text-on-surface placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Or describe the vibe (e.g. Cinematic orchestral with a heavy climax)" type="text"/>
+</div>
+<!-- Audio Player Widget (Mockup) -->
+<div id="audio-preview" class="glass-panel rounded-xl p-4 flex items-center gap-4 border border-outline-variant/10 hidden">
+<button class="w-10 h-10 flex items-center justify-center bg-primary rounded-full text-on-primary" type="button">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<div class="flex-grow">
+<div class="text-xs font-bold text-primary-fixed uppercase tracking-tighter mb-1" id="preview-filename">Previewing: Midnight_Symphony_Edit.mp3</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary w-1/3 h-full"></div>
+</div>
+</div>
+<div class="text-[10px] font-mono text-on-surface-variant">0:45 / 3:12</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Set your preferences -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-12 border-t border-outline-variant/10 items-start">
+<div class="lg:col-span-4">
+<h2 class="text-2xl font-semibold text-on-surface mb-2">Set your preferences</h2>
+<p class="text-on-surface-variant text-sm">Define the scale and logistics of the performance.</p>
+</div>
+<div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-10 bg-surface-container-low rounded-xl p-8">
+<!-- Budget Slider -->
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-sm font-semibold text-on-surface uppercase tracking-wider">Budget Range</label>
+<span id="budget-display" class="text-primary font-bold">$2,500</span>
+</div>
+<input id="budget-slider" class="w-full appearance-none bg-transparent" max="5000" min="50" step="50" type="range" value="2500"/>
+<div class="flex justify-between text-[10px] text-on-surface-variant font-medium">
+<span>$50</span>
+<span>$5,000</span>
+</div>
+</div>
+<!-- Duration Dropdown -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface uppercase tracking-wider">Duration</label>
+<div class="relative">
+<select id="duration-select" class="w-full h-11 bg-surface-container-highest border-none rounded-md text-on-surface appearance-none focus:ring-2 focus:ring-primary/20 transition-all pl-4">
+<option>1 minute</option>
+<option>2 minutes</option>
+<option selected="">3 minutes</option>
+<option>5 minutes</option>
+<option>10 minutes</option>
+</select>
+<div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Time of Day Toggle -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface uppercase tracking-wider">Time of Day</label>
+<div class="flex p-1 bg-surface-container-highest rounded-full" id="time-toggle">
+<button class="flex-1 py-2 text-xs font-bold rounded-full text-on-surface-variant hover:text-on-surface transition-colors" type="button" data-value="daytime">Daytime</button>
+<button class="flex-1 py-2 text-xs font-bold rounded-full text-on-surface-variant hover:text-on-surface transition-colors" type="button" data-value="dusk">Dusk</button>
+<button class="flex-1 py-2 text-xs font-bold rounded-full bg-primary text-on-primary shadow-lg" type="button" data-value="night">Night</button>
+</div>
+</div>
+<!-- Location Autocomplete -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface uppercase tracking-wider">Location</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+<span class="material-symbols-outlined text-outline text-xl">location_on</span>
+</div>
+<input class="w-full h-11 pl-11 bg-surface-container-highest border-none rounded-md text-on-surface placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search event location..." type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Describe your show -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-12 border-t border-outline-variant/10 items-start">
+<div class="lg:col-span-4">
+<h2 class="text-2xl font-semibold text-on-surface mb-2">Describe your show</h2>
+<p class="text-on-surface-variant text-sm">Tell the AI about the emotional journey and key visual themes.</p>
+</div>
+<div class="lg:col-span-8 space-y-6">
+<div class="relative">
+<textarea id="description-input" class="w-full bg-surface-container-low border-none rounded-xl text-on-surface p-6 placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary/20 transition-all resize-none" placeholder="Describe the sequence, preferred colors, or specific moments in the song where you want maximum impact..." rows="6"></textarea>
+</div>
+<div class="flex flex-wrap gap-3" id="mood-tags">
+<button class="px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all" type="button">Patriotic</button>
+<button class="px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all" type="button">Romantic</button>
+<button class="px-4 py-1.5 rounded-full border border-primary/40 bg-primary/5 text-xs font-medium text-primary transition-all" type="button">High energy</button>
+<button class="px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all" type="button">Elegant</button>
+<button class="px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all" type="button">Minimalist</button>
+<button class="px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all" type="button">Grand Finale Focused</button>
+</div>
+</div>
+</section>
+<!-- Footer Action -->
+<div class="pt-16">
+<button id="generate-btn" class="w-full py-5 bg-primary-container text-on-primary-container rounded-full font-extrabold text-lg uppercase tracking-widest shadow-2xl shadow-primary-container/20 scale-100 active:scale-[0.98] transition-all flex items-center justify-center gap-3" type="button">
+                    Generate My Show
+                    <span class="material-symbols-outlined">auto_awesome</span>
+</button>
+<p class="text-center text-on-surface-variant text-xs mt-6 font-medium tracking-wide">ESTIMATED COMPUTE TIME: 45 SECONDS</p>
+</div>
+</form>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto border-t border-[#534434]/15 bg-[#0E0E0E]">
+<div class="flex flex-col md:flex-row justify-between items-center px-6 max-w-[1200px] mx-auto gap-4">
+<div class="font-['Inter'] text-xs uppercase tracking-widest text-[#D8C3AD]/60">&copy; 2026 ShowCrafter AI. All rights reserved.</div>
+<div class="flex gap-8">
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">About</a>
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">Contact</a>
+<a class="font-['Inter'] text-xs uppercase tracking-widest text-[#D8C3AD]/60 hover:text-[#FFC174] transition-colors" href="#">Privacy</a>
+</div>
+</div>
+</footer>
+
+<script>
+// Budget slider
+const budgetSlider = document.getElementById('budget-slider');
+const budgetDisplay = document.getElementById('budget-display');
+budgetSlider.addEventListener('input', () => {
+    budgetDisplay.textContent = '$' + Number(budgetSlider.value).toLocaleString();
+});
+
+// Time of day toggle
+document.getElementById('time-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#time-toggle button').forEach(b => {
+        b.className = 'flex-1 py-2 text-xs font-bold rounded-full text-on-surface-variant hover:text-on-surface transition-colors';
+    });
+    btn.className = 'flex-1 py-2 text-xs font-bold rounded-full bg-primary text-on-primary shadow-lg';
+});
+
+// Mood tag toggle
+document.getElementById('mood-tags').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const isActive = btn.classList.contains('text-primary');
+    if (isActive) {
+        btn.className = 'px-4 py-1.5 rounded-full border border-outline-variant/20 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-all';
+    } else {
+        btn.className = 'px-4 py-1.5 rounded-full border border-primary/40 bg-primary/5 text-xs font-medium text-primary transition-all';
+    }
+});
+
+// File upload feedback
+document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        document.getElementById('drop-text').textContent = file.name;
+        document.getElementById('preview-filename').textContent = 'Previewing: ' + file.name;
+        document.getElementById('audio-preview').classList.remove('hidden');
+    }
+});
+
+// Generate button -> navigate to results
+document.getElementById('generate-btn').addEventListener('click', () => {
+    const vibe = document.getElementById('vibe-input').value || 'Custom Show';
+    const budget = budgetSlider.value;
+    const duration = document.getElementById('duration-select').value;
+    window.location.href = 'show-results.html?name=' + encodeURIComponent(vibe) + '&budget=' + budget + '&duration=' + encodeURIComponent(duration);
+});
+</script>
+</body></html>
