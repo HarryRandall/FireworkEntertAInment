@@ -12,11 +12,11 @@ on:
   schedule:
     - cron: '0 22 * * 0'  # Monday 9:00am  AEDT (Sunday 22:00 UTC)
     - cron: '0 1 * * 1'   # Monday 12:00pm AEDT (Monday 01:00 UTC)
-    - cron: '0 6 * * 1'   # Monday 5:00pm  AEDT (Monday 06:00 UTC)
   workflow_dispatch:       # Allow manual runs from the Actions tab
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   sync:
@@ -36,8 +36,21 @@ jobs:
           notion_token: ${{ secrets.NOTION_TOKEN }}
         continue-on-error: true
 
-      - name: Rebase and push if sync committed but failed to push
+      - name: Push to branch and open PR if sync failed to push
         if: steps.sync.outcome == 'failure'
+        working-directory: ${{ github.workspace }}/github
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          BRANCH="docs/notion-sync-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
           git pull --rebase origin main
-          git push
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "docs: sync from Notion" \
+            --body "Automated documentation sync from Notion." \
+            --base main \
+            --head "$BRANCH"
+
+          gh pr merge "$BRANCH" --squash --auto --delete-branch
