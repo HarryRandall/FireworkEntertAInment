@@ -4,7 +4,7 @@ title: User Stories
 date: '2026-03-16 02:24:00.000'
 from_notion: https://www.notion.so/User-Stories-325cd8a5bf0880658ee3dce42797b5af
 author: From Notion
-last_edited_time: '2026-03-23 03:46:00.000'
+last_edited_time: '2026-03-30 05:12:00.000'
 ---
 ## Consumer
 
@@ -60,11 +60,7 @@ last_edited_time: '2026-03-23 03:46:00.000'
 
 1. As a manufacturer**,** I want to link my existing video and 3D animation assets to my products so consumers can preview them accurately in existing simulation software.
 
-<br/>
-
 ## **Persona**
-
-<br/>
 
 ### **1. Consumer: Jack (The Party Planner)**
 
@@ -90,8 +86,6 @@ last_edited_time: '2026-03-23 03:46:00.000'
 
 	- A generated list of **in-stock fireworks **used in his design, so he can purchase them immediately from his preferred retailer.
 
-<br/>
-
 ### **2. Consumer: Lily (The Creative Enthusiast)**
 
 - **Demographics:** 26 years old, Amateur DJ / Audiovisual Creator.
@@ -112,8 +106,6 @@ last_edited_time: '2026-03-23 03:46:00.000'
 
 	- A clear, actionable shopping list of available inventory to bring her digital creation to life.
 
-<br/>
-
 ### **3. Retailer: Sarah (The Local Shop Owner)**
 
 - **Demographics:** 45 years old, Fireworks Store Owner.
@@ -133,8 +125,6 @@ last_edited_time: '2026-03-23 03:46:00.000'
 	- The software must inform consumers about **safety protocols** and technical aspects.
 
 	- A clear terms of service ensuring that the **liability **from using the software and firing the show falls entirely on the consumer.
-
-<br/>
 
 ### **4. Manufacturer: David (The Product Supplier)**
 

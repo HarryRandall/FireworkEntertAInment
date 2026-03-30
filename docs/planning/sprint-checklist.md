@@ -4,7 +4,7 @@ title: Sprint Checklist
 date: '2026-03-16 03:50:00.000'
 from_notion: https://www.notion.so/Sprint-Checklist-325cd8a5bf08801eb32efb961637d294
 author: From Notion
-last_edited_time: '2026-03-30 04:47:00.000'
+last_edited_time: '2026-03-30 05:10:00.000'
 ---
 # Project Practices Checklist
 
@@ -74,7 +74,7 @@ last_edited_time: '2026-03-30 04:47:00.000'
 
 - [x] Seek feedback from tutors and stakeholders regularly
 
-- [ ] Conduct sprint review at the end of each sprint to demonstrate completed work, gather feedback, and adjust priorities as needed
+- [x] Conduct sprint review at the end of each sprint to demonstrate completed work, gather feedback, and adjust priorities as needed
 
 - [ ] Conduct sprint retrospective at the end of each sprint to reflect on team processes, identify issues, and agree on improvements for future sprints
 
