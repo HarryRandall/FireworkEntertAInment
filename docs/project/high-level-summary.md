@@ -4,13 +4,11 @@ title: High Level Summary
 date: '2026-03-16 01:56:00.000'
 from_notion: https://www.notion.so/High-Level-Summary-325cd8a5bf0880738e5cc19c96418cfc
 author: From Notion
-last_edited_time: '2026-03-16 04:47:00.000'
+last_edited_time: '2026-03-29 23:46:00.000'
 ---
 <br/>
 
 ## What is the product
-
-A tool, provided by retailers for consumers, that allows consumers to create and personalise their own AI-generated pyromusical using products sold at the store.
 
 ## How will it work
 
@@ -56,5 +54,5 @@ A tool, provided by retailers for consumers, that allows consumers to create and
 
 - List the product used in the show, for the consumer to purchase at the retailer.
 
-- 
+<br/>
 
