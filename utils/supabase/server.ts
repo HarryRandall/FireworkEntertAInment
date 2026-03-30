@@ -1,13 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+import { getSupabaseServerEnv } from "@/utils/supabase/env";
 
 export const createClient = (
   cookieStore: Awaited<ReturnType<typeof cookies>>,
 ) => {
-  return createServerClient(supabaseUrl!, supabaseKey!, {
+  const env = getSupabaseServerEnv();
+  if (!env) {
+    throw new Error(
+      "Supabase URL and anon/publishable key are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) in .env.local for dev, or in Vercel Project Settings → Environment Variables. Optional server-only fallbacks: SUPABASE_URL, SUPABASE_ANON_KEY.",
+    );
+  }
+
+  return createServerClient(env.url, env.key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

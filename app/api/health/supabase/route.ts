@@ -1,22 +1,21 @@
 import { createClient } from "@/utils/supabase/server";
+import { getSupabaseServerEnv } from "@/utils/supabase/env";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 /**
  * GET /api/health/supabase
- * Confirms NEXT_PUBLIC_* env is present and the app can reach Supabase (auth endpoint).
+ * Confirms Supabase env is present and the app can reach Supabase (auth endpoint).
  * Safe to call from production after deploy; does not expose secrets.
  */
 export async function GET() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-  if (!url || !key) {
+  if (!getSupabaseServerEnv()) {
     return NextResponse.json(
       {
         ok: false,
         step: "env",
-        message: "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+        message:
+          "Missing Supabase URL/key. Use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY (optional: SUPABASE_URL, SUPABASE_ANON_KEY on server).",
       },
       { status: 503 },
     );
