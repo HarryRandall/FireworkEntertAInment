@@ -279,6 +279,12 @@ export default function Home() {
             >
               Privacy
             </Link>
+            <Link
+              className="text-xs uppercase tracking-widest text-on-surface-variant/60 hover:text-primary transition-colors"
+              href="/db-test"
+            >
+              Supabase data
+            </Link>
           </div>
         </div>
       </footer>
