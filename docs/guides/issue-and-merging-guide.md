@@ -1,10 +1,10 @@
 ---
 notion-url: https://www.notion.so/Issue-Merging-Guide-Please-Read-325cd8a5bf0880f3aafcfcc7c4fcbc37
-title: Issue & Merging Guide (Read)
+title: Issue & Merging Guide
 date: '2026-03-16 04:14:00.000'
-from_notion: https://www.notion.so/Issue-Merging-Guide-Read-325cd8a5bf0880f3aafcfcc7c4fcbc37
+from_notion: https://www.notion.so/Issue-Merging-Guide-325cd8a5bf0880f3aafcfcc7c4fcbc37
 author: From Notion
-last_edited_time: '2026-03-30 03:51:00.000'
+last_edited_time: '2026-03-30 05:10:00.000'
 ---
 # Issue, Merging & Review Guide
 

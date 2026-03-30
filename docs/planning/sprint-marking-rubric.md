@@ -4,9 +4,17 @@ title: Sprint Marking Rubric
 date: '2026-03-16 03:44:00.000'
 from_notion: https://www.notion.so/Sprint-Marking-Rubric-325cd8a5bf0880ab995ac221156a72a6
 author: From Notion
-last_edited_time: '2026-03-16 03:45:00.000'
+last_edited_time: '2026-03-30 05:36:00.000'
 ---
-TechLauncher is structured around six sprints. Students are required to attend their assigned sprint days and actively contribute to team activities. At the end of each sprint, teams should review their contributions with their tutor. At the end of the semester, each team must submit a Sprint Grade Case, which, together with tutor observations, determines the final Sprint mark.
+## Members:
+
+1. Harry Randall - u7499609
+
+1. Harrison Black - u7650334
+
+1. Liam Maloney - u7497338
+
+1. Chongyang Fang - u8085615
 
 ## General Flow
 
@@ -22,10 +30,6 @@ TechLauncher is structured around six sprints. Students are required to attend t
 
 ## Attendance and Participation
 
-Attendance is a core expectation of Sprint participation. There will be 9 sprint days where your full-day attendance is required. These days collectively contribute to your final 30% sprint grade. Valid reasons (e.g. illness or emergencies) should be supported by evidence and communicated to your tutor in advance wherever possible.
-
-Unexplained absences will result in the following deductions from the final Sprint mark:
-
 - For each day of absence, **3 marks** will be deducted from your final sprint score (out of 30).
 
 - Example: If your original Sprint mark is 22 and you miss part of a day, your final mark will be reduced to 19.
@@ -33,10 +37,6 @@ Unexplained absences will result in the following deductions from the final Spri
 - These deductions apply individually, not to the team's overall performance.
 
 ## Marking Rubric
-
-This rubric is intended to help students understand expectations for each performance level. It is used to provide sprint feedback and to assess the Sprint Grade Case. Meeting all requirements to a high standard reflects a Distinction level. A High Distinction is awarded for work that goes beyond expectations and demonstrates exceptional quality.
-
-For any questions about marks or feedback, please contact your tutor. Tutors can provide clarification and make adjustments if needed.
 
 ---
 

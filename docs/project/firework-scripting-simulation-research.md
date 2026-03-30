@@ -4,7 +4,7 @@ title: Firework Scripting/Simulation Research
 date: '2026-03-23 03:46:00.000'
 from_notion: https://www.notion.so/Firework-Scripting-Simulation-Research-32ccd8a5bf0880bdb882c91be1b33dff
 author: From Notion
-last_edited_time: '2026-03-23 03:51:00.000'
+last_edited_time: '2026-03-30 05:13:00.000'
 ---
 # Scripting:
 
