@@ -4,7 +4,7 @@ title: Sprint Checklist
 date: '2026-03-16 03:50:00.000'
 from_notion: https://www.notion.so/Sprint-Checklist-325cd8a5bf08801eb32efb961637d294
 author: From Notion
-last_edited_time: '2026-03-30 03:56:00.000'
+last_edited_time: '2026-03-30 04:47:00.000'
 ---
 # Project Practices Checklist
 
@@ -42,7 +42,7 @@ last_edited_time: '2026-03-30 03:56:00.000'
 
 - [x] Assign PBIs to appropriate team members, set clear responsibilities and feasible deadlines (based on estimates)
 
-- [ ] Prioritise backlog items based on project goals, user needs, and stakeholder input
+- [x] Prioritise backlog items based on project goals, user needs, and stakeholder input
 
 - [x] Identify and manage risks
 
@@ -66,7 +66,7 @@ last_edited_time: '2026-03-30 03:56:00.000'
 
 - [x] Actively monitor and respond to technical or project challenges (e.g. delays, scope changes, blockers)
 
-- [ ] Summarise the impact of work completed to date (e.g. user value, stakeholder benefit, relevance to real-world use)
+- [x] Summarise the impact of work completed to date (e.g. user value, stakeholder benefit, relevance to real-world use)
 
 ---
 
