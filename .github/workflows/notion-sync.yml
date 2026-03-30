@@ -12,6 +12,7 @@ on:
   schedule:
     - cron: '0 22 * * 0'  # Monday 9:00am  AEDT (Sunday 22:00 UTC)
     - cron: '0 1 * * 1'   # Monday 12:00pm AEDT (Monday 01:00 UTC)
+    - cron: '0 6 * * 1'   # Monday 5:00pm  AEDT (Monday 06:00 UTC)
   workflow_dispatch:       # Allow manual runs from the Actions tab
 
 permissions:
@@ -52,5 +53,3 @@ jobs:
             --body "Automated documentation sync from Notion." \
             --base main \
             --head "$BRANCH"
-
-          gh pr merge "$BRANCH" --squash --auto --delete-branch
