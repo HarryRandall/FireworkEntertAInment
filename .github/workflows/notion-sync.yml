@@ -30,6 +30,35 @@ jobs:
           git config --global user.name "Notion Sync Bot"
           git config --global user.email "actions@github.com"
 
+      # ── Discover new Notion pages and create stubs ──
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install discovery script dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Discover new Notion pages
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_ROOT_PAGE_ID: ${{ secrets.NOTION_ROOT_PAGE_ID }}
+        run: python scripts/notion-discover.py
+
+      - name: Commit new stubs (if any)
+        run: |
+          git add docs/unsorted/
+          if git diff --cached --quiet; then
+            echo "No new stubs to commit."
+          else
+            git commit -m "docs: add stubs for newly discovered Notion pages"
+            git push
+          fi
+
+      # ── Sync existing pages from Notion ──
       - name: Sync Notion pages to markdown
         id: sync
         uses: YouXam/Notion-GitHub-Sync@v2
