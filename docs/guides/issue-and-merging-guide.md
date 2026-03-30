@@ -1,10 +1,10 @@
 ---
 notion-url: https://www.notion.so/Issue-Merging-Guide-Please-Read-325cd8a5bf0880f3aafcfcc7c4fcbc37
-title: Issue & Merging Guide (Please Read)
+title: Issue & Merging Guide (Read)
 date: '2026-03-16 04:14:00.000'
-from_notion: https://www.notion.so/Issue-Merging-Guide-Please-Read-325cd8a5bf0880f3aafcfcc7c4fcbc37
+from_notion: https://www.notion.so/Issue-Merging-Guide-Read-325cd8a5bf0880f3aafcfcc7c4fcbc37
 author: From Notion
-last_edited_time: '2026-03-23 03:42:00.000'
+last_edited_time: '2026-03-30 03:51:00.000'
 ---
 # Issue, Merging & Review Guide
 
@@ -15,8 +15,6 @@ last_edited_time: '2026-03-23 03:42:00.000'
 ## 1. Creating an Issue
 
 ### Issue Requirements
-
-Every issue — regardless of type — must include the following before work can begin:
 
  | Field | Details | 
  | ---- | ---- | 
@@ -30,21 +28,13 @@ Every issue — regardless of type — must include the following before work ca
 
 ### Required Labels
 
-All issues must have **one** label from each applicable group:
-
-**Type** *(required — pick one)*
-
 - `Bug`
 
 - `Feature`
 
 - `Documentation`
 
-**Sprint** *(required)*
-
 - `Sprint #` — e.g. `Sprint 4`
-
-**Epic** *(only if applicable)*
 
 - `Epic` — only add this label if the issue belongs to an epic
 
@@ -54,13 +44,9 @@ All issues must have **one** label from each applicable group:
 
 ### Technical Issues → Use the GitHub Issue Template
 
-All technical issues (bugs, features, technical tasks) **must** use the repository's GitHub Issue Template. Do not freeform a technical issue.
-
 > Navigate to **Issues → New Issue** and select the appropriate template.
 
 ### Non-Technical Issues → Freeform
-
-Non-technical issues (documentation, process, admin) may be written freeform, but must still satisfy all required fields listed above.
 
 ---
 
@@ -68,16 +54,10 @@ Non-technical issues (documentation, process, admin) may be written freeform, bu
 
 ### Branch Naming
 
-Every issue must be worked on its **own dedicated branch**. Never work directly on `main`.
-
-Prepend the branch with the **type** of work, followed by the issue number and a short description:
-
 
 ```plain text
 <type>/#<GitHubIssueNumber>-<short-description>
 ```
-
-Examples:
 
 
 ```plain text
@@ -88,8 +68,6 @@ docs/#55-update-readme
 ```
 
 ### Commit Message Format
-
-This project follows the [Conventional Commits](https://www.conventionalcommits.org/) specification. Every commit must follow this structure:
 
 
 ```plain text
@@ -131,14 +109,10 @@ This project follows the [Conventional Commits](https://www.conventionalcommits.
 
 ### Breaking Changes
 
-Add a `!` before the `:` to signal a breaking change:
-
 
 ```plain text
 feat(api)!: remove status endpoint
 ```
-
-Describe the breaking change in the footer:
 
 
 ```plain text
@@ -146,8 +120,6 @@ BREAKING CHANGE: the status endpoint has been removed entirely
 ```
 
 ### Footer
-
-Use the footer to reference issues and flag breaking changes:
 
 
 ```plain text
@@ -208,8 +180,6 @@ chore: init
 
 ### Status Progression
 
-Move the issue through the project board as work progresses:
-
 
 ```plain text
 Backlog  →  In Progress  →  In Review  →  Done
@@ -253,11 +223,7 @@ Backlog  →  In Progress  →  In Review  →  Done
 
 ## 5. Post-Merge Cleanup
 
-Once a PR is merged into `main`, **shoot both the branch and the issue dead**:
-
 ### Close the Branch
-
-Delete the branch immediately after merging — do not leave stale branches around.
 
 
 ```bash

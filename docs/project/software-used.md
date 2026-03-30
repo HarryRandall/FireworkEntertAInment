@@ -4,7 +4,7 @@ title: Software Used
 date: '2026-03-16 04:01:00.000'
 from_notion: https://www.notion.so/Software-Used-325cd8a5bf0880dc9cabca4864f04c05
 author: From Notion
-last_edited_time: '2026-03-16 04:06:00.000'
+last_edited_time: '2026-03-30 04:18:00.000'
 ---
 - Notion: Writing documentation and notes.
 
@@ -14,7 +14,9 @@ last_edited_time: '2026-03-16 04:06:00.000'
 
 - Teams: Meeting with client.
 
-- Discord: Team communication
+- Discord: Team communication.
+
+- Supabase: Databasing.
 
 <br/>
 
