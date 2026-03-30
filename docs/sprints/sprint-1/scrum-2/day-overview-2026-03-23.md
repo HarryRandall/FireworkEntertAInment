@@ -4,7 +4,7 @@ title: Day Overview (23/03)
 date: '2026-03-23 01:15:00.000'
 from_notion: https://www.notion.so/Day-Overview-23-03-32ccd8a5bf088002b5e0dec60598762d
 author: From Notion
-last_edited_time: '2026-03-23 05:43:00.000'
+last_edited_time: '2026-03-30 04:13:00.000'
 ---
 ## What we’ve done:
 
@@ -72,37 +72,17 @@ last_edited_time: '2026-03-23 05:43:00.000'
 
 - What You’ve Done
 
-	Formed user personas based on the provided user stories.
+	- Roadblocks
 
-- Roadblocks
+	- What You’re Gonna Do
 
-	The structural analysis and systematic categorization of music and its associated emotional impacts.
-
-- What You’re Gonna Do
-
-	Research existing psychological models for music and emotion to establish a standardized tagging framework.
-
-### Harrison:
+	### Harrison:
 
 - What You’ve Done
 
-	Written up an Issue, Commit & Merging Guide
+			- Roadblocks
 
-	Created The Risk Assessment Framework
+		- What You’re Gonna Do
 
-	Researched how to simulate fireworks in godot
-
-- Roadblocks
-
-	Slept so little I feel like my brain is melting lmao
-
-	Finale3D didn’t let me import effects :(
-
-- What You’re Gonna Do
-
-	Finish writing a report on what it’ll take to create our own simulation software.
-
-	Potentially start development of said software.
-
-<br/>
+		<br/>
 
