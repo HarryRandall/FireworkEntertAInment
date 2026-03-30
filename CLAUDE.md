@@ -10,16 +10,28 @@ AI tool for designing real consumer firework shows, in partnership with ICON Pyr
 
 ## Tech Stack
 
-TBD — to be decided after initial stakeholder meeting.
+- **Framework**: Next.js (App Router) with TypeScript
+- **Styling**: Tailwind CSS v4
+- **Backend/Storage**: Supabase
+- **Hosting**: Vercel (main = production, other branches = preview deployments)
+- **Audio Analysis**: Python (librosa) — see `prototypes/audio-analyser/`
+- **Choreography**: LLM-based agent (API)
 
 ## Development
 
-TBD — setup instructions will go here once the stack is chosen.
+```bash
+npm install        # install dependencies
+npm run dev        # start dev server at localhost:3000
+npm run build      # production build
+npm run lint       # run linter
+```
 
 ## Repository Structure
 
 ```
-docs/           — project documentation and planning links
-data/           — sample data and example audio tracks
-prototypes/     — standalone prototypes (audio analyser, site mockup)
+app/              — Next.js App Router (pages, layouts, styles)
+public/           — static assets
+docs/             — project documentation and planning
+data/             — sample data and example audio tracks
+prototypes/       — standalone prototypes (audio analyser, site mockup)
 ```

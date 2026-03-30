@@ -27,6 +27,11 @@ dist/
 build/
 *.egg-info/
 
+# Next.js
+.next/
+out/
+next-env.d.ts
+
 # Logs
 *.log
 logs/
