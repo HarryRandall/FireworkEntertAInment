@@ -85,9 +85,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Sync failed but no file changes to commit."
+            exit 0
+          fi
+
           BRANCH="docs/notion-sync-$(date +%Y%m%d-%H%M%S)"
           git checkout -b "$BRANCH"
-          git pull --rebase origin main
+          git commit -m "docs: sync from Notion"
           git push origin "$BRANCH"
 
           gh pr create \
