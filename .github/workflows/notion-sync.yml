@@ -68,6 +68,9 @@ jobs:
               --head "$BRANCH"
           fi
 
+      - name: Return to main branch
+        run: git checkout main
+
       # ── Sync existing pages from Notion ──
       - name: Sync Notion pages to markdown
         id: sync
