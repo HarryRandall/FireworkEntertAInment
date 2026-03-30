@@ -30,6 +30,14 @@ jobs:
           git config --global user.email "actions@github.com"
 
       - name: Sync Notion pages to markdown
+        id: sync
         uses: YouXam/Notion-GitHub-Sync@v2
         with:
           notion_token: ${{ secrets.NOTION_TOKEN }}
+        continue-on-error: true
+
+      - name: Rebase and push if sync committed but failed to push
+        if: steps.sync.outcome == 'failure'
+        run: |
+          git pull --rebase origin main
+          git push
