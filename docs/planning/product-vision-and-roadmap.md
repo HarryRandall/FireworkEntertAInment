@@ -2,7 +2,7 @@
 notion-url: https://www.notion.so/Product-Vision-Roadmap-325cd8a5bf0880f3b8ead17a7e10029d
 title: Product Vision + Roadmap
 date: '2026-03-16 02:24:00.000'
-from_notion: https://www.notion.so/Product-Vision-Roadmap-325cd8a5bf0880f3b8ead17a7e10029d
+from_notion: https://app.notion.com/Product-Vision-Roadmap-325cd8a5bf0880f3b8ead17a7e10029d
 author: From Notion
 last_edited_time: '2026-03-30 05:10:00.000'
 ---
