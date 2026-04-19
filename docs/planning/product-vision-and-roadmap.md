@@ -4,13 +4,23 @@ title: Product Vision + Roadmap
 date: '2026-03-16 02:24:00.000'
 from_notion: https://www.notion.so/Product-Vision-Roadmap-325cd8a5bf0880f3b8ead17a7e10029d
 author: From Notion
-last_edited_time: '2026-03-30 05:10:00.000'
+last_edited_time: '2026-04-17 10:52:00.000'
 ---
-# Overview
+🎯 **Vision**
 
-## The Problem
+	[//]: # (table_of_contents is not supported)
 
-## The Solution
+---
+
+## 🎟️ Overview
+
+---
+
+## ⚠️ The Problem
+
+---
+
+## 💡 The Solution
 
 1. **Choose a song** (or describe the show you want in plain language).
 
@@ -22,9 +32,13 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 1. **Get your outputs** - a shopping list of products to purchase, a PDF show guide with firing instructions, and (in later phases) an interactive simulation of the show.
 
-## Target Users
+---
 
-## How It Works (Technical Summary)
+## 👥 Target Users
+
+---
+
+## ⚙️ How It Works (Technical Summary)
 
 - A **shopping list** of products used in the show, with quantities and estimated cost.
 
@@ -34,13 +48,17 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - (Future) An **in-browser simulation** showing a real-time 2D or 3D preview of the show synchronised to the music.
 
-## User Accounts and Persistence
+---
 
-## Phased Roadmap
+## 🔐 User Accounts & Persistence
 
-### Phase 1 - MVP
+---
 
-- Template catalogue database of fireworks with technical specifications (effect type, duration, colour, height, cost).
+## 🗺️ Phased Roadmap
+
+1️⃣ **Phase 1 - MVP** · In progress
+
+	- Template catalogue database of fireworks with technical specifications (effect type, duration, colour, height, cost).
 
 - Music analysis pipeline that timestamps a song's structure (energy, beats, sections).
 
@@ -54,9 +72,9 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - Basic web interface for inputting a song, setting preferences, and downloading outputs.
 
-### Phase 2 - Embedded Simulation
+2️⃣ **Phase 2 - Embedded Simulation** · Next
 
-- **2D or 3D fireworks simulator** embedded in the web app, synchronised to the music track.
+	- **2D or 3D fireworks simulator** embedded in the web app, synchronised to the music track.
 
 - Real-time preview so users can see what their show will look like before purchasing.
 
@@ -64,9 +82,9 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - Potential integration with mapping/terrain data (e.g. Google 3D Tiles) so users can preview shows against their actual location.
 
-### Phase 3 - Platform and Scale
+3️⃣ **Phase 3 - Platform & Scale** · Future
 
-- **Multi-retailer support** - onboard additional retailers and their inventories, with location-based routing.
+	- **Multi-retailer support** - onboard additional retailers and their inventories, with location-based routing.
 
 - **Firing system script generation** - direct export to electronic firing system formats, reducing the gap between plan and execution.
 
@@ -76,7 +94,9 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - **Analytics for retailers and manufacturers** - data on which products are most frequently selected by the AI, demand patterns by region and season, and insights into consumer preferences.
 
-## Technical Considerations
+---
+
+## 🛠️ Technical Considerations
 
 - **Frontend**: A responsive web application (desktop and mobile). Framework TBD - likely a modern JS framework (React/Next.js or similar).
 
@@ -88,7 +108,9 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - **Product Catalogue**: A structured database of fireworks products and their specifications, maintained per retailer. Needs to support search, filtering, and stock-level awareness.
 
-## Competitive Landscape
+---
+
+## 🌐 Competitive Landscape
 
 - **Finale 3D** - industry-standard professional choreography and simulation software. Powerful but designed for trained pyrotechnicians, not consumers.
 
@@ -96,5 +118,9 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - **Hammer & Anvil** - fireworks retailer/brand with some digital presence, but no AI-driven planning.
 
-## Key Stakeholder
+---
+
+## 🤝 Key Stakeholder
+
+👨‍💼 **Robert Foti** - fireworks manufacturer and distributor. Robert's family company services major events including the Sydney New Year's Eve fireworks. Robert is ShowCrafter's primary client and will handle retailer relationships and go-to-market. The product is being built to his specifications and validated against his industry expertise.
 

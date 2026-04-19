@@ -1,233 +1,204 @@
 ---
 notion-url: https://www.notion.so/Sprint-1-Documentation-Tools-Product-Vision-333cd8a5bf0880f59cc5dbbb1b0331ac
-title: "Sprint 1: Documentation, Tools, Product Vision"
-from_notion: https://www.notion.so/Sprint-1-Documentation-Tools-Product-Vision-333cd8a5bf0880f59cc5dbbb1b0331ac
+title: Sprint 1 - Foundations, Tooling & Product Vision
+from_notion: https://www.notion.so/Sprint-1-Foundations-Tooling-Product-Vision-333cd8a5bf0880f59cc5dbbb1b0331ac
 author: From Notion
-last_edited_time: '2026-04-01T15:04:00.000Z'
+last_edited_time: '2026-04-17 11:31:00.000'
+date: '2026-03-30 00:38:00.000'
 ---
-**Sprint Goal:** Set up project management tools and write documentation regarding the FireworkEntertAInment project. Discuss with stakeholder his project vision and refine the scope to a feasible MVP.
+[//]: # (column_list is not supported)
 
-**Sprint Outcome:**
+	[//]: # (column is not supported)
 
-This sprint was focused on getting the foundations in place: tooling, documentation, and alignment before moving into active development. We had 3 meetings with the stakeholder this sprint which helped clarify his product vision and gave us a clearer picture of what the MVP should look like. Harry created a mock web app to aid the stakeholders vision further and make a few design choices. We set up all the project management software we'll be using across the project and got it documented for reference. Foundations are in place, docs are written, the project management sites are synced, and Supabase is ready to go. With a clearer MVP scope from the stakeholder sessions, we're in a good spot to start developing the MVP next sprint.
+			[//]: # (column is not supported)
 
-**Tools:**
+			[//]: # (column is not supported)
 
-**Documentation:**
+		[//]: # (table_of_contents is not supported)
 
-**What We Did:**
+---
 
-- Met with the client and completed introductory documentation including user stories and risk assessment
-- Completed admin setup tasks following the rubric
-- Conducted market research on the product and similar products
-- Started researching firework simulation options
-- Fine-tuned the MIR
-- General structure and refactoring
-- [Write up backlog issues](https://linear.app/fireworkentertainment/issue/FIR-17/write-up-backlog-issues)
-- [Write up issue, merging and review guide](https://linear.app/fireworkentertainment/issue/FIR-23/write-up-issue-merging-and-review-guide)
-- [Static website](https://linear.app/fireworkentertainment/issue/FIR-18/static-website)
-- [Create personas for user stories](https://linear.app/fireworkentertainment/issue/FIR-26/create-personas-for-user-stories)
-- [Write up user stories](https://linear.app/fireworkentertainment/issue/FIR-13/write-up-user-stories)
-- [Write up risk assessment](https://linear.app/fireworkentertainment/issue/FIR-16/write-up-risk-assesment)
-- [Upload to and format Supabase](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase)
-- [Sprint 1 Goal and Summary](https://linear.app/fireworkentertainment/issue/FIR-43/sprint-1-goal-and-summary)
-- [Update Supabase with new sample database](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database)
-**What We Plan to Do**
+## Sprint Outcome
 
-- Begin development of the firework simulation software
-- Database work
-- Build a skeleton for the platform
-- Research more into Finale3D
+---
 
-## Reflection:
+## Key Deliverables
 
+ | Theme | Deliverable | Linear | Evidence | 
+ | ---- | ---- | ---- | ---- | 
+ | Tooling | GitHub + Linear integration, issue template, branch / PR conventions | [FIR-11](https://linear.app/fireworkentertainment/issue/FIR-11/set-up-issue-template) | [Issue template PR](https://github.com/HarryRandall/FireworkEntertAInment/issues/2) | 
+ | Tooling | Issue, commit & merging guide | [FIR-23](https://linear.app/fireworkentertainment/issue/FIR-23/write-up-issue-merging-and-review-guide) | [Issue & Merging Guide](https://www.notion.so/325cd8a5bf08804ebe2fe3619b8c1d8c) | 
+ | Tooling | Notion to GitHub sync workflow (GitHub Actions) | [FIR-31](https://linear.app/fireworkentertainment/issue/FIR-31/create-script-to-pull-latest-notion-data-into-a-unified-repo) | [PR #38](https://github.com/HarryRandall/FireworkEntertAInment/pull/38), [PR #39](https://github.com/HarryRandall/FireworkEntertAInment/pull/39), [PR #41](https://github.com/HarryRandall/FireworkEntertAInment/pull/41), [PR #44](https://github.com/HarryRandall/FireworkEntertAInment/pull/44), [PR #47](https://github.com/HarryRandall/FireworkEntertAInment/pull/47), [PR #50](https://github.com/HarryRandall/FireworkEntertAInment/pull/50) | 
+ | Tooling | Repository restructure (audio analyser moved to `prototypes/`) | - | [PR #30](https://github.com/HarryRandall/FireworkEntertAInment/pull/30) | 
+ | Platform | Next.js 15 + Tailwind v4 skeleton deployed to Vercel | [FIR-44](https://linear.app/fireworkentertainment/issue/FIR-44/initialise-nextjs-web-platform-with-vercel-deployment) | [PR #36](https://github.com/HarryRandall/FireworkEntertAInment/pull/36) | 
+ | Platform | Site mockup walked through with Robert at Meeting 2 | [FIR-18](https://linear.app/fireworkentertainment/issue/FIR-18/static-website) | [PR #29](https://github.com/HarryRandall/FireworkEntertAInment/pull/29) | 
+ | Database | Supabase client, middleware, env loader and `/api/health/supabase` probe | [FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase) | [PR #48](https://github.com/HarryRandall/FireworkEntertAInment/pull/48) | 
+ | Database | Updated sample CSV re-formatted into Supabase after Meeting 3 handover | [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database) | Supabase `fireworks` table | 
+ | MIR | Audio analyser prototype: beat, onset, energy features on sample audio | [FIR-27](https://linear.app/fireworkentertainment/issue/FIR-27/mir-research) | [PR #54 audio analyser features](https://github.com/HarryRandall/FireworkEntertAInment/pull/54), commit `bc32c71` | 
+ | MIR | Music structure, emotion and personality framework research | [FIR-39](https://linear.app/fireworkentertainment/issue/FIR-39/enhance-audio-analysis-granularity-and-model-generalization) | [Firework Scripting/Simulation Research](https://www.notion.so/32ccd8a5bf0880bdb882c91be1b33dff) | 
+ | Docs / Planning | Product Vision + Roadmap (phased MVP) | [FIR-43](https://linear.app/fireworkentertainment/issue/FIR-43/sprint-1-goal-and-summary) | [Product Vision + Roadmap](https://www.notion.so/325cd8a5bf0880f3b8ead17a7e10029d) | 
+ | Docs / Planning | User Stories and Personas | [FIR-13](https://linear.app/fireworkentertainment/issue/FIR-13/write-up-user-stories), [FIR-26](https://linear.app/fireworkentertainment/issue/FIR-26/create-personas-for-user-stories) | [User Stories](https://www.notion.so/325cd8a5bf0880e786add257de9f1dc6), [Personas](https://www.notion.so/325cd8a5bf0880f98011e3ebc8fe0cce) | 
+ | Docs / Planning | Risk Assessment | [FIR-16](https://linear.app/fireworkentertainment/issue/FIR-16/write-up-risk-assesment) | [Risk Assessment](https://www.notion.so/325cd8a5bf08809d8dbce15c3aeeb2ef) | 
+ | Docs / Planning | Sprint backlog authored and groomed | [FIR-17](https://linear.app/fireworkentertainment/issue/FIR-17/write-up-backlog-issues) | [Linear backlog](https://linear.app/fireworkentertainment/team/FIR/active) | 
+ | Docs / Planning | Sprint Checklist walked through against the rubric | [FIR-47](https://linear.app/fireworkentertainment/issue/FIR-47/complete-sprint-checklist-via-evaluating-which-items-have-been-done) | [Sprint Checklist](https://www.notion.so/325cd8a5bf08801eb32efb961637d294) | 
 
-### Harry:
+---
 
+## Contributor Breakdown
 
-<details>
-<summary>What You’ve Done</summary>
+- **Harry Randall** - Drove the three stakeholder meetings; built the Next.js + Tailwind platform skeleton ([PR #36](https://github.com/HarryRandall/FireworkEntertAInment/pull/36) / [FIR-44](https://linear.app/fireworkentertainment/issue/FIR-44/initialise-nextjs-web-platform-with-vercel-deployment)); shipped the clickable site mockup ([PR #29](https://github.com/HarryRandall/FireworkEntertAInment/pull/29) / [FIR-18](https://linear.app/fireworkentertainment/issue/FIR-18/static-website)); authored MIR research ([FIR-27](https://linear.app/fireworkentertainment/issue/FIR-27/mir-research)); set up the Notion-to-GitHub sync workflow ([PRs #38, #39, #41, #44, #47, #50](https://github.com/HarryRandall/FireworkEntertAInment/pulls?q=is%3Apr%20notion)); restructured the repo ([PR #30](https://github.com/HarryRandall/FireworkEntertAInment/pull/30)).
 
-  - 
-</details>
+- **Harrison Black** - Set up GitHub + Linear and the issue template ([FIR-11](https://linear.app/fireworkentertainment/issue/FIR-11/set-up-issue-template)); authored the Issue, Commit & Merging Guide ([FIR-23](https://linear.app/fireworkentertainment/issue/FIR-23/write-up-issue-merging-and-review-guide)); wrote the Risk Assessment ([FIR-16](https://linear.app/fireworkentertainment/issue/FIR-16/write-up-risk-assesment)) and User Stories ([FIR-13](https://linear.app/fireworkentertainment/issue/FIR-13/write-up-user-stories)); led firework simulation research (Godot spike) and the Finale 3D local setup; closed the Sprint Checklist against the rubric ([FIR-47](https://linear.app/fireworkentertainment/issue/FIR-47/complete-sprint-checklist-via-evaluating-which-items-have-been-done)).
 
+- **Liam Maloney** - Stood up Supabase: client, middleware, env loader and `/api/health/supabase` probe ([PR #48](https://github.com/HarryRandall/FireworkEntertAInment/pull/48) / [FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase), [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database)); owned the sprint backlog (FIR-17, FIR-19, FIR-20, FIR-22, FIR-25, FIR-30 through FIR-37); authored the Sprint 1 Goal & Summary ([FIR-43](https://linear.app/fireworkentertainment/issue/FIR-43/sprint-1-goal-and-summary)).
 
-<details>
-<summary>Roadblocks</summary>
+- **Chongyang Fang** - Wrote the personas ([FIR-26](https://linear.app/fireworkentertainment/issue/FIR-26/create-personas-for-user-stories)); extended the audio analyser prototype with richer MIR features (commit `bc32c71`, [PR #54](https://github.com/HarryRandall/FireworkEntertAInment/pull/54)); drafted the music structure / emotion / personality framework that will underpin the curator AI ([FIR-39](https://linear.app/fireworkentertainment/issue/FIR-39/enhance-audio-analysis-granularity-and-model-generalization)).
 
-  - 
-  - 
-</details>
+---
 
+## Stakeholder Engagement
 
-<details>
-<summary>What You’re Gonna Do</summary>
+- **Meeting 1 - 16 March 2026** (kick-off): scope and vision, agreement on web tool, initial understanding of Finale 3D / Ignite / Glow Fireworks ecosystem.
 
-  - 
-  - 
-</details>
+- **Meeting 2 - 23 March 2026** (mockup walkthrough): mood-based curation direction, Finale 3D CSV as MVP output, consumer vs professional fireworks distinction, firework database tags and prompts.
 
+- **Meeting 3 - 30 March 2026** (Sprint 1 sign-off): approval of Next.js + Supabase direction, handover of replacement sample database, schedule for Sprint 2 around ANZAC Day / Easter break.
 
-<details>
-<summary>Retrospective</summary>
+---
 
-  
+## Planned vs Delivered
 
-</details>
+ | Item | Status | Notes | 
+ | ---- | ---- | ---- | 
+ | Project management tools stood up | Delivered | GitHub, Linear, Notion, Notion to GitHub sync, branch conventions | 
+ | Agreed MVP with stakeholder | Delivered | Finale 3D CSV output target signed off in Meeting 3 | 
+ | Product Vision + Roadmap | Delivered | Phased roadmap with MVP, Phase 2 AI curation, Phase 3 firing system integration | 
+ | User Stories, Personas, Risk Assessment | Delivered | All three published and signed off | 
+ | Next.js web platform skeleton | Delivered | Deployed on Vercel; auth flow planned for Sprint 2 | 
+ | Supabase catalogue import | Delivered | Replacement CSV imported after Meeting 3 | 
+ | MIR prototype on sample audio | Delivered | Beat, onset, energy features; generalisation work carried into Sprint 2 | 
+ | Browser-side firework simulation | Deferred to Sprint 2 | Godot spike documented; implementation dependent on catalogue and MIR landing | 
+ | Finale 3D CSV round-trip demo | Deferred to Sprint 2 | Blocked on usable database from Robert, received end of Sprint 1 | 
+ | Sprint retrospective | Deferred to Sprint 2 kick-off | Sprint 1 included a sprint review at the final scrum; formal retrospective rolled into Sprint 2 planning to consolidate tutor feedback | 
 
+---
 
-### Liam:
+## Reflections
 
+### Harry
 
-<details>
-<summary>What You’ve Done</summary>
+- What You've Done
 
-  Contributed to docs, issues, stakeholder engagement. Engaged in heavy discussions with the group about the product vision MVP, development procedures, and project management tools. Started development with Supase database and integrating it into the application skeleton.
+	- Led the three stakeholder meetings with Robert and drove the scope conversation from an abstract 'AI + fireworks' idea to a concrete Finale 3D CSV MVP.
 
-</details>
+	- Built the Next.js 15 + Tailwind v4 web platform skeleton and wired up the Vercel deployment ([PR #36](https://github.com/HarryRandall/FireworkEntertAInment/pull/36) / [FIR-44](https://linear.app/fireworkentertainment/issue/FIR-44/initialise-nextjs-web-platform-with-vercel-deployment)).
 
+	- Designed and shipped the first clickable site mockup that Robert walked through live in Meeting 2 ([PR #29](https://github.com/HarryRandall/FireworkEntertAInment/pull/29) / [FIR-18](https://linear.app/fireworkentertainment/issue/FIR-18/static-website)).
 
-<details>
-<summary>Roadblocks</summary>
+	- Wrote the initial MIR research and helped lock the two-stage architecture (MIR for the song, curator AI for the firework catalogue) ([FIR-27](https://linear.app/fireworkentertainment/issue/FIR-27/mir-research)).
 
-  Relative inexperience with full stack development, chatbot developments and real world tools. 
+	- Set up the Notion-to-GitHub sync workflow via GitHub Actions so Notion content is always mirrored into the repo ([PRs #38, #39, #41, #44, #47, #50](https://github.com/HarryRandall/FireworkEntertAInment/pulls?q=is%3Apr%20notion)).
 
-</details>
+	- Restructured the repo and moved the audio analyser prototype into `prototypes/` ([PR #30](https://github.com/HarryRandall/FireworkEntertAInment/pull/30)).
 
+- Roadblocks
 
-<details>
-<summary>What You’re Gonna Do</summary>
+	- Small team size means wearing a lot of hats across stakeholder management, platform, MIR research and CI. Easy to context switch and lose depth in one area.
 
-  - Continue development on my assigned issues.
-  - Research relevant firework data and description for the database.
-  - Continue contributing to group discussions and stakeholder meetings.
-</details>
+	- The Notion to GitHub sync went through several iterations before it handled both formatting and attachments reliably.
 
+	- Time zone gap with Robert (Hong Kong / US) limits us to one live meeting per week; had to rely on async WhatsApp updates for clarifications.
 
-<details>
-<summary>Retrospective</summary>
+- What You're Gonna Do
 
-  I feel disadvantaged to have a smaller group size and that Im using a lot of these tools for the first time, but am eager to create this project. I find the stakeholder and group friendly and the project interesting, so I have sufficient interest to do my best work for the project.
+	- Lead the authentication and protected-routes work on the Next.js platform in Sprint 2 ([FIR-22](https://linear.app/fireworkentertainment/issue/FIR-22/research-login-flow-and-user-persistence-for-the-website)).
 
-</details>
+	- Continue steering stakeholder engagement and keep the [Stakeholder Feedback Log](https://www.notion.so/345cd8a5bf0881579b96c2a37a854144) current after every meeting.
 
+	- Support Fang on integrating the MIR prototype into the web platform so we can demo an end-to-end pipeline on a real song by the end of Sprint 2.
 
-### Fang:
+- Retrospective
 
+	### Liam
 
-<details>
-<summary>What You’ve Done</summary>
+- What You've Done
 
+	- Roadblocks
 
-  ```markdown
-  - Conducted the client kick-off meeting and helped define user stories, risks, and user personas.
+	- What You're Gonna Do
+
+	- Continue development on my assigned issues.
+
+	- Research relevant firework data and description for the database.
+
+	- Continue contributing to group discussions and stakeholder meetings.
+
+- Retrospective
+
+	### Fang
+
+- What You've Done
+
+	
+```markdown
+- Conducted the client kick-off meeting and helped define user stories, risks, and user personas.
 - Investigated how to analyse music structure and classify emotional impact in a more systematic way.
 - Refined the project direction from basic audio segmentation to a more artistic firework cueing system.
 - Identified the limitations of the current prototype, especially its reliance on simple beat, onset, and energy heuristics.
 - Proposed a measurable personality framework to connect music analysis with firework presentation style.
-  ```
+```
 
-</details>
+- Roadblocks
 
-
-<details>
-<summary>Roadblocks</summary>
-
-
-  ```markdown
-  - The client’s artistic expectations are still abstract and difficult to translate into precise technical requirements.
+	
+```markdown
+- The client's artistic expectations are still abstract and difficult to translate into precise technical requirements.
 - There is no standard mapping between music emotion, personality, and firework aesthetics.
 - Cross-genre consistency remains challenging.
-  ```
+```
 
-</details>
+- What You're Gonna Do
 
-
-<details>
-<summary>What You’re Gonna Do</summary>
-
-
-  ```markdown
-  - Continue refining the framework for music structure, emotion, and personality analysis.
+	
+```markdown
+- Continue refining the framework for music structure, emotion, and personality analysis.
 - Test the prototype across a wider range of genres.
 - Improve cue generation so synchronization is more globally coherent and artistically controlled.
 - Prepare clearer evaluation criteria for future client feedback.
-  ```
+```
 
-</details>
+- Retrospective
 
-
-<details>
-<summary>Retrospective</summary>
-
-
-  ```markdown
-  - This sprint moved the project from early discovery into a clearer prototype direction.
+	
+```markdown
+- This sprint moved the project from early discovery into a clearer prototype direction.
 - The main achievement was turning abstract ideas about personality and emotion into a more structured design approach.
 - The next stage will require stronger validation, clearer client feedback, and broader testing.
-  ```
+```
 
-</details>
+### Harrison
 
+- What You've Done
 
-### Harrison:
+							- Roadblocks
 
+		- What You're Gonna Do
 
-<details>
-<summary>What You’ve Done</summary>
+		- Retrospective
 
-  Met with Robert
+	---
 
-  Helped setup software such as github and linear, managed the integration of the two.
+## Meetings & Daily Overviews
 
-  Written up an Issue, Commit & Merging Guide
+[//]: # (child_page is not supported)
 
-  Created The Risk Assessment Framework
+[//]: # (child_page is not supported)
 
-  Researched how to simulate fireworks in godot
+[//]: # (child_page is not supported)
 
-  Got Finale3D working on my machine with Robert’s help.
+[//]: # (child_page is not supported)
 
-  Finalised introductory documentation such as Risk Assesment, User Stories, Issue & Merging Guide.
+[//]: # (child_page is not supported)
 
-</details>
-
-
-<details>
-<summary>Roadblocks</summary>
-
-  The small team size makes it harder to get everything out on time.
-
-  Complications getting ahold of Finale3D made it hard to ensure we’d be able to test our output, but that has been sorted.
-
-</details>
-
-
-<details>
-<summary>What You’re Gonna Do</summary>
-
-  Document the specifications on importing effects/shows into Finale3D.
-
-  Ensure that tutor feedback is employed at the very start of the next sprint.
-
-</details>
-
-
-<details>
-<summary>Retrospective</summary>
-
-  This sprint has gone pretty well, it’s annoying having such a small team, but at the very least it makes it easier to communicate ideas and get everyone on the same page! Since this sprint has mostly been documentation, it’s felt kinda slow, but still! Robert seems like a nice guy, a little unsure about the exact AI technology he wants, but communication with him is going well. At the start we were a little unsure about exactly what he wanted, but we nailed it down the second day after deliberation among ourselves. Personally, I’ve been contributing an okay amount of work, most of what I’ve done has been documentation and research, so It doesn’t feel like I have much to show for this sprint, but next sprint we will get more into the nitty gritty of developing the AI system.
-
-</details>
-
-
-
-**Meetings and Overviews:**
-
-[Stakeholder Meeting 1](https://www.notion.so/325cd8a5bf0880639dbde55fec373283)
-[Day Overview (16/03)](https://www.notion.so/325cd8a5bf0880ecb7e2eb715a239134)
-[Stakeholder Meeting 2](https://www.notion.so/32ccd8a5bf08807a93d5c6ed3a582589)
-[Day Overview (23/03)](https://www.notion.so/32ccd8a5bf088002b5e0dec60598762d)
-[Stakeholder Meeting 3](https://www.notion.so/333cd8a5bf0880ef9d92c9f02f38ce87)
-
+[//]: # (child_page is not supported)
 

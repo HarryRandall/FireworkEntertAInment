@@ -4,31 +4,37 @@ title: Day Overview (16/03)
 date: '2026-03-16 04:33:00.000'
 from_notion: https://www.notion.so/Day-Overview-16-03-325cd8a5bf0880ecb7e2eb715a239134
 author: From Notion
-last_edited_time: '2026-03-30 04:49:00.000'
+last_edited_time: '2026-04-17 11:32:00.000'
 ---
-## What we’ve done:
+---
 
-- Met with our client.
+## What We've Done
 
-- Completed a large amount of introductory documentation including User Stories and risk assessment.
+- Held [Stakeholder Meeting 1](https://www.notion.so/325cd8a5bf0880639dbde55fec373283) with Robert Foti to agree the initial project scope.
 
-- Completed most of the admin setup tasks following the rubric.
+- Completed introductory documentation: [User Stories](https://www.notion.so/325cd8a5bf0880e786add257de9f1dc6) ([FIR-13](https://linear.app/fireworkentertainment/issue/FIR-13/write-up-user-stories)) and [Risk Assessment](https://www.notion.so/325cd8a5bf08809d8dbce15c3aeeb2ef) ([FIR-16](https://linear.app/fireworkentertainment/issue/FIR-16/write-up-risk-assesment)).
 
-- Done lots of market research on the product and similar products.
+- Completed the admin setup tasks from the [Sprint Checklist](https://www.notion.so/325cd8a5bf08801eb32efb961637d294) (GitHub, Linear, Notion, Discord).
 
-## What we plan to do:
+- Conducted market research on comparable products (captured in [Competitor Analysis](https://www.notion.so/325cd8a5bf0880c19edee49b88abe705)).
 
-- Clarify idea with Robert - see if he likes it / has feedback.
+---
 
-- Same with Solomon, see if he has any ideas.
+## What We Plan to Do
 
-- Start delegating work based on that feedback.
+- Clarify the product idea with Robert and capture any feedback in a second meeting.
+
+- Review direction with our tutor Solomon Inyang.
+
+- Delegate sprint tasks based on that feedback and the evolving [Product Vision + Roadmap](https://www.notion.so/325cd8a5bf0880f3b8ead17a7e10029d).
 
 <br/>
 
-## Reflection:
+---
 
-### Harry:
+## Reflections
+
+### Harry
 
 - What You’ve Done
 
@@ -60,7 +66,7 @@ last_edited_time: '2026-03-30 04:49:00.000'
 
 			- What You’re Gonna Do
 
-			### Liam:
+			### Liam
 
 - What You’ve Done
 
@@ -68,7 +74,7 @@ last_edited_time: '2026-03-30 04:49:00.000'
 
 	- What You’re Gonna Do
 
-	### Fang:
+	### Fang
 
 - What You’ve Done
 
@@ -80,7 +86,7 @@ last_edited_time: '2026-03-30 04:49:00.000'
 
 	- What You’re Gonna Do
 
-	### Harrison:
+	### Harrison
 
 - What You’ve Done
 

@@ -4,9 +4,27 @@ title: Stakeholder Meeting 2
 date: '2026-03-23 01:15:00.000'
 from_notion: https://www.notion.so/Stakeholder-Meeting-2-32ccd8a5bf08807a93d5c6ed3a582589
 author: From Notion
-last_edited_time: '2026-03-30 04:13:00.000'
+last_edited_time: '2026-04-17 11:32:00.000'
 ---
+[//]: # (table_of_contents is not supported)
+
 ---
+
+## Stakeholder Feedback & Actions
+
+ | Feedback / decision | Our response | Linear / evidence | 
+ | ---- | ---- | ---- | 
+ | UI mockup walkthrough: positive on editor, shopping list, show guide and live preview flow. | Mockup ported into Next.js; same flow kept as our north-star navigation. | [PR #29](https://github.com/HarryRandall/FireworkEntertAInment/pull/29), [PR #36](https://github.com/HarryRandall/FireworkEntertAInment/pull/36) | 
+ | Consumer fireworks have a 3-6 second ignition fuse and produce many effects at once, so beat-level precision is unrealistic. Profile fireworks by mood and match to song sections. | Curation redesigned around mood / song-section matching, not beat-level firing. | [Product Vision + Roadmap](https://www.notion.so/325cd8a5bf0880f3b8ead17a7e10029d), [FIR-39](https://linear.app/fireworkentertainment/issue/FIR-39/enhance-audio-analysis-granularity-and-model-generalization) | 
+ | Stick with Finale 3D CSV for MVP; the exported `.fire` file is universal across firing systems. | MVP scope frozen to Finale 3D CSV; direct Ignite integration parked as a Phase 3 goal. | [FIR-28](https://linear.app/fireworkentertainment/issue/FIR-28/write-research-methods-for-firework-simulation), [Firework Scripting/Simulation Research](https://www.notion.so/32ccd8a5bf0880bdb882c91be1b33dff) | 
+ | Database should include tags and categories per firework (peony, palm, willow, cake, crackle, strobe), fuse timing and mood-fit scores. | Supabase schema drafted around these attributes; sample CSV ingested and re-formatted. | [FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase), [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database), [PR #48](https://github.com/HarryRandall/FireworkEntertAInment/pull/48) | 
+ | Full retailer POS integration is out of scope for MVP. Use a static product list on the back end. | Roadmap updated; live stock integration deferred to Phase 3. | [Product Vision + Roadmap, Phase 3](https://www.notion.so/325cd8a5bf0880f3b8ead17a7e10029d) | 
+ | Differentiation will come from Robert's assets, expertise, and a well-tuned LLM system prompt describing firework personality. | System-prompt design marked as a core Sprint 3 deliverable; Robert's draft prompts queued for ingestion. | Sprint 3 backlog (to be created) | 
+ | Robert's actions: export working Finale 3D CSV, supply consumer database, draft prompts per firework type, meet Ignite team 7-8 April. | Tracked as stakeholder action items; delivered replacement CSV ingested after Meeting 3. | [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database) | 
+
+---
+
+## Meeting Notes
 
 ### Overview
 
@@ -92,7 +110,9 @@ last_edited_time: '2026-03-30 04:13:00.000'
 
 ---
 
-### Next Steps
+---
+
+## Next Steps
 
  | Owner | Action | 
  | ---- | ---- | 
@@ -106,7 +126,9 @@ last_edited_time: '2026-03-30 04:13:00.000'
 
 ---
 
-### Scheduling
+---
+
+## Scheduling
 
 - No meeting the week of 7 April (Easter/Anzac break)
 
@@ -117,8 +139,6 @@ last_edited_time: '2026-03-30 04:13:00.000'
 - Robert will confirm closer to the time based on his US time zone
 
 - Team to contact Robert via WhatsApp for quick questions
-
----
 
 ---
 

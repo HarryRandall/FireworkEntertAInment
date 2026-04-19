@@ -4,39 +4,45 @@ title: Day Overview (23/03)
 date: '2026-03-23 01:15:00.000'
 from_notion: https://www.notion.so/Day-Overview-23-03-32ccd8a5bf088002b5e0dec60598762d
 author: From Notion
-last_edited_time: '2026-03-30 04:13:00.000'
+last_edited_time: '2026-04-17 11:32:00.000'
 ---
-## What we’ve done:
+---
 
-- Issue & Merging Guide
+## What We've Done
 
-- Added personas
+- Published the [Issue, Commit & Merging Guide](https://www.notion.so/325cd8a5bf08804ebe2fe3619b8c1d8c) ([FIR-23](https://linear.app/fireworkentertainment/issue/FIR-23/write-up-issue-merging-and-review-guide)).
 
-- Finished Risk Assesment
+- Added [Personas](https://www.notion.so/325cd8a5bf0880f98011e3ebc8fe0cce) to complement the user stories ([FIR-26](https://linear.app/fireworkentertainment/issue/FIR-26/create-personas-for-user-stories)).
 
-- Started researching firework simulation options
+- Finished the [Risk Assessment](https://www.notion.so/325cd8a5bf08809d8dbce15c3aeeb2ef) ([FIR-16](https://linear.app/fireworkentertainment/issue/FIR-16/write-up-risk-assesment)).
 
-- Built functioning demo website
+- Started researching firework simulation options in [Firework Scripting/Simulation Research](https://www.notion.so/32ccd8a5bf0880bdb882c91be1b33dff) ([FIR-28](https://linear.app/fireworkentertainment/issue/FIR-28/write-research-methods-for-firework-simulation)).
 
-- Created large issue backlog
+- Built a working demo website for the Meeting 2 walkthrough ([FIR-18](https://linear.app/fireworkentertainment/issue/FIR-18/static-website), [PR #29](https://github.com/HarryRandall/FireworkEntertAInment/pull/29)).
 
-- Fine-Tuned the MIR
+- Authored the sprint backlog in Linear ([FIR-17](https://linear.app/fireworkentertainment/issue/FIR-17/write-up-backlog-issues)).
 
-- General Structure/Refactoring stuff
+- Extended the MIR audio analyser with richer features ([FIR-27](https://linear.app/fireworkentertainment/issue/FIR-27/mir-research), commit `bc32c71`).
 
-## What we plan to do:
+- Restructured the repository and moved the audio analyser into `prototypes/` ([PR #30](https://github.com/HarryRandall/FireworkEntertAInment/pull/30)).
 
-- begin development of firework simulation software?
+---
 
-- Database stuff
+## What We Plan to Do
 
-- Build a skeleton for the platform
+- Begin the firework simulation software spike (Godot vs browser canvas / WebGL).
 
-- Research more into Finale3D
+- Stand up the database layer in Supabase and import Robert's consumer firework catalogue ([FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase)).
 
-## Reflection:
+- Build the Next.js platform skeleton and deploy to Vercel ([FIR-44](https://linear.app/fireworkentertainment/issue/FIR-44/initialise-nextjs-web-platform-with-vercel-deployment)).
 
-### Harry:
+- Deepen research into the Finale 3D CSV format to lock the MVP export target.
+
+---
+
+## Reflections
+
+### Harry
 
 - What You’ve Done
 
@@ -60,7 +66,7 @@ last_edited_time: '2026-03-30 04:13:00.000'
 
 	- 
 
-### Liam:
+### Liam
 
 - What You’ve Done
 
@@ -68,7 +74,7 @@ last_edited_time: '2026-03-30 04:13:00.000'
 
 - What You’re Gonna Do
 
-### Fang:
+### Fang
 
 - What You’ve Done
 
@@ -76,7 +82,7 @@ last_edited_time: '2026-03-30 04:13:00.000'
 
 	- What You’re Gonna Do
 
-	### Harrison:
+	### Harrison
 
 - What You’ve Done
 
