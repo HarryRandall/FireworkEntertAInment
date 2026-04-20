@@ -4,11 +4,29 @@ title: Stakeholder Meeting 1
 date: '2026-03-16 03:48:00.000'
 from_notion: https://www.notion.so/Stakeholder-Meeting-1-325cd8a5bf0880639dbde55fec373283
 author: From Notion
-last_edited_time: '2026-03-30 04:12:00.000'
+last_edited_time: '2026-04-17 11:32:00.000'
 ---
+[//]: # (table_of_contents is not supported)
+
+---
+
+## Stakeholder Feedback & Actions
+
+ | Feedback / decision | Our response | Linear / evidence | 
+ | ---- | ---- | ---- | 
+ | Tool is for retailers first; consumers are end users who pick it up in-store on mobile. | Product Vision reframed around retailer-led distribution; personas cover both audiences. | [Product Vision + Roadmap](https://www.notion.so/325cd8a5bf0880f3b8ead17a7e10029d), [FIR-26](https://linear.app/fireworkentertainment/issue/FIR-26/create-personas-for-user-stories) | 
+ | Build a web tool, not a native app. | Next.js web platform selected; mobile-first landing page shipped. | [FIR-44](https://linear.app/fireworkentertainment/issue/FIR-44/initialise-nextjs-web-platform-with-vercel-deployment), [PR #36](https://github.com/HarryRandall/FireworkEntertAInment/pull/36) | 
+ | Target a Finale 3D compatible CSV for the MVP because the consumer-firework database already lives there. | Scope frozen to Finale 3D CSV output; Supabase chosen to hold the catalogue. | [FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase), [Firework Scripting/Simulation Research](https://www.notion.so/32ccd8a5bf0880bdb882c91be1b33dff) | 
+ | Core differentiator is defining the 'personality' of a firework and matching it to music. | Committed to a two-stage pipeline: MIR for the song, curator AI for the catalogue. | [FIR-27](https://linear.app/fireworkentertainment/issue/FIR-27/mir-research), [FIR-24](https://linear.app/fireworkentertainment/issue/FIR-24/spike-evaluate-and-select-core-mir-librariesapis) | 
+ | Robert to supply 20-30 firework animation files plus the matching real-firework videos. | Supabase catalogue designed to receive the files once delivered. | [FIR-38](https://linear.app/fireworkentertainment/issue/FIR-38/upload-to-and-format-supabase) | 
+ | Propose a consumer-firework safety-distance baseline for Robert to validate. | Captured as a Sprint 2 / Sprint 3 deliverable against the Finale 3D simulation spike. | [FIR-28](https://linear.app/fireworkentertainment/issue/FIR-28/write-research-methods-for-firework-simulation) | 
+ | Communicate via a WhatsApp group between meetings. | Group created and now used for async clarifications. | WhatsApp group (off-platform) | 
+
 ---
 
 ## High-Level Summary
+
+---
 
 ---
 
@@ -52,6 +70,8 @@ last_edited_time: '2026-03-30 04:12:00.000'
 
 ---
 
+---
+
 ## Action Items
 
 - **Robert:** Provide 20–30 firework animation files and real firework videos to the team
@@ -73,6 +93,8 @@ last_edited_time: '2026-03-30 04:12:00.000'
 - **Team:** Create a WhatsApp group including Robert for ongoing communication
 
 - **Team:** Propose a baseline for consumer firework safety distances for Robert to validate
+
+---
 
 ---
 

@@ -4,7 +4,7 @@ title: Sprint Checklist
 date: '2026-03-16 03:50:00.000'
 from_notion: https://www.notion.so/Sprint-Checklist-325cd8a5bf08801eb32efb961637d294
 author: From Notion
-last_edited_time: '2026-03-30 05:10:00.000'
+last_edited_time: '2026-04-17 10:38:00.000'
 ---
 # Project Practices Checklist
 
@@ -46,7 +46,7 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - [x] Identify and manage risks
 
-- [ ] Monitor team velocity and feed it into planning/estimation activities for subsequent sprints
+- [ ] Monitor team velocity and feed it into planning/estimation activities for subsequent sprints *(Deferred: Sprint 1 is our first sprint, so there is no prior velocity to monitor yet. Velocity tracking kicks in from Sprint 2 onward using Linear cycle metrics.)*
 
 ---
 
@@ -76,7 +76,7 @@ last_edited_time: '2026-03-30 05:10:00.000'
 
 - [x] Conduct sprint review at the end of each sprint to demonstrate completed work, gather feedback, and adjust priorities as needed
 
-- [ ] Conduct sprint retrospective at the end of each sprint to reflect on team processes, identify issues, and agree on improvements for future sprints
+- [ ] Conduct sprint retrospective at the end of each sprint to reflect on team processes, identify issues, and agree on improvements for future sprints *(Deferred to Sprint 2 kick-off so we can consolidate it with tutor feedback. Sprint 1 included a sprint review at the final scrum, and individual retrospectives are captured per person on the **[Sprint 1 page](https://www.notion.so/333cd8a5bf0880f59cc5dbbb1b0331ac)**.)*
 
 - [x] Create PBIs to implement all actions resulting from each retrospective and review
 
