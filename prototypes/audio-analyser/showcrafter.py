@@ -4,6 +4,7 @@ Extracts musical structure from an audio file for pyromusical choreography.
 Output: a Markdown file of timestamped musical events ready to feed into an LLM.
 """
 
+import argparse
 import librosa
 import numpy as np
 import json
@@ -14,7 +15,388 @@ import sklearn.cluster
 from scipy.signal import find_peaks, savgol_filter
 
 
-def analyse_song(file_path: str) -> dict:
+STYLE_DIMENSIONS = (
+    "boldness",
+    "elegance",
+    "playfulness",
+    "warmth",
+    "brightness",
+    "grandeur",
+    "tension",
+    "precision",
+)
+
+PITCH_CLASS_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"]
+
+PERSONALITY_PRESETS = {
+    "balanced": {
+        "boldness": 0.55,
+        "elegance": 0.55,
+        "playfulness": 0.45,
+        "warmth": 0.55,
+        "brightness": 0.50,
+        "grandeur": 0.55,
+        "tension": 0.45,
+        "precision": 0.60,
+    },
+    "bold": {
+        "boldness": 0.90,
+        "elegance": 0.35,
+        "playfulness": 0.45,
+        "warmth": 0.65,
+        "brightness": 0.78,
+        "grandeur": 0.88,
+        "tension": 0.62,
+        "precision": 0.58,
+    },
+    "elegant": {
+        "boldness": 0.38,
+        "elegance": 0.92,
+        "playfulness": 0.28,
+        "warmth": 0.48,
+        "brightness": 0.64,
+        "grandeur": 0.74,
+        "tension": 0.34,
+        "precision": 0.82,
+    },
+    "playful": {
+        "boldness": 0.58,
+        "elegance": 0.34,
+        "playfulness": 0.94,
+        "warmth": 0.62,
+        "brightness": 0.84,
+        "grandeur": 0.52,
+        "tension": 0.32,
+        "precision": 0.55,
+    },
+    "cinematic": {
+        "boldness": 0.68,
+        "elegance": 0.72,
+        "playfulness": 0.22,
+        "warmth": 0.42,
+        "brightness": 0.52,
+        "grandeur": 0.96,
+        "tension": 0.78,
+        "precision": 0.70,
+    },
+    "intimate": {
+        "boldness": 0.24,
+        "elegance": 0.76,
+        "playfulness": 0.24,
+        "warmth": 0.78,
+        "brightness": 0.34,
+        "grandeur": 0.36,
+        "tension": 0.30,
+        "precision": 0.66,
+    },
+}
+
+
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def score01(value: float, low: float, high: float) -> float:
+    if high <= low:
+        return 0.0
+    return clamp01((float(value) - low) / (high - low))
+
+
+def normalise_series(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=float)
+    if values.size == 0:
+        return values
+    value_range = float(values.max() - values.min())
+    if value_range <= 1e-10:
+        return np.zeros_like(values, dtype=float)
+    return (values - values.min()) / value_range
+
+
+def rounded_scores(scores: dict) -> dict:
+    return {key: round(clamp01(value), 3) for key, value in scores.items()}
+
+
+def score_to_label(score: float) -> str:
+    if score >= 0.75:
+        return "high"
+    if score >= 0.45:
+        return "medium"
+    return "low"
+
+
+def dominant_traits(style_vector: dict, limit: int = 3) -> list:
+    ranked = sorted(style_vector.items(), key=lambda item: item[1], reverse=True)
+    return [name for name, _ in ranked[:limit]]
+
+
+def estimate_key_signature(chroma: np.ndarray) -> dict:
+    chroma = np.asarray(chroma, dtype=float)
+    if chroma.size == 0 or chroma.shape[0] != 12:
+        return {"root": "C", "mode": "major", "confidence": 0.0}
+
+    chroma_profile = chroma.mean(axis=1)
+    if np.allclose(chroma_profile.sum(), 0.0):
+        return {"root": "C", "mode": "major", "confidence": 0.0}
+
+    chroma_profile = chroma_profile / (np.linalg.norm(chroma_profile) + 1e-10)
+    major_template = np.array(
+        [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],
+        dtype=float,
+    )
+    minor_template = np.array(
+        [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17],
+        dtype=float,
+    )
+    major_template /= np.linalg.norm(major_template)
+    minor_template /= np.linalg.norm(minor_template)
+
+    major_scores = [float(np.dot(chroma_profile, np.roll(major_template, idx))) for idx in range(12)]
+    minor_scores = [float(np.dot(chroma_profile, np.roll(minor_template, idx))) for idx in range(12)]
+
+    best_major_idx = int(np.argmax(major_scores))
+    best_minor_idx = int(np.argmax(minor_scores))
+    best_major = major_scores[best_major_idx]
+    best_minor = minor_scores[best_minor_idx]
+
+    if best_major >= best_minor:
+        root = PITCH_CLASS_NAMES[best_major_idx]
+        mode = "major"
+        chosen = best_major
+        alternate = best_minor
+    else:
+        root = PITCH_CLASS_NAMES[best_minor_idx]
+        mode = "minor"
+        chosen = best_minor
+        alternate = best_major
+
+    confidence = clamp01(0.5 + (chosen - alternate) / (2 * (abs(chosen) + abs(alternate) + 1e-10)))
+    return {"root": root, "mode": mode, "confidence": round(confidence, 3)}
+
+
+def infer_genre_hint(tempo_bpm: float, descriptors: dict, key_signature: dict) -> str:
+    drive = descriptors["drive"]
+    bass_impact = descriptors["bass_impact"]
+    brightness = descriptors["brightness"]
+    grandeur = descriptors["grandeur"]
+    tension = descriptors["tension"]
+    playfulness = descriptors["playfulness"]
+
+    if drive > 0.72 and bass_impact > 0.52 and tempo_bpm >= 118:
+        return "edm"
+    if bass_impact > 0.58 and 75 <= tempo_bpm <= 105 and brightness < 0.55:
+        return "hiphop"
+    if grandeur > 0.72 and tension > 0.55 and tempo_bpm < 115:
+        return "cinematic"
+    if drive > 0.58 and brightness > 0.48 and tempo_bpm >= 96:
+        return "rock"
+    if playfulness > 0.55 and key_signature["mode"] == "major":
+        return "pop"
+    if tempo_bpm < 92 and descriptors["energy"] < 0.5:
+        return "ballad"
+    return "hybrid"
+
+
+def analyse_music_personality(
+    y: np.ndarray,
+    sr: int,
+    hop_length: int,
+    duration: float,
+    tempo_bpm: float,
+    beat_times: list,
+    onset_times: list,
+    rms_normalised: np.ndarray,
+    sections: list,
+    key_moments: list,
+    buildups: list,
+) -> dict:
+    spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
+    spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop_length)[0]
+    chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
+
+    stft = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_length))
+    freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
+    total_energy = float(np.mean(stft)) + 1e-10
+    bass_mask = freqs <= 180
+    bass_energy = float(np.mean(stft[bass_mask])) if np.any(bass_mask) else 0.0
+    bass_ratio = bass_energy / total_energy
+
+    energy_mean = float(np.mean(rms_normalised))
+    dynamic_range = float(np.percentile(rms_normalised, 90) - np.percentile(rms_normalised, 10))
+    energy_variation = float(np.std(rms_normalised))
+    beat_intervals = np.diff(beat_times) if len(beat_times) > 1 else np.array([])
+    beat_cv = float(np.std(beat_intervals) / (np.mean(beat_intervals) + 1e-10)) if beat_intervals.size else 1.0
+    beat_stability = clamp01(1.0 - beat_cv / 0.25)
+
+    onset_density = len(onset_times) / max(duration, 1.0)
+    key_moment_density = len(key_moments) / max(duration / 60.0, 1.0)
+    buildup_density = len(buildups) / max(duration / 60.0, 1.0)
+    section_contrast = 0.0
+    if len(sections) > 1:
+        section_energies = [s["avg_energy"] for s in sections]
+        section_contrast = float(np.mean(np.abs(np.diff(section_energies))))
+
+    centroid_norm = float(np.mean(spectral_centroid)) / (sr / 2.0 + 1e-10)
+    rolloff_norm = float(np.mean(spectral_rolloff)) / (sr / 2.0 + 1e-10)
+    brightness = clamp01(0.55 * score01(centroid_norm, 0.08, 0.45) + 0.45 * score01(rolloff_norm, 0.12, 0.7))
+    bass_impact = score01(bass_ratio, 0.8, 3.5)
+    drive = clamp01(
+        0.40 * score01(tempo_bpm, 70, 160)
+        + 0.35 * score01(onset_density, 0.8, 4.0)
+        + 0.25 * bass_impact
+    )
+
+    key_signature = estimate_key_signature(chroma)
+    major_bias = key_signature["confidence"] if key_signature["mode"] == "major" else 1.0 - key_signature["confidence"]
+    minor_bias = key_signature["confidence"] if key_signature["mode"] == "minor" else 1.0 - key_signature["confidence"]
+
+    warmth = clamp01(0.58 * bass_impact + 0.42 * (1.0 - brightness))
+    tension = clamp01(
+        0.32 * minor_bias
+        + 0.22 * score01(dynamic_range, 0.12, 0.55)
+        + 0.20 * score01(energy_variation, 0.08, 0.28)
+        + 0.14 * score01(key_moment_density, 1.0, 5.0)
+        + 0.12 * score01(buildup_density, 0.5, 3.0)
+    )
+    grandeur = clamp01(
+        0.28 * score01(dynamic_range, 0.12, 0.55)
+        + 0.26 * score01(section_contrast, 0.05, 0.25)
+        + 0.24 * score01(max(duration, 0.0), 90, 300)
+        + 0.22 * score01(key_moment_density, 1.0, 5.0)
+    )
+    playfulness = clamp01(
+        0.34 * brightness
+        + 0.30 * major_bias
+        + 0.22 * score01(onset_density, 0.8, 4.0)
+        + 0.14 * score01(tempo_bpm, 85, 150)
+    )
+    precision = clamp01(0.72 * beat_stability + 0.28 * (1.0 - score01(energy_variation, 0.08, 0.28)))
+    boldness = clamp01(
+        0.42 * energy_mean
+        + 0.24 * drive
+        + 0.18 * bass_impact
+        + 0.16 * score01(key_moment_density, 1.0, 5.0)
+    )
+    elegance = clamp01(
+        0.42 * precision
+        + 0.26 * grandeur
+        + 0.18 * (1.0 - score01(onset_density, 0.8, 4.0))
+        + 0.14 * (1.0 - score01(energy_variation, 0.08, 0.28))
+    )
+
+    descriptors = rounded_scores(
+        {
+            "energy": energy_mean,
+            "drive": drive,
+            "brightness": brightness,
+            "warmth": warmth,
+            "tension": tension,
+            "grandeur": grandeur,
+            "playfulness": playfulness,
+            "precision": precision,
+            "dynamic_range": score01(dynamic_range, 0.12, 0.55),
+            "bass_impact": bass_impact,
+            "section_contrast": score01(section_contrast, 0.05, 0.25),
+        }
+    )
+    style_vector = rounded_scores(
+        {
+            "boldness": boldness,
+            "elegance": elegance,
+            "playfulness": playfulness,
+            "warmth": warmth,
+            "brightness": brightness,
+            "grandeur": grandeur,
+            "tension": tension,
+            "precision": precision,
+        }
+    )
+    genre_hint = infer_genre_hint(tempo_bpm, descriptors, key_signature)
+
+    return {
+        "genre_hint": genre_hint,
+        "key_signature": key_signature,
+        "descriptors": descriptors,
+        "style_vector": style_vector,
+        "dominant_traits": dominant_traits(style_vector),
+        "raw_metrics": {
+            "tempo_bpm": round(float(tempo_bpm), 1),
+            "onset_density_per_sec": round(float(onset_density), 3),
+            "key_moments_per_min": round(float(key_moment_density), 3),
+            "buildups_per_min": round(float(buildup_density), 3),
+            "beat_stability": round(float(beat_stability), 3),
+            "section_contrast": round(float(section_contrast), 3),
+            "bass_ratio": round(float(bass_ratio), 3),
+        },
+    }
+
+
+def select_show_palette(style_vector: dict, genre_hint: str) -> dict:
+    warmth = style_vector["warmth"]
+    brightness = style_vector["brightness"]
+    tension = style_vector["tension"]
+    playfulness = style_vector["playfulness"]
+    boldness = style_vector["boldness"]
+
+    if tension > 0.65:
+        palette = {"primary": "deep_blue", "secondary": "silver", "accent": "crimson"}
+    elif warmth > 0.65:
+        palette = {
+            "primary": "gold",
+            "secondary": "amber",
+            "accent": "red" if boldness > 0.65 else "white",
+        }
+    elif brightness > 0.68:
+        palette = {"primary": "white", "secondary": "ice_blue", "accent": "silver"}
+    elif playfulness > 0.68:
+        palette = {"primary": "teal", "secondary": "lime", "accent": "gold"}
+    else:
+        palette = {"primary": "gold", "secondary": "white", "accent": "emerald"}
+
+    if genre_hint == "edm":
+        palette["accent"] = "white"
+    elif genre_hint == "cinematic":
+        palette["secondary"] = "silver"
+
+    return palette
+
+
+def build_show_personality(music_profile: dict, preset_name: str) -> dict:
+    preset_key = preset_name if preset_name in PERSONALITY_PRESETS else "balanced"
+    preset_vector = PERSONALITY_PRESETS[preset_key]
+    music_style = music_profile["style_vector"]
+
+    combined = {}
+    for dimension in STYLE_DIMENSIONS:
+        combined[dimension] = 0.55 * preset_vector[dimension] + 0.45 * music_style[dimension]
+
+    genre_hint = music_profile["genre_hint"]
+    if genre_hint == "edm":
+        combined["boldness"] += 0.05
+        combined["brightness"] += 0.04
+    elif genre_hint == "cinematic":
+        combined["grandeur"] += 0.06
+        combined["tension"] += 0.04
+    elif genre_hint == "ballad":
+        combined["warmth"] += 0.05
+        combined["elegance"] += 0.04
+
+    combined = rounded_scores(combined)
+    palette_direction = select_show_palette(combined, genre_hint)
+
+    return {
+        "preset": preset_key,
+        "blend_weights": {"user": 0.55, "music": 0.45},
+        "dimensions": combined,
+        "dominant_traits": dominant_traits(combined),
+        "palette_direction": palette_direction,
+        "density_level": score_to_label(
+            clamp01(0.5 + (combined["boldness"] - combined["elegance"]) * 0.6 + combined["playfulness"] * 0.25)
+        ),
+        "genre_hint": genre_hint,
+    }
+
+
+def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     """
     Analyse a song and return structured data for firework choreography.
     Uses Laplacian spectral clustering for accurate structural segmentation.
@@ -34,7 +416,7 @@ def analyse_song(file_path: str) -> dict:
     # ──────────────────────────────────────────────
     hop_length = 512
     rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
-    rms_normalised = (rms - rms.min()) / (rms.max() - rms.min())
+    rms_normalised = normalise_series(rms)
     rms_times = librosa.frames_to_time(range(len(rms)), sr=sr, hop_length=hop_length)
 
     # Downsample energy to ~1 reading per second
@@ -83,10 +465,37 @@ def analyse_song(file_path: str) -> dict:
     buildups = detect_buildups(smoothed, sr, hop_length)
 
     # ──────────────────────────────────────────────
-    # 7. FIREWORK CUES
+    # 7. MUSIC PERSONALITY ANALYSIS
+    # ──────────────────────────────────────────────
+    music_profile = analyse_music_personality(
+        y,
+        sr,
+        hop_length,
+        duration,
+        float(np.atleast_1d(tempo)[0]),
+        beat_times,
+        onset_times,
+        rms_normalised,
+        sections,
+        key_moments,
+        buildups,
+    )
+    show_personality = build_show_personality(music_profile, personality_preset)
+
+    # ──────────────────────────────────────────────
+    # 8. FIREWORK CUES
     # ──────────────────────────────────────────────
     firework_cues = generate_firework_cues(
-        beat_times, onset_times, sections, key_moments, buildups, smoothed, sr, hop_length
+        beat_times,
+        onset_times,
+        sections,
+        key_moments,
+        buildups,
+        smoothed,
+        sr,
+        hop_length,
+        music_profile,
+        show_personality,
     )
 
     # ──────────────────────────────────────────────
@@ -103,6 +512,8 @@ def analyse_song(file_path: str) -> dict:
         "sections": sections,
         "key_moments": key_moments,
         "buildups": buildups,
+        "music_profile": music_profile,
+        "show_personality": show_personality,
         "firework_cues": firework_cues,
     }
 
@@ -408,8 +819,121 @@ def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
     return buildups
 
 
+def get_section_at_time(t: float, sections: list) -> dict | None:
+    for section in sections:
+        if section["start"] <= t <= section["end"]:
+            return section
+    return None
+
+
+def cue_steps_from_personality(show_personality: dict) -> dict:
+    dims = show_personality["dimensions"]
+    density_score = clamp01(
+        0.45 * dims["boldness"] + 0.30 * dims["playfulness"] + 0.10 * dims["grandeur"] - 0.25 * dims["elegance"]
+    )
+
+    if density_score >= 0.72:
+        chorus_step = 1
+        high_step = 2
+        verse_step = 4
+    elif density_score >= 0.48:
+        chorus_step = 2
+        high_step = 4
+        verse_step = 6
+    else:
+        chorus_step = 4
+        high_step = 6
+        verse_step = 8
+
+    if dims["precision"] > 0.78 and chorus_step > 1:
+        chorus_step -= 1
+    if dims["elegance"] > 0.80:
+        verse_step = max(verse_step, 8)
+
+    return {
+        "chorus": chorus_step,
+        "high": high_step,
+        "verse": verse_step,
+        "onset": 5 if dims["playfulness"] > 0.72 else 8,
+    }
+
+
+def nearest_beat_distance(t: float, beat_times: np.ndarray) -> float:
+    if beat_times.size == 0:
+        return float("inf")
+
+    idx = int(np.searchsorted(beat_times, t))
+    candidates = []
+    if idx < beat_times.size:
+        candidates.append(abs(float(beat_times[idx]) - t))
+    if idx > 0:
+        candidates.append(abs(float(beat_times[idx - 1]) - t))
+    return min(candidates) if candidates else float("inf")
+
+
+def style_firework_cue(cue: dict, section: dict | None, music_profile: dict, show_personality: dict) -> dict:
+    dims = show_personality["dimensions"]
+    palette = show_personality["palette_direction"]
+    section_label = section["label"] if section else "unknown"
+
+    if cue["effect"] == "barrage":
+        shape = "fan_willow" if dims["elegance"] > 0.78 else (
+            "layered_chrysanthemum" if dims["grandeur"] > 0.72 else "chrysanthemum"
+        )
+        height = "high"
+        spread = "fan" if dims["elegance"] > 0.78 else "wide"
+        density = "dense" if dims["boldness"] > 0.62 else "layered"
+        primary = palette["accent"] if dims["boldness"] > 0.62 else palette["primary"]
+        secondary = palette["primary"]
+    elif cue["effect"] == "crackle":
+        shape = "glitter_comet" if dims["elegance"] > 0.70 else (
+            "strobe_fan" if dims["tension"] > 0.65 else "crackle_tail"
+        )
+        height = "mid_high" if dims["grandeur"] > 0.58 else "mid"
+        spread = "fan" if section_label in {"pre-chorus", "bridge"} else "trail"
+        density = "sustained"
+        primary = "silver" if dims["elegance"] > 0.70 else palette["secondary"]
+        secondary = palette["primary"]
+    elif cue["effect"] == "accent":
+        shape = "ring" if dims["playfulness"] > 0.76 else (
+            "comet" if dims["precision"] > 0.72 else ("peony" if dims["boldness"] > 0.64 else "palm")
+        )
+        height = "high" if cue["energy"] > 0.78 or section_label == "chorus" else "mid"
+        spread = "wide" if dims["boldness"] > 0.70 else "focused"
+        density = "punchy"
+        primary = palette["accent"] if section_label in {"chorus", "bridge"} else palette["secondary"]
+        secondary = palette["primary"]
+    else:
+        shape = "ring" if dims["playfulness"] > 0.76 else ("comet" if dims["elegance"] > 0.68 else "pearl")
+        height = "mid" if cue["energy"] > 0.4 else "low"
+        spread = "focused" if dims["precision"] > 0.65 else "narrow"
+        density = "airy" if dims["elegance"] > 0.68 else "sparse"
+        primary = palette["primary"]
+        secondary = palette["secondary"]
+
+    return {
+        "section": section_label,
+        "palette": f"{primary}/{secondary}",
+        "shape": shape,
+        "height": height,
+        "spread": spread,
+        "density": density,
+        "style_tags": dominant_traits(dims, limit=2),
+        "genre_hint": music_profile["genre_hint"],
+    }
+
+
 def generate_firework_cues(
-    beat_times, onset_times, sections, key_moments, buildups, smoothed, sr, hop_length
+    beat_times,
+    onset_times,
+    sections,
+    key_moments,
+    buildups,
+    smoothed,
+    sr,
+    hop_length,
+    music_profile,
+    show_personality,
 ) -> list:
     """
     Generate concrete firework cue suggestions:
@@ -420,6 +944,9 @@ def generate_firework_cues(
     """
     cues = []
     fps = sr / hop_length
+    beat_array = np.asarray(beat_times, dtype=float)
+    step_config = cue_steps_from_personality(show_personality)
+    dims = show_personality["dimensions"]
 
     chorus_ranges = [(s["start"], s["end"]) for s in sections if s["label"] == "chorus"]
     high_ranges = [(s["start"], s["end"]) for s in sections if s["intensity"] == "high"]
@@ -451,10 +978,10 @@ def generate_firework_cues(
             "energy": bu["energy_rise"],
         })
 
-    # Beats during chorus → accent on every 2nd beat
+    # Beats during chorus/high-energy sections → density shaped by personality
     for i, t in enumerate(beat_times):
         if in_ranges(t, chorus_ranges):
-            if i % 2 == 0:
+            if i % step_config["chorus"] == 0:
                 cues.append({
                     "time": round(t, 3),
                     "effect": "accent",
@@ -462,7 +989,7 @@ def generate_firework_cues(
                     "energy": round(get_energy_at(t), 3),
                 })
         elif in_ranges(t, high_ranges):
-            if i % 4 == 0:
+            if i % step_config["high"] == 0:
                 cues.append({
                     "time": round(t, 3),
                     "effect": "accent",
@@ -470,10 +997,29 @@ def generate_firework_cues(
                     "energy": round(get_energy_at(t), 3),
                 })
 
+    # Syncopated onsets add sparkle for brighter / more playful personalities
+    if dims["playfulness"] > 0.60 or music_profile["genre_hint"] in {"edm", "pop"}:
+        for i, t in enumerate(onset_times):
+            if i % step_config["onset"] != 0:
+                continue
+            if not (in_ranges(t, chorus_ranges) or in_ranges(t, high_ranges)):
+                continue
+            if get_energy_at(t) < 0.45:
+                continue
+            if nearest_beat_distance(t, beat_array) < 0.08:
+                continue
+
+            cues.append({
+                "time": round(t, 3),
+                "effect": "accent",
+                "reason": "syncopated_onset",
+                "energy": round(get_energy_at(t), 3),
+            })
+
     # Downbeats during verses → sparse single shots
     for i, t in enumerate(beat_times):
         if not in_ranges(t, chorus_ranges) and not in_ranges(t, high_ranges):
-            if i % 8 == 0 and get_energy_at(t) > 0.2:
+            if i % step_config["verse"] == 0 and get_energy_at(t) > 0.2:
                 cues.append({
                     "time": round(t, 3),
                     "effect": "single",
@@ -491,6 +1037,8 @@ def generate_firework_cues(
         t = cue["time"]
         if t not in seen_times:
             seen_times.add(t)
+            section = get_section_at_time(t, sections)
+            cue.update(style_firework_cue(cue, section, music_profile, show_personality))
             deduped.append(cue)
 
     return deduped
@@ -508,6 +1056,9 @@ def write_markdown(result: dict, output_path: str):
     """
     lines = []
     r = result
+    music_profile = r["music_profile"]
+    show_personality = r["show_personality"]
+    key_signature = music_profile["key_signature"]
 
     lines.append(f"# Song Analysis: {os.path.basename(r['file'])}")
     lines.append("")
@@ -519,6 +1070,36 @@ def write_markdown(result: dict, output_path: str):
     lines.append(f"- **Total firework cues:** {len(r['firework_cues'])}")
     lines.append(f"- **Climax moments:** {sum(1 for m in r['key_moments'] if m['type'] == 'climax')}")
     lines.append(f"- **Build-ups detected:** {len(r['buildups'])}")
+    lines.append(f"- **Genre hint:** {music_profile['genre_hint']}")
+    lines.append(
+        f"- **Key / mode:** {key_signature['root']} {key_signature['mode']} "
+        f"(confidence {key_signature['confidence']})"
+    )
+    lines.append(f"- **Personality preset:** {show_personality['preset']}")
+    lines.append("")
+
+    # ── Personality ──
+    lines.append("## Personality Mapping")
+    lines.append("")
+    lines.append(
+        "Quantified style profile derived from the music, then blended with the selected personality preset."
+    )
+    lines.append("")
+    lines.append(f"- **Music dominant traits:** {', '.join(music_profile['dominant_traits'])}")
+    lines.append(f"- **Show dominant traits:** {', '.join(show_personality['dominant_traits'])}")
+    palette = show_personality["palette_direction"]
+    lines.append(
+        f"- **Palette direction:** {palette['primary']} / {palette['secondary']} with {palette['accent']} accents"
+    )
+    lines.append(f"- **Cue density level:** {show_personality['density_level']}")
+    lines.append("")
+    lines.append("| Dimension | Music Score | Show Score |")
+    lines.append("|-----------|-------------|------------|")
+    for dimension in STYLE_DIMENSIONS:
+        lines.append(
+            f"| {dimension} | {music_profile['style_vector'][dimension]} | "
+            f"{show_personality['dimensions'][dimension]} |"
+        )
     lines.append("")
 
     # ── Sections ──
@@ -610,13 +1191,16 @@ def write_markdown(result: dict, output_path: str):
     lines.append("- **CRACKLE**: Sustained crackling effect (during build-ups)")
     lines.append("- **SINGLE**: Individual shot (sparse beats during verses)")
     lines.append("")
-    lines.append("| Time | Effect | Reason | Energy |")
-    lines.append("|------|--------|--------|--------|")
+    lines.append("| Time | Effect | Palette | Shape | Height | Reason | Energy |")
+    lines.append("|------|--------|---------|-------|--------|--------|--------|")
     for c in r['firework_cues']:
         end_str = f" - {fmt_time(c['end'])} ({c['end']}s)" if 'end' in c else ""
         lines.append(
             f"| {fmt_time(c['time'])} ({c['time']}s){end_str} | "
             f"{c['effect'].upper()} | "
+            f"{c['palette']} | "
+            f"{c['shape']} | "
+            f"{c['height']} | "
             f"{c['reason']} | "
             f"{c['energy']} |"
         )
@@ -675,6 +1259,8 @@ def live_player(result: dict, file_path: str):
     sections = result["sections"]
     buildups = result.get("buildups", [])
     duration = result["duration_seconds"]
+    genre_hint = result["music_profile"]["genre_hint"]
+    preset = result["show_personality"]["preset"]
     cols = shutil.get_terminal_size().columns
 
     # ANSI
@@ -782,13 +1368,13 @@ def live_player(result: dict, file_path: str):
                     fired_cues.add(ci - 1)
                     eff = cue["effect"]
                     if eff == "barrage":
-                        cue_text = f"{R}{BLD}FIREWORK *** BARRAGE ***{RST}"
+                        cue_text = f"{R}{BLD}FIREWORK *** BARRAGE *** [{cue['shape']}]{RST}"
                     elif eff == "accent":
-                        cue_text = f"{O}{BLD}FIREWORK * ACCENT *{RST}"
+                        cue_text = f"{O}{BLD}FIREWORK * ACCENT * [{cue['shape']}]{RST}"
                     elif eff == "crackle":
-                        cue_text = f"{Y}FIREWORK ~ crackle ~{RST}"
+                        cue_text = f"{Y}FIREWORK ~ crackle ~ [{cue['shape']}]{RST}"
                     else:
-                        cue_text = f"{C}FIREWORK . single .{RST}"
+                        cue_text = f"{C}FIREWORK . single . [{cue['shape']}]{RST}"
                     cue_fade = 1.0
             cue_fade = max(0.0, cue_fade - REFRESH * 2.5)
 
@@ -816,7 +1402,10 @@ def live_player(result: dict, file_path: str):
 
             lines = []
             lines.append(f"  {BLD}ShowCrafter{RST}  {DIM}{result['file']}{RST}")
-            lines.append(f"  {DIM}{result['tempo_bpm']} BPM  |  {len(result['firework_cues'])} cues  |  Ctrl+C to stop{RST}")
+            lines.append(
+                f"  {DIM}{result['tempo_bpm']} BPM  |  {genre_hint}  |  {preset} preset  |  "
+                f"{len(result['firework_cues'])} cues  |  Ctrl+C to stop{RST}"
+            )
             lines.append("")
 
             for i, sm in enumerate(section_map_lines):
@@ -861,27 +1450,38 @@ def live_player(result: dict, file_path: str):
         print(f"\n  {DIM}Done.{RST}\n")
 
 
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="Analyse a song and generate style-aware firework cues.")
+    parser.add_argument("path", nargs="?", default="song.mp3", help="Path to the audio file")
+    parser.add_argument("--json", dest="json_output", action="store_true", help="Also print JSON to stdout")
+    parser.add_argument("--play", action="store_true", help="Play audio with the live terminal visualizer")
+    parser.add_argument(
+        "--personality",
+        default="balanced",
+        choices=sorted(PERSONALITY_PRESETS.keys()),
+        help="Blend the music with a show personality preset",
+    )
+    return parser.parse_args(argv)
+
+
 # ──────────────────────────────────────────────
 # USAGE
 # ──────────────────────────────────────────────
 if __name__ == "__main__":
-    import sys
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    flags = [a for a in sys.argv[1:] if a.startswith("--")]
-    path = args[0] if args else "song.mp3"
+    options = parse_args()
 
     print("Analysing...", flush=True)
-    result = analyse_song(path)
+    result = analyse_song(options.path, personality_preset=options.personality)
 
-    if "--play" in flags:
-        live_player(result, path)
+    if options.play:
+        live_player(result, options.path)
     else:
         # Write markdown output
-        song_name = os.path.splitext(os.path.basename(path))[0]
+        song_name = os.path.splitext(os.path.basename(options.path))[0]
         output_path = f"{song_name}_analysis.md"
         write_markdown(result, output_path)
         print(f"Analysis written to: {output_path}")
 
         # Also print JSON to stdout for programmatic use
-        if "--json" in flags:
+        if options.json_output:
             print(json.dumps(result, indent=2))
