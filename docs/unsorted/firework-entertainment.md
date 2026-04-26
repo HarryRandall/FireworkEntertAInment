@@ -3,7 +3,7 @@ notion-url: https://www.notion.so/Firework-EntertaINment-325cd8a5bf088050b0e6cd1
 title: Firework EntertaINment
 from_notion: https://www.notion.so/Firework-EntertaINment-325cd8a5bf088050b0e6cd10670fdfbb
 author: From Notion
-last_edited_time: '2026-04-17 11:31:00.000'
+last_edited_time: '2026-04-26 00:20:00.000'
 date: '2026-03-16 01:55:00.000'
 ---
 ---
