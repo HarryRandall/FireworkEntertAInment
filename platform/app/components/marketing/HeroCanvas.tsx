@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
+// r3f 9.x still constructs THREE.Clock, which three 0.184 deprecated in favor of
+// THREE.Timer. Filter that one warning until r3f migrates.
+if (typeof window !== "undefined") {
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].includes("Clock: This module has been deprecated")) return;
+    origWarn(...args);
+  };
+}
+
 const PALETTE = [
   new THREE.Color("#ffc174"), // Ember Gold
   new THREE.Color("#f59e0b"), // Gold container
