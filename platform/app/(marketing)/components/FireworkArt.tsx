@@ -50,7 +50,7 @@ function FireworkBurst({
 
 export function FireworkArt() {
   return (
-    <div className="relative flex w-full flex-col items-center justify-between overflow-hidden p-14">
+    <div className="relative flex w-full flex-col items-center justify-center gap-6 overflow-hidden p-14">
       <svg viewBox="0 0 420 560" className="w-full max-w-xs" aria-hidden="true">
         <defs>
           <radialGradient id="glow-gold" cx="50%" cy="50%" r="50%">

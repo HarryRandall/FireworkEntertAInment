@@ -29,7 +29,7 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
     >
       <Info size={16} className="shrink-0 text-primary" />
       <span className="text-sm text-on-surface">{message}</span>
-      <button onClick={onClose} className="ml-1 shrink-0 text-on-surface-variant hover:text-on-surface transition">
+      <button onClick={onClose} className="ml-1 shrink-0 text-on-surface-variant hover:text-on-surface transition cursor-pointer">
         <X size={14} />
       </button>
     </motion.div>
@@ -43,7 +43,7 @@ function OAuthButton({ icon, label, onClick }: { icon: React.ReactNode; label: s
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border border-outline-variant/25 bg-surface-container px-5 py-3.5 text-sm font-medium text-on-surface shadow-sm transition hover:border-outline-variant/50 hover:bg-surface-container-highest active:scale-[0.99]"
+      className="flex w-full items-center gap-3 rounded-xl border border-outline-variant/25 bg-surface-container px-5 py-3.5 text-sm font-medium text-on-surface shadow-sm transition cursor-pointer hover:border-outline-variant/50 hover:bg-surface-container-highest active:scale-[0.99]"
     >
       {icon}
       <span>{label}</span>
@@ -123,9 +123,9 @@ export default function LoginPage() {
         {toast && <Toast message={toast} onClose={() => setToast(null)} />}
       </AnimatePresence>
 
-      <div className="relative flex min-h-[calc(100vh-4rem)]">
+      <div className="relative flex min-h-[calc(100vh-4rem)] mx-auto w-full max-w-screen-xl">
         {/* Left — form panel */}
-        <div className="relative flex flex-1 flex-col items-center justify-center px-8 py-16 lg:max-w-[50%]">
+        <div className="relative flex flex-col items-center justify-center px-8 py-16 w-full lg:w-[50%] lg:max-w-[600px] lg:flex-none">
           <div className="w-full max-w-md space-y-8">
             <div className="space-y-1">
               <h1 className="text-3xl font-bold tracking-tight text-on-surface">
@@ -173,7 +173,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setStep("email"); setError(null); }}
-                  className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition"
+                  className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition cursor-pointer"
                 >
                   <ArrowLeft size={14} />
                   Use a different email
