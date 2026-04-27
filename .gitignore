@@ -14,6 +14,8 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+# Cursor — local MCP config may contain access tokens
+.cursor/mcp.json
 *.swp
 *.swo
 *~

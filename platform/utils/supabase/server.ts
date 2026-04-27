@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabaseServerEnv } from "@/utils/supabase/env";
+import type { Database } from "@/lib/database.types";
 
 export const createClient = (
   cookieStore: Awaited<ReturnType<typeof cookies>>,
@@ -12,7 +13,7 @@ export const createClient = (
     );
   }
 
-  return createServerClient(env.url, env.key, {
+  return createServerClient<Database>(env.url, env.key, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

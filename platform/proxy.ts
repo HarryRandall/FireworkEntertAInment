@@ -12,9 +12,15 @@ export async function proxy(request: NextRequest) {
 
   const env = getSupabaseServerEnv();
   if (!env) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[proxy] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local. Auth gating disabled.",
+      );
+    }
     return supabaseResponse;
   }
 
+  // Build a Supabase client that refreshes the session cookie on every request.
   const supabase = createServerClient(env.url, env.key, {
     cookies: {
       getAll() {
@@ -37,13 +43,13 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
   const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -57,5 +63,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // Match everything except Next internals, static assets, the auth callback,
+  // and API routes (which handle their own auth).
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/|auth/callback).*)",
+  ],
 };

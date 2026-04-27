@@ -21,11 +21,34 @@ AI tool for designing real consumer firework shows, in partnership with ICON Pyr
 
 ```bash
 cd platform
-npm install        # install dependencies
-npm run dev        # start dev server at localhost:3000
-npm run build      # production build
-npm run lint       # run linter
+cp .env.example .env.local   # then fill in real Supabase values
+npm install                  # install dependencies
+npm run dev                  # start dev server at localhost:3000
+npm run build                # production build
+npm run lint                 # run linter
 ```
+
+### Required environment variables (`platform/.env.local`)
+
+| Name | Required | Used by | Purpose |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | yes | browser + server | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | browser + server | Anon / publishable key (RLS-safe) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | optional | browser + server | Newer name for the same anon key — either is accepted |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | optional | server | Server-only fallbacks for non-`NEXT_PUBLIC_*` deployments |
+
+`platform/.env.local` is gitignored — never commit secrets. In Vercel, configure these under Project Settings → Environment Variables.
+
+## Database
+
+App schema lives in [`platform/supabase/migrations/`](platform/supabase/migrations/):
+
+- `0001_init_app_schema.sql` — creates `profiles`, `shows`, `show_cues`, `shopping_list_items`; enables RLS scoped to `auth.uid()`; provisions a private `audio` storage bucket with per-user prefix policies; adds an `on_auth_user_created` trigger that materialises `profiles` from `auth.users`.
+- `0002_harden_function_security.sql` — locks `search_path` and revokes public `EXECUTE` on the trigger function.
+
+Generated TS types live at [`platform/lib/database.types.ts`](platform/lib/database.types.ts). Regenerate via the Supabase MCP `generate_typescript_types` tool whenever the schema changes.
+
+Server-side data access goes through [`platform/lib/shows.server.ts`](platform/lib/shows.server.ts) (`server-only`); the matching domain types and formatters are in [`platform/lib/shows.ts`](platform/lib/shows.ts).
 
 ## Repository Structure
 
