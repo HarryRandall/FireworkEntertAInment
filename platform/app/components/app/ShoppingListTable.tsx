@@ -1,18 +1,16 @@
 import { Package } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-
-export type ShoppingItem = {
-  name: string;
-  qty: number;
-  price: number;
-};
+import type { ShoppingListItem } from "@/lib/shows";
 
 type ShoppingListTableProps = {
-  items: ShoppingItem[];
+  items: ShoppingListItem[];
 };
 
 export function ShoppingListTable({ items }: ShoppingListTableProps) {
-  const total = items.reduce((sum, item) => sum + item.qty * item.price, 0);
+  const total = items.reduce(
+    (sum, item) => sum + (item.qty * item.priceCents) / 100,
+    0,
+  );
 
   return (
     <Card elevation="low" radius="md" className="space-y-6 p-8">
@@ -26,34 +24,41 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
         </p>
       </header>
 
-      <ul className="space-y-3">
-        {items.map((item) => {
-          const lineTotal = item.qty * item.price;
-          return (
-            <li
-              key={item.name}
-              className="flex items-center justify-between rounded-xl border border-outline-variant/10 bg-surface-container-highest/40 p-4"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Package size={18} strokeWidth={1.75} />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-on-surface">
-                    {item.name}
+      {items.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-outline-variant/20 bg-surface-container-highest/30 p-8 text-center text-sm text-on-surface-variant">
+          No items yet. The AI will populate this list once your show is
+          generated.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {items.map((item) => {
+            const lineTotal = (item.qty * item.priceCents) / 100;
+            return (
+              <li
+                key={item.id}
+                className="flex items-center justify-between rounded-xl border border-outline-variant/10 bg-surface-container-highest/40 p-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Package size={18} strokeWidth={1.75} />
                   </div>
-                  <div className="text-xs tabular-nums text-on-surface-variant">
-                    Qty {item.qty} &times; ${item.price.toFixed(2)}
+                  <div>
+                    <div className="text-sm font-medium text-on-surface">
+                      {item.name}
+                    </div>
+                    <div className="text-xs tabular-nums text-on-surface-variant">
+                      Qty {item.qty} &times; ${(item.priceCents / 100).toFixed(2)}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="font-bold tabular-nums text-primary">
-                ${lineTotal.toFixed(2)}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                <div className="font-bold tabular-nums text-primary">
+                  ${lineTotal.toFixed(2)}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <div className="flex items-center justify-between border-t border-outline-variant/10 pt-6">
         <span className="font-medium text-on-surface-variant">

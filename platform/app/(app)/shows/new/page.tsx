@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, type FormEvent } from "react";
 import {
   CloudUpload,
   Music4,
@@ -11,8 +10,9 @@ import {
 } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Textarea } from "@/app/components/ui/Input";
-import { Button } from "@/app/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { createShowAction } from "./actions";
+import { FormError } from "@/app/(marketing)/components/FormError";
 
 const TIME_OF_DAY = ["Daytime", "Dusk", "Night"] as const;
 const MOOD_TAGS = [
@@ -24,8 +24,9 @@ const MOOD_TAGS = [
   "Grand finale focused",
 ];
 
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+
 export default function NewShowPage() {
-  const router = useRouter();
   const [budget, setBudget] = useState(2500);
   const [timeOfDay, setTimeOfDay] = useState<(typeof TIME_OF_DAY)[number]>(
     "Night",
@@ -33,6 +34,9 @@ export default function NewShowPage() {
   const [activeMoods, setActiveMoods] = useState<Set<string>>(
     new Set(["High energy"]),
   );
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const toggleMood = (mood: string) => {
     setActiveMoods((prev) => {
@@ -45,9 +49,30 @@ export default function NewShowPage() {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO(FIR-58): persist the form payload to Supabase, then route to the
-    // generated show. For now we drop the user on the most recent demo show.
-    router.push("/shows/midnight-galaxy");
+    setError(null);
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    data.set("budget", String(budget));
+    data.set("timeOfDay", timeOfDay);
+    data.delete("moodTags");
+    activeMoods.forEach((mood) => data.append("moodTags", mood));
+    if (audioFile) {
+      if (audioFile.size > MAX_AUDIO_BYTES) {
+        setError("Audio file must be 50MB or smaller.");
+        return;
+      }
+      data.set("audio", audioFile);
+    } else {
+      data.delete("audio");
+    }
+
+    startTransition(async () => {
+      const result = await createShowAction(data);
+      if (result && !result.ok) {
+        setError(result.error);
+      }
+      // On success the action calls redirect(); the navigation handles the rest.
+    });
   };
 
   return (
@@ -66,8 +91,22 @@ export default function NewShowPage() {
       </header>
 
       <Section
+        title="Name your show"
+        description="A short, memorable title. This is how it will appear on your dashboard."
+      >
+        <Input
+          name="title"
+          required
+          placeholder="e.g. Midnight Galaxy"
+          iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
+          className="h-12 text-base"
+        />
+      </Section>
+
+      <Section
         title="Choose a song"
         description="The foundation of your choreography. Upload high-fidelity audio or describe the mood."
+        bordered
       >
         <div className="space-y-6">
           <label className="group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/30 bg-surface-container-low p-10 transition-all hover:bg-surface-container">
@@ -77,18 +116,20 @@ export default function NewShowPage() {
               className="mb-4 text-primary"
             />
             <p className="font-medium text-on-surface">
-              Drag and drop your audio file
+              {audioFile ? audioFile.name : "Drag and drop your audio file"}
             </p>
             <p className="mt-1 text-xs text-on-surface-variant">
-              MP3, WAV, or AAC (max 50MB)
+              MP3, WAV, AAC, or M4A (max 50MB)
             </p>
             <input
               className="absolute inset-0 cursor-pointer opacity-0"
               type="file"
               accept="audio/*"
+              onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
             />
           </label>
           <Input
+            name="vibe"
             placeholder="Or describe the vibe (e.g. cinematic orchestral with a heavy climax)"
             iconLeft={<Music4 size={16} strokeWidth={1.75} />}
           />
@@ -143,6 +184,7 @@ export default function NewShowPage() {
             <div className="relative">
               <select
                 id="duration"
+                name="duration"
                 defaultValue="3 minutes"
                 className="h-11 w-full appearance-none rounded-md border-none bg-surface-container-highest pl-4 pr-10 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
@@ -195,6 +237,7 @@ export default function NewShowPage() {
             </label>
             <Input
               id="location"
+              name="location"
               placeholder="Search event location…"
               iconLeft={<MapPin size={16} strokeWidth={1.75} />}
             />
@@ -209,6 +252,7 @@ export default function NewShowPage() {
       >
         <div className="space-y-6">
           <Textarea
+            name="description"
             rows={6}
             placeholder="Describe the sequence, preferred colours, or specific moments in the song where you want maximum impact…"
           />
@@ -235,12 +279,19 @@ export default function NewShowPage() {
         </div>
       </Section>
 
+      {error && (
+        <div className="pt-2">
+          <FormError message={error} />
+        </div>
+      )}
+
       <div className="pt-8">
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-3 rounded-full bg-primary-container py-5 text-lg font-extrabold uppercase tracking-widest text-on-primary-container shadow-[0_24px_60px_-20px_rgba(245,158,11,0.5)] transition-all active:scale-[0.98] hover:brightness-110"
+          disabled={isPending}
+          className="flex w-full items-center justify-center gap-3 rounded-full bg-primary-container py-5 text-lg font-extrabold uppercase tracking-widest text-on-primary-container shadow-[0_24px_60px_-20px_rgba(245,158,11,0.5)] transition-all active:scale-[0.98] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Generate my show
+          {isPending ? "Generating…" : "Generate my show"}
           <Sparkles size={20} strokeWidth={2} />
         </button>
         <p className="mt-6 text-center text-xs font-medium tracking-wide text-on-surface-variant">

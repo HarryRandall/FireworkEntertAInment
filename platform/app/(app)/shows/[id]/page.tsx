@@ -3,16 +3,26 @@ import { Wand2, RefreshCw } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { Textarea } from "@/app/components/ui/Input";
 import { StatTile } from "@/app/components/ui/StatTile";
-import { getShow } from "@/lib/shows";
+import { formatDuration } from "@/lib/shows";
+import { getShowBySlug } from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-const TIME_LABELS = ["0:00", "1:00", "2:00", "3:00", "4:00", "4:42"];
+function buildTimeLabels(durationSeconds: number | null): string[] {
+  const total = durationSeconds && durationSeconds > 0 ? durationSeconds : 240;
+  const stops = 6;
+  return Array.from({ length: stops }, (_, i) => {
+    const t = (total / (stops - 1)) * i;
+    return formatDuration(Math.round(t));
+  });
+}
 
 export default async function ShowTimelinePage({ params }: PageProps) {
   const { id } = await params;
-  const show = getShow(id);
+  const show = await getShowBySlug(id);
   if (!show) notFound();
+
+  const timeLabels = buildTimeLabels(show.durationSeconds);
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
@@ -24,8 +34,8 @@ export default async function ShowTimelinePage({ params }: PageProps) {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
 
         <div className="relative mb-12 flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 tabular-nums">
-          {TIME_LABELS.map((label) => (
-            <span key={label}>{label}</span>
+          {timeLabels.map((label, i) => (
+            <span key={`${label}-${i}`}>{label}</span>
           ))}
         </div>
 
@@ -51,13 +61,17 @@ export default async function ShowTimelinePage({ params }: PageProps) {
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatTile label="Total effects" value={show.effects} />
+          <StatTile label="Total effects" value={show.effectsCount} />
           <StatTile
             label="Sync precision"
-            value={show.syncPercent.toFixed(1)}
-            unit="%"
+            value={show.syncPercent != null ? show.syncPercent.toFixed(1) : "—"}
+            unit={show.syncPercent != null ? "%" : undefined}
           />
-          <StatTile label="Safety clearance" value={show.safetyMeters} unit="m" />
+          <StatTile
+            label="Safety clearance"
+            value={show.safetyMeters ?? "—"}
+            unit={show.safetyMeters != null ? "m" : undefined}
+          />
         </div>
       </Card>
 
@@ -98,10 +112,6 @@ export default async function ShowTimelinePage({ params }: PageProps) {
               <span className="text-[10px] uppercase tracking-widest text-primary">
                 Active
               </span>
-            </li>
-            <li className="flex items-center justify-between rounded-lg p-3 text-on-surface-variant transition-opacity hover:opacity-100 opacity-70 cursor-pointer">
-              <span className="text-sm">Initial draft</span>
-              <span className="text-[10px] tabular-nums">Just now</span>
             </li>
           </ul>
         </Card>

@@ -4,23 +4,17 @@ import { Music4, User, Timer, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { ShowTabs } from "./ShowTabs";
-import { getShow } from "@/lib/shows";
+import { formatDuration, formatTotal } from "@/lib/shows";
+import { getShowBySlug } from "@/lib/shows.server";
 
 type LayoutProps = {
   children: ReactNode;
   params: Promise<{ id: string }>;
 };
 
-function formatTotal(cents: number) {
-  return `$${(cents / 100).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 export default async function ShowLayout({ children, params }: LayoutProps) {
   const { id } = await params;
-  const show = getShow(id);
+  const show = await getShowBySlug(id);
   if (!show) notFound();
 
   return (
@@ -35,10 +29,12 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-on-surface-variant">
             <Stat icon={<User size={14} strokeWidth={1.75} />}>
-              {show.artist}
+              {show.artist || "Unknown artist"}
             </Stat>
             <Stat icon={<Timer size={14} strokeWidth={1.75} />}>
-              <span className="tabular-nums">{show.duration}</span>
+              <span className="tabular-nums">
+                {formatDuration(show.durationSeconds)}
+              </span>
             </Stat>
             <Stat icon={<Wallet size={14} strokeWidth={1.75} />}>
               <span className="tabular-nums text-primary">
@@ -58,7 +54,7 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
         </div>
       </header>
 
-      <ShowTabs id={show.id} />
+      <ShowTabs id={show.slug} />
       {children}
     </div>
   );
