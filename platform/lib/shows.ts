@@ -29,6 +29,37 @@ export type ShowCue = {
   position: number;
   timeSeconds: number | null;
   description: string;
+  fireworkSpecificationId: string | null;
+  renderParams: FireworkRenderParams | null;
+};
+
+export type FireworkRenderSpec = {
+  particleCount: number;
+  burstDuration: number;
+  colors: string[];
+  spread: number;
+  launchHeight: number;
+  gravity: number;
+  drag: number;
+  sparkSize: number;
+  trailLength: number;
+  secondaryBursts?: number;
+};
+
+export type FireworkRenderParams = Partial<FireworkRenderSpec>;
+
+export type FireworkSpecification = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  spec: FireworkRenderSpec;
+};
+
+export type ReplayCue = ShowCue & {
+  timeSeconds: number;
+  firework: FireworkSpecification;
 };
 
 export type ShoppingListItem = {

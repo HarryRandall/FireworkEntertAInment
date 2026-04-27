@@ -10,12 +10,14 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+supabase/.temp/
 
 # IDE
 .vscode/
 .idea/
 # Cursor — local MCP config may contain access tokens
 .cursor/mcp.json
+.mcp.json
 *.swp
 *.swo
 *~

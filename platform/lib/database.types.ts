@@ -130,6 +130,39 @@ export type Database = {
         }
         Relationships: []
       }
+      firework_specifications: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          spec: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+          spec: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          spec?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -202,8 +235,10 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          firework_specification_id: string | null
           id: string
           position: number
+          render_params: Json | null
           show_id: string
           time_seconds: number | null
           updated_at: string
@@ -211,8 +246,10 @@ export type Database = {
         Insert: {
           created_at?: string
           description: string
+          firework_specification_id?: string | null
           id?: string
           position?: number
+          render_params?: Json | null
           show_id: string
           time_seconds?: number | null
           updated_at?: string
@@ -220,13 +257,22 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          firework_specification_id?: string | null
           id?: string
           position?: number
+          render_params?: Json | null
           show_id?: string
           time_seconds?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "show_cues_firework_specification_id_fkey"
+            columns: ["firework_specification_id"]
+            isOneToOne: false
+            referencedRelation: "firework_specifications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "show_cues_show_id_fkey"
             columns: ["show_id"]

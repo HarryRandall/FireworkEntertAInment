@@ -3,17 +3,121 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import type {
+  FireworkRenderParams,
+  FireworkRenderSpec,
+  FireworkSpecification,
+  ReplayCue,
   Show,
   ShowCue,
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
-import type { Database } from "@/lib/database.types";
+import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
+type FireworkSpecificationRow =
+  Database["public"]["Tables"]["firework_specifications"]["Row"];
+type ReplayCueRow = ShowCueRow & {
+  firework_specifications: FireworkSpecificationRow | null;
+};
 type ShoppingItemRow =
   Database["public"]["Tables"]["shopping_list_items"]["Row"];
+
+const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
+  particleCount: 220,
+  burstDuration: 2.4,
+  colors: ["#ffc174", "#ffe6b8", "#f59e0b"],
+  spread: 2.6,
+  launchHeight: 3,
+  gravity: -1.5,
+  drag: 0.86,
+  sparkSize: 0.075,
+  trailLength: 0.65,
+};
+
+function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readNumber(
+  source: Record<string, Json | undefined>,
+  key: keyof FireworkRenderSpec,
+  fallback: number,
+): number {
+  const value = source[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readColors(source: Record<string, Json | undefined>): string[] {
+  const colors = source.colors;
+  if (!Array.isArray(colors)) return DEFAULT_FIREWORK_SPEC.colors;
+  const valid = colors.filter(
+    (color): color is string => typeof color === "string" && color.length > 0,
+  );
+  return valid.length > 0 ? valid : DEFAULT_FIREWORK_SPEC.colors;
+}
+
+function parseRenderSpec(spec: Json): FireworkRenderSpec {
+  if (!isRecord(spec)) return DEFAULT_FIREWORK_SPEC;
+  return {
+    particleCount: Math.round(
+      readNumber(spec, "particleCount", DEFAULT_FIREWORK_SPEC.particleCount),
+    ),
+    burstDuration: readNumber(
+      spec,
+      "burstDuration",
+      DEFAULT_FIREWORK_SPEC.burstDuration,
+    ),
+    colors: readColors(spec),
+    spread: readNumber(spec, "spread", DEFAULT_FIREWORK_SPEC.spread),
+    launchHeight: readNumber(
+      spec,
+      "launchHeight",
+      DEFAULT_FIREWORK_SPEC.launchHeight,
+    ),
+    gravity: readNumber(spec, "gravity", DEFAULT_FIREWORK_SPEC.gravity),
+    drag: readNumber(spec, "drag", DEFAULT_FIREWORK_SPEC.drag),
+    sparkSize: readNumber(spec, "sparkSize", DEFAULT_FIREWORK_SPEC.sparkSize),
+    trailLength: readNumber(
+      spec,
+      "trailLength",
+      DEFAULT_FIREWORK_SPEC.trailLength,
+    ),
+    secondaryBursts: readNumber(spec, "secondaryBursts", 0) || undefined,
+  };
+}
+
+function parseRenderParams(params: Json | null): FireworkRenderParams | null {
+  const source = params ?? undefined;
+  if (!isRecord(source)) return null;
+  const overrides: FireworkRenderParams = {};
+  if (typeof source.particleCount === "number") {
+    overrides.particleCount = Math.round(source.particleCount);
+  }
+  if (typeof source.burstDuration === "number") {
+    overrides.burstDuration = source.burstDuration;
+  }
+  if (Array.isArray(source.colors)) {
+    overrides.colors = source.colors.filter(
+      (color): color is string => typeof color === "string",
+    );
+  }
+  if (typeof source.spread === "number") overrides.spread = source.spread;
+  if (typeof source.launchHeight === "number") {
+    overrides.launchHeight = source.launchHeight;
+  }
+  if (typeof source.gravity === "number") overrides.gravity = source.gravity;
+  if (typeof source.drag === "number") overrides.drag = source.drag;
+  if (typeof source.sparkSize === "number") overrides.sparkSize = source.sparkSize;
+  if (typeof source.trailLength === "number") {
+    overrides.trailLength = source.trailLength;
+  }
+  if (typeof source.secondaryBursts === "number") {
+    overrides.secondaryBursts = source.secondaryBursts;
+  }
+  return overrides;
+}
 
 function mapShow(row: ShowRow): Show {
   return {
@@ -45,6 +149,30 @@ function mapCue(row: ShowCueRow): ShowCue {
     position: row.position,
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
+    fireworkSpecificationId: row.firework_specification_id,
+    renderParams: parseRenderParams(row.render_params),
+  };
+}
+
+function mapFireworkSpecification(
+  row: FireworkSpecificationRow,
+): FireworkSpecification {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    sortOrder: row.sort_order,
+    spec: parseRenderSpec(row.spec),
+  };
+}
+
+function mapReplayCue(row: ReplayCueRow): ReplayCue | null {
+  if (row.time_seconds == null || !row.firework_specifications) return null;
+  return {
+    ...mapCue(row),
+    timeSeconds: Number(row.time_seconds),
+    firework: mapFireworkSpecification(row.firework_specifications),
   };
 }
 
@@ -102,6 +230,41 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
     return [];
   }
   return (data ?? []).map(mapCue);
+}
+
+export async function listFireworkSpecifications(): Promise<FireworkSpecification[]> {
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from("firework_specifications")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) {
+    console.error("[shows.server] listFireworkSpecifications failed:", error);
+    return [];
+  }
+  return (data ?? []).map(mapFireworkSpecification);
+}
+
+export async function listReplayCuesForShow(
+  showId: string,
+): Promise<ReplayCue[]> {
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from("show_cues")
+    .select("*, firework_specifications (*)")
+    .eq("show_id", showId)
+    .not("time_seconds", "is", null)
+    .not("firework_specification_id", "is", null)
+    .order("time_seconds", { ascending: true })
+    .order("position", { ascending: true });
+  if (error) {
+    console.error("[shows.server] listReplayCuesForShow failed:", error);
+    return [];
+  }
+  return ((data ?? []) as ReplayCueRow[])
+    .map(mapReplayCue)
+    .filter((cue): cue is ReplayCue => cue !== null);
 }
 
 export async function listShoppingItemsForShow(

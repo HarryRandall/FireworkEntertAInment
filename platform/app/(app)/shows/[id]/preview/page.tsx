@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
-import { LivePreviewTile } from "@/app/components/app/LivePreviewTile";
-import { formatDuration } from "@/lib/shows";
-import { getShowBySlug } from "@/lib/shows.server";
+import { FireworkReplayViewer } from "@/app/components/app/FireworkReplayViewer";
+import {
+  getShowBySlug,
+  listFireworkSpecifications,
+  listReplayCuesForShow,
+} from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -9,13 +12,19 @@ export default async function ShowPreviewPage({ params }: PageProps) {
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) notFound();
+  const [cues, specifications] = await Promise.all([
+    listReplayCuesForShow(show.id),
+    listFireworkSpecifications(),
+  ]);
 
   return (
-    <LivePreviewTile
+    <FireworkReplayViewer
+      showId={show.id}
+      showSlug={show.slug}
       showName={show.title}
-      duration={formatDuration(show.durationSeconds)}
-      progress={0}
-      elapsed="0:00"
+      durationSeconds={show.durationSeconds}
+      cues={cues}
+      specifications={specifications}
     />
   );
 }
