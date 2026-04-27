@@ -207,18 +207,6 @@ body {
   background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
-/* 3D card tilt — used by TiltCard. Children get GPU-accelerated transforms. */
-.tilt-card {
-  transform-style: preserve-3d;
-  perspective: 1200px;
-  will-change: transform;
-}
-.tilt-card-inner {
-  transform-style: preserve-3d;
-  transition: transform 200ms ease-out;
-  will-change: transform;
-}
-
 /* Honour OS reduced-motion: pause infinite anims, keep static states. */
 @media (prefers-reduced-motion: reduce) {
   .ember-divider {

@@ -17,19 +17,20 @@ type MarketingNavBarProps = {
   ctaLabel?: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  isAuthenticated?: boolean;
+  dashboardHref?: string;
+  dashboardLabel?: string;
 };
 
-const DEFAULT_LINKS: NavLink[] = [
-  { href: "/#how-it-works", label: "How it works" },
-  { href: "/#features", label: "Features" },
-];
-
 export function MarketingNavBar({
-  links = DEFAULT_LINKS,
-  ctaHref = "/login",
-  ctaLabel = "Get Started",
+  links = [],
+  ctaHref = "/signup",
+  ctaLabel = "Sign up free",
   secondaryHref = "/login",
-  secondaryLabel = "Login",
+  secondaryLabel = "Log in",
+  isAuthenticated = false,
+  dashboardHref = "/dashboard",
+  dashboardLabel = "Dashboard",
 }: MarketingNavBarProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -42,6 +43,8 @@ export function MarketingNavBar({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const hasLinks = links.length > 0;
+
   return (
     <nav
       className={cn(
@@ -53,7 +56,7 @@ export function MarketingNavBar({
     >
       <Container className="flex h-16 items-center justify-between">
         <Link
-          href="/"
+          href={isAuthenticated ? dashboardHref : "/"}
           className="group flex items-center gap-2 text-xl font-semibold tracking-tighter text-on-surface"
         >
           <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary transition-transform duration-300 group-hover:rotate-12">
@@ -68,44 +71,53 @@ export function MarketingNavBar({
           </span>
         </Link>
 
-        <div
-          className="hidden items-center gap-1 md:flex"
-          onPointerLeave={() => setHovered(null)}
-        >
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onPointerEnter={() => setHovered(link.href)}
-              className="relative rounded-full px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:text-on-surface"
-            >
-              {hovered === link.href && (
-                <motion.span
-                  layoutId="nav-pill"
-                  className="absolute inset-0 -z-10 rounded-full bg-surface-container-highest/60"
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                />
-              )}
-              {link.label}
-            </Link>
-          ))}
-        </div>
+        {hasLinks ? (
+          <div
+            className="hidden items-center gap-1 md:flex"
+            onPointerLeave={() => setHovered(null)}
+          >
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onPointerEnter={() => setHovered(link.href)}
+                className="relative rounded-full px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:text-on-surface"
+              >
+                {hovered === link.href && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="absolute inset-0 -z-10 rounded-full bg-surface-container-highest/60"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                )}
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        ) : null}
 
         <div className="hidden items-center gap-3 md:flex">
+          {isAuthenticated ? (
+            <Button href={dashboardHref} size="sm">
+              {dashboardLabel}
+            </Button>
+          ) : (
+            <>
+              <Link
+                href={secondaryHref}
+                className="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
+              >
+                {secondaryLabel}
+              </Link>
+              <Button href={ctaHref} size="sm">
+                {ctaLabel}
+              </Button>
+            </>
+          )}
           <ThemeToggle />
-          <Link
-            href={secondaryHref}
-            className="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
-          >
-            {secondaryLabel}
-          </Link>
-          <Button href={ctaHref} size="sm">
-            {ctaLabel}
-          </Button>
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
           <button
             type="button"
             aria-label={open ? "Close menu" : "Open menu"}
@@ -115,6 +127,7 @@ export function MarketingNavBar({
           >
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
+          <ThemeToggle />
         </div>
       </Container>
 
@@ -138,22 +151,40 @@ export function MarketingNavBar({
                   {link.label}
                 </Link>
               ))}
-              <div className="mt-3 flex flex-col gap-3 border-t border-outline-variant/10 pt-4">
-                <Link
-                  href={secondaryHref}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-highest/50"
-                  onClick={() => setOpen(false)}
-                >
-                  {secondaryLabel}
-                </Link>
-                <Button
-                  href={ctaHref}
-                  size="md"
-                  className="w-full"
-                  onClick={() => setOpen(false)}
-                >
-                  {ctaLabel}
-                </Button>
+              <div
+                className={cn(
+                  "flex flex-col gap-3",
+                  hasLinks && "mt-3 border-t border-outline-variant/10 pt-4",
+                )}
+              >
+                {isAuthenticated ? (
+                  <Button
+                    href={dashboardHref}
+                    size="md"
+                    className="w-full"
+                    onClick={() => setOpen(false)}
+                  >
+                    {dashboardLabel}
+                  </Button>
+                ) : (
+                  <>
+                    <Link
+                      href={secondaryHref}
+                      className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-highest/50"
+                      onClick={() => setOpen(false)}
+                    >
+                      {secondaryLabel}
+                    </Link>
+                    <Button
+                      href={ctaHref}
+                      size="md"
+                      className="w-full"
+                      onClick={() => setOpen(false)}
+                    >
+                      {ctaLabel}
+                    </Button>
+                  </>
+                )}
               </div>
             </Container>
           </motion.div>
