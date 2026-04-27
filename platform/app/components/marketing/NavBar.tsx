@@ -26,10 +26,10 @@ const DEFAULT_LINKS: NavLink[] = [
 
 export function MarketingNavBar({
   links = DEFAULT_LINKS,
-  ctaHref = "/login",
-  ctaLabel = "Get Started",
+  ctaHref = "/signup",
+  ctaLabel = "Sign up free",
   secondaryHref = "/login",
-  secondaryLabel = "Login",
+  secondaryLabel = "Log in",
 }: MarketingNavBarProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
