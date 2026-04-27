@@ -4,8 +4,8 @@ import { Container } from "@/app/components/ui/Container";
 import { Hero } from "@/app/components/marketing/Hero";
 import { CTABand } from "@/app/components/marketing/CTABand";
 import { Reveal } from "@/app/components/marketing/Reveal";
-import { StatsStrip } from "@/app/components/marketing/StatsStrip";
 import { InteractiveSteps } from "@/app/components/marketing/InteractiveSteps";
+import { VendorNetwork } from "@/app/components/marketing/VendorNetwork";
 
 const PILLARS = [
   {
@@ -49,7 +49,7 @@ export default function MarketingHome() {
 
       <InteractiveSteps />
 
-      <StatsStrip />
+      <VendorNetwork />
 
       <section id="features" className="bg-surface py-24 lg:py-32">
         <Container>
