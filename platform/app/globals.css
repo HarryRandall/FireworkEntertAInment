@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/*
+ * ShowCrafter design tokens.
+ * Full spec: .claude/skills/showcrafter-design-system/SKILL.md
+ *
+ * Token names map 1:1 to Tailwind v4 classes (e.g. `bg-primary`,
+ * `text-on-surface-variant`). Values are plain CSS custom properties so a
+ * `[data-theme="light"]` block can override them — every utility cascades.
+ */
+@theme {
+  /* Type */
+  --font-headline: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Brand-friendly aliases */
+  --color-night: #131313;
+  --color-ember-gold: #ffc174;
+  --color-ember-gold-container: #f59e0b;
+  --color-ember-gold-fixed: #ffddb8;
+  --color-ember-gold-dim: #ffb95f;
+  --color-soft-gold: #f0bd82;
+  --color-sky-pulse: #8fd5ff;
+  --color-sky-pulse-container: #1abdff;
+
+  /* Surface ladder */
+  --color-background: #0b0b0c;
+  --color-surface: #0b0b0c;
+  --color-surface-dim: #131313;
+  --color-surface-bright: #3a3939;
+  --color-surface-container-lowest: #060607;
+  --color-surface-container-low: #141416;
+  --color-surface-container: #1a1a1d;
+  --color-surface-container-high: #232327;
+  --color-surface-container-highest: #2d2d31;
+  --color-surface-variant: #353534;
+  --color-surface-tint: #ffb95f;
+
+  /* On-surface text */
+  --color-on-surface: #f1edea;
+  --color-on-surface-variant: #b9a98f;
+  --color-on-background: #f1edea;
+
+  /* Primary (Ember Gold) */
+  --color-primary: #ffc174;
+  --color-primary-container: #f59e0b;
+  --color-primary-fixed: #ffddb8;
+  --color-primary-fixed-dim: #ffb95f;
+  --color-on-primary: #472a00;
+  --color-on-primary-container: #2a1700;
+  --color-on-primary-fixed: #2a1700;
+  --color-on-primary-fixed-variant: #653e00;
+  --color-inverse-primary: #855300;
+
+  /* Secondary */
+  --color-secondary: #f0bd82;
+  --color-secondary-container: #62400f;
+  --color-secondary-fixed: #ffddb8;
+  --color-secondary-fixed-dim: #f0bd82;
+  --color-on-secondary: #472a00;
+  --color-on-secondary-container: #ddac72;
+  --color-on-secondary-fixed: #2a1700;
+  --color-on-secondary-fixed-variant: #62400f;
+
+  /* Tertiary (Sky Pulse) */
+  --color-tertiary: #8fd5ff;
+  --color-tertiary-container: #1abdff;
+  --color-tertiary-fixed: #c5e7ff;
+  --color-tertiary-fixed-dim: #7fd0ff;
+  --color-on-tertiary: #00344a;
+  --color-on-tertiary-container: #004966;
+  --color-on-tertiary-fixed: #001e2d;
+  --color-on-tertiary-fixed-variant: #004c6a;
+
+  /* Semantic */
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+  --color-success: #0ECB81;
+  --color-danger: #F6465D;
+
+  /* Borders */
+  --color-outline: #a08e7a;
+  --color-outline-variant: #3a2f24;
+
+  /* Inverse */
+  --color-inverse-surface: #f1edea;
+  --color-inverse-on-surface: #313030;
+
+  /* Radius scale */
+  --radius-pill: 9999px;
+  --radius-card: 12px;
+  --radius-card-lg: 16px;
+  --radius-hero: 24px;
+
+  /* Shadow scale */
+  --shadow-card: 0 3px 5px rgba(0, 0, 0, 0.05);
+  --shadow-card-hover: 0 8px 20px rgba(0, 0, 0, 0.10);
+  --shadow-cta: 0 8px 24px -8px rgba(245, 158, 11, 0.40);
+  --shadow-modal: 0 32px 60px rgba(0, 0, 0, 0.40);
+}
+
+/*
+ * Light theme overrides. The night-sky brand is preserved by warming the
+ * cream surfaces, deepening Ember Gold for AA contrast on light, and
+ * inverting the surface ladder. Sky Pulse stays — it's still "live state".
+ */
+[data-theme="light"] {
+  --color-background: #faf6ef;
+  --color-surface: #faf6ef;
+  --color-surface-dim: #f1ebe0;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #f5efe3;
+  --color-surface-container-low: #fbf6eb;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #fff8ec;
+  --color-surface-container-highest: #fff3df;
+  --color-surface-variant: #ece2cf;
+
+  --color-on-surface: #1a1410;
+  --color-on-surface-variant: #5a4a36;
+  --color-on-background: #1a1410;
+
+  --color-primary: #b8730a;
+  --color-primary-container: #f59e0b;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #2a1700;
+
+  --color-tertiary: #0a78a8;
+  --color-tertiary-container: #1abdff;
+  --color-on-tertiary: #ffffff;
+
+  --color-outline: #a08e7a;
+  --color-outline-variant: #d8c8ad;
+
+  --shadow-card: 0 3px 8px rgba(40, 25, 0, 0.06);
+  --shadow-card-hover: 0 12px 28px rgba(40, 25, 0, 0.12);
+  --shadow-cta: 0 10px 28px -10px rgba(245, 158, 11, 0.55);
+  --shadow-modal: 0 32px 60px rgba(40, 25, 0, 0.18);
+}
+
+html {
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.glass-panel {
+  background: color-mix(in srgb, var(--color-surface-container-high) 70%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.hero-glow {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-primary) 28%, transparent),
+    transparent 70%
+  );
+  filter: blur(64px);
+}
+
+/* Animated gold sweep used on the footer divider and section accents. */
+@keyframes ember-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ember-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-primary) 60%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: ember-sweep 8s linear infinite;
+}
+
+/* Subtle film-grain noise — used on CTA band & hero overlay for depth. */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* 3D card tilt — used by TiltCard. Children get GPU-accelerated transforms. */
+.tilt-card {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  will-change: transform;
+}
+.tilt-card-inner {
+  transform-style: preserve-3d;
+  transition: transform 200ms ease-out;
+  will-change: transform;
+}
+
+/* Honour OS reduced-motion: pause infinite anims, keep static states. */
+@media (prefers-reduced-motion: reduce) {
+  .ember-divider {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
