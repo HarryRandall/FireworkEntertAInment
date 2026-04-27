@@ -93,9 +93,10 @@ export function InteractiveSteps() {
                     </p>
                   </div>
 
-                  {/* Visual stage */}
+                  {/* Visual stage — surfaces follow the active theme so
+                      panels and chips stay readable in light mode too. */}
                   <div className="flex-1">
-                    <div className="relative aspect-[5/4] w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-[#0d0d12] via-[#15151f] to-[#0a0a14] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
+                    <div className="relative aspect-[5/4] w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-low shadow-[var(--shadow-card-hover)]">
                       <step.Visual />
                     </div>
                   </div>
@@ -268,7 +269,7 @@ function PreferencesVisual() {
                   ICON Pyrotechnics
                 </div>
                 <div className="text-[10px] uppercase tracking-widest text-on-surface-variant/70">
-                  342 SKUs in stock
+                  342 products in stock
                 </div>
               </div>
             </div>

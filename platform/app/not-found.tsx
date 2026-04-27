@@ -1,8 +1,17 @@
+import { cookies } from "next/headers";
 import { Home } from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { Container } from "@/app/components/ui/Container";
+import { createClient } from "@/utils/supabase/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const supabase = createClient(await cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const homeHref = user ? "/dashboard" : "/";
+  const homeLabel = user ? "Back to Dashboard" : "Return Home";
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
       {/* Ember glow backdrop */}
@@ -61,13 +70,9 @@ export default function NotFound() {
           different part of the show. Head back and pick up where you left off.
         </p>
 
-        {/* Divider spark line */}
-        <div className="w-16 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-
-        {/* Actions */}
-        <Button href="/" size="lg">
+        <Button href={homeHref} size="lg">
           <Home size={18} strokeWidth={1.75} />
-          Return Home
+          {homeLabel}
         </Button>
       </Container>
     </div>

@@ -36,7 +36,7 @@ export function AppShell({ children, containerWidth = "default" }: AppShellProps
       <header className="fixed top-0 z-50 w-full border-b border-outline-variant/15 bg-surface/85 backdrop-blur-md">
         <Container className="flex h-16 items-center justify-between">
           <Link
-            href="/"
+            href="/dashboard"
             className="text-xl font-semibold tracking-tighter text-primary"
           >
             ShowCrafter
