@@ -1,33 +1,11 @@
 import Image from "next/image";
-import { Music4, Sliders, Sparkles, Activity, Boxes, MessageSquareText } from "lucide-react";
+import { Activity, Boxes, MessageSquareText } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
 import { Hero } from "@/app/components/marketing/Hero";
-import { FeatureGrid, type Feature } from "@/app/components/marketing/FeatureGrid";
 import { CTABand } from "@/app/components/marketing/CTABand";
 import { Reveal } from "@/app/components/marketing/Reveal";
 import { StatsStrip } from "@/app/components/marketing/StatsStrip";
-import { BeatTimeline } from "@/app/components/marketing/BeatTimeline";
-
-const HOW_IT_WORKS: Feature[] = [
-  {
-    icon: <Music4 size={22} strokeWidth={1.75} />,
-    title: "Choose song",
-    description:
-      "Upload any track or link your Spotify. Our AI analyses BPM and frequency for perfect timing.",
-  },
-  {
-    icon: <Sliders size={22} strokeWidth={1.75} />,
-    title: "Set preferences",
-    description:
-      "Define your budget and pick your preferred firework vendors. We match designs to what you can actually buy.",
-  },
-  {
-    icon: <Sparkles size={22} strokeWidth={1.75} />,
-    title: "Get show",
-    description:
-      "Receive a 3D visual preview, a firing script, and a shopping list for your exact location instantly.",
-  },
-];
+import { InteractiveSteps } from "@/app/components/marketing/InteractiveSteps";
 
 const PILLARS = [
   {
@@ -69,17 +47,9 @@ export default function MarketingHome() {
         secondaryLabel="See how it works"
       />
 
-      <FeatureGrid
-        id="how-it-works"
-        eyebrow="Workflow"
-        title="How it works"
-        description="Professional choreography simplified into three precise steps."
-        features={HOW_IT_WORKS}
-      />
+      <InteractiveSteps />
 
       <StatsStrip />
-
-      <BeatTimeline />
 
       <section id="features" className="bg-surface py-24 lg:py-32">
         <Container>
