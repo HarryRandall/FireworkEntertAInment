@@ -20,6 +20,7 @@ AI tool for designing real consumer firework shows, in partnership with ICON Pyr
 ## Development
 
 ```bash
+cd platform
 npm install        # install dependencies
 npm run dev        # start dev server at localhost:3000
 npm run build      # production build
@@ -29,9 +30,15 @@ npm run lint       # run linter
 ## Repository Structure
 
 ```
-app/              — Next.js App Router (pages, layouts, styles)
-public/           — static assets
+platform/         — Next.js web app (deploy root for Vercel)
+  app/            — App Router pages, layouts, styles
+  lib/            — shared server/client utilities
+  utils/          — Supabase client helpers
+  public/         — static assets
 docs/             — project documentation and planning
 data/             — sample data and example audio tracks
 prototypes/       — standalone prototypes (audio analyser, site mockup)
+scripts/          — utility scripts (e.g. Notion discovery)
 ```
+
+> **Vercel**: set "Root Directory" to `platform` in project settings.

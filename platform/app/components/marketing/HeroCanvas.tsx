@@ -65,8 +65,8 @@ function makeBurst(now: number): Burst {
 
 function FireworkBurst({ burst, onExpire }: { burst: Burst; onExpire: () => void }) {
   const matRef = useRef<THREE.PointsMaterial>(null);
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime - burst.startTime;
+  useFrame(() => {
+    const t = performance.now() / 1000 - burst.startTime;
     if (t > BURST_LIFETIME) {
       onExpire();
       return;
@@ -120,9 +120,9 @@ function Starfield() {
     return g;
   }, []);
   const matRef = useRef<THREE.PointsMaterial>(null);
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (matRef.current) {
-      matRef.current.opacity = 0.45 + 0.15 * Math.sin(clock.elapsedTime * 0.6);
+      matRef.current.opacity = 0.45 + 0.15 * Math.sin(performance.now() / 1000 * 0.6);
     }
   });
   return (
@@ -163,8 +163,8 @@ function BurstManager() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const lastSpawn = useRef(0);
 
-  useFrame(({ clock }) => {
-    const now = clock.elapsedTime;
+  useFrame(() => {
+    const now = performance.now() / 1000;
     if (now - lastSpawn.current > 0.7 + Math.random() * 0.6 && bursts.length < MAX_BURSTS) {
       lastSpawn.current = now;
       setBursts((prev) => [...prev, makeBurst(now)]);
