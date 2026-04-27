@@ -1,28 +1,29 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { Container } from "@/app/components/ui/Container";
 import { Reveal } from "./Reveal";
 
-// USA SVG viewBox: 0 0 1000 600.
-// Pin coordinates are hand-tuned to the simplified outline below — they only
-// need to look right, not be cartographically perfect.
+// Pins use the same 959 x 593 viewBox as the underlying USA map SVG so they
+// line up with real city locations (Albers projection).
 const VENDOR_PINS: { x: number; y: number; size: "lg" | "md" | "sm"; label?: string }[] = [
-  { x: 870, y: 230, size: "lg", label: "New York" },   // NYC
-  { x: 110, y: 280, size: "lg", label: "Los Angeles" }, // LA
-  { x: 600, y: 235, size: "lg", label: "Chicago" },     // Chicago
-  { x: 540, y: 430, size: "md", label: "Houston" },     // Houston
-  { x: 855, y: 470, size: "md", label: "Miami" },       // Miami
-  { x: 130, y: 175, size: "md", label: "Seattle" },     // Seattle
-  { x: 350, y: 280, size: "md", label: "Denver" },      // Denver
-  { x: 740, y: 360, size: "md", label: "Atlanta" },     // Atlanta
-  { x: 245, y: 365, size: "sm", label: "Phoenix" },     // Phoenix
-  { x: 720, y: 250, size: "sm" },                       // Detroit-ish
-  { x: 460, y: 320, size: "sm" },                       // Kansas City-ish
-  { x: 800, y: 295, size: "sm" },                       // DC-ish
-  { x: 415, y: 410, size: "sm" },                       // Dallas-ish
-  { x: 200, y: 230, size: "sm" },                       // Salt Lake-ish
-  { x: 660, y: 410, size: "sm" },                       // Memphis-ish
+  { x: 810, y: 175, size: "lg", label: "New York" },
+  { x: 120, y: 350, size: "lg", label: "Los Angeles" },
+  { x: 615, y: 215, size: "lg", label: "Chicago" },
+  { x: 545, y: 460, size: "md", label: "Houston" },
+  { x: 810, y: 510, size: "md", label: "Miami" },
+  { x: 140, y: 90, size: "md", label: "Seattle" },
+  { x: 370, y: 285, size: "md", label: "Denver" },
+  { x: 700, y: 395, size: "md", label: "Atlanta" },
+  { x: 245, y: 395, size: "sm", label: "Phoenix" },
+  { x: 795, y: 245, size: "sm" }, // DC
+  { x: 510, y: 430, size: "sm" }, // Dallas
+  { x: 860, y: 175, size: "sm" }, // Boston
+  { x: 190, y: 195, size: "sm" }, // Salt Lake-ish
+  { x: 480, y: 350, size: "sm" }, // Kansas City-ish
+  { x: 660, y: 360, size: "sm" }, // Memphis-ish
+  { x: 700, y: 250, size: "sm" }, // Detroit-ish
 ];
 
 const STATS = [
@@ -60,66 +61,29 @@ export function VendorNetwork() {
           </p>
         </Reveal>
 
-        {/* Map first — large and centred — then stats below in a clean row. */}
         <Reveal>
           <div className="relative mx-auto w-full max-w-5xl">
-            <div className="relative aspect-[5/3] w-full">
+            <div className="relative aspect-[959/593] w-full">
+              {/* Base map */}
+              <Image
+                src="/images/landing/us-map.svg"
+                alt="Map of the United States"
+                fill
+                priority={false}
+                className="select-none object-contain"
+                sizes="(min-width: 1024px) 1024px, 100vw"
+              />
+
+              {/* Pins overlay — same viewBox as the map for 1:1 alignment */}
               <svg
-                viewBox="0 0 1000 600"
+                viewBox="0 0 959 593"
                 xmlns="http://www.w3.org/2000/svg"
                 className="absolute inset-0 h-full w-full"
                 aria-hidden
               >
-                <defs>
-                  <radialGradient id="usGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.32" />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-                  </radialGradient>
-                  <linearGradient id="usFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="color-mix(in srgb, var(--color-primary) 35%, var(--color-surface-container-high))" />
-                    <stop offset="100%" stopColor="var(--color-surface-container)" />
-                  </linearGradient>
-                </defs>
-
-                {/* Halo behind map */}
-                <ellipse cx="500" cy="320" rx="430" ry="240" fill="url(#usGlow)" />
-
-                {/* Stylised contiguous USA — simplified hand-drawn outline. */}
-                <path
-                  d="M95 175
-                     L155 145 L210 135 L275 130 L340 125 L405 130 L470 130 L530 125 L595 125 L655 130 L720 135 L780 140 L835 150 L880 165 L915 185 L935 215
-                     L920 245 L905 270 L905 295 L915 315 L900 330
-                     L880 355 L860 375 L880 400 L885 430 L870 460 L845 485 L815 495 L785 490
-                     L750 485 L715 490 L680 495 L645 490 L610 485 L575 490 L540 495 L505 495 L470 495 L440 485 L415 470 L385 460 L355 470 L325 480 L295 470 L265 450 L240 425
-                     L215 395 L195 365 L175 335 L155 305 L135 275 L120 245 L105 215 Z"
-                  fill="url(#usFill)"
-                  stroke="color-mix(in srgb, var(--color-primary) 45%, transparent)"
-                  strokeWidth="1.75"
-                  strokeLinejoin="round"
-                />
-
-                {/* Florida tail */}
-                <path
-                  d="M810 410 L830 440 L848 475 L860 500 L850 510 L835 495 L815 470 L800 445 Z"
-                  fill="url(#usFill)"
-                  stroke="color-mix(in srgb, var(--color-primary) 45%, transparent)"
-                  strokeWidth="1.75"
-                  strokeLinejoin="round"
-                />
-
-                {/* Texas dip */}
-                <path
-                  d="M455 460 L470 490 L490 510 L515 510 L530 490 L545 465 Z"
-                  fill="url(#usFill)"
-                  stroke="color-mix(in srgb, var(--color-primary) 45%, transparent)"
-                  strokeWidth="1.75"
-                  strokeLinejoin="round"
-                />
-
-                {/* Vendor pins */}
                 {VENDOR_PINS.map((p, i) => {
-                  const r = p.size === "lg" ? 7 : p.size === "md" ? 5 : 3.2;
-                  const ringR = p.size === "lg" ? 24 : p.size === "md" ? 17 : 11;
+                  const r = p.size === "lg" ? 6 : p.size === "md" ? 4.5 : 3;
+                  const ringR = p.size === "lg" ? 22 : p.size === "md" ? 16 : 11;
                   const delay = (i % 5) * 0.5;
                   return (
                     <g key={i}>
@@ -131,7 +95,7 @@ export function VendorNetwork() {
                           fill="none"
                           stroke="var(--color-primary)"
                           strokeWidth="1.5"
-                          opacity="0.6"
+                          opacity="0.7"
                         >
                           <animate
                             attributeName="r"
@@ -142,7 +106,7 @@ export function VendorNetwork() {
                           />
                           <animate
                             attributeName="opacity"
-                            values="0.6;0;0"
+                            values="0.7;0;0"
                             dur="2.4s"
                             begin={`${delay}s`}
                             repeatCount="indefinite"
@@ -155,7 +119,7 @@ export function VendorNetwork() {
                         r={r}
                         fill="var(--color-primary)"
                         style={{
-                          filter: `drop-shadow(0 0 ${r * 2}px var(--color-primary))`,
+                          filter: `drop-shadow(0 0 ${r * 2.4}px var(--color-primary))`,
                         }}
                       />
                     </g>
@@ -163,8 +127,8 @@ export function VendorNetwork() {
                 })}
               </svg>
 
-              {/* Floating chip — top right */}
-              <div className="absolute right-3 top-3 hidden rounded-xl border border-outline-variant/20 bg-surface-container/70 px-4 py-3 backdrop-blur-md md:block">
+              {/* Floating chips */}
+              <div className="absolute right-3 top-3 hidden rounded-xl border border-outline-variant/20 bg-surface-container/80 px-4 py-3 backdrop-blur-md md:block">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tertiary opacity-60" />
@@ -179,8 +143,7 @@ export function VendorNetwork() {
                 </div>
               </div>
 
-              {/* Floating chip — bottom left */}
-              <div className="absolute bottom-3 left-3 hidden rounded-xl border border-outline-variant/20 bg-surface-container/70 px-4 py-3 backdrop-blur-md md:block">
+              <div className="absolute bottom-3 left-3 hidden rounded-xl border border-outline-variant/20 bg-surface-container/80 px-4 py-3 backdrop-blur-md md:block">
                 <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
                   Nearest store
                 </div>
@@ -192,7 +155,6 @@ export function VendorNetwork() {
           </div>
         </Reveal>
 
-        {/* Stat row — sits below the map, full-width and balanced. */}
         <div className="mt-14 grid grid-cols-2 gap-4 md:mt-16 md:grid-cols-4 md:gap-6">
           {STATS.map((s, i) => (
             <motion.div

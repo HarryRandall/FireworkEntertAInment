@@ -45,7 +45,7 @@ export function Hero({
         };
 
   return (
-    <section className="relative isolate overflow-hidden bg-background pb-24 pt-32 lg:min-h-[100svh] lg:pt-40">
+    <section className="relative isolate overflow-hidden bg-background pb-20 pt-28 lg:pb-28 lg:pt-36">
       {/* WebGL canvas — full-bleed behind the copy. */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {!reduce ? <HeroCanvas /> : null}
