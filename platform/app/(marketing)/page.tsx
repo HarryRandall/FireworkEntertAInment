@@ -5,6 +5,8 @@ import { Hero } from "@/app/components/marketing/Hero";
 import { FeatureGrid, type Feature } from "@/app/components/marketing/FeatureGrid";
 import { CTABand } from "@/app/components/marketing/CTABand";
 import { Reveal } from "@/app/components/marketing/Reveal";
+import { StatsStrip } from "@/app/components/marketing/StatsStrip";
+import { BeatTimeline } from "@/app/components/marketing/BeatTimeline";
 
 const HOW_IT_WORKS: Feature[] = [
   {
@@ -75,8 +77,23 @@ export default function MarketingHome() {
         features={HOW_IT_WORKS}
       />
 
+      <StatsStrip />
+
+      <BeatTimeline />
+
       <section id="features" className="bg-surface py-24 lg:py-32">
         <Container>
+          <Reveal className="mb-16 max-w-2xl space-y-3 md:mb-20">
+            <span className="block text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              Under the hood
+            </span>
+            <h2 className="text-4xl font-bold tracking-tight text-on-surface md:text-5xl">
+              Three engines, one show.
+            </h2>
+            <p className="text-lg text-on-surface-variant">
+              Each pillar handles a piece of the choreography so you don&apos;t have to.
+            </p>
+          </Reveal>
           <div className="space-y-32">
             {PILLARS.map((pillar, idx) => (
               <Reveal key={pillar.eyebrow}>
