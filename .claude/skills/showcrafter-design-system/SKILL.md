@@ -30,8 +30,10 @@ gimmicky.
 
 **Key characteristics:**
 
-- Dark-only UI — no light-mode variant. Surfaces step through a 6-tier ladder, never
-  literal white.
+- Dark-first UI with an opt-in light variant. The night-sky brand is the default;
+  light mode (`[data-theme="light"]`) warms the canvas to a cream `#faf6ef`, deepens
+  Ember Gold to `#b8730a` for AA contrast, and inverts the surface ladder. Theme is
+  driven by `next-themes` and toggled from the navbar.
 - Ember Gold (`#ffc174`) as the singular brand accent driving CTAs, key headlines, and
   brand marks.
 - Sky Pulse (`#8fd5ff`) reserved for live/playing state — never decorative.
@@ -399,11 +401,14 @@ ignition needs to feel like ignition.
 - Don't use Material Symbols. Lucide only.
 - Don't add cartoon illustrations or stock photography. Imagery is product
   screenshots, long-exposure fireworks, or data viz.
-- Don't add motion beyond `200ms ease` transitions, `active:scale-[0.98]` press
-  feedback, and `hover:brightness-110`. We are not a marketing site for a wellness
-  app.
-- Don't hover-translate cards (no `-translate-y-1`). It feels frivolous next to the
-  product's stillness.
+- Motion must be purposeful. Allowed: scroll-triggered fade/translate-up reveals
+  (≤24px, ≤0.6s, `once: true`), pointer-driven 3D card tilts on `lg+`, the WebGL
+  hero canvas (firework particles, parallax camera), and the standard
+  `200ms ease` / `active:scale-[0.98]` / `hover:brightness-110` interactions.
+  Forbidden: bouncy springs, infinite spinners on resting elements, hover Y-translate
+  on data cards (still frivolous next to dense content), animated emojis, parallax
+  on body text. All motion respects `prefers-reduced-motion` — global CSS
+  short-circuits transitions and `Reveal`/`TiltCard` no-op.
 - Don't put gold text on gold backgrounds. Always pair `primary-container`
   background with `on-primary-container` text.
 - Don't mix pill (`9999px`) and square (`8px`) buttons in the same row.
