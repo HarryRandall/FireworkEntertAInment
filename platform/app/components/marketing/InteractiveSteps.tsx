@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { Music4, Sliders, Sparkles } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
 import { Reveal } from "./Reveal";
@@ -12,6 +13,7 @@ type Step = {
   title: string;
   description: string;
   Icon: typeof Music4;
+  Visual: () => ReactNode;
 };
 
 const STEPS: Step[] = [
@@ -21,6 +23,7 @@ const STEPS: Step[] = [
     description:
       "Upload any track or paste a Spotify link. Our analyser finds the BPM, key drops, and frequency peaks in seconds.",
     Icon: Music4,
+    Visual: SongVisual,
   },
   {
     num: "02",
@@ -28,6 +31,7 @@ const STEPS: Step[] = [
     description:
       "Pick a budget, your local vendor, and the vibe — calm and elegant, hard-hitting finale, family-friendly. We do the rest.",
     Icon: Sliders,
+    Visual: PreferencesVisual,
   },
   {
     num: "03",
@@ -35,36 +39,18 @@ const STEPS: Step[] = [
     description:
       "A 3D preview, a printable firing script, and a one-click shopping list — every shell mapped to a real product on a real shelf.",
     Icon: Sparkles,
+    Visual: ShowVisual,
   },
 ];
 
-const AUTO_ADVANCE_MS = 4500;
-
 export function InteractiveSteps() {
-  const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const reduce = useReducedMotion();
-  const timeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (paused || reduce) return;
-    timeoutRef.current = window.setTimeout(() => {
-      setActive((a) => (a + 1) % STEPS.length);
-    }, AUTO_ADVANCE_MS);
-    return () => {
-      if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current);
-    };
-  }, [active, paused, reduce]);
-
   return (
     <section
       id="how-it-works"
       className="relative bg-surface-container-low py-24 lg:py-32"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
     >
       <Container>
-        <Reveal className="mb-14 max-w-2xl space-y-3 md:mb-16">
+        <Reveal className="mb-16 max-w-2xl space-y-3 md:mb-20">
           <span className="block text-xs font-bold uppercase tracking-[0.2em] text-primary">
             Workflow
           </span>
@@ -75,87 +61,48 @@ export function InteractiveSteps() {
             </span>
           </h2>
           <p className="text-lg text-on-surface-variant">
-            Click a step or just watch — every screen on the right is live.
+            Three live demos — each screen below is interactive.
           </p>
         </Reveal>
 
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          {/* Step list */}
-          <div className="flex flex-col gap-3 lg:col-span-5">
-            {STEPS.map((step, i) => {
-              const isActive = i === active;
-              return (
-                <button
-                  key={step.num}
-                  type="button"
-                  onClick={() => setActive(i)}
-                  className={cn(
-                    "group relative w-full overflow-hidden rounded-2xl border p-6 text-left transition-all duration-300",
-                    isActive
-                      ? "border-primary/40 bg-surface-container-high shadow-[0_10px_40px_-15px_color-mix(in_srgb,var(--color-primary)_50%,transparent)]"
-                      : "border-outline-variant/15 bg-surface-container/40 hover:border-outline-variant/30 hover:bg-surface-container/70",
-                  )}
+        <div className="space-y-24 md:space-y-32">
+          {STEPS.map((step, idx) => {
+            const reverse = idx % 2 === 1;
+            return (
+              <Reveal key={step.num}>
+                <div
+                  className={`flex flex-col gap-10 md:flex-row md:items-center md:gap-16 ${
+                    reverse ? "md:flex-row-reverse" : ""
+                  }`}
                 >
-                  {/* Active progress bar */}
-                  {isActive && !reduce && !paused ? (
-                    <motion.div
-                      key={`bar-${i}-${active}`}
-                      className="absolute inset-x-0 top-0 h-[2px] origin-left bg-primary"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ duration: AUTO_ADVANCE_MS / 1000, ease: "linear" }}
-                    />
-                  ) : null}
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1 transition-all",
-                        isActive
-                          ? "bg-primary text-on-primary-container ring-primary/40"
-                          : "bg-primary/10 text-primary ring-primary/20 group-hover:scale-105",
-                      )}
-                    >
-                      <step.Icon size={20} strokeWidth={1.75} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/60 tabular-nums">
-                          Step {step.num}
-                        </span>
+                  {/* Copy */}
+                  <div className="flex-1 space-y-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/25">
+                        <step.Icon size={20} strokeWidth={1.75} />
                       </div>
-                      <h3
-                        className={cn(
-                          "text-xl font-bold transition-colors md:text-2xl",
-                          isActive ? "text-on-surface" : "text-on-surface/85",
-                        )}
-                      >
-                        {step.title}
-                      </h3>
-                      <p
-                        className={cn(
-                          "mt-2 text-sm leading-relaxed transition-colors md:text-base",
-                          isActive ? "text-on-surface-variant" : "text-on-surface-variant/70",
-                        )}
-                      >
-                        {step.description}
-                      </p>
+                      <span className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-on-surface-variant/70 tabular-nums">
+                        Step {step.num}
+                      </span>
+                    </div>
+                    <h3 className="text-3xl font-bold leading-tight tracking-tight text-on-surface md:text-5xl">
+                      {step.title}
+                    </h3>
+                    <p className="max-w-xl text-lg leading-relaxed text-on-surface-variant">
+                      {step.description}
+                    </p>
+                  </div>
+
+                  {/* Visual stage */}
+                  <div className="flex-1">
+                    <div className="relative aspect-[5/4] w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-[#0d0d12] via-[#15151f] to-[#0a0a14] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
+                      <step.Visual />
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Visual stage */}
-          <div className="lg:col-span-7">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-gradient-to-br from-[#0d0d12] via-[#15151f] to-[#0a0a14] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] lg:aspect-[5/4]">
-              <AnimatePresence mode="wait">
-                {active === 0 && <SongVisual key="song" />}
-                {active === 1 && <PreferencesVisual key="prefs" />}
-                {active === 2 && <ShowVisual key="show" />}
-              </AnimatePresence>
-            </div>
-          </div>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </Container>
     </section>
@@ -164,18 +111,18 @@ export function InteractiveSteps() {
 
 /* ---------- Visuals ---------- */
 
-const fadeSlide = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -16 },
-  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+const fadeIn = {
+  initial: { opacity: 0, y: 12 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-10% 0px" },
+  transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
 };
 
 function SongVisual() {
   // Animated waveform.
   const bars = 48;
   return (
-    <motion.div {...fadeSlide} className="absolute inset-0 flex flex-col p-8">
+    <motion.div {...fadeIn} className="absolute inset-0 flex flex-col p-8">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-tertiary">
           <span className="relative flex h-2 w-2">
@@ -254,13 +201,13 @@ function PreferencesVisual() {
   const [budget, setBudget] = useState(750);
   const [intensity, setIntensity] = useState(65);
   return (
-    <motion.div {...fadeSlide} className="absolute inset-0 flex flex-col p-8">
+    <motion.div {...fadeIn} className="absolute inset-0 flex flex-col p-8">
       <div className="mb-6 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
           Your show settings
         </span>
         <span className="font-mono text-[10px] tabular-nums text-on-surface-variant/60">
-          MELBOURNE, AU
+          AUSTIN, TX
         </span>
       </div>
 
@@ -398,7 +345,7 @@ function ShowVisual() {
     { x: 65, y: 55, delay: 1.6, color: "var(--color-primary)", size: 60 },
   ];
   return (
-    <motion.div {...fadeSlide} className="absolute inset-0">
+    <motion.div {...fadeIn} className="absolute inset-0">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.7)_85%)]" />
       {/* Stars */}
       <div
