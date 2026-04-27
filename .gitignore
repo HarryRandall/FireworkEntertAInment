@@ -31,6 +31,7 @@ build/
 .next/
 out/
 next-env.d.ts
+tsconfig.tsbuildinfo
 
 # Logs
 *.log
