@@ -4,7 +4,7 @@ title: Software Used
 date: '2026-03-16 04:01:00.000'
 from_notion: https://www.notion.so/Software-Used-325cd8a5bf0880dc9cabca4864f04c05
 author: From Notion
-last_edited_time: '2026-04-17 10:53:00.000'
+last_edited_time: '2026-04-26 00:20:00.000'
 ---
 🛠️ Every tool the team is actively using, grouped by purpose. Links point to each product's home page so anyone new to the project can get set up quickly.
 
@@ -27,6 +27,8 @@ last_edited_time: '2026-04-17 10:53:00.000'
 ---
 
 ## 💻 Development Platform
+
+![my-stack-diagram(1)](192fe9e7_my-stack-diagram(1).png)
 
 - **[GitHub](https://github.com/)** - version control, PR reviews, CI/CD via GitHub Actions. Repository: `[HarryRandall/FireworkEntertAInment](https://github.com/HarryRandall/FireworkEntertAInment)`.
 

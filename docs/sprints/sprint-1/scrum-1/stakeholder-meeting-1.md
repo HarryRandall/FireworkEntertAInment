@@ -4,7 +4,7 @@ title: Stakeholder Meeting 1
 date: '2026-03-16 03:48:00.000'
 from_notion: https://www.notion.so/Stakeholder-Meeting-1-325cd8a5bf0880639dbde55fec373283
 author: From Notion
-last_edited_time: '2026-04-17 11:32:00.000'
+last_edited_time: '2026-04-24 09:31:00.000'
 ---
 [//]: # (table_of_contents is not supported)
 
@@ -100,3 +100,6 @@ last_edited_time: '2026-04-17 11:32:00.000'
 
 ## Full Transcript
 
+- Show full transcript
+
+																																																																																																																																																																					
