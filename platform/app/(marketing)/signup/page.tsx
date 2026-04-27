@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Rocket, Mail, Lock, ArrowLeft } from "lucide-react";
+import { Rocket, Mail, Lock, User } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { Input } from "@/app/components/ui/Input";
 import { Button } from "@/app/components/ui/Button";
@@ -48,13 +47,14 @@ function AppleIcon() {
   );
 }
 
-type Step = "email" | "password";
+type Step = "email" | "details" | "confirm";
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function SignupPage() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,20 +63,30 @@ export default function LoginPage() {
   const handleEmailContinue = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    setStep("password");
+    setStep("details");
   };
 
-  const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
     if (error) {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/dashboard");
-      router.refresh();
+      setStep("confirm");
     }
   };
 
@@ -87,6 +97,32 @@ export default function LoginPage() {
     });
   };
 
+  if (step === "confirm") {
+    return (
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md space-y-8 text-center">
+          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Mail size={28} strokeWidth={1.75} />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-on-surface">
+            Check your email
+          </h1>
+          <p className="text-on-surface-variant">
+            We sent a confirmation link to{" "}
+            <span className="font-medium text-on-surface">{email}</span>.
+            Click it to activate your account.
+          </p>
+          <p className="text-sm text-on-surface-variant">
+            Already confirmed?{" "}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6 py-16">
       <div className="w-full max-w-md space-y-8">
@@ -95,9 +131,9 @@ export default function LoginPage() {
             <Rocket size={28} strokeWidth={1.75} />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-on-surface">
-            {step === "email" ? "Sign in" : "Welcome back"}
+            Create an account
           </h1>
-          {step === "password" && (
+          {step === "details" && (
             <p className="text-on-surface-variant">{email}</p>
           )}
         </div>
@@ -125,9 +161,7 @@ export default function LoginPage() {
                     required
                   />
                 </div>
-                {error && (
-                  <p className="text-sm text-red-500">{error}</p>
-                )}
+                {error && <p className="text-sm text-red-500">{error}</p>}
                 <Button type="submit" size="md" className="w-full">
                   Continue
                 </Button>
@@ -138,7 +172,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-outline-variant/10" />
                 </div>
                 <span className="relative bg-surface-container-high px-4 text-xs uppercase tracking-widest text-on-surface-variant">
-                  or continue with
+                  or sign up with
                 </span>
               </div>
 
@@ -176,15 +210,26 @@ export default function LoginPage() {
               </div>
             </>
           ) : (
-            <form onSubmit={handleSignIn} className="space-y-6">
-              <button
-                type="button"
-                onClick={() => { setStep("email"); setError(null); }}
-                className="flex items-center gap-1 text-sm text-on-surface-variant hover:text-on-surface"
-              >
-                <ArrowLeft size={14} />
-                Use a different email
-              </button>
+            <form onSubmit={handleSignUp} className="space-y-5">
+              <div className="space-y-2">
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-semibold uppercase tracking-wider text-on-surface"
+                >
+                  Full name
+                </label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Harry Randall"
+                  iconLeft={<User size={16} strokeWidth={1.75} />}
+                  autoComplete="name"
+                  autoFocus
+                  required
+                />
+              </div>
 
               <div className="space-y-2">
                 <label
@@ -198,35 +243,45 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   iconLeft={<Lock size={16} strokeWidth={1.75} />}
-                  autoComplete="current-password"
-                  autoFocus
+                  autoComplete="new-password"
                   required
                 />
               </div>
 
-              <div className="flex justify-end">
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
+              <div className="space-y-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-semibold uppercase tracking-wider text-on-surface"
+                >
+                  Confirm password
+                </label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat your password"
+                  iconLeft={<Lock size={16} strokeWidth={1.75} />}
+                  autoComplete="new-password"
+                  required
+                />
               </div>
 
-              {error && (
-                <p className="text-sm text-red-500">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-500">{error}</p>}
 
               <Button type="submit" size="md" className="w-full" disabled={loading}>
-                {loading ? "Signing in…" : "Sign in"}
+                {loading ? "Creating account…" : "Create account"}
               </Button>
             </form>
           )}
         </Card>
 
         <p className="text-center text-sm text-on-surface-variant">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-primary hover:underline">
-            Sign up free
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

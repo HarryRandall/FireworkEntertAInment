@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Container } from "@/app/components/ui/Container";
 import { Button } from "@/app/components/ui/Button";
+import { createClient } from "@/utils/supabase/client";
 
 type AppNavLink = { href: string; label: string };
 
@@ -21,6 +22,14 @@ type AppShellProps = {
 
 export function AppShell({ children, containerWidth = "default" }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-on-surface">
@@ -56,7 +65,7 @@ export function AppShell({ children, containerWidth = "default" }: AppShellProps
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button href="/" variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
               Logout
             </Button>
           </div>
