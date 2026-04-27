@@ -193,12 +193,11 @@ export default function LoginPage() {
                       id="password"
                       type="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
                       placeholder="••••••••"
                       iconLeft={<Lock size={16} strokeWidth={1.75} />}
                       autoComplete="current-password"
                       autoFocus
-                      onChange={(e) => { setPassword(e.target.value); setError(null); }}
                       className="h-12 text-base"
                     />
                   </div>
