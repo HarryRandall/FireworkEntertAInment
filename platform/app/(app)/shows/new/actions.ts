@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { slugifyTitle } from "@/lib/shows";
+import { invalidateShowsCacheForUser } from "@/lib/shows.server";
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -144,6 +145,7 @@ export async function createShowAction(
     return { ok: false, error: "Could not save your show. Please try again." };
   }
 
+  await invalidateShowsCacheForUser(user.id);
   revalidatePath("/dashboard");
   redirect(`/shows/${slug}`);
 }

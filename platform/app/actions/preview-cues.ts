@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { invalidateShowCacheForUser } from "@/lib/shows.server";
 
 export type CueActionResult =
   | { ok: true; message?: string }
@@ -41,6 +42,9 @@ export async function addPreviewCueAction(
   }
 
   const supabase = createClient(await cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: lastCue } = await supabase
     .from("show_cues")
     .select("position")
@@ -62,6 +66,12 @@ export async function addPreviewCueAction(
     return { ok: false, error: "Could not add that firework cue." };
   }
 
+  if (user) {
+    await invalidateShowCacheForUser(user.id, {
+      showId: parsed.data.showId,
+      showSlug: parsed.data.showSlug,
+    });
+  }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: "Cue added." };
 }
@@ -79,16 +89,27 @@ export async function deletePreviewCueAction(
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: deletedCue, error } = await supabase
     .from("show_cues")
     .delete()
-    .eq("id", parsed.data.cueId);
+    .eq("id", parsed.data.cueId)
+    .select("show_id")
+    .maybeSingle();
 
   if (error) {
     console.error("[deletePreviewCueAction] delete failed:", error);
     return { ok: false, error: "Could not remove that firework cue." };
   }
 
+  if (user && deletedCue?.show_id) {
+    await invalidateShowCacheForUser(user.id, {
+      showId: deletedCue.show_id,
+      showSlug: parsed.data.showSlug,
+    });
+  }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: "Cue removed." };
 }

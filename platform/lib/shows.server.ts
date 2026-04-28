@@ -2,6 +2,11 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import {
+  deleteCachedKeys,
+  getCachedJson,
+  setCachedJson,
+} from "@/lib/server-cache";
 import type {
   FireworkRenderParams,
   FireworkRenderSpec,
@@ -35,6 +40,9 @@ const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
   sparkSize: 0.075,
   trailLength: 0.65,
 };
+const CACHE_PREFIX = "shows:v1";
+const SHOWS_TTL_SECONDS = 60;
+const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 
 function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -191,34 +199,118 @@ async function getServerClient() {
   return createClient(await cookies());
 }
 
+async function getCurrentUserId(): Promise<string | null> {
+  const supabase = await getServerClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) return null;
+  return user.id;
+}
+
+export function getUserShowsCacheKey(userId: string): string {
+  return `${CACHE_PREFIX}:users:${userId}:shows`;
+}
+
+export function getShowBySlugCacheKey(userId: string, slug: string): string {
+  return `${CACHE_PREFIX}:users:${userId}:show-by-slug:${slug}`;
+}
+
+export function getShowCuesCacheKey(userId: string, showId: string): string {
+  return `${CACHE_PREFIX}:users:${userId}:show:${showId}:cues`;
+}
+
+export function getShowReplayCuesCacheKey(userId: string, showId: string): string {
+  return `${CACHE_PREFIX}:users:${userId}:show:${showId}:replay-cues`;
+}
+
+export function getShoppingListCacheKey(userId: string, showId: string): string {
+  return `${CACHE_PREFIX}:users:${userId}:show:${showId}:shopping`;
+}
+
+export function getFireworkSpecificationsCacheKey(): string {
+  return `${CACHE_PREFIX}:firework-specifications`;
+}
+
+export async function invalidateShowsCacheForUser(userId: string): Promise<void> {
+  await deleteCachedKeys([getUserShowsCacheKey(userId)]);
+}
+
+export async function invalidateShowCacheForUser(
+  userId: string,
+  params: { showId: string; showSlug?: string | null },
+): Promise<void> {
+  const keys = [
+    getUserShowsCacheKey(userId),
+    getShowCuesCacheKey(userId, params.showId),
+    getShowReplayCuesCacheKey(userId, params.showId),
+    getShoppingListCacheKey(userId, params.showId),
+  ];
+  if (params.showSlug) {
+    keys.push(getShowBySlugCacheKey(userId, params.showSlug));
+  }
+  await deleteCachedKeys(keys);
+}
+
 export async function listShowsForCurrentUser(): Promise<Show[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const cacheKey = getUserShowsCacheKey(userId);
+  const cached = await getCachedJson<Show[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shows")
     .select("*")
+    .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) {
     console.error("[shows.server] listShowsForCurrentUser failed:", error);
     return [];
   }
-  return (data ?? []).map(mapShow);
+  const mapped = (data ?? []).map(mapShow);
+  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
+  return mapped;
 }
 
 export async function getShowBySlug(slug: string): Promise<Show | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const cacheKey = getShowBySlugCacheKey(userId, slug);
+  const cached = await getCachedJson<Show>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shows")
     .select("*")
+    .eq("user_id", userId)
     .eq("slug", slug)
     .maybeSingle();
   if (error) {
     console.error("[shows.server] getShowBySlug failed:", error);
     return null;
   }
-  return data ? mapShow(data) : null;
+  const mapped = data ? mapShow(data) : null;
+  if (mapped) {
+    await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
+  }
+  return mapped;
 }
 
 export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const cacheKey = getShowCuesCacheKey(userId, showId);
+  const cached = await getCachedJson<ShowCue[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("show_cues")
@@ -229,10 +321,16 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
     console.error("[shows.server] listCuesForShow failed:", error);
     return [];
   }
-  return (data ?? []).map(mapCue);
+  const mapped = (data ?? []).map(mapCue);
+  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listFireworkSpecifications(): Promise<FireworkSpecification[]> {
+  const cacheKey = getFireworkSpecificationsCacheKey();
+  const cached = await getCachedJson<FireworkSpecification[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("firework_specifications")
@@ -243,12 +341,21 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
     console.error("[shows.server] listFireworkSpecifications failed:", error);
     return [];
   }
-  return (data ?? []).map(mapFireworkSpecification);
+  const mapped = (data ?? []).map(mapFireworkSpecification);
+  await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listReplayCuesForShow(
   showId: string,
 ): Promise<ReplayCue[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const cacheKey = getShowReplayCuesCacheKey(userId, showId);
+  const cached = await getCachedJson<ReplayCue[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("show_cues")
@@ -262,14 +369,23 @@ export async function listReplayCuesForShow(
     console.error("[shows.server] listReplayCuesForShow failed:", error);
     return [];
   }
-  return ((data ?? []) as ReplayCueRow[])
+  const mapped = ((data ?? []) as ReplayCueRow[])
     .map(mapReplayCue)
     .filter((cue): cue is ReplayCue => cue !== null);
+  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listShoppingItemsForShow(
   showId: string,
 ): Promise<ShoppingListItem[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const cacheKey = getShoppingListCacheKey(userId, showId);
+  const cached = await getCachedJson<ShoppingListItem[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shopping_list_items")
@@ -280,7 +396,9 @@ export async function listShoppingItemsForShow(
     console.error("[shows.server] listShoppingItemsForShow failed:", error);
     return [];
   }
-  return (data ?? []).map(mapShoppingItem);
+  const mapped = (data ?? []).map(mapShoppingItem);
+  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
+  return mapped;
 }
 
 /**
