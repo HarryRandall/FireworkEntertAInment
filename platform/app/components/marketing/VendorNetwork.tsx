@@ -31,6 +31,8 @@ const VENDOR_PINS: { x: number; y: number; size: "lg" | "md" | "sm"; label?: str
 const USER_LOCATION = { x: 488, y: 462 };
 // Highlight the closest vendor so the user sees who'd ship to them.
 const NEAREST_VENDOR = { x: 525, y: 445 }; // Houston
+const TRACKING_ROUTE = `M ${USER_LOCATION.x} ${USER_LOCATION.y} L ${NEAREST_VENDOR.x} ${NEAREST_VENDOR.y}`;
+const TRACKING_GREEN = "#0ECB81";
 
 const STATS = [
   { value: "342", label: "Products in vendor catalogue", accent: "primary" as const },
@@ -88,16 +90,40 @@ export function VendorNetwork() {
                 aria-hidden
               >
                 {/* Connector from user location to nearest vendor */}
-                <line
-                  x1={USER_LOCATION.x}
-                  y1={USER_LOCATION.y}
-                  x2={NEAREST_VENDOR.x}
-                  y2={NEAREST_VENDOR.y}
-                  stroke="#22c55e"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                  opacity="0.7"
-                />
+                <path
+                  d={TRACKING_ROUTE}
+                  fill="none"
+                  stroke={TRACKING_GREEN}
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeDasharray="6 8"
+                  opacity="0.75"
+                >
+                  {!reduce ? (
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      values="28;0"
+                      dur="1.2s"
+                      repeatCount="indefinite"
+                    />
+                  ) : null}
+                </path>
+
+                {!reduce ? (
+                  <circle r="4" fill={TRACKING_GREEN}>
+                    <animateMotion
+                      dur="1.8s"
+                      repeatCount="indefinite"
+                      path={TRACKING_ROUTE}
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0;1;1;0"
+                      dur="1.8s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                ) : null}
 
                 {VENDOR_PINS.map((p, i) => {
                   const r = p.size === "lg" ? 6 : p.size === "md" ? 4.5 : 3;
@@ -152,7 +178,7 @@ export function VendorNetwork() {
                       cy={USER_LOCATION.y}
                       r={5}
                       fill="none"
-                      stroke="#22c55e"
+                      stroke={TRACKING_GREEN}
                       strokeWidth="1.5"
                       opacity="0.8"
                     >
@@ -174,10 +200,10 @@ export function VendorNetwork() {
                     cx={USER_LOCATION.x}
                     cy={USER_LOCATION.y}
                     r={5}
-                    fill="#22c55e"
-                    stroke="#ffffff"
+                    fill={TRACKING_GREEN}
+                    stroke="var(--color-on-surface)"
                     strokeWidth="1.5"
-                    style={{ filter: "drop-shadow(0 0 12px #22c55e)" }}
+                    style={{ filter: `drop-shadow(0 0 12px ${TRACKING_GREEN})` }}
                   />
                 </g>
               </svg>

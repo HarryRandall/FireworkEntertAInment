@@ -17,7 +17,7 @@ export function LivePreviewTile({
 }: LivePreviewTileProps) {
   const clamped = Math.min(100, Math.max(0, progress));
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-outline-variant/15 bg-gradient-to-b from-[#0a0a18] via-[#0c0c1f] to-[#101030] p-8 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]">
+    <div className="relative overflow-hidden rounded-2xl border border-outline-variant/15 bg-gradient-to-b from-surface-container-high via-surface-container to-surface-container-low p-8 shadow-[var(--shadow-card-hover)]">
       <div className="absolute right-6 top-6 flex items-center gap-2 rounded-full bg-tertiary/15 px-3 py-1 text-tertiary">
         <Eye size={14} strokeWidth={2} />
         <span className="text-[11px] font-bold uppercase tracking-widest">

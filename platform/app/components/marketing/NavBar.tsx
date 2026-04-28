@@ -8,6 +8,7 @@ import { Container } from "@/app/components/ui/Container";
 import { Button } from "@/app/components/ui/Button";
 import { ThemeToggle } from "@/app/components/theme/ThemeToggle";
 import { cn } from "@/lib/cn";
+import { createClient } from "@/utils/supabase/client";
 
 type NavLink = { href: string; label: string };
 
@@ -35,12 +36,40 @@ export function MarketingNavBar({
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(isAuthenticated);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    try {
+      const supabase = createClient();
+
+      supabase.auth.getUser().then(({ data }) => {
+        if (active) setAuthenticated(Boolean(data.user));
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setAuthenticated(Boolean(session?.user));
+      });
+
+      return () => {
+        active = false;
+        subscription.unsubscribe();
+      };
+    } catch {
+      return () => {
+        active = false;
+      };
+    }
   }, []);
 
   const hasLinks = links.length > 0;
@@ -56,7 +85,7 @@ export function MarketingNavBar({
     >
       <Container className="flex h-16 items-center justify-between">
         <Link
-          href={isAuthenticated ? dashboardHref : "/"}
+          href={authenticated ? dashboardHref : "/"}
           className="group flex items-center gap-2 text-xl font-semibold tracking-tighter text-on-surface"
         >
           <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary transition-transform duration-300 group-hover:rotate-12">
@@ -97,7 +126,7 @@ export function MarketingNavBar({
         ) : null}
 
         <div className="hidden items-center gap-3 md:flex">
-          {isAuthenticated ? (
+          {authenticated ? (
             <Button href={dashboardHref} size="sm">
               {dashboardLabel}
             </Button>
@@ -157,7 +186,7 @@ export function MarketingNavBar({
                   hasLinks && "mt-3 border-t border-outline-variant/10 pt-4",
                 )}
               >
-                {isAuthenticated ? (
+                {authenticated ? (
                   <Button
                     href={dashboardHref}
                     size="md"
