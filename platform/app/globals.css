@@ -197,6 +197,30 @@ body {
   animation: ember-sweep 8s linear infinite;
 }
 
+@keyframes route-progress {
+  0% {
+    opacity: 0;
+    transform: translateX(-45%) scaleX(0.25);
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(35%) scaleX(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(115%) scaleX(0.35);
+  }
+}
+
+.route-progress-bar {
+  width: 70%;
+  transform-origin: left center;
+  animation: route-progress 1.15s ease-in-out infinite;
+}
+
 /* Subtle film-grain noise — used on CTA band & hero overlay for depth. */
 .noise-overlay {
   position: absolute;

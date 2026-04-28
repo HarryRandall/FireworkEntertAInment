@@ -475,7 +475,7 @@ export function FireworkReplayViewer({
       <Card
         elevation="low"
         radius="lg"
-        className="overflow-hidden bg-gradient-to-b from-[#080811] via-[#0b0b18] to-surface-container-low p-0 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+        className="overflow-hidden bg-gradient-to-b from-surface-container-high via-surface-container to-surface-container-low p-0 shadow-[var(--shadow-card-hover)]"
       >
         <div className="relative h-[min(72vh,680px)] min-h-[520px]">
           <div className="absolute left-6 top-6 z-10 space-y-2">
