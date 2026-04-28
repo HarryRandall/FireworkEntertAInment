@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { PlayCircle, Sparkles } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
@@ -19,8 +20,6 @@ type HeroProps = {
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
-  showName?: string;
-  showProgressLabel?: string;
 };
 
 export function Hero({
@@ -31,10 +30,28 @@ export function Hero({
   primaryLabel,
   secondaryHref,
   secondaryLabel,
-  showName = "Midnight Symphony 04",
-  showProgressLabel = "02:44",
 }: HeroProps) {
   const reduce = useReducedMotion();
+  const [showCanvas, setShowCanvas] = useState(false);
+
+  useEffect(() => {
+    if (reduce) {
+      setShowCanvas(false);
+      return;
+    }
+
+    const scheduleCanvas = () => setShowCanvas(true);
+    const idleId = window.requestIdleCallback?.(scheduleCanvas, {
+      timeout: 1200,
+    });
+    const timeoutId = idleId ? undefined : window.setTimeout(scheduleCanvas, 250);
+
+    return () => {
+      if (idleId) window.cancelIdleCallback?.(idleId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [reduce]);
+
   const fadeUp = (delay = 0) =>
     reduce
       ? {}
@@ -48,7 +65,7 @@ export function Hero({
     <section className="relative isolate overflow-hidden bg-background pb-20 pt-28 lg:pb-28 lg:pt-36">
       {/* WebGL canvas — full-bleed behind the copy. */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        {!reduce ? <HeroCanvas /> : null}
+        {showCanvas ? <HeroCanvas /> : null}
         {/* Vignette + base gradient — paints before R3F mounts and softens edges. */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_75%)]" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
@@ -100,32 +117,6 @@ export function Hero({
               <PlayCircle size={20} />
             </Button>
           ) : null}
-        </motion.div>
-
-        {/* Floating live-preview chip — replaces the old image card. */}
-        <motion.div
-          {...fadeUp(0.4)}
-          className="mt-20 flex items-center gap-4 rounded-full border border-outline-variant/30 bg-surface-container/60 px-5 py-3 text-left shadow-[0_24px_60px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl"
-        >
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-tertiary opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-tertiary" />
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-tertiary">
-              Live Preview
-            </span>
-          </div>
-          <div className="hidden h-5 w-px bg-outline-variant/30 sm:block" />
-          <div className="hidden text-sm font-medium text-on-surface sm:block">
-            {showName}
-          </div>
-          <div className="hidden h-1 w-32 overflow-hidden rounded-full bg-surface-container-highest md:block">
-            <div className="h-full w-2/3 bg-tertiary shadow-[0_0_15px_rgba(143,213,255,0.6)]" />
-          </div>
-          <span className="hidden font-mono text-[10px] tabular-nums text-tertiary md:inline">
-            {showProgressLabel}
-          </span>
         </motion.div>
       </Container>
     </section>

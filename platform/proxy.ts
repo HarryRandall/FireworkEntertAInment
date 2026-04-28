@@ -5,10 +5,24 @@ import { getSupabaseServerEnv } from "@/utils/supabase/env";
 const PROTECTED_PREFIXES = ["/dashboard", "/shows"];
 const AUTH_ONLY_PATHS = ["/login", "/signup"];
 
+function matchesPathPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request: { headers: request.headers },
   });
+
+  const { pathname } = request.nextUrl;
+  const isProtected = PROTECTED_PREFIXES.some((p) =>
+    matchesPathPrefix(pathname, p),
+  );
+  const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
+
+  if (!isProtected && !isAuthPage) {
+    return supabaseResponse;
+  }
 
   const env = getSupabaseServerEnv();
   if (!env) {
@@ -41,10 +55,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
