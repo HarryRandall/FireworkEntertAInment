@@ -161,7 +161,12 @@ Downstream systems should assume the top-level result object contains:
 - `show_personality`
 - `firework_cues`
 
-The current schema version is `1.0.0`. Bump it when introducing any change a downstream consumer could not absorb by reading the new fields it understands and ignoring the rest.
+The current schema version is `1.1.0`. Bump it when introducing any change a downstream consumer could not absorb by reading the new fields it understands and ignoring the rest.
+
+#### Schema changelog
+
+- **1.1.0** — Added `key_moments[].prominence`. Reclassified `key_moments[].type` from an absolute `energy > 0.8` threshold to relative prominence ranking (top quartile = `climax`).
+- **1.0.0** — Initial versioned contract.
 
 ### Compact LLM Payload (`build_llm_payload`)
 
@@ -208,12 +213,15 @@ Each moment currently includes:
 
 - `time`
 - `energy`
+- `prominence` *(added in schema 1.1.0)*
 - `type`
 
 Expected `type` values today:
 
 - `build`
 - `climax`
+
+`type` is decided by **relative prominence ranking**: the top quartile of detected peaks (by `prominence`, with a minimum of one) are labelled `climax`; the rest are `build`. This replaces the previous absolute `energy > 0.8` threshold, which produced zero climaxes on heavily compressed mixes (modern EDM / pop) and consequently starved the show of `barrage` cues.
 
 ### `buildups[]`
 

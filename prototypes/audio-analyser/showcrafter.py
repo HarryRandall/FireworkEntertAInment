@@ -17,7 +17,12 @@ from scipy.signal import find_peaks, savgol_filter
 
 # Bumped when the output contract changes. Downstream harnesses can read
 # `schema_version` from the result / LLM payload to gate compatibility.
-SCHEMA_VERSION = "1.0.0"
+#
+# 1.1.0 — added `key_moments[].prominence`; `key_moments[].type` is now
+#         decided by relative prominence ranking (top quartile = climax)
+#         instead of an absolute energy threshold.
+# 1.0.0 — initial versioned contract.
+SCHEMA_VERSION = "1.1.0"
 
 # Anchor windows around climaxes and build-up peaks (seconds before/after).
 ANCHOR_PRE_SEC = 3.0
@@ -455,14 +460,27 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     else:
         smoothed = rms_normalised
 
-    peaks, _ = find_peaks(smoothed, height=0.5, distance=sr // hop_length * 3, prominence=0.1)
+    peaks, peak_props = find_peaks(
+        smoothed, height=0.5, distance=sr // hop_length * 3, prominence=0.1
+    )
     peak_times_arr = librosa.frames_to_time(peaks, sr=sr, hop_length=hop_length)
+    prominences = peak_props.get("prominences", np.zeros(len(peaks)))
+
+    # Top quartile of detected peaks (by prominence) are climaxes; the rest
+    # are builds. Replaces the old absolute energy threshold (>0.8), which
+    # silently produced zero climaxes on loudness-flat mixes (modern EDM /
+    # heavily compressed pop) and starved the show of barrage cues.
+    n_climaxes = max(1, len(peaks) // 4) if len(peaks) > 0 else 0
+    climax_idx = (
+        set(np.argsort(prominences)[-n_climaxes:].tolist()) if n_climaxes > 0 else set()
+    )
 
     key_moments = [
         {
             "time": round(float(peak_times_arr[i]), 2),
             "energy": round(float(smoothed[peaks[i]]), 3),
-            "type": "climax" if smoothed[peaks[i]] > 0.8 else "build",
+            "prominence": round(float(prominences[i]), 3),
+            "type": "climax" if i in climax_idx else "build",
         }
         for i in range(len(peaks))
     ]
