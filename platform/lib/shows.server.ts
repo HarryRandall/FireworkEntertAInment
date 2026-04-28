@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { getCurrentUserId } from "@/lib/current-user.server";
 import {
   deleteCachedKeys,
   getCachedJson,
@@ -195,20 +197,9 @@ function mapShoppingItem(row: ShoppingItemRow): ShoppingListItem {
   };
 }
 
-async function getServerClient() {
+const getServerClient = cache(async () => {
   return createClient(await cookies());
-}
-
-async function getCurrentUserId(): Promise<string | null> {
-  const supabase = await getServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) return null;
-  return user.id;
-}
+});
 
 export function getUserShowsCacheKey(userId: string): string {
   return `${CACHE_PREFIX}:users:${userId}:shows`;
@@ -277,7 +268,7 @@ export async function listShowsForCurrentUser(): Promise<Show[]> {
   return mapped;
 }
 
-export async function getShowBySlug(slug: string): Promise<Show | null> {
+export const getShowBySlug = cache(async (slug: string): Promise<Show | null> => {
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
@@ -301,7 +292,7 @@ export async function getShowBySlug(slug: string): Promise<Show | null> {
     await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
   }
   return mapped;
-}
+});
 
 export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
   const userId = await getCurrentUserId();
