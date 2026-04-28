@@ -91,14 +91,18 @@ pip install -r requirements.txt
 
 ```bash
 python showcrafter.py [path_to_audio] [--json] [--play] [--personality PRESET]
+                      [--analysis-out PATH] [--llm-out PATH] [--no-json-file]
 ```
 
 Arguments:
 
 - `path_to_audio` (optional): path to input audio file. Default: `song.mp3`
-- `--json`: print full analysis JSON to stdout
+- `--json`: also print the full analysis JSON to stdout
 - `--play`: launch live terminal playback visualizer
 - `--personality PRESET`: choose show personality preset
+- `--analysis-out PATH`: override the full analysis JSON output path (default: `<song>_analysis.json`)
+- `--llm-out PATH`: override the compact LLM payload JSON output path (default: `<song>_llm.json`)
+- `--no-json-file`: skip writing both JSON files (Markdown only)
 
 Allowed personality presets:
 
@@ -122,9 +126,13 @@ python showcrafter.py song.mp3 --play --personality elegant
 
 ## Output
 
-By default, ShowCrafter writes:
+By default, ShowCrafter writes three files alongside each run:
 
-- `<song_name>_analysis.md`
+- `<song_name>_analysis.md` — verbose human-readable report
+- `<song_name>_analysis.json` — full analysis result, schema-stable, suitable for programmatic post-processing
+- `<song_name>_llm.json` — **compact, token-efficient payload** for downstream LLM consumption (shape per `llm-harness.md`)
+
+All JSON outputs include a top-level `schema_version` field so downstream harnesses can gate compatibility.
 
 The Markdown report includes:
 
@@ -136,11 +144,11 @@ The Markdown report includes:
 - Firework cue table with style fields (`palette`, `shape`, `height`)
 - Full beat/onset timestamp lists
 
-When `--json` is enabled, it also prints the full analysis object, including:
+The full analysis JSON mirrors the in-memory result object (sections, beats, onsets, energy timeline, music profile, show personality, firework cues, etc.).
 
-- `music_profile`
-- `show_personality`
-- `firework_cues`
+The compact LLM payload contains only the highest-signal fields plus pre-computed derived features (`finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`) and placeholder `user_constraints` / `inventory` blocks for the next stage to populate. It deliberately omits raw beat/onset/energy arrays — fetch those from the full analysis JSON when micro-timing is needed.
+
+When `--json` is enabled, the full analysis JSON is **also** echoed to stdout (in addition to the file) for programmatic piping. Use `--no-json-file` if you only want the Markdown.
 
 ## Supporting Documentation
 

@@ -15,6 +15,14 @@ import sklearn.cluster
 from scipy.signal import find_peaks, savgol_filter
 
 
+# Bumped when the output contract changes. Downstream harnesses can read
+# `schema_version` from the result / LLM payload to gate compatibility.
+SCHEMA_VERSION = "1.0.0"
+
+# Anchor windows around climaxes and build-up peaks (seconds before/after).
+ANCHOR_PRE_SEC = 3.0
+ANCHOR_POST_SEC = 4.0
+
 STYLE_DIMENSIONS = (
     "boldness",
     "elegance",
@@ -502,6 +510,7 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     # ASSEMBLE OUTPUT
     # ──────────────────────────────────────────────
     return {
+        "schema_version": SCHEMA_VERSION,
         "file": file_path,
         "duration_seconds": round(duration, 2),
         "tempo_bpm": round(float(np.atleast_1d(tempo)[0]), 1),
@@ -1044,6 +1053,142 @@ def generate_firework_cues(
     return deduped
 
 
+def compute_derived_features(result: dict) -> dict:
+    """
+    Cheap, deterministic derived fields recommended by `llm-harness.md`.
+    These reduce reasoning load on the downstream choreography model.
+    """
+    sections = result["sections"]
+    duration = float(result["duration_seconds"])
+    key_moments = result["key_moments"]
+    buildups = result["buildups"]
+
+    if not sections:
+        return {
+            "finale_window": None,
+            "quietest_section_index": None,
+            "highest_energy_section_index": None,
+            "repeated_chorus_count": 0,
+            "section_rank_by_energy": [],
+            "anchor_windows": [],
+        }
+
+    last_climax_t = next(
+        (m["time"] for m in reversed(key_moments) if m.get("type") == "climax"),
+        None,
+    )
+    if last_climax_t is None and buildups:
+        last_climax_t = buildups[-1]["peak"]
+
+    finale_window = None
+    if last_climax_t is not None:
+        finale_window = {
+            "start": round(float(last_climax_t), 2),
+            "end": round(duration, 2),
+        }
+
+    energies = [s["avg_energy"] for s in sections]
+    quietest_idx = min(range(len(energies)), key=lambda i: energies[i])
+    loudest_idx = max(range(len(energies)), key=lambda i: energies[i])
+    section_rank = sorted(range(len(energies)), key=lambda i: energies[i], reverse=True)
+    repeated_chorus_count = sum(1 for s in sections if s["label"] == "chorus")
+
+    anchor_windows = []
+    for m in key_moments:
+        if m["type"] != "climax":
+            continue
+        anchor_windows.append({
+            "type": "climax",
+            "anchor_time": m["time"],
+            "start": round(max(0.0, m["time"] - ANCHOR_PRE_SEC), 2),
+            "end": round(min(duration, m["time"] + ANCHOR_POST_SEC), 2),
+            "energy": m["energy"],
+        })
+    for bu in buildups:
+        anchor_windows.append({
+            "type": "buildup",
+            "anchor_time": bu["peak"],
+            "start": bu["start"],
+            "end": round(min(duration, bu["peak"] + ANCHOR_POST_SEC), 2),
+            "energy_rise": bu["energy_rise"],
+        })
+    anchor_windows.sort(key=lambda w: w["anchor_time"])
+
+    return {
+        "finale_window": finale_window,
+        "quietest_section_index": int(quietest_idx),
+        "highest_energy_section_index": int(loudest_idx),
+        "repeated_chorus_count": int(repeated_chorus_count),
+        "section_rank_by_energy": [int(i) for i in section_rank],
+        "anchor_windows": anchor_windows,
+    }
+
+
+def build_llm_payload(result: dict) -> dict:
+    """
+    Compact, token-efficient payload for downstream LLM consumption.
+    Shape follows `llm-harness.md`. Raw beat_times / onset_times /
+    energy_timeline are intentionally omitted — they remain in the full
+    analysis JSON for stages that genuinely need micro-timing.
+    """
+    music_profile = result["music_profile"]
+    show_personality = result["show_personality"]
+    cues = result["firework_cues"]
+    sections = result["sections"]
+
+    sections_compact = []
+    for i, s in enumerate(sections):
+        cue_counts = {}
+        for c in cues:
+            if s["start"] <= c["time"] <= s["end"]:
+                cue_counts[c["effect"]] = cue_counts.get(c["effect"], 0) + 1
+        sections_compact.append({
+            "index": i,
+            "label": s["label"],
+            "start": s["start"],
+            "end": s["end"],
+            "duration": s["duration"],
+            "avg_energy": s["avg_energy"],
+            "peak_energy": s["peak_energy"],
+            "intensity": s["intensity"],
+            "cue_counts": cue_counts,
+        })
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "source_file": os.path.basename(result["file"]),
+        "song": {
+            "duration_seconds": result["duration_seconds"],
+            "tempo_bpm": result["tempo_bpm"],
+            "total_beats": result["total_beats"],
+            "genre_hint": music_profile["genre_hint"],
+            "key_signature": music_profile["key_signature"],
+        },
+        "music_style": {
+            "dominant_traits": music_profile["dominant_traits"],
+            "style_vector": music_profile["style_vector"],
+            "descriptors": music_profile["descriptors"],
+        },
+        "show_personality": {
+            "preset": show_personality["preset"],
+            "blend_weights": show_personality["blend_weights"],
+            "dimensions": show_personality["dimensions"],
+            "dominant_traits": show_personality["dominant_traits"],
+            "palette_direction": show_personality["palette_direction"],
+            "density_level": show_personality["density_level"],
+        },
+        "sections": sections_compact,
+        "anchors": {
+            "key_moments": result["key_moments"],
+            "buildups": result["buildups"],
+        },
+        "derived": compute_derived_features(result),
+        "firework_cues_baseline": cues,
+        "user_constraints": {},
+        "inventory": [],
+    }
+
+
 def fmt_time(seconds: float) -> str:
     """Format seconds as M:SS."""
     m, s = divmod(int(seconds), 60)
@@ -1453,13 +1598,28 @@ def live_player(result: dict, file_path: str):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Analyse a song and generate style-aware firework cues.")
     parser.add_argument("path", nargs="?", default="song.mp3", help="Path to the audio file")
-    parser.add_argument("--json", dest="json_output", action="store_true", help="Also print JSON to stdout")
+    parser.add_argument("--json", dest="json_output", action="store_true", help="Also print full JSON to stdout")
     parser.add_argument("--play", action="store_true", help="Play audio with the live terminal visualizer")
     parser.add_argument(
         "--personality",
         default="balanced",
         choices=sorted(PERSONALITY_PRESETS.keys()),
         help="Blend the music with a show personality preset",
+    )
+    parser.add_argument(
+        "--analysis-out",
+        default=None,
+        help="Path for the full analysis JSON (default: <song>_analysis.json)",
+    )
+    parser.add_argument(
+        "--llm-out",
+        default=None,
+        help="Path for the compact LLM payload JSON (default: <song>_llm.json)",
+    )
+    parser.add_argument(
+        "--no-json-file",
+        action="store_true",
+        help="Skip writing the analysis/LLM JSON files",
     )
     return parser.parse_args(argv)
 
@@ -1476,12 +1636,21 @@ if __name__ == "__main__":
     if options.play:
         live_player(result, options.path)
     else:
-        # Write markdown output
         song_name = os.path.splitext(os.path.basename(options.path))[0]
-        output_path = f"{song_name}_analysis.md"
-        write_markdown(result, output_path)
-        print(f"Analysis written to: {output_path}")
+        md_path = f"{song_name}_analysis.md"
+        write_markdown(result, md_path)
+        print(f"Markdown report:     {md_path}")
 
-        # Also print JSON to stdout for programmatic use
+        if not options.no_json_file:
+            analysis_path = options.analysis_out or f"{song_name}_analysis.json"
+            with open(analysis_path, "w") as f:
+                json.dump(result, f, indent=2)
+            print(f"Full analysis JSON:  {analysis_path}")
+
+            llm_path = options.llm_out or f"{song_name}_llm.json"
+            with open(llm_path, "w") as f:
+                json.dump(build_llm_payload(result), f, indent=2)
+            print(f"LLM payload JSON:    {llm_path}")
+
         if options.json_output:
             print(json.dumps(result, indent=2))

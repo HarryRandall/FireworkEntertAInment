@@ -78,13 +78,17 @@ python showcrafter.py song.mp3 --personality cinematic
 python showcrafter.py song.mp3 --play
 ```
 
-Default output:
+Default output (written to the working directory):
 
-- `<song_name>_analysis.md`
+- `<song_name>_analysis.md` — verbose human report
+- `<song_name>_analysis.json` — full analysis result (schema-stable)
+- `<song_name>_llm.json` — compact LLM payload per `llm-harness.md`
 
-Optional stdout output:
+Optional:
 
-- full JSON result with `--json`
+- `--json` also echoes the full analysis JSON to stdout
+- `--no-json-file` skips both JSON files (Markdown only)
+- `--analysis-out PATH` / `--llm-out PATH` override the JSON paths
 
 ## Pipeline Overview
 
@@ -131,6 +135,10 @@ Its current flow is:
 
 - `write_markdown(...)`
   Writes an LLM-readable Markdown report.
+- `compute_derived_features(...)`
+  Pre-computes cheap derived fields recommended by `llm-harness.md` (`finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`).
+- `build_llm_payload(...)`
+  Produces the compact, token-efficient JSON payload for downstream LLM consumption. Shape follows `llm-harness.md`. Excludes raw beat/onset/energy arrays.
 - `live_player(...)`
   Plays audio with a terminal visualisation overlay.
 
@@ -138,6 +146,7 @@ Its current flow is:
 
 Downstream systems should assume the top-level result object contains:
 
+- `schema_version` (string, semver — bump on any breaking output change)
 - `file`
 - `duration_seconds`
 - `tempo_bpm`
@@ -151,6 +160,24 @@ Downstream systems should assume the top-level result object contains:
 - `music_profile`
 - `show_personality`
 - `firework_cues`
+
+The current schema version is `1.0.0`. Bump it when introducing any change a downstream consumer could not absorb by reading the new fields it understands and ignoring the rest.
+
+### Compact LLM Payload (`build_llm_payload`)
+
+A separate, token-efficient view of the result is written to `<song>_llm.json` and follows the shape recommended in `llm-harness.md`:
+
+- `schema_version`, `source_file`
+- `song`: `duration_seconds`, `tempo_bpm`, `total_beats`, `genre_hint`, `key_signature`
+- `music_style`: `dominant_traits`, `style_vector`, `descriptors`
+- `show_personality`: `preset`, `blend_weights`, `dimensions`, `dominant_traits`, `palette_direction`, `density_level`
+- `sections[]`: `index`, `label`, `start`, `end`, `duration`, `avg_energy`, `peak_energy`, `intensity`, `cue_counts`
+- `anchors`: `key_moments`, `buildups`
+- `derived`: `finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`
+- `firework_cues_baseline`: heuristic cue list (treat as hint, not authoritative)
+- `user_constraints`, `inventory`: empty placeholders for the next stage to populate
+
+Raw `beat_times`, `onset_times`, and `energy_timeline` are intentionally **omitted** from this payload — fetch them from `<song>_analysis.json` only when the harness explicitly needs micro-timing.
 
 ### `sections[]`
 
@@ -256,6 +283,7 @@ If you modify this prototype, treat the following as stability rules unless you 
 4. Keep `effect` names stable unless the downstream harness is updated in the same change.
 5. Preserve the current preset names unless there is a deliberate migration plan.
 6. Keep output JSON serialisable without custom encoders.
+7. Bump `SCHEMA_VERSION` on any breaking change to the result object or the compact LLM payload.
 
 ## Design Assumptions
 
@@ -281,8 +309,7 @@ If you modify this prototype, treat the following as stability rules unless you 
 - better section naming confidence
 - multi-pass climax/finale detection
 - richer cue metadata for export targets
-- compact machine-facing summary output separate from the verbose Markdown report
-- formal schema validation for JSON output
+- formal schema validation for JSON output (e.g. JSON Schema or pydantic models keyed on `schema_version`)
 
 ### Risky Changes
 
