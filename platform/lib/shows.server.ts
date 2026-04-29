@@ -25,11 +25,49 @@ type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
 type FireworkSpecificationRow =
   Database["public"]["Tables"]["firework_specifications"]["Row"];
-type ReplayCueRow = ShowCueRow & {
-  firework_specifications: FireworkSpecificationRow | null;
-};
 type ShoppingItemRow =
   Database["public"]["Tables"]["shopping_list_items"]["Row"];
+type ShowProjection = Pick<
+  ShowRow,
+  | "id"
+  | "slug"
+  | "title"
+  | "song"
+  | "artist"
+  | "status"
+  | "duration_seconds"
+  | "budget_cents"
+  | "total_cents"
+  | "effects_count"
+  | "sync_percent"
+  | "safety_meters"
+  | "time_of_day"
+  | "location"
+  | "description"
+  | "mood_tags"
+  | "audio_path"
+  | "updated_at"
+>;
+type ShowCueProjection = Pick<
+  ShowCueRow,
+  | "id"
+  | "position"
+  | "time_seconds"
+  | "description"
+  | "firework_specification_id"
+  | "render_params"
+>;
+type FireworkSpecificationProjection = Pick<
+  FireworkSpecificationRow,
+  "id" | "slug" | "name" | "description" | "sort_order" | "spec"
+>;
+type ReplayCueRow = ShowCueProjection & {
+  firework_specifications: FireworkSpecificationProjection | null;
+};
+type ShoppingItemProjection = Pick<
+  ShoppingItemRow,
+  "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
+>;
 
 const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
   particleCount: 220,
@@ -45,6 +83,15 @@ const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
 const CACHE_PREFIX = "shows:v1";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
+const SHOW_SELECT =
+  "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, updated_at";
+const SHOW_CUE_SELECT =
+  "id, position, time_seconds, description, firework_specification_id, render_params";
+const FIREWORK_SPECIFICATION_SELECT =
+  "id, slug, name, description, sort_order, spec";
+const SHOPPING_ITEM_SELECT =
+  "id, position, name, qty, price_cents, firework_part_number";
+const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, firework_specifications (${FIREWORK_SPECIFICATION_SELECT})`;
 
 function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -129,7 +176,7 @@ function parseRenderParams(params: Json | null): FireworkRenderParams | null {
   return overrides;
 }
 
-function mapShow(row: ShowRow): Show {
+function mapShow(row: ShowProjection): Show {
   return {
     id: row.id,
     slug: row.slug,
@@ -153,7 +200,7 @@ function mapShow(row: ShowRow): Show {
   };
 }
 
-function mapCue(row: ShowCueRow): ShowCue {
+function mapCue(row: ShowCueProjection): ShowCue {
   return {
     id: row.id,
     position: row.position,
@@ -165,7 +212,7 @@ function mapCue(row: ShowCueRow): ShowCue {
 }
 
 function mapFireworkSpecification(
-  row: FireworkSpecificationRow,
+  row: FireworkSpecificationProjection,
 ): FireworkSpecification {
   return {
     id: row.id,
@@ -186,7 +233,7 @@ function mapReplayCue(row: ReplayCueRow): ReplayCue | null {
   };
 }
 
-function mapShoppingItem(row: ShoppingItemRow): ShoppingListItem {
+function mapShoppingItem(row: ShoppingItemProjection): ShoppingListItem {
   return {
     id: row.id,
     position: row.position,
@@ -256,7 +303,7 @@ export async function listShowsForCurrentUser(): Promise<Show[]> {
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shows")
-    .select("*")
+    .select(SHOW_SELECT)
     .eq("user_id", userId)
     .order("updated_at", { ascending: false });
   if (error) {
@@ -279,7 +326,7 @@ export const getShowBySlug = cache(async (slug: string): Promise<Show | null> =>
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shows")
-    .select("*")
+    .select(SHOW_SELECT)
     .eq("user_id", userId)
     .eq("slug", slug)
     .maybeSingle();
@@ -305,7 +352,7 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("show_cues")
-    .select("*")
+    .select(SHOW_CUE_SELECT)
     .eq("show_id", showId)
     .order("position", { ascending: true });
   if (error) {
@@ -325,7 +372,7 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("firework_specifications")
-    .select("*")
+    .select(FIREWORK_SPECIFICATION_SELECT)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) {
@@ -350,7 +397,7 @@ export async function listReplayCuesForShow(
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("show_cues")
-    .select("*, firework_specifications (*)")
+    .select(REPLAY_CUE_SELECT)
     .eq("show_id", showId)
     .not("time_seconds", "is", null)
     .not("firework_specification_id", "is", null)
@@ -380,7 +427,7 @@ export async function listShoppingItemsForShow(
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("shopping_list_items")
-    .select("*")
+    .select(SHOPPING_ITEM_SELECT)
     .eq("show_id", showId)
     .order("position", { ascending: true });
   if (error) {

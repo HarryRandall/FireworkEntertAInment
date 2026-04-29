@@ -58,22 +58,22 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const userId =
+    typeof data?.claims.sub === "string" ? data.claims.sub : null;
 
-  if (user) {
-    requestHeaders.set("x-showcrafter-user-id", user.id);
+  if (userId) {
+    requestHeaders.set("x-showcrafter-user-id", userId);
   }
 
-  if (isProtected && !user) {
+  if (isProtected && !userId) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isAuthPage && user) {
+  if (isAuthPage && userId) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

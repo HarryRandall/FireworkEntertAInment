@@ -23,7 +23,7 @@ export function ShowTabs({ id }: Props) {
           <Link
             key={tab.href}
             href={tab.href}
-            prefetch={false}
+            prefetch
             className={cn(
               "pb-4 text-sm font-medium transition-colors",
               active

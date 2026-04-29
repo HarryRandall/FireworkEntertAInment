@@ -21,6 +21,13 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
     return proxiedUserId;
   }
 
+  const supabase = createClient(await cookies());
+  const { data } = await supabase.auth.getClaims();
+  const claimsUserId = data?.claims.sub;
+  if (typeof claimsUserId === "string") {
+    return claimsUserId;
+  }
+
   const user = await getCurrentUser();
   return user?.id ?? null;
 });
