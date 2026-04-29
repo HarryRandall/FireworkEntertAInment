@@ -34,7 +34,7 @@ export default async function DashboardPage() {
             Manage your choreographed pyrotechnic displays.
           </p>
         </div>
-        <Button href="/shows/new">
+        <Button href="/shows/new" prefetch={false}>
           <PlusCircle size={18} strokeWidth={2} />
           New show
         </Button>
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
               your first pyromusical choreography in under a minute.
             </p>
           </div>
-          <Button href="/shows/new">
+          <Button href="/shows/new" prefetch={false}>
             <PlusCircle size={18} strokeWidth={2} />
             Create your first show
           </Button>
@@ -71,6 +71,7 @@ export default async function DashboardPage() {
               <Link
                 key={show.id}
                 href={`/shows/${show.slug}`}
+                prefetch={false}
                 className="group block focus:outline-none"
               >
                 <Card elevation="low" radius="md" hoverable className="p-6">
