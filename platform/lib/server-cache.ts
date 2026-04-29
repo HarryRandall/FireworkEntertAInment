@@ -15,6 +15,7 @@ const redis =
     : null;
 
 const CACHE_TTL_SECONDS = 60;
+const memoryCache = new Map<string, { expiresAt: number; value: JsonValue }>();
 
 function getRedisClient() {
   return redis;
@@ -26,7 +27,15 @@ export function hasRedisCache() {
 
 export async function getCachedJson<T>(key: string): Promise<T | null> {
   const client = getRedisClient();
-  if (!client) return null;
+  if (!client) {
+    const cached = memoryCache.get(key);
+    if (!cached) return null;
+    if (cached.expiresAt <= Date.now()) {
+      memoryCache.delete(key);
+      return null;
+    }
+    return cached.value as T;
+  }
 
   try {
     const value = await client.get<T>(key);
@@ -43,7 +52,13 @@ export async function setCachedJson<T extends JsonValue>(
   ttlSeconds = CACHE_TTL_SECONDS,
 ): Promise<void> {
   const client = getRedisClient();
-  if (!client) return;
+  if (!client) {
+    memoryCache.set(key, {
+      expiresAt: Date.now() + ttlSeconds * 1000,
+      value,
+    });
+    return;
+  }
 
   try {
     await client.set(key, value, { ex: ttlSeconds });
@@ -54,6 +69,7 @@ export async function setCachedJson<T extends JsonValue>(
 
 export async function deleteCachedKeys(keys: string[]): Promise<void> {
   const client = getRedisClient();
+  keys.forEach((key) => memoryCache.delete(key));
   if (!client || keys.length === 0) return;
 
   try {
