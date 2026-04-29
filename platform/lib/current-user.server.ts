@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 
 export const getCurrentUser = cache(async () => {
@@ -16,6 +16,11 @@ export const getCurrentUser = cache(async () => {
 });
 
 export const getCurrentUserId = cache(async (): Promise<string | null> => {
+  const proxiedUserId = (await headers()).get("x-showcrafter-user-id");
+  if (proxiedUserId) {
+    return proxiedUserId;
+  }
+
   const user = await getCurrentUser();
   return user?.id ?? null;
 });

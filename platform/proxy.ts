@@ -10,9 +10,15 @@ function matchesPathPrefix(pathname: string, prefix: string) {
 }
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete("x-showcrafter-user-id");
+
+  const createSupabaseResponse = () =>
+    NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+
+  let supabaseResponse = createSupabaseResponse();
 
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some((p) =>
@@ -44,7 +50,7 @@ export async function proxy(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = createSupabaseResponse();
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options),
         );
@@ -55,6 +61,10 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (user) {
+    requestHeaders.set("x-showcrafter-user-id", user.id);
+  }
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
@@ -69,7 +79,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  const response = createSupabaseResponse();
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    response.cookies.set(cookie);
+  });
+  return response;
 }
 
 export const config = {

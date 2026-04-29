@@ -58,7 +58,6 @@ function LoginPageInner() {
     } else {
       const dest = nextPath.startsWith("/") ? nextPath : "/dashboard";
       router.push(dest);
-      router.refresh();
     }
   };
 
