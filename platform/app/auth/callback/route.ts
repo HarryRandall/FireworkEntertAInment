@@ -2,6 +2,12 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
+function getSafeNextPath(nextPath: string | null) {
+  return nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+    ? nextPath
+    : "/dashboard";
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -15,6 +21,6 @@ export async function GET(request: Request) {
 
   // Allow `next` to direct post-confirmation flows (e.g. password reset).
   // Restrict to same-origin paths to avoid open-redirect.
-  const safeNext = next && next.startsWith("/") ? next : "/dashboard";
+  const safeNext = getSafeNextPath(next);
   return NextResponse.redirect(`${origin}${safeNext}`);
 }

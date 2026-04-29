@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
@@ -12,6 +12,12 @@ import { FormError } from "../components/FormError";
 
 type Step = "email" | "password";
 
+function getSafeNextPath(nextPath: string) {
+  return nextPath.startsWith("/") && !nextPath.startsWith("//")
+    ? nextPath
+    : "/dashboard";
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -21,7 +27,6 @@ export default function LoginPage() {
 }
 
 function LoginPageInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/dashboard";
 
@@ -56,8 +61,8 @@ function LoginPageInner() {
       setError(error.message);
       setLoading(false);
     } else {
-      const dest = nextPath.startsWith("/") ? nextPath : "/dashboard";
-      router.push(dest);
+      const dest = getSafeNextPath(nextPath);
+      window.location.replace(dest);
     }
   };
 

@@ -37,6 +37,7 @@ export function AppShell({ children, containerWidth = "default" }: AppShellProps
         <Container className="flex h-16 items-center justify-between">
           <Link
             href="/dashboard"
+            prefetch={false}
             className="text-xl font-semibold tracking-tighter text-primary"
           >
             ShowCrafter
@@ -51,6 +52,7 @@ export function AppShell({ children, containerWidth = "default" }: AppShellProps
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={false}
                   className={cn(
                     "pb-1 text-sm font-medium transition-all duration-200",
                     active
