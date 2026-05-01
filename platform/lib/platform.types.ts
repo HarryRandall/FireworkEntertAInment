@@ -4,7 +4,6 @@ export type PermissionKey =
   | "shows.create"
   | "admin.view"
   | "admin.manage_users"
-  | "admin.manage_organisations"
   | "admin.manage_suppliers"
   | "admin.manage_catalogue"
   | "admin.manage_imports"
@@ -54,15 +53,6 @@ export type Permission = {
   name: string;
   description: string | null;
   category: string;
-};
-
-export type OrganisationSummary = {
-  id: string;
-  name: string;
-  slug: string;
-  type: string;
-  status: string;
-  updatedAt: string;
 };
 
 export type SupplierSummary = {

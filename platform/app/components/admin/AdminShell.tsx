@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Boxes,
-  Building2,
   Database,
   FileInput,
   LayoutDashboard,
@@ -22,7 +21,6 @@ import type { CurrentProfile } from "@/lib/platform.types";
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/organisations", label: "Organisations", icon: Building2 },
   { href: "/admin/suppliers", label: "Suppliers", icon: Store },
   { href: "/admin/catalogue", label: "Catalogue", icon: Database },
   { href: "/admin/imports", label: "Imports", icon: FileInput },

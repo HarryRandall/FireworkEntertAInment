@@ -28,12 +28,6 @@ const PermissionOverrideSchema = z.object({
   mode: z.enum(["grant", "deny", "clear"]),
 });
 
-const OrganisationSchema = z.object({
-  name: z.string().trim().min(1).max(160),
-  type: z.enum(["customer", "supplier", "internal"]),
-  status: z.enum(["active", "suspended", "archived"]),
-});
-
 const SupplierSchema = z.object({
   name: z.string().trim().min(1).max(160),
   contactEmail: z.string().trim().email().optional().or(z.literal("")),
@@ -188,68 +182,6 @@ export async function setPermissionOverrideAction(
   }
 
   revalidatePath("/admin/users");
-}
-
-export async function createOrganisationAction(
-  formData: FormData,
-): Promise<void> {
-  const admin = await requirePermission("admin.manage_organisations");
-  if (!admin) return;
-  const parsed = OrganisationSchema.safeParse({
-    name: formData.get("name"),
-    type: formData.get("type"),
-    status: formData.get("status"),
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from("organisations").insert({
-    name: parsed.data.name,
-    slug: `${slugifyTitle(parsed.data.name)}-${crypto.randomUUID().slice(0, 8)}`,
-    type: parsed.data.type,
-    status: parsed.data.status,
-    created_by: admin.id,
-  });
-  if (error) {
-    console.error("[createOrganisationAction] failed:", error);
-    return;
-  }
-  revalidatePath("/admin/organisations");
-}
-
-export async function updateOrganisationAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_organisations"))) return;
-  const parsed = OrganisationSchema.extend({ id: z.string().uuid() }).safeParse({
-    id: formData.get("id"),
-    name: formData.get("name"),
-    type: formData.get("type"),
-    status: formData.get("status"),
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("organisations")
-    .update({
-      name: parsed.data.name,
-      type: parsed.data.type,
-      status: parsed.data.status,
-    })
-    .eq("id", parsed.data.id);
-  if (error) console.error("[updateOrganisationAction] failed:", error);
-  revalidatePath("/admin/organisations");
-}
-
-export async function deleteOrganisationAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_organisations"))) return;
-  const parsed = IdSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("organisations")
-    .delete()
-    .eq("id", parsed.data.id);
-  if (error) console.error("[deleteOrganisationAction] failed:", error);
-  revalidatePath("/admin/organisations");
 }
 
 export async function createSupplierAction(
