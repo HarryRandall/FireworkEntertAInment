@@ -38,6 +38,8 @@ export function AdminShell({
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
+  const secondaryLine = profile.fullName && profile.email ? profile.email : "Platform admin";
+  const profileHref = `/settings/profile?returnTo=${encodeURIComponent(pathname || "/admin")}`;
   const initials =
     displayName
       .split(/\s+/)
@@ -65,15 +67,15 @@ export function AdminShell({
 
   const brand = (
     <div className="flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[var(--shadow-cta)]">
-        <Boxes size={21} strokeWidth={1.8} />
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[var(--shadow-cta)]">
+        <Boxes size={20} strokeWidth={1.8} />
       </span>
       <div>
-        <p className="text-xl font-extrabold tracking-tight text-primary">
-          Admin
+        <p className="text-xl font-semibold tracking-tight text-primary">
+          ShowCrafter
         </p>
         <p className="text-xs font-semibold text-on-surface-variant">
-          Platform admin
+          Admin
         </p>
       </div>
     </div>
@@ -106,7 +108,7 @@ export function AdminShell({
 
   const profileCard = (
     <Link
-      href="/settings/profile"
+      href={profileHref}
       prefetch
       onClick={() => setDrawerOpen(false)}
       className="flex items-center gap-3 rounded-xl border border-outline-variant/45 bg-surface-container-low p-3 transition-colors hover:border-primary/30 hover:bg-surface-container"
@@ -119,7 +121,7 @@ export function AdminShell({
           {displayName}
         </span>
         <span className="block truncate text-xs text-on-surface-variant">
-          {profile.roles.join(", ")}
+          {secondaryLine}
         </span>
       </span>
       <Settings className="ml-auto text-on-surface-variant" size={16} />
@@ -127,24 +129,24 @@ export function AdminShell({
   );
 
   return (
-    <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[300px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <ThemePreferenceSync themePreference={profile.themePreference} />
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[300px] border-r border-outline-variant/60 bg-surface-container-lowest/95 p-5 shadow-[var(--shadow-card)] backdrop-blur-xl lg:flex lg:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest/95 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl lg:flex lg:flex-col">
         <div className="mb-8">{brand}</div>
 
         <nav className="space-y-1">{renderNavLinks()}</nav>
 
-        <div className="mt-auto pt-4">{profileCard}</div>
+        <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
       </aside>
 
       <header className="fixed top-0 z-40 w-full border-b border-outline-variant/50 bg-surface/90 backdrop-blur-xl lg:hidden">
         <div className="flex h-16 items-center justify-between px-5">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 text-base font-extrabold tracking-tight text-primary"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight text-primary"
           >
             <Boxes size={18} strokeWidth={1.85} />
-            Admin
+            ShowCrafter
           </Link>
           <button
             type="button"
@@ -170,7 +172,7 @@ export function AdminShell({
             onClick={() => setDrawerOpen(false)}
             className="absolute inset-0 h-full w-full cursor-default bg-background/70 backdrop-blur-sm"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-[320px] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-5 shadow-[var(--shadow-card)]">
+          <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-[320px] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-card)]">
             <div className="mb-6 flex items-center justify-between gap-3">
               {brand}
               <button
@@ -187,7 +189,7 @@ export function AdminShell({
               {renderNavLinks(() => setDrawerOpen(false))}
             </nav>
 
-            <div className="mt-auto pt-4">{profileCard}</div>
+            <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
           </aside>
         </div>
       ) : null}

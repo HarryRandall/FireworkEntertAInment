@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { LockKeyhole, Mail, Phone, User } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, LockKeyhole, Mail, Phone, User } from "lucide-react";
 import { updateProfileAction } from "@/app/actions/platform-admin";
 import { ThemePreferenceField } from "@/app/components/theme/ThemePreferenceField";
 import { Button } from "@/app/components/ui/Button";
@@ -7,15 +8,34 @@ import { Input } from "@/app/components/ui/Input";
 import { SignOutButton } from "../SignOutButton";
 import { getCurrentProfile } from "@/lib/platform.server";
 
-export default async function ProfileSettingsPage() {
+type PageProps = {
+  searchParams?: Promise<{ returnTo?: string }>;
+};
+
+export default async function ProfileSettingsPage({ searchParams }: PageProps) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+  const params = await searchParams;
+  const returnTo =
+    params?.returnTo && params.returnTo.startsWith("/admin")
+      ? params.returnTo
+      : null;
 
   return (
     <div className="space-y-6">
+      {returnTo ? (
+        <Link
+          href={returnTo}
+          className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+        >
+          <ArrowLeft size={16} />
+          Back to admin
+        </Link>
+      ) : null}
+
       <form
         action={updateProfileAction}
-        className="space-y-6 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5 sm:p-6"
+        className="space-y-6 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5 shadow-[var(--shadow-card)] sm:p-6"
       >
         <label className="block space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">

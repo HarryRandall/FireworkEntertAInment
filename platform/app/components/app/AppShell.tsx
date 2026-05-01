@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   Boxes,
   Gauge,
-  LogOut,
   Menu,
   PlusCircle,
   Star,
@@ -16,7 +15,6 @@ import {
 import { cn } from "@/lib/cn";
 import { Container } from "@/app/components/ui/Container";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
-import { createClient } from "@/utils/supabase/client";
 import type { CurrentProfile, PermissionKey } from "@/lib/platform.types";
 
 type AppNavLink = {
@@ -45,19 +43,11 @@ export function AppShell({
   profile,
 }: AppShellProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
     (link) => !link.permission || permissions.has(link.permission),
   );
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  };
 
   const displayName = profile?.fullName || profile?.email || "Account";
   const secondaryLine =
@@ -135,17 +125,6 @@ export function AppShell({
     </Link>
   );
 
-  const logoutButton = (
-    <button
-      type="button"
-      onClick={handleLogout}
-      className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-variant/45 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
-    >
-      <LogOut size={16} strokeWidth={1.85} />
-      Logout
-    </button>
-  );
-
   return (
     <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <ThemePreferenceSync themePreference={profile?.themePreference} />
@@ -163,9 +142,8 @@ export function AppShell({
 
         <nav className="space-y-1">{renderNavLinks()}</nav>
 
-        <div className="mt-auto space-y-3 border-t border-outline-variant/50 pt-4">
+        <div className="mt-auto border-t border-outline-variant/50 pt-4">
           {profileCard}
-          {logoutButton}
         </div>
       </aside>
 
@@ -231,9 +209,8 @@ export function AppShell({
                 {renderNavLinks(() => setDrawerOpen(false))}
               </nav>
 
-              <div className="mt-auto space-y-3 border-t border-outline-variant/50 pt-4">
+              <div className="mt-auto border-t border-outline-variant/50 pt-4">
                 {profileCard}
-                {logoutButton}
               </div>
             </aside>
           </div>
