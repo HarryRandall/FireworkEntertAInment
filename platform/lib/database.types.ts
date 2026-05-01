@@ -181,6 +181,7 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
+          firework_specification_id: string | null
           firework_type: string | null
           id: string
           manufacturer: string | null
@@ -195,6 +196,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          firework_specification_id?: string | null
           firework_type?: string | null
           id?: string
           manufacturer?: string | null
@@ -209,6 +211,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          firework_specification_id?: string | null
           firework_type?: string | null
           id?: string
           manufacturer?: string | null
@@ -222,41 +225,62 @@ export type Database = {
       }
       import_jobs: {
         Row: {
+          approved_catalogue_product_id: string | null
+          approved_firework_specification_id: string | null
+          completed_at: string | null
           created_at: string
           created_by: string | null
           error_message: string | null
           id: string
           kind: string
           media_asset_id: string | null
+          processing_progress: number
+          processor_version: string | null
           row_count: number | null
+          selected_model: string | null
           source_name: string
           source_url: string | null
+          started_at: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          approved_catalogue_product_id?: string | null
+          approved_firework_specification_id?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
           error_message?: string | null
           id?: string
           kind: string
           media_asset_id?: string | null
+          processing_progress?: number
+          processor_version?: string | null
           row_count?: number | null
+          selected_model?: string | null
           source_name: string
           source_url?: string | null
+          started_at?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          approved_catalogue_product_id?: string | null
+          approved_firework_specification_id?: string | null
+          completed_at?: string | null
           created_at?: string
           created_by?: string | null
           error_message?: string | null
           id?: string
           kind?: string
           media_asset_id?: string | null
+          processing_progress?: number
+          processor_version?: string | null
           row_count?: number | null
+          selected_model?: string | null
           source_name?: string
           source_url?: string | null
+          started_at?: string | null
           status?: string
           updated_at?: string
         }

@@ -44,9 +44,37 @@ export type FireworkRenderSpec = {
   sparkSize: number;
   trailLength: number;
   secondaryBursts?: number;
+  sections?: FireworkRenderSection[];
+  audioSync?: FireworkAudioSyncEvent[];
 };
 
 export type FireworkRenderParams = Partial<FireworkRenderSpec>;
+
+export type FireworkRenderSection = {
+  id: string;
+  label: string;
+  phase: "launch" | "burst" | "afterglow" | "secondary";
+  startTimeSeconds: number;
+  endTimeSeconds: number;
+  burstTimeSeconds: number;
+  colors: string[];
+  particleCount: number;
+  spread: number;
+  launchHeight: number;
+  burstDuration: number;
+  gravity: number;
+  drag: number;
+  sparkSize: number;
+  trailLength: number;
+  secondaryBursts?: number;
+  confidence?: number;
+};
+
+export type FireworkAudioSyncEvent = {
+  timeSeconds: number;
+  kind: "launch" | "burst" | "crackle" | "fade";
+  confidence: number;
+};
 
 export type FireworkSpecification = {
   id: string;

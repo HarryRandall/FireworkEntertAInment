@@ -1,0 +1,22 @@
+import "server-only";
+
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
+
+/**
+ * Browserless Supabase client using the service role key.
+ * Use only after normal permission checks; never expose the key to clients.
+ */
+export function createServiceRoleSupabase() {
+  const rawUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.SUPABASE_URL?.trim() ||
+    "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = rawUrl.replace(/\/+$/, "");
+  if (!url || !key) return null;
+
+  return createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}

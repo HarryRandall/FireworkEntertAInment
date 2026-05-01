@@ -10,7 +10,9 @@ import {
   setCachedJson,
 } from "@/lib/server-cache";
 import type {
+  FireworkAudioSyncEvent,
   FireworkRenderParams,
+  FireworkRenderSection,
   FireworkRenderSpec,
   FireworkSpecification,
   ReplayCue,
@@ -117,6 +119,12 @@ function readColors(source: Record<string, Json | undefined>): string[] {
 
 function parseRenderSpec(spec: Json): FireworkRenderSpec {
   if (!isRecord(spec)) return DEFAULT_FIREWORK_SPEC;
+  const sections = Array.isArray(spec.sections)
+    ? (spec.sections.filter(isRecord) as unknown as FireworkRenderSection[])
+    : undefined;
+  const audioSync = Array.isArray(spec.audioSync)
+    ? (spec.audioSync.filter(isRecord) as unknown as FireworkAudioSyncEvent[])
+    : undefined;
   return {
     particleCount: Math.round(
       readNumber(spec, "particleCount", DEFAULT_FIREWORK_SPEC.particleCount),
@@ -142,6 +150,8 @@ function parseRenderSpec(spec: Json): FireworkRenderSpec {
       DEFAULT_FIREWORK_SPEC.trailLength,
     ),
     secondaryBursts: readNumber(spec, "secondaryBursts", 0) || undefined,
+    sections,
+    audioSync,
   };
 }
 

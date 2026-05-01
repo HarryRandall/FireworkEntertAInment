@@ -1,0 +1,287 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, CheckCircle2, RefreshCcw, WandSparkles } from "lucide-react";
+import {
+  approveImportJobAction,
+  queueImportJobAction,
+  requestImportRefinementAction,
+  updateImportDraftSpecAction,
+} from "@/app/actions/platform-admin";
+import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
+import { Card } from "@/app/components/ui/Card";
+import { Input, Select, Textarea } from "@/app/components/ui/Input";
+import {
+  DEFAULT_OPENROUTER_MODEL,
+  latestImportedSpecFromOutputs,
+  OPENROUTER_MODEL_OPTIONS,
+} from "@/lib/imports";
+import { getImportJobDetail } from "@/lib/platform.server";
+import { formatDuration } from "@/lib/shows";
+import { FireworkImportPreview } from "./FireworkImportPreview";
+
+type PageProps = { params: Promise<{ id: string }> };
+
+export default async function AdminImportDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const job = await getImportJobDetail(id);
+  if (!job) notFound();
+
+  const spec = latestImportedSpecFromOutputs(job.outputs);
+  const section = spec?.renderSpec.sections.find((item) => item.phase === "burst") ??
+    spec?.renderSpec.sections[0];
+  const defaultDuration =
+    spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
+  const selectedModel = job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
+  const canApprove = Boolean(spec) && job.status !== "complete";
+  const isWaitingForWorker =
+    (job.status === "queued" || job.status === "processing") && !spec;
+
+  return (
+    <div className="space-y-6">
+      <Link
+        href="/admin/imports"
+        className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+      >
+        <ArrowLeft size={16} />
+        Back to imports
+      </Link>
+
+      <header className="border-b border-outline-variant/55 pb-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
+            {job.sourceName}
+          </h1>
+          <Badge tone={job.status === "complete" ? "success" : "neutral"}>
+            {job.status.replace("_", " ")}
+          </Badge>
+          <Badge tone="neutral">{job.processingProgress}%</Badge>
+        </div>
+        <p className="mt-3 max-w-3xl text-sm text-on-surface-variant">
+          {job.mediaAsset?.durationSeconds
+            ? `Source video duration ${formatDuration(job.mediaAsset.durationSeconds)}.`
+            : "The worker will verify the source duration before analysis."}
+          {" "}
+          Model: {selectedModel}.
+        </p>
+      </header>
+
+      {isWaitingForWorker ? (
+        <Card elevation="low" radius="md" className="border-primary/35 p-5">
+          <h2 className="text-lg font-bold text-on-surface">
+            Waiting for the reconstruction worker
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+            The upload worked and the import is queued. Start the worker in a
+            second terminal with <span className="font-mono text-on-surface">npm run worker:firework-import</span>.
+            It needs <span className="font-mono text-on-surface">SUPABASE_SERVICE_ROLE_KEY</span>
+            {" "}
+            in the worker environment so OpenRouter jobs can finish, and the same variable on your
+            <span className="font-mono text-on-surface"> Next</span> server so private import videos receive a valid signed playback URL.
+            Also set{" "}
+            <span className="font-mono text-on-surface">OPENROUTER_API_KEY</span>
+            {" "}
+            for the worker.
+          </p>
+        </Card>
+      ) : null}
+
+      <Card elevation="high" radius="md" className="space-y-5 p-5">
+        <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
+          <div>
+            <h2 className="text-xl font-bold text-on-surface">
+              Reconstruction review
+            </h2>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Compare the source footage with the generated 3D particle demo.
+            </p>
+          </div>
+          <form action={queueImportJobAction} className="flex flex-col gap-2 sm:flex-row">
+            <input type="hidden" name="id" value={job.id} />
+            <Select name="selectedModel" defaultValue={selectedModel} className="sm:w-[260px]">
+              {OPENROUTER_MODEL_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Button type="submit" variant="secondary" disabled={!job.mediaAsset}>
+              <RefreshCcw size={16} />
+              Queue analysis
+            </Button>
+          </form>
+        </div>
+        <FireworkImportPreview
+          videoUrl={job.videoUrl}
+          videoMimeType={job.mediaAsset?.mimeType ?? null}
+          spec={spec}
+          fallbackDuration={defaultDuration}
+        />
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card elevation="low" radius="md" className="space-y-5 p-5">
+          <div>
+            <h2 className="text-xl font-bold text-on-surface">
+              Natural-language refinement
+            </h2>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Refinement requests are queued for the worker so it can reanalyse
+              the original video context with the latest draft.
+            </p>
+          </div>
+          <form action={requestImportRefinementAction} className="space-y-3">
+            <input type="hidden" name="id" value={job.id} />
+            <Select name="selectedModel" defaultValue={selectedModel}>
+              {OPENROUTER_MODEL_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Textarea
+              name="prompt"
+              rows={5}
+              placeholder="At the end it went green; make that section a lighter #A8FF8F and let it fade more slowly."
+              required
+            />
+            <Button type="submit" disabled={!spec}>
+              <WandSparkles size={16} />
+              Queue refinement
+            </Button>
+          </form>
+        </Card>
+
+        <Card elevation="low" radius="md" className="space-y-5 p-5">
+          <div>
+            <h2 className="text-xl font-bold text-on-surface">
+              Approve to catalogue
+            </h2>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Approval publishes both a catalogue product and a reusable 3D
+              firework specification.
+            </p>
+          </div>
+          <form action={approveImportJobAction} className="space-y-3">
+            <input type="hidden" name="id" value={job.id} />
+            <Input
+              name="partNumber"
+              defaultValue={`VID-${job.id.slice(0, 8).toUpperCase()}`}
+              required
+            />
+            <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
+            <Input name="manufacturer" placeholder="Manufacturer" />
+            <Input name="category" defaultValue="Imported video" />
+            <Input name="fireworkType" defaultValue="Video reconstructed" />
+            <Button type="submit" disabled={!canApprove}>
+              <CheckCircle2 size={16} />
+              Approve and publish
+            </Button>
+          </form>
+        </Card>
+      </div>
+
+      <Card elevation="high" radius="md" className="space-y-5 p-5">
+        <div>
+          <h2 className="text-xl font-bold text-on-surface">
+            Manual adjustments
+          </h2>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            These controls save a new draft spec immediately for preview and
+            approval.
+          </p>
+        </div>
+        <form
+          action={updateImportDraftSpecAction}
+          className="grid grid-cols-1 gap-3 lg:grid-cols-4"
+        >
+          <input type="hidden" name="id" value={job.id} />
+          <label className="space-y-1 lg:col-span-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Name
+            </span>
+            <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
+          </label>
+          <label className="space-y-1 lg:col-span-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Colours
+            </span>
+            <Input
+              name="colors"
+              defaultValue={(section?.colors ?? ["#00E5FF"]).join(", ")}
+              required
+            />
+          </label>
+          <label className="space-y-1 lg:col-span-4">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Description
+            </span>
+            <Textarea
+              name="description"
+              rows={3}
+              defaultValue={spec?.description ?? ""}
+            />
+          </label>
+          {[
+            ["durationSeconds", "Duration", defaultDuration, 0.1],
+            ["launchTimeSeconds", "Launch time", section?.startTimeSeconds ?? 0, 0.05],
+            ["burstTimeSeconds", "Burst time", section?.burstTimeSeconds ?? 1.15, 0.05],
+            ["endTimeSeconds", "End time", section?.endTimeSeconds ?? 4, 0.05],
+            ["particleCount", "Particles", section?.particleCount ?? 220, 1],
+            ["spread", "Spread", section?.spread ?? 2.6, 0.1],
+            ["launchHeight", "Launch height", section?.launchHeight ?? 3, 0.1],
+            ["burstDuration", "Burst duration", section?.burstDuration ?? 2.4, 0.1],
+            ["gravity", "Gravity", section?.gravity ?? -1.5, 0.1],
+            ["drag", "Drag", section?.drag ?? 0.86, 0.01],
+            ["sparkSize", "Spark size", section?.sparkSize ?? 0.075, 0.005],
+            ["trailLength", "Trail length", section?.trailLength ?? 0.65, 0.05],
+            ["secondaryBursts", "Secondary bursts", section?.secondaryBursts ?? 0, 1],
+          ].map(([name, label, value, step]) => (
+            <label key={String(name)} className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                {label}
+              </span>
+              <Input
+                name={String(name)}
+                type="number"
+                step={Number(step)}
+                defaultValue={Number(value)}
+                required
+              />
+            </label>
+          ))}
+          <div className="lg:col-span-4">
+            <Button type="submit" variant="secondary">
+              Save manual draft
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card elevation="low" radius="md" className="p-5">
+        <h2 className="text-xl font-bold text-on-surface">Import outputs</h2>
+        <div className="mt-4 space-y-2">
+          {job.outputs.length > 0 ? (
+            job.outputs.map((output) => (
+              <div
+                key={output.id}
+                className="flex flex-col gap-1 rounded-lg border border-outline-variant/20 bg-surface-container-highest/40 p-3 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="font-semibold text-on-surface">
+                  {output.outputType.replace("_", " ")}
+                </div>
+                <div className="font-mono text-xs text-on-surface-variant">
+                  {new Date(output.createdAt).toLocaleString()}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-on-surface-variant">
+              No worker outputs have been stored yet.
+            </p>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}

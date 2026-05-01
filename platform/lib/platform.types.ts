@@ -72,9 +72,42 @@ export type ImportJobSummary = {
   status: string;
   sourceName: string;
   sourceUrl: string | null;
+  mediaAssetId: string | null;
+  selectedModel: string | null;
+  processingProgress: number;
+  approvedCatalogueProductId: string | null;
+  approvedFireworkSpecificationId: string | null;
   rowCount: number | null;
   errorMessage: string | null;
+  createdAt: string;
   updatedAt: string;
+};
+
+export type ImportOutputSummary = {
+  id: string;
+  importJobId: string;
+  outputType: string;
+  payload: unknown;
+  createdAt: string;
+};
+
+export type MediaAssetSummary = {
+  id: string;
+  sourceType: string;
+  url: string | null;
+  storagePath: string | null;
+  mimeType: string | null;
+  durationSeconds: number | null;
+  width: number | null;
+  height: number | null;
+  metadata: unknown;
+  createdAt: string;
+};
+
+export type ImportJobDetail = ImportJobSummary & {
+  mediaAsset: MediaAssetSummary | null;
+  outputs: ImportOutputSummary[];
+  videoUrl: string | null;
 };
 
 export type CatalogueProductSummary = {
@@ -84,6 +117,7 @@ export type CatalogueProductSummary = {
   manufacturer: string | null;
   category: string | null;
   fireworkType: string | null;
+  fireworkSpecificationId: string | null;
   durationSeconds: number | null;
   updatedAt: string;
 };
