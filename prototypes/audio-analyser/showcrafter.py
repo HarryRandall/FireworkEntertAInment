@@ -429,6 +429,11 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     # ──────────────────────────────────────────────
     hop_length = 512
     rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+    if rms.size:
+        # Percentile clip to reduce outlier-driven normalization.
+        rms_low = np.percentile(rms, 5)
+        rms_high = np.percentile(rms, 95)
+        rms = np.clip(rms, rms_low, rms_high)
     rms_normalised = normalise_series(rms)
     rms_times = librosa.frames_to_time(range(len(rms)), sr=sr, hop_length=hop_length)
 
