@@ -9,7 +9,10 @@ import type {
   AdminUser,
   CatalogueProductSummary,
   CurrentProfile,
+  ImportJobDetail,
   ImportJobSummary,
+  ImportOutputSummary,
+  MediaAssetSummary,
   Permission,
   PermissionKey,
   ProfileStatus,
@@ -21,6 +24,8 @@ import type {
   ThemePreference,
 } from "@/lib/platform.types";
 import type { Database, Json } from "@/lib/database.types";
+import { IMPORT_VIDEO_BUCKET } from "@/lib/imports";
+import { createServiceRoleSupabase } from "@/utils/supabase/service-role";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type RoleRow = Database["public"]["Tables"]["roles"]["Row"];
@@ -31,6 +36,8 @@ type UserPermissionOverrideRow =
   Database["public"]["Tables"]["user_permission_overrides"]["Row"];
 type SupplierRow = Database["public"]["Tables"]["supplier_profiles"]["Row"];
 type ImportJobRow = Database["public"]["Tables"]["import_jobs"]["Row"];
+type ImportOutputRow = Database["public"]["Tables"]["import_outputs"]["Row"];
+type MediaAssetRow = Database["public"]["Tables"]["media_assets"]["Row"];
 type CatalogueProductRow =
   Database["public"]["Tables"]["catalogue_products"]["Row"];
 type ShowTemplateRow = Database["public"]["Tables"]["show_templates"]["Row"];
@@ -85,6 +92,37 @@ function unique<T>(items: T[]): T[] {
 
 const getServerClient = cache(async () => createClient(await cookies()));
 
+async function createSignedImportVideoUrl(
+  storagePath: string,
+  sessionSupabase: Awaited<ReturnType<typeof getServerClient>>,
+): Promise<string | null> {
+  const service = createServiceRoleSupabase();
+  if (service) {
+    const svcResult = await service.storage
+      .from(IMPORT_VIDEO_BUCKET)
+      .createSignedUrl(storagePath, 60 * 60);
+    if (!svcResult.error && svcResult.data?.signedUrl) {
+      return svcResult.data.signedUrl;
+    }
+    console.error(
+      "[platform.server] service-role import video signing failed:",
+      svcResult.error?.message ?? "unknown",
+    );
+  }
+
+  const { data: signed, error: signedError } = await sessionSupabase.storage
+    .from(IMPORT_VIDEO_BUCKET)
+    .createSignedUrl(storagePath, 60 * 60);
+  if (signedError || !signed?.signedUrl) {
+    console.error(
+      "[platform.server] session import video signing failed:",
+      signedError?.message ?? "missing URL",
+    );
+    return null;
+  }
+  return signed.signedUrl;
+}
+
 function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -134,6 +172,51 @@ function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     likeCount: deriveTemplateLikeCount(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function mapImportJob(row: ImportJobRow): ImportJobSummary {
+  return {
+    id: row.id,
+    kind: row.kind,
+    status: row.status,
+    sourceName: row.source_name,
+    sourceUrl: row.source_url,
+    mediaAssetId: row.media_asset_id,
+    selectedModel: row.selected_model,
+    processingProgress: row.processing_progress,
+    approvedCatalogueProductId: row.approved_catalogue_product_id,
+    approvedFireworkSpecificationId: row.approved_firework_specification_id,
+    rowCount: row.row_count,
+    errorMessage: row.error_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapImportOutput(row: ImportOutputRow): ImportOutputSummary {
+  return {
+    id: row.id,
+    importJobId: row.import_job_id,
+    outputType: row.output_type,
+    payload: row.payload,
+    createdAt: row.created_at,
+  };
+}
+
+function mapMediaAsset(row: MediaAssetRow): MediaAssetSummary {
+  return {
+    id: row.id,
+    sourceType: row.source_type,
+    url: row.url,
+    storagePath: row.storage_path,
+    mimeType: row.mime_type,
+    durationSeconds:
+      row.duration_seconds == null ? null : Number(row.duration_seconds),
+    width: row.width,
+    height: row.height,
+    metadata: row.metadata,
+    createdAt: row.created_at,
   };
 }
 
@@ -375,25 +458,110 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("import_jobs")
-    .select("id, kind, status, source_name, source_url, row_count, error_message, updated_at")
+    .select(
+      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
+    )
     .order("updated_at", { ascending: false });
   if (error) {
-    console.error("[platform.server] listImportJobs failed:", error);
-    return [];
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("import_jobs")
+      .select("id, kind, status, source_name, source_url, row_count, error_message, created_at, updated_at")
+      .order("updated_at", { ascending: false });
+    if (fallbackError) {
+      console.error("[platform.server] listImportJobs failed:", fallbackError);
+      return [];
+    }
+    return ((fallbackData ?? []) as Pick<
+      ImportJobRow,
+      | "id"
+      | "kind"
+      | "status"
+      | "source_name"
+      | "source_url"
+      | "row_count"
+      | "error_message"
+      | "created_at"
+      | "updated_at"
+    >[]).map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      status: row.status,
+      sourceName: row.source_name,
+      sourceUrl: row.source_url,
+      mediaAssetId: null,
+      selectedModel: null,
+      processingProgress: row.status === "complete" ? 100 : 0,
+      approvedCatalogueProductId: null,
+      approvedFireworkSpecificationId: null,
+      rowCount: row.row_count,
+      errorMessage: row.error_message,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
   }
-  return ((data ?? []) as Pick<
-    ImportJobRow,
-    "id" | "kind" | "status" | "source_name" | "source_url" | "row_count" | "error_message" | "updated_at"
-  >[]).map((row) => ({
-    id: row.id,
-    kind: row.kind,
-    status: row.status,
-    sourceName: row.source_name,
-    sourceUrl: row.source_url,
-    rowCount: row.row_count,
-    errorMessage: row.error_message,
-    updatedAt: row.updated_at,
-  }));
+  return ((data ?? []) as ImportJobRow[]).map(mapImportJob);
+}
+
+export async function getImportJobDetail(
+  jobId: string,
+): Promise<ImportJobDetail | null> {
+  if (!(await requirePermission("admin.manage_imports"))) return null;
+  const supabase = await getServerClient();
+  const { data: job, error: jobError } = await supabase
+    .from("import_jobs")
+    .select(
+      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
+    )
+    .eq("id", jobId)
+    .maybeSingle();
+  if (jobError) {
+    console.error("[platform.server] getImportJobDetail failed:", jobError);
+    return null;
+  }
+  if (!job) return null;
+
+  const [mediaResult, outputsResult] = await Promise.all([
+    job.media_asset_id
+      ? supabase
+          .from("media_assets")
+          .select(
+            "id, owner_id, source_type, url, storage_path, mime_type, duration_seconds, width, height, metadata, created_at",
+          )
+          .eq("id", job.media_asset_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("import_outputs")
+      .select("id, import_job_id, output_type, payload, created_at")
+      .eq("import_job_id", job.id)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (mediaResult.error) {
+    console.error("[platform.server] import media lookup failed:", mediaResult.error);
+  }
+  if (outputsResult.error) {
+    console.error("[platform.server] import outputs lookup failed:", outputsResult.error);
+  }
+
+  const media = mediaResult.data ? mapMediaAsset(mediaResult.data as MediaAssetRow) : null;
+  let videoUrl = media?.url ?? job.source_url ?? null;
+  if (media?.storagePath) {
+    const signedUrl = await createSignedImportVideoUrl(
+      media.storagePath,
+      supabase,
+    );
+    if (signedUrl) {
+      videoUrl = signedUrl;
+    }
+  }
+
+  return {
+    ...mapImportJob(job as ImportJobRow),
+    mediaAsset: media,
+    outputs: ((outputsResult.data ?? []) as ImportOutputRow[]).map(mapImportOutput),
+    videoUrl,
+  };
 }
 
 export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]> {
@@ -401,7 +569,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("catalogue_products")
-    .select("id, part_number, name, manufacturer, category, firework_type, duration_seconds, updated_at")
+    .select("id, part_number, name, manufacturer, category, firework_type, firework_specification_id, duration_seconds, updated_at")
     .order("updated_at", { ascending: false })
     .limit(100);
   if (error) {
@@ -416,6 +584,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     | "manufacturer"
     | "category"
     | "firework_type"
+    | "firework_specification_id"
     | "duration_seconds"
     | "updated_at"
   >[]).map((row) => ({
@@ -425,6 +594,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     manufacturer: row.manufacturer,
     category: row.category,
     fireworkType: row.firework_type,
+    fireworkSpecificationId: row.firework_specification_id,
     durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     updatedAt: row.updated_at,
   }));

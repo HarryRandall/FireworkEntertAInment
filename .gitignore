@@ -11,6 +11,7 @@ __pycache__/
 .env.local
 .env.*.local
 supabase/.temp/
+platform/supabase/.temp/
 
 # IDE
 .vscode/

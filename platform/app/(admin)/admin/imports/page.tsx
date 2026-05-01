@@ -1,5 +1,4 @@
 import {
-  createImportJobAction,
   deleteImportJobAction,
   updateImportJobAction,
 } from "@/app/actions/platform-admin";
@@ -8,11 +7,10 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
 import { listImportJobs } from "@/lib/platform.server";
+import { VideoImportUploadForm } from "./VideoImportUploadForm";
 
 const KIND_OPTIONS = [
   { value: "firework_video", label: "Firework video" },
-  { value: "vdl_glossary", label: "VDL glossary" },
-  { value: "supplier_stock", label: "Supplier stock" },
 ];
 
 const STATUS_OPTIONS = [
@@ -34,40 +32,25 @@ export default async function AdminImportsPage() {
           Imports
         </p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-on-surface">
-          VDL and video intake
+          Firework video reconstruction
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-on-surface-variant">
-          Record source files, Loom links, and future model outputs before they
-          become reviewed firework specs.
+          Upload short source videos, generate a synced 3D reconstruction, then
+          review and publish the result to the catalogue.
         </p>
       </header>
 
       <Card elevation="high" radius="md" className="p-5">
-        <form
-          action={createImportJobAction}
-          className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_1fr_1fr_160px_120px_auto]"
-        >
-          <Select name="kind" defaultValue="firework_video">
-            {KIND_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-          <Input name="sourceName" placeholder="Source name" required />
-          <Input name="sourceUrl" placeholder="Loom or source URL" />
-          <Select name="status" defaultValue="draft">
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-          <Input name="rowCount" type="number" min={0} placeholder="Rows" />
-          <Button type="submit" size="sm">
-            Create
-          </Button>
-        </form>
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-on-surface">
+            Upload firework video
+          </h2>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            Import a video up to 1 minute, then let the worker reconstruct a
+            reviewable 3D firework.
+          </p>
+        </div>
+        <VideoImportUploadForm />
       </Card>
 
       <div className="space-y-3">
@@ -88,6 +71,14 @@ export default async function AdminImportsPage() {
                     >
                       {job.status.replace("_", " ")}
                     </Badge>
+                    {job.selectedModel ? (
+                      <Badge tone="neutral">{job.selectedModel}</Badge>
+                    ) : null}
+                    {job.kind === "firework_video" ? (
+                      <span className="text-xs font-semibold text-on-surface-variant">
+                        {job.processingProgress}% processed
+                      </span>
+                    ) : null}
                   </div>
                   <Input
                     name="sourceUrl"
@@ -122,6 +113,11 @@ export default async function AdminImportsPage() {
                 <Button type="submit" variant="secondary" size="sm">
                   Save
                 </Button>
+                {job.kind === "firework_video" ? (
+                  <Button href={`/admin/imports/${job.id}`} variant="secondary" size="sm">
+                    Review
+                  </Button>
+                ) : null}
                 <Button
                   type="submit"
                   formAction={deleteImportJobAction}

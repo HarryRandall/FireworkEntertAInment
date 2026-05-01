@@ -338,6 +338,7 @@ export function FireworkReplayCanvas({
 }) {
   return (
     <Canvas
+      className="h-full w-full min-h-0 touch-none bg-transparent"
       gl={{
         antialias: true,
         alpha: true,
