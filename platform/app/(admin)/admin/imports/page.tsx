@@ -2,6 +2,7 @@ import {
   deleteImportJobAction,
   updateImportJobAction,
 } from "@/app/actions/platform-admin";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -27,18 +28,10 @@ export default async function AdminImportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="border-b border-outline-variant/55 pb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-          Imports
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-on-surface">
-          Firework video reconstruction
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-on-surface-variant">
-          Upload short source videos, generate a synced 3D reconstruction, then
-          review and publish the result to the catalogue.
-        </p>
-      </header>
+      <AppPageHeader
+        title="Firework video reconstruction"
+        description="Upload short source videos, generate a synced 3D reconstruction, then review and publish the result to the catalogue."
+      />
 
       <Card elevation="high" radius="md" className="p-5">
         <div className="mb-4">

@@ -142,7 +142,7 @@ export function SelectField({
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKeyDown}
         className={cn(
-          "flex h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-outline/55 bg-surface px-3 text-left text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus:border-primary/55 focus:ring-2 focus:ring-primary/30",
+          "focus-glow-field flex h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-outline/55 bg-surface px-3 text-left text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus-visible:outline-none",
           disabled && "cursor-not-allowed opacity-60",
         )}
       >
@@ -190,7 +190,7 @@ export function SelectField({
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => !option.disabled && choose(option.value)}
                   className={cn(
-                    "flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45",
+                    "focus-glow-action flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:outline-none",
                     option.disabled && "cursor-not-allowed opacity-50",
                     isActive && !option.disabled
                       ? "bg-surface-container-high text-on-surface"

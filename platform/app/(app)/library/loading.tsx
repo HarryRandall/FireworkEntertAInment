@@ -3,8 +3,8 @@ import { Skeleton } from "@/app/components/ui/Feedback";
 export default function LibraryLoading() {
   return (
     <div className="space-y-8" aria-label="Loading show library">
-      <div className="space-y-3 border-b border-outline-variant/55 pb-6">
-        <Skeleton className="h-10 w-56" />
+      <div className="min-h-[136px] space-y-3 border-b border-outline-variant/55 pb-6">
+        <Skeleton className="mt-8 h-10 w-56" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
       <div className="flex flex-wrap gap-2">

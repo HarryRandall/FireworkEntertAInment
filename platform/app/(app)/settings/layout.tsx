@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { SettingsTabs } from "./SettingsTabs";
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
@@ -7,11 +8,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
       className="space-y-7"
       aria-label="Personal details Notifications Billing Security"
     >
-      <header className="border-b border-outline-variant/55 pb-5">
-        <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
-          Account settings
-        </h1>
-      </header>
+      <AppPageHeader title="Account settings" />
 
       <SettingsTabs />
 

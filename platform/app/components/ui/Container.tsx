@@ -1,11 +1,12 @@
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/cn";
 
-type Width = "default" | "wide";
+type Width = "default" | "wide" | "fluid";
 
 const widthClasses: Record<Width, string> = {
   default: "max-w-[1200px]",
   wide: "max-w-[1400px]",
+  fluid: "",
 };
 
 type ContainerProps = ComponentPropsWithoutRef<"div"> & {

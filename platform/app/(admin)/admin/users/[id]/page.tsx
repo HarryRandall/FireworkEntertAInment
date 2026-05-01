@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -28,27 +29,25 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/admin/users"
-        className="inline-flex items-center gap-2 text-sm font-bold text-primary"
-      >
-        <ArrowLeft size={16} />
-        Back to users
-      </Link>
+      <AppPageHeader
+        title={user.fullName || user.email || "Unnamed user"}
+        description={user.email || "No email"}
+      />
 
-      <header className="border-b border-outline-variant/55 pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
-            {user.fullName || user.email || "Unnamed user"}
-          </h1>
+      <div className="flex flex-col gap-4">
+        <Link
+          href="/admin/users"
+          className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+        >
+          <ArrowLeft size={16} />
+          Back to users
+        </Link>
+        <div className="flex flex-wrap items-center gap-3">
           <Badge tone={user.status === "active" ? "success" : "neutral"}>
             {user.status}
           </Badge>
         </div>
-        <p className="mt-2 break-all text-sm text-on-surface-variant">
-          {user.email || "No email"}
-        </p>
-      </header>
+      </div>
 
       <Card elevation="high" radius="md" className="p-6">
         <form action={updateAdminUserAction} className="space-y-5">

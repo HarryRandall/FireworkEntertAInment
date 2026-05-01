@@ -34,8 +34,10 @@ export function AdminShell({
   children: ReactNode;
   profile: CurrentProfile;
 }) {
+  const DRAWER_EXIT_MS = 460;
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMounted, setDrawerMounted] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
   const secondaryLine = profile.fullName && profile.email ? profile.email : "Platform admin";
   const profileHref = `/settings/profile?returnTo=${encodeURIComponent(pathname || "/admin")}`;
@@ -47,14 +49,33 @@ export function AdminShell({
       .map((part) => part[0]?.toUpperCase())
       .join("") || "A";
 
-  useEffect(() => {
+  const openDrawer = () => {
+    setDrawerMounted(true);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        setDrawerOpen(true);
+      });
+    });
+  };
+
+  const closeDrawer = () => {
     setDrawerOpen(false);
+  };
+
+  useEffect(() => {
+    closeDrawer();
   }, [pathname]);
 
   useEffect(() => {
-    if (!drawerOpen) return;
+    if (drawerOpen) return;
+    const timeout = window.setTimeout(() => setDrawerMounted(false), DRAWER_EXIT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    if (!drawerMounted) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDrawerOpen(false);
+      if (e.key === "Escape") closeDrawer();
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
@@ -62,15 +83,15 @@ export function AdminShell({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [drawerOpen]);
+  }, [drawerMounted]);
 
   const brand = (
     <div className="flex items-center gap-3">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[var(--shadow-cta)]">
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/55 bg-surface text-primary">
         <Boxes size={20} strokeWidth={1.8} />
       </span>
       <div>
-        <p className="text-xl font-semibold tracking-tight text-primary">
+        <p className="text-xl font-semibold tracking-tight text-on-surface">
           ShowCrafter
         </p>
         <p className="text-xs font-semibold text-on-surface-variant">
@@ -93,10 +114,10 @@ export function AdminShell({
           prefetch
           onClick={onClick}
           className={cn(
-            "flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55",
+            "focus-glow-action flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition-colors focus:outline-none focus-visible:outline-none",
             active
-              ? "bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
-              : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
+              ? "border border-[#2563EB] bg-[#2563EB] text-white shadow-[0_12px_28px_-20px_rgba(37,99,235,0.42)]"
+              : "text-on-surface-variant hover:bg-primary/10 hover:text-primary",
           )}
         >
           <Icon size={17} strokeWidth={1.9} />
@@ -109,10 +130,10 @@ export function AdminShell({
     <Link
       href={profileHref}
       prefetch
-      onClick={() => setDrawerOpen(false)}
-      className="flex items-center gap-3 rounded-xl border border-outline-variant/45 bg-surface-container-low p-3 transition-colors hover:border-primary/30 hover:bg-surface-container"
+      onClick={closeDrawer}
+      className="flex items-center gap-3 rounded-xl border border-outline-variant/45 bg-surface p-3 transition-colors hover:bg-surface-container-high"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-tertiary/20 bg-tertiary/12 text-sm font-bold text-tertiary">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant/55 bg-surface-container-high text-sm font-bold text-on-surface-variant">
         {initials}
       </span>
       <span className="min-w-0">
@@ -130,83 +151,102 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <ThemePreferenceSync themePreference={profile.themePreference} />
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest/95 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl lg:flex lg:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[0_16px_40px_-30px_rgba(11,16,32,0.14)] lg:flex lg:flex-col">
         <div className="mb-8">{brand}</div>
 
         <nav className="space-y-1">{renderNavLinks()}</nav>
         <Link
           href="/dashboard"
           prefetch
-          className="mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+          className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
         >
           <ArrowLeft size={16} strokeWidth={1.9} />
           Back to app
         </Link>
 
-        <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
+        <div className="mt-auto pt-4">{profileCard}</div>
       </aside>
 
-      <header className="fixed top-0 z-40 w-full border-b border-outline-variant/50 bg-surface/90 backdrop-blur-xl lg:hidden">
+      <header className="fixed top-0 z-40 w-full border-b border-outline-variant/50 bg-surface/92 backdrop-blur-xl lg:hidden">
         <div className="flex h-16 items-center justify-between px-5">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 text-base font-semibold tracking-tight text-primary"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight text-on-surface"
           >
             <Boxes size={18} strokeWidth={1.85} />
             ShowCrafter
           </Link>
           <button
             type="button"
-            onClick={() => setDrawerOpen(true)}
+            onClick={openDrawer}
             aria-label="Open admin navigation"
             aria-expanded={drawerOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface-container-high text-on-surface transition-colors hover:bg-surface-container-highest"
+            className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
           >
             <Menu size={20} strokeWidth={1.85} />
           </button>
         </div>
       </header>
 
-      <main className="min-w-0 px-5 pb-16 pt-24 sm:px-8 lg:col-start-2 lg:px-12 lg:pt-10">
-        <div className="mx-auto w-full max-w-[1480px]">{children}</div>
+      <main className="min-w-0 bg-background px-6 pb-16 pt-24 sm:px-8 lg:col-start-2 lg:px-12 lg:pt-10">
+        <div className="w-full">{children}</div>
       </main>
 
-      {drawerOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+      {drawerMounted ? (
+        <div
+          className={cn(
+            "fixed inset-0 z-50 lg:hidden transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            drawerOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
+          role="dialog"
+          aria-modal="true"
+        >
           <button
             type="button"
             aria-label="Close admin navigation"
-            onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 h-full w-full cursor-default bg-background/70 backdrop-blur-sm"
+            onClick={closeDrawer}
+            className={cn(
+              "absolute inset-0 h-full w-full cursor-default bg-background/60 backdrop-blur-sm transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              drawerOpen ? "opacity-100" : "opacity-0",
+            )}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-[320px] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-card)]">
-            <div className="mb-6 flex items-center justify-between gap-3">
-              {brand}
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Close admin navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+          <div
+            className={cn(
+              "absolute inset-y-0 left-0 overflow-hidden will-change-[width,opacity] transition-[width,opacity] duration-[440ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              drawerOpen
+                ? "w-[min(86vw,320px)] opacity-100"
+                : "w-0 opacity-0",
+            )}
+          >
+            <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[0_16px_40px_-30px_rgba(11,16,32,0.18)]">
+              <div className="mb-6 flex items-center justify-between gap-3">
+                {brand}
+                <button
+                  type="button"
+                  onClick={closeDrawer}
+                  aria-label="Close admin navigation"
+                  className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
+                >
+                  <X size={18} strokeWidth={1.85} />
+                </button>
+              </div>
+
+              <nav className="space-y-1">
+                {renderNavLinks(closeDrawer)}
+              </nav>
+              <Link
+                href="/dashboard"
+                prefetch
+                onClick={closeDrawer}
+                className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
               >
-                <X size={18} strokeWidth={1.85} />
-              </button>
-            </div>
+                <ArrowLeft size={16} strokeWidth={1.9} />
+                Back to app
+              </Link>
 
-            <nav className="space-y-1">
-              {renderNavLinks(() => setDrawerOpen(false))}
-            </nav>
-            <Link
-              href="/dashboard"
-              prefetch
-              onClick={() => setDrawerOpen(false)}
-              className="mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
-            >
-              <ArrowLeft size={16} strokeWidth={1.9} />
-              Back to app
-            </Link>
-
-            <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
-          </aside>
+              <div className="mt-auto pt-4">{profileCard}</div>
+            </aside>
+          </div>
         </div>
       ) : null}
     </div>

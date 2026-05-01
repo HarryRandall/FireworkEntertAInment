@@ -21,7 +21,7 @@ export function SignOutButton() {
   return (
     <Button
       type="button"
-      variant="destructive"
+      variant="secondary"
       onClick={handle}
       loading={pending}
     >

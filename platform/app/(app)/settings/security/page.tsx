@@ -1,25 +1,16 @@
-import { LockKeyhole } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { PasswordChangeForm } from "./PasswordChangeForm";
 
 export default function SecuritySettingsPage() {
   return (
-    <Card elevation="low" radius="md" className="p-6">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
-          <LockKeyhole size={20} strokeWidth={1.85} />
-        </span>
-        <div>
-          <h2 className="text-2xl font-bold text-on-surface">Security</h2>
-          <p className="text-sm text-on-surface-variant">
-            Manage how you sign in to ShowCrafter.
-          </p>
-        </div>
+    <Card elevation="low" radius="md" className="space-y-5 p-6">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-on-surface">Password</h2>
+        <p className="text-sm text-on-surface-variant">
+          Update the password you use to sign in to ShowCrafter.
+        </p>
       </div>
-
-      <div className="mt-6">
-        <PasswordChangeForm />
-      </div>
+      <PasswordChangeForm />
     </Card>
   );
 }

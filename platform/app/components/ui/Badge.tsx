@@ -50,7 +50,7 @@ export function ChoiceChip({
       type="button"
       aria-pressed={selected}
       className={cn(
-        "inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border px-4 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        "focus-glow-action inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border px-4 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:outline-none",
         selected
           ? "border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
           : "border-outline-variant/55 bg-surface-container-low text-on-surface-variant hover:border-primary/40 hover:bg-surface-container-high hover:text-on-surface",
