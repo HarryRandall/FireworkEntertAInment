@@ -347,7 +347,8 @@ function ReplayScene({
           dampingFactor={0.08}
           minDistance={2.5}
           maxDistance={11}
-          maxPolarAngle={Math.PI * 0.72}
+          minPolarAngle={0.1}
+          maxPolarAngle={Math.PI / 2 - 0.05}
         />
       ) : null}
       {bursts.map((burst) => (
@@ -523,33 +524,34 @@ export function FireworkReplayViewer({
           {!hasReplayCues ? <EmptyPreview /> : null}
         </div>
 
-        <div className="border-t border-outline-variant/15 bg-surface-container-low/90 p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={togglePlayback}
-                disabled={!hasReplayCues}
-                aria-label={isPlaying ? "Pause preview" : "Play preview"}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
-              >
-                {isPlaying ? (
-                  <Pause size={18} strokeWidth={2.5} />
-                ) : (
-                  <Play size={18} strokeWidth={2.5} />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={restart}
-                aria-label="Restart preview"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-outline/20 text-primary transition-all hover:bg-surface-container-highest/50 active:scale-[0.98]"
-              >
-                <RotateCcw size={16} strokeWidth={2} />
-              </button>
-            </div>
+        <div className="border-t border-outline-variant/15 bg-surface-container-low/90 px-5 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={togglePlayback}
+              disabled={!hasReplayCues}
+              aria-label={isPlaying ? "Pause preview" : "Play preview"}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
+            >
+              {isPlaying ? (
+                <Pause size={18} strokeWidth={2.5} />
+              ) : (
+                <Play size={18} strokeWidth={2.5} />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={restart}
+              aria-label="Restart preview"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline/20 text-primary transition-all hover:bg-surface-container-highest/50 active:scale-[0.98]"
+            >
+              <RotateCcw size={16} strokeWidth={2} />
+            </button>
 
-            <div className="flex-1">
+            <div className="flex flex-1 items-center gap-3">
+              <span className="font-mono text-[11px] tabular-nums text-tertiary/80 min-w-[2.75rem]">
+                {formatDuration(elapsed)}
+              </span>
               <input
                 type="range"
                 min={0}
@@ -560,13 +562,12 @@ export function FireworkReplayViewer({
                   setIsPlaying(false);
                   setElapsed(Number(event.target.value));
                 }}
-                className="h-2 w-full accent-tertiary"
+                className="h-2 flex-1 accent-tertiary"
                 aria-label="Preview timeline"
               />
-              <div className="mt-2 flex justify-between font-mono text-[11px] text-tertiary/80 tabular-nums">
-                <span>{formatDuration(elapsed)}</span>
-                <span>{formatDuration(duration)}</span>
-              </div>
+              <span className="font-mono text-[11px] tabular-nums text-tertiary/80 min-w-[2.75rem] text-right">
+                {formatDuration(duration)}
+              </span>
             </div>
           </div>
         </div>

@@ -309,7 +309,8 @@ function ReplayScene({
           dampingFactor={0.08}
           minDistance={2.5}
           maxDistance={11}
-          maxPolarAngle={Math.PI * 0.72}
+          minPolarAngle={0.1}
+          maxPolarAngle={Math.PI / 2 - 0.05}
         />
       ) : null}
       {bursts.map((burst) => (
