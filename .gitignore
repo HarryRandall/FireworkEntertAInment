@@ -15,7 +15,7 @@ supabase/.temp/
 # IDE
 .vscode/
 .idea/
-# Cursor — local MCP config may contain access tokens
+# Local IDE MCP config may contain access tokens
 .cursor/mcp.json
 .mcp.json
 *.swp
