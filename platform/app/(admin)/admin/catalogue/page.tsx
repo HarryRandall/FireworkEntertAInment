@@ -3,7 +3,9 @@ import {
   deleteCatalogueProductAction,
 } from "@/app/actions/platform-admin";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
 import {
   DataTableShell,
   tableCellClasses,
@@ -30,16 +32,25 @@ export default async function AdminCataloguePage() {
       </header>
 
       <Card elevation="high" radius="md" className="p-5">
-        <form action={createCatalogueProductAction} className="grid grid-cols-1 gap-3 lg:grid-cols-[140px_1fr_180px_160px_160px_120px_auto]">
-          <input name="partNumber" placeholder="Part #" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" required />
-          <input name="name" placeholder="Product name" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" required />
-          <input name="manufacturer" placeholder="Manufacturer" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <input name="category" placeholder="Category" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <input name="fireworkType" placeholder="Type" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <input name="durationSeconds" type="number" min="0" step="0.1" placeholder="Seconds" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <button type="submit" className="h-11 rounded-full bg-primary-container px-5 text-sm font-bold text-on-primary-container">
+        <form
+          action={createCatalogueProductAction}
+          className="grid grid-cols-1 gap-3 lg:grid-cols-[140px_1fr_180px_160px_160px_120px_auto]"
+        >
+          <Input name="partNumber" placeholder="Part #" required />
+          <Input name="name" placeholder="Product name" required />
+          <Input name="manufacturer" placeholder="Manufacturer" />
+          <Input name="category" placeholder="Category" />
+          <Input name="fireworkType" placeholder="Type" />
+          <Input
+            name="durationSeconds"
+            type="number"
+            min={0}
+            step={0.1}
+            placeholder="Seconds"
+          />
+          <Button type="submit" size="sm">
             Add
-          </button>
+          </Button>
         </form>
       </Card>
 
@@ -81,14 +92,14 @@ export default async function AdminCataloguePage() {
                   {formatDuration(product.durationSeconds)}
                 </td>
                 <td className={tableCellClasses("text-right")}>
-                  <form action={deleteCatalogueProductAction} className="inline-flex items-center gap-2">
+                  <form
+                    action={deleteCatalogueProductAction}
+                    className="inline-flex items-center gap-2"
+                  >
                     <input type="hidden" name="id" value={product.id} />
-                    <button
-                      type="submit"
-                      className="h-9 rounded-full border border-error/35 px-4 text-xs font-bold text-error transition-colors hover:bg-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/45"
-                    >
+                    <Button type="submit" variant="destructive" size="sm">
                       Delete
-                    </button>
+                    </Button>
                   </form>
                 </td>
               </tr>

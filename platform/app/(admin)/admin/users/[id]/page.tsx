@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
+import { Input, Select } from "@/app/components/ui/Input";
 import {
   setPermissionOverrideAction,
   updateAdminUserAction,
@@ -34,7 +36,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         Back to users
       </Link>
 
-      <header>
+      <header className="border-b border-outline-variant/55 pb-6">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
             {user.fullName || user.email || "Unnamed user"}
@@ -56,34 +58,22 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Full name
               </span>
-              <input
-                name="fullName"
-                defaultValue={user.fullName ?? ""}
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm text-on-surface outline-none ring-primary/20 focus:ring-2"
-              />
+              <Input name="fullName" defaultValue={user.fullName ?? ""} />
             </label>
             <label className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Phone
               </span>
-              <input
-                name="phone"
-                defaultValue={user.phone ?? ""}
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm text-on-surface outline-none ring-primary/20 focus:ring-2"
-              />
+              <Input name="phone" defaultValue={user.phone ?? ""} />
             </label>
             <label className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Status
               </span>
-              <select
-                name="status"
-                defaultValue={user.status}
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm font-semibold text-on-surface outline-none ring-primary/20 focus:ring-2"
-              >
+              <Select name="status" defaultValue={user.status}>
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
-              </select>
+              </Select>
             </label>
           </div>
 
@@ -95,14 +85,14 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               {roles.map((role) => (
                 <label
                   key={role.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-outline-variant/20 bg-surface-container-highest px-3 py-2 text-sm font-semibold text-on-surface"
+                  className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-outline/55 bg-surface px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-on-surface has-[:checked]:border-primary/60 has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
                 >
                   <input
                     type="checkbox"
                     name="roles"
                     value={role.id}
                     defaultChecked={user.roles.includes(role.key)}
-                    className="accent-primary"
+                    className="sr-only"
                   />
                   {role.name}
                 </label>
@@ -110,13 +100,10 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             </div>
           </fieldset>
 
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-container px-6 text-sm font-bold text-on-primary-container"
-          >
+          <Button type="submit">
             <ShieldCheck size={16} />
             Save user
-          </button>
+          </Button>
         </form>
       </Card>
 
@@ -127,27 +114,21 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_140px_auto]"
         >
           <input type="hidden" name="userId" value={user.id} />
-          <select
-            name="permissionId"
-            className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm text-on-surface outline-none ring-primary/20 focus:ring-2"
-          >
+          <Select name="permissionId">
             {permissions.map((permission) => (
               <option key={permission.id} value={permission.id}>
                 {permission.key}
               </option>
             ))}
-          </select>
-          <select
-            name="mode"
-            className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm font-semibold text-on-surface outline-none ring-primary/20 focus:ring-2"
-          >
+          </Select>
+          <Select name="mode">
             <option value="grant">Grant</option>
             <option value="deny">Deny</option>
             <option value="clear">Clear</option>
-          </select>
-          <button className="h-11 rounded-full border border-outline-variant/25 px-5 text-sm font-bold text-primary transition-colors hover:bg-surface-container-highest">
+          </Select>
+          <Button type="submit" variant="secondary" size="sm">
             Apply
-          </button>
+          </Button>
         </form>
 
         {user.permissionOverrides.length > 0 ? (
