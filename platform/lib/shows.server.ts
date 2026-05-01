@@ -72,7 +72,7 @@ type ShoppingItemProjection = Pick<
 const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
   particleCount: 220,
   burstDuration: 2.4,
-  colors: ["#ffc174", "#ffe6b8", "#f59e0b"],
+  colors: ["#00E5FF", "#8B5CF6", "#FF3DF2"],
   spread: 2.6,
   launchHeight: 3,
   gravity: -1.5,

@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { PlusCircle, Music4, Sparkles, Zap, type LucideIcon } from "lucide-react";
+import {
+  PlusCircle,
+  Music4,
+  Sparkles,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Badge } from "@/app/components/ui/Badge";

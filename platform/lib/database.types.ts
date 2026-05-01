@@ -136,29 +136,278 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          review_status: string
           slug: string
           sort_order: number
           spec: Json
+          source_import_job_id: string | null
+          source_media_asset_id: string | null
           updated_at: string
+          vdl_phrase: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          review_status?: string
           slug: string
           sort_order?: number
           spec: Json
+          source_import_job_id?: string | null
+          source_media_asset_id?: string | null
           updated_at?: string
+          vdl_phrase?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          review_status?: string
           slug?: string
           sort_order?: number
           spec?: Json
+          source_import_job_id?: string | null
+          source_media_asset_id?: string | null
+          updated_at?: string
+          vdl_phrase?: string | null
+        }
+        Relationships: []
+      }
+      catalogue_products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          firework_type: string | null
+          id: string
+          manufacturer: string | null
+          name: string
+          part_number: string
+          source_payload: Json | null
+          source_table: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          firework_type?: string | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          part_number: string
+          source_payload?: Json | null
+          source_table?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          firework_type?: string | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          part_number?: string
+          source_payload?: Json | null
+          source_table?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          kind: string
+          media_asset_id: string | null
+          row_count: number | null
+          source_name: string
+          source_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          kind: string
+          media_asset_id?: string | null
+          row_count?: number | null
+          source_name: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          kind?: string
+          media_asset_id?: string | null
+          row_count?: number | null
+          source_name?: string
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_outputs: {
+        Row: {
+          created_at: string
+          id: string
+          import_job_id: string
+          output_type: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          import_job_id: string
+          output_type: string
+          payload: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          import_job_id?: string
+          output_type?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
+      media_assets: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          height: number | null
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          owner_id: string | null
+          source_type: string
+          storage_path: string | null
+          url: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          height?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          owner_id?: string | null
+          source_type: string
+          storage_path?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          height?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          owner_id?: string | null
+          source_type?: string
+          storage_path?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
+      organisation_memberships: {
+        Row: {
+          created_at: string
+          organisation_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          organisation_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          organisation_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      organisations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -169,6 +418,10 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_seen_at: string | null
+          phone: string | null
+          status: string
+          theme_preference: string
           updated_at: string
         }
         Insert: {
@@ -176,6 +429,10 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_seen_at?: string | null
+          phone?: string | null
+          status?: string
+          theme_preference?: string
           updated_at?: string
         }
         Update: {
@@ -183,6 +440,58 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_seen_at?: string | null
+          phone?: string | null
+          status?: string
+          theme_preference?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: []
+      }
+      roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -230,6 +539,204 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_inventory_items: {
+        Row: {
+          available: boolean
+          created_at: string
+          currency: string
+          id: string
+          location_id: string | null
+          price_cents: number | null
+          product_id: string | null
+          quantity_on_hand: number
+          supplier_id: string
+          supplier_sku: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          location_id?: string | null
+          price_cents?: number | null
+          product_id?: string | null
+          quantity_on_hand?: number
+          supplier_id: string
+          supplier_sku?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          location_id?: string | null
+          price_cents?: number | null
+          product_id?: string | null
+          quantity_on_hand?: number
+          supplier_id?: string
+          supplier_sku?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      supplier_locations: {
+        Row: {
+          address: string | null
+          country: string | null
+          created_at: string
+          id: string
+          name: string
+          region: string | null
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          region?: string | null
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          region?: string | null
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      supplier_profiles: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          name: string
+          organisation_id: string | null
+          phone: string | null
+          slug: string
+          status: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organisation_id?: string | null
+          phone?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organisation_id?: string | null
+          phone?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      user_permission_overrides: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          enabled: boolean
+          permission_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          enabled?: boolean
+          permission_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          enabled?: boolean
+          permission_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vdl_terms: {
+        Row: {
+          created_at: string
+          description: string | null
+          example_vdl_phrase: string | null
+          id: string
+          term: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          example_vdl_phrase?: string | null
+          id?: string
+          term: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          example_vdl_phrase?: string | null
+          id?: string
+          term?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
       }
       show_cues: {
         Row: {
@@ -351,6 +858,63 @@ export type Database = {
         }
         Relationships: []
       }
+      show_templates: {
+        Row: {
+          budget_cents: number | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          effects_count: number
+          id: string
+          is_featured: boolean
+          mood_tags: string[]
+          preview_cues: Json
+          slug: string
+          sort_order: number
+          theme: string
+          time_of_day: string | null
+          title: string
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          id?: string
+          is_featured?: boolean
+          mood_tags?: string[]
+          preview_cues?: Json
+          slug: string
+          sort_order?: number
+          theme: string
+          time_of_day?: string | null
+          title: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          id?: string
+          is_featured?: boolean
+          mood_tags?: string[]
+          preview_cues?: Json
+          slug?: string
+          sort_order?: number
+          theme?: string
+          time_of_day?: string | null
+          title?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       "Wikifireworks sample database": {
         Row: {
           "BARCODE 1 (optional)": string | null
@@ -401,7 +965,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      current_user_has_permission: {
+        Args: { permission_key: string }
+        Returns: boolean
+      }
+      current_user_access: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      has_permission: {
+        Args: { target_user_id: string; permission_key: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -49,7 +49,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
 export function MarketingFooter() {
   return (
     <footer className="relative mt-auto w-full bg-surface-container-lowest pb-10 pt-20">
-      <div className="ember-divider absolute inset-x-0 top-0" />
+      <div className="neon-divider absolute inset-x-0 top-0" />
       <Container>
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
           <div className="md:col-span-4">

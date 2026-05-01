@@ -10,11 +10,13 @@ when anyone on the team is editing UI):
 
 ## TL;DR
 
-ShowCrafter is dark-only. Two accents, one for "act" (Ember Gold `#ffc174`), one
-for "live" (Sky Pulse `#8fd5ff`). Surface ladder from `#131313` (Night) up to
-`#353534` (`surface-container-highest`). Inter at weight 500+. Lucide icons (no
-Material Symbols). Pill CTAs (`rounded-full`); cards `rounded-xl` or `rounded-2xl`.
-Whisper-light shadows. Tabular numerals on every number.
+ShowCrafter defaults to a dark navy/black cinematic AI-tool interface with neon
+cyan, electric blue, violet, and magenta accents. Yellow is reserved for finale
+or "wow moment" states. Light mode is fully tokenised and uses cool blue/violet
+accents rather than warm parchment surfaces. Geist Sans is the primary UI font;
+Geist Mono is used for timings, product codes, quantities, prices, and metadata.
+Lucide icons only. Pill CTAs (`rounded-full`); cards `rounded-xl` or
+`rounded-2xl`; visible focus rings; tabular numerals on every number.
 
 ## How to use this on the team
 
