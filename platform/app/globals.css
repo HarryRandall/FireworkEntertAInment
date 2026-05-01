@@ -103,6 +103,10 @@
   --shadow-card-hover: 0 22px 70px -40px rgba(139, 92, 246, 0.52);
   --shadow-cta: 0 14px 36px -16px rgba(0, 229, 255, 0.72);
   --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.55);
+
+  /* Replay preview chrome (theme-aware) */
+  --preview-card-bg: linear-gradient(180deg, #07080b 0%, #151b24 62%, #2b1610 100%);
+  --preview-card-fade: linear-gradient(180deg, transparent, rgba(8, 10, 10, 0.92));
 }
 
 [data-theme="light"] {
@@ -168,6 +172,9 @@
   --shadow-card-hover: 0 24px 70px -42px rgba(0, 109, 219, 0.34);
   --shadow-cta: 0 14px 36px -18px rgba(0, 109, 219, 0.62);
   --shadow-modal: 0 32px 72px rgba(11, 16, 32, 0.24);
+
+  --preview-card-bg: linear-gradient(180deg, #E8EEF6 0%, #F1F5F9 62%, #FFFFFF 100%);
+  --preview-card-fade: linear-gradient(180deg, transparent, rgba(247, 249, 252, 0.92));
 }
 
 html {
