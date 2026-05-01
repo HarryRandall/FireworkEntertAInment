@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type Tone = "primary" | "neutral" | "success" | "live" | "danger" | "wow";
@@ -25,13 +25,41 @@ export function Badge({ tone = "primary", className, children }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
+        "inline-flex items-center gap-1 rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
         toneClasses[tone],
         className,
       )}
     >
       {children}
     </span>
+  );
+}
+
+type ChoiceChipProps = ComponentPropsWithoutRef<"button"> & {
+  selected?: boolean;
+};
+
+export function ChoiceChip({
+  selected = false,
+  className,
+  children,
+  ...rest
+}: ChoiceChipProps) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      className={cn(
+        "inline-flex min-h-10 cursor-pointer items-center justify-center rounded-lg border px-4 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        selected
+          ? "border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
+          : "border-outline-variant/55 bg-surface-container-low text-on-surface-variant hover:border-primary/40 hover:bg-surface-container-high hover:text-on-surface",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }
 
