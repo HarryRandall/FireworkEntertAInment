@@ -19,7 +19,7 @@ const AdminUserSchema = z.object({
   fullName: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(40).optional(),
   status: z.enum(["active", "suspended"]),
-  roles: z.array(z.string().uuid()).min(1),
+  role: z.string().uuid(),
 });
 
 const PermissionOverrideSchema = z.object({
@@ -108,7 +108,7 @@ export async function updateAdminUserAction(
     fullName: formData.get("fullName") ?? "",
     phone: formData.get("phone") ?? "",
     status: formData.get("status") ?? "active",
-    roles: formData.getAll("roles").map(String),
+    role: formData.get("role"),
   });
   if (!parsed.success) return console.error(firstError(parsed.error));
 
@@ -136,11 +136,11 @@ export async function updateAdminUserAction(
   }
 
   const { error: insertError } = await supabase.from("user_roles").insert(
-    parsed.data.roles.map((roleId) => ({
+    {
       user_id: parsed.data.userId,
-      role_id: roleId,
+      role_id: parsed.data.role,
       assigned_by: admin.id,
-    })),
+    },
   );
   if (insertError) {
     console.error("[updateAdminUserAction] insert roles failed:", insertError);

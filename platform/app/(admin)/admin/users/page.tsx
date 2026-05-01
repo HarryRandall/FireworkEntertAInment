@@ -11,12 +11,28 @@ import {
   tableRowClasses,
 } from "@/app/components/ui/DataTable";
 import { Card } from "@/app/components/ui/Card";
-import { Input, Select } from "@/app/components/ui/Input";
+import { Input } from "@/app/components/ui/Input";
+import { SelectField } from "@/app/components/ui/SelectField";
 import { listAdminUsers } from "@/lib/platform.server";
 
 type PageProps = {
   searchParams: Promise<{ q?: string; role?: string; status?: string }>;
 };
+
+const ROLE_OPTIONS = [
+  { value: "all", label: "All roles" },
+  { value: "admin", label: "Admin" },
+  { value: "supplier", label: "Supplier" },
+  { value: "user", label: "User" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "suspended", label: "Suspended" },
+];
+
+const rowLinkClasses = "block px-4 py-3";
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -55,25 +71,18 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             aria-label="Search user records"
             iconLeft={<Search size={17} />}
           />
-          <Select
+          <SelectField
             name="role"
             defaultValue={role}
-            aria-label="Filter by role"
-          >
-            <option value="all">All roles</option>
-            <option value="admin">Admin</option>
-            <option value="supplier">Supplier</option>
-            <option value="user">User</option>
-          </Select>
-          <Select
+            options={ROLE_OPTIONS}
+            ariaLabel="Filter by role"
+          />
+          <SelectField
             name="status"
             defaultValue={status}
-            aria-label="Filter by status"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-          </Select>
+            options={STATUS_OPTIONS}
+            ariaLabel="Filter by status"
+          />
           <Button>
             Search
           </Button>
@@ -87,17 +96,20 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             <thead className={tableHeadClasses()}>
               <tr>
                 <th className={tableHeaderCellClasses()}>User</th>
-                <th className={tableHeaderCellClasses()}>Roles</th>
+                <th className={tableHeaderCellClasses()}>Role</th>
                 <th className={tableHeaderCellClasses()}>Status</th>
                 <th className={tableHeaderCellClasses()}>Updated</th>
                 <th className={tableHeaderCellClasses("text-right")}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((user) => (
-                <tr key={user.id} className={tableRowClasses()}>
-                  <td className={tableCellClasses()}>
-                    <div className="flex items-center gap-3">
+              {filtered.map((user) => {
+                const href = `/admin/users/${user.id}`;
+                const primaryRole = user.roles[0] ?? "user";
+                return (
+                <tr key={user.id} className={tableRowClasses("group cursor-pointer")}>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={`${rowLinkClasses} flex items-center gap-3`}>
                       <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-tertiary/20 bg-tertiary/12 text-tertiary">
                         <UserRound size={17} />
                       </span>
@@ -109,35 +121,39 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                           {user.email || "No email"}
                         </span>
                       </span>
-                    </div>
+                    </Link>
                   </td>
-                  <td className={tableCellClasses()}>
-                    <div className="flex flex-wrap gap-1">
-                      {user.roles.map((userRole) => (
-                        <Badge key={userRole} tone={userRole === "admin" ? "primary" : "neutral"}>
-                          {userRole}
-                        </Badge>
-                      ))}
-                    </div>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      <Badge tone={primaryRole === "admin" ? "primary" : "neutral"}>
+                        {primaryRole}
+                      </Badge>
+                    </Link>
                   </td>
-                  <td className={tableCellClasses()}>
-                    <Badge tone={user.status === "active" ? "success" : "neutral"}>
-                      {user.status}
-                    </Badge>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      <Badge tone={user.status === "active" ? "success" : "neutral"}>
+                        {user.status}
+                      </Badge>
+                    </Link>
                   </td>
-                  <td className={tableCellClasses("font-mono text-xs text-on-surface-variant tabular-nums")}>
-                    {new Date(user.updatedAt).toLocaleDateString()}
+                  <td className={tableCellClasses("p-0 font-mono text-xs text-on-surface-variant tabular-nums")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      {new Date(user.updatedAt).toLocaleDateString()}
+                    </Link>
                   </td>
                   <td className={tableCellClasses("text-right")}>
                     <Link
-                      href={`/admin/users/${user.id}`}
-                      className="rounded-full border border-outline-variant/45 px-4 py-2 text-xs font-bold text-primary transition-colors hover:border-primary/40 hover:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+                      href={href}
+                      prefetch
+                      className="rounded-lg border border-outline-variant/45 px-4 py-2 text-xs font-bold text-primary transition-colors hover:border-primary/40 hover:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                     >
                       Open
                     </Link>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
       </DataTableShell>
