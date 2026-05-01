@@ -1,0 +1,12 @@
+{
+  "particleCount": 300,
+  "burstDuration": 3.2,
+  "colors": ["#ffd36a", "#ffffff"],
+  "spread": 3.1,
+  "launchHeight": 3.4,
+  "gravity": -1.7,
+  "drag": 0.82,
+  "sparkSize": 0.08,
+  "trailLength": 1.25,
+  "secondaryBursts": 2
+}

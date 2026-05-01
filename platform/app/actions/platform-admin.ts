@@ -10,8 +10,8 @@ import { requirePermission } from "@/lib/platform.server";
 import { slugifyTitle } from "@/lib/shows";
 import {
   DEFAULT_OPENROUTER_MODEL,
-  deriveLegacyRenderSpec,
   IMPORT_VIDEO_BUCKET,
+  ImportedFireworkSpecSchema,
   latestImportedSpecFromOutputs,
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
@@ -693,7 +693,7 @@ export async function updateImportDraftSpecAction(
     parsed.data.burstTimeSeconds,
   );
   const endTime = Math.max(burstTime, parsed.data.endTimeSeconds);
-  const spec: ImportedFireworkSpec = {
+  const spec: ImportedFireworkSpec = ImportedFireworkSpecSchema.parse({
     name: parsed.data.name,
     description: parsed.data.description || null,
     durationSeconds: parsed.data.durationSeconds,
@@ -739,7 +739,7 @@ export async function updateImportDraftSpecAction(
         },
       ],
     },
-  };
+  });
 
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("import_outputs").insert({
@@ -789,7 +789,6 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     .eq("id", parsed.data.id)
     .maybeSingle();
   const fireworkSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
-  const legacySpec = deriveLegacyRenderSpec(spec);
   const { data: firework, error: fireworkError } = await supabase
     .from("firework_specifications")
     .insert({
@@ -797,7 +796,7 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       name: parsed.data.name,
       description: spec.description || null,
       sort_order: 100,
-      spec: legacySpec as unknown as Json,
+      spec: spec.effectSpec as unknown as Json,
       source_import_job_id: parsed.data.id,
       source_media_asset_id: job?.media_asset_id ?? null,
       review_status: "approved",
@@ -824,7 +823,9 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       source_payload: {
         importJobId: parsed.data.id,
         confidence: spec.confidence,
-        generatedSpec: spec,
+        generatedSpec: spec.effectSpec,
+        observations: spec.observations ?? null,
+        legacyRenderProjection: spec.renderSpec,
       } as Json,
     })
     .select("id")

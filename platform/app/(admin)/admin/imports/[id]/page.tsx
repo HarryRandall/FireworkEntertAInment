@@ -29,8 +29,9 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   if (!job) notFound();
 
   const spec = latestImportedSpecFromOutputs(job.outputs);
-  const section = spec?.renderSpec.sections.find((item) => item.phase === "burst") ??
-    spec?.renderSpec.sections[0];
+  const renderSections = spec?.renderSpec.sections ?? [];
+  const section =
+    renderSections.find((item) => item.phase === "burst") ?? renderSections[0];
   const defaultDuration =
     spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
   const selectedModel = job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;

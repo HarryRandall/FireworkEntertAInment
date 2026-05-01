@@ -21,6 +21,10 @@ import type {
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
+import {
+  FireworkEffectSpecV2Schema,
+  type FireworkEffectSpecV2,
+} from "@/lib/fireworks/spec-v2";
 import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
@@ -117,8 +121,13 @@ function readColors(source: Record<string, Json | undefined>): string[] {
   return valid.length > 0 ? valid : DEFAULT_FIREWORK_SPEC.colors;
 }
 
-function parseRenderSpec(spec: Json): FireworkRenderSpec {
+function parseRenderSpec(spec: Json): FireworkRenderSpec | FireworkEffectSpecV2 {
   if (!isRecord(spec)) return DEFAULT_FIREWORK_SPEC;
+  if (spec.version === 2) {
+    const parsed = FireworkEffectSpecV2Schema.safeParse(spec);
+    if (parsed.success) return parsed.data;
+    console.error("[shows.server] invalid FireworkEffectSpecV2:", parsed.error);
+  }
   const sections = Array.isArray(spec.sections)
     ? (spec.sections.filter(isRecord) as unknown as FireworkRenderSection[])
     : undefined;
