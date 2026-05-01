@@ -4,8 +4,25 @@ import {
   updateImportJobAction,
 } from "@/app/actions/platform-admin";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
+import { Input, Select } from "@/app/components/ui/Input";
 import { listImportJobs } from "@/lib/platform.server";
+
+const KIND_OPTIONS = [
+  { value: "firework_video", label: "Firework video" },
+  { value: "vdl_glossary", label: "VDL glossary" },
+  { value: "supplier_stock", label: "Supplier stock" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "queued", label: "Queued" },
+  { value: "processing", label: "Processing" },
+  { value: "needs_review", label: "Needs review" },
+  { value: "complete", label: "Complete" },
+  { value: "failed", label: "Failed" },
+];
 
 export default async function AdminImportsPage() {
   const jobs = await listImportJobs();
@@ -26,26 +43,30 @@ export default async function AdminImportsPage() {
       </header>
 
       <Card elevation="high" radius="md" className="p-5">
-        <form action={createImportJobAction} className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_1fr_1fr_160px_120px_auto]">
-          <select name="kind" defaultValue="firework_video" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm font-semibold outline-none ring-primary/20 focus:ring-2">
-            <option value="firework_video">Firework video</option>
-            <option value="vdl_glossary">VDL glossary</option>
-            <option value="supplier_stock">Supplier stock</option>
-          </select>
-          <input name="sourceName" placeholder="Source name" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" required />
-          <input name="sourceUrl" placeholder="Loom or source URL" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <select name="status" defaultValue="draft" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm font-semibold outline-none ring-primary/20 focus:ring-2">
-            <option value="draft">Draft</option>
-            <option value="queued">Queued</option>
-            <option value="processing">Processing</option>
-            <option value="needs_review">Needs review</option>
-            <option value="complete">Complete</option>
-            <option value="failed">Failed</option>
-          </select>
-          <input name="rowCount" type="number" min="0" placeholder="Rows" className="h-11 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-          <button type="submit" className="h-11 rounded-full bg-primary-container px-5 text-sm font-bold text-on-primary-container">
+        <form
+          action={createImportJobAction}
+          className="grid grid-cols-1 gap-3 lg:grid-cols-[180px_1fr_1fr_160px_120px_auto]"
+        >
+          <Select name="kind" defaultValue="firework_video">
+            {KIND_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Input name="sourceName" placeholder="Source name" required />
+          <Input name="sourceUrl" placeholder="Loom or source URL" />
+          <Select name="status" defaultValue="draft">
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+          <Input name="rowCount" type="number" min={0} placeholder="Rows" />
+          <Button type="submit" size="sm">
             Create
-          </button>
+          </Button>
         </form>
       </Card>
 
@@ -55,37 +76,60 @@ export default async function AdminImportsPage() {
             <form action={updateImportJobAction} className="space-y-4">
               <input type="hidden" name="id" value={job.id} />
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <input name="sourceName" defaultValue={job.sourceName} className="h-10 min-w-0 flex-1 rounded-md bg-surface-container-highest px-3 text-lg font-bold text-on-surface outline-none ring-primary/20 focus:ring-2" />
-                    <Badge tone={job.status === "complete" ? "success" : "neutral"}>
+                    <Input
+                      name="sourceName"
+                      defaultValue={job.sourceName}
+                      className="h-10 text-base font-bold"
+                    />
+                    <Badge
+                      tone={job.status === "complete" ? "success" : "neutral"}
+                    >
                       {job.status.replace("_", " ")}
                     </Badge>
                   </div>
-                  <input name="sourceUrl" defaultValue={job.sourceUrl ?? ""} placeholder="Source URL" className="mt-3 h-10 w-full rounded-md bg-surface-container-highest px-3 text-sm text-tertiary outline-none ring-primary/20 focus:ring-2" />
+                  <Input
+                    name="sourceUrl"
+                    defaultValue={job.sourceUrl ?? ""}
+                    placeholder="Source URL"
+                    className="h-10"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[180px_180px_120px_auto_auto]">
-                <select name="kind" defaultValue={job.kind} className="h-10 rounded-md bg-surface-container-highest px-3 text-sm font-semibold outline-none ring-primary/20 focus:ring-2">
-                  <option value="firework_video">Firework video</option>
-                  <option value="vdl_glossary">VDL glossary</option>
-                  <option value="supplier_stock">Supplier stock</option>
-                </select>
-                <select name="status" defaultValue={job.status} className="h-10 rounded-md bg-surface-container-highest px-3 text-sm font-semibold outline-none ring-primary/20 focus:ring-2">
-                  <option value="draft">Draft</option>
-                  <option value="queued">Queued</option>
-                  <option value="processing">Processing</option>
-                  <option value="needs_review">Needs review</option>
-                  <option value="complete">Complete</option>
-                  <option value="failed">Failed</option>
-                </select>
-                <input name="rowCount" type="number" min="0" defaultValue={job.rowCount ?? ""} className="h-10 rounded-md bg-surface-container-highest px-3 text-sm outline-none ring-primary/20 focus:ring-2" />
-                <button type="submit" className="h-10 rounded-full border border-outline-variant/25 px-4 text-sm font-bold text-primary">
+                <Select name="kind" defaultValue={job.kind} className="h-10">
+                  {KIND_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
+                <Select name="status" defaultValue={job.status} className="h-10">
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  name="rowCount"
+                  type="number"
+                  min={0}
+                  defaultValue={job.rowCount ?? ""}
+                  className="h-10"
+                />
+                <Button type="submit" variant="secondary" size="sm">
                   Save
-                </button>
-                <button formAction={deleteImportJobAction} className="h-10 rounded-full border border-error/30 px-4 text-sm font-bold text-error">
+                </Button>
+                <Button
+                  type="submit"
+                  formAction={deleteImportJobAction}
+                  variant="destructive"
+                  size="sm"
+                >
                   Delete
-                </button>
+                </Button>
               </div>
             </form>
             {job.errorMessage ? (

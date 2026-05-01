@@ -11,7 +11,11 @@ import {
   type CueActionResult,
 } from "@/app/actions/preview-cues";
 import { Badge, Eyebrow } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
+import { Input } from "@/app/components/ui/Input";
+import { NumberInput } from "@/app/components/ui/NumberInput";
+import { SelectField } from "@/app/components/ui/SelectField";
 import { StatTile } from "@/app/components/ui/StatTile";
 import type {
   FireworkRenderSpec,
@@ -598,7 +602,7 @@ export function FireworkReplayViewer({
           <form
             ref={formRef}
             action={addCue}
-            className="grid grid-cols-1 gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 md:grid-cols-[1fr_140px_1.4fr_auto]"
+            className="grid grid-cols-1 gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 md:grid-cols-[1fr_140px_1.4fr_auto] md:items-end"
           >
             <input type="hidden" name="showId" value={showId} />
             <input type="hidden" name="showSlug" value={showSlug} />
@@ -606,52 +610,48 @@ export function FireworkReplayViewer({
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Firework
               </span>
-              <select
+              <SelectField
                 name="fireworkSpecificationId"
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm font-semibold text-on-surface outline-none ring-primary/20 focus:ring-2"
                 required
-              >
-                {specifications.map((spec) => (
-                  <option key={spec.id} value={spec.id}>
-                    {spec.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select firework"
+                defaultValue={specifications[0]?.id}
+                options={specifications.map((spec) => ({
+                  value: spec.id,
+                  label: spec.name,
+                }))}
+              />
             </label>
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Time
               </span>
-              <input
+              <NumberInput
                 name="timeSeconds"
-                type="number"
                 min={0}
                 max={duration}
                 step={0.5}
                 defaultValue={Math.min(duration, Math.round(elapsed + 3))}
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm font-semibold text-on-surface outline-none ring-primary/20 focus:ring-2"
                 required
+                ariaLabel="Cue time in seconds"
               />
             </label>
             <label className="space-y-2">
               <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                 Label
               </span>
-              <input
+              <Input
                 name="description"
                 defaultValue="Custom firework cue"
-                className="h-11 w-full rounded-md bg-surface-container-highest px-3 text-sm font-semibold text-on-surface outline-none ring-primary/20 focus:ring-2"
                 required
               />
             </label>
-            <button
+            <Button
               type="submit"
               disabled={isPending || specifications.length === 0}
-              className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40"
             >
               <Plus size={16} strokeWidth={2} />
               Add
-            </button>
+            </Button>
           </form>
 
           <div className="space-y-3">
