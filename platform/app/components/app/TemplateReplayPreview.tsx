@@ -130,7 +130,12 @@ export function TemplateReplayPreview({
       className={
         isDetail
           ? "overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-low"
-          : "relative h-52 overflow-hidden bg-[linear-gradient(180deg,#07080b_0%,#151b24_62%,#2b1610_100%)]"
+          : "relative h-52 overflow-hidden"
+      }
+      style={
+        isDetail
+          ? undefined
+          : { backgroundImage: "var(--preview-card-bg)" }
       }
     >
       <div className={isDetail ? "h-[min(58vh,560px)] min-h-[380px]" : "h-full"}>
@@ -141,7 +146,10 @@ export function TemplateReplayPreview({
         />
       </div>
       {!isDetail ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,rgba(8,10,10,0.92))]" />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-20"
+          style={{ backgroundImage: "var(--preview-card-fade)" }}
+        />
       ) : (
         <div className="border-t border-outline-variant/15 bg-surface-container-low/90 p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
