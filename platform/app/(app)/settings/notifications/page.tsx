@@ -1,18 +1,22 @@
 import { Bell, Mail, Radio } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
+import { Toggle } from "@/app/components/ui/Toggle";
 
 const OPTIONS = [
   {
+    name: "showUpdates",
     icon: Mail,
     title: "Show updates",
     body: "Email me when generated shows, exports, or imports finish processing.",
   },
   {
+    name: "supplierAvailability",
     icon: Radio,
     title: "Supplier availability",
     body: "Notify me when recommended fireworks become available from suppliers.",
   },
   {
+    name: "productAnnouncements",
     icon: Bell,
     title: "Product announcements",
     body: "Send occasional updates about new catalogue and viewer capabilities.",
@@ -27,21 +31,14 @@ export default function NotificationSettingsPage() {
         {OPTIONS.map((option) => {
           const Icon = option.icon;
           return (
-            <label
-              key={option.title}
-              className="flex items-start gap-4 rounded-xl bg-surface-container-low p-4"
-            >
-              <Icon className="mt-1 text-primary" size={18} />
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold text-on-surface">
-                  {option.title}
-                </span>
-                <span className="mt-1 block text-sm text-on-surface-variant">
-                  {option.body}
-                </span>
-              </span>
-              <input type="checkbox" defaultChecked className="mt-1 accent-primary" />
-            </label>
+            <Toggle
+              key={option.name}
+              name={option.name}
+              defaultChecked
+              icon={<Icon size={18} strokeWidth={1.85} />}
+              label={option.title}
+              description={option.body}
+            />
           );
         })}
       </div>

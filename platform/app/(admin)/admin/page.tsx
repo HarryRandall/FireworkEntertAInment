@@ -19,7 +19,7 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <header>
+      <header className="border-b border-outline-variant/55 pb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
           Admin
         </p>
