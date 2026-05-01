@@ -1,6 +1,8 @@
 // Domain types for ShowCrafter shows. Pure types only — no in-memory data.
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
+import type { FireworkEffectSpecV2 } from "@/lib/fireworks/spec-v2";
+
 export type ShowStatus = "draft" | "complete";
 
 export type Show = {
@@ -82,7 +84,7 @@ export type FireworkSpecification = {
   name: string;
   description: string | null;
   sortOrder: number;
-  spec: FireworkRenderSpec;
+  spec: FireworkRenderSpec | FireworkEffectSpecV2;
 };
 
 export type ReplayCue = ShowCue & {

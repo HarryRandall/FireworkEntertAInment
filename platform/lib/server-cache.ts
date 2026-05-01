@@ -15,7 +15,7 @@ const redis =
     : null;
 
 const CACHE_TTL_SECONDS = 60;
-const memoryCache = new Map<string, { expiresAt: number; value: JsonValue }>();
+const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
 
 function getRedisClient() {
   return redis;
@@ -46,7 +46,7 @@ export async function getCachedJson<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function setCachedJson<T extends JsonValue>(
+export async function setCachedJson<T>(
   key: string,
   value: T,
   ttlSeconds = CACHE_TTL_SECONDS,
