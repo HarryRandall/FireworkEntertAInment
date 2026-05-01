@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { PlusCircle, Music4, Sparkles, Zap, type LucideIcon } from "lucide-react";
+import {
+  PlusCircle,
+  Music4,
+  Sparkles,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
-import { Badge } from "@/app/components/ui/Badge";
 import {
   formatBudget,
   formatDuration,
@@ -25,20 +32,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-12">
-      <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight text-on-surface">
-            Your shows
-          </h1>
-          <p className="text-lg text-on-surface-variant">
-            Manage your choreographed pyrotechnic displays.
-          </p>
-        </div>
+      <AppPageHeader
+        title="Your shows"
+        description="Manage your choreographed pyrotechnic displays."
+      />
+
+      <div className="flex justify-start sm:justify-end">
         <Button href="/shows/new" prefetch={false}>
           <PlusCircle size={18} strokeWidth={2} />
           New show
         </Button>
-      </header>
+      </div>
 
       {shows.length === 0 ? (
         <Card

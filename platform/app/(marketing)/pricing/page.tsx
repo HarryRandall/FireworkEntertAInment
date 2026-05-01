@@ -94,7 +94,7 @@ export default function PricingPage() {
                 }`}
               >
                 {plan.highlighted ? (
-                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary-container px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.5)]">
+                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary-container px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container shadow-[var(--shadow-cta)]">
                     <Sparkles size={12} strokeWidth={2} />
                     Most popular
                   </span>

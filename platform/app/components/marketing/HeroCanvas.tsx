@@ -15,11 +15,11 @@ if (typeof window !== "undefined") {
 }
 
 const PALETTE = [
-  new THREE.Color("#ffc174"), // Ember Gold
-  new THREE.Color("#f59e0b"), // Gold container
-  new THREE.Color("#8fd5ff"), // Sky Pulse
-  new THREE.Color("#ff7a59"), // Warm crimson accent
-  new THREE.Color("#ffe6b8"), // Light gold tail
+  new THREE.Color("#00E5FF"),
+  new THREE.Color("#3B82F6"),
+  new THREE.Color("#8B5CF6"),
+  new THREE.Color("#FF3DF2"),
+  new THREE.Color("#FFD166"),
 ];
 
 const PARTICLES_PER_BURST = 220;
@@ -139,7 +139,7 @@ function Starfield() {
     <points geometry={geom}>
       <pointsMaterial
         ref={matRef}
-        color="#e5e2e1"
+        color="#F5F7FA"
         size={0.025}
         sizeAttenuation
         transparent
@@ -204,7 +204,7 @@ export default function HeroCanvas() {
         camera={{ position: [0, 0, 8], fov: 55 }}
         dpr={[1, 1.75]}
       >
-        <fog attach="fog" args={["#0b0b0c", 8, 22]} />
+        <fog attach="fog" args={["#05070D", 8, 22]} />
         <ambientLight intensity={0.4} />
         <Starfield />
         <BurstManager />

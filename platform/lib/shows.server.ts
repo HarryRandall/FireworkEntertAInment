@@ -10,7 +10,9 @@ import {
   setCachedJson,
 } from "@/lib/server-cache";
 import type {
+  FireworkAudioSyncEvent,
   FireworkRenderParams,
+  FireworkRenderSection,
   FireworkRenderSpec,
   FireworkSpecification,
   ReplayCue,
@@ -19,6 +21,10 @@ import type {
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
+import {
+  FireworkEffectSpecV2Schema,
+  type FireworkEffectSpecV2,
+} from "@/lib/fireworks/spec-v2";
 import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
@@ -72,7 +78,7 @@ type ShoppingItemProjection = Pick<
 const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
   particleCount: 220,
   burstDuration: 2.4,
-  colors: ["#ffc174", "#ffe6b8", "#f59e0b"],
+  colors: ["#00E5FF", "#8B5CF6", "#FF3DF2"],
   spread: 2.6,
   launchHeight: 3,
   gravity: -1.5,
@@ -115,8 +121,19 @@ function readColors(source: Record<string, Json | undefined>): string[] {
   return valid.length > 0 ? valid : DEFAULT_FIREWORK_SPEC.colors;
 }
 
-function parseRenderSpec(spec: Json): FireworkRenderSpec {
+function parseRenderSpec(spec: Json): FireworkRenderSpec | FireworkEffectSpecV2 {
   if (!isRecord(spec)) return DEFAULT_FIREWORK_SPEC;
+  if (spec.version === 2) {
+    const parsed = FireworkEffectSpecV2Schema.safeParse(spec);
+    if (parsed.success) return parsed.data;
+    console.error("[shows.server] invalid FireworkEffectSpecV2:", parsed.error);
+  }
+  const sections = Array.isArray(spec.sections)
+    ? (spec.sections.filter(isRecord) as unknown as FireworkRenderSection[])
+    : undefined;
+  const audioSync = Array.isArray(spec.audioSync)
+    ? (spec.audioSync.filter(isRecord) as unknown as FireworkAudioSyncEvent[])
+    : undefined;
   return {
     particleCount: Math.round(
       readNumber(spec, "particleCount", DEFAULT_FIREWORK_SPEC.particleCount),
@@ -142,6 +159,8 @@ function parseRenderSpec(spec: Json): FireworkRenderSpec {
       DEFAULT_FIREWORK_SPEC.trailLength,
     ),
     secondaryBursts: readNumber(spec, "secondaryBursts", 0) || undefined,
+    sections,
+    audioSync,
   };
 }
 

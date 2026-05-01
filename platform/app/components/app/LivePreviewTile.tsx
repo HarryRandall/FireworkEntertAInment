@@ -38,7 +38,7 @@ export function LivePreviewTile({
         <button
           type="button"
           aria-label="Play preview"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.5)] transition-all hover:brightness-110 active:scale-95"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-95"
         >
           <Play size={18} strokeWidth={2.5} />
         </button>

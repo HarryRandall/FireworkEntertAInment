@@ -1,6 +1,8 @@
 // Domain types for ShowCrafter shows. Pure types only — no in-memory data.
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
+import type { FireworkEffectSpecV2 } from "@/lib/fireworks/spec-v2";
+
 export type ShowStatus = "draft" | "complete";
 
 export type Show = {
@@ -44,9 +46,37 @@ export type FireworkRenderSpec = {
   sparkSize: number;
   trailLength: number;
   secondaryBursts?: number;
+  sections?: FireworkRenderSection[];
+  audioSync?: FireworkAudioSyncEvent[];
 };
 
 export type FireworkRenderParams = Partial<FireworkRenderSpec>;
+
+export type FireworkRenderSection = {
+  id: string;
+  label: string;
+  phase: "launch" | "burst" | "afterglow" | "secondary";
+  startTimeSeconds: number;
+  endTimeSeconds: number;
+  burstTimeSeconds: number;
+  colors: string[];
+  particleCount: number;
+  spread: number;
+  launchHeight: number;
+  burstDuration: number;
+  gravity: number;
+  drag: number;
+  sparkSize: number;
+  trailLength: number;
+  secondaryBursts?: number;
+  confidence?: number;
+};
+
+export type FireworkAudioSyncEvent = {
+  timeSeconds: number;
+  kind: "launch" | "burst" | "crackle" | "fade";
+  confidence: number;
+};
 
 export type FireworkSpecification = {
   id: string;
@@ -54,7 +84,7 @@ export type FireworkSpecification = {
   name: string;
   description: string | null;
   sortOrder: number;
-  spec: FireworkRenderSpec;
+  spec: FireworkRenderSpec | FireworkEffectSpecV2;
 };
 
 export type ReplayCue = ShowCue & {

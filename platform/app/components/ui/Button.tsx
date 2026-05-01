@@ -1,25 +1,30 @@
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost";
-type Size = "sm" | "md" | "lg";
+type Variant = "primary" | "secondary" | "ghost" | "destructive";
+type Size = "sm" | "md" | "lg" | "icon";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-full font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+  "focus-glow-action inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus:outline-none focus-visible:outline-none";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary-container text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.40)] hover:brightness-110",
+    "border border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105",
   secondary:
-    "border border-outline/30 text-primary hover:bg-surface-container-highest/50",
-  ghost: "text-on-surface-variant hover:text-primary",
+    "border border-outline/45 bg-surface-container-low text-on-surface hover:border-primary/45 hover:bg-surface-container-high",
+  ghost:
+    "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
+  destructive:
+    "border border-error/35 bg-error/10 text-error hover:bg-error/15",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-9 px-5 text-sm",
-  md: "h-11 px-8 text-sm",
-  lg: "h-14 px-10 text-base",
+  sm: "min-h-9 px-5 text-sm",
+  md: "min-h-11 px-8 text-sm",
+  lg: "min-h-14 px-10 text-base",
+  icon: "h-11 w-11 p-0",
 };
 
 type CommonProps = {
@@ -27,6 +32,7 @@ type CommonProps = {
   size?: Size;
   children: ReactNode;
   className?: string;
+  loading?: boolean;
 };
 
 type ButtonAsButton = CommonProps &
@@ -42,7 +48,13 @@ type ButtonAsLink = CommonProps &
 type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 export function Button(props: ButtonProps) {
-  const { variant = "primary", size = "md", className, children } = props;
+  const {
+    variant = "primary",
+    size = "md",
+    className,
+    children,
+    loading = false,
+  } = props;
   const classes = cn(
     baseClasses,
     variantClasses[variant],
@@ -51,27 +63,45 @@ export function Button(props: ButtonProps) {
   );
 
   if ("href" in props && props.href !== undefined) {
-    const { href, variant: _v, size: _s, className: _c, children: _ch, ...rest } =
-      props;
+    const {
+      href,
+      variant: _v,
+      size: _s,
+      className: _c,
+      children: _ch,
+      loading: _l,
+      ...rest
+    } = props;
     void _v;
     void _s;
     void _c;
     void _ch;
+    void _l;
     return (
       <Link href={href} className={classes} {...rest}>
+        {loading ? <Loader2 size={16} className="animate-spin" /> : null}
         {children}
       </Link>
     );
   }
 
-  const { variant: _v, size: _s, className: _c, children: _ch, ...rest } =
-    props as ButtonAsButton;
+  const {
+    variant: _v,
+    size: _s,
+    className: _c,
+    children: _ch,
+    loading: _l,
+    disabled,
+    ...rest
+  } = props as ButtonAsButton;
   void _v;
   void _s;
   void _c;
   void _ch;
+  void _l;
   return (
-    <button className={classes} {...rest}>
+    <button className={classes} disabled={disabled || loading} {...rest}>
+      {loading ? <Loader2 size={16} className="animate-spin" /> : null}
       {children}
     </button>
   );
