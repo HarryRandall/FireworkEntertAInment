@@ -159,7 +159,7 @@ export function TemplateReplayPreview({
                 onClick={togglePlayback}
                 disabled={cues.length === 0}
                 aria-label={isPlaying ? "Pause template preview" : "Play template preview"}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
+                className="focus-glow-action flex h-11 w-11 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all focus:outline-none focus-visible:outline-none hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
               >
                 {isPlaying ? <Pause size={17} /> : <Play size={17} />}
               </button>
@@ -167,7 +167,7 @@ export function TemplateReplayPreview({
                 type="button"
                 onClick={restart}
                 aria-label="Restart template preview"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-outline/20 text-primary transition-all hover:bg-surface-container-highest/50 active:scale-[0.98]"
+                className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline/20 text-primary transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-highest/50 active:scale-[0.98]"
               >
                 <RotateCcw size={15} />
               </button>

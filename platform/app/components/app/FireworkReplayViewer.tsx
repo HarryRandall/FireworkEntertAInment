@@ -535,7 +535,7 @@ export function FireworkReplayViewer({
               onClick={togglePlayback}
               disabled={!hasReplayCues}
               aria-label={isPlaying ? "Pause preview" : "Play preview"}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
+              className="focus-glow-action flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all focus:outline-none focus-visible:outline-none hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
             >
               {isPlaying ? (
                 <Pause size={18} strokeWidth={2.5} />
@@ -547,7 +547,7 @@ export function FireworkReplayViewer({
               type="button"
               onClick={restart}
               aria-label="Restart preview"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline/20 text-primary transition-all hover:bg-surface-container-highest/50 active:scale-[0.98]"
+              className="focus-glow-action flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline/20 text-primary transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-highest/50 active:scale-[0.98]"
             >
               <RotateCcw size={16} strokeWidth={2} />
             </button>
@@ -681,7 +681,7 @@ export function FireworkReplayViewer({
                     type="button"
                     onClick={() => deleteCue(cue.id)}
                     disabled={isPending}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-outline/20 px-4 text-sm font-semibold text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
+                    className="focus-glow-action inline-flex h-10 items-center justify-center gap-2 rounded-full border border-outline/20 px-4 text-sm font-semibold text-on-surface-variant transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 size={15} strokeWidth={2} />
                     Remove

@@ -15,7 +15,7 @@ const SETTINGS_LINKS = [
 export function SettingsTabs() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-wrap gap-2 border-b border-outline-variant/45 pb-3">
+    <nav className="flex flex-wrap gap-2">
       {SETTINGS_LINKS.map((link) => {
         const Icon = link.icon;
         const active = pathname === link.href || pathname?.startsWith(link.href + "/");

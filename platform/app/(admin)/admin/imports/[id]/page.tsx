@@ -7,6 +7,7 @@ import {
   requestImportRefinementAction,
   updateImportDraftSpecAction,
 } from "@/app/actions/platform-admin";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -39,32 +40,33 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/admin/imports"
-        className="inline-flex items-center gap-2 text-sm font-bold text-primary"
-      >
-        <ArrowLeft size={16} />
-        Back to imports
-      </Link>
+      <AppPageHeader
+        title={job.sourceName}
+        description={(
+          <>
+            {job.mediaAsset?.durationSeconds
+              ? `Source video duration ${formatDuration(job.mediaAsset.durationSeconds)}.`
+              : "The worker will verify the source duration before analysis."}{" "}
+            Model: {selectedModel}.
+          </>
+        )}
+      />
 
-      <header className="border-b border-outline-variant/55 pb-6">
+      <div className="flex flex-col gap-4">
+        <Link
+          href="/admin/imports"
+          className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+        >
+          <ArrowLeft size={16} />
+          Back to imports
+        </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-extrabold tracking-tight text-on-surface">
-            {job.sourceName}
-          </h1>
           <Badge tone={job.status === "complete" ? "success" : "neutral"}>
             {job.status.replace("_", " ")}
           </Badge>
           <Badge tone="neutral">{job.processingProgress}%</Badge>
         </div>
-        <p className="mt-3 max-w-3xl text-sm text-on-surface-variant">
-          {job.mediaAsset?.durationSeconds
-            ? `Source video duration ${formatDuration(job.mediaAsset.durationSeconds)}.`
-            : "The worker will verify the source duration before analysis."}
-          {" "}
-          Model: {selectedModel}.
-        </p>
-      </header>
+      </div>
 
       {isWaitingForWorker ? (
         <Card elevation="low" radius="md" className="border-primary/35 p-5">

@@ -30,7 +30,7 @@ export function TemplateLikeButton({
     <button
       type="button"
       onClick={toggleLike}
-      className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-outline/20 px-5 text-sm font-bold text-on-surface-variant transition-all hover:bg-surface-container-highest/60 hover:text-primary active:scale-[0.98]"
+      className="focus-glow-action inline-flex h-11 items-center justify-center gap-2 rounded-full border border-outline/20 px-5 text-sm font-bold text-on-surface-variant transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-highest/60 hover:text-primary active:scale-[0.98]"
     >
       <Heart
         size={17}

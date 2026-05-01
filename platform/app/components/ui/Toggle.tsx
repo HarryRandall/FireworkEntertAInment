@@ -40,9 +40,8 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        "group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-surface p-4 transition-colors",
+        "focus-glow-field-group group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-white p-4 transition-colors",
         "hover:border-primary/35 hover:bg-surface-container-low",
-        "focus-within:border-primary/55 focus-within:ring-2 focus-within:ring-primary/35",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
@@ -59,7 +58,7 @@ export function Toggle({
           </span>
         ) : null}
       </span>
-      <span className="relative mt-0.5 inline-flex shrink-0 items-center">
+      <span className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center">
         <input
           id={id}
           type="checkbox"
@@ -79,10 +78,10 @@ export function Toggle({
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full shadow-sm transition-all duration-200",
+            "pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition-transform duration-200",
             value
-              ? "left-[1.5rem] bg-on-primary"
-              : "left-[0.125rem] bg-surface",
+              ? "translate-x-5 bg-on-primary"
+              : "translate-x-0 bg-surface",
           )}
         />
       </span>

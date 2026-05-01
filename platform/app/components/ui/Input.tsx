@@ -17,7 +17,7 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
       <input
         {...rest}
         className={cn(
-          "h-11 w-full rounded-lg border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/55",
+          "focus-glow-field h-11 w-full rounded-lg border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200 focus:outline-none focus-visible:outline-none",
           invalid ? "border-error/60" : "border-outline/55",
           iconLeft ? "pl-11 pr-4" : "px-4",
           className,
@@ -34,7 +34,7 @@ export function Textarea({ className, ...rest }: TextareaProps) {
     <textarea
       {...rest}
       className={cn(
-        "w-full resize-none rounded-lg border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all duration-200 focus:outline-none focus:border-primary/55 focus:ring-2 focus:ring-primary/30",
+        "focus-glow-field w-full resize-none rounded-lg border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all duration-200 focus:outline-none focus-visible:outline-none",
         className,
       )}
     />
@@ -48,7 +48,7 @@ export function Select({ className, ...rest }: SelectProps) {
     <select
       {...rest}
       className={cn(
-        "h-11 w-full cursor-pointer rounded-lg border border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus:border-primary/55 focus:ring-2 focus:ring-primary/30",
+        "focus-glow-field h-11 w-full cursor-pointer rounded-lg border border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus-visible:outline-none",
         className,
       )}
     />

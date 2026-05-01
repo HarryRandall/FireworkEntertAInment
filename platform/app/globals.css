@@ -110,11 +110,11 @@
 }
 
 [data-theme="light"] {
-  --color-background: #F7F9FC;
-  --color-surface: #F7F9FC;
-  --color-surface-dim: #E8EEF6;
+  --color-background: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F7F9FC;
   --color-surface-bright: #FFFFFF;
-  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-lowest: #F7F9FC;
   --color-surface-container-low: #FFFFFF;
   --color-surface-container: #F8FAFD;
   --color-surface-container-high: #F1F5F9;
@@ -201,9 +201,37 @@ a {
   outline-offset: 3px;
 }
 
-:focus-visible {
+:focus-visible:not(.focus-glow-field):not(.focus-glow-action) {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
+}
+
+.focus-glow-field:focus,
+.focus-glow-field:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-primary) 46%, var(--color-outline) 54%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 18px 44px -18px color-mix(in srgb, var(--color-primary) 34%, transparent);
+}
+
+.focus-glow-field-group:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 46%, var(--color-outline) 54%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 18px 44px -18px color-mix(in srgb, var(--color-primary) 34%, transparent);
+}
+
+.focus-glow-field-group :focus-visible {
+  outline: none;
+}
+
+.focus-glow-action:focus,
+.focus-glow-action:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--color-primary) 36%, transparent),
+    0 18px 44px -18px color-mix(in srgb, var(--color-primary) 42%, transparent);
 }
 
 ::selection {

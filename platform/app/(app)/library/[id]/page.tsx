@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Heart, Sparkles, Wallet } from "lucide-react";
 import Link from "next/link";
 import { cloneShowTemplateAction } from "@/app/actions/show-templates";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { TemplateLikeButton } from "@/app/components/app/TemplateLikeButton";
 import { TemplateReplayPreview } from "@/app/components/app/TemplateReplayPreview";
 import { Badge } from "@/app/components/ui/Badge";
@@ -22,13 +23,38 @@ export default async function LibraryDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/library"
-        className="inline-flex items-center gap-2 text-sm font-bold text-primary"
-      >
-        <ArrowLeft size={16} />
-        Back to show library
-      </Link>
+      <AppPageHeader
+        title={template.title}
+        description={template.description}
+      />
+
+      <div className="flex flex-col gap-4">
+        <Link
+          href="/library"
+          className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+        >
+          <ArrowLeft size={16} />
+          Back to show library
+        </Link>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-on-surface-variant">
+        <span className="flex items-center gap-2">
+          <Heart size={16} />
+          {template.likeCount} likes
+        </span>
+        <span className="flex items-center gap-2">
+          <Clock size={16} />
+          {formatDuration(template.durationSeconds)}
+        </span>
+        <span className="flex items-center gap-2">
+          <Wallet size={16} />
+          {formatBudget(template.totalCents)}
+        </span>
+        <span className="flex items-center gap-2">
+          <Sparkles size={16} />
+          {template.effectsCount} effects
+        </span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <TemplateReplayPreview
@@ -39,33 +65,9 @@ export default async function LibraryDetailPage({ params }: PageProps) {
 
         <aside className="space-y-4">
           <Card elevation="high" radius="md" className="p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            <p className="text-sm font-semibold text-primary">
               {template.theme}
             </p>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-on-surface">
-              {template.title}
-            </h1>
-            <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
-              {template.description}
-            </p>
-            <div className="mt-5 space-y-3 text-sm text-on-surface-variant">
-              <span className="flex items-center gap-2">
-                <Heart size={16} />
-                {template.likeCount} likes
-              </span>
-              <span className="flex items-center gap-2">
-                <Clock size={16} />
-                {formatDuration(template.durationSeconds)}
-              </span>
-              <span className="flex items-center gap-2">
-                <Wallet size={16} />
-                {formatBudget(template.totalCents)}
-              </span>
-              <span className="flex items-center gap-2">
-                <Sparkles size={16} />
-                {template.effectsCount} effects
-              </span>
-            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {template.moodTags.map((tag) => (
                 <Badge key={tag} tone="neutral">

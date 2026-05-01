@@ -53,7 +53,7 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        "flex h-11 items-center rounded-lg border border-outline/55 bg-surface text-on-surface transition-all duration-200 focus-within:border-primary/55 focus-within:ring-2 focus-within:ring-primary/35",
+        "focus-glow-field-group flex h-11 items-center rounded-lg border border-outline/55 bg-surface text-on-surface transition-all duration-200",
         disabled && "opacity-60",
         className,
       )}
@@ -82,7 +82,7 @@ export function NumberInput({
         required={required}
         disabled={disabled}
         aria-label={ariaLabel}
-        className="h-full w-full appearance-none bg-transparent px-3 text-sm font-semibold tabular-nums text-on-surface outline-none placeholder:text-on-surface-variant/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-full w-full appearance-none bg-transparent px-3 text-sm font-semibold tabular-nums text-on-surface outline-none focus-visible:outline-none placeholder:text-on-surface-variant/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <div className="flex h-full shrink-0 flex-col border-l border-outline/45">
         <button

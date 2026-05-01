@@ -2,6 +2,7 @@ import {
   createCatalogueProductAction,
   deleteCatalogueProductAction,
 } from "@/app/actions/platform-admin";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -22,14 +23,7 @@ export default async function AdminCataloguePage() {
 
   return (
     <div className="space-y-6">
-      <header className="border-b border-outline-variant/55 pb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-          Catalogue
-        </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-on-surface">
-          Normalized products
-        </h1>
-      </header>
+      <AppPageHeader title="Normalized products" />
 
       <Card elevation="high" radius="md" className="p-5">
         <form

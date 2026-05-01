@@ -1,6 +1,6 @@
-import Link from "next/link";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { ShowTemplatePreview } from "@/app/components/app/ShowTemplatePreview";
-import { Card } from "@/app/components/ui/Card";
+import { LibraryControls } from "@/app/(app)/library/LibraryControls";
 import { listShowTemplates } from "@/lib/platform.server";
 import { listFireworkSpecifications } from "@/lib/shows.server";
 import type { ShowTemplate } from "@/lib/platform.types";
@@ -34,7 +34,9 @@ function sortTemplates(templates: ShowTemplate[], sort: SortKey) {
 }
 
 type PageProps = {
-  searchParams?: Promise<{ sort?: string }>;
+  searchParams?: Promise<{
+    sort?: string;
+  }>;
 };
 
 export default async function LibraryPage({ searchParams }: PageProps) {
@@ -51,36 +53,15 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <header className="border-b border-outline-variant/55 pb-6">
-        <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">
-          Show library
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-          Browse ready-made pyromusical templates, preview the fixed-camera
-          replay, then clone one into your dashboard.
-        </p>
-      </header>
+      <AppPageHeader
+        title="Show library"
+        description="Browse ready-made pyromusical templates, preview the fixed-camera replay, then clone one into your dashboard."
+      />
 
-      <Card elevation="low" radius="md" className="p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            Sort by
-          </span>
-          {SORTS.map((item) => (
-            <Link
-              key={item.key}
-              href={item.key === "popular" ? "/library" : `/library?sort=${item.key}`}
-              className={
-                item.key === sort
-                  ? "inline-flex h-10 items-center rounded-lg border border-primary/60 bg-primary-container px-4 text-sm font-bold text-on-primary-container shadow-[var(--shadow-cta)]"
-                  : "inline-flex h-10 items-center rounded-lg border border-outline-variant/55 bg-surface-container-low px-4 text-sm font-bold text-on-surface-variant transition-colors hover:border-primary/40 hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              }
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </Card>
+      <LibraryControls
+        sort={sort}
+        sorts={SORTS}
+      />
 
       {sortedTemplates.length > 0 ? (
         <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
@@ -93,9 +74,8 @@ export default async function LibraryPage({ searchParams }: PageProps) {
           ))}
         </div>
       ) : (
-        <p className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-5 text-sm text-on-surface-variant">
-          No shows are available yet. Apply the latest migrations to seed the
-          library.
+        <p className="rounded-xl border border-outline-variant/35 bg-white p-5 text-sm text-on-surface-variant">
+          No shows are available right now. Adjust the sort or check back later.
         </p>
       )}
     </div>

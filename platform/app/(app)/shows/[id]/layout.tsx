@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Music4, User, Timer, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
+import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Button } from "@/app/components/ui/Button";
 import { ShowTabs } from "./ShowTabs";
 import { formatDuration, formatTotal } from "@/lib/shows";
@@ -19,31 +20,31 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <Music4 size={28} strokeWidth={1.75} className="text-primary" />
-            <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">
-              {show.title}
-            </h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-on-surface-variant">
-            <Stat icon={<User size={14} strokeWidth={1.75} />}>
-              {show.artist || "Unknown artist"}
-            </Stat>
-            <Stat icon={<Timer size={14} strokeWidth={1.75} />}>
-              <span className="tabular-nums">
-                {formatDuration(show.durationSeconds)}
-              </span>
-            </Stat>
-            <Stat icon={<Wallet size={14} strokeWidth={1.75} />}>
-              <span className="tabular-nums text-primary">
-                {formatTotal(show.totalCents)} total
-              </span>
-            </Stat>
-          </div>
+      <AppPageHeader
+        title={show.title}
+        description={show.song ? `${show.artist || "Unknown artist"} - ${show.song}` : (show.artist || "Unknown artist")}
+      />
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-on-surface-variant">
+          <Stat icon={<Music4 size={14} strokeWidth={1.75} />}>
+            {show.song || "No song selected"}
+          </Stat>
+          <Stat icon={<Timer size={14} strokeWidth={1.75} />}>
+            <span className="tabular-nums">
+              {formatDuration(show.durationSeconds)}
+            </span>
+          </Stat>
+          <Stat icon={<Wallet size={14} strokeWidth={1.75} />}>
+            <span className="tabular-nums text-primary">
+              {formatTotal(show.totalCents)} total
+            </span>
+          </Stat>
+          <Stat icon={<User size={14} strokeWidth={1.75} />}>
+            {show.artist || "Unknown artist"}
+          </Stat>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/shows/new"
             prefetch={false}
@@ -53,7 +54,7 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
           </Link>
           <Button size="sm">Export</Button>
         </div>
-      </header>
+      </div>
 
       <ShowTabs id={show.slug} />
       {children}

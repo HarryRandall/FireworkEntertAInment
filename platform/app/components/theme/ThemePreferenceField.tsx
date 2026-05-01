@@ -71,10 +71,10 @@ export function ThemePreferenceField({
               aria-checked={active}
               onClick={() => chooseTheme(option.value)}
               className={cn(
-                "flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55",
+                "focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none",
                 active
-                  ? "border-primary/60 bg-primary/10 text-on-surface shadow-[var(--shadow-cta)]"
-                  : "border-outline-variant/55 bg-surface-container-highest/55 text-on-surface-variant hover:border-primary/35 hover:bg-surface-container-highest",
+                  ? "border-primary/45 bg-primary-fixed/50 text-on-surface shadow-[var(--shadow-card)]"
+                  : "border-outline-variant/55 bg-surface text-on-surface-variant hover:border-primary/25 hover:bg-surface-container-low",
               )}
             >
               <span className="flex w-full items-center justify-between gap-3">

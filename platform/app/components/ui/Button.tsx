@@ -7,7 +7,7 @@ type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "focus-glow-action inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus:outline-none focus-visible:outline-none";
 
 const variantClasses: Record<Variant, string> = {
   primary:
