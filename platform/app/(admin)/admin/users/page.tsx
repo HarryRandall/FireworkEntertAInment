@@ -144,7 +144,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                   </td>
                   <td className={tableCellClasses("text-right")}>
                     <Link
-                      href={href}
+                      href={`/admin/users/${user.id}`}
                       prefetch
                       className="rounded-lg border border-outline-variant/45 px-4 py-2 text-xs font-bold text-primary transition-colors hover:border-primary/40 hover:bg-surface-container-highest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
                     >

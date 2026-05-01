@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  ArrowLeft,
   Boxes,
   Database,
   FileInput,
@@ -133,6 +134,14 @@ export function AdminShell({
         <div className="mb-8">{brand}</div>
 
         <nav className="space-y-1">{renderNavLinks()}</nav>
+        <Link
+          href="/dashboard"
+          prefetch
+          className="mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+        >
+          <ArrowLeft size={16} strokeWidth={1.9} />
+          Back to app
+        </Link>
 
         <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
       </aside>
@@ -186,6 +195,15 @@ export function AdminShell({
             <nav className="space-y-1">
               {renderNavLinks(() => setDrawerOpen(false))}
             </nav>
+            <Link
+              href="/dashboard"
+              prefetch
+              onClick={() => setDrawerOpen(false)}
+              className="mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
+            >
+              <ArrowLeft size={16} strokeWidth={1.9} />
+              Back to app
+            </Link>
 
             <div className="mt-auto border-t border-outline-variant/50 pt-4">{profileCard}</div>
           </aside>
