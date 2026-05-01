@@ -50,7 +50,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <header className="border-b border-outline-variant/15 pb-6">
+      <header className="border-b border-outline-variant/55 pb-6">
         <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">
           Show library
         </h1>

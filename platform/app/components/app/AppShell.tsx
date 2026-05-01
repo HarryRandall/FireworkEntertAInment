@@ -60,7 +60,8 @@ export function AppShell({
   };
 
   const displayName = profile?.fullName || profile?.email || "Account";
-  const secondaryLine = (profile?.roles ?? ["user"]).join(", ");
+  const secondaryLine =
+    profile?.fullName && profile?.email ? profile.email : "";
   const initials =
     displayName
       .split(/\s+/)

@@ -12,7 +12,7 @@ export default async function AdminImportsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="border-b border-outline-variant/55 pb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
           Imports
         </p>
