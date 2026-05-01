@@ -29,7 +29,7 @@ export function PasswordChangeForm() {
     <form
       ref={formRef}
       action={formAction}
-      className="space-y-4 rounded-xl border border-outline-variant/45 bg-surface p-5"
+      className="space-y-4 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5"
     >
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant/45 bg-surface-container-low text-primary">

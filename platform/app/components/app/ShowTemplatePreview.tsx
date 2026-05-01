@@ -23,19 +23,19 @@ export function ShowTemplatePreview({
     <Link
       href={`/library/${template.slug}`}
       prefetch
-      className="group block focus:outline-none"
+      className="group block h-full focus:outline-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onFocus={() => setIsHovered(true)}
       onBlur={() => setIsHovered(false)}
     >
-      <Card elevation="low" radius="md" hoverable className="overflow-hidden p-0">
+      <Card elevation="low" radius="md" hoverable className="flex h-full flex-col overflow-hidden p-0">
         <TemplateReplayPreview
           template={template}
           specifications={specifications}
           isCardHovered={isHovered}
         />
-        <div className="p-5">
+        <div className="flex flex-1 flex-col p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold text-on-surface transition-colors group-hover:text-primary">
@@ -62,7 +62,7 @@ export function ShowTemplatePreview({
             </span>
             <span>{template.effectsCount} effects</span>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-auto flex flex-wrap gap-2 pt-4">
             {template.moodTags.slice(0, 3).map((tag) => (
               <Badge key={tag} tone="neutral">
                 {tag}

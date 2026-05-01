@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShowTemplatePreview } from "@/app/components/app/ShowTemplatePreview";
+import { Card } from "@/app/components/ui/Card";
 import { listShowTemplates } from "@/lib/platform.server";
 import { listFireworkSpecifications } from "@/lib/shows.server";
 import type { ShowTemplate } from "@/lib/platform.types";
@@ -60,24 +61,29 @@ export default async function LibraryPage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      <div className="flex flex-wrap gap-2">
-        {SORTS.map((item) => (
-          <Link
-            key={item.key}
-            href={item.key === "popular" ? "/library" : `/library?sort=${item.key}`}
-            className={
-              item.key === sort
-                ? "inline-flex h-10 items-center rounded-full bg-primary-container px-4 text-sm font-bold text-on-primary-container"
-                : "inline-flex h-10 items-center rounded-full border border-outline/20 px-4 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-            }
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
+      <Card elevation="low" radius="md" className="p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-xs font-bold uppercase tracking-[0.18em] text-on-surface-variant">
+            Sort by
+          </span>
+          {SORTS.map((item) => (
+            <Link
+              key={item.key}
+              href={item.key === "popular" ? "/library" : `/library?sort=${item.key}`}
+              className={
+                item.key === sort
+                  ? "inline-flex h-10 items-center rounded-lg border border-primary/60 bg-primary-container px-4 text-sm font-bold text-on-primary-container shadow-[var(--shadow-cta)]"
+                  : "inline-flex h-10 items-center rounded-lg border border-outline-variant/55 bg-surface-container-low px-4 text-sm font-bold text-on-surface-variant transition-colors hover:border-primary/40 hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              }
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </Card>
 
       {sortedTemplates.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
           {sortedTemplates.map((template) => (
             <ShowTemplatePreview
               key={template.id}

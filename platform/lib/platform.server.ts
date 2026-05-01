@@ -10,7 +10,6 @@ import type {
   CatalogueProductSummary,
   CurrentProfile,
   ImportJobSummary,
-  OrganisationSummary,
   Permission,
   PermissionKey,
   ProfileStatus,
@@ -30,7 +29,6 @@ type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type RolePermissionRow = Database["public"]["Tables"]["role_permissions"]["Row"];
 type UserPermissionOverrideRow =
   Database["public"]["Tables"]["user_permission_overrides"]["Row"];
-type OrganisationRow = Database["public"]["Tables"]["organisations"]["Row"];
 type SupplierRow = Database["public"]["Tables"]["supplier_profiles"]["Row"];
 type ImportJobRow = Database["public"]["Tables"]["import_jobs"]["Row"];
 type CatalogueProductRow =
@@ -339,30 +337,6 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
 export async function getAdminUserById(userId: string): Promise<AdminUser | null> {
   const users = await listAdminUsers();
   return users.find((user) => user.id === userId) ?? null;
-}
-
-export async function listOrganisations(): Promise<OrganisationSummary[]> {
-  if (!(await requirePermission("admin.manage_organisations"))) return [];
-  const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from("organisations")
-    .select("id, name, slug, type, status, updated_at")
-    .order("updated_at", { ascending: false });
-  if (error) {
-    console.error("[platform.server] listOrganisations failed:", error);
-    return [];
-  }
-  return ((data ?? []) as Pick<
-    OrganisationRow,
-    "id" | "name" | "slug" | "type" | "status" | "updated_at"
-  >[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    type: row.type,
-    status: row.status,
-    updatedAt: row.updated_at,
-  }));
 }
 
 export async function listSuppliers(): Promise<SupplierSummary[]> {

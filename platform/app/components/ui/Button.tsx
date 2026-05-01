@@ -7,13 +7,13 @@ type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-full font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-110",
+    "border border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105",
   secondary:
-    "border border-outline/35 bg-surface-container-low/40 text-primary hover:border-primary/55 hover:bg-surface-container-highest/70",
+    "border border-outline/45 bg-surface-container-low text-on-surface hover:border-primary/45 hover:bg-surface-container-high",
   ghost:
     "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
   destructive:

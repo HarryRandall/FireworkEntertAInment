@@ -79,24 +79,28 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
           <fieldset className="space-y-2">
             <legend className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-              Roles
+              Role
             </legend>
             <div className="flex flex-wrap gap-2">
-              {roles.map((role) => (
+              {roles.map((role) => {
+                const selected = (user.roles[0] ?? "user") === role.key;
+                return (
                 <label
                   key={role.id}
-                  className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-outline/55 bg-surface px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-on-surface has-[:checked]:border-primary/60 has-[:checked]:bg-primary/10 has-[:checked]:text-primary"
+                  className="group inline-flex cursor-pointer items-center gap-2 rounded-lg border border-outline/55 bg-surface px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-on-surface has-[:checked]:border-primary/60 has-[:checked]:bg-primary-container has-[:checked]:text-on-primary-container has-[:checked]:shadow-[var(--shadow-cta)]"
                 >
                   <input
-                    type="checkbox"
-                    name="roles"
+                    type="radio"
+                    name="role"
                     value={role.id}
-                    defaultChecked={user.roles.includes(role.key)}
+                    defaultChecked={selected}
+                    required
                     className="sr-only"
                   />
                   {role.name}
                 </label>
-              ))}
+                );
+              })}
             </div>
           </fieldset>
 
