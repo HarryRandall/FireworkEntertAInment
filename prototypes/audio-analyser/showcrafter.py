@@ -690,6 +690,14 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
                         merged_segs.pop(idx)
 
     # Build section list with energy stats
+    intensity_low = 0.4
+    intensity_high = 0.7
+    if rms_normalised.size:
+        p40 = float(np.percentile(rms_normalised, 40))
+        p70 = float(np.percentile(rms_normalised, 70))
+        if p70 - p40 >= 0.05:
+            intensity_low = p40
+            intensity_high = p70
     sections = []
     for i in range(len(merged_bounds)):
         start = merged_bounds[i]
@@ -711,7 +719,7 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
             "duration": round(end - start, 2),
             "avg_energy": round(avg_energy, 3),
             "peak_energy": round(peak_energy, 3),
-            "intensity": classify_intensity(avg_energy),
+            "intensity": classify_intensity(avg_energy, intensity_low, intensity_high),
             "cluster_id": merged_segs[i] if i < len(merged_segs) else -1,
             "label": "unknown",
         })
@@ -811,10 +819,10 @@ def label_sections_from_clusters(sections):
                 s["label"] = "verse"
 
 
-def classify_intensity(energy: float) -> str:
-    if energy > 0.7:
+def classify_intensity(energy: float, low: float, high: float) -> str:
+    if energy > high:
         return "high"
-    elif energy > 0.4:
+    elif energy > low:
         return "medium"
     else:
         return "low"
@@ -829,7 +837,15 @@ def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
     window = int(fps * 4)
     buildups = []
 
-    peaks, _ = find_peaks(smoothed, height=0.6, distance=int(fps * 5), prominence=0.15)
+    peak_height = 0.6
+    rise_threshold = 0.2
+    if smoothed.size:
+        peak_height = float(np.percentile(smoothed, 60))
+        rise_span = float(np.percentile(smoothed, 90) - np.percentile(smoothed, 10))
+        if rise_span > 0:
+            rise_threshold = max(0.12, 0.35 * rise_span)
+
+    peaks, _ = find_peaks(smoothed, height=peak_height, distance=int(fps * 5), prominence=0.15)
 
     for peak in peaks:
         start = max(0, peak - window)
@@ -838,7 +854,7 @@ def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
             continue
 
         energy_rise = float(segment[-1] - segment[0])
-        if energy_rise > 0.2:
+        if energy_rise > rise_threshold:
             start_time = float(librosa.frames_to_time(start, sr=sr, hop_length=hop_length))
             peak_time = float(librosa.frames_to_time(peak, sr=sr, hop_length=hop_length))
             buildups.append({
