@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowLeft,
   Boxes,
   Building2,
   Database,
   FileInput,
   LayoutDashboard,
-  LogOut,
   Menu,
   Settings,
   Store,
@@ -20,7 +18,6 @@ import {
 import { cn } from "@/lib/cn";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
 import type { CurrentProfile } from "@/lib/platform.types";
-import { createClient } from "@/utils/supabase/client";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -39,7 +36,6 @@ export function AdminShell({
   profile: CurrentProfile;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
   const initials =
@@ -49,13 +45,6 @@ export function AdminShell({
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
       .join("") || "A";
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  };
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -84,7 +73,7 @@ export function AdminShell({
           Admin
         </p>
         <p className="text-xs font-semibold text-on-surface-variant">
-          ShowCrafter control
+          Platform admin
         </p>
       </div>
     </div>
@@ -137,29 +126,6 @@ export function AdminShell({
     </Link>
   );
 
-  const backToApp = (
-    <Link
-      href="/dashboard"
-      prefetch
-      onClick={() => setDrawerOpen(false)}
-      className="flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-variant/45 text-sm font-bold text-primary transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
-    >
-      <ArrowLeft size={16} strokeWidth={1.9} />
-      Back to app
-    </Link>
-  );
-
-  const logoutButton = (
-    <button
-      type="button"
-      onClick={handleLogout}
-      className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-variant/45 text-sm font-bold text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55"
-    >
-      <LogOut size={16} strokeWidth={1.9} />
-      Logout
-    </button>
-  );
-
   return (
     <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[300px_minmax(0,1fr)]">
       <ThemePreferenceSync themePreference={profile.themePreference} />
@@ -168,11 +134,7 @@ export function AdminShell({
 
         <nav className="space-y-1">{renderNavLinks()}</nav>
 
-        <div className="mt-auto space-y-3 border-t border-outline-variant/50 pt-4">
-          {backToApp}
-          {profileCard}
-          {logoutButton}
-        </div>
+        <div className="mt-auto pt-4">{profileCard}</div>
       </aside>
 
       <header className="fixed top-0 z-40 w-full border-b border-outline-variant/50 bg-surface/90 backdrop-blur-xl lg:hidden">
@@ -225,11 +187,7 @@ export function AdminShell({
               {renderNavLinks(() => setDrawerOpen(false))}
             </nav>
 
-            <div className="mt-auto space-y-3 border-t border-outline-variant/50 pt-4">
-              {backToApp}
-              {profileCard}
-              {logoutButton}
-            </div>
+            <div className="mt-auto pt-4">{profileCard}</div>
           </aside>
         </div>
       ) : null}
