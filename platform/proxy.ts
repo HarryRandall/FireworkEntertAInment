@@ -2,7 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerEnv } from "@/utils/supabase/env";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/shows"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/shows",
+  "/library",
+  "/recommendations",
+  "/admin",
+  "/settings",
+];
 const AUTH_ONLY_PATHS = ["/login", "/signup"];
 
 function matchesPathPrefix(pathname: string, prefix: string) {

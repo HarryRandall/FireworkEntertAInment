@@ -5,7 +5,7 @@ import { Container } from "@/app/components/ui/Container";
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Ember glow backdrop */}
+      {/* Neon glow backdrop */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 flex items-center justify-center"

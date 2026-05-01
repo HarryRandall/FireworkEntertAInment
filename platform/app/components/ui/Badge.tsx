@@ -1,13 +1,18 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type Tone = "primary" | "neutral" | "success" | "live";
+type Tone = "primary" | "neutral" | "success" | "live" | "danger" | "wow";
 
 const toneClasses: Record<Tone, string> = {
-  primary: "bg-primary/10 text-primary",
-  neutral: "bg-surface-container-highest text-on-surface-variant",
-  success: "bg-[color-mix(in_srgb,_var(--color-success)_15%,_transparent)] text-[color:var(--color-success)]",
-  live: "bg-tertiary/10 text-tertiary",
+  primary: "border border-primary/25 bg-primary/10 text-primary",
+  neutral:
+    "border border-outline-variant/45 bg-surface-container-highest text-on-surface-variant",
+  success:
+    "border border-success/25 bg-[color-mix(in_srgb,_var(--color-success)_14%,_transparent)] text-[color:var(--color-success)]",
+  live: "border border-secondary/25 bg-secondary/10 text-secondary",
+  danger:
+    "border border-error/25 bg-[color-mix(in_srgb,_var(--color-error)_14%,_transparent)] text-error",
+  wow: "border border-highlight/35 bg-highlight/12 text-highlight",
 };
 
 type BadgeProps = {

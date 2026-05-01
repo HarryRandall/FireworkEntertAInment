@@ -23,9 +23,9 @@ type Product = {
 };
 
 const PRODUCTS: Product[] = [
-  { sku: "ICN-2032", name: "Ember Cascade 25-shot", category: "Cake", shots: 25, duration: "32s", price: "$129", effects: ["Gold willow", "Crackle"] },
+  { sku: "ICN-2032", name: "Aurora Cascade 25-shot", category: "Cake", shots: 25, duration: "32s", price: "$129", effects: ["Cyan willow", "Crackle"] },
   { sku: "ICN-1108", name: "Sky Pulse Mini", category: "Single Shot", shots: 1, duration: "4s", price: "$8", effects: ["Blue peony", "Strobe"] },
-  { sku: "ICN-3300", name: "Phoenix Fountain XL", category: "Fountain", shots: 1, duration: "60s", price: "$45", effects: ["Gold spray", "Silver"] },
+  { sku: "ICN-3300", name: "Phoenix Fountain XL", category: "Fountain", shots: 1, duration: "60s", price: "$45", effects: ["Blue spray", "Silver"] },
   { sku: "ICN-2204", name: "Crimson Bloom 16-shot", category: "Cake", shots: 16, duration: "22s", price: "$89", effects: ["Red peony", "White strobe"] },
   { sku: "ICN-4002", name: "Roman Candle Octet", category: "Roman Candle", shots: 8, duration: "18s", price: "$32", effects: ["Multi-colour", "Whistle"] },
   { sku: "ICN-9100", name: "Grand Finale Combo", category: "Finale", shots: 100, duration: "45s", price: "$399", effects: ["Multi-effect", "Salute"] },

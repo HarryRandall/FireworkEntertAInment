@@ -91,11 +91,11 @@ export default async function ShowTimelinePage({ params }: PageProps) {
           </p>
           <Textarea
             rows={5}
-            placeholder="How would you like to change the show? E.g., 'Make the finale more intense with more gold effects.'"
+            placeholder="How would you like to change the show? E.g., 'Make the finale more intense with tighter cyan and violet hits.'"
           />
           <button
             type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary-container py-3 font-bold text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.40)] transition-all active:scale-[0.98] hover:brightness-110"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary-container py-3 font-bold text-on-primary-container shadow-[var(--shadow-cta)] transition-all active:scale-[0.98] hover:brightness-110"
           >
             <RefreshCw size={16} strokeWidth={2} />
             Regenerate

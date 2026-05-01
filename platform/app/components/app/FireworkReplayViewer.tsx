@@ -116,7 +116,7 @@ function makeBurst(cue: ReplayCue, index: number): Burst {
   const positionAttr = new THREE.BufferAttribute(livePositions, 3);
   geometry.setAttribute("position", positionAttr);
 
-  const colors = spec.colors.length > 0 ? spec.colors : ["#ffc174"];
+  const colors = spec.colors.length > 0 ? spec.colors : ["#00E5FF"];
   const xOffset =
     index === 0 ? 0 : (index - (spec.secondaryBursts ?? 0) / 2) * 1.2;
 
@@ -275,7 +275,7 @@ function Starfield() {
   return (
     <points geometry={geometry}>
       <pointsMaterial
-        color="#e5e2e1"
+        color="#F5F7FA"
         size={0.026}
         transparent
         opacity={0.48}
@@ -289,7 +289,7 @@ function Starfield() {
 function GroundGrid() {
   return (
     <gridHelper
-      args={[16, 16, "#534434", "#353534"]}
+      args={[16, 16, "#31415F", "#22304A"]}
       position={[0, -1.45, -1]}
     />
   );
@@ -298,9 +298,11 @@ function GroundGrid() {
 function ReplayScene({
   cues,
   elapsed,
+  interactive = true,
 }: {
   cues: ReplayCue[];
   elapsed: number;
+  interactive?: boolean;
 }) {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const firedCueIds = useRef(new Set<string>());
@@ -335,17 +337,19 @@ function ReplayScene({
   return (
     <>
       <ambientLight intensity={0.48} />
-      <fog attach="fog" args={["#0a0a18", 8, 22]} />
+      <fog attach="fog" args={["#05070D", 8, 22]} />
       <Starfield />
       <GroundGrid />
-      <OrbitControls
-        target={[0, 0.85, -0.8]}
-        enableDamping
-        dampingFactor={0.08}
-        minDistance={2.5}
-        maxDistance={11}
-        maxPolarAngle={Math.PI * 0.72}
-      />
+      {interactive ? (
+        <OrbitControls
+          target={[0, 0.85, -0.8]}
+          enableDamping
+          dampingFactor={0.08}
+          minDistance={2.5}
+          maxDistance={11}
+          maxPolarAngle={Math.PI * 0.72}
+        />
+      ) : null}
       {bursts.map((burst) => (
         <FireworkBurst
           key={burst.id}
@@ -357,6 +361,30 @@ function ReplayScene({
         />
       ))}
     </>
+  );
+}
+
+export function FireworkReplayCanvas({
+  cues,
+  elapsed,
+  interactive = true,
+}: {
+  cues: ReplayCue[];
+  elapsed: number;
+  interactive?: boolean;
+}) {
+  return (
+    <Canvas
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      }}
+      camera={{ position: [0, 1.35, 7.2], fov: 58 }}
+      dpr={[1, 1.75]}
+    >
+      <ReplayScene cues={cues} elapsed={elapsed} interactive={interactive} />
+    </Canvas>
   );
 }
 
@@ -490,17 +518,7 @@ export function FireworkReplayViewer({
             </p>
           </div>
 
-          <Canvas
-            gl={{
-              antialias: true,
-              alpha: true,
-              powerPreference: "high-performance",
-            }}
-            camera={{ position: [0, 1.35, 7.2], fov: 58 }}
-            dpr={[1, 1.75]}
-          >
-            <ReplayScene cues={sortedCues} elapsed={elapsed} />
-          </Canvas>
+          <FireworkReplayCanvas cues={sortedCues} elapsed={elapsed} />
 
           {!hasReplayCues ? <EmptyPreview /> : null}
         </div>
@@ -513,7 +531,7 @@ export function FireworkReplayViewer({
                 onClick={togglePlayback}
                 disabled={!hasReplayCues}
                 aria-label={isPlaying ? "Pause preview" : "Play preview"}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.5)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
               >
                 {isPlaying ? (
                   <Pause size={18} strokeWidth={2.5} />
@@ -628,7 +646,7 @@ export function FireworkReplayViewer({
             <button
               type="submit"
               disabled={isPending || specifications.length === 0}
-              className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-[0_8px_24px_-8px_rgba(245,158,11,0.4)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40"
+              className="mt-auto inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary-container px-5 text-sm font-bold text-on-primary-container shadow-[var(--shadow-cta)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40"
             >
               <Plus size={16} strokeWidth={2} />
               Add

@@ -5,8 +5,8 @@ type Elevation = "low" | "high";
 type Radius = "md" | "lg" | "xl";
 
 const elevationClasses: Record<Elevation, string> = {
-  low: "bg-surface-container-low",
-  high: "bg-surface-container-high",
+  low: "bg-surface-container-low/88",
+  high: "bg-surface-container-high/92",
 };
 
 const radiusClasses: Record<Radius, string> = {
@@ -36,10 +36,10 @@ export function Card({
       className={cn(
         elevationClasses[elevation],
         radiusClasses[radius],
-        bordered && "border border-outline-variant/15",
-        "shadow-[0_3px_5px_rgba(0,0,0,0.05)]",
+        bordered && "border border-outline-variant/55",
+        "shadow-[var(--shadow-card)] backdrop-blur-xl",
         hoverable &&
-          "transition-all duration-200 ease-out hover:border-outline-variant/25 hover:bg-surface-container-high hover:shadow-[0_8px_20px_rgba(0,0,0,0.10)]",
+          "transition-all duration-200 ease-out hover:border-primary/35 hover:bg-surface-container-high hover:shadow-[var(--shadow-card-hover)]",
         className,
       )}
       {...rest}

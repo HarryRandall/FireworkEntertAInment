@@ -2,91 +2,95 @@
 
 /*
  * ShowCrafter design tokens.
- * Full spec: .claude/skills/showcrafter-design-system/SKILL.md
  *
- * Token names map 1:1 to Tailwind v4 classes (e.g. `bg-primary`,
- * `text-on-surface-variant`). Values are plain CSS custom properties so a
- * `[data-theme="light"]` block can override them — every utility cascades.
+ * The product now uses a dark cinematic AI-control aesthetic by default:
+ * deep navy/black surfaces, neon cyan/blue/violet interaction accents, and
+ * yellow only for highlight/wow states. Token names map 1:1 to Tailwind v4
+ * utilities (e.g. `bg-primary`, `text-on-surface-variant`).
  */
 @theme {
   /* Type */
-  --font-headline: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-headline: var(--font-geist-sans), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-body: var(--font-geist-sans), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
-  /* Brand-friendly aliases */
-  --color-night: #131313;
-  --color-ember-gold: #ffc174;
-  --color-ember-gold-container: #f59e0b;
-  --color-ember-gold-fixed: #ffddb8;
-  --color-ember-gold-dim: #ffb95f;
-  --color-soft-gold: #f0bd82;
-  --color-sky-pulse: #8fd5ff;
-  --color-sky-pulse-container: #1abdff;
+  /* Brand aliases */
+  --color-night: #05070D;
+  --color-neon-cyan: #00E5FF;
+  --color-electric-blue: #3B82F6;
+  --color-violet: #8B5CF6;
+  --color-magenta: #FF3DF2;
+  --color-wow-yellow: #FFD166;
+  --color-live-green: #00FF9C;
+  --color-soft-gold: #8B5CF6;
+  --color-sky-pulse: #00E5FF;
+  --color-sky-pulse-container: #3B82F6;
 
   /* Surface ladder */
-  --color-background: #0b0b0c;
-  --color-surface: #0b0b0c;
-  --color-surface-dim: #131313;
-  --color-surface-bright: #3a3939;
-  --color-surface-container-lowest: #060607;
-  --color-surface-container-low: #141416;
-  --color-surface-container: #1a1a1d;
-  --color-surface-container-high: #232327;
-  --color-surface-container-highest: #2d2d31;
-  --color-surface-variant: #353534;
-  --color-surface-tint: #ffb95f;
+  --color-background: #05070D;
+  --color-surface: #05070D;
+  --color-surface-dim: #070B15;
+  --color-surface-bright: #1A2540;
+  --color-surface-container-lowest: #05070D;
+  --color-surface-container-low: #0B1020;
+  --color-surface-container: #0F1628;
+  --color-surface-container-high: #11182A;
+  --color-surface-container-highest: #141B2E;
+  --color-surface-variant: #18243B;
+  --color-surface-tint: #00E5FF;
 
   /* On-surface text */
-  --color-on-surface: #f1edea;
-  --color-on-surface-variant: #b9a98f;
-  --color-on-background: #f1edea;
+  --color-on-surface: #F5F7FA;
+  --color-on-surface-variant: #AAB6C8;
+  --color-on-background: #F5F7FA;
 
-  /* Primary (Ember Gold) */
-  --color-primary: #ffc174;
-  --color-primary-container: #f59e0b;
-  --color-primary-fixed: #ffddb8;
-  --color-primary-fixed-dim: #ffb95f;
-  --color-on-primary: #472a00;
-  --color-on-primary-container: #2a1700;
-  --color-on-primary-fixed: #2a1700;
-  --color-on-primary-fixed-variant: #653e00;
-  --color-inverse-primary: #855300;
+  /* Primary (Neon Cyan) */
+  --color-primary: #00E5FF;
+  --color-primary-container: #00E5FF;
+  --color-primary-fixed: #B9F7FF;
+  --color-primary-fixed-dim: #5EEAFF;
+  --color-on-primary: #00141A;
+  --color-on-primary-container: #00141A;
+  --color-on-primary-fixed: #00141A;
+  --color-on-primary-fixed-variant: #0B4A55;
+  --color-inverse-primary: #006DDB;
 
-  /* Secondary */
-  --color-secondary: #f0bd82;
-  --color-secondary-container: #62400f;
-  --color-secondary-fixed: #ffddb8;
-  --color-secondary-fixed-dim: #f0bd82;
-  --color-on-secondary: #472a00;
-  --color-on-secondary-container: #ddac72;
-  --color-on-secondary-fixed: #2a1700;
-  --color-on-secondary-fixed-variant: #62400f;
+  /* Secondary (Electric Blue) */
+  --color-secondary: #3B82F6;
+  --color-secondary-container: #173B77;
+  --color-secondary-fixed: #CFE2FF;
+  --color-secondary-fixed-dim: #93C5FD;
+  --color-on-secondary: #F5F7FA;
+  --color-on-secondary-container: #D9E8FF;
+  --color-on-secondary-fixed: #071327;
+  --color-on-secondary-fixed-variant: #173B77;
 
-  /* Tertiary (Sky Pulse) */
-  --color-tertiary: #8fd5ff;
-  --color-tertiary-container: #1abdff;
-  --color-tertiary-fixed: #c5e7ff;
-  --color-tertiary-fixed-dim: #7fd0ff;
-  --color-on-tertiary: #00344a;
-  --color-on-tertiary-container: #004966;
-  --color-on-tertiary-fixed: #001e2d;
-  --color-on-tertiary-fixed-variant: #004c6a;
+  /* Tertiary (Violet / Magenta) */
+  --color-tertiary: #8B5CF6;
+  --color-tertiary-container: #FF3DF2;
+  --color-tertiary-fixed: #E9D5FF;
+  --color-tertiary-fixed-dim: #C4B5FD;
+  --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #1B0620;
+  --color-on-tertiary-fixed: #160629;
+  --color-on-tertiary-fixed-variant: #4C1D95;
 
   /* Semantic */
-  --color-error: #ffb4ab;
-  --color-error-container: #93000a;
-  --color-on-error: #690005;
-  --color-on-error-container: #ffdad6;
-  --color-success: #0ECB81;
-  --color-danger: #F6465D;
+  --color-error: #FF4D6D;
+  --color-error-container: #5F1022;
+  --color-on-error: #FFFFFF;
+  --color-on-error-container: #FFD6DE;
+  --color-success: #00FF9C;
+  --color-danger: #FF4D6D;
+  --color-highlight: #FFD166;
 
   /* Borders */
-  --color-outline: #a08e7a;
-  --color-outline-variant: #3a2f24;
+  --color-outline: #31415F;
+  --color-outline-variant: #22304A;
 
   /* Inverse */
-  --color-inverse-surface: #f1edea;
-  --color-inverse-on-surface: #313030;
+  --color-inverse-surface: #F5F7FA;
+  --color-inverse-on-surface: #0B1020;
 
   /* Radius scale */
   --radius-pill: 9999px;
@@ -95,49 +99,75 @@
   --radius-hero: 24px;
 
   /* Shadow scale */
-  --shadow-card: 0 3px 5px rgba(0, 0, 0, 0.05);
-  --shadow-card-hover: 0 8px 20px rgba(0, 0, 0, 0.10);
-  --shadow-cta: 0 8px 24px -8px rgba(245, 158, 11, 0.40);
-  --shadow-modal: 0 32px 60px rgba(0, 0, 0, 0.40);
+  --shadow-card: 0 16px 50px -36px rgba(0, 229, 255, 0.34);
+  --shadow-card-hover: 0 22px 70px -40px rgba(139, 92, 246, 0.52);
+  --shadow-cta: 0 14px 36px -16px rgba(0, 229, 255, 0.72);
+  --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.55);
 }
 
-/*
- * Light theme overrides. The night-sky brand is preserved by warming the
- * cream surfaces, deepening Ember Gold for AA contrast on light, and
- * inverting the surface ladder. Sky Pulse stays — it's still "live state".
- */
 [data-theme="light"] {
-  --color-background: #faf6ef;
-  --color-surface: #faf6ef;
-  --color-surface-dim: #f1ebe0;
-  --color-surface-bright: #ffffff;
-  --color-surface-container-lowest: #f5efe3;
-  --color-surface-container-low: #fbf6eb;
-  --color-surface-container: #ffffff;
-  --color-surface-container-high: #fff8ec;
-  --color-surface-container-highest: #fff3df;
-  --color-surface-variant: #ece2cf;
+  --color-background: #F7F9FC;
+  --color-surface: #F7F9FC;
+  --color-surface-dim: #E8EEF6;
+  --color-surface-bright: #FFFFFF;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FFFFFF;
+  --color-surface-container: #F8FAFD;
+  --color-surface-container-high: #F1F5F9;
+  --color-surface-container-highest: #E8EEF6;
+  --color-surface-variant: #E1E8F2;
+  --color-surface-tint: #006DDB;
 
-  --color-on-surface: #1a1410;
-  --color-on-surface-variant: #5a4a36;
-  --color-on-background: #1a1410;
+  --color-on-surface: #0B1020;
+  --color-on-surface-variant: #344256;
+  --color-on-background: #0B1020;
 
-  --color-primary: #b8730a;
-  --color-primary-container: #f59e0b;
-  --color-on-primary: #ffffff;
-  --color-on-primary-container: #2a1700;
+  --color-primary: #006DDB;
+  --color-primary-container: #006DDB;
+  --color-primary-fixed: #D7EDFF;
+  --color-primary-fixed-dim: #99D9FF;
+  --color-on-primary: #FFFFFF;
+  --color-on-primary-container: #FFFFFF;
+  --color-on-primary-fixed: #071327;
+  --color-on-primary-fixed-variant: #0E4B93;
+  --color-inverse-primary: #00E5FF;
 
-  --color-tertiary: #0a78a8;
-  --color-tertiary-container: #1abdff;
-  --color-on-tertiary: #ffffff;
+  --color-secondary: #008AA8;
+  --color-secondary-container: #D8F6FF;
+  --color-secondary-fixed: #D8F6FF;
+  --color-secondary-fixed-dim: #A5EFFF;
+  --color-on-secondary: #FFFFFF;
+  --color-on-secondary-container: #063642;
+  --color-on-secondary-fixed: #063642;
+  --color-on-secondary-fixed-variant: #0B6680;
 
-  --color-outline: #a08e7a;
-  --color-outline-variant: #d8c8ad;
+  --color-tertiary: #6D28D9;
+  --color-tertiary-container: #BE185D;
+  --color-tertiary-fixed: #EDE9FE;
+  --color-tertiary-fixed-dim: #DDD6FE;
+  --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #FFFFFF;
+  --color-on-tertiary-fixed: #221044;
+  --color-on-tertiary-fixed-variant: #581C87;
 
-  --shadow-card: 0 3px 8px rgba(40, 25, 0, 0.06);
-  --shadow-card-hover: 0 12px 28px rgba(40, 25, 0, 0.12);
-  --shadow-cta: 0 10px 28px -10px rgba(245, 158, 11, 0.55);
-  --shadow-modal: 0 32px 60px rgba(40, 25, 0, 0.18);
+  --color-error: #DC2626;
+  --color-error-container: #FEE2E2;
+  --color-on-error: #FFFFFF;
+  --color-on-error-container: #7F1D1D;
+  --color-success: #008A5B;
+  --color-danger: #DC2626;
+  --color-highlight: #8A5A00;
+
+  --color-outline: #B7C3D7;
+  --color-outline-variant: #D8E0EC;
+
+  --color-inverse-surface: #0B1020;
+  --color-inverse-on-surface: #F5F7FA;
+
+  --shadow-card: 0 18px 55px -42px rgba(11, 16, 32, 0.42);
+  --shadow-card-hover: 0 24px 70px -42px rgba(0, 109, 219, 0.34);
+  --shadow-cta: 0 14px 36px -18px rgba(0, 109, 219, 0.62);
+  --shadow-modal: 0 32px 72px rgba(11, 16, 32, 0.24);
 }
 
 html {
@@ -154,6 +184,19 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv11";
+}
+
+button,
+input,
+textarea,
+select,
+a {
+  outline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 ::selection {
@@ -179,22 +222,23 @@ body {
   filter: blur(64px);
 }
 
-/* Animated gold sweep used on the footer divider and section accents. */
-@keyframes ember-sweep {
+/* Animated neon sweep used on footer dividers and section accents. */
+@keyframes neon-sweep {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-.ember-divider {
+.neon-divider {
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--color-primary) 60%, transparent) 50%,
+    color-mix(in srgb, var(--color-primary) 68%, transparent) 36%,
+    color-mix(in srgb, var(--color-tertiary) 62%, transparent) 58%,
     transparent 100%
   );
   background-size: 200% 100%;
-  animation: ember-sweep 8s linear infinite;
+  animation: neon-sweep 8s linear infinite;
 }
 
 @keyframes route-progress {
@@ -233,7 +277,7 @@ body {
 
 /* Honour OS reduced-motion: pause infinite anims, keep static states. */
 @media (prefers-reduced-motion: reduce) {
-  .ember-divider {
+  .neon-divider {
     animation: none;
   }
   *,
