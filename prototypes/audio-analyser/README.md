@@ -17,6 +17,8 @@ This folder contains the current Python prototype for ShowCrafter's audio-analys
   Maintenance and architecture guide for future contributors or agents working on this prototype. It explains the pipeline, output contract, compatibility expectations, and safe extension points.
 - `llm-harness.md`
   Design notes for downstream LLM integration. It explains how to package this analyser's outputs for a choreography model, what fields to send, how to structure prompts, and how to validate model outputs.
+- `llm-test-results/`
+  Example analysis outputs for three real songs. Each example contains the full analysis JSON (`_analysis.json`), the human-readable Markdown report (`_analysis.md`), the compact LLM payload (`_llm.json`), and the downstream LLM choreography result (`payload.json` / `analysis-report.md`).
 
 ## What This Prototype Covers
 
@@ -42,10 +44,10 @@ It does **not** yet handle:
 - Automatic music analysis from audio:
 	- Tempo and beat timeline
 	- Onset (hit/transient) timeline
-	- Energy timeline
-	- Song structure segmentation (intro / verse / chorus / bridge / outro)
-	- Key moments (builds and climaxes)
-	- Build-up detection
+	- Energy timeline (RMS, normalised with 5th/95th percentile clipping for stability on compressed mixes)
+	- Song structure segmentation via Laplacian spectral clustering (intro / verse / chorus / bridge / outro)
+	- Key moments (builds and climaxes) — climaxes are the top quartile by prominence, not a fixed energy threshold
+	- Build-up detection (rise threshold is relative to the song's own dynamic range)
 - Personality-driven show design:
 	- 8 quantified style dimensions: `boldness`, `elegance`, `playfulness`, `warmth`, `brightness`, `grandeur`, `tension`, `precision`
 	- 6 presets: `balanced`, `bold`, `elegant`, `playful`, `cinematic`, `intimate`
@@ -54,6 +56,8 @@ It does **not** yet handle:
 	- Cue density changes by section and personality
 	- Adds syncopated onset accents for suitable styles/genres
 	- Not limited to fixed `%2 / %4 / %8` beat patterns
+- Section intensity classification:
+	- `high` / `medium` / `low` thresholds are derived from the song's own energy distribution (40th and 70th percentiles), not fixed values
 - Visual recommendation per cue:
 	- `palette`, `shape`, `height`, `spread`, `density`, `section`
 - Rich output:
@@ -132,7 +136,12 @@ By default, ShowCrafter writes three files alongside each run:
 - `<song_name>_analysis.json` — full analysis result, schema-stable, suitable for programmatic post-processing
 - `<song_name>_llm.json` — **compact, token-efficient payload** for downstream LLM consumption (shape per `llm-harness.md`)
 
-All JSON outputs include a top-level `schema_version` field so downstream harnesses can gate compatibility.
+All JSON outputs include a top-level `schema_version` field so downstream harnesses can gate compatibility. The current version is **`1.1.0`**.
+
+#### Schema changelog
+
+- **1.1.0** — Added `key_moments[].prominence`. Reclassified `key_moments[].type` from an absolute `energy > 0.8` threshold to relative prominence ranking (top quartile = `climax`). This fixes zero-climax output on heavily compressed mixes (modern EDM / pop).
+- **1.0.0** — Initial versioned contract.
 
 The Markdown report includes:
 
@@ -144,7 +153,7 @@ The Markdown report includes:
 - Firework cue table with style fields (`palette`, `shape`, `height`)
 - Full beat/onset timestamp lists
 
-The full analysis JSON mirrors the in-memory result object (sections, beats, onsets, energy timeline, music profile, show personality, firework cues, etc.).
+The full analysis JSON mirrors the in-memory result object (sections, beats, onsets, energy timeline, music profile, show personality, firework cues, etc.). Each `key_moments` entry includes `time`, `energy`, `prominence`, and `type` (`climax` or `build`).
 
 The compact LLM payload contains only the highest-signal fields plus pre-computed derived features (`finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`) and placeholder `user_constraints` / `inventory` blocks for the next stage to populate. It deliberately omits raw beat/onset/energy arrays — fetch those from the full analysis JSON when micro-timing is needed.
 
