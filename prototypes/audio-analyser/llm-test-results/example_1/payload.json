@@ -1,0 +1,2696 @@
+{
+  "schema_version": "1.1.0",
+  "source_file": "example_1.mp3",
+  "song": {
+    "duration_seconds": 233.36,
+    "tempo_bpm": 123.0,
+    "total_beats": 477,
+    "genre_hint": "edm",
+    "key_signature": {
+      "root": "F",
+      "mode": "minor",
+      "confidence": 0.5
+    }
+  },
+  "music_style": {
+    "dominant_traits": [
+      "grandeur",
+      "warmth",
+      "tension"
+    ],
+    "style_vector": {
+      "boldness": 0.739,
+      "elegance": 0.512,
+      "playfulness": 0.628,
+      "warmth": 0.779,
+      "brightness": 0.527,
+      "grandeur": 0.835,
+      "tension": 0.778,
+      "precision": 0.669
+    },
+    "descriptors": {
+      "energy": 0.475,
+      "drive": 0.83,
+      "brightness": 0.527,
+      "warmth": 0.779,
+      "tension": 0.778,
+      "grandeur": 0.835,
+      "playfulness": 0.628,
+      "precision": 0.669,
+      "dynamic_range": 1.0,
+      "bass_impact": 1.0,
+      "section_contrast": 0.659
+    }
+  },
+  "show_personality": {
+    "preset": "balanced",
+    "blend_weights": {
+      "user": 0.55,
+      "music": 0.45
+    },
+    "dimensions": {
+      "boldness": 0.685,
+      "elegance": 0.533,
+      "playfulness": 0.53,
+      "warmth": 0.653,
+      "brightness": 0.552,
+      "grandeur": 0.678,
+      "tension": 0.598,
+      "precision": 0.631
+    },
+    "dominant_traits": [
+      "boldness",
+      "grandeur",
+      "warmth"
+    ],
+    "palette_direction": {
+      "primary": "gold",
+      "secondary": "amber",
+      "accent": "white"
+    },
+    "density_level": "medium"
+  },
+  "sections": [
+    {
+      "index": 0,
+      "label": "intro",
+      "start": 0.0,
+      "end": 45.98,
+      "duration": 45.98,
+      "avg_energy": 0.225,
+      "peak_energy": 0.904,
+      "intensity": "low",
+      "cue_counts": {
+        "single": 8
+      }
+    },
+    {
+      "index": 1,
+      "label": "verse",
+      "start": 45.98,
+      "end": 76.44,
+      "duration": 30.46,
+      "avg_energy": 0.437,
+      "peak_energy": 0.8,
+      "intensity": "medium",
+      "cue_counts": {
+        "single": 7,
+        "barrage": 3,
+        "crackle": 2,
+        "accent": 1
+      }
+    },
+    {
+      "index": 2,
+      "label": "chorus",
+      "start": 76.44,
+      "end": 92.9,
+      "duration": 16.46,
+      "avg_energy": 0.664,
+      "peak_energy": 1.0,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 14,
+        "barrage": 1,
+        "crackle": 1
+      }
+    },
+    {
+      "index": 3,
+      "label": "verse",
+      "start": 92.9,
+      "end": 123.86,
+      "duration": 30.95,
+      "avg_energy": 0.377,
+      "peak_energy": 0.932,
+      "intensity": "low",
+      "cue_counts": {
+        "single": 8,
+        "crackle": 1
+      }
+    },
+    {
+      "index": 4,
+      "label": "verse",
+      "start": 123.86,
+      "end": 139.83,
+      "duration": 15.98,
+      "avg_energy": 0.515,
+      "peak_energy": 1.0,
+      "intensity": "medium",
+      "cue_counts": {
+        "single": 4,
+        "crackle": 1,
+        "barrage": 1
+      }
+    },
+    {
+      "index": 5,
+      "label": "chorus",
+      "start": 139.83,
+      "end": 168.37,
+      "duration": 28.54,
+      "avg_energy": 0.668,
+      "peak_energy": 1.0,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 17,
+        "barrage": 1
+      }
+    },
+    {
+      "index": 6,
+      "label": "chorus",
+      "start": 168.37,
+      "end": 201.27,
+      "duration": 32.9,
+      "avg_energy": 0.522,
+      "peak_energy": 1.0,
+      "intensity": "medium",
+      "cue_counts": {
+        "crackle": 1,
+        "accent": 21,
+        "barrage": 2
+      }
+    },
+    {
+      "index": 7,
+      "label": "chorus",
+      "start": 201.27,
+      "end": 233.36,
+      "duration": 32.09,
+      "avg_energy": 0.631,
+      "peak_energy": 1.0,
+      "intensity": "high",
+      "cue_counts": {
+        "crackle": 2,
+        "accent": 23,
+        "barrage": 1
+      }
+    }
+  ],
+  "anchors": {
+    "key_moments": [
+      {
+        "time": 31.32,
+        "energy": 0.53,
+        "prominence": 0.351,
+        "type": "build"
+      },
+      {
+        "time": 45.14,
+        "energy": 0.52,
+        "prominence": 0.263,
+        "type": "build"
+      },
+      {
+        "time": 50.06,
+        "energy": 0.605,
+        "prominence": 0.39,
+        "type": "build"
+      },
+      {
+        "time": 53.89,
+        "energy": 0.615,
+        "prominence": 0.398,
+        "type": "climax"
+      },
+      {
+        "time": 57.75,
+        "energy": 0.579,
+        "prominence": 0.357,
+        "type": "build"
+      },
+      {
+        "time": 62.44,
+        "energy": 0.687,
+        "prominence": 0.424,
+        "type": "climax"
+      },
+      {
+        "time": 65.85,
+        "energy": 0.665,
+        "prominence": 0.395,
+        "type": "climax"
+      },
+      {
+        "time": 69.27,
+        "energy": 0.582,
+        "prominence": 0.275,
+        "type": "build"
+      },
+      {
+        "time": 73.19,
+        "energy": 0.539,
+        "prominence": 0.182,
+        "type": "build"
+      },
+      {
+        "time": 77.72,
+        "energy": 0.913,
+        "prominence": 0.916,
+        "type": "climax"
+      },
+      {
+        "time": 81.57,
+        "energy": 0.862,
+        "prominence": 0.31,
+        "type": "build"
+      },
+      {
+        "time": 84.99,
+        "energy": 0.767,
+        "prominence": 0.157,
+        "type": "build"
+      },
+      {
+        "time": 90.3,
+        "energy": 0.894,
+        "prominence": 0.373,
+        "type": "build"
+      },
+      {
+        "time": 109.46,
+        "energy": 0.594,
+        "prominence": 0.362,
+        "type": "build"
+      },
+      {
+        "time": 115.17,
+        "energy": 0.545,
+        "prominence": 0.238,
+        "type": "build"
+      },
+      {
+        "time": 122.55,
+        "energy": 0.532,
+        "prominence": 0.268,
+        "type": "build"
+      },
+      {
+        "time": 127.25,
+        "energy": 0.627,
+        "prominence": 0.338,
+        "type": "build"
+      },
+      {
+        "time": 131.42,
+        "energy": 0.713,
+        "prominence": 0.318,
+        "type": "build"
+      },
+      {
+        "time": 136.05,
+        "energy": 0.616,
+        "prominence": 0.149,
+        "type": "build"
+      },
+      {
+        "time": 139.58,
+        "energy": 0.846,
+        "prominence": 0.48,
+        "type": "climax"
+      },
+      {
+        "time": 143.5,
+        "energy": 0.827,
+        "prominence": 0.3,
+        "type": "build"
+      },
+      {
+        "time": 148.33,
+        "energy": 0.807,
+        "prominence": 0.269,
+        "type": "build"
+      },
+      {
+        "time": 155.13,
+        "energy": 0.859,
+        "prominence": 0.338,
+        "type": "build"
+      },
+      {
+        "time": 158.96,
+        "energy": 0.889,
+        "prominence": 0.75,
+        "type": "climax"
+      },
+      {
+        "time": 162.38,
+        "energy": 0.752,
+        "prominence": 0.143,
+        "type": "build"
+      },
+      {
+        "time": 166.23,
+        "energy": 0.795,
+        "prominence": 0.276,
+        "type": "build"
+      },
+      {
+        "time": 172.55,
+        "energy": 0.735,
+        "prominence": 0.205,
+        "type": "build"
+      },
+      {
+        "time": 177.84,
+        "energy": 0.743,
+        "prominence": 0.228,
+        "type": "build"
+      },
+      {
+        "time": 184.67,
+        "energy": 0.772,
+        "prominence": 0.446,
+        "type": "climax"
+      },
+      {
+        "time": 189.96,
+        "energy": 0.639,
+        "prominence": 0.426,
+        "type": "climax"
+      },
+      {
+        "time": 202.01,
+        "energy": 0.811,
+        "prominence": 0.284,
+        "type": "build"
+      },
+      {
+        "time": 205.4,
+        "energy": 0.835,
+        "prominence": 0.293,
+        "type": "build"
+      },
+      {
+        "time": 209.28,
+        "energy": 0.738,
+        "prominence": 0.133,
+        "type": "build"
+      },
+      {
+        "time": 213.16,
+        "energy": 0.746,
+        "prominence": 0.169,
+        "type": "build"
+      },
+      {
+        "time": 216.57,
+        "energy": 0.879,
+        "prominence": 0.704,
+        "type": "climax"
+      },
+      {
+        "time": 221.89,
+        "energy": 0.74,
+        "prominence": 0.161,
+        "type": "build"
+      },
+      {
+        "time": 228.65,
+        "energy": 0.747,
+        "prominence": 0.295,
+        "type": "build"
+      }
+    ],
+    "buildups": [
+      {
+        "start": 58.44,
+        "peak": 62.44,
+        "duration": 3.99,
+        "energy_rise": 0.191
+      },
+      {
+        "start": 73.72,
+        "peak": 77.72,
+        "duration": 3.99,
+        "energy_rise": 0.424
+      },
+      {
+        "start": 86.31,
+        "peak": 90.3,
+        "duration": 3.99,
+        "energy_rise": 0.19
+      },
+      {
+        "start": 105.47,
+        "peak": 109.46,
+        "duration": 3.99,
+        "energy_rise": 0.306
+      },
+      {
+        "start": 135.58,
+        "peak": 139.58,
+        "duration": 3.99,
+        "energy_rise": 0.328
+      },
+      {
+        "start": 168.55,
+        "peak": 172.55,
+        "duration": 3.99,
+        "energy_rise": 0.398
+      },
+      {
+        "start": 201.41,
+        "peak": 205.4,
+        "duration": 3.99,
+        "energy_rise": 0.172
+      },
+      {
+        "start": 212.58,
+        "peak": 216.57,
+        "duration": 3.99,
+        "energy_rise": 0.216
+      }
+    ]
+  },
+  "derived": {
+    "finale_window": {
+      "start": 216.57,
+      "end": 233.36
+    },
+    "quietest_section_index": 0,
+    "highest_energy_section_index": 5,
+    "repeated_chorus_count": 4,
+    "section_rank_by_energy": [
+      5,
+      2,
+      7,
+      6,
+      4,
+      1,
+      3,
+      0
+    ],
+    "anchor_windows": [
+      {
+        "type": "climax",
+        "anchor_time": 53.89,
+        "start": 50.89,
+        "end": 57.89,
+        "energy": 0.615
+      },
+      {
+        "type": "climax",
+        "anchor_time": 62.44,
+        "start": 59.44,
+        "end": 66.44,
+        "energy": 0.687
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 62.44,
+        "start": 58.44,
+        "end": 66.44,
+        "energy_rise": 0.191
+      },
+      {
+        "type": "climax",
+        "anchor_time": 65.85,
+        "start": 62.85,
+        "end": 69.85,
+        "energy": 0.665
+      },
+      {
+        "type": "climax",
+        "anchor_time": 77.72,
+        "start": 74.72,
+        "end": 81.72,
+        "energy": 0.913
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 77.72,
+        "start": 73.72,
+        "end": 81.72,
+        "energy_rise": 0.424
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 90.3,
+        "start": 86.31,
+        "end": 94.3,
+        "energy_rise": 0.19
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 109.46,
+        "start": 105.47,
+        "end": 113.46,
+        "energy_rise": 0.306
+      },
+      {
+        "type": "climax",
+        "anchor_time": 139.58,
+        "start": 136.58,
+        "end": 143.58,
+        "energy": 0.846
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 139.58,
+        "start": 135.58,
+        "end": 143.58,
+        "energy_rise": 0.328
+      },
+      {
+        "type": "climax",
+        "anchor_time": 158.96,
+        "start": 155.96,
+        "end": 162.96,
+        "energy": 0.889
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 172.55,
+        "start": 168.55,
+        "end": 176.55,
+        "energy_rise": 0.398
+      },
+      {
+        "type": "climax",
+        "anchor_time": 184.67,
+        "start": 181.67,
+        "end": 188.67,
+        "energy": 0.772
+      },
+      {
+        "type": "climax",
+        "anchor_time": 189.96,
+        "start": 186.96,
+        "end": 193.96,
+        "energy": 0.639
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 205.4,
+        "start": 201.41,
+        "end": 209.4,
+        "energy_rise": 0.172
+      },
+      {
+        "type": "climax",
+        "anchor_time": 216.57,
+        "start": 213.57,
+        "end": 220.57,
+        "energy": 0.879
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 216.57,
+        "start": 212.58,
+        "end": 220.57,
+        "energy_rise": 0.216
+      }
+    ]
+  },
+  "firework_cues_baseline": [
+    {
+      "time": 18.39,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.345,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 22.245,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.344,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 26.122,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.272,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 30.0,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.45,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 33.878,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.419,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 37.732,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.378,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 41.61,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.256,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 45.488,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.445,
+      "section": "intro",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 49.366,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.263,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 53.22,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.269,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 53.89,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.615,
+      "section": "verse",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 57.098,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.275,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 58.44,
+      "end": 62.44,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.191,
+      "section": "verse",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 60.976,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.42,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 62.44,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.687,
+      "section": "verse",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 64.83,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.425,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 65.85,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.665,
+      "section": "verse",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 68.708,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.462,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 72.562,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.426,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 73.72,
+      "end": 77.72,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.424,
+      "section": "verse",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 76.44,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.549,
+      "section": "verse",
+      "palette": "amber/gold",
+      "shape": "peony",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 77.72,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.913,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 78.367,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.692,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 80.062,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.729,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 80.295,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.638,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 82.013,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.734,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 82.245,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.6,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 84.172,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.622,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 86.123,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.62,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 86.31,
+      "end": 90.3,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.19,
+      "section": "chorus",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 86.355,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.735,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 88.05,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.642,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 88.305,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.701,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 89.977,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.621,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 90.233,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.865,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 91.928,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.547,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 95.806,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.304,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 99.66,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.43,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 103.538,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.38,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 105.47,
+      "end": 109.46,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.306,
+      "section": "verse",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 107.416,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.498,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 111.247,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.446,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 115.148,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.543,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 119.002,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.362,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 122.88,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.476,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 126.781,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.416,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 130.635,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.322,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 134.513,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.439,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 135.58,
+      "end": 139.58,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.328,
+      "section": "verse",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 138.368,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.528,
+      "section": "verse",
+      "palette": "gold/amber",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 139.58,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.846,
+      "section": "verse",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 140.295,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.675,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 142.222,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.598,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 144.173,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.704,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 146.1,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.622,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 148.05,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.638,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 149.954,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.608,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 151.905,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.61,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 153.855,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.579,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 155.783,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.72,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 157.71,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.606,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 157.942,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.659,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 158.96,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.889,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 159.66,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.59,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 159.893,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.693,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 161.588,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.619,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 163.515,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.609,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 165.465,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.613,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 167.393,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.615,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 168.55,
+      "end": 172.55,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.398,
+      "section": "chorus",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 169.343,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.345,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 171.27,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.58,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 173.198,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.553,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 174.8,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.65,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 175.125,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.655,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 177.075,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.581,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 177.795,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.727,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 179.003,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.601,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 179.722,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.677,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 180.953,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.583,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 182.88,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.586,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 184.67,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.772,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 184.808,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.701,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 186.758,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.4,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 188.685,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.337,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 189.96,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.639,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 190.613,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.356,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 192.563,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.28,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 194.49,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.387,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 196.418,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.339,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 198.345,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.418,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 199.576,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.529,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 200.295,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.457,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 201.41,
+      "end": 205.4,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.172,
+      "section": "chorus",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 202.223,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.692,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 204.15,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.601,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 206.1,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.622,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 208.028,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.625,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 208.237,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.682,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 209.978,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.589,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 211.905,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.615,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 212.58,
+      "end": 216.57,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.216,
+      "section": "chorus",
+      "palette": "amber/gold",
+      "shape": "crackle_tail",
+      "height": "mid_high",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 213.833,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.623,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 215.783,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.805,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 216.57,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.879,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 217.71,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.738,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 219.638,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.638,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 220.845,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.719,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 221.588,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.584,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 222.795,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.588,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 223.515,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.468,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 224.723,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.705,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 225.443,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.639,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 226.673,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.716,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 227.393,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.624,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 228.577,
+      "effect": "accent",
+      "reason": "syncopated_onset",
+      "energy": 0.729,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 229.32,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.62,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 231.271,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.406,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    },
+    {
+      "time": 233.244,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": -0.0,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "peony",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "boldness",
+        "grandeur"
+      ],
+      "genre_hint": "edm"
+    }
+  ],
+  "user_constraints": {
+    "mood": "patriotic and energetic",
+    "budget_cap": 5000,
+    "venue_notes": "open field, max height 200m",
+    "audience_context": "family-friendly festival",
+    "special_requests": "Strong red, white, and blue theme."
+  },
+  "inventory": [
+    {
+      "id": "FX-001",
+      "type": "peony",
+      "colors": [
+        "red",
+        "white",
+        "blue"
+      ],
+      "cost": 25,
+      "height": "high",
+      "spread": "wide"
+    },
+    {
+      "id": "FX-002",
+      "type": "comet",
+      "colors": [
+        "silver"
+      ],
+      "cost": 10,
+      "height": "low",
+      "spread": "narrow"
+    },
+    {
+      "id": "FX-003",
+      "type": "willow",
+      "colors": [
+        "gold"
+      ],
+      "cost": 45,
+      "height": "high",
+      "spread": "very wide",
+      "duration": "sustained"
+    },
+    {
+      "id": "FX-004",
+      "type": "barrage",
+      "colors": [
+        "red",
+        "blue",
+        "silver"
+      ],
+      "cost": 120,
+      "height": "mid",
+      "spread": "wide",
+      "intensity": "high"
+    }
+  ]
+}
