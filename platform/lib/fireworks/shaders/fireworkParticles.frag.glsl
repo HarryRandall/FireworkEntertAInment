@@ -10,6 +10,7 @@ varying vec3 vColorEnd;
 varying vec4 vAlpha;
 varying vec4 vFlicker;
 varying float vAgeNorm;
+varying float vTransition;
 varying float vSeed;
 varying float vEmissive;
 
@@ -33,12 +34,12 @@ void main() {
   float r = dot(uv, uv);
   if (r > 1.0) discard;
 
-  vec3 color = mix(vColorStart, vColorMid, smoothstep(0.0, 0.16, vAgeNorm));
-  color = mix(color, vColorEnd, smoothstep(0.45, 1.0, vAgeNorm));
-  // Tighter, more star-like falloff — the previous values (5..12) produced a very
-  // soft glow that read as one big white disc when many particles overlapped.
-  float radial = exp(-r * mix(14.0, 28.0, uSoftness));
-  float core = pow(smoothstep(1.0, 0.0, r), 1.6);
+  float transitionAt = clamp(vTransition, 0.02, 0.98);
+  vec3 color = mix(vColorStart, vColorMid, smoothstep(0.0, min(0.16, transitionAt * 0.5), vAgeNorm));
+  color = mix(color, vColorEnd, smoothstep(transitionAt, min(1.0, transitionAt + 0.2), vAgeNorm));
+  float radial = exp(-r * mix(7.0, 18.0, uSoftness));
+  float core = pow(smoothstep(0.62, 0.0, r), 1.85);
+  float halo = pow(smoothstep(1.0, 0.0, r), 3.8);
   float alpha = mix(vAlpha.x, vAlpha.y, smoothstep(0.0, 0.35, vAgeNorm));
   alpha = mix(alpha, vAlpha.z, smoothstep(0.35, 1.0, vAgeNorm));
   alpha *= alphaCurve(vAgeNorm, vAlpha.w);
@@ -48,6 +49,7 @@ void main() {
     alpha *= step(phase, max(0.02, vFlicker.w));
   }
 
-  float sparkle = 0.88 + 0.22 * hash21(gl_PointCoord * 18.0 + vSeed);
-  gl_FragColor = vec4(color * (vEmissive * uExposure) * (0.55 + core), alpha * radial * sparkle);
+  float sparkle = 0.86 + 0.28 * hash21(gl_PointCoord * 18.0 + vSeed);
+  vec3 bloomColor = color * (vEmissive * uExposure) * (0.34 + core * 1.35 + halo * 0.55);
+  gl_FragColor = vec4(bloomColor, alpha * radial * sparkle);
 }

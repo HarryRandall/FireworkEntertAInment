@@ -129,19 +129,7 @@ const ManualDraftSchema = z.object({
   name: z.string().trim().min(1).max(180),
   description: z.string().trim().max(1200).optional(),
   durationSeconds: z.coerce.number().min(0.1).max(MAX_IMPORT_VIDEO_SECONDS),
-  launchTimeSeconds: z.coerce.number().min(0).max(MAX_IMPORT_VIDEO_SECONDS),
-  burstTimeSeconds: z.coerce.number().min(0).max(MAX_IMPORT_VIDEO_SECONDS),
-  endTimeSeconds: z.coerce.number().min(0).max(MAX_IMPORT_VIDEO_SECONDS),
-  colors: z.string().trim().min(4).max(120),
-  particleCount: z.coerce.number().int().min(40).max(900),
-  spread: z.coerce.number().min(0.4).max(8),
-  launchHeight: z.coerce.number().min(0.5).max(8),
-  burstDuration: z.coerce.number().min(0.25).max(8),
-  gravity: z.coerce.number().min(-6).max(1),
-  drag: z.coerce.number().min(0.05).max(0.99),
-  sparkSize: z.coerce.number().min(0.015).max(0.22),
-  trailLength: z.coerce.number().min(0).max(2.5),
-  secondaryBursts: z.coerce.number().int().min(0).max(4),
+  spec: z.string().trim().min(2).max(20_000),
 });
 
 const ApproveImportSchema = z.object({
@@ -163,17 +151,6 @@ function sanitizeStorageName(name: string): string {
     .replace(/[^a-z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || "firework-video";
-}
-
-function parseHexColors(input: string): string[] {
-  const colors = input
-    .split(/[\s,]+/)
-    .map((color) => color.trim())
-    .filter(Boolean);
-  if (colors.length === 0) return ["#00E5FF"];
-  const invalid = colors.find((color) => !/^#[0-9a-fA-F]{6}$/.test(color));
-  if (invalid) throw new Error(`Invalid colour ${invalid}. Use #RRGGBB.`);
-  return colors.slice(0, 8);
 }
 
 async function latestSpecForImport(
@@ -792,82 +769,30 @@ export async function updateImportDraftSpecAction(
     name: formData.get("name"),
     description: formData.get("description") ?? "",
     durationSeconds: formData.get("durationSeconds"),
-    launchTimeSeconds: formData.get("launchTimeSeconds"),
-    burstTimeSeconds: formData.get("burstTimeSeconds"),
-    endTimeSeconds: formData.get("endTimeSeconds"),
-    colors: formData.get("colors"),
-    particleCount: formData.get("particleCount"),
-    spread: formData.get("spread"),
-    launchHeight: formData.get("launchHeight"),
-    burstDuration: formData.get("burstDuration"),
-    gravity: formData.get("gravity"),
-    drag: formData.get("drag"),
-    sparkSize: formData.get("sparkSize"),
-    trailLength: formData.get("trailLength"),
-    secondaryBursts: formData.get("secondaryBursts"),
+    spec: formData.get("spec") ?? "",
   });
   if (!parsed.success) return console.error(firstError(parsed.error));
 
-  let colors: string[];
+  let specJson: unknown;
   try {
-    colors = parseHexColors(parsed.data.colors);
+    specJson = JSON.parse(parsed.data.spec);
   } catch (error) {
-    console.error("[updateImportDraftSpecAction]", error);
+    console.error("[updateImportDraftSpecAction] invalid spec JSON:", error);
     return;
   }
 
-  const burstTime = Math.max(
-    parsed.data.launchTimeSeconds,
-    parsed.data.burstTimeSeconds,
-  );
-  const endTime = Math.max(burstTime, parsed.data.endTimeSeconds);
-  const spec: ImportedFireworkSpec = ImportedFireworkSpecSchema.parse({
+  const result = ImportedFireworkSpecSchema.safeParse({
     name: parsed.data.name,
     description: parsed.data.description || null,
     durationSeconds: parsed.data.durationSeconds,
     confidence: 0.85,
-    renderSpec: {
-      particleCount: parsed.data.particleCount,
-      burstDuration: parsed.data.burstDuration,
-      colors,
-      spread: parsed.data.spread,
-      launchHeight: parsed.data.launchHeight,
-      gravity: parsed.data.gravity,
-      drag: parsed.data.drag,
-      sparkSize: parsed.data.sparkSize,
-      trailLength: parsed.data.trailLength,
-      secondaryBursts: parsed.data.secondaryBursts || undefined,
-      audioSync: [
-        {
-          timeSeconds: parsed.data.launchTimeSeconds,
-          kind: "launch",
-          confidence: 0.85,
-        },
-        { timeSeconds: burstTime, kind: "burst", confidence: 0.85 },
-      ],
-      sections: [
-        {
-          id: "manual-main-burst",
-          label: "Main burst",
-          phase: "burst",
-          startTimeSeconds: parsed.data.launchTimeSeconds,
-          burstTimeSeconds: burstTime,
-          endTimeSeconds: endTime,
-          colors,
-          particleCount: parsed.data.particleCount,
-          spread: parsed.data.spread,
-          launchHeight: parsed.data.launchHeight,
-          burstDuration: parsed.data.burstDuration,
-          gravity: parsed.data.gravity,
-          drag: parsed.data.drag,
-          sparkSize: parsed.data.sparkSize,
-          trailLength: parsed.data.trailLength,
-          secondaryBursts: parsed.data.secondaryBursts || undefined,
-          confidence: 0.85,
-        },
-      ],
-    },
+    spec: specJson,
   });
+  if (!result.success) {
+    console.error("[updateImportDraftSpecAction] invalid spec:", result.error);
+    return;
+  }
+  const spec: ImportedFireworkSpec = result.data;
 
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("import_outputs").insert({
@@ -911,28 +836,26 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   }
 
   const supabase = createClient(await cookies());
-  const { data: job } = await supabase
-    .from("import_jobs")
-    .select("media_asset_id")
-    .eq("id", parsed.data.id)
-    .maybeSingle();
-  const fireworkSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
-  const { data: firework, error: fireworkError } = await supabase
-    .from("firework_specifications")
+  const effectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
+  const fireworkSpec = spec.spec;
+  const { data: effect, error: effectError } = await supabase
+    .from("effect_specs")
     .insert({
-      slug: fireworkSlug,
+      slug: effectSlug,
       name: parsed.data.name,
       description: spec.description || null,
-      sort_order: 100,
-      spec: spec.effectSpec as unknown as Json,
-      source_import_job_id: parsed.data.id,
-      source_media_asset_id: job?.media_asset_id ?? null,
-      review_status: "approved",
+      type: fireworkSpec.shellType,
+      duration_seconds: spec.durationSeconds,
+      height_meters: spec.heightMeters ?? null,
+      shot_count: 1,
+      source: "video_inferred",
+      confidence: spec.confidence,
+      spec_json: fireworkSpec as unknown as Json,
     })
     .select("id")
     .single();
-  if (fireworkError || !firework) {
-    console.error("[approveImportJobAction] firework insert failed:", fireworkError);
+  if (effectError || !effect) {
+    console.error("[approveImportJobAction] effect spec insert failed:", effectError);
     return;
   }
 
@@ -946,14 +869,12 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       firework_type: parsed.data.fireworkType || "Video reconstructed",
       duration_seconds: spec.durationSeconds,
       description: spec.description || null,
-      firework_specification_id: firework.id,
+      effect_spec_id: effect.id,
       source_table: "import_jobs",
       source_payload: {
         importJobId: parsed.data.id,
         confidence: spec.confidence,
-        generatedSpec: spec.effectSpec,
-        observations: spec.observations ?? null,
-        legacyRenderProjection: spec.renderSpec,
+        generatedSpec: fireworkSpec,
       } as Json,
     })
     .select("id")
@@ -969,7 +890,7 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       status: "complete",
       processing_progress: 100,
       approved_catalogue_product_id: product.id,
-      approved_firework_specification_id: firework.id,
+      approved_firework_specification_id: null,
       completed_at: new Date().toISOString(),
       error_message: null,
     })

@@ -12,9 +12,9 @@ export class TrailSystem {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       renderOrder: 18,
-      pointScale: 1.2,
-      exposure: 1.25,
-      softness: 0.7,
+      pointScale: 1.75,
+      exposure: 1.85,
+      softness: 0.78,
     });
     this.object = this.particles.points;
   }

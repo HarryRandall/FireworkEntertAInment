@@ -22,6 +22,11 @@ export type FireworksEngineStats = {
   smokeParticles: number;
 };
 
+export type FireworksSkyLight = {
+  color: THREE.Color;
+  intensity: number;
+};
+
 export class FireworksEngine {
   readonly group = new THREE.Group();
   readonly particles: GpuParticleSystem;
@@ -39,9 +44,9 @@ export class FireworksEngine {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       renderOrder: 20,
-      pointScale: 0.9,
-      exposure: 0.95,
-      softness: 0.72,
+      pointScale: 2.35,
+      exposure: 2.05,
+      softness: 0.46,
     });
     this.trails = new TrailSystem(options.maxTrailParticles ?? 180_000);
     this.smoke = new SmokeSystem(options.maxSmokeParticles ?? 18_000);
@@ -90,6 +95,34 @@ export class FireworksEngine {
       particles: this.particles.pool.count,
       trailParticles: this.trails.particles.pool.count,
       smokeParticles: this.smoke.particles.pool.count,
+    };
+  }
+
+  getSkyLight(): FireworksSkyLight {
+    const events = this.scheduler.getActiveEventsAt(this.elapsed);
+    const color = new THREE.Color(0x050712);
+    const mixed = new THREE.Color(0x000000);
+    let weight = 0;
+    let flashWeight = 0;
+
+    for (const event of events) {
+      const age = Math.max(0, this.elapsed - event.time);
+      const duration = Math.max(0.001, event.expiresAt - event.time);
+      const life = Math.max(0, 1 - age / duration);
+      const eventWeight = event.kind === "flash" ? life * 8 : Math.pow(life, 0.65);
+      if (event.kind === "flash") flashWeight += eventWeight;
+      mixed.add(new THREE.Color(event.color).multiplyScalar(eventWeight));
+      weight += eventWeight;
+    }
+
+    if (weight > 0) {
+      mixed.multiplyScalar(1 / weight);
+      color.lerp(mixed, 0.12);
+    }
+
+    return {
+      color,
+      intensity: Math.min(0.28, Math.pow(weight / 650, 0.68) * 0.24 + flashWeight * 0.004),
     };
   }
 

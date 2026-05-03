@@ -43,11 +43,36 @@ test("container worker exists and calls OpenRouter JSON mode with schema validat
   assert.match(worker, /jsonschema/);
   assert.match(worker, /MAX_DURATION_SECONDS = 60/);
   assert.match(worker, /generated_spec/);
-  assert.match(worker, /FireworkEffectSpecV2/);
+  assert.match(worker, /FireworkEffectSpecV3/);
   assert.match(worker, /observations/);
-  assert.match(worker, /shotSequence/);
+  assert.match(worker, /effectSpec\.shots/);
   assert.match(worker, /libx264/);
   assert.match(worker, /normalizedPreview/);
+  assert.match(worker, /DEFAULT_MODEL = os\.getenv\("DEFAULT_OPENROUTER_MODEL", "openai\/gpt-4\.1"\)/);
+  assert.doesNotMatch(worker, /gemini/i);
+});
+
+test("generated import specs keep inferred renderer mapping fields", () => {
+  const imports = readFileSync(join(root, "lib/imports.ts"), "utf8");
+  const actions = readFileSync(join(root, "app/actions/platform-admin.ts"), "utf8");
+  const worker = readFileSync(
+    join(repoRoot, "workers/firework-import-worker/worker.py"),
+    "utf8",
+  );
+
+  assert.match(imports, /normalizeImportedFireworkSpecInput/);
+  assert.match(imports, /effectSpec/);
+  assert.match(imports, /fireworkSpecFromEffectSpec/);
+  assert.match(imports, /colorPalette/);
+  assert.match(imports, /shotsFromEffectSpec/);
+  assert.match(imports, /liftTimeSeconds/);
+  assert.match(imports, /normalizeImportedFireworkLaunchInput/);
+  assert.match(imports, /sparkSpeed:\s*sparkSpeed == null \? value\.sparkSpeed : clamp\(sparkSpeed, 0, 5\)/);
+  assert.match(imports, /heightMeters: imported\.heightMeters \?\? null/);
+  assert.match(actions, /height_meters: spec\.heightMeters \?\? null/);
+  assert.match(worker, /normalized\["heightMeters"\]/);
+  assert.match(worker, /Red Green and Blue/);
+  assert.match(worker, /Silver tail to Red/);
 });
 
 test("upload form bypasses Vercel Server Action body cap with direct-to-storage upload", () => {

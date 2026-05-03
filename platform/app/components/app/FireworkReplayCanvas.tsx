@@ -9,7 +9,6 @@ import {
   FireworksEngine,
   type FireworksEngineStats,
 } from "@/lib/fireworks/FireworksEngine";
-import { createSeededRng } from "@/lib/fireworks/random";
 import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 
 if (typeof window !== "undefined") {
@@ -32,45 +31,6 @@ type ReplaySceneProps = {
   debug: boolean;
 };
 
-function Starfield() {
-  const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    const rng = createSeededRng(20260214);
-    const count = 1_100;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = rng.signed(18);
-      positions[i * 3 + 1] = rng.range(-0.4, 11.5);
-      positions[i * 3 + 2] = -rng.range(2, 20);
-      const warmth = rng.range(0.72, 1);
-      colors[i * 3 + 0] = warmth;
-      colors[i * 3 + 1] = warmth * rng.range(0.85, 1);
-      colors[i * 3 + 2] = 1;
-    }
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    return geom;
-  }, []);
-
-  useEffect(() => {
-    return () => geometry.dispose();
-  }, [geometry]);
-
-  return (
-    <points geometry={geometry} renderOrder={1}>
-      <pointsMaterial
-        size={0.026}
-        vertexColors
-        transparent
-        opacity={0.58}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
-  );
-}
-
 function GroundGrid() {
   return (
     <group position={[0, -1.45, -1]}>
@@ -84,7 +44,7 @@ function GroundGrid() {
       />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
         <planeGeometry args={[18, 18, 1, 1]} />
-        <meshBasicMaterial color={staticShowCrafterPalette.night} transparent opacity={0.22} />
+        <meshBasicMaterial color={staticShowCrafterPalette.night} transparent opacity={0.08} />
       </mesh>
     </group>
   );
@@ -109,6 +69,13 @@ function EngineBridge({ cues, elapsed, debug }: ReplaySceneProps) {
   }, [debug, gl, scene]);
 
   useEffect(() => {
+    scene.background = new THREE.Color(staticShowCrafterPalette.night);
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.color.set(staticShowCrafterPalette.night);
+    }
+  }, [scene]);
+
+  useEffect(() => {
     engineRef.current?.setCues(cues);
   }, [cues]);
 
@@ -117,6 +84,11 @@ function EngineBridge({ cues, elapsed, debug }: ReplaySceneProps) {
     if (!engine) return;
     engine.setPixelRatio(gl.getPixelRatio());
     engine.setElapsed(elapsed);
+    // const sky = engine.getSkyLight();
+    // scene.background = sky.color;
+    // if (scene.fog instanceof THREE.Fog) {
+    //   scene.fog.color.copy(sky.color);
+    // }
     if (debug && elapsed - latestStatsAt.current > 0.3) {
       latestStatsAt.current = elapsed;
       setStats(engine.getStats());
@@ -145,10 +117,9 @@ function ReplayScene({
 }: ReplaySceneProps) {
   return (
     <>
-      <color attach="background" args={[staticShowCrafterPalette.night]} />
-      <ambientLight intensity={0.36} />
-      <fog attach="fog" args={[staticShowCrafterPalette.night, 7, 24]} />
-      <Starfield />
+      <ambientLight intensity={0.22} />
+      <hemisphereLight args={[0x27446a, 0x050712, 0.28]} />
+      <fog attach="fog" args={[staticShowCrafterPalette.night, 8.5, 30]} />
       <GroundGrid />
       <EngineBridge
         cues={cues}

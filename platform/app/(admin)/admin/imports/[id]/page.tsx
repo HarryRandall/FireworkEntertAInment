@@ -30,11 +30,11 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   if (!job) notFound();
 
   const spec = latestImportedSpecFromOutputs(job.outputs);
-  const renderSections = spec?.renderSpec.sections ?? [];
-  const section =
-    renderSections.find((item) => item.phase === "burst") ?? renderSections[0];
   const defaultDuration =
     spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
+  const defaultSpecJson = spec
+    ? JSON.stringify(spec.spec, null, 2)
+    : '{\n  "shellType": "crysanthemum",\n  "spreadSize": 4.6,\n  "starLifeMs": 1400,\n  "color": "#ffbf36",\n  "glitter": "light"\n}';
   const selectedModel = job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
   const canApprove = Boolean(spec) && job.status !== "complete";
   const isWaitingForWorker =
@@ -204,26 +204,16 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
         </div>
         <form
           action={updateImportDraftSpecAction}
-          className="grid grid-cols-1 gap-3 lg:grid-cols-4"
+          className="grid grid-cols-1 gap-3"
         >
           <input type="hidden" name="id" value={job.id} />
-          <label className="space-y-1 lg:col-span-2">
+          <label className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
               Name
             </span>
             <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
           </label>
-          <label className="space-y-1 lg:col-span-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-              Colours
-            </span>
-            <Input
-              name="colors"
-              defaultValue={(section?.colors ?? ["#00E5FF"]).join(", ")}
-              required
-            />
-          </label>
-          <label className="space-y-1 lg:col-span-4">
+          <label className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
               Description
             </span>
@@ -233,35 +223,31 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
               defaultValue={spec?.description ?? ""}
             />
           </label>
-          {[
-            ["durationSeconds", "Duration", defaultDuration, 0.1],
-            ["launchTimeSeconds", "Launch time", section?.startTimeSeconds ?? 0, 0.05],
-            ["burstTimeSeconds", "Burst time", section?.burstTimeSeconds ?? 1.15, 0.05],
-            ["endTimeSeconds", "End time", section?.endTimeSeconds ?? 4, 0.05],
-            ["particleCount", "Particles", section?.particleCount ?? 220, 1],
-            ["spread", "Spread", section?.spread ?? 2.6, 0.1],
-            ["launchHeight", "Launch height", section?.launchHeight ?? 3, 0.1],
-            ["burstDuration", "Burst duration", section?.burstDuration ?? 2.4, 0.1],
-            ["gravity", "Gravity", section?.gravity ?? -1.5, 0.1],
-            ["drag", "Drag", section?.drag ?? 0.86, 0.01],
-            ["sparkSize", "Spark size", section?.sparkSize ?? 0.075, 0.005],
-            ["trailLength", "Trail length", section?.trailLength ?? 0.65, 0.05],
-            ["secondaryBursts", "Secondary bursts", section?.secondaryBursts ?? 0, 1],
-          ].map(([name, label, value, step]) => (
-            <label key={String(name)} className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-                {label}
-              </span>
-              <Input
-                name={String(name)}
-                type="number"
-                step={Number(step)}
-                defaultValue={Number(value)}
-                required
-              />
-            </label>
-          ))}
-          <div className="lg:col-span-4">
+          <label className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Duration (seconds)
+            </span>
+            <Input
+              name="durationSeconds"
+              type="number"
+              step={0.1}
+              defaultValue={defaultDuration}
+              required
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              FireworkSpec JSON
+            </span>
+            <Textarea
+              name="spec"
+              rows={14}
+              defaultValue={defaultSpecJson}
+              className="font-mono text-xs"
+              required
+            />
+          </label>
+          <div>
             <Button type="submit" variant="secondary">
               Save manual draft
             </Button>

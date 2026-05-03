@@ -10,10 +10,6 @@ import {
   setCachedJson,
 } from "@/lib/server-cache";
 import type {
-  FireworkAudioSyncEvent,
-  FireworkRenderParams,
-  FireworkRenderSection,
-  FireworkRenderSpec,
   FireworkSpecification,
   ReplayCue,
   Show,
@@ -21,16 +17,12 @@ import type {
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
-import {
-  FireworkEffectSpecV2Schema,
-  type FireworkEffectSpecV2,
-} from "@/lib/fireworks/spec-v2";
+import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
 import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
-type FireworkSpecificationRow =
-  Database["public"]["Tables"]["firework_specifications"]["Row"];
+type EffectSpecRow = Database["public"]["Tables"]["effect_specs"]["Row"];
 type ShoppingItemRow =
   Database["public"]["Tables"]["shopping_list_items"]["Row"];
 type ShowProjection = Pick<
@@ -60,139 +52,69 @@ type ShowCueProjection = Pick<
   | "position"
   | "time_seconds"
   | "description"
-  | "firework_specification_id"
-  | "render_params"
+  | "effect_spec_id"
+  | "position_json"
+  | "rotation_json"
+  | "scale"
+  | "overrides_json"
+  | "seed_override"
 >;
-type FireworkSpecificationProjection = Pick<
-  FireworkSpecificationRow,
-  "id" | "slug" | "name" | "description" | "sort_order" | "spec"
+type EffectSpecProjection = Pick<
+  EffectSpecRow,
+  | "id"
+  | "slug"
+  | "name"
+  | "description"
+  | "duration_seconds"
+  | "height_meters"
+  | "spec_json"
 >;
 type ReplayCueRow = ShowCueProjection & {
-  firework_specifications: FireworkSpecificationProjection | null;
+  effect_specs: EffectSpecProjection | null;
 };
 type ShoppingItemProjection = Pick<
   ShoppingItemRow,
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const DEFAULT_FIREWORK_SPEC: FireworkRenderSpec = {
-  particleCount: 220,
-  burstDuration: 2.4,
-  colors: ["#00E5FF", "#8B5CF6", "#FF3DF2"],
-  spread: 2.6,
-  launchHeight: 3,
-  gravity: -1.5,
-  drag: 0.86,
-  sparkSize: 0.075,
-  trailLength: 0.65,
-};
 const CACHE_PREFIX = "shows:v1";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
   "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, updated_at";
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, firework_specification_id, render_params";
-const FIREWORK_SPECIFICATION_SELECT =
-  "id, slug, name, description, sort_order, spec";
+  "id, position, time_seconds, description, effect_spec_id, position_json, rotation_json, scale, overrides_json, seed_override";
+const EFFECT_SPEC_SELECT =
+  "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
   "id, position, name, qty, price_cents, firework_part_number";
-const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, firework_specifications (${FIREWORK_SPECIFICATION_SELECT})`;
+const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, effect_specs (${EFFECT_SPEC_SELECT})`;
 
 function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readNumber(
-  source: Record<string, Json | undefined>,
-  key: keyof FireworkRenderSpec,
-  fallback: number,
-): number {
-  const value = source[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function readColors(source: Record<string, Json | undefined>): string[] {
-  const colors = source.colors;
-  if (!Array.isArray(colors)) return DEFAULT_FIREWORK_SPEC.colors;
-  const valid = colors.filter(
-    (color): color is string => typeof color === "string" && color.length > 0,
-  );
-  return valid.length > 0 ? valid : DEFAULT_FIREWORK_SPEC.colors;
-}
-
-function parseRenderSpec(spec: Json): FireworkRenderSpec | FireworkEffectSpecV2 {
-  if (!isRecord(spec)) return DEFAULT_FIREWORK_SPEC;
-  if (spec.version === 2) {
-    const parsed = FireworkEffectSpecV2Schema.safeParse(spec);
-    if (parsed.success) return parsed.data;
-    console.error("[shows.server] invalid FireworkEffectSpecV2:", parsed.error);
-  }
-  const sections = Array.isArray(spec.sections)
-    ? (spec.sections.filter(isRecord) as unknown as FireworkRenderSection[])
-    : undefined;
-  const audioSync = Array.isArray(spec.audioSync)
-    ? (spec.audioSync.filter(isRecord) as unknown as FireworkAudioSyncEvent[])
-    : undefined;
+function parseVec3(value: Json): { x: number; y: number; z: number } {
+  if (!isRecord(value)) return { x: 0, y: 0, z: 0 };
   return {
-    particleCount: Math.round(
-      readNumber(spec, "particleCount", DEFAULT_FIREWORK_SPEC.particleCount),
-    ),
-    burstDuration: readNumber(
-      spec,
-      "burstDuration",
-      DEFAULT_FIREWORK_SPEC.burstDuration,
-    ),
-    colors: readColors(spec),
-    spread: readNumber(spec, "spread", DEFAULT_FIREWORK_SPEC.spread),
-    launchHeight: readNumber(
-      spec,
-      "launchHeight",
-      DEFAULT_FIREWORK_SPEC.launchHeight,
-    ),
-    gravity: readNumber(spec, "gravity", DEFAULT_FIREWORK_SPEC.gravity),
-    drag: readNumber(spec, "drag", DEFAULT_FIREWORK_SPEC.drag),
-    sparkSize: readNumber(spec, "sparkSize", DEFAULT_FIREWORK_SPEC.sparkSize),
-    trailLength: readNumber(
-      spec,
-      "trailLength",
-      DEFAULT_FIREWORK_SPEC.trailLength,
-    ),
-    secondaryBursts: readNumber(spec, "secondaryBursts", 0) || undefined,
-    sections,
-    audioSync,
+    x: typeof value.x === "number" && Number.isFinite(value.x) ? value.x : 0,
+    y: typeof value.y === "number" && Number.isFinite(value.y) ? value.y : 0,
+    z: typeof value.z === "number" && Number.isFinite(value.z) ? value.z : 0,
   };
 }
 
-function parseRenderParams(params: Json | null): FireworkRenderParams | null {
-  const source = params ?? undefined;
-  if (!isRecord(source)) return null;
-  const overrides: FireworkRenderParams = {};
-  if (typeof source.particleCount === "number") {
-    overrides.particleCount = Math.round(source.particleCount);
-  }
-  if (typeof source.burstDuration === "number") {
-    overrides.burstDuration = source.burstDuration;
-  }
-  if (Array.isArray(source.colors)) {
-    overrides.colors = source.colors.filter(
-      (color): color is string => typeof color === "string",
-    );
-  }
-  if (typeof source.spread === "number") overrides.spread = source.spread;
-  if (typeof source.launchHeight === "number") {
-    overrides.launchHeight = source.launchHeight;
-  }
-  if (typeof source.gravity === "number") overrides.gravity = source.gravity;
-  if (typeof source.drag === "number") overrides.drag = source.drag;
-  if (typeof source.sparkSize === "number") overrides.sparkSize = source.sparkSize;
-  if (typeof source.trailLength === "number") {
-    overrides.trailLength = source.trailLength;
-  }
-  if (typeof source.secondaryBursts === "number") {
-    overrides.secondaryBursts = source.secondaryBursts;
-  }
-  return overrides;
+function parseRotation(value: Json): { pan: number; tilt: number; roll: number } {
+  if (!isRecord(value)) return { pan: 0, tilt: 90, roll: 0 };
+  return {
+    pan: typeof value.pan === "number" && Number.isFinite(value.pan) ? value.pan : 0,
+    tilt: typeof value.tilt === "number" && Number.isFinite(value.tilt) ? value.tilt : 90,
+    roll: typeof value.roll === "number" && Number.isFinite(value.roll) ? value.roll : 0,
+  };
+}
+
+function parseOverrides(value: Json): Record<string, unknown> {
+  if (!isRecord(value)) return {};
+  return value as Record<string, unknown>;
 }
 
 function mapShow(row: ShowProjection): Show {
@@ -225,30 +147,38 @@ function mapCue(row: ShowCueProjection): ShowCue {
     position: row.position,
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
-    fireworkSpecificationId: row.firework_specification_id,
-    renderParams: parseRenderParams(row.render_params),
+    effectSpecId: row.effect_spec_id,
+    positionMeters: parseVec3(row.position_json),
+    rotation: parseRotation(row.rotation_json),
+    scale: row.scale == null ? 1 : Number(row.scale),
+    overrides: parseOverrides(row.overrides_json),
+    seedOverride: row.seed_override,
   };
 }
 
-function mapFireworkSpecification(
-  row: FireworkSpecificationProjection,
+function mapEffectSpecification(
+  row: EffectSpecProjection,
+  index = 0,
 ): FireworkSpecification {
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     description: row.description,
-    sortOrder: row.sort_order,
-    spec: parseRenderSpec(row.spec),
+    sortOrder: index,
+    durationSeconds: row.duration_seconds,
+    heightMeters: row.height_meters,
+    spec: safeParseFireworkSpec(row.spec_json),
   };
 }
 
 function mapReplayCue(row: ReplayCueRow): ReplayCue | null {
-  if (row.time_seconds == null || !row.firework_specifications) return null;
+  if (row.time_seconds == null) return null;
+  if (!row.effect_specs) return null;
   return {
     ...mapCue(row),
     timeSeconds: Number(row.time_seconds),
-    firework: mapFireworkSpecification(row.firework_specifications),
+    firework: mapEffectSpecification(row.effect_specs),
   };
 }
 
@@ -390,15 +320,14 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("firework_specifications")
-    .select(FIREWORK_SPECIFICATION_SELECT)
-    .order("sort_order", { ascending: true })
+    .from("effect_specs")
+    .select(EFFECT_SPEC_SELECT)
     .order("name", { ascending: true });
   if (error) {
     console.error("[shows.server] listFireworkSpecifications failed:", error);
     return [];
   }
-  const mapped = (data ?? []).map(mapFireworkSpecification);
+  const mapped = ((data ?? []) as EffectSpecProjection[]).map(mapEffectSpecification);
   await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
   return mapped;
 }
@@ -419,7 +348,7 @@ export async function listReplayCuesForShow(
     .select(REPLAY_CUE_SELECT)
     .eq("show_id", showId)
     .not("time_seconds", "is", null)
-    .not("firework_specification_id", "is", null)
+    .not("effect_spec_id", "is", null)
     .order("time_seconds", { ascending: true })
     .order("position", { ascending: true });
   if (error) {
