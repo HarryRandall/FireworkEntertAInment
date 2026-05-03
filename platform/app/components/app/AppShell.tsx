@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Container } from "@/app/components/ui/Container";
+import { uiStyles } from "@/app/components/ui/styles";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
 import type { CurrentProfile, PermissionKey } from "@/lib/platform.types";
 
@@ -111,10 +112,8 @@ export function AppShell({
           prefetch
           onClick={onClick}
           className={cn(
-            "focus-glow-action flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold transition-all focus:outline-none focus-visible:outline-none",
-            active
-              ? "border border-[#2563EB] bg-[#2563EB] text-white shadow-[0_12px_28px_-20px_rgba(37,99,235,0.42)]"
-              : "text-on-surface-variant hover:bg-primary/10 hover:text-primary",
+            uiStyles.action.navBase,
+            active ? uiStyles.action.navActive : uiStyles.action.navInactive,
           )}
         >
           <Icon size={17} strokeWidth={1.85} />
@@ -149,7 +148,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
       <ThemePreferenceSync themePreference={profile?.themePreference} />
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[0_16px_40px_-30px_rgba(11,16,32,0.14)] lg:flex lg:flex-col">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-card)] lg:flex lg:flex-col">
         <Link
           href="/dashboard"
           prefetch={false}
@@ -221,7 +220,7 @@ export function AppShell({
                   : "w-0 opacity-0",
               )}
             >
-              <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[0_16px_40px_-30px_rgba(11,16,32,0.18)]">
+              <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)]">
                 <div className="mb-6 flex items-center justify-between">
                   <Link
                     href="/dashboard"

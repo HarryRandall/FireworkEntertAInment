@@ -12,7 +12,7 @@ export function StatTile({ label, value, unit, className }: StatTileProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-outline-variant/55 bg-white px-4 py-3",
+        "rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
         className,
       )}
     >

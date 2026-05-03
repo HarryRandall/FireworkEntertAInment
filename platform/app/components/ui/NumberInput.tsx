@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type NumberInputProps = {
   name?: string;
@@ -53,13 +54,14 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        "focus-glow-field-group flex h-11 items-center rounded-lg border border-outline/55 bg-surface text-on-surface transition-all duration-200",
+        uiStyles.focus.fieldGroup,
+        "flex h-11 items-center rounded-xl border border-outline/55 bg-surface text-on-surface transition-all duration-200",
         disabled && "opacity-60",
         className,
       )}
     >
       {iconLeft ? (
-        <span className="pl-3 text-outline">{iconLeft}</span>
+        <span className="pl-3 text-on-surface-variant">{iconLeft}</span>
       ) : null}
       <input
         type="number"

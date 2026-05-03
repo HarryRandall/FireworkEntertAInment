@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 
 /* ── Firework burst primitive ─────────────────────────────────── */
 
@@ -54,16 +55,16 @@ export function FireworkArt() {
       <svg viewBox="0 0 420 560" className="w-full max-w-xs" aria-hidden="true">
         <defs>
           <radialGradient id="glow-cyan" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="#00E5FF" stopOpacity="0" />
+            <stop offset="0%" stopColor={staticShowCrafterPalette.primary} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={staticShowCrafterPalette.primary} stopOpacity="0" />
           </radialGradient>
           <radialGradient id="glow-blue" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+            <stop offset="0%" stopColor={staticShowCrafterPalette.tertiary} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={staticShowCrafterPalette.tertiary} stopOpacity="0" />
           </radialGradient>
           <radialGradient id="glow-sky" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#FF3DF2" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#FF3DF2" stopOpacity="0" />
+            <stop offset="0%" stopColor={staticShowCrafterPalette.magenta} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={staticShowCrafterPalette.magenta} stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -73,26 +74,26 @@ export function FireworkArt() {
         <ellipse cx="100" cy="390" rx="75" ry="75" fill="url(#glow-sky)" />
 
         {/* trails — more opaque for light mode */}
-        <line x1="210" y1="560" x2="210" y2="250" stroke="#00E5FF" strokeWidth="2" opacity="0.65" strokeDasharray="6 8">
+        <line x1="210" y1="560" x2="210" y2="250" stroke={staticShowCrafterPalette.primary} strokeWidth="2" opacity="0.65" strokeDasharray="6 8">
           <animate attributeName="opacity" values="0.65;0.2;0.65" dur="3s" repeatCount="indefinite" />
         </line>
-        <line x1="330" y1="560" x2="330" y2="150" stroke="#8B5CF6" strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
+        <line x1="330" y1="560" x2="330" y2="150" stroke={staticShowCrafterPalette.tertiary} strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
           <animate attributeName="opacity" values="0.55;0.15;0.55" dur="3.5s" repeatCount="indefinite" />
         </line>
-        <line x1="100" y1="560" x2="100" y2="390" stroke="#FF3DF2" strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
+        <line x1="100" y1="560" x2="100" y2="390" stroke={staticShowCrafterPalette.magenta} strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
           <animate attributeName="opacity" values="0.55;0.15;0.55" dur="2.8s" repeatCount="indefinite" />
         </line>
 
         {/* bursts — using richer colours */}
-        <FireworkBurst cx={210} cy={240} r={90} color="#00E5FF" spokes={16} delay="0s" />
-        <FireworkBurst cx={330} cy={140} r={60} color="#8B5CF6" spokes={12} delay="0.6s" />
-        <FireworkBurst cx={100} cy={390} r={48} color="#FF3DF2" spokes={10} delay="1.2s" />
-        <FireworkBurst cx={340} cy={360} r={28} color="#FFD166" spokes={8} delay="0.9s" />
-        <FireworkBurst cx={60} cy={170} r={22} color="#3B82F6" spokes={8} delay="1.6s" />
+        <FireworkBurst cx={210} cy={240} r={90} color={staticShowCrafterPalette.primary} spokes={16} delay="0s" />
+        <FireworkBurst cx={330} cy={140} r={60} color={staticShowCrafterPalette.tertiary} spokes={12} delay="0.6s" />
+        <FireworkBurst cx={100} cy={390} r={48} color={staticShowCrafterPalette.magenta} spokes={10} delay="1.2s" />
+        <FireworkBurst cx={340} cy={360} r={28} color={staticShowCrafterPalette.highlight} spokes={8} delay="0.9s" />
+        <FireworkBurst cx={60} cy={170} r={22} color={staticShowCrafterPalette.secondary} spokes={8} delay="1.6s" />
 
         {/* scattered sparkles */}
         {([[170, 140], [260, 310], [380, 260], [50, 300], [290, 480], [140, 490]] as [number, number][]).map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={2.5} fill="#00E5FF" opacity={0.7}>
+          <circle key={i} cx={x} cy={y} r={2.5} fill={staticShowCrafterPalette.primary} opacity={0.7}>
             <animate attributeName="opacity" values="0.7;0;0.7" dur={`${1.5 + i * 0.4}s`} repeatCount="indefinite" />
           </circle>
         ))}

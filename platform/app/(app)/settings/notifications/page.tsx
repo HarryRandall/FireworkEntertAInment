@@ -25,7 +25,7 @@ const OPTIONS = [
 
 export default function NotificationSettingsPage() {
   return (
-    <Card elevation="low" radius="md" className="bg-white p-6">
+    <Card elevation="low" radius="md" className="p-6">
       <h2 className="text-2xl font-bold text-on-surface">Notifications</h2>
       <div className="mt-6 space-y-3">
         {OPTIONS.map((option) => {

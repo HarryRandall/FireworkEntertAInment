@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 export type SelectOption = {
   value: string;
@@ -142,11 +143,12 @@ export function SelectField({
         onClick={() => setOpen((v) => !v)}
         onKeyDown={onTriggerKeyDown}
         className={cn(
-          "focus-glow-field flex h-11 w-full cursor-pointer items-center gap-2 rounded-lg border border-outline/55 bg-surface px-3 text-left text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus-visible:outline-none",
+          uiStyles.focus.field,
+          "flex h-11 w-full cursor-pointer items-center gap-2 rounded-xl border border-outline/55 bg-surface px-3 text-left text-sm font-semibold text-on-surface transition-all duration-200",
           disabled && "cursor-not-allowed opacity-60",
         )}
       >
-        {iconLeft ? <span className="text-outline">{iconLeft}</span> : null}
+        {iconLeft ? <span className="text-on-surface-variant">{iconLeft}</span> : null}
         <span
           className={cn(
             "flex-1 truncate",
@@ -170,7 +172,10 @@ export function SelectField({
           role="listbox"
           tabIndex={-1}
           onKeyDown={onListKeyDown}
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-72 overflow-auto rounded-xl border border-outline/55 bg-surface p-1.5 shadow-[var(--shadow-modal)]"
+          className={cn(
+            uiStyles.surface.popover,
+            "absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-72 overflow-auto",
+          )}
         >
           {options.length === 0 ? (
             <li className="px-3 py-2 text-sm text-on-surface-variant">
@@ -190,7 +195,8 @@ export function SelectField({
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => !option.disabled && choose(option.value)}
                   className={cn(
-                    "focus-glow-action flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:outline-none",
+                    uiStyles.focus.action,
+                    "flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                     option.disabled && "cursor-not-allowed opacity-50",
                     isActive && !option.disabled
                       ? "bg-surface-container-high text-on-surface"

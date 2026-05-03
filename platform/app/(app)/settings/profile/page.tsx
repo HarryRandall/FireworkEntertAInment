@@ -4,6 +4,7 @@ import { ArrowLeft, LockKeyhole, Mail, Phone, User } from "lucide-react";
 import { updateProfileAction } from "@/app/actions/platform-admin";
 import { ThemePreferenceField } from "@/app/components/theme/ThemePreferenceField";
 import { Button } from "@/app/components/ui/Button";
+import { Field, FieldHint, FieldLabel } from "@/app/components/ui/Field";
 import { Input } from "@/app/components/ui/Input";
 import { SignOutButton } from "../SignOutButton";
 import { getCurrentProfile } from "@/lib/platform.server";
@@ -37,43 +38,39 @@ export default async function ProfileSettingsPage({ searchParams }: PageProps) {
         action={updateProfileAction}
         className="space-y-6 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5 shadow-[var(--shadow-card)] sm:p-6"
       >
-        <label className="block space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            Full name
-          </span>
+        <Field>
+          <FieldLabel htmlFor="fullName">Full name</FieldLabel>
           <Input
+            id="fullName"
             name="fullName"
             defaultValue={profile.fullName ?? ""}
             iconLeft={<User size={17} />}
             placeholder="Your full name"
           />
-        </label>
+        </Field>
 
-        <label className="block space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            Phone
-          </span>
+        <Field>
+          <FieldLabel htmlFor="phone">Phone</FieldLabel>
           <Input
+            id="phone"
             name="phone"
             defaultValue={profile.phone ?? ""}
             iconLeft={<Phone size={17} />}
             placeholder="+61 ..."
           />
-        </label>
+        </Field>
 
-        <div className="space-y-2">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            Email
-          </span>
-          <div className="flex h-11 items-center gap-3 rounded-lg border border-outline/55 bg-surface px-4 text-sm text-on-surface-variant">
-            <Mail size={17} className="text-outline" />
+        <Field>
+          <FieldLabel>Email</FieldLabel>
+          <div className="flex h-11 items-center gap-3 rounded-xl border border-outline/55 bg-surface px-4 text-sm text-on-surface-variant">
+            <Mail size={17} className="text-on-surface-variant" />
             <span className="truncate">{profile.email || "No email"}</span>
-            <LockKeyhole size={14} className="ml-auto text-outline" />
+            <LockKeyhole size={14} className="ml-auto text-on-surface-variant" />
           </div>
-          <p className="text-xs text-on-surface-variant">
+          <FieldHint className="text-xs">
             Email changes go through the security tab.
-          </p>
-        </div>
+          </FieldHint>
+        </Field>
 
         <ThemePreferenceField initialTheme={profile.themePreference} />
 

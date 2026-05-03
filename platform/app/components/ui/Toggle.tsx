@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type ToggleProps = {
   name?: string;
@@ -40,8 +41,9 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        "focus-glow-field-group group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-white p-4 transition-colors",
-        "hover:border-primary/35 hover:bg-surface-container-low",
+        uiStyles.focus.fieldGroup,
+        "group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low p-4 transition-colors",
+        "hover:border-primary/35 hover:bg-surface-container-high",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >

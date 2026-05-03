@@ -74,7 +74,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
           ))}
         </div>
       ) : (
-        <p className="rounded-xl border border-outline-variant/35 bg-white p-5 text-sm text-on-surface-variant">
+        <p className="rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-low p-5 text-sm text-on-surface-variant">
           No shows are available right now. Adjust the sort or check back later.
         </p>
       )}

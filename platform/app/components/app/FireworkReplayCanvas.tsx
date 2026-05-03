@@ -10,6 +10,7 @@ import {
   type FireworksEngineStats,
 } from "@/lib/fireworks/FireworksEngine";
 import { createSeededRng } from "@/lib/fireworks/random";
+import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 
 if (typeof window !== "undefined") {
   const origWarn = console.warn;
@@ -73,10 +74,17 @@ function Starfield() {
 function GroundGrid() {
   return (
     <group position={[0, -1.45, -1]}>
-      <gridHelper args={[18, 18, "#40516F", "#22304A"]} />
+      <gridHelper
+        args={[
+          18,
+          18,
+          staticShowCrafterPalette.gridMajor,
+          staticShowCrafterPalette.gridMinor,
+        ]}
+      />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
         <planeGeometry args={[18, 18, 1, 1]} />
-        <meshBasicMaterial color="#05070D" transparent opacity={0.22} />
+        <meshBasicMaterial color={staticShowCrafterPalette.night} transparent opacity={0.22} />
       </mesh>
     </group>
   );
@@ -118,7 +126,7 @@ function EngineBridge({ cues, elapsed, debug }: ReplaySceneProps) {
   if (!debug || !stats) return null;
   return (
     <Html position={[-3.7, 3.7, 0]} transform={false} zIndexRange={[20, 0]}>
-      <div className="w-56 rounded-xl border border-white/10 bg-black/55 p-3 font-mono text-[10px] leading-relaxed text-white shadow-2xl backdrop-blur">
+      <div className="w-56 rounded-xl border border-outline-variant/55 bg-surface-container-low/85 p-3 font-mono text-[10px] leading-relaxed text-on-surface shadow-[var(--shadow-card)] backdrop-blur">
         <div>cues: {stats.cues}</div>
         <div>events: {stats.scheduledEvents}</div>
         <div>particles: {stats.particles}</div>
@@ -137,9 +145,9 @@ function ReplayScene({
 }: ReplaySceneProps) {
   return (
     <>
-      <color attach="background" args={["#05070D"]} />
+      <color attach="background" args={[staticShowCrafterPalette.night]} />
       <ambientLight intensity={0.36} />
-      <fog attach="fog" args={["#05070D", 7, 24]} />
+      <fog attach="fog" args={[staticShowCrafterPalette.night, 7, 24]} />
       <Starfield />
       <GroundGrid />
       <EngineBridge
