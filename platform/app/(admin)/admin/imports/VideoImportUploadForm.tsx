@@ -61,9 +61,14 @@ export function VideoImportUploadForm() {
 
   // Once direct upload to Storage finishes, submit the form synchronously so
   // the server action runs with the storage path the browser just wrote.
+  // CRITICAL: clear the file input first — the original File is already
+  // sitting in Supabase Storage, and leaving it attached re-includes the
+  // bytes in the Server Action POST, which Vercel caps at ~4.5 MB and rejects
+  // as an "unexpected response" with no log entry on the action.
   useEffect(() => {
     if (uploaded && !finalizing && !hasFinalizedRef.current) {
       hasFinalizedRef.current = true;
+      if (fileRef.current) fileRef.current.value = "";
       formRef.current?.requestSubmit();
     }
   }, [uploaded, finalizing]);

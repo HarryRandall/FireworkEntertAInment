@@ -62,6 +62,9 @@ test("upload form bypasses Vercel Server Action body cap with direct-to-storage 
   assert.match(form, /supabase\.storage\s*\.from\(IMPORT_VIDEO_BUCKET\)/);
   assert.match(form, /finalizeVideoImportJobAction/);
   assert.match(form, /name="storagePath"/);
+  // Clear the file input before requestSubmit so the bytes don't get
+  // re-included in the Server Action POST and trip Vercel's 4.5 MB cap.
+  assert.match(form, /fileRef\.current\.value = ""/);
   // Browser couldn't-decode-metadata stays a non-blocking notice.
   assert.match(form, /setNotice\(/);
   assert.match(form, /worker will probe/i);
