@@ -20,6 +20,7 @@ import {
 import { getImportJobDetail } from "@/lib/platform.server";
 import { formatDuration } from "@/lib/shows";
 import { FireworkImportPreview } from "./FireworkImportPreview";
+import { ImportProgressWatcher } from "./ImportProgressWatcher";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -67,6 +68,13 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
           </Badge>
           <Badge tone="neutral">{job.processingProgress}%</Badge>
         </div>
+        <ImportProgressWatcher
+          jobId={job.id}
+          initialStatus={job.status}
+          initialProgress={job.processingProgress}
+          initialOutputCount={job.outputs.length}
+          initialUpdatedAt={job.updatedAt ?? null}
+        />
       </div>
 
       {isWaitingForWorker ? (
