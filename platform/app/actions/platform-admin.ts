@@ -95,6 +95,24 @@ const VideoImportSchema = z.object({
     .or(z.literal("")),
 });
 
+// Direct-to-storage uploads happen in the browser (Vercel caps Server Action
+// request bodies at 4.5 MB regardless of next.config bodySizeLimit), so the
+// finalize action only receives metadata about the already-uploaded object.
+const FinalizeVideoImportSchema = z.object({
+  sourceName: z.string().trim().min(1).max(180),
+  selectedModel: ModelSchema.default(DEFAULT_OPENROUTER_MODEL),
+  storagePath: z.string().trim().min(1).max(512),
+  originalName: z.string().trim().min(1).max(255),
+  sizeBytes: z.coerce.number().int().min(1).max(500 * 1024 * 1024),
+  contentType: z.string().trim().min(1).max(120),
+  reportedDurationSeconds: z.coerce
+    .number()
+    .min(0)
+    .max(MAX_IMPORT_VIDEO_SECONDS)
+    .optional()
+    .or(z.literal("")),
+});
+
 const QueueImportSchema = z.object({
   id: z.string().uuid(),
   selectedModel: ModelSchema.default(DEFAULT_OPENROUTER_MODEL),
@@ -593,6 +611,95 @@ export async function createVideoImportJobAction(
     return {
       ok: false,
       error:
+        "Could not create the import job. Apply migration 0008 and try again.",
+    };
+  }
+
+  revalidatePath("/admin/imports");
+  redirect(`/admin/imports/${job.id}`);
+}
+
+export async function finalizeVideoImportJobAction(
+  _state: ImportUploadActionState,
+  formData: FormData,
+): Promise<ImportUploadActionState> {
+  const admin = await requirePermission("admin.manage_imports");
+  if (!admin) {
+    return { ok: false, error: "You do not have permission to manage imports." };
+  }
+
+  const parsed = FinalizeVideoImportSchema.safeParse({
+    sourceName: formData.get("sourceName"),
+    selectedModel: formData.get("selectedModel") ?? DEFAULT_OPENROUTER_MODEL,
+    storagePath: formData.get("storagePath"),
+    originalName: formData.get("originalName"),
+    sizeBytes: formData.get("sizeBytes"),
+    contentType: formData.get("contentType") ?? "video/mp4",
+    reportedDurationSeconds: formData.get("reportedDurationSeconds") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, error: firstError(parsed.error) };
+  }
+
+  // Storage RLS requires the path live under the admin's own UUID prefix.
+  // Reject anything that wasn't uploaded into the caller's namespace.
+  if (!parsed.data.storagePath.startsWith(`${admin.id}/`)) {
+    return {
+      ok: false,
+      error: "Uploaded object is not in your admin folder; refresh and retry.",
+    };
+  }
+
+  const supabase = createClient(await cookies());
+  const duration =
+    typeof parsed.data.reportedDurationSeconds === "number"
+      ? parsed.data.reportedDurationSeconds
+      : null;
+  const { data: media, error: mediaError } = await supabase
+    .from("media_assets")
+    .insert({
+      owner_id: admin.id,
+      source_type: "upload",
+      storage_path: parsed.data.storagePath,
+      mime_type: parsed.data.contentType,
+      duration_seconds: duration,
+      metadata: {
+        originalName: parsed.data.originalName,
+        sizeBytes: parsed.data.sizeBytes,
+      } as Json,
+    })
+    .select("id")
+    .single();
+  if (mediaError || !media) {
+    console.error("[finalizeVideoImportJobAction] media insert failed:", mediaError);
+    return {
+      ok: false,
+      error:
+        mediaError?.message ??
+        "Could not create the media record. Apply migration 0008 and try again.",
+    };
+  }
+
+  const { data: job, error: jobError } = await supabase
+    .from("import_jobs")
+    .insert({
+      kind: "firework_video",
+      status: "queued",
+      source_name: parsed.data.sourceName,
+      media_asset_id: media.id,
+      selected_model: parsed.data.selectedModel,
+      processing_progress: 0,
+      created_by: admin.id,
+      row_count: 0,
+    })
+    .select("id")
+    .single();
+  if (jobError || !job) {
+    console.error("[finalizeVideoImportJobAction] import job insert failed:", jobError);
+    return {
+      ok: false,
+      error:
+        jobError?.message ??
         "Could not create the import job. Apply migration 0008 and try again.",
     };
   }
