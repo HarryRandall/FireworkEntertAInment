@@ -35,7 +35,7 @@ export function AdminShell({
   children: ReactNode;
   profile: CurrentProfile;
 }) {
-  const DRAWER_EXIT_MS = 460;
+  const DRAWER_EXIT_MS = 280;
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMounted, setDrawerMounted] = useState(false);
@@ -53,9 +53,7 @@ export function AdminShell({
   const openDrawer = () => {
     setDrawerMounted(true);
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        setDrawerOpen(true);
-      });
+      setDrawerOpen(true);
     });
   };
 
@@ -195,7 +193,7 @@ export function AdminShell({
       {drawerMounted ? (
         <div
           className={cn(
-            "fixed inset-0 z-50 lg:hidden transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "fixed inset-0 z-50 lg:hidden transition-opacity duration-200 ease-out",
             drawerOpen ? "opacity-100" : "pointer-events-none opacity-0",
           )}
           role="dialog"
@@ -206,16 +204,16 @@ export function AdminShell({
             aria-label="Close admin navigation"
             onClick={closeDrawer}
             className={cn(
-              "absolute inset-0 h-full w-full cursor-default bg-background/60 backdrop-blur-sm transition-opacity duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "absolute inset-0 h-full w-full cursor-default bg-background/45 backdrop-blur-[2px] transition-opacity duration-200 ease-out",
               drawerOpen ? "opacity-100" : "opacity-0",
             )}
           />
           <div
             className={cn(
-              "absolute inset-y-0 left-0 overflow-hidden will-change-[width,opacity] transition-[width,opacity] duration-[440ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "absolute inset-y-0 left-0 w-[min(86vw,320px)] will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
               drawerOpen
-                ? "w-[min(86vw,320px)] opacity-100"
-                : "w-0 opacity-0",
+                ? "translate-x-0"
+                : "-translate-x-full",
             )}
           >
             <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)]">
