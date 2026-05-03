@@ -116,7 +116,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
         </div>
         <FireworkImportPreview
           videoUrl={job.videoUrl}
-          videoMimeType={job.mediaAsset?.mimeType ?? null}
+          videoMimeType={job.videoMimeType}
           spec={spec}
           fallbackDuration={defaultDuration}
         />
