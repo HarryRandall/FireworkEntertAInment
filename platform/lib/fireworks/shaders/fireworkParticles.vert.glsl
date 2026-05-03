@@ -38,13 +38,18 @@ void main() {
   float visible = step(0.0, age) * step(age, lifetime);
   float t = clamp(age / lifetime, 0.0, 1.0);
   float drag = clamp(aPhysics.x, 0.0, 0.999);
-  float dragFactor = (1.0 - exp(-age * (1.0 - drag) * 3.0)) / max(0.0001, (1.0 - drag) * 3.0);
+  float k = max(0.0001, (1.0 - drag) * 3.0);
+  float F = (1.0 - exp(-age * k)) / k;
   vec3 curl = vec3(
     sin(age * 1.7 + aSeed * 13.1),
     sin(age * 2.1 + aSeed * 7.7),
     cos(age * 1.9 + aSeed * 11.3)
   ) * hash11(aSeed + 2.0) * 0.035;
-  vec3 worldPosition = position + aVelocity * dragFactor + 0.5 * aAcceleration * age * age + uWind * age + curl * age;
+  vec3 worldPosition = position
+    + aVelocity * F
+    + aAcceleration * (age - F) / k
+    + uWind * age
+    + curl * age;
 
   vec4 mvPosition = modelViewMatrix * vec4(worldPosition, 1.0);
   gl_Position = projectionMatrix * mvPosition;

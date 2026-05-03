@@ -9,7 +9,6 @@ import {
   FireworksEngine,
   type FireworksEngineStats,
 } from "@/lib/fireworks/FireworksEngine";
-import { createSeededRng } from "@/lib/fireworks/random";
 import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 
 if (typeof window !== "undefined") {
@@ -31,45 +30,6 @@ type ReplaySceneProps = {
   interactive: boolean;
   debug: boolean;
 };
-
-function Starfield() {
-  const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    const rng = createSeededRng(20260214);
-    const count = 1_100;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = rng.signed(18);
-      positions[i * 3 + 1] = rng.range(-0.4, 11.5);
-      positions[i * 3 + 2] = -rng.range(2, 20);
-      const warmth = rng.range(0.72, 1);
-      colors[i * 3 + 0] = warmth;
-      colors[i * 3 + 1] = warmth * rng.range(0.85, 1);
-      colors[i * 3 + 2] = 1;
-    }
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    return geom;
-  }, []);
-
-  useEffect(() => {
-    return () => geometry.dispose();
-  }, [geometry]);
-
-  return (
-    <points geometry={geometry} renderOrder={1}>
-      <pointsMaterial
-        size={0.026}
-        vertexColors
-        transparent
-        opacity={0.58}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
-  );
-}
 
 function GroundGrid() {
   return (
@@ -148,7 +108,6 @@ function ReplayScene({
       <color attach="background" args={[staticShowCrafterPalette.night]} />
       <ambientLight intensity={0.36} />
       <fog attach="fog" args={[staticShowCrafterPalette.night, 7, 24]} />
-      <Starfield />
       <GroundGrid />
       <EngineBridge
         cues={cues}

@@ -19,12 +19,20 @@ import {
 } from "@/lib/fireworks/spec";
 
 const GROUND_Y = -1.45;
-const GRAVITY = -9.8;
-const STAR_DRAG = 0.92;
-const SPARK_DRAG = 0.86;
-const HEAVY_DRAG = 0.97;
+// Gravity is softened vs. real-world 9.8 so particles hang in the air and fade,
+// rather than dropping like debris. Real consumer fireworks appear to float because
+// their mass-to-drag ratio is low — we mimic that look instead of simulating it.
+const GRAVITY = -3.2;
+// Per-second drag coefficient. Matches the shader's `(1 - drag) * 3` time constant.
+// With drag=0.60, tau = 1 / ((1-0.6)*3) = 0.83 s — particles decelerate to 37 % of
+// their launch speed in under a second, giving the characteristic "shoot then float"
+// look rather than flying outward in straight lines until death.
+const STAR_DRAG = 0.6;
+const SPARK_DRAG = 0.45;
+// Heavy drag is for the lifting comet, which needs to stay "heavy" and keep rising.
+const HEAVY_DRAG = 0.9;
 const MAX_SPARKS_PER_STAR = 24;
-const MAX_STARS_PER_BURST = 220;
+const MAX_STARS_PER_BURST = 500;
 
 export type EngineEmitTargets = {
   particles: { write: (particle: ParticleWrite) => void };
@@ -202,8 +210,10 @@ function evaluateVelocity(
 function deriveStarCount(spec: FireworkSpec): number {
   if (spec.starCount) return Math.min(MAX_STARS_PER_BURST, Math.round(spec.starCount));
   const density = spec.starDensity ?? 1;
-  const scaledSize = spec.spreadSize / 4;
-  const count = Math.max(8, Math.round(scaledSize * scaledSize * density * 12));
+  // Exemplar uses (spreadSize_px / 54)² × density, giving ~150 stars at spreadSize=600px.
+  // Our spreadSize is in metres; a direct square gets us equivalent density —
+  // spreadSize=4.6 → ~148 stars, which is what a firework cloud should look like.
+  const count = Math.max(24, Math.round(spec.spreadSize * spec.spreadSize * density * 7));
   return Math.min(MAX_STARS_PER_BURST, count);
 }
 
@@ -514,7 +524,13 @@ function emitBurst(
   });
 
   const starCount = deriveStarCount(spec);
-  const burstSpeed = spec.spreadSize * 0.7;
+  // spreadSize is the final cloud DIAMETER (exemplar convention). Asymptotic radius
+  // under drag is burstSpeed × tau; with tau=0.83s we want burstSpeed ≈ spreadSize/2/tau
+  // ≈ 0.6 × spreadSize. Particles die before asymptote so we nudge slightly up.
+  const burstSpeed = spec.spreadSize * 0.72;
+  // Small upward bias so the burst shape stays visually centered as gravity pulls
+  // the cloud down during hang time. Matches the exemplar's `standardInitialSpeed`.
+  const burstRise = spec.spreadSize * 0.08;
   const starLifeSec = spec.starLifeMs / 1000;
   const starLifeVariation = spec.starLifeVariation ?? 0.125;
   const ringSquash = spec.ring ? 0.18 + rng.next() * 0.5 : 1;
@@ -538,10 +554,13 @@ function emitBurst(
     } else {
       dir = randomUnitVector(rng);
     }
-    const speedJitter = 0.85 + rng.next() * 0.3;
+    // Near-cubic falloff on the speed multiplier places more stars toward the
+    // outer edge of the sphere. Without this, the inner cloud looks too dense and
+    // the outer shell too thin — the exemplar uses the same technique.
+    const speedJitter = Math.pow(rng.next(), 0.45) * 0.35 + 0.75;
     const velocity: [number, number, number] = [
       dir[0] * burstSpeed * speedJitter,
-      dir[1] * burstSpeed * speedJitter,
+      dir[1] * burstSpeed * speedJitter + (spec.horsetail ? 0 : burstRise),
       dir[2] * burstSpeed * speedJitter,
     ];
     const lifetime =
@@ -689,9 +708,8 @@ export function compileCueEvents(cue: ReplayCue): CompiledEffectEvent[] {
   const scale = cue.scale ?? 1;
   const burstPos = cuePosition(cue);
   const lift = liftSeconds(spec);
-  // All shells launch from a single mortar at stage centre; bursts still occur
-  // at the cued 3D position for variety.
-  const launchPos: [number, number, number] = [0, GROUND_Y, 0];
+  // Mortar sits directly below the burst point so shells rise vertically.
+  const launchPos: [number, number, number] = [burstPos[0], GROUND_Y, burstPos[2]];
 
   // Lift comet
   const liftDelta: [number, number, number] = [
@@ -835,7 +853,10 @@ export function emitCompiledEvent(
     colorMid: rgb,
     colorEnd: secondaryRgb,
     alphaStart: 1,
-    alphaMid: 0.92,
+    // Fade gradually through life — exemplar uses burnRate = sqrt(life/fullLife) for
+    // brightness, which lands around 0.5 at mid-life. Keeping mid high made our stars
+    // look like hard-edged pellets that snapped off at death.
+    alphaMid: 0.55,
     alphaEnd: 0,
     drag: event.drag,
     twinkleFrequency: 6,
