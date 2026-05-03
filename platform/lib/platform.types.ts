@@ -108,6 +108,7 @@ export type ImportJobDetail = ImportJobSummary & {
   mediaAsset: MediaAssetSummary | null;
   outputs: ImportOutputSummary[];
   videoUrl: string | null;
+  videoMimeType: string | null;
 };
 
 export type CatalogueProductSummary = {

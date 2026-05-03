@@ -25,6 +25,7 @@ import type {
 } from "@/lib/platform.types";
 import type { Database, Json } from "@/lib/database.types";
 import { IMPORT_VIDEO_BUCKET } from "@/lib/imports";
+import { getPreferredImportVideoSource } from "@/lib/import-video-preview.mjs";
 import { createServiceRoleSupabase } from "@/utils/supabase/service-role";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -545,14 +546,25 @@ export async function getImportJobDetail(
   }
 
   const media = mediaResult.data ? mapMediaAsset(mediaResult.data as MediaAssetRow) : null;
+  const preferredVideo = media
+    ? getPreferredImportVideoSource(media)
+    : { storagePath: null, mimeType: null };
   let videoUrl = media?.url ?? job.source_url ?? null;
-  if (media?.storagePath) {
+  if (preferredVideo.storagePath) {
     const signedUrl = await createSignedImportVideoUrl(
-      media.storagePath,
+      preferredVideo.storagePath,
       supabase,
     );
     if (signedUrl) {
       videoUrl = signedUrl;
+    } else if (media?.storagePath && media.storagePath !== preferredVideo.storagePath) {
+      const fallbackSignedUrl = await createSignedImportVideoUrl(
+        media.storagePath,
+        supabase,
+      );
+      if (fallbackSignedUrl) {
+        videoUrl = fallbackSignedUrl;
+      }
     }
   }
 
@@ -561,6 +573,7 @@ export async function getImportJobDetail(
     mediaAsset: media,
     outputs: ((outputsResult.data ?? []) as ImportOutputRow[]).map(mapImportOutput),
     videoUrl,
+    videoMimeType: preferredVideo.mimeType ?? media?.mimeType ?? null,
   };
 }
 

@@ -153,22 +153,123 @@ def env_required(name):
 
 
 def ffprobe_duration(path):
+    return float(ffprobe_media(path).get("duration") or 0.0)
+
+
+def ffprobe_media(path):
     result = subprocess.run(
         [
             "ffprobe",
             "-v",
             "error",
             "-show_entries",
-            "format=duration",
+            "stream=index,codec_name,codec_type,profile,pix_fmt,width,height,avg_frame_rate:format=format_name,duration",
             "-of",
-            "default=noprint_wrappers=1:nokey=1",
+            "json",
             str(path),
         ],
         check=True,
         text=True,
         capture_output=True,
     )
-    return float(result.stdout.strip())
+    payload = json.loads(result.stdout or "{}")
+    streams = payload.get("streams") or []
+    video_stream = next((stream for stream in streams if stream.get("codec_type") == "video"), {})
+    audio_stream = next((stream for stream in streams if stream.get("codec_type") == "audio"), {})
+    fmt = payload.get("format") or {}
+    duration = fmt.get("duration")
+    try:
+        duration = float(duration) if duration is not None else 0.0
+    except (TypeError, ValueError):
+        duration = 0.0
+    return {
+        "duration": duration,
+        "format_name": fmt.get("format_name"),
+        "video_codec": video_stream.get("codec_name"),
+        "audio_codec": audio_stream.get("codec_name"),
+        "width": video_stream.get("width"),
+        "height": video_stream.get("height"),
+        "video_profile": video_stream.get("profile"),
+        "pixel_format": video_stream.get("pix_fmt"),
+        "frame_rate": video_stream.get("avg_frame_rate"),
+    }
+
+
+def needs_browser_normalization(media_info):
+    video_codec = (media_info.get("video_codec") or "").lower()
+    audio_codec = media_info.get("audio_codec")
+    if video_codec != "h264":
+        return True
+    if audio_codec is None:
+        return False
+    return audio_codec.lower() != "aac"
+
+
+def normalized_preview_storage_path(storage_path):
+    base = storage_path.rsplit("/", 1)[-1]
+    if "." in base:
+        stem = storage_path[: -len(base)] + base.rsplit(".", 1)[0]
+    else:
+        stem = storage_path
+    return f"{stem}-browser-h264.mp4"
+
+
+def create_browser_normalized_video(source_path, out_dir):
+    output_path = out_dir / "browser-preview.mp4"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source_path),
+            "-map",
+            "0:v:0",
+            "-map",
+            "0:a?",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-movflags",
+            "+faststart",
+            str(output_path),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    return output_path
+
+
+def upload_browser_normalized_video(supabase, storage_path, preview_path):
+    preview_storage_path = normalized_preview_storage_path(storage_path)
+    with preview_path.open("rb") as handle:
+        supabase.storage.from_(BUCKET).upload(
+            preview_storage_path,
+            handle,
+            {"content-type": "video/mp4", "upsert": "true"},
+        )
+    return preview_storage_path
+
+
+def build_media_metadata(existing_metadata, source_probe, normalized_preview=None):
+    metadata = existing_metadata if isinstance(existing_metadata, dict) else {}
+    merged = dict(metadata)
+    merged["sourceProbe"] = {
+        "durationSeconds": round(float(source_probe.get("duration") or 0.0), 3),
+        "formatName": source_probe.get("format_name"),
+        "videoCodec": source_probe.get("video_codec"),
+        "audioCodec": source_probe.get("audio_codec"),
+        "width": source_probe.get("width"),
+        "height": source_probe.get("height"),
+        "pixelFormat": source_probe.get("pixel_format"),
+        "frameRate": source_probe.get("frame_rate"),
+        "videoProfile": source_probe.get("video_profile"),
+    }
+    if normalized_preview:
+        merged["normalizedPreview"] = normalized_preview
+    return merged
 
 
 def extract_audio(path, out_dir):
@@ -803,14 +904,47 @@ def process_job(supabase, job):
         video_bytes = supabase.storage.from_(BUCKET).download(storage_path)
         video_path.write_bytes(video_bytes)
 
-        duration = ffprobe_duration(video_path)
+        source_probe = ffprobe_media(video_path)
+        duration = float(source_probe.get("duration") or 0.0)
         if duration > MAX_DURATION_SECONDS:
             raise RuntimeError(f"Video is {duration:.2f}s; maximum is 60s")
 
-        supabase.table("media_assets").update({"duration_seconds": duration}).eq("id", media_id).execute()
+        analysis_video_path = video_path
+        preview_metadata = None
+        if needs_browser_normalization(source_probe):
+            try:
+                normalized_video_path = create_browser_normalized_video(video_path, tmp_dir)
+                normalized_probe = ffprobe_media(normalized_video_path)
+                preview_storage_path = upload_browser_normalized_video(
+                    supabase,
+                    storage_path,
+                    normalized_video_path,
+                )
+                preview_metadata = {
+                    "storagePath": preview_storage_path,
+                    "mimeType": "video/mp4",
+                    "videoCodec": normalized_probe.get("video_codec"),
+                    "audioCodec": normalized_probe.get("audio_codec"),
+                }
+                analysis_video_path = normalized_video_path
+            except Exception as exc:
+                print(f"browser normalization failed for {job_id}: {exc}")
+
+        supabase.table("media_assets").update(
+            {
+                "duration_seconds": duration,
+                "width": source_probe.get("width"),
+                "height": source_probe.get("height"),
+                "metadata": build_media_metadata(
+                    media.get("metadata"),
+                    source_probe,
+                    normalized_preview=preview_metadata,
+                ),
+            }
+        ).eq("id", media_id).execute()
         supabase.table("import_jobs").update({"processing_progress": 20}).eq("id", job_id).execute()
 
-        frame_summary, frame_images = analyse_frames(video_path, duration)
+        frame_summary, frame_images = analyse_frames(analysis_video_path, duration)
         supabase.table("import_outputs").insert(
             {
                 "import_job_id": job_id,
@@ -820,7 +954,7 @@ def process_job(supabase, job):
         ).execute()
 
         supabase.table("import_jobs").update({"processing_progress": 45}).eq("id", job_id).execute()
-        audio_path = extract_audio(video_path, tmp_dir)
+        audio_path = extract_audio(analysis_video_path, tmp_dir)
         audio = analyse_audio(audio_path)
         supabase.table("import_outputs").insert(
             {
