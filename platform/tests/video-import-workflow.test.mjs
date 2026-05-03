@@ -50,33 +50,37 @@ test("container worker exists and calls OpenRouter JSON mode with schema validat
   assert.match(worker, /normalizedPreview/);
 });
 
-test("upload action accepts video files when browser leaves file.type empty", () => {
-  const actions = readFileSync(join(root, "app/actions/platform-admin.ts"), "utf8");
-  // Regression: MPEG-4 SP MP4s were rejected because file.type sometimes comes
-  // back empty in Chromium on Linux, so we now also accept by extension.
-  assert.match(actions, /looksLikeVideoByName/);
-  assert.match(actions, /\\\.\(mp4\|m4v\|mov\|webm\|mkv\)\$/);
-  // Inferred content type lets the storage upload satisfy allowed_mime_types
-  // even when the browser didn't supply a mime.
-  assert.match(actions, /inferredContentType/);
-  // Storage upload errors are surfaced verbatim rather than always blamed on
-  // the migration not being applied.
-  assert.match(actions, /Video upload failed: \$\{detail\}/);
-});
-
-test("upload form does not block submission when metadata cannot be decoded", () => {
+test("upload form bypasses Vercel Server Action body cap with direct-to-storage upload", () => {
   const form = readFileSync(
     join(root, "app/(admin)/admin/imports/VideoImportUploadForm.tsx"),
     "utf8",
   );
-  // The previous implementation set a hard error in onerror, disabling the
-  // submit button for any file Chromium couldn't decode (e.g. MPEG-4 SP).
-  // Now onerror sets a non-blocking notice and the worker probes server-side.
+  // Regression: Vercel caps Server Action request bodies at 4.5 MB, so the
+  // file is uploaded straight from the browser to Supabase Storage and only
+  // metadata (storage path, name, size, mime) is posted to the server action.
+  assert.match(form, /createSupabaseBrowserClient|@\/utils\/supabase\/client/);
+  assert.match(form, /supabase\.storage\s*\.from\(IMPORT_VIDEO_BUCKET\)/);
+  assert.match(form, /finalizeVideoImportJobAction/);
+  assert.match(form, /name="storagePath"/);
+  // Clear the file input before requestSubmit so the bytes don't get
+  // re-included in the Server Action POST and trip Vercel's 4.5 MB cap.
+  assert.match(form, /fileRef\.current\.value = ""/);
+  // Browser couldn't-decode-metadata stays a non-blocking notice.
   assert.match(form, /setNotice\(/);
-  assert.doesNotMatch(form, /onerror = \(\) => \{\s*URL\.revokeObjectURL\(objectUrl\);\s*setError\(/);
   assert.match(form, /worker will probe/i);
-  // Filename-based fallback so files without file.type still pass the gate.
   assert.match(form, /looksLikeVideoByName/);
+});
+
+test("finalize action validates uploaded object lives under caller's admin folder", () => {
+  const actions = readFileSync(join(root, "app/actions/platform-admin.ts"), "utf8");
+  assert.match(actions, /finalizeVideoImportJobAction/);
+  assert.match(actions, /FinalizeVideoImportSchema/);
+  // Path-prefix check stops a caller from finalizing someone else's upload.
+  assert.match(actions, /storagePath\.startsWith\(`\$\{admin\.id\}\/`\)/);
+  // Storage errors are surfaced verbatim rather than always blamed on
+  // the migration not being applied.
+  assert.match(actions, /mediaError\?\.message/);
+  assert.match(actions, /jobError\?\.message/);
 });
 
 test("import detail page polls for live progress without manual refresh", () => {
