@@ -1,25 +1,30 @@
 import * as THREE from "three";
-import type { FireworkRenderSpec, ReplayCue } from "@/lib/shows";
-import {
-  applyLegacyOverridesToEffectSpecV2,
-  legacyFireworkRenderSpecToEffectSpecV2,
-} from "@/lib/fireworks/legacy-adapter";
-import {
-  FireworkEffectSpecV2Schema,
-  type BreakSpec,
-  type FireworkEffectSpecV2,
-  type FlashSpec,
-  type LaunchSpec,
-  type ParticleLayerSpec,
-  type ShotSpec,
-  type SmokeSpec,
-} from "@/lib/fireworks/spec-v2";
-import {
-  FireworkEffectSpecV3Schema,
-  fireworkEffectSpecV3ToV2,
-} from "@/lib/fireworks/spec-v3";
-import { createSeededRng, mixSeed, type SeededRng } from "@/lib/fireworks/random";
+import type { ReplayCue } from "@/lib/shows";
 import type { ParticleWrite } from "@/lib/fireworks/ParticlePool";
+import {
+  createSeededRng,
+  mixSeed,
+  type SeededRng,
+} from "@/lib/fireworks/random";
+import {
+  DEFAULT_FIREWORK_SPEC,
+  FIREWORK_COLORS,
+  GLITTER_PROFILES,
+  hexToRgb,
+  pickPrimaryColor,
+  safeParseFireworkSpec,
+  type FireworkColor,
+  type FireworkSpec,
+  type GlitterKind,
+} from "@/lib/fireworks/spec";
+
+const GROUND_Y = -1.45;
+const GRAVITY = -9.8;
+const STAR_DRAG = 0.92;
+const SPARK_DRAG = 0.86;
+const HEAVY_DRAG = 0.97;
+const MAX_SPARKS_PER_STAR = 24;
+const MAX_STARS_PER_BURST = 220;
 
 export type EngineEmitTargets = {
   particles: { write: (particle: ParticleWrite) => void };
@@ -27,795 +32,818 @@ export type EngineEmitTargets = {
   smoke: { write: (particle: ParticleWrite) => void };
 };
 
-export type CompiledEffectEvent =
-  | {
-      kind: "launch";
-      id: string;
-      cueId: string;
-      time: number;
-      expiresAt: number;
-      seed: number;
-      origin: THREE.Vector3;
-      end: THREE.Vector3;
-      launch: LaunchSpec;
-      scale: number;
-      liftTimeSeconds: number;
-    }
-  | {
-      kind: "layer";
-      id: string;
-      cueId: string;
-      time: number;
-      expiresAt: number;
-      seed: number;
-      origin: THREE.Vector3;
-      launchVelocity: THREE.Vector3;
-      layer: ParticleLayerSpec;
-      breakSpec: BreakSpec;
-      scale: number;
-      qualityScale: number;
-    }
-  | {
-      kind: "flash";
-      id: string;
-      cueId: string;
-      time: number;
-      expiresAt: number;
-      seed: number;
-      origin: THREE.Vector3;
-      flash: FlashSpec;
-      scale: number;
-    }
-  | {
-      kind: "smoke";
-      id: string;
-      cueId: string;
-      time: number;
-      expiresAt: number;
-      seed: number;
-      origin: THREE.Vector3;
-      smoke: SmokeSpec;
-      scale: number;
-    };
+export type CompiledStarEvent = {
+  kind: "star";
+  id: string;
+  cueId: string;
+  time: number;
+  expiresAt: number;
+  origin: [number, number, number];
+  velocity: [number, number, number];
+  acceleration: [number, number, number];
+  drag: number;
+  lifetime: number;
+  sizeStart: number;
+  sizeEnd: number;
+  color: FireworkColor;
+  secondColor: FireworkColor | null;
+  transitionAt: number | null;
+  strobeFreq: number;
+  emissive: number;
+  alphaCurve: number;
+  seed: number;
+  target: "particles" | "trails";
+};
 
-const GROUND_Y = -1.45;
-const COLOR_CACHE = new Map<string, [number, number, number]>();
+export type CompiledFlashEvent = {
+  kind: "flash";
+  id: string;
+  cueId: string;
+  time: number;
+  expiresAt: number;
+  origin: [number, number, number];
+  color: FireworkColor;
+  size: number;
+  seed: number;
+};
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
+export type CompiledEffectEvent = CompiledStarEvent | CompiledFlashEvent;
+
+const DEG2RAD = Math.PI / 180;
+
+function rotateVec(
+  v: [number, number, number],
+  pan: number,
+  tilt: number,
+  roll: number,
+): [number, number, number] {
+  const cp = Math.cos(pan * DEG2RAD);
+  const sp = Math.sin(pan * DEG2RAD);
+  const ct = Math.cos((tilt - 90) * DEG2RAD);
+  const st = Math.sin((tilt - 90) * DEG2RAD);
+  const cr = Math.cos(roll * DEG2RAD);
+  const sr = Math.sin(roll * DEG2RAD);
+  // roll(z) → tilt(x) → pan(y)
+  let [x, y, z] = v;
+  let nx = x * cr - y * sr;
+  let ny = x * sr + y * cr;
+  let nz = z;
+  [x, y, z] = [nx, ny, nz];
+  ny = y * ct - z * st;
+  nz = y * st + z * ct;
+  [x, y, z] = [x, ny, nz];
+  nx = x * cp + z * sp;
+  nz = -x * sp + z * cp;
+  return [nx, ny, nz];
 }
 
-function colorToRgb(color: string): [number, number, number] {
-  const cached = COLOR_CACHE.get(color);
-  if (cached) return cached;
-  const parsed = new THREE.Color(color);
-  const rgb: [number, number, number] = [parsed.r, parsed.g, parsed.b];
-  COLOR_CACHE.set(color, rgb);
-  return rgb;
+function randomUnitVector(rng: SeededRng): [number, number, number] {
+  // Even distribution on unit sphere
+  const u = rng.next();
+  const v = rng.next();
+  const theta = 2 * Math.PI * u;
+  const phi = Math.acos(2 * v - 1);
+  const s = Math.sin(phi);
+  return [s * Math.cos(theta), Math.cos(phi), s * Math.sin(theta)];
 }
 
-function alphaCurveCode(curve: ParticleLayerSpec["appearance"]["alphaCurve"]): number {
-  switch (curve) {
-    case "linear":
-      return 0;
-    case "ease_out":
-      return 1;
-    case "spark_flicker":
-      return 2;
-    case "strobe":
-      return 3;
-    case "glitter_decay":
-      return 4;
-    case "custom":
-      return 5;
+function randomRingDirection(
+  rng: SeededRng,
+  squash: number,
+): [number, number, number] {
+  const angle = rng.next() * Math.PI * 2;
+  return [Math.sin(angle) * squash, Math.cos(angle), 0];
+}
+
+function randomConeVector(
+  rng: SeededRng,
+  axis: [number, number, number],
+  spreadRad: number,
+): [number, number, number] {
+  // Sample around +axis within cone, then return
+  const cosA = Math.cos(rng.next() * spreadRad);
+  const sinA = Math.sqrt(1 - cosA * cosA);
+  const phi = rng.next() * Math.PI * 2;
+  const local: [number, number, number] = [
+    sinA * Math.cos(phi),
+    cosA,
+    sinA * Math.sin(phi),
+  ];
+  // Build orthonormal basis around axis
+  const [ax, ay, az] = axis;
+  const upDot = ay;
+  const len = Math.hypot(ax, ay, az) || 1;
+  const nx = ax / len;
+  const ny = ay / len;
+  const nz = az / len;
+  // pick a "right" vector
+  let rx = 0;
+  let ry = 0;
+  let rz = 1;
+  if (Math.abs(upDot) > 0.95) {
+    rx = 1;
+    ry = 0;
+    rz = 0;
   }
+  // r = right × axis
+  const ux = ry * nz - rz * ny;
+  const uy = rz * nx - rx * nz;
+  const uz = rx * ny - ry * nx;
+  const ulen = Math.hypot(ux, uy, uz) || 1;
+  const Ux = ux / ulen;
+  const Uy = uy / ulen;
+  const Uz = uz / ulen;
+  // V = axis × U
+  const Vx = ny * Uz - nz * Uy;
+  const Vy = nz * Ux - nx * Uz;
+  const Vz = nx * Uy - ny * Ux;
+  return [
+    Ux * local[0] + nx * local[1] + Vx * local[2],
+    Uy * local[0] + ny * local[1] + Vy * local[2],
+    Uz * local[0] + nz * local[1] + Vz * local[2],
+  ];
 }
 
-function gradientTriplet(
-  gradient: ParticleLayerSpec["appearance"]["colorGradient"],
-): {
-  start: [number, number, number];
-  mid: [number, number, number];
-  end: [number, number, number];
-  alphaStart: number;
-  alphaMid: number;
-  alphaEnd: number;
-} {
-  const sorted = [...gradient].sort((a, b) => a.t - b.t);
-  const first = sorted[0] ?? { color: "#FFFFFF", alpha: 1 };
-  const middle = sorted[Math.floor(sorted.length / 2)] ?? first;
-  const last = sorted[sorted.length - 1] ?? first;
-  return {
-    start: colorToRgb(first.color),
-    mid: colorToRgb(middle.color),
-    end: colorToRgb(last.color),
-    alphaStart: first.alpha,
-    alphaMid: middle.alpha,
-    alphaEnd: last.alpha,
-  };
+function dragApprox(age: number, drag: number): number {
+  const k = (1 - drag) * 3;
+  if (k < 1e-4) return age;
+  return (1 - Math.exp(-age * k)) / k;
 }
 
-function launchDirection(panDegrees: number, tiltDegrees: number): THREE.Vector3 {
-  const pan = THREE.MathUtils.degToRad(panDegrees);
-  const tilt = THREE.MathUtils.degToRad(tiltDegrees);
-  const horizontal = Math.cos(tilt);
-  return new THREE.Vector3(
-    Math.sin(pan) * horizontal,
-    Math.sin(tilt),
-    -Math.cos(pan) * horizontal,
-  ).normalize();
+function evaluatePosition(
+  origin: [number, number, number],
+  velocity: [number, number, number],
+  acceleration: [number, number, number],
+  drag: number,
+  age: number,
+): [number, number, number] {
+  const k = dragApprox(age, drag);
+  return [
+    origin[0] + velocity[0] * k + 0.5 * acceleration[0] * age * age,
+    origin[1] + velocity[1] * k + 0.5 * acceleration[1] * age * age,
+    origin[2] + velocity[2] * k + 0.5 * acceleration[2] * age * age,
+  ];
 }
 
-function shotBasePosition(cue: ReplayCue, shot: ShotSpec, scale: number): THREE.Vector3 {
-  const cueOffset = (mixSeed(cue.id, "position") % 1000) / 1000 - 0.5;
-  const cuePosition = cue.positionMeters ?? { x: 0, y: 0, z: 0 };
-  return new THREE.Vector3(
-    cuePosition.x * scale + cueOffset * 0.5 + shot.launchPositionOffset.x * scale,
-    GROUND_Y + cuePosition.y * scale + shot.launchPositionOffset.y * scale,
-    -0.6 + cuePosition.z * scale + shot.launchPositionOffset.z * scale,
-  );
+function evaluateVelocity(
+  velocity: [number, number, number],
+  acceleration: [number, number, number],
+  drag: number,
+  age: number,
+): [number, number, number] {
+  const decay = Math.exp(-age * (1 - drag) * 3);
+  return [
+    velocity[0] * decay + acceleration[0] * age,
+    velocity[1] * decay + acceleration[1] * age,
+    velocity[2] * decay + acceleration[2] * age,
+  ];
 }
 
-function qualityScaleFor(spec: FireworkEffectSpecV2): number {
-  switch (spec.renderProfile.quality) {
-    case "low":
-      return 0.35;
-    case "medium":
-      return 0.62;
-    case "high":
-      return 1;
-    case "ultra":
-      return 1.35;
-  }
+function deriveStarCount(spec: FireworkSpec): number {
+  if (spec.starCount) return Math.min(MAX_STARS_PER_BURST, Math.round(spec.starCount));
+  const density = spec.starDensity ?? 1;
+  const scaledSize = spec.spreadSize / 4;
+  const count = Math.max(8, Math.round(scaledSize * scaledSize * density * 12));
+  return Math.min(MAX_STARS_PER_BURST, count);
 }
 
-function eventLifetimeForLayer(layer: ParticleLayerSpec): number {
-  return (
-    layer.spawnDelaySeconds +
-    layer.spawnDurationSeconds +
-    layer.lifetime.max +
-    (layer.trail.enabled ? layer.trail.lengthSeconds : 0) +
-    0.35
-  );
+function liftSeconds(spec: FireworkSpec): number {
+  return Math.max(0.6, 0.6 + Math.sqrt(spec.spreadSize) * 0.18);
 }
 
-export function resolveCueEffectSpec(cue: ReplayCue): FireworkEffectSpecV2 {
-  const maybeV3 = FireworkEffectSpecV3Schema.safeParse(cue.firework.spec);
-  if (maybeV3.success) {
-    return fireworkEffectSpecV3ToV2(maybeV3.data);
-  }
-  const maybeV2 = FireworkEffectSpecV2Schema.safeParse(cue.firework.spec);
-  if (maybeV2.success) {
-    return applyLegacyOverridesToEffectSpecV2(maybeV2.data, cue.renderParams);
-  }
-  return legacyFireworkRenderSpecToEffectSpecV2(cue.firework.spec as FireworkRenderSpec, {
-    id: cue.firework.id,
-    name: cue.firework.name,
-    description: cue.firework.description,
-    slug: cue.firework.slug,
-    seed: mixSeed(cue.firework.id, cue.firework.slug),
-    overrides: cue.renderParams,
-  });
+function alphaCurveFor(spec: FireworkSpec): number {
+  if (spec.shellType === "strobe" || spec.strobe) return 3;
+  if (spec.glitter && spec.glitter !== "none") return 4;
+  if (spec.shellType === "willow" || spec.shellType === "fallingLeaves") return 5;
+  if (spec.shellType === "comet") return 1;
+  return 1;
 }
 
-function compileBreakEvents(
+function emissiveFor(spec: FireworkSpec): number {
+  if (spec.shellType === "ghost") return 1.6;
+  if (spec.shellType === "comet") return 3;
+  return 2.4;
+}
+
+function strobeFreqFor(spec: FireworkSpec): number {
+  if (spec.shellType === "strobe" || spec.strobe) return 18;
+  return 0;
+}
+
+function starSizeFor(spec: FireworkSpec): { start: number; end: number } {
+  const base = 0.22 + spec.spreadSize * 0.024;
+  const tail =
+    spec.shellType === "willow" || spec.shellType === "fallingLeaves"
+      ? base * 0.6
+      : base * 0.38;
+  return { start: base, end: tail };
+}
+
+function cuePosition(cue: ReplayCue): [number, number, number] {
+  const p = cue.positionMeters ?? { x: 0, y: 0, z: 0 };
+  return [p.x, GROUND_Y + Math.max(2, p.y + spreadRise(cue)), p.z];
+}
+
+function spreadRise(cue: ReplayCue): number {
+  const spec = safeParseFireworkSpec(cue.firework.spec);
+  return Math.max(2.4, 1.4 + spec.spreadSize * 0.45);
+}
+
+function applyRotation(
+  cue: ReplayCue,
+  vec: [number, number, number],
+): [number, number, number] {
+  const r = cue.rotation ?? { pan: 0, tilt: 90, roll: 0 };
+  return rotateVec(vec, r.pan, r.tilt, r.roll);
+}
+
+function pushStar(
   events: CompiledEffectEvent[],
-  params: {
+  partial: Omit<CompiledStarEvent, "kind" | "id" | "cueId" | "expiresAt"> & {
     cue: ReplayCue;
-    spec: FireworkEffectSpecV2;
-    breakSpec: BreakSpec;
-    time: number;
-    origin: THREE.Vector3;
-    launchVelocity: THREE.Vector3;
-    parentSeed: number;
-    scale: number;
-    qualityScale: number;
-    path: string;
+    label: string;
   },
 ): void {
-  if (!params.breakSpec.enabled) return;
-  params.breakSpec.layers.forEach((layer, layerIndex) => {
-    if (!layer.enabled || layer.particleCount <= 0) return;
-    const layerTime = params.time + layer.spawnDelaySeconds;
-    events.push({
-      kind: "layer",
-      id: `${params.path}:layer:${layer.id}:${layerIndex}`,
-      cueId: params.cue.id,
-      time: layerTime,
-      expiresAt: layerTime + eventLifetimeForLayer(layer),
-      seed: mixSeed(params.parentSeed, layer.id, layerIndex),
-      origin: params.origin.clone(),
-      launchVelocity: params.launchVelocity.clone(),
-      layer,
-      breakSpec: params.breakSpec,
-      scale: params.scale,
-      qualityScale: params.qualityScale,
-    });
+  const expiresAt = partial.time + partial.lifetime + 0.2;
+  events.push({
+    kind: "star",
+    id: `${partial.cue.id}:${partial.label}`,
+    cueId: partial.cue.id,
+    time: partial.time,
+    expiresAt,
+    origin: partial.origin,
+    velocity: partial.velocity,
+    acceleration: partial.acceleration,
+    drag: partial.drag,
+    lifetime: partial.lifetime,
+    sizeStart: partial.sizeStart,
+    sizeEnd: partial.sizeEnd,
+    color: partial.color,
+    secondColor: partial.secondColor,
+    transitionAt: partial.transitionAt,
+    strobeFreq: partial.strobeFreq,
+    emissive: partial.emissive,
+    alphaCurve: partial.alphaCurve,
+    seed: partial.seed,
+    target: partial.target,
   });
+}
 
-  if (params.breakSpec.flash?.enabled) {
-    events.push({
-      kind: "flash",
-      id: `${params.path}:flash`,
-      cueId: params.cue.id,
-      time: params.time,
-      expiresAt: params.time + params.breakSpec.flash.duration + 0.05,
-      seed: mixSeed(params.parentSeed, "flash"),
-      origin: params.origin.clone(),
-      flash: params.breakSpec.flash,
-      scale: params.scale,
-    });
-  }
-
-  if (params.breakSpec.smoke?.enabled && params.spec.renderProfile.useSmoke) {
-    events.push({
-      kind: "smoke",
-      id: `${params.path}:smoke`,
-      cueId: params.cue.id,
-      time: params.time + 0.03,
-      expiresAt: params.time + params.breakSpec.smoke.lifetime + 0.1,
-      seed: mixSeed(params.parentSeed, "smoke"),
-      origin: params.origin.clone(),
-      smoke: params.breakSpec.smoke,
-      scale: params.scale,
-    });
-  }
-
-  params.breakSpec.subBreaks?.forEach((subBreak, index) => {
-    const rng = createSeededRng(mixSeed(params.parentSeed, "sub", index));
-    const offset = randomDirection(rng, { type: "sphere" }).multiplyScalar(
-      params.scale * rng.range(5, 14),
+function emitGlitter(
+  events: CompiledEffectEvent[],
+  cue: ReplayCue,
+  parent: {
+    origin: [number, number, number];
+    velocity: [number, number, number];
+    acceleration: [number, number, number];
+    drag: number;
+    lifetime: number;
+    spawnTime: number;
+  },
+  glitter: GlitterKind | undefined,
+  glitterColor: FireworkColor,
+  rng: SeededRng,
+  label: string,
+): void {
+  if (!glitter || glitter === "none") return;
+  const profile = GLITTER_PROFILES[glitter];
+  const sparkLifeSec = profile.sparkLifeMs / 1000;
+  const sparksOverLifetime = Math.min(
+    MAX_SPARKS_PER_STAR,
+    Math.round((profile.sparkFreq / 1000) * parent.lifetime * 1000 / 60),
+  );
+  if (sparksOverLifetime <= 0) return;
+  for (let i = 0; i < sparksOverLifetime; i++) {
+    const emitAge = (i / sparksOverLifetime) * parent.lifetime * (0.2 + 0.8 * rng.next());
+    const pos = evaluatePosition(
+      parent.origin,
+      parent.velocity,
+      parent.acceleration,
+      parent.drag,
+      emitAge,
     );
-    compileBreakEvents(events, {
-      ...params,
-      breakSpec: subBreak,
-      time: params.time + subBreak.timeOffsetSeconds,
-      origin: params.origin.clone().add(offset),
-      parentSeed: mixSeed(params.parentSeed, "sub-break", index),
-      path: `${params.path}:sub:${index}`,
+    const vel = evaluateVelocity(
+      parent.velocity,
+      parent.acceleration,
+      parent.drag,
+      emitAge,
+    );
+    const dir = randomUnitVector(rng);
+    const speed = profile.sparkSpeed;
+    const sparkLife =
+      sparkLifeSec * (1 + rng.signed(profile.sparkLifeVariation * 0.3));
+    pushStar(events, {
+      cue,
+      label: `${label}:spark${i}`,
+      time: parent.spawnTime + emitAge,
+      origin: pos,
+      velocity: [
+        vel[0] + dir[0] * speed,
+        vel[1] + dir[1] * speed,
+        vel[2] + dir[2] * speed,
+      ],
+      acceleration: [0, GRAVITY, 0],
+      drag: SPARK_DRAG,
+      lifetime: Math.max(0.2, sparkLife),
+      sizeStart: 0.06,
+      sizeEnd: 0.02,
+      color: glitterColor,
+      secondColor: null,
+      transitionAt: null,
+      strobeFreq: 0,
+      emissive: 2.6,
+      alphaCurve: 4,
+      seed: Math.floor(rng.next() * 1e6),
+      target: "trails",
     });
+  }
+}
+
+function emitDeathSparks(
+  events: CompiledEffectEvent[],
+  cue: ReplayCue,
+  parent: {
+    origin: [number, number, number];
+    velocity: [number, number, number];
+    acceleration: [number, number, number];
+    drag: number;
+    lifetime: number;
+    spawnTime: number;
+  },
+  spec: FireworkSpec,
+  rng: SeededRng,
+  label: string,
+): void {
+  const deathTime = parent.spawnTime + parent.lifetime;
+  const pos = evaluatePosition(
+    parent.origin,
+    parent.velocity,
+    parent.acceleration,
+    parent.drag,
+    parent.lifetime,
+  );
+  const baseVel = evaluateVelocity(
+    parent.velocity,
+    parent.acceleration,
+    parent.drag,
+    parent.lifetime,
+  );
+
+  if (spec.crackle) {
+    for (let i = 0; i < 18; i++) {
+      const dir = randomUnitVector(rng);
+      const speed = 1.5 + rng.next() * 1.4;
+      pushStar(events, {
+        cue,
+        label: `${label}:crackle${i}`,
+        time: deathTime,
+        origin: pos,
+        velocity: [
+          baseVel[0] + dir[0] * speed,
+          baseVel[1] + dir[1] * speed,
+          baseVel[2] + dir[2] * speed,
+        ],
+        acceleration: [0, GRAVITY, 0],
+        drag: SPARK_DRAG,
+        lifetime: 0.45 + rng.next() * 0.25,
+        sizeStart: 0.07,
+        sizeEnd: 0.02,
+        color: FIREWORK_COLORS.Gold,
+        secondColor: null,
+        transitionAt: null,
+        strobeFreq: 0,
+        emissive: 3,
+        alphaCurve: 4,
+        seed: Math.floor(rng.next() * 1e6),
+        target: "trails",
+      });
+    }
+  }
+
+  if (spec.crossette) {
+    for (let i = 0; i < 4; i++) {
+      const dir = randomUnitVector(rng);
+      const speed = 2.4;
+      pushStar(events, {
+        cue,
+        label: `${label}:cross${i}`,
+        time: deathTime,
+        origin: pos,
+        velocity: [
+          baseVel[0] + dir[0] * speed,
+          baseVel[1] + dir[1] * speed,
+          baseVel[2] + dir[2] * speed,
+        ],
+        acceleration: [0, GRAVITY, 0],
+        drag: STAR_DRAG,
+        lifetime: 0.55,
+        sizeStart: 0.13,
+        sizeEnd: 0.05,
+        color:
+          spec.color === "random" || Array.isArray(spec.color)
+            ? FIREWORK_COLORS.White
+            : (spec.color as FireworkColor),
+        secondColor: null,
+        transitionAt: null,
+        strobeFreq: 0,
+        emissive: 2.6,
+        alphaCurve: 1,
+        seed: Math.floor(rng.next() * 1e6),
+        target: "particles",
+      });
+    }
+  }
+
+  if (spec.floral || spec.fallingLeaves) {
+    const count = spec.floral ? 6 : 8;
+    for (let i = 0; i < count; i++) {
+      const dir = randomUnitVector(rng);
+      const speed = spec.floral ? 1.6 : 0.7;
+      pushStar(events, {
+        cue,
+        label: `${label}:floral${i}`,
+        time: deathTime,
+        origin: pos,
+        velocity: [
+          baseVel[0] + dir[0] * speed,
+          baseVel[1] + dir[1] * speed * 0.3,
+          baseVel[2] + dir[2] * speed,
+        ],
+        acceleration: [0, GRAVITY * 0.55, 0],
+        drag: HEAVY_DRAG,
+        lifetime: 1.6,
+        sizeStart: 0.14,
+        sizeEnd: 0.06,
+        color: FIREWORK_COLORS.Gold,
+        secondColor: null,
+        transitionAt: null,
+        strobeFreq: 0,
+        emissive: 2.4,
+        alphaCurve: 5,
+        seed: Math.floor(rng.next() * 1e6),
+        target: "particles",
+      });
+    }
+  }
+}
+
+function emitBurst(
+  events: CompiledEffectEvent[],
+  cue: ReplayCue,
+  burstPos: [number, number, number],
+  spec: FireworkSpec,
+  primaryColor: FireworkColor,
+  burstTime: number,
+  rng: SeededRng,
+  scale: number,
+  prefix: string,
+): void {
+  events.push({
+    kind: "flash",
+    id: `${cue.id}:${prefix}:flash`,
+    cueId: cue.id,
+    time: burstTime,
+    expiresAt: burstTime + 0.18,
+    origin: burstPos,
+    color:
+      spec.color === "random" || Array.isArray(spec.color)
+        ? FIREWORK_COLORS.White
+        : primaryColor,
+    size: spec.spreadSize * 0.08 * scale,
+    seed: Math.floor(rng.next() * 1e6),
   });
+
+  const starCount = deriveStarCount(spec);
+  const burstSpeed = spec.spreadSize * 0.7;
+  const starLifeSec = spec.starLifeMs / 1000;
+  const starLifeVariation = spec.starLifeVariation ?? 0.125;
+  const ringSquash = spec.ring ? 0.18 + rng.next() * 0.5 : 1;
+  const horseAxis = spec.horsetail
+    ? applyRotation(cue, [0, -1, 0])
+    : null;
+  const sizes = starSizeFor(spec);
+  const colorChoice = (i: number): FireworkColor => {
+    if (Array.isArray(spec.color)) return spec.color[i % 2];
+    if (spec.color === "random") return pickPrimaryColor(spec, () => rng.next());
+    return spec.color;
+  };
+
+  for (let i = 0; i < starCount; i++) {
+    let dir: [number, number, number];
+    if (spec.ring) {
+      const ringDir = randomRingDirection(rng, ringSquash);
+      dir = applyRotation(cue, ringDir);
+    } else if (spec.horsetail && horseAxis) {
+      dir = randomConeVector(rng, horseAxis, Math.PI * 0.55);
+    } else {
+      dir = randomUnitVector(rng);
+    }
+    const speedJitter = 0.85 + rng.next() * 0.3;
+    const velocity: [number, number, number] = [
+      dir[0] * burstSpeed * speedJitter,
+      dir[1] * burstSpeed * speedJitter,
+      dir[2] * burstSpeed * speedJitter,
+    ];
+    const lifetime =
+      starLifeSec * (1 + rng.signed(starLifeVariation));
+    const color = colorChoice(i);
+    const secondColor =
+      spec.secondColor ?? (spec.shellType === "ghost" ? null : null);
+    const transitionAt =
+      spec.transitionTimeMs && spec.secondColor
+        ? burstTime + spec.transitionTimeMs / 1000
+        : null;
+    pushStar(events, {
+      cue,
+      label: `${prefix}:star${i}`,
+      time: burstTime,
+      origin: burstPos,
+      velocity,
+      acceleration: [0, GRAVITY, 0],
+      drag: spec.shellType === "willow" || spec.shellType === "fallingLeaves" ? HEAVY_DRAG : STAR_DRAG,
+      lifetime,
+      sizeStart: sizes.start,
+      sizeEnd: sizes.end,
+      color,
+      secondColor: secondColor ?? null,
+      transitionAt,
+      strobeFreq: strobeFreqFor(spec),
+      emissive: emissiveFor(spec),
+      alphaCurve: alphaCurveFor(spec),
+      seed: Math.floor(rng.next() * 1e6),
+      target: "particles",
+    });
+
+    emitGlitter(
+      events,
+      cue,
+      {
+        origin: burstPos,
+        velocity,
+        acceleration: [0, GRAVITY, 0],
+        drag: STAR_DRAG,
+        lifetime,
+        spawnTime: burstTime,
+      },
+      spec.glitter,
+      spec.glitterColor ?? color,
+      rng,
+      `${prefix}:gl${i}`,
+    );
+
+    emitDeathSparks(
+      events,
+      cue,
+      {
+        origin: burstPos,
+        velocity,
+        acceleration: [0, GRAVITY, 0],
+        drag: STAR_DRAG,
+        lifetime,
+        spawnTime: burstTime,
+      },
+      spec,
+      rng,
+      `${prefix}:dth${i}`,
+    );
+  }
+
+  if (spec.pistil) {
+    const pistilColor = spec.pistilColor ?? FIREWORK_COLORS.Gold;
+    const pistilSpec: FireworkSpec = {
+      ...spec,
+      shellType: "crysanthemum",
+      color: pistilColor,
+      pistil: false,
+      streamers: false,
+      ring: false,
+      horsetail: false,
+      crossette: false,
+      crackle: false,
+      floral: false,
+      fallingLeaves: false,
+      strobe: false,
+      glitter: "light",
+      glitterColor:
+        pistilColor === FIREWORK_COLORS.Gold
+          ? FIREWORK_COLORS.Gold
+          : FIREWORK_COLORS.White,
+      spreadSize: spec.spreadSize * 0.5,
+      starLifeMs: spec.starLifeMs * 0.65,
+      starCount: undefined,
+      starDensity: 1.4,
+    };
+    emitBurst(
+      events,
+      cue,
+      burstPos,
+      pistilSpec,
+      pistilColor,
+      burstTime,
+      rng,
+      scale,
+      `${prefix}:pist`,
+    );
+  }
+
+  if (spec.streamers) {
+    const streamerSpec: FireworkSpec = {
+      ...spec,
+      shellType: "crysanthemum",
+      color: FIREWORK_COLORS.White,
+      pistil: false,
+      streamers: false,
+      ring: false,
+      horsetail: false,
+      crossette: false,
+      crackle: false,
+      floral: false,
+      fallingLeaves: false,
+      strobe: false,
+      glitter: "streamer",
+      glitterColor: FIREWORK_COLORS.White,
+      spreadSize: spec.spreadSize * 0.9,
+      starLifeMs: spec.starLifeMs * 0.85,
+      starCount: Math.max(6, Math.round(spec.spreadSize * 1.4)),
+      starDensity: undefined,
+    };
+    emitBurst(
+      events,
+      cue,
+      burstPos,
+      streamerSpec,
+      FIREWORK_COLORS.White,
+      burstTime,
+      rng,
+      scale,
+      `${prefix}:str`,
+    );
+  }
 }
 
 export function compileCueEvents(cue: ReplayCue): CompiledEffectEvent[] {
-  const spec = resolveCueEffectSpec(cue);
-  const scale = spec.globalScale * (cue.scale ?? 1);
-  const qualityScale = qualityScaleFor(spec);
   const events: CompiledEffectEvent[] = [];
-  const cueSeed = cue.seedOverride ?? mixSeed(spec.seed, cue.id, cue.timeSeconds);
+  const spec = safeParseFireworkSpec(cue.firework.spec) ?? DEFAULT_FIREWORK_SPEC;
+  const seed = cue.seedOverride ?? mixSeed(cue.id, cue.firework.id);
+  const rng = createSeededRng(seed);
+  const scale = cue.scale ?? 1;
+  const burstPos = cuePosition(cue);
+  const lift = liftSeconds(spec);
+  // All shells launch from a single mortar at stage centre; bursts still occur
+  // at the cued 3D position for variety.
+  const launchPos: [number, number, number] = [0, GROUND_Y, 0];
 
-  spec.shotSequence.shots.forEach((shot) => {
-    const shotSeed = mixSeed(cueSeed, shot.index, shot.seedOffset);
-    const launch = shot.tracer ?? spec.launch;
-    const liftTimeSeconds =
-      shot.liftTimeSeconds ?? launch.liftTimeSeconds ?? spec.launch.liftTimeSeconds;
-    const heightMeters = shot.launchHeightMeters ?? spec.heightMeters;
-    const start = shotBasePosition(cue, shot, scale);
-    const direction = launchDirection(
-      shot.panDegrees + (cue.rotation?.pan ?? 0),
-      shot.tiltDegrees + ((cue.rotation?.tilt ?? 90) - 90),
-    );
-    const end = start
-      .clone()
-      .add(direction.clone().multiplyScalar(heightMeters * scale));
-    end.y = Math.max(end.y, GROUND_Y + heightMeters * scale * 0.72);
-    const launchStart = cue.timeSeconds + shot.timeOffsetSeconds;
-    const launchVelocity = end.clone().sub(start).multiplyScalar(1 / liftTimeSeconds);
+  // Lift comet
+  const liftDelta: [number, number, number] = [
+    burstPos[0] - launchPos[0],
+    burstPos[1] - launchPos[1],
+    burstPos[2] - launchPos[2],
+  ];
+  const liftVelocity: [number, number, number] = [
+    liftDelta[0] / lift,
+    liftDelta[1] / lift - 0.5 * GRAVITY * lift,
+    liftDelta[2] / lift,
+  ];
+  const cometColor =
+    spec.color === "random" || Array.isArray(spec.color)
+      ? FIREWORK_COLORS.Gold
+      : (spec.color as FireworkColor);
 
-    if (launch.enabled) {
-      events.push({
-        kind: "launch",
-        id: `${cue.id}:shot:${shot.index}:launch`,
-        cueId: cue.id,
-        time: launchStart,
-        expiresAt: launchStart + liftTimeSeconds + launch.tracerLifetime + 0.2,
-        seed: mixSeed(shotSeed, "launch"),
-        origin: start.clone(),
-        end,
-        launch,
-        scale,
-        liftTimeSeconds,
-      });
-    }
-
-    if (shot.mineAtLaunch) {
-      compileBreakEvents(events, {
-        cue,
-        spec,
-        breakSpec: shot.mineAtLaunch,
-        time: launchStart + shot.mineAtLaunch.timeOffsetSeconds,
-        origin: start.clone(),
-        launchVelocity,
-        parentSeed: mixSeed(shotSeed, "mine"),
-        scale,
-        qualityScale,
-        path: `${cue.id}:shot:${shot.index}:mine`,
-      });
-    }
-
-    if (shot.breakSpec) {
-      compileBreakEvents(events, {
-        cue,
-        spec,
-        breakSpec: shot.breakSpec,
-        time: launchStart + shot.breakSpec.timeOffsetSeconds,
-        origin: end,
-        launchVelocity,
-        parentSeed: mixSeed(shotSeed, "break"),
-        scale,
-        qualityScale,
-        path: `${cue.id}:shot:${shot.index}:break`,
-      });
-    }
-  });
-
-  return events.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
-}
-
-function randomDirection(
-  rng: SeededRng,
-  distribution: Pick<
-    ParticleLayerSpec["distribution"],
-    "type"
-  > &
-    Partial<
-      Pick<
-        ParticleLayerSpec["distribution"],
-        | "verticalBias"
-        | "horizontalBias"
-        | "angleStart"
-        | "angleEnd"
-        | "polarMin"
-        | "polarMax"
-        | "noiseAmount"
-        | "symmetry"
-        | "customPoints"
-      >
-    >,
-  index = 0,
-  count = 1,
-): THREE.Vector3 {
-  if (distribution.type === "custom" && distribution.customPoints?.length) {
-    const point = distribution.customPoints[index % distribution.customPoints.length];
-    return new THREE.Vector3(point.x, point.y, point.z).normalize();
-  }
-
-  if (distribution.type === "shell" || distribution.type === "sphere") {
-    // CodePen's 2D burst uses curved rings rather than pure random points.
-    // This 3D equivalent keeps rings evenly spaced over the sphere surface,
-    // then adds a small seeded offset so the shell looks manufactured, not gridded.
-    const safeCount = Math.max(1, count);
-    const radius = 0.5 * Math.sqrt(safeCount / Math.PI);
-    const circumference = Math.max(4, 2 * radius * Math.PI);
-    const ringCount = Math.max(4, Math.round(circumference));
-    let remaining = index % safeCount;
-    let ringIndex = 0;
-    let ringSize = 1;
-    let partsInRing = safeCount;
-
-    for (let ring = 0; ring < ringCount; ring++) {
-      const ringAngle = (ring / Math.max(1, ringCount - 1)) * Math.PI;
-      ringSize = Math.max(0.08, Math.sin(ringAngle));
-      partsInRing = Math.max(1, Math.round(circumference * ringSize));
-      if (remaining < partsInRing) {
-        ringIndex = ring;
-        break;
-      }
-      remaining -= partsInRing;
-      ringIndex = ring;
-    }
-
-    const polar = (ringIndex / Math.max(1, ringCount - 1)) * Math.PI;
-    const theta =
-      (remaining / partsInRing) * Math.PI * 2 +
-      rng.signed((Math.PI * 2 / partsInRing) * 0.33);
-    const sinPhi = Math.sin(polar);
-    const dir = new THREE.Vector3(
-      sinPhi * Math.cos(theta) + (distribution.horizontalBias ?? 0),
-      Math.cos(polar) + (distribution.verticalBias ?? 0),
-      sinPhi * Math.sin(theta),
-    );
-    if (distribution.noiseAmount) {
-      dir.x += rng.signed(distribution.noiseAmount);
-      dir.y += rng.signed(distribution.noiseAmount);
-      dir.z += rng.signed(distribution.noiseAmount);
-    }
-    return dir.normalize();
-  }
-
-  if (distribution.type === "ring" || distribution.type === "disc") {
-    const start = THREE.MathUtils.degToRad(distribution.angleStart ?? 0);
-    const end = THREE.MathUtils.degToRad(distribution.angleEnd ?? 360);
-    const angle = start + (end - start) * rng.next();
-    return new THREE.Vector3(Math.cos(angle), rng.signed(0.04), Math.sin(angle)).normalize();
-  }
-
-  if (distribution.type === "fan" || distribution.type === "cone") {
-    const start = THREE.MathUtils.degToRad(distribution.angleStart ?? -35);
-    const end = THREE.MathUtils.degToRad(distribution.angleEnd ?? 35);
-    const angle = start + (end - start) * rng.next();
-    const y = distribution.type === "cone" ? rng.range(0.15, 0.95) : rng.range(0.25, 0.85);
-    return new THREE.Vector3(Math.sin(angle), y, -Math.cos(angle) * 0.35).normalize();
-  }
-
-  const symmetryCount = distribution.symmetry ?? 0;
-  const symmetry = symmetryCount > 1;
-  const theta = symmetry
-    ? ((index % symmetryCount) / symmetryCount) * Math.PI * 2 +
-      rng.signed(0.04)
-    : rng.range(0, Math.PI * 2);
-  const polarMin = THREE.MathUtils.degToRad(distribution.polarMin ?? 0);
-  const polarMax = THREE.MathUtils.degToRad(distribution.polarMax ?? 180);
-  const u = rng.next();
-  const phi = polarMin + (polarMax - polarMin) * u;
-  const sinPhi = Math.sin(phi);
-  const dir = new THREE.Vector3(
-    sinPhi * Math.cos(theta) + (distribution.horizontalBias ?? 0),
-    Math.cos(phi) + (distribution.verticalBias ?? 0),
-    sinPhi * Math.sin(theta),
-  );
-  if (distribution.noiseAmount) {
-    dir.x += rng.signed(distribution.noiseAmount);
-    dir.y += rng.signed(distribution.noiseAmount);
-    dir.z += rng.signed(distribution.noiseAmount);
-  }
-  return dir.normalize();
-}
-
-function writeParticle(
-  target: { write: (particle: ParticleWrite) => void },
-  params: {
-    origin: THREE.Vector3;
-    velocity: THREE.Vector3;
-    acceleration: THREE.Vector3;
-    spawnTime: number;
-    lifetime: number;
-    sizeStart: number;
-    sizeEnd: number;
-    colors: ReturnType<typeof gradientTriplet>;
-    drag: number;
-    twinkleFrequency: number;
-    twinkleAmount: number;
-    strobeFrequency: number;
-    strobeDutyCycle: number;
-    emissiveIntensity: number;
-    alphaCurve: number;
-    seed: number;
-    alphaScale?: number;
-  },
-): void {
-  const alphaScale = params.alphaScale ?? 1;
-  target.write({
-    origin: [params.origin.x, params.origin.y, params.origin.z],
-    velocity: [params.velocity.x, params.velocity.y, params.velocity.z],
-    acceleration: [
-      params.acceleration.x,
-      params.acceleration.y,
-      params.acceleration.z,
-    ],
-    spawnTime: params.spawnTime,
-    lifetime: params.lifetime,
-    sizeStart: params.sizeStart,
-    sizeEnd: params.sizeEnd,
-    colorStart: params.colors.start,
-    colorMid: params.colors.mid,
-    colorEnd: params.colors.end,
-    alphaStart: params.colors.alphaStart * alphaScale,
-    alphaMid: params.colors.alphaMid * alphaScale,
-    alphaEnd: params.colors.alphaEnd * alphaScale,
-    drag: params.drag,
-    twinkleFrequency: params.twinkleFrequency,
-    twinkleAmount: params.twinkleAmount,
-    strobeFrequency: params.strobeFrequency,
-    strobeDutyCycle: params.strobeDutyCycle,
-    emissiveIntensity: params.emissiveIntensity,
-    alphaCurve: params.alphaCurve,
-    seed: params.seed,
-  });
-}
-
-function emitLayerEvent(event: Extract<CompiledEffectEvent, { kind: "layer" }>, targets: EngineEmitTargets): void {
-  const rng = createSeededRng(event.seed);
-  const layer = event.layer;
-  const count = Math.round(layer.particleCount * event.qualityScale);
-  const colors = gradientTriplet(layer.appearance.colorGradient);
-  const acceleration = new THREE.Vector3(0, layer.velocity.gravity * event.scale, 0);
-  const target = layer.blending.mode === "normal_transparent" ? targets.smoke : targets.particles;
-  const spawnDuration =
-    layer.spawnMode === "instant" ? 0 : layer.spawnDurationSeconds;
-
-  for (let i = 0; i < count; i++) {
-    const dir = randomDirection(rng, layer.distribution, i, count);
-    const speed =
-      rng.range(layer.velocity.speedMin, layer.velocity.speedMax) * event.scale;
-    const velocity = dir.multiplyScalar(speed);
-    velocity.y +=
-      (layer.velocity.upwardBias - layer.velocity.downwardBias) * speed +
-      event.launchVelocity.y * layer.velocity.inheritedLaunchVelocity;
-    velocity.x += event.launchVelocity.x * layer.velocity.inheritedLaunchVelocity;
-    velocity.z += event.launchVelocity.z * layer.velocity.inheritedLaunchVelocity;
-    if (layer.velocity.tangentialSpeed) {
-      velocity.x += rng.signed(layer.velocity.tangentialSpeed * event.scale);
-      velocity.z += rng.signed(layer.velocity.tangentialSpeed * event.scale);
-    }
-
-    const lifetime = rng.range(layer.lifetime.min, layer.lifetime.max);
-    const spawnTime = event.time + rng.next() * spawnDuration;
-    const sizeRandom = 1 + rng.signed(layer.appearance.sizeRandomness);
-    const particleSeed = rng.next();
-    writeParticle(target, {
-      origin: event.origin,
-      velocity,
-      acceleration,
-      spawnTime,
-      lifetime,
-      sizeStart: layer.appearance.sizeStart * sizeRandom,
-      sizeEnd: layer.appearance.sizeEnd * sizeRandom,
-      colors,
-      drag: layer.velocity.drag,
-      twinkleFrequency: layer.appearance.twinkleFrequency,
-      twinkleAmount: layer.appearance.twinkleAmount,
-      strobeFrequency: layer.appearance.strobeFrequency,
-      strobeDutyCycle: layer.appearance.strobeDutyCycle,
-      emissiveIntensity: layer.appearance.emissiveIntensity,
-      alphaCurve: alphaCurveCode(layer.appearance.alphaCurve),
-      seed: particleSeed,
-    });
-
-    if (layer.trail.enabled && layer.trail.segmentCount > 0) {
-      const segments = clamp(layer.trail.segmentCount, 1, 24);
-      for (let s = 1; s <= segments; s++) {
-        const progress = s / segments;
-        writeParticle(targets.trails, {
-          origin: event.origin,
-          velocity,
-          acceleration,
-          spawnTime: spawnTime + progress * layer.trail.lengthSeconds,
-          lifetime: Math.max(0.08, lifetime - progress * layer.trail.lengthSeconds),
-          sizeStart: THREE.MathUtils.lerp(
-            layer.trail.widthStart,
-            layer.trail.widthEnd,
-            progress,
-          ),
-          sizeEnd: layer.trail.widthEnd,
-          colors,
-          drag: layer.velocity.drag,
-          twinkleFrequency:
-            layer.trail.glitter > 0 ? 24 + layer.trail.glitter * 24 : 0,
-          twinkleAmount: layer.trail.glitter * 0.45,
-          strobeFrequency: 0,
-          strobeDutyCycle: 0.5,
-          emissiveIntensity: layer.appearance.emissiveIntensity * 0.62,
-          alphaCurve: 4,
-          seed: particleSeed + s * 0.017,
-          alphaScale: Math.pow(layer.trail.alphaDecay, s),
-        });
-      }
-    }
-
-    if (layer.events.crackleBursts > 0 && i < layer.events.crackleBursts) {
-      const crackleCount = Math.max(4, layer.events.childParticleCount || 8);
-      const splitAt = event.time + (layer.events.splitTime ?? lifetime * 0.62);
-      for (let c = 0; c < crackleCount; c++) {
-        const crackleDir = randomDirection(rng, { type: "sphere" });
-        writeParticle(targets.particles, {
-          origin: event.origin,
-          velocity: velocity
-            .clone()
-            .multiplyScalar(0.18)
-            .add(crackleDir.multiplyScalar(rng.range(3, 8) * event.scale)),
-          acceleration,
-          spawnTime: splitAt + rng.range(0, 0.18),
-          lifetime: rng.range(0.18, 0.45),
-          sizeStart: layer.appearance.sizeStart * 0.46,
-          sizeEnd: 0,
-          colors,
-          drag: 0.88,
-          twinkleFrequency: 36,
-          twinkleAmount: 0.7,
-          strobeFrequency: 0,
-          strobeDutyCycle: 0.5,
-          emissiveIntensity: layer.appearance.emissiveIntensity * 1.5,
-          alphaCurve: 2,
-          seed: rng.next(),
-        });
-      }
-    }
-
-    if (layer.events.secondaryBurstProbability > 0 && rng.next() < layer.events.secondaryBurstProbability) {
-      const childCount = Math.max(8, layer.events.childParticleCount || 12);
-      const splitAt = event.time + (layer.events.splitTime ?? lifetime * 0.55);
-      for (let child = 0; child < childCount; child++) {
-        const childDir = randomDirection(rng, { type: "shell", noiseAmount: 0.08 }, child, childCount);
-        writeParticle(targets.particles, {
-          origin: event.origin,
-          velocity: velocity
-            .clone()
-            .multiplyScalar(0.24)
-            .add(childDir.multiplyScalar(rng.range(4, 10) * event.scale)),
-          acceleration,
-          spawnTime: splitAt + rng.range(0, 0.12),
-          lifetime: rng.range(0.45, 0.9),
-          sizeStart: layer.appearance.sizeStart * 0.52,
-          sizeEnd: 0,
-          colors,
-          drag: 0.84,
-          twinkleFrequency: layer.appearance.twinkleFrequency,
-          twinkleAmount: Math.max(0.2, layer.appearance.twinkleAmount),
-          strobeFrequency: 0,
-          strobeDutyCycle: 0.5,
-          emissiveIntensity: layer.appearance.emissiveIntensity * 1.25,
-          alphaCurve: 2,
-          seed: rng.next(),
-        });
-      }
-    }
-  }
-}
-
-function emitLaunchEvent(event: Extract<CompiledEffectEvent, { kind: "launch" }>, targets: EngineEmitTargets): void {
-  const rng = createSeededRng(event.seed);
-  const launch = event.launch;
-  const sparks = Math.max(4, Math.round(launch.tracerSparkRate * event.liftTimeSeconds));
-  const path = event.end.clone().sub(event.origin);
-  const velocity = path.clone().multiplyScalar(1 / event.liftTimeSeconds);
-  const colors = {
-    start: colorToRgb("#FFFFFF"),
-    mid: colorToRgb(launch.tracerColor),
-    end: colorToRgb(launch.tracerColor),
-    alphaStart: 1,
-    alphaMid: 0.8,
-    alphaEnd: 0,
-  };
-  const acceleration = new THREE.Vector3(0, launch.gravity * event.scale * 0.16, 0);
-
-  for (let i = 0; i < sparks; i++) {
-    const t = i / sparks;
-    const spawnTime = event.time + t * event.liftTimeSeconds;
-    const origin = event.origin.clone().add(path.clone().multiplyScalar(t));
-    origin.x += rng.signed(launch.randomWobble);
-    origin.z += rng.signed(launch.randomWobble);
-    writeParticle(targets.particles, {
-      origin,
-      velocity: velocity
-        .clone()
-        .multiplyScalar(0.16)
-        .add(new THREE.Vector3(rng.signed(0.18), rng.range(0.02, 0.22), rng.signed(0.18))),
-      acceleration,
-      spawnTime,
-      lifetime: launch.tracerLifetime * rng.range(0.75, 1.25),
-      sizeStart: launch.tracerSparkSize,
-      sizeEnd: 0,
-      colors,
-      drag: launch.drag,
-      twinkleFrequency: 24,
-      twinkleAmount: 0.18,
-      strobeFrequency: 0,
-      strobeDutyCycle: 0.5,
-      emissiveIntensity: 2.8,
-      alphaCurve: 2,
-      seed: rng.next(),
-    });
-  }
-
-  if (launch.liftFlashSize > 0) {
-    writeParticle(targets.particles, {
-      origin: event.origin,
-      velocity: new THREE.Vector3(0, 0, 0),
-      acceleration: new THREE.Vector3(0, 0, 0),
-      spawnTime: event.time,
-      lifetime: 0.12,
-      sizeStart: launch.liftFlashSize,
-      sizeEnd: 0,
-      colors: {
-        start: colorToRgb("#FFFFFF"),
-        mid: colorToRgb(launch.liftFlashColor),
-        end: colorToRgb(launch.liftFlashColor),
-        alphaStart: 1,
-        alphaMid: 0.8,
-        alphaEnd: 0,
-      },
-      drag: 1,
-      twinkleFrequency: 0,
-      twinkleAmount: 0,
-      strobeFrequency: 0,
-      strobeDutyCycle: 0.5,
-      emissiveIntensity: 4,
-      alphaCurve: 1,
-      seed: rng.next(),
-    });
-  }
-}
-
-function emitFlashEvent(event: Extract<CompiledEffectEvent, { kind: "flash" }>, targets: EngineEmitTargets): void {
-  const colors = {
-    start: colorToRgb("#FFFFFF"),
-    mid: colorToRgb(event.flash.color),
-    end: colorToRgb(event.flash.color),
-    alphaStart: 1,
-    alphaMid: 0.75,
-    alphaEnd: 0,
-  };
-  writeParticle(targets.particles, {
-    origin: event.origin,
-    velocity: new THREE.Vector3(0, 0, 0),
-    acceleration: new THREE.Vector3(0, 0, 0),
-    spawnTime: event.time,
-    lifetime: event.flash.duration,
-    sizeStart: event.flash.size * 0.55,
-    sizeEnd: 0,
-    colors,
-    drag: 1,
-    twinkleFrequency: 0,
-    twinkleAmount: 0,
-    strobeFrequency: 0,
-    strobeDutyCycle: 0.5,
-    emissiveIntensity: event.flash.intensity,
+  pushStar(events, {
+    cue,
+    label: "lift",
+    time: cue.timeSeconds,
+    origin: launchPos,
+    velocity: liftVelocity,
+    acceleration: [0, GRAVITY, 0],
+    drag: HEAVY_DRAG,
+    lifetime: lift,
+    sizeStart: 0.18,
+    sizeEnd: 0.1,
+    color: cometColor,
+    secondColor: null,
+    transitionAt: null,
+    strobeFreq: 0,
+    emissive: 3.2,
     alphaCurve: 1,
-    seed: event.seed / 4294967296,
+    seed: Math.floor(rng.next() * 1e6),
+    target: "particles",
   });
+
+  emitGlitter(
+    events,
+    cue,
+    {
+      origin: launchPos,
+      velocity: liftVelocity,
+      acceleration: [0, GRAVITY, 0],
+      drag: HEAVY_DRAG,
+      lifetime: lift,
+      spawnTime: cue.timeSeconds,
+    },
+    "medium",
+    cometColor,
+    rng,
+    "lift:tail",
+  );
+
+  // Burst
+  const primaryColor = pickPrimaryColor(spec, () => rng.next());
+  const burstTime = cue.timeSeconds + lift;
+
+  if (spec.shellType === "comet") {
+    // Comet shells just keep going as the lift trail; skip a normal burst.
+    return events;
+  }
+
+  emitBurst(
+    events,
+    cue,
+    burstPos,
+    spec,
+    primaryColor,
+    burstTime,
+    rng,
+    scale,
+    "burst",
+  );
+
+  return events;
 }
 
-function emitSmokeEvent(event: Extract<CompiledEffectEvent, { kind: "smoke" }>, targets: EngineEmitTargets): void {
-  const rng = createSeededRng(event.seed);
-  const smoke = event.smoke;
-  const colors = {
-    start: colorToRgb(smoke.color),
-    mid: colorToRgb(smoke.color),
-    end: colorToRgb("#1B1D22"),
-    alphaStart: 0,
-    alphaMid: smoke.opacity,
-    alphaEnd: 0,
-  };
-  const count = Math.round(smoke.particleCount * clamp(smoke.amount, 0, 2));
-  for (let i = 0; i < count; i++) {
-    writeParticle(targets.smoke, {
-      origin: event.origin
-        .clone()
-        .add(new THREE.Vector3(rng.signed(0.2), rng.signed(0.08), rng.signed(0.2))),
-      velocity: new THREE.Vector3(
-        rng.signed(smoke.turbulence),
-        smoke.riseSpeed + rng.range(0, smoke.expansion),
-        rng.signed(smoke.turbulence),
-      ).multiplyScalar(event.scale),
-      acceleration: new THREE.Vector3(0, 0.04 * event.scale, 0),
-      spawnTime: event.time + rng.range(0, 0.6),
-      lifetime: smoke.lifetime * rng.range(0.75, 1.25),
-      sizeStart: smoke.size * rng.range(0.6, 1.25),
-      sizeEnd: smoke.size * smoke.expansion,
-      colors,
-      drag: 0.98,
-      twinkleFrequency: 0,
-      twinkleAmount: 0,
-      strobeFrequency: 0,
-      strobeDutyCycle: 0.5,
-      emissiveIntensity: 0.2,
-      alphaCurve: 5,
-      seed: rng.next(),
-    });
-  }
+export function eventIsActiveAt(
+  event: CompiledEffectEvent,
+  elapsed: number,
+): boolean {
+  return event.time <= elapsed && elapsed <= event.expiresAt;
+}
+
+const TMP = new THREE.Color();
+
+function colorTuple(color: FireworkColor): [number, number, number] {
+  return hexToRgb(color);
 }
 
 export function emitCompiledEvent(
   event: CompiledEffectEvent,
   targets: EngineEmitTargets,
 ): void {
-  switch (event.kind) {
-    case "launch":
-      emitLaunchEvent(event, targets);
-      return;
-    case "layer":
-      emitLayerEvent(event, targets);
-      return;
-    case "flash":
-      emitFlashEvent(event, targets);
-      return;
-    case "smoke":
-      emitSmokeEvent(event, targets);
-      return;
+  if (event.kind === "flash") {
+    const rgb = colorTuple(event.color);
+    targets.particles.write({
+      origin: event.origin,
+      velocity: [0, 0, 0],
+      acceleration: [0, 0, 0],
+      spawnTime: event.time,
+      lifetime: 0.18,
+      sizeStart: event.size * 1.1,
+      sizeEnd: event.size * 0.4,
+      colorStart: [1, 1, 1],
+      colorMid: rgb,
+      colorEnd: rgb,
+      alphaStart: 1,
+      alphaMid: 0.6,
+      alphaEnd: 0,
+      drag: 0.1,
+      twinkleFrequency: 0,
+      twinkleAmount: 0,
+      strobeFrequency: 0,
+      strobeDutyCycle: 0,
+      emissiveIntensity: 6,
+      alphaCurve: 1,
+      seed: event.seed,
+    });
+    return;
   }
-}
-
-export function eventIsActiveAt(event: CompiledEffectEvent, elapsed: number): boolean {
-  return event.time <= elapsed && event.expiresAt >= elapsed;
+  const rgb = colorTuple(event.color);
+  const secondaryRgb = event.secondColor ? colorTuple(event.secondColor) : rgb;
+  const transitionT = event.transitionAt
+    ? Math.min(1, Math.max(0, (event.transitionAt - event.time) / event.lifetime))
+    : 1;
+  const target = event.target === "trails" ? targets.trails : targets.particles;
+  void TMP;
+  void transitionT;
+  target.write({
+    origin: event.origin,
+    velocity: event.velocity,
+    acceleration: event.acceleration,
+    spawnTime: event.time,
+    lifetime: event.lifetime,
+    sizeStart: event.sizeStart,
+    sizeEnd: event.sizeEnd,
+    colorStart: rgb,
+    colorMid: rgb,
+    colorEnd: secondaryRgb,
+    alphaStart: 1,
+    alphaMid: 0.92,
+    alphaEnd: 0,
+    drag: event.drag,
+    twinkleFrequency: 6,
+    twinkleAmount: 0.08,
+    strobeFrequency: event.strobeFreq,
+    strobeDutyCycle: event.strobeFreq > 0 ? 0.18 : 0,
+    emissiveIntensity: event.emissive,
+    alphaCurve: event.alphaCurve,
+    seed: event.seed,
+  });
 }

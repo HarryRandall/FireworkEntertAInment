@@ -39,9 +39,9 @@ export class FireworksEngine {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       renderOrder: 20,
-      pointScale: 0.9,
-      exposure: 0.95,
-      softness: 0.72,
+      pointScale: 1.8,
+      exposure: 1.4,
+      softness: 0.55,
     });
     this.trails = new TrailSystem(options.maxTrailParticles ?? 180_000);
     this.smoke = new SmokeSystem(options.maxSmokeParticles ?? 18_000);

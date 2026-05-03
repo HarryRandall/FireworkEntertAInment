@@ -1,6 +1,12 @@
 -- Firework effect spec v3 catalogue wiring.
 -- Keep legacy firework_specifications intact while new catalogue/product rows point at effect_specs.
 
+alter table public.effect_specs
+  drop constraint if exists effect_specs_version_check;
+
+alter table public.effect_specs
+  add constraint effect_specs_version_check check (version in (2, 3));
+
 alter table public.catalogue_products
   add column if not exists effect_spec_id uuid references public.effect_specs(id) on delete set null;
 

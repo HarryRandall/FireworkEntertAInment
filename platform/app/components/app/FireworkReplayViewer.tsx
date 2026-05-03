@@ -258,7 +258,7 @@ export function FireworkReplayViewer({
                 Firework
               </span>
               <SelectField
-                name="fireworkSpecificationId"
+                name="effectSpecId"
                 required
                 placeholder="Select firework"
                 defaultValue={specifications[0]?.id}

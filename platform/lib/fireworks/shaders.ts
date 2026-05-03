@@ -52,12 +52,11 @@ void main() {
 
   float size = mix(aSize.x, aSize.y, t);
   size *= 1.0 + sin(uTime * aFlicker.x + aSeed * 19.17) * aFlicker.y;
-  // The previous coefficient (280.0) made every spark render at ~1000+ px when
-  // the camera was close, so overlapping points saturated to a white disc.
-  // 36.0 keeps points spark-sized; the min() clamp prevents extreme close-ups
-  // from ballooning a single particle into a screen-filling blob.
-  float projected = size * uPointScale * uPixelRatio * (36.0 / max(1.0, -mvPosition.z));
-  gl_PointSize = max(0.0, visible * min(projected, 26.0 * uPixelRatio));
+  // Meter-sized particles → pixels: projection factor tuned so a 0.12m radius
+  // spark reads as ~10–14px at typical 7m camera distance; min() clamp prevents
+  // extreme close-ups from ballooning into screen-filling blobs.
+  float projected = size * uPointScale * uPixelRatio * (220.0 / max(1.0, -mvPosition.z));
+  gl_PointSize = max(0.0, visible * min(projected, 64.0 * uPixelRatio));
 
   vColorStart = aColorStart;
   vColorMid = aColorMid;

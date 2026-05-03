@@ -582,7 +582,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("catalogue_products")
-    .select("id, part_number, name, manufacturer, category, firework_type, firework_specification_id, duration_seconds, updated_at")
+    .select("id, part_number, name, manufacturer, category, firework_type, duration_seconds, updated_at")
     .order("updated_at", { ascending: false })
     .limit(100);
   if (error) {
@@ -597,7 +597,6 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     | "manufacturer"
     | "category"
     | "firework_type"
-    | "firework_specification_id"
     | "duration_seconds"
     | "updated_at"
   >[]).map((row) => ({
@@ -607,7 +606,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     manufacturer: row.manufacturer,
     category: row.category,
     fireworkType: row.firework_type,
-    fireworkSpecificationId: row.firework_specification_id,
+    fireworkSpecificationId: null,
     durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     updatedAt: row.updated_at,
   }));
