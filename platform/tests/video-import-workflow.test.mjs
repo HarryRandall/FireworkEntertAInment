@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { join } from "node:path";
-import { getPreferredImportVideoSource } from "../lib/import-video-preview.mjs";
+import { getPreferredImportVideoSource } from "../lib/import-video-preview.js";
 
 const root = process.cwd();
 const repoRoot = join(root, "..");

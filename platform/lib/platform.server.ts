@@ -25,7 +25,7 @@ import type {
 } from "@/lib/platform.types";
 import type { Database, Json } from "@/lib/database.types";
 import { IMPORT_VIDEO_BUCKET } from "@/lib/imports";
-import { getPreferredImportVideoSource } from "@/lib/import-video-preview.mjs";
+import { getPreferredImportVideoSource } from "@/lib/import-video-preview.js";
 import { createServiceRoleSupabase } from "@/utils/supabase/service-role";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
