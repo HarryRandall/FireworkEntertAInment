@@ -45,7 +45,7 @@ export function LivePreviewTile({
         <div className="flex-1">
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-container-highest/60">
             <div
-              className="h-full rounded-full bg-tertiary shadow-[0_0_15px_rgba(143,213,255,0.6)] transition-all duration-200"
+              className="h-full rounded-full bg-tertiary shadow-[0_0_15px_color-mix(in_srgb,var(--color-tertiary)_55%,transparent)] transition-all duration-200"
               style={{ width: `${clamped}%` }}
             />
           </div>

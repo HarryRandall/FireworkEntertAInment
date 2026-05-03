@@ -12,7 +12,7 @@ const elevationClasses: Record<Elevation, string> = {
 const radiusClasses: Record<Radius, string> = {
   md: "rounded-xl",
   lg: "rounded-2xl",
-  xl: "rounded-3xl",
+  xl: "rounded-[var(--radius-hero)]",
 };
 
 type CardProps = ComponentPropsWithoutRef<"div"> & {

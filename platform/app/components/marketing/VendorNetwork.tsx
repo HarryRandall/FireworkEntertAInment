@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { Container } from "@/app/components/ui/Container";
+import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 import { Reveal } from "./Reveal";
 
 // Pins use the same 959 x 593 viewBox as the underlying USA map SVG so they
@@ -32,7 +33,7 @@ const USER_LOCATION = { x: 488, y: 462 };
 // Highlight the closest vendor so the user sees who'd ship to them.
 const NEAREST_VENDOR = { x: 525, y: 445 }; // Houston
 const TRACKING_ROUTE = `M ${USER_LOCATION.x} ${USER_LOCATION.y} L ${NEAREST_VENDOR.x} ${NEAREST_VENDOR.y}`;
-const TRACKING_GREEN = "#0ECB81";
+const TRACKING_GREEN = staticShowCrafterPalette.success;
 
 const STATS = [
   { value: "342", label: "Products in vendor catalogue", accent: "primary" as const },

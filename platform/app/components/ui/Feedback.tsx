@@ -11,6 +11,13 @@ const alertToneClasses: Record<AlertTone, string> = {
   danger: "border-error/30 bg-error/10 text-on-surface",
 };
 
+const alertIconClasses: Record<AlertTone, string> = {
+  info: "text-primary",
+  success: "text-success",
+  warning: "text-highlight",
+  danger: "text-error",
+};
+
 export function InlineAlert({
   tone = "info",
   title,
@@ -32,7 +39,7 @@ export function InlineAlert({
       )}
       role={tone === "danger" ? "alert" : "status"}
     >
-      <Icon className="mt-0.5 shrink-0 text-primary" size={18} />
+      <Icon className={cn("mt-0.5 shrink-0", alertIconClasses[tone])} size={18} />
       <div>
         <p className="font-bold">{title}</p>
         {children ? (
@@ -83,7 +90,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-lg bg-surface-container-highest/70",
+        "animate-pulse rounded-xl bg-surface-container-highest/70",
         className,
       )}
     />

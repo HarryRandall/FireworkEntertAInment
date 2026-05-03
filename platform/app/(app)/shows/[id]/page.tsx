@@ -53,7 +53,7 @@ export default async function ShowTimelinePage({ params }: PageProps) {
             })}
           </div>
           <div
-            className="absolute h-full w-[2px] bg-tertiary shadow-[0_0_15px_rgba(143,213,255,0.6)] z-10"
+            className="absolute h-full w-[2px] bg-tertiary shadow-[0_0_15px_color-mix(in_srgb,var(--color-tertiary)_55%,transparent)] z-10"
             style={{ left: "24%" }}
           >
             <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rotate-45 bg-tertiary" />
@@ -79,7 +79,7 @@ export default async function ShowTimelinePage({ params }: PageProps) {
         <Card
           elevation="high"
           radius="md"
-          className="space-y-5 p-6 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.6)]"
+          className="space-y-5 p-6"
         >
           <h3 className="flex items-center gap-2 text-lg font-bold text-on-surface">
             <Wand2 size={18} strokeWidth={1.75} className="text-primary" />

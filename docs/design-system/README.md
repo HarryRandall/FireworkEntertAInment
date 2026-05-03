@@ -6,6 +6,8 @@ anyone on the team is editing UI:
 
 - **Full spec:** [`.claude/skills/showcrafter-design-system/SKILL.md`](../../.claude/skills/showcrafter-design-system/SKILL.md)
 - **Live tokens:** [`platform/app/globals.css`](../../platform/app/globals.css)
+- **UI conventions:** [`platform/app/components/ui/styles.ts`](../../platform/app/components/ui/styles.ts)
+- **Code-only tokens:** [`platform/app/components/ui/tokens.ts`](../../platform/app/components/ui/tokens.ts)
 
 ## TL;DR
 
@@ -26,6 +28,29 @@ Lucide icons only. Pill CTAs (`rounded-full`); cards `rounded-xl` or
   `bg-primary`, `on-surface-variant` → `text-on-surface-variant`, etc.).
 - **PR reviews** — the bottom of `SKILL.md` has a Do / Don't list and an iteration
   guide that's a good rubric for "does this look like ShowCrafter?".
+
+## Frontend Component Architecture
+
+When building UI, follow this lookup order:
+
+1. `platform/app/components/ui/` — base primitives, shared class maps, and token
+   references.
+2. `platform/app/components/{app,admin,marketing,theme}/` — domain components
+   composed from UI primitives.
+3. Route files under `platform/app/**` — page composition, data loading, and
+   route-specific layout only.
+
+Use `cn()` from `@/lib/cn` for class merging. Prefer imports from
+`@/app/components/ui` for new code. Avoid hard-coded colours in TSX; use Tailwind
+token classes such as `bg-surface`, `text-on-surface`, `border-outline-variant`,
+`bg-primary-container`, and `text-on-primary-container`. If CSS tokens cannot be
+used directly, such as in Three.js, SVG, or canvas code, use
+`staticShowCrafterPalette` from `components/ui/tokens.ts`.
+
+Form markup should use `Field`, `FieldLabel`, `FieldHint`, and `FieldError`.
+Buttons use `Button` variants, cards use `Card`, loading states use `Skeleton`,
+and empty states use `EmptyState` unless the shape is genuinely page-specific.
+Lucide remains the only icon library for new UI.
 
 ## Updating the system
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, CreditCard, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 const SETTINGS_LINKS = [
   { href: "/settings/profile", label: "Personal details", icon: UserRound },
@@ -26,7 +27,8 @@ export function SettingsTabs() {
             prefetch
             aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/55",
+              uiStyles.focus.action,
+              "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors",
               active
                 ? "border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
                 : "border-transparent text-on-surface-variant hover:border-outline-variant/55 hover:bg-surface-container-high hover:text-on-surface",

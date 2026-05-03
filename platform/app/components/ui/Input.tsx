@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type InputProps = ComponentPropsWithoutRef<"input"> & {
   iconLeft?: ReactNode;
@@ -10,14 +11,15 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   return (
     <div className="relative">
       {iconLeft ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-outline">
+        <div className={uiStyles.control.icon}>
           {iconLeft}
         </div>
       ) : null}
       <input
         {...rest}
         className={cn(
-          "focus-glow-field h-11 w-full rounded-lg border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200 focus:outline-none focus-visible:outline-none",
+          uiStyles.focus.field,
+          "h-11 w-full rounded-xl border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
           invalid ? "border-error/60" : "border-outline/55",
           iconLeft ? "pl-11 pr-4" : "px-4",
           className,
@@ -34,7 +36,8 @@ export function Textarea({ className, ...rest }: TextareaProps) {
     <textarea
       {...rest}
       className={cn(
-        "focus-glow-field w-full resize-none rounded-lg border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all duration-200 focus:outline-none focus-visible:outline-none",
+        uiStyles.focus.field,
+        "w-full resize-none rounded-xl border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
         className,
       )}
     />
@@ -48,7 +51,8 @@ export function Select({ className, ...rest }: SelectProps) {
     <select
       {...rest}
       className={cn(
-        "focus-glow-field h-11 w-full cursor-pointer rounded-lg border border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus-visible:outline-none",
+        uiStyles.focus.field,
+        uiStyles.control.select,
         className,
       )}
     />

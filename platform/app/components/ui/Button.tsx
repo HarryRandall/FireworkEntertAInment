@@ -2,22 +2,23 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const baseClasses =
-  "focus-glow-action inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus:outline-none focus-visible:outline-none";
+  "inline-flex items-center justify-center gap-2 rounded-full font-bold transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0";
 
 const variantClasses: Record<Variant, string> = {
   primary:
     "border border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105",
   secondary:
-    "border border-outline/45 bg-surface-container-low text-on-surface hover:border-primary/45 hover:bg-surface-container-high",
+    "border border-outline-variant/55 bg-surface text-on-surface hover:border-primary/45 hover:bg-surface-container-high",
   ghost:
-    "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
+    "border border-transparent text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
   destructive:
-    "border border-error/35 bg-error/10 text-error hover:bg-error/15",
+    "border border-error/70 bg-error text-on-error hover:brightness-105",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -56,6 +57,7 @@ export function Button(props: ButtonProps) {
     loading = false,
   } = props;
   const classes = cn(
+    uiStyles.focus.action,
     baseClasses,
     variantClasses[variant],
     sizeClasses[size],

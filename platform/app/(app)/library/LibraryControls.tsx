@@ -4,6 +4,7 @@ import { Check, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type SortKey = "popular" | "recent" | "featured" | "shortest" | "budget";
 
@@ -35,7 +36,10 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
         <button
           type="button"
           onClick={() => setSortOpen((open) => !open)}
-          className="inline-flex h-11 items-center gap-2 rounded-xl border border-outline-variant/55 bg-white px-4 text-sm font-semibold text-on-surface transition-colors hover:border-primary/35 hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className={cn(
+            uiStyles.focus.action,
+            "inline-flex h-11 items-center gap-2 rounded-full border border-outline-variant/55 bg-surface px-4 text-sm font-semibold text-on-surface transition-colors hover:border-primary/35 hover:bg-surface-container-high",
+          )}
         >
           <SlidersHorizontal size={16} className="text-on-surface-variant" />
           Sort: {selectedSort.label}
@@ -46,7 +50,7 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
         </button>
 
         {sortOpen ? (
-          <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-64 rounded-2xl border border-outline-variant/55 bg-white p-2 shadow-[var(--shadow-modal)]">
+          <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-64 rounded-xl border border-outline-variant/55 bg-surface p-2 shadow-[var(--shadow-modal)]">
             <div className="grid gap-1">
               {sorts.map((item) => {
                 const active = item.key === sort;
@@ -62,10 +66,11 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
                       setSortOpen(false);
                     }}
                       className={cn(
-                        "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45",
+                        uiStyles.focus.action,
+                        "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
                         active
                           ? "bg-primary/10 text-primary"
-                          : "text-on-surface-variant hover:bg-[#EEF4FF] hover:text-primary",
+                          : "text-on-surface-variant hover:bg-surface-container-high hover:text-primary",
                       )}
                     >
                     <span className={cn("font-medium", active && "font-semibold")}>
