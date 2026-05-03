@@ -504,24 +504,45 @@ export async function createVideoImportJobAction(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose a video file before uploading." };
   }
-  if (!file.type.startsWith("video/")) {
+  // Some browsers report an empty file.type for less common containers
+  // (e.g. MPEG-4 SP). Accept those too if the file extension is a video
+  // container — the bucket's allowed_mime_types will still reject anything
+  // truly unsupported, and the worker re-probes with ffprobe.
+  const looksLikeVideoByName = /\.(mp4|m4v|mov|webm|mkv)$/i.test(file.name);
+  if (!file.type.startsWith("video/") && !looksLikeVideoByName) {
     return { ok: false, error: "Choose a supported video file." };
   }
+  // When the browser hasn't filled in a mime, infer one from the extension so
+  // the upload doesn't get blocked by the bucket's allowed_mime_types check.
+  const inferredContentType =
+    file.type && file.type.startsWith("video/")
+      ? file.type
+      : /\.mov$/i.test(file.name)
+        ? "video/quicktime"
+        : /\.webm$/i.test(file.name)
+          ? "video/webm"
+          : /\.mkv$/i.test(file.name)
+            ? "video/x-matroska"
+            : "video/mp4";
 
   const supabase = createClient(await cookies());
   const storagePath = `${admin.id}/${crypto.randomUUID()}-${sanitizeStorageName(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from(IMPORT_VIDEO_BUCKET)
     .upload(storagePath, file, {
-      contentType: file.type || "video/mp4",
+      contentType: inferredContentType,
       upsert: false,
     });
   if (uploadError) {
     console.error("[createVideoImportJobAction] upload failed:", uploadError);
+    const detail = uploadError.message ?? "";
+    // Surface the underlying storage failure so the operator can act on it
+    // instead of always blaming a missing migration.
     return {
       ok: false,
-      error:
-        "Video upload failed. Apply migration 0008 first so the import-videos storage bucket exists.",
+      error: detail
+        ? `Video upload failed: ${detail}`
+        : "Video upload failed. Apply migration 0008 first so the import-videos storage bucket exists.",
     };
   }
 

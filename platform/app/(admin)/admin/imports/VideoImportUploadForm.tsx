@@ -17,7 +17,12 @@ import { formatDuration } from "@/lib/shows";
 
 export function VideoImportUploadForm() {
   const [duration, setDuration] = useState<number | null>(null);
+  // Hard error blocks submit (real validation failures: wrong type, too long).
   const [error, setError] = useState<string | null>(null);
+  // Soft notice shown but does not block submit — e.g. browser can't decode
+  // exotic MP4 codecs (MPEG-4 SP / DivX / HEVC) so client-side duration probe
+  // fails. The worker re-probes server-side with ffprobe.
+  const [notice, setNotice] = useState<string | null>(null);
   const initialState: ImportUploadActionState = { ok: false, error: null };
   const [state, formAction, pending] = useActionState(
     createVideoImportJobAction,
@@ -28,8 +33,12 @@ export function VideoImportUploadForm() {
   function inspectVideo(file: File | undefined) {
     setDuration(null);
     setError(null);
+    setNotice(null);
     if (!file) return;
-    if (!file.type.startsWith("video/")) {
+    // Accept by extension OR mime — some Linux/Chromium builds report empty
+    // file.type for less common containers even when the bucket accepts them.
+    const looksLikeVideoByName = /\.(mp4|m4v|mov|webm|mkv)$/i.test(file.name);
+    if (!file.type.startsWith("video/") && !looksLikeVideoByName) {
       setError("Choose a video file.");
       return;
     }
@@ -39,14 +48,25 @@ export function VideoImportUploadForm() {
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(objectUrl);
       const seconds = video.duration;
-      setDuration(seconds);
-      if (seconds > MAX_IMPORT_VIDEO_SECONDS) {
-        setError(`Video must be ${MAX_IMPORT_VIDEO_SECONDS} seconds or less.`);
+      if (Number.isFinite(seconds) && seconds > 0) {
+        setDuration(seconds);
+        if (seconds > MAX_IMPORT_VIDEO_SECONDS) {
+          setError(`Video must be ${MAX_IMPORT_VIDEO_SECONDS} seconds or less.`);
+        }
+      } else {
+        setNotice(
+          "Browser could not read duration; the worker will probe it server-side.",
+        );
       }
     };
     video.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      setError("Could not read video metadata.");
+      // Don't block — the server worker will re-probe with ffprobe and the
+      // bucket already validates allowed mime types. This unblocks files like
+      // MPEG-4 Simple Profile that browsers can't decode.
+      setNotice(
+        "Browser couldn't decode this file's metadata (often MPEG-4 SP / HEVC). The worker will probe it server-side; the upload can still proceed.",
+      );
     };
     video.src = objectUrl;
   }
@@ -89,10 +109,14 @@ export function VideoImportUploadForm() {
           value={duration == null ? "" : duration}
           readOnly
         />
-        {duration != null || error ? (
-          <p className={error ? "text-xs font-semibold text-error" : "text-xs text-on-surface-variant"}>
-            {error ?? `Detected duration ${formatDuration(duration)}.`}
+        {error ? (
+          <p className="text-xs font-semibold text-error">{error}</p>
+        ) : duration != null ? (
+          <p className="text-xs text-on-surface-variant">
+            Detected duration {formatDuration(duration)}.
           </p>
+        ) : notice ? (
+          <p className="text-xs text-on-surface-variant">{notice}</p>
         ) : null}
       </div>
       <Button type="submit" size="sm" disabled={Boolean(error) || pending} loading={pending}>
