@@ -2,6 +2,7 @@
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
 import type { FireworkEffectSpecV2 } from "@/lib/fireworks/spec-v2";
+import type { FireworkEffectSpecV3 } from "@/lib/fireworks/spec-v3";
 
 export type ShowStatus = "draft" | "complete";
 
@@ -84,7 +85,7 @@ export type FireworkSpecification = {
   name: string;
   description: string | null;
   sortOrder: number;
-  spec: FireworkRenderSpec | FireworkEffectSpecV2;
+  spec: FireworkRenderSpec | FireworkEffectSpecV2 | FireworkEffectSpecV3;
 };
 
 export type ReplayCue = ShowCue & {

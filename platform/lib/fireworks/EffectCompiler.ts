@@ -14,6 +14,10 @@ import {
   type ShotSpec,
   type SmokeSpec,
 } from "@/lib/fireworks/spec-v2";
+import {
+  FireworkEffectSpecV3Schema,
+  fireworkEffectSpecV3ToV2,
+} from "@/lib/fireworks/spec-v3";
 import { createSeededRng, mixSeed, type SeededRng } from "@/lib/fireworks/random";
 import type { ParticleWrite } from "@/lib/fireworks/ParticlePool";
 
@@ -175,6 +179,10 @@ function eventLifetimeForLayer(layer: ParticleLayerSpec): number {
 }
 
 export function resolveCueEffectSpec(cue: ReplayCue): FireworkEffectSpecV2 {
+  const maybeV3 = FireworkEffectSpecV3Schema.safeParse(cue.firework.spec);
+  if (maybeV3.success) {
+    return fireworkEffectSpecV3ToV2(maybeV3.data);
+  }
   const maybeV2 = FireworkEffectSpecV2Schema.safeParse(cue.firework.spec);
   if (maybeV2.success) {
     return applyLegacyOverridesToEffectSpecV2(maybeV2.data, cue.renderParams);
