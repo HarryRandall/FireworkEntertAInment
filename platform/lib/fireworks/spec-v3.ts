@@ -62,7 +62,15 @@ export const FireworkEffectSpecV3Schema = z.object({
       deterministic: z.boolean().default(true),
       pixelRatioLimit: z.number().positive().default(2),
     })
-    .default({}),
+    .default({
+      quality: "high",
+      maxParticles: 120_000,
+      maxTrailSegments: 260_000,
+      useSmoke: true,
+      useSkyLighting: true,
+      deterministic: true,
+      pixelRatioLimit: 2,
+    }),
   shell: z.object({
     family: z.enum([
       "chrysanthemum",
@@ -117,7 +125,20 @@ export const FireworkEffectSpecV3Schema = z.object({
     sparkLifeMs: z.number().positive().default(320),
     sparkSpeed: z.number().nonnegative().default(0.5),
     randomWobble: z.number().min(0).default(0.035),
-  }).default({}),
+  }).default({
+    enabled: true,
+    fuseTimeSeconds: 0,
+    liftTimeSeconds: 1.15,
+    heightMeters: 88,
+    startPosition: { x: 0, y: 0, z: 0 },
+    panDegrees: 0,
+    tiltDegrees: 90,
+    tracerColor: CodePenFireworkPalette.Gold,
+    sparkFrequency: 32,
+    sparkLifeMs: 320,
+    sparkSpeed: 0.5,
+    randomWobble: 0.035,
+  }),
   shots: z
     .array(
       z.object({

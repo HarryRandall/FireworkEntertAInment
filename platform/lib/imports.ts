@@ -18,7 +18,6 @@ import {
 import {
   FireworkEffectSpecV3Schema,
   fireworkEffectSpecV3ToV2,
-  type FireworkEffectSpecV3,
 } from "@/lib/fireworks/spec-v3";
 
 export const IMPORT_VIDEO_BUCKET = "import-videos";

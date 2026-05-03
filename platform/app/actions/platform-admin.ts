@@ -911,11 +911,6 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   }
 
   const supabase = createClient(await cookies());
-  const { data: job } = await supabase
-    .from("import_jobs")
-    .select("media_asset_id")
-    .eq("id", parsed.data.id)
-    .maybeSingle();
   const effectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
   const effectSpec = spec.effectSpec;
   const shotCount =
