@@ -16,6 +16,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      effect_specs: {
+        Row: {
+          confidence: number
+          created_at: string
+          description: string | null
+          duration_seconds: number
+          height_meters: number | null
+          id: string
+          name: string
+          shot_count: number
+          slug: string
+          source: string
+          spec_json: Json
+          type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          duration_seconds: number
+          height_meters?: number | null
+          id?: string
+          name: string
+          shot_count?: number
+          slug: string
+          source: string
+          spec_json: Json
+          type: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number
+          height_meters?: number | null
+          id?: string
+          name?: string
+          shot_count?: number
+          slug?: string
+          source?: string
+          spec_json?: Json
+          type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       "Finale3D CSV Import Sample": {
         Row: {
           available: string | null
@@ -766,37 +817,74 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          effect_spec_id: string | null
           firework_specification_id: string | null
           id: string
+          label: string | null
+          layer: string | null
+          locked: boolean
+          overrides_json: Json
           position: number
+          position_json: Json
           render_params: Json | null
+          rotation_json: Json
+          scale: number
+          seed_override: number | null
           show_id: string
           time_seconds: number | null
+          track: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description: string
+          effect_spec_id?: string | null
           firework_specification_id?: string | null
           id?: string
+          label?: string | null
+          layer?: string | null
+          locked?: boolean
+          overrides_json?: Json
           position?: number
+          position_json?: Json
           render_params?: Json | null
+          rotation_json?: Json
+          scale?: number
+          seed_override?: number | null
           show_id: string
           time_seconds?: number | null
+          track?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string
+          effect_spec_id?: string | null
           firework_specification_id?: string | null
           id?: string
+          label?: string | null
+          layer?: string | null
+          locked?: boolean
+          overrides_json?: Json
           position?: number
+          position_json?: Json
           render_params?: Json | null
+          rotation_json?: Json
+          scale?: number
+          seed_override?: number | null
           show_id?: string
           time_seconds?: number | null
+          track?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "show_cues_effect_spec_id_fkey"
+            columns: ["effect_spec_id"]
+            isOneToOne: false
+            referencedRelation: "effect_specs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "show_cues_firework_specification_id_fkey"
             columns: ["firework_specification_id"]

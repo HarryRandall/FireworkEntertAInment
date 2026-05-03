@@ -1,7 +1,11 @@
 // Domain types for ShowCrafter shows. Pure types only — no in-memory data.
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
-import type { FireworkEffectSpecV2 } from "@/lib/fireworks/spec-v2";
+import type {
+  FireworkEffectSpecV2,
+  Rotation,
+  Vec3,
+} from "@/lib/fireworks/spec-v2";
 import type { FireworkEffectSpecV3 } from "@/lib/fireworks/spec-v3";
 
 export type ShowStatus = "draft" | "complete";
@@ -33,7 +37,13 @@ export type ShowCue = {
   timeSeconds: number | null;
   description: string;
   fireworkSpecificationId: string | null;
+  effectSpecId?: string | null;
   renderParams: FireworkRenderParams | null;
+  positionMeters?: Vec3;
+  rotation?: Rotation;
+  scale?: number;
+  overrides?: Record<string, unknown>;
+  seedOverride?: number | null;
 };
 
 export type FireworkRenderSpec = {

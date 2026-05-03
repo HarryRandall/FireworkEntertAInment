@@ -148,10 +148,11 @@ function launchDirection(panDegrees: number, tiltDegrees: number): THREE.Vector3
 
 function shotBasePosition(cue: ReplayCue, shot: ShotSpec, scale: number): THREE.Vector3 {
   const cueOffset = (mixSeed(cue.id, "position") % 1000) / 1000 - 0.5;
+  const cuePosition = cue.positionMeters ?? { x: 0, y: 0, z: 0 };
   return new THREE.Vector3(
-    cueOffset * 0.5 + shot.launchPositionOffset.x * scale,
-    GROUND_Y + shot.launchPositionOffset.y * scale,
-    -0.6 + shot.launchPositionOffset.z * scale,
+    cuePosition.x * scale + cueOffset * 0.5 + shot.launchPositionOffset.x * scale,
+    GROUND_Y + cuePosition.y * scale + shot.launchPositionOffset.y * scale,
+    -0.6 + cuePosition.z * scale + shot.launchPositionOffset.z * scale,
   );
 }
 
@@ -278,10 +279,10 @@ function compileBreakEvents(
 
 export function compileCueEvents(cue: ReplayCue): CompiledEffectEvent[] {
   const spec = resolveCueEffectSpec(cue);
-  const scale = spec.globalScale;
+  const scale = spec.globalScale * (cue.scale ?? 1);
   const qualityScale = qualityScaleFor(spec);
   const events: CompiledEffectEvent[] = [];
-  const cueSeed = mixSeed(spec.seed, cue.id, cue.timeSeconds);
+  const cueSeed = cue.seedOverride ?? mixSeed(spec.seed, cue.id, cue.timeSeconds);
 
   spec.shotSequence.shots.forEach((shot) => {
     const shotSeed = mixSeed(cueSeed, shot.index, shot.seedOffset);
@@ -290,7 +291,10 @@ export function compileCueEvents(cue: ReplayCue): CompiledEffectEvent[] {
       shot.liftTimeSeconds ?? launch.liftTimeSeconds ?? spec.launch.liftTimeSeconds;
     const heightMeters = shot.launchHeightMeters ?? spec.heightMeters;
     const start = shotBasePosition(cue, shot, scale);
-    const direction = launchDirection(shot.panDegrees, shot.tiltDegrees);
+    const direction = launchDirection(
+      shot.panDegrees + (cue.rotation?.pan ?? 0),
+      shot.tiltDegrees + ((cue.rotation?.tilt ?? 90) - 90),
+    );
     const end = start
       .clone()
       .add(direction.clone().multiplyScalar(heightMeters * scale));

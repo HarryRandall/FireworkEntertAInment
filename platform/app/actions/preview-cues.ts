@@ -58,7 +58,11 @@ export async function addPreviewCueAction(
     position: (lastCue?.position ?? 0) + 1,
     time_seconds: parsed.data.timeSeconds,
     description: parsed.data.description,
-    firework_specification_id: parsed.data.fireworkSpecificationId,
+    effect_spec_id: parsed.data.fireworkSpecificationId,
+    position_json: { x: 0, y: 0, z: 0 },
+    rotation_json: { pan: 0, tilt: 90, roll: 0 },
+    scale: 1,
+    overrides_json: {},
   });
 
   if (error) {

@@ -33,6 +33,7 @@ import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
+type EffectSpecRow = Database["public"]["Tables"]["effect_specs"]["Row"];
 type FireworkSpecificationRow =
   Database["public"]["Tables"]["firework_specifications"]["Row"];
 type ShoppingItemRow =
@@ -65,14 +66,41 @@ type ShowCueProjection = Pick<
   | "time_seconds"
   | "description"
   | "firework_specification_id"
+  | "effect_spec_id"
+  | "render_params"
+  | "position_json"
+  | "rotation_json"
+  | "scale"
+  | "overrides_json"
+  | "seed_override"
+>;
+type LegacyShowCueProjection = Pick<
+  ShowCueRow,
+  | "id"
+  | "position"
+  | "time_seconds"
+  | "description"
+  | "firework_specification_id"
   | "render_params"
 >;
 type FireworkSpecificationProjection = Pick<
   FireworkSpecificationRow,
   "id" | "slug" | "name" | "description" | "sort_order" | "spec"
 >;
+type EffectSpecProjection = Pick<
+  EffectSpecRow,
+  | "id"
+  | "slug"
+  | "name"
+  | "description"
+  | "type"
+  | "spec_json"
+  | "shot_count"
+  | "duration_seconds"
+>;
 type ReplayCueRow = ShowCueProjection & {
   firework_specifications: FireworkSpecificationProjection | null;
+  effect_specs: EffectSpecProjection | null;
 };
 type ShoppingItemProjection = Pick<
   ShoppingItemRow,
@@ -96,12 +124,16 @@ const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
   "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, updated_at";
 const SHOW_CUE_SELECT =
+  "id, position, time_seconds, description, firework_specification_id, effect_spec_id, render_params, position_json, rotation_json, scale, overrides_json, seed_override";
+const LEGACY_SHOW_CUE_SELECT =
   "id, position, time_seconds, description, firework_specification_id, render_params";
 const FIREWORK_SPECIFICATION_SELECT =
   "id, slug, name, description, sort_order, spec";
+const EFFECT_SPEC_SELECT =
+  "id, slug, name, description, type, spec_json, shot_count, duration_seconds";
 const SHOPPING_ITEM_SELECT =
   "id, position, name, qty, price_cents, firework_part_number";
-const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, firework_specifications (${FIREWORK_SPECIFICATION_SELECT})`;
+const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, effect_specs (${EFFECT_SPEC_SELECT}), firework_specifications (${FIREWORK_SPECIFICATION_SELECT})`;
 
 function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -206,6 +238,29 @@ function parseRenderParams(params: Json | null): FireworkRenderParams | null {
   return overrides;
 }
 
+function parseVec3(value: Json): { x: number; y: number; z: number } {
+  if (!isRecord(value)) return { x: 0, y: 0, z: 0 };
+  return {
+    x: typeof value.x === "number" && Number.isFinite(value.x) ? value.x : 0,
+    y: typeof value.y === "number" && Number.isFinite(value.y) ? value.y : 0,
+    z: typeof value.z === "number" && Number.isFinite(value.z) ? value.z : 0,
+  };
+}
+
+function parseRotation(value: Json): { pan: number; tilt: number; roll: number } {
+  if (!isRecord(value)) return { pan: 0, tilt: 90, roll: 0 };
+  return {
+    pan: typeof value.pan === "number" && Number.isFinite(value.pan) ? value.pan : 0,
+    tilt: typeof value.tilt === "number" && Number.isFinite(value.tilt) ? value.tilt : 90,
+    roll: typeof value.roll === "number" && Number.isFinite(value.roll) ? value.roll : 0,
+  };
+}
+
+function parseOverrides(value: Json): Record<string, unknown> {
+  if (!isRecord(value)) return {};
+  return value as Record<string, unknown>;
+}
+
 function mapShow(row: ShowProjection): Show {
   return {
     id: row.id,
@@ -237,7 +292,13 @@ function mapCue(row: ShowCueProjection): ShowCue {
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
     fireworkSpecificationId: row.firework_specification_id,
+    effectSpecId: row.effect_spec_id,
     renderParams: parseRenderParams(row.render_params),
+    positionMeters: parseVec3(row.position_json),
+    rotation: parseRotation(row.rotation_json),
+    scale: row.scale == null ? 1 : Number(row.scale),
+    overrides: parseOverrides(row.overrides_json),
+    seedOverride: row.seed_override,
   };
 }
 
@@ -254,12 +315,49 @@ function mapFireworkSpecification(
   };
 }
 
+function mapEffectSpecification(
+  row: EffectSpecProjection,
+  index = 0,
+): FireworkSpecification {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    sortOrder: index,
+    spec: parseRenderSpec(row.spec_json),
+  };
+}
+
 function mapReplayCue(row: ReplayCueRow): ReplayCue | null {
-  if (row.time_seconds == null || !row.firework_specifications) return null;
+  if (row.time_seconds == null) return null;
+  const firework = row.effect_specs
+    ? mapEffectSpecification(row.effect_specs)
+    : row.firework_specifications
+      ? mapFireworkSpecification(row.firework_specifications)
+      : null;
+  if (!firework) return null;
   return {
     ...mapCue(row),
     timeSeconds: Number(row.time_seconds),
-    firework: mapFireworkSpecification(row.firework_specifications),
+    firework,
+  };
+}
+
+function normalizeLegacyReplayCueRow(
+  row: LegacyShowCueProjection & {
+    firework_specifications: FireworkSpecificationProjection | null;
+  },
+): ReplayCueRow {
+  return {
+    ...row,
+    effect_spec_id: null,
+    position_json: { x: 0, y: 0, z: 0 },
+    rotation_json: { pan: 0, tilt: 90, roll: 0 },
+    scale: 1,
+    overrides_json: {},
+    seed_override: null,
+    effect_specs: null,
   };
 }
 
@@ -386,8 +484,29 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
     .eq("show_id", showId)
     .order("position", { ascending: true });
   if (error) {
-    console.error("[shows.server] listCuesForShow failed:", error);
-    return [];
+    console.error("[shows.server] listCuesForShow effect fields failed; using legacy cues:", error);
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("show_cues")
+      .select(LEGACY_SHOW_CUE_SELECT)
+      .eq("show_id", showId)
+      .order("position", { ascending: true });
+    if (legacyError) {
+      console.error("[shows.server] listCuesForShow failed:", legacyError);
+      return [];
+    }
+    const legacyMapped = ((legacyData ?? []) as LegacyShowCueProjection[]).map((row) =>
+      mapCue({
+        ...row,
+        effect_spec_id: null,
+        position_json: { x: 0, y: 0, z: 0 },
+        rotation_json: { pan: 0, tilt: 90, roll: 0 },
+        scale: 1,
+        overrides_json: {},
+        seed_override: null,
+      }),
+    );
+    await setCachedJson(cacheKey, legacyMapped, SHOWS_TTL_SECONDS);
+    return legacyMapped;
   }
   const mapped = (data ?? []).map(mapCue);
   await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
@@ -400,16 +519,30 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
+  const { data: effectSpecs, error: effectSpecsError } = await supabase
+    .from("effect_specs")
+    .select(EFFECT_SPEC_SELECT)
+    .order("name", { ascending: true });
+  if (!effectSpecsError && effectSpecs && effectSpecs.length > 0) {
+    const mapped = (effectSpecs as EffectSpecProjection[]).map(mapEffectSpecification);
+    await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+    return mapped;
+  }
+
+  if (effectSpecsError) {
+    console.error("[shows.server] list effect_specs failed; using legacy specs:", effectSpecsError);
+  }
+
+  const { data: legacySpecs, error: legacyError } = await supabase
     .from("firework_specifications")
     .select(FIREWORK_SPECIFICATION_SELECT)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
-  if (error) {
-    console.error("[shows.server] listFireworkSpecifications failed:", error);
+  if (legacyError) {
+    console.error("[shows.server] listFireworkSpecifications failed:", legacyError);
     return [];
   }
-  const mapped = (data ?? []).map(mapFireworkSpecification);
+  const mapped = (legacySpecs ?? []).map(mapFireworkSpecification);
   await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
   return mapped;
 }
@@ -430,12 +563,33 @@ export async function listReplayCuesForShow(
     .select(REPLAY_CUE_SELECT)
     .eq("show_id", showId)
     .not("time_seconds", "is", null)
-    .not("firework_specification_id", "is", null)
+    .or("effect_spec_id.not.is.null,firework_specification_id.not.is.null")
     .order("time_seconds", { ascending: true })
     .order("position", { ascending: true });
   if (error) {
-    console.error("[shows.server] listReplayCuesForShow failed:", error);
-    return [];
+    console.error("[shows.server] listReplayCuesForShow effect_specs failed; using legacy specs:", error);
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("show_cues")
+      .select(`${LEGACY_SHOW_CUE_SELECT}, firework_specifications (${FIREWORK_SPECIFICATION_SELECT})`)
+      .eq("show_id", showId)
+      .not("time_seconds", "is", null)
+      .not("firework_specification_id", "is", null)
+      .order("time_seconds", { ascending: true })
+      .order("position", { ascending: true });
+    if (legacyError) {
+      console.error("[shows.server] listReplayCuesForShow failed:", legacyError);
+      return [];
+    }
+    const legacyMapped = ((legacyData ?? []) as Array<
+      LegacyShowCueProjection & {
+        firework_specifications: FireworkSpecificationProjection | null;
+      }
+    >)
+      .map(normalizeLegacyReplayCueRow)
+      .map(mapReplayCue)
+      .filter((cue): cue is ReplayCue => cue !== null);
+    await setCachedJson(cacheKey, legacyMapped, SHOWS_TTL_SECONDS);
+    return legacyMapped;
   }
   const mapped = ((data ?? []) as ReplayCueRow[])
     .map(mapReplayCue)
