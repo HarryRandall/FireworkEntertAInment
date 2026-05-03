@@ -34,12 +34,16 @@ function loadTsModule(relativePath, mocks = {}) {
 }
 
 const specV2 = loadTsModule("lib/fireworks/spec-v2.ts");
+const specV3 = loadTsModule("lib/fireworks/spec-v3.ts", {
+  "@/lib/fireworks/spec-v2": specV2,
+});
 const random = loadTsModule("lib/fireworks/random.ts");
 const legacyAdapter = loadTsModule("lib/fireworks/legacy-adapter.ts", {
   "@/lib/fireworks/spec-v2": specV2,
 });
 const effectCompiler = loadTsModule("lib/fireworks/EffectCompiler.ts", {
   "@/lib/fireworks/spec-v2": specV2,
+  "@/lib/fireworks/spec-v3": specV3,
   "@/lib/fireworks/random": random,
   "@/lib/fireworks/legacy-adapter": legacyAdapter,
 });
@@ -131,6 +135,99 @@ test("same seed and cue time produce the same emitted particle attributes", () =
   assert.deepEqual(collect(), collect());
 });
 
+test("FireworkEffectSpecV3 validates CodePen-style standalone effects", () => {
+  const spec = specV3.FireworkEffectSpecV3Schema.parse({
+    version: 3,
+    name: "CodePen test willow",
+    source: "catalogue",
+    confidence: 1,
+    seed: 3001,
+    type: "shell",
+    durationSeconds: 6,
+    colorPalette: ["#ffbf36", "#ffffff"],
+    shell: {
+      family: "willow",
+      size: 3,
+      starDensity: 1,
+      color: "#ffbf36",
+      glitter: "willow",
+      smokeAmount: 0.4,
+    },
+    launch: {
+      enabled: true,
+      liftTimeSeconds: 1.15,
+      heightMeters: 90,
+      tracerColor: "#ffbf36",
+    },
+    shots: [
+      {
+        index: 0,
+        timeOffsetSeconds: 0,
+        position: { x: 0, y: 0, z: 0 },
+        scale: 1,
+        seedOffset: 0,
+      },
+    ],
+  });
+  const converted = specV3.fireworkEffectSpecV3ToV2(spec);
+  assert.equal(converted.version, 2);
+  assert.equal(converted.shotSequence.shotCount, 1);
+  assert.equal(converted.colorPalette[0], "#ffbf36");
+  assert.equal(converted.effectLayers[0].trail.enabled, true);
+});
+
+test("v3 standalone effects can be reused by multiple positioned cues", () => {
+  const spec = specV3.FireworkEffectSpecV3Schema.parse({
+    version: 3,
+    name: "Reusable blue ring",
+    source: "catalogue",
+    confidence: 1,
+    seed: 3002,
+    type: "shell",
+    durationSeconds: 4.4,
+    colorPalette: ["#1e7fff", "#ffffff"],
+    shell: {
+      family: "ring",
+      size: 2.7,
+      starDensity: 1,
+      color: "#1e7fff",
+      glitter: "light",
+      ring: true,
+      pistil: true,
+    },
+    launch: {
+      enabled: true,
+      liftTimeSeconds: 1.15,
+      heightMeters: 82,
+      tracerColor: "#1e7fff",
+    },
+  });
+  const cues = [0, 1].map((index) => ({
+    id: `cue-v3-${index}`,
+    position: index + 1,
+    timeSeconds: 2,
+    description: "Reusable ring",
+    fireworkSpecificationId: null,
+    effectSpecId: "effect-ring",
+    renderParams: null,
+    positionMeters: { x: index === 0 ? -2 : 2, y: 0, z: 0 },
+    rotation: { pan: 0, tilt: 90, roll: 0 },
+    scale: 1,
+    firework: {
+      id: "effect-ring",
+      slug: "codepen-blue-ring",
+      name: spec.name,
+      description: null,
+      sortOrder: 1,
+      spec,
+    },
+  }));
+  const events = cues.flatMap(effectCompiler.compileCueEvents);
+  const layerEvents = events.filter((event) => event.kind === "layer");
+  assert.equal(layerEvents.length, 4);
+  assert.notEqual(layerEvents[0].origin.x, layerEvents[2].origin.x);
+});
+
 test("scrub rebuilds select the same active events for the same elapsed time", () => {
   const spec = specV2.FireworkEffectSpecV2Schema.parse(
     JSON.parse(readFileSync(join(root, "tests/fixtures/fireworks-v2/red-peony.json"), "utf8")),
@@ -189,4 +286,16 @@ test("v2 database migration adds normalized tables and 20+ preset seeds", () => 
   assert.match(migration, /create table if not exists public\.effect_specs/);
   assert.match(migration, /create table if not exists public\.inferred_video_observations/);
   assert.equal(seededRows.length >= 20, true);
+});
+
+test("v3 CodePen seed SQL stores standalone effect_specs with exact palette", () => {
+  const seedSql = readFileSync(
+    join(root, "supabase/seed-codepen-fireworks-v3.sql"),
+    "utf8",
+  );
+  assert.match(seedSql, /insert into public\.effect_specs/);
+  assert.match(seedSql, /'version', 3/);
+  for (const color of ["#ff0043", "#14fc56", "#1e7fff", "#e60aff", "#ffbf36", "#ffffff"]) {
+    assert.match(seedSql, new RegExp(color));
+  }
 });
