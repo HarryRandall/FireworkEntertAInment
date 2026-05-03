@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { join } from "node:path";
+import { getPreferredImportVideoSource } from "../lib/import-video-preview.js";
 
 const root = process.cwd();
 const repoRoot = join(root, "..");
@@ -45,4 +46,33 @@ test("container worker exists and calls OpenRouter JSON mode with schema validat
   assert.match(worker, /FireworkEffectSpecV2/);
   assert.match(worker, /observations/);
   assert.match(worker, /shotSequence/);
+  assert.match(worker, /libx264/);
+  assert.match(worker, /normalizedPreview/);
+});
+
+test("import preview prefers a normalized browser-safe asset when present", () => {
+  const preferred = getPreferredImportVideoSource({
+    storagePath: "admin/original-upload.mp4",
+    mimeType: "video/mp4",
+    metadata: {
+      normalizedPreview: {
+        storagePath: "admin/original-upload-browser-h264.mp4",
+        mimeType: "video/mp4",
+      },
+    },
+  });
+  assert.deepEqual(preferred, {
+    storagePath: "admin/original-upload-browser-h264.mp4",
+    mimeType: "video/mp4",
+  });
+
+  const fallback = getPreferredImportVideoSource({
+    storagePath: "admin/original-upload.mp4",
+    mimeType: "video/quicktime",
+    metadata: { originalName: "demo.mov" },
+  });
+  assert.deepEqual(fallback, {
+    storagePath: "admin/original-upload.mp4",
+    mimeType: "video/quicktime",
+  });
 });
