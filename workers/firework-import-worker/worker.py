@@ -654,6 +654,70 @@ def _coerce_enum(value, allowed, fallback):
     return fallback
 
 
+_LAYER_ROLES = {
+    "primary_stars",
+    "secondary_stars",
+    "micro_sparks",
+    "trail_sparks",
+    "glitter",
+    "strobe",
+    "crackle",
+    "smoke",
+    "flash",
+    "falling_leaves",
+    "comets",
+    "embers",
+}
+
+_LAYER_ROLE_SYNONYMS = {
+    "primary": "primary_stars",
+    "stars": "primary_stars",
+    "secondary": "secondary_stars",
+    "trails": "trail_sparks",
+    "trail": "trail_sparks",
+    "sparks": "micro_sparks",
+    "ember": "embers",
+    "comet": "comets",
+}
+
+
+def _coerce_layer_role(value):
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in _LAYER_ROLES:
+            return lowered
+        mapped = _LAYER_ROLE_SYNONYMS.get(lowered)
+        if mapped:
+            return mapped
+    return "primary_stars"
+
+
+def _coerce_effect_layers(value):
+    if isinstance(value, list):
+        result = []
+        for index, entry in enumerate(value):
+            if not isinstance(entry, dict):
+                continue
+            layer = dict(entry)
+            layer["role"] = _coerce_layer_role(layer.get("role"))
+            if not isinstance(layer.get("id"), str) or not layer["id"].strip():
+                layer["id"] = f"{layer['role']}_{index}"
+            result.append(layer)
+        return result
+    if isinstance(value, dict):
+        result = []
+        for index, (key, entry) in enumerate(value.items()):
+            if not isinstance(entry, dict):
+                continue
+            layer = dict(entry)
+            layer["role"] = _coerce_layer_role(layer.get("role") or key)
+            if not isinstance(layer.get("id"), str) or not layer["id"].strip():
+                layer["id"] = str(key) if isinstance(key, str) and key.strip() else f"{layer['role']}_{index}"
+            result.append(layer)
+        return result
+    return []
+
+
 def normalize_import_spec(spec, source_name, duration):
     if not isinstance(spec, dict):
         raise RuntimeError("Model output must be a JSON object")
@@ -722,6 +786,8 @@ def normalize_import_spec(spec, source_name, duration):
     )
     shot_sequence["shots"] = shots
     effect_spec["shotSequence"] = shot_sequence
+
+    effect_spec["effectLayers"] = _coerce_effect_layers(effect_spec.get("effectLayers"))
 
     normalized["effectSpec"] = effect_spec
 
@@ -811,9 +877,14 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "zippers, rows and volleys MUST be represented as multiple shots, not one giant burst. "
         "Each shot needs index, timeOffsetSeconds, panDegrees, tiltDegrees, launchHeightMeters, "
         "liftTimeSeconds, breakSpec.\n"
-        "- effectLayers describe primary_stars / secondary_stars / glitter / strobe / crackle / "
-        "smoke / comets / trails / embers with particleCount (40–2000), distribution, velocity, "
-        "lifetime, appearance.colorGradient, trail, blending and lod. Use the `regionColors` "
+        "- effectLayers MUST be a JSON ARRAY (not an object). Each array entry is one layer "
+        "object with required fields `id` (unique string) and `role` (one of primary_stars, "
+        "secondary_stars, micro_sparks, trail_sparks, glitter, strobe, crackle, smoke, flash, "
+        "falling_leaves, comets, embers), plus particleCount (40–2000), distribution, velocity, "
+        "lifetime, appearance.colorGradient, trail, blending and lod. Example shape: "
+        "`effectLayers: [{\"id\":\"primary\",\"role\":\"primary_stars\", ...}, "
+        "{\"id\":\"glitter\",\"role\":\"glitter\", ...}]`. Do NOT key layers by name "
+        "(e.g. `{primary_stars: {...}}`) — that will fail validation. Use the `regionColors` "
         "(upper/middle/lower) to set colour gradients — e.g. upper=blue head, lower=gold trail.\n"
         "- launch.tracerColor and liftFlashColor must come from observed launch-time chroma, not "
         "white, when `peakColors` at the launch time has chroma.\n"
