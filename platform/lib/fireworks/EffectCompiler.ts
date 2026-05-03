@@ -373,10 +373,54 @@ function randomDirection(
       >
     >,
   index = 0,
+  count = 1,
 ): THREE.Vector3 {
   if (distribution.type === "custom" && distribution.customPoints?.length) {
     const point = distribution.customPoints[index % distribution.customPoints.length];
     return new THREE.Vector3(point.x, point.y, point.z).normalize();
+  }
+
+  if (distribution.type === "shell" || distribution.type === "sphere") {
+    // CodePen's 2D burst uses curved rings rather than pure random points.
+    // This 3D equivalent keeps rings evenly spaced over the sphere surface,
+    // then adds a small seeded offset so the shell looks manufactured, not gridded.
+    const safeCount = Math.max(1, count);
+    const radius = 0.5 * Math.sqrt(safeCount / Math.PI);
+    const circumference = Math.max(4, 2 * radius * Math.PI);
+    const ringCount = Math.max(4, Math.round(circumference));
+    let remaining = index % safeCount;
+    let ringIndex = 0;
+    let ringSize = 1;
+    let partsInRing = safeCount;
+
+    for (let ring = 0; ring < ringCount; ring++) {
+      const ringAngle = (ring / Math.max(1, ringCount - 1)) * Math.PI;
+      ringSize = Math.max(0.08, Math.sin(ringAngle));
+      partsInRing = Math.max(1, Math.round(circumference * ringSize));
+      if (remaining < partsInRing) {
+        ringIndex = ring;
+        break;
+      }
+      remaining -= partsInRing;
+      ringIndex = ring;
+    }
+
+    const polar = (ringIndex / Math.max(1, ringCount - 1)) * Math.PI;
+    const theta =
+      (remaining / partsInRing) * Math.PI * 2 +
+      rng.signed((Math.PI * 2 / partsInRing) * 0.33);
+    const sinPhi = Math.sin(polar);
+    const dir = new THREE.Vector3(
+      sinPhi * Math.cos(theta) + (distribution.horizontalBias ?? 0),
+      Math.cos(polar) + (distribution.verticalBias ?? 0),
+      sinPhi * Math.sin(theta),
+    );
+    if (distribution.noiseAmount) {
+      dir.x += rng.signed(distribution.noiseAmount);
+      dir.y += rng.signed(distribution.noiseAmount);
+      dir.z += rng.signed(distribution.noiseAmount);
+    }
+    return dir.normalize();
   }
 
   if (distribution.type === "ring" || distribution.type === "disc") {
@@ -481,7 +525,7 @@ function emitLayerEvent(event: Extract<CompiledEffectEvent, { kind: "layer" }>, 
     layer.spawnMode === "instant" ? 0 : layer.spawnDurationSeconds;
 
   for (let i = 0; i < count; i++) {
-    const dir = randomDirection(rng, layer.distribution, i);
+    const dir = randomDirection(rng, layer.distribution, i, count);
     const speed =
       rng.range(layer.velocity.speedMin, layer.velocity.speedMax) * event.scale;
     const velocity = dir.multiplyScalar(speed);
@@ -572,6 +616,35 @@ function emitLayerEvent(event: Extract<CompiledEffectEvent, { kind: "layer" }>, 
           strobeFrequency: 0,
           strobeDutyCycle: 0.5,
           emissiveIntensity: layer.appearance.emissiveIntensity * 1.5,
+          alphaCurve: 2,
+          seed: rng.next(),
+        });
+      }
+    }
+
+    if (layer.events.secondaryBurstProbability > 0 && rng.next() < layer.events.secondaryBurstProbability) {
+      const childCount = Math.max(8, layer.events.childParticleCount || 12);
+      const splitAt = event.time + (layer.events.splitTime ?? lifetime * 0.55);
+      for (let child = 0; child < childCount; child++) {
+        const childDir = randomDirection(rng, { type: "shell", noiseAmount: 0.08 }, child, childCount);
+        writeParticle(targets.particles, {
+          origin: event.origin,
+          velocity: velocity
+            .clone()
+            .multiplyScalar(0.24)
+            .add(childDir.multiplyScalar(rng.range(4, 10) * event.scale)),
+          acceleration,
+          spawnTime: splitAt + rng.range(0, 0.12),
+          lifetime: rng.range(0.45, 0.9),
+          sizeStart: layer.appearance.sizeStart * 0.52,
+          sizeEnd: 0,
+          colors,
+          drag: 0.84,
+          twinkleFrequency: layer.appearance.twinkleFrequency,
+          twinkleAmount: Math.max(0.2, layer.appearance.twinkleAmount),
+          strobeFrequency: 0,
+          strobeDutyCycle: 0.5,
+          emissiveIntensity: layer.appearance.emissiveIntensity * 1.25,
           alphaCurve: 2,
           seed: rng.next(),
         });
