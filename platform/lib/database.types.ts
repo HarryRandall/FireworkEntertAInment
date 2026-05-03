@@ -232,6 +232,7 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
+          effect_spec_id: string | null
           firework_specification_id: string | null
           firework_type: string | null
           id: string
@@ -247,6 +248,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          effect_spec_id?: string | null
           firework_specification_id?: string | null
           firework_type?: string | null
           id?: string
@@ -262,6 +264,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          effect_spec_id?: string | null
           firework_specification_id?: string | null
           firework_type?: string | null
           id?: string

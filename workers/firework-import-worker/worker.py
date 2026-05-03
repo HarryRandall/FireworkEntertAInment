@@ -30,7 +30,7 @@ DEFAULT_MODEL = os.getenv("DEFAULT_OPENROUTER_MODEL", "google/gemini-2.5-flash-l
 
 # Validated in-process after the model returns JSON. OpenRouter+Gemini rejects rich
 # json_schema constraints ("too many states"); we use response_format json_object instead.
-# The renderer owns visual quality: the model infers structured FireworkEffectSpecV2
+# The renderer owns visual quality: the model infers structured FireworkEffectSpecV3
 # parameters and observations, never per-frame drawing instructions.
 SPEC_SCHEMA = {
     "type": "object",
@@ -52,12 +52,10 @@ SPEC_SCHEMA = {
                 "seed",
                 "type",
                 "durationSeconds",
-                "heightMeters",
                 "colorPalette",
-                "shotSequence",
             ],
             "properties": {
-                "version": {"type": "integer", "enum": [2]},
+                "version": {"type": "integer", "enum": [2, 3]},
                 "name": {"type": "string"},
                 "description": {"type": ["string", "null"]},
                 "source": {
@@ -96,6 +94,8 @@ SPEC_SCHEMA = {
                         "shots": {"type": "array", "maxItems": 500},
                     },
                 },
+                "shell": {"type": "object"},
+                "shots": {"type": "array", "maxItems": 500},
                 "effectLayers": {"type": "array", "maxItems": 40},
                 "renderProfile": {"type": "object"},
                 "launch": {"type": "object"},
@@ -718,6 +718,46 @@ def _coerce_effect_layers(value):
     return []
 
 
+_SHELL_FAMILIES = [
+    "chrysanthemum",
+    "ghost",
+    "strobe",
+    "palm",
+    "ring",
+    "crossette",
+    "floral",
+    "falling_leaves",
+    "willow",
+    "crackle",
+    "horsetail",
+    "peony",
+    "comet",
+    "mine",
+    "custom",
+]
+
+
+def _infer_shell_family(effect_spec, observations):
+    text = " ".join(
+        str(part or "")
+        for part in [
+            effect_spec.get("name"),
+            effect_spec.get("description"),
+            observations.get("unknowns") if isinstance(observations, dict) else "",
+        ]
+    ).lower()
+    for family in _SHELL_FAMILIES:
+        if family.replace("_", " ") in text or family in text:
+            return family
+    if "willow" in text or "brocade" in text:
+        return "willow"
+    if "crackle" in text:
+        return "crackle"
+    if "strobe" in text:
+        return "strobe"
+    return "peony"
+
+
 def normalize_import_spec(spec, source_name, duration):
     if not isinstance(spec, dict):
         raise RuntimeError("Model output must be a JSON object")
@@ -739,7 +779,8 @@ def normalize_import_spec(spec, source_name, duration):
     normalized["durationSeconds"] = float(normalized.get("durationSeconds") or duration)
     normalized["confidence"] = _clamp_confidence(normalized.get("confidence"))
 
-    effect_spec["version"] = 2
+    version = int(effect_spec.get("version") or 3)
+    effect_spec["version"] = version if version in (2, 3) else 3
     effect_spec["name"] = str(effect_spec.get("name") or normalized["name"])
     effect_spec["source"] = _coerce_enum(
         effect_spec.get("source"),
@@ -748,13 +789,13 @@ def normalize_import_spec(spec, source_name, duration):
     )
     effect_spec["confidence"] = _clamp_confidence(effect_spec.get("confidence", normalized["confidence"]))
     effect_spec["seed"] = int(effect_spec.get("seed") or 1)
+    type_allowed = ["shell", "cake", "mine", "comet", "single_shot", "combo", "custom"] if effect_spec["version"] == 3 else ["shell", "cake", "candle", "mine", "comet", "single_shot", "rocket", "fountain", "flame", "combo", "custom"]
     effect_spec["type"] = _coerce_enum(
         effect_spec.get("type"),
-        ["shell", "cake", "candle", "mine", "comet", "single_shot", "rocket", "fountain", "flame", "combo", "custom"],
+        type_allowed,
         "custom",
     )
     effect_spec["durationSeconds"] = float(effect_spec.get("durationSeconds") or normalized["durationSeconds"])
-    effect_spec["heightMeters"] = float(effect_spec.get("heightMeters") or 60)
     effect_spec["renderProfile"] = effect_spec.get("renderProfile") if isinstance(effect_spec.get("renderProfile"), dict) else {}
     effect_spec["launch"] = effect_spec.get("launch") if isinstance(effect_spec.get("launch"), dict) else {}
     effect_spec["audio"] = effect_spec.get("audio") if isinstance(effect_spec.get("audio"), dict) else {}
@@ -765,12 +806,60 @@ def normalize_import_spec(spec, source_name, duration):
         color_palette = ["#FFFFFF"]
     effect_spec["colorPalette"] = color_palette
 
+    observations = normalized.get("observations")
+    if not isinstance(observations, dict):
+        observations = {}
+
+    if effect_spec["version"] == 3:
+        shell = effect_spec.get("shell")
+        if not isinstance(shell, dict):
+            shell = {}
+        shell["family"] = _coerce_enum(shell.get("family"), _SHELL_FAMILIES, _infer_shell_family(effect_spec, observations))
+        shell["size"] = float(shell.get("size") or 3)
+        shell["starDensity"] = float(shell.get("starDensity") or 1)
+        shell["color"] = shell.get("color") or color_palette[0]
+        shell["glitter"] = _coerce_enum(shell.get("glitter"), ["none", "light", "medium", "heavy", "thick", "streamer", "willow"], "light")
+        shell["smokeAmount"] = float(shell.get("smokeAmount") or 0.28)
+        effect_spec["shell"] = shell
+
+        launch = effect_spec["launch"]
+        launch["enabled"] = bool(launch.get("enabled", True))
+        launch["fuseTimeSeconds"] = float(launch.get("fuseTimeSeconds") or 0)
+        launch["liftTimeSeconds"] = float(launch.get("liftTimeSeconds") or 1.15)
+        launch["heightMeters"] = float(launch.get("heightMeters") or effect_spec.get("heightMeters") or 60)
+        launch["startPosition"] = launch.get("startPosition") if isinstance(launch.get("startPosition"), dict) else {"x": 0, "y": 0, "z": 0}
+        launch["panDegrees"] = float(launch.get("panDegrees") or 0)
+        launch["tiltDegrees"] = float(launch.get("tiltDegrees") or 90)
+        launch["tracerColor"] = launch.get("tracerColor") or color_palette[0]
+        effect_spec["launch"] = launch
+
+        shots = effect_spec.get("shots")
+        if not isinstance(shots, list) or not shots:
+            shots = [{"index": 0, "timeOffsetSeconds": 0, "position": {"x": 0, "y": 0, "z": 0}, "scale": 1, "seedOffset": 0}]
+        normalized_shots = []
+        for index, shot in enumerate(shots):
+            if not isinstance(shot, dict):
+                shot = {}
+            normalized_shots.append({
+                **shot,
+                "index": int(shot.get("index", index)),
+                "timeOffsetSeconds": max(0.0, min(60.0, float(shot.get("timeOffsetSeconds") or 0))),
+                "position": shot.get("position") if isinstance(shot.get("position"), dict) else {"x": 0, "y": 0, "z": 0},
+                "scale": float(shot.get("scale") or 1),
+                "seedOffset": int(shot.get("seedOffset") or index * 101),
+            })
+        effect_spec["shots"] = normalized_shots
+        effect_spec["metadata"]["normalizedAs"] = "FireworkEffectSpecV3"
+        normalized["effectSpec"] = effect_spec
+    else:
+        effect_spec["heightMeters"] = float(effect_spec.get("heightMeters") or 60)
+
     shot_sequence = effect_spec.get("shotSequence")
     if not isinstance(shot_sequence, dict):
         shot_sequence = {}
     shots = shot_sequence.get("shots")
     if not isinstance(shots, list):
-        shots = []
+        shots = effect_spec.get("shots") if effect_spec["version"] == 3 and isinstance(effect_spec.get("shots"), list) else []
     shot_count = int(shot_sequence.get("shotCount") or max(1, len(shots)))
     shot_sequence["shotCount"] = max(1, shot_count)
     shot_sequence["durationSeconds"] = float(shot_sequence.get("durationSeconds") or effect_spec["durationSeconds"])
@@ -787,13 +876,11 @@ def normalize_import_spec(spec, source_name, duration):
     shot_sequence["shots"] = shots
     effect_spec["shotSequence"] = shot_sequence
 
-    effect_spec["effectLayers"] = _coerce_effect_layers(effect_spec.get("effectLayers"))
+    if effect_spec["version"] == 2:
+        effect_spec["effectLayers"] = _coerce_effect_layers(effect_spec.get("effectLayers"))
 
     normalized["effectSpec"] = effect_spec
 
-    observations = normalized.get("observations")
-    if not isinstance(observations, dict):
-        observations = {}
     raw_events = observations.get("observedEvents")
     normalized_events = []
     if isinstance(raw_events, list):
@@ -837,7 +924,7 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
     timeline = frame_summary.get("timeline") or []
     instructions = (
         "Reconstruct this consumer firework video as a parametric 3D particle animation by "
-        "filling in a structured FireworkEffectSpecV2. The renderer owns visual fidelity; your "
+        "filling in a structured FireworkEffectSpecV3. The renderer owns visual fidelity; your "
         "job is to capture what was actually fired (counts, timings, colours, shapes), not to "
         "describe per-frame drawings.\n"
         "\n"
@@ -846,14 +933,14 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "\n"
         "TIMELINE IS AUTHORITATIVE. The `timeline` array lists every detected burst with its "
         "`burstTimeSeconds` and the chroma actually observed at that moment. You MUST emit "
-        "exactly one shot in shotSequence.shots per timeline entry, in order, and the resulting "
-        "burst time (`shot.timeOffsetSeconds + shot.breakSpec.timeOffsetSeconds`) must equal "
-        "`burstTimeSeconds` within ±0.05s. Set `shot.liftTimeSeconds` so the launch begins "
-        "0.6–1.4s before that. Mirror each timeline entry as a `break` observedEvent at the "
+        "exactly one shot in effectSpec.shots per timeline entry, in order, and the resulting "
+        "burst time (`shot.timeOffsetSeconds + effectSpec.launch.liftTimeSeconds`) must equal "
+        "`burstTimeSeconds` within ±0.05s. Set `effectSpec.launch.liftTimeSeconds` so each launch "
+        "begins 0.6–1.4s before its burst. Mirror each timeline entry as a `break` observedEvent at the "
         "same `timeSeconds`. Do not invent extra bursts and do not skip any.\n"
         "\n"
         "COLOUR — read this carefully. Sources of truth, in priority order:\n"
-        "  1. `timeline[i].colors` — the chroma at burst i. The break colorPalette and the "
+        "  1. `timeline[i].colors` — the chroma at burst i. The effect colorPalette and the "
         "associated `break` observedEvent's `color` MUST come from this list.\n"
         "  2. `timeline[i].regionColors` (upper/middle/lower) — drives layered colour "
         "gradients (e.g. upper=blue head, lower=gold trail).\n"
@@ -869,24 +956,21 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "burst time itself.\n"
         "\n"
         "STRUCTURE.\n"
-        "- effectSpec.version = 2, source = 'video_inferred', seed = any int.\n"
-        "- effectSpec.type chosen from shell, cake, candle, mine, comet, single_shot, rocket, "
-        "fountain, flame, combo, custom (cakes have many shots over time; choose 'shell' only "
+        "- effectSpec.version = 3, source = 'video_inferred', seed = any int.\n"
+        "- effectSpec.type chosen from shell, cake, mine, comet, single_shot, combo, custom "
+        "(cakes have many shots over time; choose 'shell' only "
         "for a single rising-then-bursting effect).\n"
-        "- shotSequence.shots: ONE entry per visible launch/break. Cakes, candles, fans, "
+        "- effectSpec.shell is required. Use family ∈ chrysanthemum, ghost, strobe, palm, ring, "
+        "crossette, floral, falling_leaves, willow, crackle, horsetail, peony, comet, mine, custom. "
+        "Include size, starDensity, color, secondColor when seen, glitter, glitterColor, pistil, "
+        "pistilColor, streamers, crackle/strobe/horsetail booleans, and smokeAmount.\n"
+        "- effectSpec.launch is required. Include fuseTimeSeconds, liftTimeSeconds, heightMeters, "
+        "panDegrees, tiltDegrees, tracerColor, sparkFrequency, sparkLifeMs, sparkSpeed, randomWobble.\n"
+        "- effectSpec.shots: ONE entry per visible launch/break. Cakes, fans, "
         "zippers, rows and volleys MUST be represented as multiple shots, not one giant burst. "
-        "Each shot needs index, timeOffsetSeconds, panDegrees, tiltDegrees, launchHeightMeters, "
-        "liftTimeSeconds, breakSpec.\n"
-        "- effectLayers MUST be a JSON ARRAY (not an object). Each array entry is one layer "
-        "object with required fields `id` (unique string) and `role` (one of primary_stars, "
-        "secondary_stars, micro_sparks, trail_sparks, glitter, strobe, crackle, smoke, flash, "
-        "falling_leaves, comets, embers), plus particleCount (40–2000), distribution, velocity, "
-        "lifetime, appearance.colorGradient, trail, blending and lod. Example shape: "
-        "`effectLayers: [{\"id\":\"primary\",\"role\":\"primary_stars\", ...}, "
-        "{\"id\":\"glitter\",\"role\":\"glitter\", ...}]`. Do NOT key layers by name "
-        "(e.g. `{primary_stars: {...}}`) — that will fail validation. Use the `regionColors` "
-        "(upper/middle/lower) to set colour gradients — e.g. upper=blue head, lower=gold trail.\n"
-        "- launch.tracerColor and liftFlashColor must come from observed launch-time chroma, not "
+        "Each shot needs index, timeOffsetSeconds, position {x,y,z}, panDegrees/tiltDegrees if "
+        "different from launch, scale, and seedOffset. Do not embed per-shot particle layers.\n"
+        "- launch.tracerColor must come from observed launch-time chroma, not "
         "white, when `peakColors` at the launch time has chroma.\n"
         "\n"
         "OBSERVATIONS. observations.observedEvents[].type ∈ {launch, mine, break, "
@@ -894,8 +978,8 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "needs timeSeconds, type, color (hex), confidence; estimatedHeight and description "
         "encouraged. Also include `unknowns`, `suggestedManualReviewFields`, `confidence`.\n"
         "\n"
-        "RANGES. Times within [0, durationSeconds]. heightMeters 6–180. "
-        "particleCount 40–2000 per layer.\n"
+        "RANGES. Times within [0, durationSeconds]. launch.heightMeters 6–180. "
+        "shell.size 0.2–8, starDensity 0.1–3.\n"
     )
 
     context = (

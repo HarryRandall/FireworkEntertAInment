@@ -916,23 +916,35 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     .select("media_asset_id")
     .eq("id", parsed.data.id)
     .maybeSingle();
-  const fireworkSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
-  const { data: firework, error: fireworkError } = await supabase
-    .from("firework_specifications")
+  const effectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
+  const effectSpec = spec.effectSpec;
+  const shotCount =
+    effectSpec.version === 3
+      ? effectSpec.shots.length
+      : effectSpec.shotSequence.shotCount;
+  const heightMeters =
+    effectSpec.version === 3
+      ? effectSpec.launch.heightMeters
+      : effectSpec.heightMeters;
+  const { data: effect, error: effectError } = await supabase
+    .from("effect_specs")
     .insert({
-      slug: fireworkSlug,
+      slug: effectSlug,
       name: parsed.data.name,
       description: spec.description || null,
-      sort_order: 100,
-      spec: spec.effectSpec as unknown as Json,
-      source_import_job_id: parsed.data.id,
-      source_media_asset_id: job?.media_asset_id ?? null,
-      review_status: "approved",
+      type: effectSpec.type,
+      duration_seconds: spec.durationSeconds,
+      shot_count: shotCount,
+      height_meters: heightMeters,
+      source: "video_inferred",
+      confidence: spec.confidence,
+      version: effectSpec.version,
+      spec_json: effectSpec as unknown as Json,
     })
     .select("id")
     .single();
-  if (fireworkError || !firework) {
-    console.error("[approveImportJobAction] firework insert failed:", fireworkError);
+  if (effectError || !effect) {
+    console.error("[approveImportJobAction] effect spec insert failed:", effectError);
     return;
   }
 
@@ -946,12 +958,12 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       firework_type: parsed.data.fireworkType || "Video reconstructed",
       duration_seconds: spec.durationSeconds,
       description: spec.description || null,
-      firework_specification_id: firework.id,
+      effect_spec_id: effect.id,
       source_table: "import_jobs",
       source_payload: {
         importJobId: parsed.data.id,
         confidence: spec.confidence,
-        generatedSpec: spec.effectSpec,
+        generatedSpec: effectSpec,
         observations: spec.observations ?? null,
         legacyRenderProjection: spec.renderSpec,
       } as Json,
@@ -969,7 +981,7 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       status: "complete",
       processing_progress: 100,
       approved_catalogue_product_id: product.id,
-      approved_firework_specification_id: firework.id,
+      approved_firework_specification_id: null,
       completed_at: new Date().toISOString(),
       error_message: null,
     })

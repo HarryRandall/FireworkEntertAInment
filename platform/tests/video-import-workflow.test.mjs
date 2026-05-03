@@ -43,9 +43,9 @@ test("container worker exists and calls OpenRouter JSON mode with schema validat
   assert.match(worker, /jsonschema/);
   assert.match(worker, /MAX_DURATION_SECONDS = 60/);
   assert.match(worker, /generated_spec/);
-  assert.match(worker, /FireworkEffectSpecV2/);
+  assert.match(worker, /FireworkEffectSpecV3/);
   assert.match(worker, /observations/);
-  assert.match(worker, /shotSequence/);
+  assert.match(worker, /effectSpec\.shots/);
   assert.match(worker, /libx264/);
   assert.match(worker, /normalizedPreview/);
 });

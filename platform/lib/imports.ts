@@ -15,6 +15,11 @@ import {
   type FireworkEffectSpecV2,
   type VideoInferenceObservation,
 } from "@/lib/fireworks/spec-v2";
+import {
+  FireworkEffectSpecV3Schema,
+  fireworkEffectSpecV3ToV2,
+  type FireworkEffectSpecV3,
+} from "@/lib/fireworks/spec-v3";
 
 export const IMPORT_VIDEO_BUCKET = "import-videos";
 export const MAX_IMPORT_VIDEO_SECONDS = 60;
@@ -96,7 +101,7 @@ export const ImportedFireworkSpecSchema = z
     durationSeconds: z.coerce.number().min(0.1).max(MAX_IMPORT_VIDEO_SECONDS),
     confidence: z.coerce.number().min(0).max(1).default(0.5),
     renderSpec: RenderSpecSchema.optional(),
-    effectSpec: FireworkEffectSpecV2Schema.optional(),
+    effectSpec: z.union([FireworkEffectSpecV3Schema, FireworkEffectSpecV2Schema]).optional(),
     observations: VideoInferenceObservationSchema.optional(),
     fieldConfidence: z.record(z.string(), z.number().min(0).max(1)).optional(),
   })
@@ -113,7 +118,10 @@ export const ImportedFireworkSpecSchema = z
         source: "video_inferred",
       });
     const renderSpec =
-      value.renderSpec ?? effectSpecV2ToLegacyRenderSpec(effectSpec);
+      value.renderSpec ??
+      effectSpecV2ToLegacyRenderSpec(
+        effectSpec.version === 3 ? fireworkEffectSpecV3ToV2(effectSpec) : effectSpec,
+      );
     return {
       ...value,
       renderSpec,
