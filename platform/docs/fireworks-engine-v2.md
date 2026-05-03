@@ -7,28 +7,28 @@
 Core modules live in `lib/fireworks`:
 
 - `spec-v2.ts`: TypeScript-first Zod schemas for `FireworkEffectSpecV2`, products, show cues, shot sequences, launches, breaks, particle layers, smoke, flash, render profiles, and video observations.
+- `spec-v3.ts`: CodePen-style standalone firework schema. It stores shell family, size, fuse/lift timing, palette, glitter, crackle, strobe, pistil, streamers, smoke, and reusable cue placement data.
 - `legacy-adapter.ts`: migrates old `FireworkRenderSpec` data into v2. `trailLength` becomes real trail seconds/segments, `secondaryBursts` become sub-breaks, and legacy cue timing is preserved.
-- `EffectCompiler.ts`: turns replay cues into deterministic launch/layer/flash/smoke events and emits shader attributes into pools.
+- `EffectCompiler.ts`: turns v3, v2, or legacy replay cues into deterministic launch/layer/flash/smoke events and emits shader attributes into pools.
 - `FireworksEngine.ts`: owns GPU-friendly draw systems and deterministic forward/scrub playback.
 - `ParticlePool.ts`, `GpuParticleSystem.ts`, `TrailSystem.ts`, `SmokeSystem.ts`: reusable typed-array-backed render systems.
-- `effectPresets.ts`: 24 validated v2 presets covering shells, mines, comets, cakes, zippers, W patterns, reloadable sequences, and finale volleys.
 
 ## Adding Effects
 
-Add new reusable effects in `lib/fireworks/effectPresets.ts` using `shellPreset`, `cakePreset`, or a new factory if the product needs a distinct structure. For product data from the database, store the full validated `FireworkEffectSpecV2` JSON in `effect_specs.spec_json` or the existing `firework_specifications.spec` compatibility column.
+Add new reusable effects in the database using `effect_specs.spec_json`. For local/manual seeding, start from `supabase/seed-codepen-fireworks-v3.sql`. The active library should not depend on hard-coded TypeScript presets.
 
-Use `shotSequence` for cakes, candles, fans, zippers, rows, and volleys. Do not fake these as one large burst. Each shot can override launch height, pan/tilt, mine-at-launch, break layers, colours, and seeds.
+Use v3 `shots` for cakes, fans, zippers, rows, and volleys. Do not fake these as one large burst. Shows can reuse one effect many times by adding multiple cue rows with different `time_seconds`, `position_json`, `rotation_json`, `scale`, and `effect_spec_id`.
 
 ## Database Model
 
-Migration `0009_firework_effect_spec_v2.sql` adds:
+Migration `0009_firework_effect_spec_v2.sql` adds the normalized effect tables, and `0010_effect_specs_v3_catalogue.sql` wires v3 catalogue/product references:
 
 - `products`: queryable product metadata and default effect link.
-- `effect_specs`: queryable v2 spec headers plus flexible `spec_json`.
+- `effect_specs`: queryable spec headers plus flexible versioned `spec_json`.
 - `show_cues` v2 columns: `effect_spec_id`, `firework_product_id`, spatial position/rotation JSON, overrides, track/layer, lock, and seed override.
 - `inferred_video_observations`: stores video observation JSON linked to an effect spec.
 
-The existing `firework_specifications` path remains supported. Server parsing detects `version: 2`; otherwise it returns the old legacy spec and the renderer migrates it at runtime.
+The existing `firework_specifications` path remains supported. Server parsing detects `version: 3` and `version: 2`; otherwise it returns the old legacy spec and the renderer migrates it at runtime.
 
 ## Video/LLM Ingestion
 
@@ -40,7 +40,7 @@ The worker should output structured inference, not frames or per-frame drawing i
   "description": "Short product/effect summary",
   "durationSeconds": 8.5,
   "confidence": 0.78,
-  "effectSpec": { "version": 2 },
+  "effectSpec": { "version": 3 },
   "observations": {
     "observedEvents": [],
     "inferredShotSequence": {},
@@ -52,7 +52,7 @@ The worker should output structured inference, not frames or per-frame drawing i
 }
 ```
 
-`lib/imports.ts` accepts both new v2 envelopes and old legacy `renderSpec` envelopes. Old outputs are migrated for preview; approved imports now publish the v2 `effectSpec`.
+`lib/imports.ts` accepts v3, v2, and old legacy `renderSpec` envelopes. Old outputs are migrated for preview; approved imports now publish the versioned `effectSpec` into `effect_specs`.
 
 ## Quality And Performance
 

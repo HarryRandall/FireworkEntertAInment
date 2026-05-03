@@ -47,9 +47,6 @@ const effectCompiler = loadTsModule("lib/fireworks/EffectCompiler.ts", {
   "@/lib/fireworks/random": random,
   "@/lib/fireworks/legacy-adapter": legacyAdapter,
 });
-const presets = loadTsModule("lib/fireworks/effectPresets.ts", {
-  "@/lib/fireworks/spec-v2": specV2,
-});
 
 test("FireworkEffectSpecV2 Zod schema validates fixture specs and observations", () => {
   const fixture = JSON.parse(
@@ -258,22 +255,6 @@ test("scrub rebuilds select the same active events for the same elapsed time", (
     .map((event) => event.id);
 
   assert.deepEqual(activeA, activeB);
-});
-
-test("preset library exposes at least 20 validated v2 effects including cakes", () => {
-  assert.equal(presets.fireworkEffectPresetsV2.length >= 20, true);
-  assert.equal(
-    presets.fireworkEffectPresetsV2.some(
-      (preset) => preset.name === "Zipper Cake" && preset.shotSequence.shotCount > 1,
-    ),
-    true,
-  );
-  assert.equal(
-    presets.fireworkEffectPresetsV2.some(
-      (preset) => preset.name === "Finale Volley" && preset.type === "cake",
-    ),
-    true,
-  );
 });
 
 test("v2 database migration adds normalized tables and 20+ preset seeds", () => {
