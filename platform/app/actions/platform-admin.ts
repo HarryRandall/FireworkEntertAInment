@@ -846,6 +846,7 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       description: spec.description || null,
       type: fireworkSpec.shellType,
       duration_seconds: spec.durationSeconds,
+      height_meters: spec.heightMeters ?? null,
       shot_count: 1,
       source: "video_inferred",
       confidence: spec.confidence,

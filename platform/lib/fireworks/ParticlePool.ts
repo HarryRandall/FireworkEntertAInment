@@ -15,10 +15,13 @@ export type ParticleWrite = {
   alphaMid: number;
   alphaEnd: number;
   drag: number;
+  colorTransition: number;
   twinkleFrequency: number;
   twinkleAmount: number;
   strobeFrequency: number;
   strobeDutyCycle: number;
+  spinRadius: number;
+  spinSpeed: number;
   emissiveIntensity: number;
   alphaCurve: number;
   seed: number;
@@ -41,6 +44,8 @@ export class ParticlePool {
   private readonly alpha: Float32Array;
   private readonly physics: Float32Array;
   private readonly flicker: Float32Array;
+  private readonly motion: Float32Array;
+  private readonly transition: Float32Array;
   private readonly seed: Float32Array;
 
   private readonly attributes: THREE.BufferAttribute[];
@@ -58,6 +63,8 @@ export class ParticlePool {
     this.alpha = new Float32Array(capacity * 4);
     this.physics = new Float32Array(capacity * 2);
     this.flicker = new Float32Array(capacity * 4);
+    this.motion = new Float32Array(capacity * 2);
+    this.transition = new Float32Array(capacity);
     this.seed = new Float32Array(capacity);
 
     this.geometry = new THREE.BufferGeometry();
@@ -72,6 +79,8 @@ export class ParticlePool {
     const alpha = new THREE.BufferAttribute(this.alpha, 4);
     const physics = new THREE.BufferAttribute(this.physics, 2);
     const flicker = new THREE.BufferAttribute(this.flicker, 4);
+    const motion = new THREE.BufferAttribute(this.motion, 2);
+    const transition = new THREE.BufferAttribute(this.transition, 1);
     const seed = new THREE.BufferAttribute(this.seed, 1);
 
     this.geometry.setAttribute("position", position);
@@ -85,6 +94,8 @@ export class ParticlePool {
     this.geometry.setAttribute("aAlpha", alpha);
     this.geometry.setAttribute("aPhysics", physics);
     this.geometry.setAttribute("aFlicker", flicker);
+    this.geometry.setAttribute("aMotion", motion);
+    this.geometry.setAttribute("aTransition", transition);
     this.geometry.setAttribute("aSeed", seed);
     this.geometry.setDrawRange(0, 0);
 
@@ -100,6 +111,8 @@ export class ParticlePool {
       alpha,
       physics,
       flicker,
+      motion,
+      transition,
       seed,
     ];
   }
@@ -136,6 +149,9 @@ export class ParticlePool {
     this.flicker[i * 4 + 1] = particle.twinkleAmount;
     this.flicker[i * 4 + 2] = particle.strobeFrequency;
     this.flicker[i * 4 + 3] = particle.strobeDutyCycle;
+    this.motion[i * 2 + 0] = particle.spinRadius;
+    this.motion[i * 2 + 1] = particle.spinSpeed;
+    this.transition[i] = particle.colorTransition;
     this.seed[i] = particle.seed;
   }
 

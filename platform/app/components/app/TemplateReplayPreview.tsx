@@ -14,6 +14,14 @@ type TemplateReplayPreviewProps = {
   isCardHovered?: boolean;
 };
 
+const FIREWORK_SLUG_ALIASES: Record<string, string> = {
+  chrysanthemum: "gold-chrysanthemum",
+  comet: "comet-gold",
+  finale_barrage: "white-strobe",
+  peony: "gold-chrysanthemum",
+  willow: "willow-gold",
+};
+
 function posterTimeFor(template: ShowTemplate): number {
   if (template.previewCues.length === 0) return 0;
   let hash = 0;
@@ -36,7 +44,9 @@ function toReplayCue(
   index: number,
   specBySlug: Map<string, FireworkSpecification>,
 ): ReplayCue | null {
-  const firework = specBySlug.get(cue.fireworkSlug);
+  const firework =
+    specBySlug.get(cue.fireworkSlug) ??
+    specBySlug.get(FIREWORK_SLUG_ALIASES[cue.fireworkSlug] ?? "");
   if (!firework) return null;
   return {
     id: `${cue.fireworkSlug}-${cue.timeSeconds}-${index}`,

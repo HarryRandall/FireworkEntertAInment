@@ -12,9 +12,9 @@ export class SmokeSystem {
       blending: THREE.NormalBlending,
       depthWrite: false,
       renderOrder: 8,
-      pointScale: 1.8,
-      exposure: 0.45,
-      softness: 0.18,
+      pointScale: 2.1,
+      exposure: 0.5,
+      softness: 0.28,
     });
     this.object = this.particles.points;
   }

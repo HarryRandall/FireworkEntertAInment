@@ -65,6 +65,8 @@ type EffectSpecProjection = Pick<
   | "slug"
   | "name"
   | "description"
+  | "duration_seconds"
+  | "height_meters"
   | "spec_json"
 >;
 type ReplayCueRow = ShowCueProjection & {
@@ -83,7 +85,7 @@ const SHOW_SELECT =
 const SHOW_CUE_SELECT =
   "id, position, time_seconds, description, effect_spec_id, position_json, rotation_json, scale, overrides_json, seed_override";
 const EFFECT_SPEC_SELECT =
-  "id, slug, name, description, spec_json";
+  "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
   "id, position, name, qty, price_cents, firework_part_number";
 const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, effect_specs (${EFFECT_SPEC_SELECT})`;
@@ -164,6 +166,8 @@ function mapEffectSpecification(
     name: row.name,
     description: row.description,
     sortOrder: index,
+    durationSeconds: row.duration_seconds,
+    heightMeters: row.height_meters,
     spec: safeParseFireworkSpec(row.spec_json),
   };
 }

@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -25,11 +26,11 @@ BUCKET = "import-videos"
 MAX_DURATION_SECONDS = 60.0
 WORKER_VERSION = os.getenv("WORKER_VERSION", "firework-import-worker/v1")
 POLL_SECONDS = int(os.getenv("POLL_SECONDS", "8"))
-DEFAULT_MODEL = os.getenv("DEFAULT_OPENROUTER_MODEL", "google/gemini-2.5-flash-lite")
+DEFAULT_MODEL = os.getenv("DEFAULT_OPENROUTER_MODEL", "openai/gpt-4.1")
 
 
-# Validated in-process after the model returns JSON. OpenRouter+Gemini rejects rich
-# json_schema constraints ("too many states"); we use response_format json_object instead.
+# Validated in-process after the model returns JSON. OpenRouter JSON-schema support
+# varies by model, so we use response_format json_object and validate locally.
 # The renderer owns visual quality: the model infers structured FireworkEffectSpecV3
 # parameters and observations, never per-frame drawing instructions.
 SPEC_SCHEMA = {
@@ -406,7 +407,7 @@ def _coarse_brightness_curve(capture, duration, samples_per_second=12):
     return out
 
 
-def _peak_times(curve, max_peaks=14, min_separation_seconds=0.18):
+def _peak_times(curve, max_peaks=80, min_separation_seconds=0.18):
     if len(curve) < 3:
         return [t for t, _ in curve]
     values = np.array([c[1] for c in curve], dtype=np.float32)
@@ -420,6 +421,15 @@ def _peak_times(curve, max_peaks=14, min_separation_seconds=0.18):
     indices = find_local_peaks(norm.tolist(), threshold, min_distance_indices)
     indices = sorted(indices, key=lambda i: norm[i], reverse=True)[:max_peaks]
     return sorted({round(float(times[i]), 3) for i in indices})
+
+
+def _sample_evenly(values, limit):
+    if limit <= 0:
+        return []
+    if len(values) <= limit:
+        return values
+    indices = np.linspace(0, len(values) - 1, limit)
+    return [values[int(round(i))] for i in indices]
 
 
 def _build_timeline(peak_times, frames):
@@ -499,13 +509,31 @@ def analyse_frames(path, duration):
         # Coarse brightness scan first so we can spend our detail-sample budget at the bursts,
         # not just at uniform-spaced timestamps that often miss the actual flash.
         coarse = _coarse_brightness_curve(capture, duration, samples_per_second=12)
-        peak_times = _peak_times(coarse, max_peaks=14)
+        peak_times = _peak_times(coarse, max_peaks=min(80, max(14, int(duration * 2.2))))
 
-        uniform_count = min(18, max(8, int(duration * 2.5)))
+        uniform_count = min(48, max(8, int(duration * 1.6)))
         uniform_times = np.linspace(0, max(0.01, duration - 0.05), uniform_count).tolist()
-        all_times = sorted({round(t, 3) for t in [*uniform_times, *peak_times]})
-        # Cap detail sampling at 28 frames so worker stays cheap on long uploads.
-        all_times = all_times[:28]
+        peak_candidates = sorted({round(float(t), 3) for t in peak_times})
+        uniform_candidates = sorted(
+            {
+                round(float(t), 3)
+                for t in uniform_times
+                if all(abs(float(t) - p) > 0.08 for p in peak_candidates)
+            }
+        )
+        # Keep all detected peaks when possible, then fill the remaining detail budget
+        # evenly through the whole clip. This stops long multi-shot cakes from only
+        # sampling their first few seconds.
+        detail_cap = min(90, max(32, int(duration * 1.6)))
+        if len(peak_candidates) >= detail_cap:
+            all_times = _sample_evenly(peak_candidates, detail_cap)
+        else:
+            all_times = sorted(
+                {
+                    *peak_candidates,
+                    *_sample_evenly(uniform_candidates, detail_cap - len(peak_candidates)),
+                }
+            )
 
         frames = []
         for idx, seconds in enumerate(all_times):
@@ -652,6 +680,62 @@ def _coerce_enum(value, allowed, fallback):
         if mapped in allowed:
             return mapped
     return fallback
+
+
+_TEXT_COLOR_MAP = [
+    ("red", "#FF0043"),
+    ("green", "#14FC56"),
+    ("blue", "#1E7FFF"),
+    ("purple", "#E60AFF"),
+    ("violet", "#E60AFF"),
+    ("gold", "#FFBF36"),
+    ("golden", "#FFBF36"),
+    ("silver", "#FFFFFF"),
+    ("white", "#FFFFFF"),
+]
+
+
+def _is_hex_color(value):
+    return isinstance(value, str) and re.match(r"^#[0-9a-fA-F]{6}$", value) is not None
+
+
+def _dedupe_colors(values):
+    out = []
+    seen = set()
+    for value in values or []:
+        if not _is_hex_color(value):
+            continue
+        color = value.upper()
+        if color in seen:
+            continue
+        seen.add(color)
+        out.append(color)
+    return out
+
+
+def _palette_from_text(*parts):
+    text = " ".join(str(part or "") for part in parts).lower()
+    colors = []
+    for word, color in _TEXT_COLOR_MAP:
+        if re.search(rf"\b{re.escape(word)}\b", text):
+            colors.append(color)
+    return _dedupe_colors(colors)
+
+
+def _is_white_color(value):
+    if not _is_hex_color(value):
+        return False
+    r = int(value[1:3], 16)
+    g = int(value[3:5], 16)
+    b = int(value[5:7], 16)
+    return r > 224 and g > 224 and b > 224
+
+
+def _first_non_white(colors):
+    for color in colors:
+        if not _is_white_color(color):
+            return color
+    return colors[0] if colors else None
 
 
 _LAYER_ROLES = {
@@ -802,7 +886,14 @@ def normalize_import_spec(spec, source_name, duration):
     effect_spec["metadata"] = effect_spec.get("metadata") if isinstance(effect_spec.get("metadata"), dict) else {}
 
     color_palette = effect_spec.get("colorPalette")
-    if not isinstance(color_palette, list) or not color_palette:
+    color_palette = color_palette if isinstance(color_palette, list) else []
+    color_palette = _dedupe_colors(
+        [
+            *color_palette,
+            *_palette_from_text(source_name, normalized["name"], normalized["description"]),
+        ]
+    )
+    if not color_palette:
         color_palette = ["#FFFFFF"]
     effect_spec["colorPalette"] = color_palette
 
@@ -817,7 +908,31 @@ def normalize_import_spec(spec, source_name, duration):
         shell["family"] = _coerce_enum(shell.get("family"), _SHELL_FAMILIES, _infer_shell_family(effect_spec, observations))
         shell["size"] = float(shell.get("size") or 3)
         shell["starDensity"] = float(shell.get("starDensity") or 1)
-        shell["color"] = shell.get("color") or color_palette[0]
+        shell_palette = _dedupe_colors(
+            [
+                *(shell.get("colorPalette") if isinstance(shell.get("colorPalette"), list) else []),
+                shell.get("outerColor"),
+                shell.get("color"),
+                shell.get("secondColor"),
+                shell.get("innerColor"),
+                shell.get("pistilColor"),
+                *color_palette,
+            ]
+        )
+        if not shell_palette:
+            shell_palette = color_palette
+        shell["colorPalette"] = shell_palette
+        shell_color = shell.get("outerColor") or shell.get("color")
+        shell["color"] = shell_color if _is_hex_color(shell_color) else _first_non_white(shell_palette)
+        if not shell.get("secondColor"):
+            second = next((color for color in shell_palette if color != shell["color"] and not _is_white_color(color)), None)
+            if second:
+                shell["secondColor"] = second
+        if not shell.get("pistilColor"):
+            white = next((color for color in shell_palette if _is_white_color(color)), None)
+            if white and any(not _is_white_color(color) for color in shell_palette):
+                shell["pistil"] = True
+                shell["pistilColor"] = white
         shell["glitter"] = _coerce_enum(shell.get("glitter"), ["none", "light", "medium", "heavy", "thick", "streamer", "willow"], "light")
         shell["smokeAmount"] = float(shell.get("smokeAmount") or 0.28)
         effect_spec["shell"] = shell
@@ -830,8 +945,13 @@ def normalize_import_spec(spec, source_name, duration):
         launch["startPosition"] = launch.get("startPosition") if isinstance(launch.get("startPosition"), dict) else {"x": 0, "y": 0, "z": 0}
         launch["panDegrees"] = float(launch.get("panDegrees") or 0)
         launch["tiltDegrees"] = float(launch.get("tiltDegrees") or 90)
-        launch["tracerColor"] = launch.get("tracerColor") or color_palette[0]
+        launch_palette = _palette_from_text(source_name, "tail", launch.get("tailType"), launch.get("description"))
+        launch["tracerColor"] = launch.get("tracerColor") or (launch_palette[0] if launch_palette else color_palette[0])
+        if not launch.get("tailColor"):
+            launch["tailColor"] = launch["tracerColor"]
         effect_spec["launch"] = launch
+        effect_spec["heightMeters"] = launch["heightMeters"]
+        normalized["heightMeters"] = launch["heightMeters"]
 
         shots = effect_spec.get("shots")
         if not isinstance(shots, list) or not shots:
@@ -840,6 +960,20 @@ def normalize_import_spec(spec, source_name, duration):
         for index, shot in enumerate(shots):
             if not isinstance(shot, dict):
                 shot = {}
+            shot_palette = _dedupe_colors(
+                [
+                    *(shot.get("colorPalette") if isinstance(shot.get("colorPalette"), list) else []),
+                    *(shot.get("colors") if isinstance(shot.get("colors"), list) else []),
+                    shot.get("color"),
+                    *color_palette,
+                ]
+            )
+            burst_time = shot.get("burstTimeSeconds")
+            if burst_time is not None and not shot.get("timeOffsetSeconds"):
+                try:
+                    shot["timeOffsetSeconds"] = max(0.0, float(burst_time) - launch["liftTimeSeconds"])
+                except (TypeError, ValueError):
+                    pass
             normalized_shots.append({
                 **shot,
                 "index": int(shot.get("index", index)),
@@ -847,19 +981,29 @@ def normalize_import_spec(spec, source_name, duration):
                 "position": shot.get("position") if isinstance(shot.get("position"), dict) else {"x": 0, "y": 0, "z": 0},
                 "scale": float(shot.get("scale") or 1),
                 "seedOffset": int(shot.get("seedOffset") or index * 101),
+                "colorPalette": shot_palette,
+                "color": shot.get("color") or _first_non_white(shot_palette),
+                "tailColor": shot.get("tailColor") or launch.get("tailColor"),
+                "liftTimeSeconds": float(shot.get("liftTimeSeconds") or launch["liftTimeSeconds"]),
+                "heightMeters": float(shot.get("heightMeters") or launch["heightMeters"]),
             })
         effect_spec["shots"] = normalized_shots
         effect_spec["metadata"]["normalizedAs"] = "FireworkEffectSpecV3"
         normalized["effectSpec"] = effect_spec
     else:
         effect_spec["heightMeters"] = float(effect_spec.get("heightMeters") or 60)
+        normalized["heightMeters"] = effect_spec["heightMeters"]
 
     shot_sequence = effect_spec.get("shotSequence")
     if not isinstance(shot_sequence, dict):
         shot_sequence = {}
-    shots = shot_sequence.get("shots")
+    shots = (
+        effect_spec.get("shots")
+        if effect_spec["version"] == 3 and isinstance(effect_spec.get("shots"), list)
+        else shot_sequence.get("shots")
+    )
     if not isinstance(shots, list):
-        shots = effect_spec.get("shots") if effect_spec["version"] == 3 and isinstance(effect_spec.get("shots"), list) else []
+        shots = []
     shot_count = int(shot_sequence.get("shotCount") or max(1, len(shots)))
     shot_sequence["shotCount"] = max(1, shot_count)
     shot_sequence["durationSeconds"] = float(shot_sequence.get("durationSeconds") or effect_spec["durationSeconds"])
@@ -946,10 +1090,19 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "gradients (e.g. upper=blue head, lower=gold trail).\n"
         "  3. `globalPalette` — weighted top hues across the whole show; use it to populate the "
         "spec-level `colorPalette` (3–6 hues).\n"
+        "  4. Product/source name colour words are authoritative when the image is clipped or "
+        "dim (e.g. 'Silver tail to Red' means silver/white launch tail and red burst; "
+        "'Red Green and Blue' means all three burst colours must appear).\n"
         "Do NOT default to white or yellow. White is only allowed when a timeline entry has "
         "`flashIntensity > 0.5` AND its `colors` array is empty (a true white strobe). If a "
         "timeline entry's colors include '#C9302F' or '#3FA7FF', the corresponding break event "
         "and break colorPalette MUST list that exact hue — never substitute '#FFFFFF'.\n"
+        "For multicolour shells: use effectSpec.colorPalette and each shot.colorPalette. "
+        "Set shell.color/outerColor to the OUTER or dominant non-white colour, set shell.pistil=true "
+        "and shell.pistilColor/innerColor for a white or coloured centre, and set shell.secondColor "
+        "only when there is a visible secondary outer colour or a colour change over time. "
+        "A red outside / white inside shell is NOT white: shell.color='#FF0043', "
+        "shell.pistil=true, shell.pistilColor='#FFFFFF', colorPalette includes both.\n"
         "\n"
         "AUDIO. `audio.onsets` and `audio.energyPeaks` are launch/report cues. Use them to "
         "place launches before the matching timeline burst (0.6–1.4s lead) and reports at the "
@@ -962,14 +1115,18 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "for a single rising-then-bursting effect).\n"
         "- effectSpec.shell is required. Use family ∈ chrysanthemum, ghost, strobe, palm, ring, "
         "crossette, floral, falling_leaves, willow, crackle, horsetail, peony, comet, mine, custom. "
-        "Include size, starDensity, color, secondColor when seen, glitter, glitterColor, pistil, "
-        "pistilColor, streamers, crackle/strobe/horsetail booleans, and smokeAmount.\n"
+        "Include size, starDensity, color, outerColor, innerColor, colorPalette, secondColor when seen, "
+        "glitter, glitterColor, pistil, pistilColor, streamers, crackle/strobe/horsetail booleans, "
+        "tailType when the lift has a flare/silver/gold/crackle trail, and smokeAmount.\n"
         "- effectSpec.launch is required. Include fuseTimeSeconds, liftTimeSeconds, heightMeters, "
-        "panDegrees, tiltDegrees, tracerColor, sparkFrequency, sparkLifeMs, sparkSpeed, randomWobble.\n"
+        "panDegrees, tiltDegrees, tracerColor, tailColor, tailType, sparkFrequency, sparkLifeMs, "
+        "sparkSpeed, randomWobble. Silver tail means tracerColor/tailColor '#FFFFFF' and a streamer tail.\n"
         "- effectSpec.shots: ONE entry per visible launch/break. Cakes, fans, "
         "zippers, rows and volleys MUST be represented as multiple shots, not one giant burst. "
-        "Each shot needs index, timeOffsetSeconds, position {x,y,z}, panDegrees/tiltDegrees if "
-        "different from launch, scale, and seedOffset. Do not embed per-shot particle layers.\n"
+        "Each shot needs index, timeOffsetSeconds (the launch start time, so burst time = "
+        "timeOffsetSeconds + liftTimeSeconds), position {x,y,z}, panDegrees/tiltDegrees if "
+        "different from launch, scale, seedOffset, colorPalette, color, tailColor, heightMeters. "
+        "Do not embed per-shot particle layers.\n"
         "- launch.tracerColor must come from observed launch-time chroma, not "
         "white, when `peakColors` at the launch time has chroma.\n"
         "\n"
@@ -978,8 +1135,13 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "needs timeSeconds, type, color (hex), confidence; estimatedHeight and description "
         "encouraged. Also include `unknowns`, `suggestedManualReviewFields`, `confidence`.\n"
         "\n"
-        "RANGES. Times within [0, durationSeconds]. launch.heightMeters 6–180. "
-        "shell.size 0.2–8, starDensity 0.1–3.\n"
+        "RANGES. Times within [0, durationSeconds]. launch.heightMeters 6–120 for these preview clips "
+        "(prefer 35–80 unless the frame clearly reaches very high). launch.liftTimeSeconds 0.7–1.8. "
+        "shell.size 0.2–8, starDensity 0.1–3, shell duration/star life should preserve long fades and trails.\n"
+        "\n"
+        "BAD OUTPUT TO AVOID: a generic single gold chrysanthemum like "
+        "{\"shellType\":\"crysanthemum\",\"spreadSize\":4.6,\"starLifeMs\":1400,\"color\":\"#ffbf36\",\"glitter\":\"light\"}. "
+        "That is a fallback, not a reconstruction.\n"
     )
 
     context = (

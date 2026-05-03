@@ -8,6 +8,8 @@ attribute vec3 aColorEnd;
 attribute vec4 aAlpha;
 attribute vec2 aPhysics;
 attribute vec4 aFlicker;
+attribute vec2 aMotion;
+attribute float aTransition;
 attribute float aSeed;
 
 uniform float uTime;
@@ -21,6 +23,7 @@ varying vec3 vColorEnd;
 varying vec4 vAlpha;
 varying vec4 vFlicker;
 varying float vAgeNorm;
+varying float vTransition;
 varying float vSeed;
 varying float vEmissive;
 
@@ -45,11 +48,14 @@ void main() {
     sin(age * 2.1 + aSeed * 7.7),
     cos(age * 1.9 + aSeed * 11.3)
   ) * hash11(aSeed + 2.0) * 0.035;
+  float spinPhase = age * aMotion.y + aSeed * 19.17;
+  vec3 spin = vec3(sin(spinPhase), 0.0, cos(spinPhase)) * aMotion.x;
   vec3 worldPosition = position
     + aVelocity * F
     + aAcceleration * (age - F) / k
     + uWind * age
-    + curl * age;
+    + curl * age
+    + spin * smoothstep(0.0, 0.08, age);
 
   vec4 mvPosition = modelViewMatrix * vec4(worldPosition, 1.0);
   gl_Position = projectionMatrix * mvPosition;
@@ -58,8 +64,8 @@ void main() {
   size *= 1.0 + sin(uTime * aFlicker.x + aSeed * 19.17) * aFlicker.y;
   // Project: ~size pixels at 1m with pixelRatio=1. Cap to avoid giant blobs when the
   // camera is close — large soft sprites read as a single white disc otherwise.
-  float projected = size * uPointScale * uPixelRatio * (60.0 / max(1.0, -mvPosition.z));
-  gl_PointSize = max(0.0, visible * min(projected, 48.0 * uPixelRatio));
+  float projected = size * uPointScale * uPixelRatio * (72.0 / max(1.0, -mvPosition.z));
+  gl_PointSize = max(0.0, visible * min(projected, 86.0 * uPixelRatio));
 
   vColorStart = aColorStart;
   vColorMid = aColorMid;
@@ -67,6 +73,7 @@ void main() {
   vAlpha = aAlpha;
   vFlicker = aFlicker;
   vAgeNorm = t;
+  vTransition = aTransition;
   vSeed = aSeed;
   vEmissive = aPhysics.y;
 }
