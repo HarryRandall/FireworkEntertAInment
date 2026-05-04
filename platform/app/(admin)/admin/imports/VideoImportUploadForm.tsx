@@ -270,6 +270,7 @@ export function VideoImportUploadForm() {
       <Button
         type="submit"
         size="sm"
+        className="self-start"
         disabled={Boolean(error) || uploading || finalizing}
         loading={uploading || finalizing}
       >

@@ -31,11 +31,8 @@ export default async function DashboardPage() {
   const shows = await listShowsForCurrentUser();
 
   return (
-    <div className="space-y-12">
-      <AppPageHeader
-        title="Your shows"
-        description="Manage your choreographed pyrotechnic displays."
-      />
+    <div className="space-y-8">
+      <AppPageHeader title="Your shows" />
 
       <div className="flex justify-start sm:justify-end">
         <Button href="/shows/new" prefetch={false}>

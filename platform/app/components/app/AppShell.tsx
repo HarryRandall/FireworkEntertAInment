@@ -188,7 +188,7 @@ export function AppShell({
           </Container>
         </header>
 
-        <main className="pt-24 pb-16 lg:pt-10">
+        <main className="pt-0 pb-16">
           <Container width={containerWidth}>{children}</Container>
         </main>
 
