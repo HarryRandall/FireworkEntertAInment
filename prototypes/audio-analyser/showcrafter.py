@@ -28,6 +28,13 @@ SCHEMA_VERSION = "1.1.0"
 ANCHOR_PRE_SEC = 3.0
 ANCHOR_POST_SEC = 4.0
 
+# Max time gap (seconds) between a build-up peak and the final climax for
+# that build-up to count as the lead-in when computing finale_window.start.
+# Build-ups and key_moments come from find_peaks calls with different
+# parameters and can disagree by a couple of frames on the same musical
+# event, so a small tolerance is needed.
+FINALE_BUILDUP_TOLERANCE_SEC = 3.0
+
 STYLE_DIMENSIONS = (
     "boldness",
     "elegance",
@@ -1096,11 +1103,15 @@ def compute_derived_features(result: dict) -> dict:
     """
     Cheap, deterministic derived fields recommended by `llm-harness.md`.
     These reduce reasoning load on the downstream choreography model.
+
+    Defensive: this function does not assume `key_moments` or `buildups`
+    arrive in time-sorted order. Both are sorted locally before use so
+    the output stays correct even if upstream construction order changes.
     """
     sections = result["sections"]
     duration = float(result["duration_seconds"])
-    key_moments = result["key_moments"]
-    buildups = result["buildups"]
+    key_moments = sorted(result["key_moments"], key=lambda m: m["time"])
+    buildups = sorted(result["buildups"], key=lambda bu: bu["peak"])
 
     if not sections:
         return {
@@ -1121,8 +1132,29 @@ def compute_derived_features(result: dict) -> dict:
 
     finale_window = None
     if last_climax_t is not None:
+        # Expand the window backwards to include the lead-in into the
+        # final climax. Prefer a build-up whose ramp peaks near the
+        # climax (within FINALE_BUILDUP_TOLERANCE_SEC); otherwise fall
+        # back to the start of the section that contains the climax.
+        # Without this, finale_window starts at the climax instant and
+        # gives the downstream LLM no room to escalate into it.
+        finale_start = float(last_climax_t)
+        leading_buildup = next(
+            (
+                bu for bu in reversed(buildups)
+                if abs(bu["peak"] - last_climax_t) <= FINALE_BUILDUP_TOLERANCE_SEC
+            ),
+            None,
+        )
+        if leading_buildup is not None:
+            finale_start = float(leading_buildup["start"])
+        else:
+            for s in sections:
+                if s["start"] <= last_climax_t <= s["end"]:
+                    finale_start = float(s["start"])
+                    break
         finale_window = {
-            "start": round(float(last_climax_t), 2),
+            "start": round(finale_start, 2),
             "end": round(duration, 2),
         }
 
