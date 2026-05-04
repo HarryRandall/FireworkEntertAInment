@@ -21,6 +21,7 @@ export type Database = {
           description: string | null
           duration_seconds: number | null
           effect_spec_id: string | null
+          firework_subtype: string | null
           firework_type: string | null
           id: string
           manufacturer: string | null
@@ -36,6 +37,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effect_spec_id?: string | null
+          firework_subtype?: string | null
           firework_type?: string | null
           id?: string
           manufacturer?: string | null
@@ -51,6 +53,7 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effect_spec_id?: string | null
+          firework_subtype?: string | null
           firework_type?: string | null
           id?: string
           manufacturer?: string | null
@@ -69,6 +72,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          firework_subtype: string | null
+          firework_type: string | null
+          id: string
+          manufacturer: string | null
+          name: string
+          part_number: string
+          source_payload: Json | null
+          source_table: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          firework_subtype?: string | null
+          firework_type?: string | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          part_number: string
+          source_payload?: Json | null
+          source_table?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          firework_subtype?: string | null
+          firework_type?: string | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          part_number?: string
+          source_payload?: Json | null
+          source_table?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       effect_specs: {
         Row: {
@@ -752,7 +803,7 @@ export type Database = {
             foreignKeyName: "show_cues_firework_product_id_fkey"
             columns: ["firework_product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "catalogue_products"
             referencedColumns: ["id"]
           },
           {
@@ -945,7 +996,7 @@ export type Database = {
             foreignKeyName: "supplier_inventory_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
