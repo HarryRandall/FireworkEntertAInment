@@ -1,156 +1,153 @@
 ---
 notion-url: https://www.notion.so/Day-Overview-27-04-34fcd8a5bf08819fac2cc31aaed3ede5
-title: "Day Overview (27/04)"
+title: Day Overview (27/04)
 from_notion: https://www.notion.so/Day-Overview-27-04-34fcd8a5bf08819fac2cc31aaed3ede5
 author: From Notion
-last_edited_time: '2026-04-27T06:53:00.000Z'
+last_edited_time: '2026-05-04 05:37:00.000'
+date: '2026-04-27 06:09:00.000'
 ---
-> **Scrum 2 (Sprint 2)** · 27 April 2026
-  Mid-sprint catch-up after the ANZAC Day / Easter gap. Building on the design-system + route-group foundation from [Scrum 1](https://www.notion.so/34ccd8a5bf0881b395c3cd41a62841cf), Harry landed real Supabase auth, RLS-scoped schema, end-to-end live-data wiring, and a polished marketing landing. Heading into the **4 May** stakeholder checkpoint with an authenticated demo path.
-
-
 ---
-
 
 ## What We've Done
 
-| Theme | Deliverable | Owner | Linear | Evidence |
-| ---- | ---- | ---- | ---- | ---- |
-| Platform / auth | Real Supabase auth end-to-end — email/password login + signup, identifier-first flow, OAuth callback route, password reset flow, and a `proxy.ts` that gates protected routes and redirects authed users away from `/login` and `/signup` | Harry | [FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-56](https://linear.app/fireworkentertainment/issue/FIR-56/implement-supabase-authentication-flow) | [PR #96](https://github.com/HarryRandall/FireworkEntertAInment/pull/96), [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) |
-| Platform / database | Supabase migrations for `profiles`, `shows`, `show_cues`, `shopping_list_items` with RLS scoped to `auth.uid()`, an `on_auth_user_created` profile trigger, and a private `audio` storage bucket with per-user RLS policies. Generated typed Database client and applied to client/server helpers | Harry | [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase) | [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) |
-| Platform / live data | Replaced hard-coded `SHOWS` demo data with server-only Supabase queries on dashboard, show detail, timeline, shopping list, show guide, and preview. `/shows/new` server action validates input, uploads audio to the private bucket, generates a slug, inserts the row | Harry | [FIR-57](https://linear.app/fireworkentertainment/issue/FIR-57/connect-platform-ui-to-live-database-data) | [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) |
-| Marketing site | Rebuilt `/` with a 3D WebGL hero (react-three-fiber), light theme + dark toggle, animated stats strip, interactive Cloudflare-style stepper (Choose song / Set preferences / Get show), and a stylised Australia VendorNetwork map. Cleaner navbar CTAs and a four-column footer | Harry | — | [PR #94](https://github.com/HarryRandall/FireworkEntertAInment/pull/94), commits `65f8186` → `862fa3f` |
-| Polish / DX | Branded `/not-found` page; fixed Vercel root-directory build by moving the app into `platform/` with a matching `vercel.json`; suppressed THREE.Clock deprecation warning; tightened login/signup layout (max-width cap, fixed left panel, pointer cursors) | Harry | — | [PR #95](https://github.com/HarryRandall/FireworkEntertAInment/pull/95), [PR #98](https://github.com/HarryRandall/FireworkEntertAInment/pull/98), [PR #99](https://github.com/HarryRandall/FireworkEntertAInment/pull/99) |
-| Docs / process | Documented env vars and migrations in `CLAUDE.md`; gitignored local IDE MCP config so tokens don’t get committed; synced Sprint 2 planning into the repo via the Notion-to-GitHub pipeline | Harry | [FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps) | [PR #97](https://github.com/HarryRandall/FireworkEntertAInment/pull/97) |
-| Process / Linear | Closed the seven Sprint 2 platform issues that landed across Scrum 1 + Scrum 2 (FIR-51, 52, 53, 54, 55, 58, 59) and updated the Sprint 2 deliverables table with current statuses | Harry | [FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-59](https://linear.app/fireworkentertainment/issue/FIR-59/frontend-showcrafter-platform-redesign) | Linear |
+ | Theme | Deliverable | Owner | Linear | Evidence | 
+ | ---- | ---- | ---- | ---- | ---- | 
+ | Platform / auth | Real Supabase auth end-to-end — email/password login + signup, identifier-first flow, OAuth callback route, password reset flow, and a `proxy.ts` that gates protected routes and redirects authed users away from `/login` and `/signup` | Harry | [FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-56](https://linear.app/fireworkentertainment/issue/FIR-56/implement-supabase-authentication-flow) | [PR #96](https://github.com/HarryRandall/FireworkEntertAInment/pull/96), [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) | 
+ | Platform / database | Supabase migrations for `profiles`, `shows`, `show_cues`, `shopping_list_items` with RLS scoped to `auth.uid()`, an `on_auth_user_created` profile trigger, and a private `audio` storage bucket with per-user RLS policies. Generated typed Database client and applied to client/server helpers | Harry | [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase) | [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) | 
+ | Platform / live data | Replaced hard-coded `SHOWS` demo data with server-only Supabase queries on dashboard, show detail, timeline, shopping list, show guide, and preview. `/shows/new` server action validates input, uploads audio to the private bucket, generates a slug, inserts the row | Harry | [FIR-57](https://linear.app/fireworkentertainment/issue/FIR-57/connect-platform-ui-to-live-database-data) | [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100) | 
+ | Marketing site | Rebuilt `/` with a 3D WebGL hero (react-three-fiber), light theme + dark toggle, animated stats strip, interactive Cloudflare-style stepper (Choose song / Set preferences / Get show), and a stylised Australia VendorNetwork map. Cleaner navbar CTAs and a four-column footer | Harry | — | [PR #94](https://github.com/HarryRandall/FireworkEntertAInment/pull/94), commits `65f8186` → `862fa3f` | 
+ | Polish / DX | Branded `/not-found` page; fixed Vercel root-directory build by moving the app into `platform/` with a matching `vercel.json`; suppressed THREE.Clock deprecation warning; tightened login/signup layout (max-width cap, fixed left panel, pointer cursors) | Harry | — | [PR #95](https://github.com/HarryRandall/FireworkEntertAInment/pull/95), [PR #98](https://github.com/HarryRandall/FireworkEntertAInment/pull/98), [PR #99](https://github.com/HarryRandall/FireworkEntertAInment/pull/99) | 
+ | Docs / process | Documented env vars and migrations in `CLAUDE.md`; gitignored `.cursor/mcp.json` so local MCP tokens don’t get committed; synced Sprint 2 planning into the repo via the Notion-to-GitHub pipeline | Harry | [FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps) | [PR #97](https://github.com/HarryRandall/FireworkEntertAInment/pull/97) | 
+ | Process / Linear | Closed the seven Sprint 2 platform issues that landed across Scrum 1 + Scrum 2 (FIR-51, 52, 53, 54, 55, 58, 59) and updated the Sprint 2 deliverables table with current statuses | Harry | [FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-59](https://linear.app/fireworkentertainment/issue/FIR-59/frontend-showcrafter-platform-redesign) | Linear | 
 
 ---
-
 
 ## What We Plan to Do (before 4 May)
 
 - **Harry**: Stitch the **MIR pipeline** into `/shows/new` so Robert sees a real song → mood / energy → cue list flow at the **4 May** demo, and finish polishing the authenticated app pages on the new design system ([FIR-65](https://linear.app/fireworkentertainment/issue/FIR-65/authenticated-app-pages-dashboard-new-show-show-editor-sub-routes)).
+
 - **Liam**: Land the latest **Finale 3D CSV** import on top of the new schema and confirm the catalogue helpers still cover Robert's updated product list ([FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database), [FIR-25](https://linear.app/fireworkentertainment/issue/FIR-25/evaluate-database-options-for-backend-storage), [FIR-50](https://linear.app/fireworkentertainment/issue/FIR-50/catalogue-config-documentation)).
+
 - **Fang**: Lock the MIR **JSON / Markdown contract** and prep a Robert-selected demo song so we can play the analysis live in the meeting ([FIR-24](https://linear.app/fireworkentertainment/issue/FIR-24/spike-evaluate-and-select-core-mir-librariesapis), [FIR-39](https://linear.app/fireworkentertainment/issue/FIR-39/enhance-audio-analysis-granularity-and-model-generalization)).
+
 - **Harrison**: Decide **Godot vs web** for the visualiser and start mapping VDL / CSV fields into sim parameters; time-permitting, stub a Finale export round-trip with Liam ([FIR-28](https://linear.app/fireworkentertainment/issue/FIR-28/write-research-methods-for-firework-simulation), [FIR-35](https://linear.app/fireworkentertainment/issue/FIR-35/implement-industry-and-generic-export-format-support-ignite-csv)).
+
 - **Team**: Confirm the **4 May** stakeholder session details on WhatsApp and finalise the demo agenda (auth + live catalogue + MIR + visualiser).
 
 ---
 
-
 ## Reflections
-
 
 ### Harry
 
+- What You’ve Done
 
-<details>
-<summary>What You’ve Done</summary>
+	- Landed the **Supabase auth + schema + live data** slice in [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100): RLS-scoped tables, a private audio bucket, generated typed clients, a `proxy.ts` route guard, real `/shows/new` server action, and dashboard / show pages reading from Supabase instead of hard-coded data ([FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase), [FIR-56](https://linear.app/fireworkentertainment/issue/FIR-56/implement-supabase-authentication-flow), [FIR-57](https://linear.app/fireworkentertainment/issue/FIR-57/connect-platform-ui-to-live-database-data)).
 
-  - Landed the **Supabase auth + schema + live data** slice in [PR #100](https://github.com/HarryRandall/FireworkEntertAInment/pull/100): RLS-scoped tables, a private audio bucket, generated typed clients, a `proxy.ts` route guard, real `/shows/new` server action, and dashboard / show pages reading from Supabase instead of hard-coded data ([FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase), [FIR-56](https://linear.app/fireworkentertainment/issue/FIR-56/implement-supabase-authentication-flow), [FIR-57](https://linear.app/fireworkentertainment/issue/FIR-57/connect-platform-ui-to-live-database-data)).
-  - Polished the auth UI — split layout with a firework-art panel, identifier-first flow, animated SVG bursts that work in light + dark mode, custom inline validation, and pointer cursors throughout ([PR #96](https://github.com/HarryRandall/FireworkEntertAInment/pull/96), [PR #98](https://github.com/HarryRandall/FireworkEntertAInment/pull/98), [PR #99](https://github.com/HarryRandall/FireworkEntertAInment/pull/99)).
-  - Rebuilt the marketing landing page with a 3D WebGL hero, light theme, an interactive Cloudflare-style stepper, and a stylised Australia VendorNetwork map; added a branded 404 page and tightened nav/footer copy ([PR #94](https://github.com/HarryRandall/FireworkEntertAInment/pull/94), [PR #95](https://github.com/HarryRandall/FireworkEntertAInment/pull/95)).
-  - Closed off the matching Linear issues ([FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-52](https://linear.app/fireworkentertainment/issue/FIR-52/review-existing-nextjssupabase-platform-skeleton-for-sprint-2), [FIR-53](https://linear.app/fireworkentertainment/issue/FIR-53/backfill-sprint-2-scrum-1-platform-progress-notes), [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase), [FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps), [FIR-59](https://linear.app/fireworkentertainment/issue/FIR-59/frontend-showcrafter-platform-redesign)) and updated the Sprint 2 deliverables table with current statuses.
-  - Documented env vars + migrations in `CLAUDE.md`, gitignored local MCP config paths, and kept the Notion ↔ GitHub sync running ([PR #97](https://github.com/HarryRandall/FireworkEntertAInment/pull/97)).
-</details>
+	- Polished the auth UI — split layout with a firework-art panel, identifier-first flow, animated SVG bursts that work in light + dark mode, custom inline validation, and pointer cursors throughout ([PR #96](https://github.com/HarryRandall/FireworkEntertAInment/pull/96), [PR #98](https://github.com/HarryRandall/FireworkEntertAInment/pull/98), [PR #99](https://github.com/HarryRandall/FireworkEntertAInment/pull/99)).
 
+	- Rebuilt the marketing landing page with a 3D WebGL hero, light theme, an interactive Cloudflare-style stepper, and a stylised Australia VendorNetwork map; added a branded 404 page and tightened nav/footer copy ([PR #94](https://github.com/HarryRandall/FireworkEntertAInment/pull/94), [PR #95](https://github.com/HarryRandall/FireworkEntertAInment/pull/95)).
 
-<details>
-<summary>Roadblocks</summary>
+	- Closed off the matching Linear issues ([FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-52](https://linear.app/fireworkentertainment/issue/FIR-52/review-existing-nextjssupabase-platform-skeleton-for-sprint-2), [FIR-53](https://linear.app/fireworkentertainment/issue/FIR-53/backfill-sprint-2-scrum-1-platform-progress-notes), [FIR-54](https://linear.app/fireworkentertainment/issue/FIR-54/define-sprint-2-platform-api-surface), [FIR-55](https://linear.app/fireworkentertainment/issue/FIR-55/build-catalogue-api-routes-backed-by-supabase), [FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps), [FIR-59](https://linear.app/fireworkentertainment/issue/FIR-59/frontend-showcrafter-platform-redesign)) and updated the Sprint 2 deliverables table with current statuses.
 
-  - The Next.js 16 upgrade renamed `middleware.ts` to `proxy.ts` and the conflicting files broke the build; had to consolidate auth into `proxy.ts` before the auth slice could merge.
-  - Vercel was still building from the repo root after the move into `platform/`, so the deploy failed until a `vercel.json` pinned the root directory.
-  - The TiltCard `FeatureGrid` jittered under the cursor and the BeatTimeline demo was technically wrong, so I dropped both and replaced them with the InteractiveSteps + VendorNetwork sections — cost a chunk of the day but the page reads as one cohesive narrative now.
-  - ANZAC Day / Easter gap meant no synchronous time with Robert this week; relying on the **4 May** session to validate the auth + live-data demo.
-</details>
+	- Documented env vars + migrations in `CLAUDE.md`, gitignored `.cursor/mcp.json`, and kept the Notion ↔ GitHub sync running ([PR #97](https://github.com/HarryRandall/FireworkEntertAInment/pull/97)).
 
+- Roadblocks
 
-<details>
-<summary>What You’re Gonna Do</summary>
+	- The Next.js 16 upgrade renamed `middleware.ts` to `proxy.ts` and the conflicting files broke the build; had to consolidate auth into `proxy.ts` before the auth slice could merge.
 
-  - Wire Fang's MIR output into `/shows/new` so the **4 May** demo runs a real song through the full pipeline and shows the resulting cue list in the dashboard.
-  - Polish the authenticated app pages on the new design system (timeline, shopping list, show guide) so the demo doesn't fall over on edge cases.
-  - Lock the **4 May** agenda with Harrison, Liam and Fang and update the [Stakeholder Feedback Log](https://www.notion.so/345cd8a5bf0881579b96c2a37a854144) once Robert’s confirmed.
-</details>
+	- Vercel was still building from the repo root after the move into `platform/`, so the deploy failed until a `vercel.json` pinned the root directory.
 
+	- The TiltCard `FeatureGrid` jittered under the cursor and the BeatTimeline demo was technically wrong, so I dropped both and replaced them with the InteractiveSteps + VendorNetwork sections — cost a chunk of the day but the page reads as one cohesive narrative now.
+
+	- ANZAC Day / Easter gap meant no synchronous time with Robert this week; relying on the **4 May** session to validate the auth + live-data demo.
+
+- What You’re Gonna Do
+
+	- Wire Fang's MIR output into `/shows/new` so the **4 May** demo runs a real song through the full pipeline and shows the resulting cue list in the dashboard.
+
+	- Polish the authenticated app pages on the new design system (timeline, shopping list, show guide) so the demo doesn't fall over on edge cases.
+
+	- Lock the **4 May** agenda with Harrison, Liam and Fang and update the [Stakeholder Feedback Log](https://www.notion.so/345cd8a5bf0881579b96c2a37a854144) once Robert’s confirmed.
 
 ### Liam
 
+- What You’ve Done
 
-<details>
-<summary>What You’ve Done</summary>
+	- Roadblocks
 
-  *To be completed.*
+	- What You’re Gonna Do
 
-</details>
+		### Fang
 
+- What You’ve Done
 
-<details>
-<summary>Roadblocks</summary>
+	
+```markdown
+    - Foundational pipeline + docs commit (`edd4a0f`) shipped 21/04.
+    - Phase A scoped and partially implemented: settled the LLM
+      payload shape per `llm-harness.md` §Suggested Compact Payload
+      Shape, settled the derived feature list, and decided to omit
+      raw `beat_times` / `onset_times` / `energy_timeline` arrays
+      from the compact payload (they stay in the full analysis JSON
+      for stages that genuinely need micro-timing). Implementation
+      in progress, targeting end of this week.
+```
 
-  *To be completed.*
+- Roadblocks
 
-</details>
+	
+```markdown
+    - Whether `firework_cues_baseline` belongs in the compact LLM
+      payload is a cross-component decision I can't make alone — it
+      depends on what the choreography harness wants on a first pass,
+      and I don't own that side. Including it for now so the payload
+      is usable as a fallback hint; logging the trade-off so we can
+      revisit once the harness owner is available.
+    - Reviewing the existing fixtures, the absolute `energy > 0.8`
+      climax threshold visibly under-fires on compressed mixes
+      (modern EDM / pop) — those tracks produce zero detected
+      climaxes, which would starve the downstream cue generator of
+      barrage events. Not blocking Phase A, but on my list right
+      after.
+    - Team's mid-sprint platform push today (design system, route
+      groups, real Supabase auth + schema + live data, redesigned
+      landing) doesn't intersect with my analyser work — confirming
+      the streams are genuinely parallel and I'm continuing solo on
+      the analyser side. Not a blocker, just division-of-labour
+      clarity.
+```
 
+- What You’re Gonna Do
 
-<details>
-<summary>What You’re Gonna Do</summary>
+	
+```markdown
+    - Finish and ship Phase A this week: `SCHEMA_VERSION` introduced,
+      full + compact payload split, `compute_derived_features()`
+      complete. Update `agent.md` and `README.md` to match.
+    - Then tackle the compressed-mix climax issue: replace the
+      absolute energy threshold with relative prominence ranking
+      (top quartile of detected peaks → climax, the rest → build).
+      That change adds a `prominence` field and changes
+      `key_moments[].type` semantics, so it'll bump schema to
+      `1.1.0` per `agent.md` §Compatibility Rules.
+```
 
-  *To be completed.*
-
-</details>
-
-
-### Fang
-
-
-<details>
-<summary>What You’ve Done</summary>
-
-  *To be completed.*
-
-</details>
-
-
-<details>
-<summary>Roadblocks</summary>
-
-  *To be completed.*
-
-</details>
-
-
-<details>
-<summary>What You’re Gonna Do</summary>
-
-  *To be completed.*
-
-</details>
-
+	---
 
 ### Harrison
 
+- What You’ve Done
 
-<details>
-<summary>What You’ve Done</summary>
+	- Extended the Godot renderer to understand more colours and firework types.
 
-  *To be completed.*
+- Roadblocks
 
-</details>
+	- Had some issues come up in my personal life that made it really difficult to work this week.
 
+	- Public holiday made it so we couldn’t meet with Robert or communicate as easily with each other.
 
-<details>
-<summary>Roadblocks</summary>
+- What You’re Gonna Do
 
-  *To be completed.*
-
-</details>
-
-
-<details>
-<summary>What You’re Gonna Do</summary>
-
-  *To be completed.*
-
-</details>
+	- Refine the Godot renderer to understand several layers of VDL description in one firework, as many consumer fireworks are a mix of different types in one cake.
 
