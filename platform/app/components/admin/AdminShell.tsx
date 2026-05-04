@@ -15,6 +15,14 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
 import { uiStyles } from "@/app/components/ui/styles";
@@ -35,10 +43,8 @@ export function AdminShell({
   children: ReactNode;
   profile: CurrentProfile;
 }) {
-  const DRAWER_EXIT_MS = 280;
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMounted, setDrawerMounted] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
   const secondaryLine = profile.fullName && profile.email ? profile.email : "Platform admin";
   const profileHref = `/settings/profile?returnTo=${encodeURIComponent(pathname || "/admin")}`;
@@ -50,13 +56,6 @@ export function AdminShell({
       .map((part) => part[0]?.toUpperCase())
       .join("") || "A";
 
-  const openDrawer = () => {
-    setDrawerMounted(true);
-    window.requestAnimationFrame(() => {
-      setDrawerOpen(true);
-    });
-  };
-
   const closeDrawer = () => {
     setDrawerOpen(false);
   };
@@ -64,25 +63,6 @@ export function AdminShell({
   useEffect(() => {
     closeDrawer();
   }, [pathname]);
-
-  useEffect(() => {
-    if (drawerOpen) return;
-    const timeout = window.setTimeout(() => setDrawerMounted(false), DRAWER_EXIT_MS);
-    return () => window.clearTimeout(timeout);
-  }, [drawerOpen]);
-
-  useEffect(() => {
-    if (!drawerMounted) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDrawer();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [drawerMounted]);
 
   const brand = (
     <div className="flex items-center gap-3">
@@ -174,15 +154,53 @@ export function AdminShell({
             <Boxes size={18} strokeWidth={1.85} />
             ShowCrafter
           </Link>
-          <button
-            type="button"
-            onClick={openDrawer}
-            aria-label="Open admin navigation"
-            aria-expanded={drawerOpen}
-            className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
-          >
-            <Menu size={20} strokeWidth={1.85} />
-          </button>
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open admin navigation"
+                className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
+              >
+                <Menu size={20} strokeWidth={1.85} />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              showCloseButton={false}
+              className="w-[min(86vw,320px)] border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)] lg:hidden"
+            >
+              <SheetTitle className="sr-only">Admin navigation</SheetTitle>
+              <div className="mb-6 flex items-center justify-between gap-3">
+                {brand}
+                <SheetClose asChild>
+                  <button
+                    type="button"
+                    aria-label="Close admin navigation"
+                    className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
+                  >
+                    <X size={18} strokeWidth={1.85} />
+                  </button>
+                </SheetClose>
+              </div>
+
+              <ScrollArea className="min-h-0 flex-1">
+                <nav className="space-y-1 pr-3">
+                  {renderNavLinks(closeDrawer)}
+                </nav>
+                <Link
+                  href="/dashboard"
+                  prefetch
+                  onClick={closeDrawer}
+                  className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
+                >
+                  <ArrowLeft size={16} strokeWidth={1.9} />
+                  Back to app
+                </Link>
+              </ScrollArea>
+
+              <div className="mt-auto pt-4">{profileCard}</div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
@@ -190,63 +208,6 @@ export function AdminShell({
         <div className="w-full">{children}</div>
       </main>
 
-      {drawerMounted ? (
-        <div
-          className={cn(
-            "fixed inset-0 z-50 lg:hidden transition-opacity duration-200 ease-out",
-            drawerOpen ? "opacity-100" : "pointer-events-none opacity-0",
-          )}
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            type="button"
-            aria-label="Close admin navigation"
-            onClick={closeDrawer}
-            className={cn(
-              "absolute inset-0 h-full w-full cursor-default bg-background/45 backdrop-blur-[2px] transition-opacity duration-200 ease-out",
-              drawerOpen ? "opacity-100" : "opacity-0",
-            )}
-          />
-          <div
-            className={cn(
-              "absolute inset-y-0 left-0 w-[min(86vw,320px)] will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-              drawerOpen
-                ? "translate-x-0"
-                : "-translate-x-full",
-            )}
-          >
-            <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)]">
-              <div className="mb-6 flex items-center justify-between gap-3">
-                {brand}
-                <button
-                  type="button"
-                  onClick={closeDrawer}
-                  aria-label="Close admin navigation"
-                  className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
-                >
-                  <X size={18} strokeWidth={1.85} />
-                </button>
-              </div>
-
-              <nav className="space-y-1">
-                {renderNavLinks(closeDrawer)}
-              </nav>
-              <Link
-                href="/dashboard"
-                prefetch
-                onClick={closeDrawer}
-                className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
-              >
-                <ArrowLeft size={16} strokeWidth={1.9} />
-                Back to app
-              </Link>
-
-              <div className="mt-auto pt-4">{profileCard}</div>
-            </aside>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
