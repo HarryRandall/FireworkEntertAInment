@@ -1,4 +1,5 @@
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { InfoTooltip } from "@/app/components/ui/InfoTooltip";
 import { Card } from "@/app/components/ui/Card";
 import { StatTile } from "@/app/components/ui/StatTile";
 import {
@@ -24,7 +25,11 @@ export default async function AdminOverviewPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Users" value={users.length} />
+        <StatTile
+          label="Users"
+          labelAddon={<InfoTooltip text="This is the total users we have." />}
+          value={users.length}
+        />
         <StatTile label="Suppliers" value={suppliers.length} />
         <StatTile label="Imports" value={imports.length} />
         <StatTile label="Catalogue products" value={catalogue.length} />

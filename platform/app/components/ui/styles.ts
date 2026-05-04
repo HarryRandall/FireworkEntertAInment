@@ -34,6 +34,9 @@ export const uiStyles = {
     empty:
       "rounded-xl border border-dashed border-outline-variant/35 bg-surface-container-low/70 p-8 text-center text-sm text-on-surface-variant",
   },
+  layer: {
+    popover: "z-50",
+  },
   action: {
     iconButton:
       "focus-glow-action inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface focus:outline-none focus-visible:outline-none",

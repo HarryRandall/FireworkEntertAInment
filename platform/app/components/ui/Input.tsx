@@ -1,6 +1,7 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { uiStyles } from "@/app/components/ui/styles";
+import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
 
 type InputProps = ComponentPropsWithoutRef<"input"> & {
   iconLeft?: ReactNode;
@@ -46,15 +47,41 @@ export function Textarea({ className, ...rest }: TextareaProps) {
 
 type SelectProps = ComponentPropsWithoutRef<"select">;
 
-export function Select({ className, ...rest }: SelectProps) {
+export function Select({
+  className,
+  children,
+  name,
+  value,
+  defaultValue,
+  required,
+  disabled,
+  "aria-label": ariaLabel,
+}: SelectProps) {
+  const options: SelectOption[] = Children.toArray(children)
+    .filter(isValidElement)
+    .map((child) => {
+      const childProps = child.props as {
+        value?: string | number;
+        children?: ReactNode;
+        disabled?: boolean;
+      };
+      return {
+        value: String(childProps.value ?? ""),
+        label: String(childProps.children ?? ""),
+        disabled: Boolean(childProps.disabled),
+      };
+    });
+
   return (
-    <select
-      {...rest}
-      className={cn(
-        uiStyles.focus.field,
-        uiStyles.control.select,
-        className,
-      )}
+    <SelectField
+      name={name}
+      value={typeof value === "string" ? value : undefined}
+      defaultValue={defaultValue != null ? String(defaultValue) : undefined}
+      required={required}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      options={options}
+      className={cn("w-full", className)}
     />
   );
 }

@@ -3,12 +3,13 @@ import { cn } from "@/lib/cn";
 
 type StatTileProps = {
   label: string;
+  labelAddon?: ReactNode;
   value: ReactNode;
   unit?: ReactNode;
   className?: string;
 };
 
-export function StatTile({ label, value, unit, className }: StatTileProps) {
+export function StatTile({ label, labelAddon, value, unit, className }: StatTileProps) {
   return (
     <div
       className={cn(
@@ -16,8 +17,9 @@ export function StatTile({ label, value, unit, className }: StatTileProps) {
         className,
       )}
     >
-      <div className="mb-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-        {label}
+      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+        <span>{label}</span>
+        {labelAddon}
       </div>
       <div className="text-xl font-bold tabular-nums text-on-surface">
         {value}
