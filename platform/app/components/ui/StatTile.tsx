@@ -14,7 +14,7 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
   return (
     <Card
       className={cn(
-        "rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
+        "gap-0 rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
         className,
       )}
     >

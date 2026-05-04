@@ -16,6 +16,7 @@ export function DataTableShell({
     <Card
       className={cn(
         uiStyles.table.shell,
+        "gap-0 py-0",
         className,
       )}
     >

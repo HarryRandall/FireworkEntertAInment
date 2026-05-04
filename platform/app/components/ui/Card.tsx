@@ -38,7 +38,7 @@ export function Card({
         elevationClasses[elevation],
         radiusClasses[radius],
         bordered && "border border-outline-variant/55",
-        "shadow-[var(--shadow-card)] backdrop-blur-xl",
+        "gap-0 py-0 shadow-[var(--shadow-card)] backdrop-blur-xl",
         hoverable &&
           "transition-all duration-200 ease-out hover:border-primary/35 hover:bg-surface-container-high hover:shadow-[var(--shadow-card-hover)]",
         className,
