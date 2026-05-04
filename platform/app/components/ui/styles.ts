@@ -43,9 +43,9 @@ export const uiStyles = {
     navBase:
       "focus-glow-action flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all focus:outline-none focus-visible:outline-none",
     navActive:
-      "border border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]",
+      "border border-outline bg-surface-container-high text-on-surface shadow-[var(--shadow-card)]",
     navInactive:
-      "text-on-surface-variant hover:bg-primary/10 hover:text-primary",
+      "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
   },
   table: {
     shell:

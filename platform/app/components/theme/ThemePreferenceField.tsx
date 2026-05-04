@@ -15,7 +15,7 @@ const OPTIONS: {
   {
     value: "dark",
     label: "Dark",
-    description: "Cinematic navy workspace",
+    description: "Layered black workspace",
     icon: Moon,
   },
   {
@@ -73,12 +73,12 @@ export function ThemePreferenceField({
               className={cn(
                 "focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none",
                 active
-                  ? "border-primary/45 bg-primary-fixed/50 text-on-surface shadow-[var(--shadow-card)]"
-                  : "border-outline-variant/55 bg-surface text-on-surface-variant hover:border-primary/25 hover:bg-surface-container-low",
+                  ? "border-outline bg-surface-container-high text-on-surface shadow-[var(--shadow-card)]"
+                  : "border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low",
               )}
             >
               <span className="flex w-full items-center justify-between gap-3">
-                <Icon size={18} className={active ? "text-primary" : ""} />
+                <Icon size={18} className={active ? "text-on-surface" : ""} />
                 {active ? <Check size={16} className="text-primary" /> : null}
               </span>
               <span>
