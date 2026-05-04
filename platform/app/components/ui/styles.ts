@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 export const uiStyles = {
   focus: {
@@ -43,9 +43,9 @@ export const uiStyles = {
     navBase:
       "focus-glow-action flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all focus:outline-none focus-visible:outline-none",
     navActive:
-      "border border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]",
+      "border border-primary/55 bg-primary/8 text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_24%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_75%,transparent)]",
     navInactive:
-      "text-on-surface-variant hover:bg-primary/10 hover:text-primary",
+      "text-on-surface-variant hover:bg-primary/8 hover:text-on-surface hover:shadow-[0_12px_36px_-32px_color-mix(in_srgb,var(--color-primary)_60%,transparent)]",
   },
   table: {
     shell:

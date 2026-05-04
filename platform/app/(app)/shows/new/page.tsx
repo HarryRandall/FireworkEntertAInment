@@ -20,7 +20,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Textarea } from "@/app/components/ui/Input";
 import { SelectField } from "@/app/components/ui/SelectField";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { createShowAction } from "./actions";
 
 const TIME_OF_DAY = ["Daytime", "Dusk", "Night"] as const;

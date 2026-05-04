@@ -2,7 +2,9 @@
 
 import { useState, type ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 
 type NumberInputProps = {
@@ -63,7 +65,7 @@ export function NumberInput({
       {iconLeft ? (
         <span className="pl-3 text-on-surface-variant">{iconLeft}</span>
       ) : null}
-      <input
+      <Input
         type="number"
         name={name}
         value={Number.isFinite(current) ? current : ""}
@@ -84,29 +86,33 @@ export function NumberInput({
         required={required}
         disabled={disabled}
         aria-label={ariaLabel}
-        className="h-full w-full appearance-none bg-transparent px-3 text-sm font-semibold tabular-nums text-on-surface outline-none focus-visible:outline-none placeholder:text-on-surface-variant/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-full w-full appearance-none border-0 bg-transparent px-3 text-sm font-semibold tabular-nums text-on-surface shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 placeholder:text-on-surface-variant/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <div className="flex h-full shrink-0 flex-col border-l border-outline/45">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           tabIndex={-1}
           aria-label="Increase"
           disabled={disabled || (typeof max === "number" && current >= max)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) + step)}
-          className="flex h-1/2 w-8 items-center justify-center text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-1/2 w-8 rounded-none text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={12} strokeWidth={2.5} />
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           tabIndex={-1}
           aria-label="Decrease"
           disabled={disabled || (typeof min === "number" && current <= min)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) - step)}
-          className="flex h-1/2 w-8 items-center justify-center border-t border-outline/45 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-1/2 w-8 rounded-none border-t border-outline/45 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Minus size={12} strokeWidth={2.5} />
-        </button>
+        </Button>
       </div>
     </div>
   );

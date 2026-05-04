@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, Info, Loader2, Sparkles } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton as ShadcnSkeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 type AlertTone = "info" | "success" | "warning" | "danger";
 
@@ -64,7 +67,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
+    <Card
       className={cn(
         "flex flex-col items-center gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low/80 p-10 text-center",
         className,
@@ -82,17 +85,14 @@ export function EmptyState({
         ) : null}
       </div>
       {action}
-    </div>
+    </Card>
   );
 }
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div
-      className={cn(
-        "animate-pulse rounded-xl bg-surface-container-highest/70",
-        className,
-      )}
+    <ShadcnSkeleton
+      className={cn("rounded-xl bg-surface-container-highest/70", className)}
     />
   );
 }
@@ -110,12 +110,7 @@ export function ProgressIndicator({
         <Loader2 size={14} className="animate-spin text-primary" />
         {label}
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
-        <div
-          className="h-full rounded-full bg-primary shadow-[0_0_18px_color-mix(in_srgb,var(--color-primary)_55%,transparent)] transition-all"
-          style={{ width: `${Math.max(0, Math.min(100, value ?? 42))}%` }}
-        />
-      </div>
+      <Progress value={value ?? 42} className="h-2 bg-surface-container-highest" />
     </div>
   );
 }

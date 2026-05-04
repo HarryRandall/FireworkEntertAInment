@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Music4, Sliders, Sparkles } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
 import { Reveal } from "./Reveal";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 type Step = {
   num: string;

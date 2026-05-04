@@ -2,7 +2,7 @@ import { AlertTriangle, AudioWaveform, Sparkles, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 export function AiGeneratedNotice({ className }: { className?: string }) {
   return (

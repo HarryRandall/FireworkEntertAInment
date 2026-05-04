@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type StatTileProps = {
   label: string;
@@ -11,9 +12,9 @@ type StatTileProps = {
 
 export function StatTile({ label, labelAddon, value, unit, className }: StatTileProps) {
   return (
-    <div
+    <Card
       className={cn(
-        "rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
+        "gap-0 rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
         className,
       )}
     >
@@ -27,6 +28,6 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
           <span className="ml-0.5 text-sm font-medium text-primary">{unit}</span>
         ) : null}
       </div>
-    </div>
+    </Card>
   );
 }

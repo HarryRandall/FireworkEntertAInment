@@ -12,7 +12,15 @@ import {
   Shield,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { Container } from "@/app/components/ui/Container";
 import { uiStyles } from "@/app/components/ui/styles";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
@@ -43,10 +51,8 @@ export function AppShell({
   containerWidth = "fluid",
   profile,
 }: AppShellProps) {
-  const DRAWER_EXIT_MS = 280;
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMounted, setDrawerMounted] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
     (link) => !link.permission || permissions.has(link.permission),
@@ -63,13 +69,6 @@ export function AppShell({
       .map((part) => part[0]?.toUpperCase())
       .join("") || "SC";
 
-  const openDrawer = () => {
-    setDrawerMounted(true);
-    window.requestAnimationFrame(() => {
-      setDrawerOpen(true);
-    });
-  };
-
   const closeDrawer = () => {
     setDrawerOpen(false);
   };
@@ -77,25 +76,6 @@ export function AppShell({
   useEffect(() => {
     closeDrawer();
   }, [pathname]);
-
-  useEffect(() => {
-    if (drawerOpen) return;
-    const timeout = window.setTimeout(() => setDrawerMounted(false), DRAWER_EXIT_MS);
-    return () => window.clearTimeout(timeout);
-  }, [drawerOpen]);
-
-  useEffect(() => {
-    if (!drawerMounted) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDrawer();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [drawerMounted]);
 
   const renderNavLinks = (onClick?: () => void) =>
     visibleLinks.map((link) => {
@@ -176,49 +156,22 @@ export function AppShell({
               <Boxes size={20} strokeWidth={1.8} />
               ShowCrafter
             </Link>
-            <button
-              type="button"
-              onClick={openDrawer}
-              aria-label="Open navigation menu"
-              aria-expanded={drawerOpen}
-              className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
-            >
-              <Menu size={20} strokeWidth={1.85} />
-            </button>
-          </Container>
-        </header>
-
-        <main className="pt-0 pb-16">
-          <Container width={containerWidth}>{children}</Container>
-        </main>
-
-        {drawerMounted ? (
-          <div
-            className={cn(
-              "fixed inset-0 z-50 lg:hidden transition-opacity duration-200 ease-out",
-              drawerOpen ? "opacity-100" : "pointer-events-none opacity-0",
-            )}
-            role="dialog"
-            aria-modal="true"
-          >
-            <button
-              type="button"
-              aria-label="Close navigation menu"
-              onClick={closeDrawer}
-              className={cn(
-                "absolute inset-0 h-full w-full cursor-default bg-background/45 backdrop-blur-[2px] transition-opacity duration-200 ease-out",
-                drawerOpen ? "opacity-100" : "opacity-0",
-              )}
-            />
-            <div
-              className={cn(
-                "absolute inset-y-0 left-0 w-[min(86vw,320px)] will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                drawerOpen
-                  ? "translate-x-0"
-                  : "-translate-x-full",
-              )}
-            >
-              <aside className="flex h-full w-[min(86vw,320px)] flex-col border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)]">
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open navigation menu"
+                  className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
+                >
+                  <Menu size={20} strokeWidth={1.85} />
+                </button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                showCloseButton={false}
+                className="w-[min(86vw,320px)] border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)] lg:hidden"
+              >
+                <SheetTitle className="sr-only">Navigation menu</SheetTitle>
                 <div className="mb-6 flex items-center justify-between">
                   <Link
                     href="/dashboard"
@@ -231,27 +184,33 @@ export function AppShell({
                     </span>
                     ShowCrafter
                   </Link>
-                  <button
-                    type="button"
-                    onClick={closeDrawer}
-                    aria-label="Close navigation menu"
-                    className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
-                  >
-                    <X size={18} strokeWidth={1.85} />
-                  </button>
+                  <SheetClose asChild>
+                    <button
+                      type="button"
+                      aria-label="Close navigation menu"
+                      className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
+                    >
+                      <X size={18} strokeWidth={1.85} />
+                    </button>
+                  </SheetClose>
                 </div>
 
-                <nav className="space-y-1">
-                  {renderNavLinks(closeDrawer)}
-                </nav>
+                <ScrollArea className="min-h-0 flex-1">
+                  <nav className="space-y-1 pr-3">
+                    {renderNavLinks(closeDrawer)}
+                  </nav>
+                </ScrollArea>
 
-                <div className="mt-auto pt-4">
-                  {profileCard}
-                </div>
-              </aside>
-            </div>
-          </div>
-        ) : null}
+                <div className="mt-auto pt-4">{profileCard}</div>
+              </SheetContent>
+            </Sheet>
+          </Container>
+        </header>
+
+        <main className="pt-0 pb-16">
+          <Container width={containerWidth}>{children}</Container>
+        </main>
+
       </div>
     </div>
   );
