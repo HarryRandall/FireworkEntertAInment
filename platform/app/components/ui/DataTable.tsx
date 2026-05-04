@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 
 export function DataTableShell({
@@ -12,7 +13,7 @@ export function DataTableShell({
   className?: string;
 }) {
   return (
-    <section
+    <Card
       className={cn(
         uiStyles.table.shell,
         className,
@@ -24,7 +25,7 @@ export function DataTableShell({
         </div>
       ) : null}
       <div className="overflow-x-auto">{children}</div>
-    </section>
+    </Card>
   );
 }
 

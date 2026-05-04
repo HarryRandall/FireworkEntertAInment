@@ -7,7 +7,7 @@ import { Menu, X, Sparkles } from "lucide-react";
 import { Container } from "@/app/components/ui/Container";
 import { Button } from "@/app/components/ui/Button";
 import { ThemeToggle } from "@/app/components/theme/ThemeToggle";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
 type NavLink = { href: string; label: string };

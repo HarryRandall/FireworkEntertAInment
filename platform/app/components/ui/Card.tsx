@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef } from "react";
-import { cn } from "@/lib/cn";
+import { Card as ShadcnCard } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type Elevation = "low" | "high";
 type Radius = "md" | "lg" | "xl";
@@ -32,7 +33,7 @@ export function Card({
   ...rest
 }: CardProps) {
   return (
-    <div
+    <ShadcnCard
       className={cn(
         elevationClasses[elevation],
         radiusClasses[radius],
@@ -45,6 +46,6 @@ export function Card({
       {...rest}
     >
       {children}
-    </div>
+    </ShadcnCard>
   );
 }

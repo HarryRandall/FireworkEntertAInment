@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, CreditCard, ShieldCheck, UserRound } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 
 const SETTINGS_LINKS = [

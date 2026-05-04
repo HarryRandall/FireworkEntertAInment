@@ -1,5 +1,7 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Badge as ShadcnBadge } from "@/components/ui/badge";
+import { Toggle as ShadcnToggle } from "@/components/ui/toggle";
+import { cn } from "@/lib/utils";
 
 type Tone = "primary" | "neutral" | "success" | "live" | "danger" | "wow";
 
@@ -23,7 +25,8 @@ type BadgeProps = {
 
 export function Badge({ tone = "primary", className, children }: BadgeProps) {
   return (
-    <span
+    <ShadcnBadge
+      variant="outline"
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
         toneClasses[tone],
@@ -31,7 +34,7 @@ export function Badge({ tone = "primary", className, children }: BadgeProps) {
       )}
     >
       {children}
-    </span>
+    </ShadcnBadge>
   );
 }
 
@@ -46,9 +49,10 @@ export function ChoiceChip({
   ...rest
 }: ChoiceChipProps) {
   return (
-    <button
+    <ShadcnToggle
       type="button"
-      aria-pressed={selected}
+      pressed={selected}
+      variant="outline"
       className={cn(
         "focus-glow-action inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border px-4 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:outline-none",
         selected
@@ -59,7 +63,7 @@ export function ChoiceChip({
       {...rest}
     >
       {children}
-    </button>
+    </ShadcnToggle>
   );
 }
 

@@ -12,7 +12,7 @@ import {
   Shield,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { Container } from "@/app/components/ui/Container";
 import { uiStyles } from "@/app/components/ui/styles";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";

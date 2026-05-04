@@ -1,5 +1,7 @@
 import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Input as ShadcnInput } from "@/components/ui/input";
+import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
 
@@ -16,8 +18,9 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
           {iconLeft}
         </div>
       ) : null}
-      <input
+      <ShadcnInput
         {...rest}
+        aria-invalid={invalid || rest["aria-invalid"] || undefined}
         className={cn(
           uiStyles.focus.field,
           "h-11 w-full rounded-xl border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
@@ -34,7 +37,7 @@ type TextareaProps = ComponentPropsWithoutRef<"textarea">;
 
 export function Textarea({ className, ...rest }: TextareaProps) {
   return (
-    <textarea
+    <ShadcnTextarea
       {...rest}
       className={cn(
         uiStyles.focus.field,

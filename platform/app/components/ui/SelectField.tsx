@@ -1,17 +1,14 @@
 "use client";
 
+import { useMemo, useState, type ReactNode } from "react";
 import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { Check, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/cn";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 
 export type SelectOption = {
@@ -41,7 +38,7 @@ export function SelectField({
   defaultValue,
   onChange,
   options,
-  placeholder = "Select…",
+  placeholder = "Select...",
   required,
   disabled,
   className,
@@ -49,243 +46,77 @@ export function SelectField({
   iconLeft,
 }: SelectFieldProps) {
   const isControlled = typeof value === "string";
-  const [internal, setInternal] = useState<string>(defaultValue ?? "");
+  const [internal, setInternal] = useState(defaultValue ?? "");
   const current = isControlled ? value! : internal;
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState<number>(-1);
-  const [menuLayout, setMenuLayout] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    maxHeight: number;
-    openUpward: boolean;
-  } | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  const id = useId();
 
   const selected = useMemo(
-    () => options.find((o) => o.value === current) ?? null,
-    [options, current],
+    () => options.find((option) => option.value === current),
+    [current, options],
   );
 
-  const choose = (next: string) => {
+  const handleChange = (next: string) => {
     if (!isControlled) setInternal(next);
     onChange?.(next);
-    setOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        listRef.current?.contains(target) ||
-        triggerRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    return () => document.removeEventListener("mousedown", onPointer);
-  }, [open]);
-
-  useEffect(() => {
-    if (open) {
-      const idx = options.findIndex((o) => o.value === current);
-      setActiveIndex(idx >= 0 ? idx : 0);
-    }
-  }, [open, options, current]);
-
-  const computeMenuLayout = () => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const gap = 6;
-    const preferredHeight = Math.min(288, Math.round(viewportHeight * 0.42));
-    const availableBelow = viewportHeight - rect.bottom - gap - 12;
-    const availableAbove = rect.top - gap - 12;
-    const shouldOpenUp = availableBelow < 220 && availableAbove > availableBelow;
-    const maxHeight = Math.max(
-      160,
-      Math.min(preferredHeight, shouldOpenUp ? availableAbove : availableBelow),
-    );
-    const top = shouldOpenUp ? rect.top - gap : rect.bottom + gap;
-
-    setMenuLayout({
-      top,
-      left: rect.left,
-      width: rect.width,
-      maxHeight,
-      openUpward: shouldOpenUp,
-    });
-  };
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    computeMenuLayout();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onReflow = () => computeMenuLayout();
-    window.addEventListener("resize", onReflow);
-    window.addEventListener("scroll", onReflow, true);
-    return () => {
-      window.removeEventListener("resize", onReflow);
-      window.removeEventListener("scroll", onReflow, true);
-    };
-  }, [open]);
-
-  const onTriggerKeyDown = (event: React.KeyboardEvent) => {
-    if (disabled) return;
-    if (
-      event.key === "ArrowDown" ||
-      event.key === "ArrowUp" ||
-      event.key === "Enter" ||
-      event.key === " "
-    ) {
-      event.preventDefault();
-      setOpen(true);
-    }
-  };
-
-  const onListKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setOpen(false);
-      triggerRef.current?.focus();
-      return;
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((i) => Math.min(options.length - 1, i + 1));
-      return;
-    }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((i) => Math.max(0, i - 1));
-      return;
-    }
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      const opt = options[activeIndex];
-      if (opt && !opt.disabled) choose(opt.value);
-    }
   };
 
   return (
-    <div className={cn("relative", className)}>
+    <>
       {name ? (
-        <input type="hidden" name={name} value={current} required={required} />
+        <input
+          type="hidden"
+          name={name}
+          value={current}
+          required={required}
+          disabled={disabled}
+        />
       ) : null}
-      <button
-        ref={triggerRef}
-        type="button"
-        id={id}
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        onClick={() => {
-          if (!open) computeMenuLayout();
-          setOpen((v) => !v);
-        }}
-        onKeyDown={onTriggerKeyDown}
-        className={cn(
-          uiStyles.focus.field,
-          "flex h-11 w-full cursor-pointer items-center gap-2 rounded-xl border border-outline/55 bg-surface px-3 text-left text-sm font-semibold text-on-surface transition-all duration-200",
-          disabled && "cursor-not-allowed opacity-60",
-        )}
-      >
-        {iconLeft ? <span className="text-on-surface-variant">{iconLeft}</span> : null}
-        <span
+      <Select value={current} onValueChange={handleChange} disabled={disabled}>
+        <SelectTrigger
+          aria-label={ariaLabel}
           className={cn(
-            "flex-1 truncate",
-            !selected && "text-on-surface-variant/70 font-medium",
+            uiStyles.focus.field,
+            "h-11 w-full cursor-pointer rounded-xl border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200",
+            disabled && "cursor-not-allowed opacity-60",
+            className,
           )}
         >
-          {selected ? selected.label : placeholder}
-        </span>
-        <ChevronDown
-          size={16}
-          className={cn(
-            "shrink-0 text-on-surface-variant transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-
-      {open && menuLayout
-        ? createPortal(
-            <ul
-              ref={listRef}
-              role="listbox"
-              tabIndex={-1}
-              onKeyDown={onListKeyDown}
-              className={cn(
-                uiStyles.surface.popover,
-                uiStyles.layer.popover,
-                "fixed overflow-auto",
-              )}
-              style={{
-                top: `${menuLayout.top}px`,
-                left: `${menuLayout.left}px`,
-                width: `${menuLayout.width}px`,
-                maxHeight: `${menuLayout.maxHeight}px`,
-                transform: menuLayout.openUpward ? "translateY(-100%)" : undefined,
-              }}
+          {iconLeft ? (
+            <span className="text-on-surface-variant">{iconLeft}</span>
+          ) : null}
+          <SelectValue placeholder={placeholder}>
+            {selected?.label}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          align="start"
+          className="rounded-xl border-outline/55 bg-surface p-1.5 text-on-surface shadow-[var(--shadow-modal)]"
+        >
+          {options.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-on-surface-variant">
+              No options
+            </div>
+          ) : null}
+          {options.map((option) => (
+            <SelectItem
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+              className="rounded-lg text-on-surface-variant focus:bg-surface-container-high focus:text-on-surface data-[state=checked]:text-primary"
             >
-              {options.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-on-surface-variant">
-                  No options
-                </li>
-              ) : null}
-              {options.map((option, index) => {
-                const isSelected = option.value === current;
-                const isActive = index === activeIndex;
-                return (
-                  <li key={option.value}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      disabled={option.disabled}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onClick={() => !option.disabled && choose(option.value)}
-                      className={cn(
-                        uiStyles.focus.action,
-                        "flex w-full cursor-pointer items-start gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                        option.disabled && "cursor-not-allowed opacity-50",
-                        isActive && !option.disabled
-                          ? "bg-surface-container-high text-on-surface"
-                          : "text-on-surface-variant",
-                        isSelected && "text-primary",
-                      )}
-                    >
-                      <span className="flex-1 min-w-0">
-                        <span className="block truncate font-semibold">
-                          {option.label}
-                        </span>
-                        {option.description ? (
-                          <span className="mt-0.5 block truncate text-xs text-on-surface-variant">
-                            {option.description}
-                          </span>
-                        ) : null}
-                      </span>
-                      {isSelected ? (
-                        <Check size={14} className="mt-0.5 shrink-0 text-primary" />
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>,
-            document.body,
-          )
-        : null}
-    </div>
+              <span className="min-w-0">
+                <span className="block truncate font-semibold">
+                  {option.label}
+                </span>
+                {option.description ? (
+                  <span className="mt-0.5 block truncate text-xs text-on-surface-variant">
+                    {option.description}
+                  </span>
+                ) : null}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
   );
 }

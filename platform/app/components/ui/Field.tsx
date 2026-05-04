@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { uiStyles } from "@/app/components/ui/styles";
 
 export function Field({
@@ -29,13 +30,13 @@ export function FieldLabel({
   }
 
   return (
-    <label
+    <Label
       htmlFor={htmlFor}
       className={cn(uiStyles.text.label, className)}
       {...rest}
     >
       {children}
-    </label>
+    </Label>
   );
 }
 

@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
 import { uiStyles } from "@/app/components/ui/styles";
 import type { CurrentProfile } from "@/lib/platform.types";
