@@ -40,7 +40,7 @@ export function Card({
         bordered && "border border-outline-variant/55",
         "gap-0 py-0 shadow-[var(--shadow-card)] backdrop-blur-xl",
         hoverable &&
-          "transition-all duration-200 ease-out hover:border-primary/35 hover:bg-surface-container-high hover:shadow-[var(--shadow-card-hover)]",
+          "transition-all duration-200 ease-out hover:border-primary/55 hover:bg-surface-container-high hover:shadow-[var(--shadow-card-hover)] focus-visible:border-primary/65 focus-visible:shadow-[var(--shadow-card-hover)]",
         className,
       )}
       {...rest}

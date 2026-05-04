@@ -16,7 +16,7 @@ const SETTINGS_LINKS = [
 export function SettingsTabs() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-wrap gap-2">
+    <nav className="flex flex-wrap justify-center gap-2">
       {SETTINGS_LINKS.map((link) => {
         const Icon = link.icon;
         const active = pathname === link.href || pathname?.startsWith(link.href + "/");
@@ -30,7 +30,7 @@ export function SettingsTabs() {
               uiStyles.focus.action,
               "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors",
               active
-                ? "border-outline bg-surface-container-high text-on-surface shadow-[var(--shadow-card)]"
+                ? "border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
                 : "border-transparent text-on-surface-variant hover:border-outline-variant/55 hover:bg-surface-container-high hover:text-on-surface",
             )}
           >

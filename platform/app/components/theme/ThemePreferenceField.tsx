@@ -73,7 +73,7 @@ export function ThemePreferenceField({
               className={cn(
                 "focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none",
                 active
-                  ? "border-outline bg-surface-container-high text-on-surface shadow-[var(--shadow-card)]"
+                  ? "border-primary/50 bg-surface-container-high text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_18%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_68%,transparent)]"
                   : "border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low",
               )}
             >

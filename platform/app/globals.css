@@ -106,7 +106,9 @@
 
   /* Shadow scale */
   --shadow-card: 0 18px 55px -42px rgba(0, 0, 0, 0.82);
-  --shadow-card-hover: 0 24px 70px -42px rgba(0, 0, 0, 0.9);
+  --shadow-card-hover:
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+    0 24px 80px -44px color-mix(in srgb, var(--color-primary) 78%, transparent);
   --shadow-cta: 0 14px 36px -16px rgba(0, 229, 255, 0.72);
   --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.55);
 
