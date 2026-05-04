@@ -19,6 +19,7 @@ platform/supabase/.temp/
 # Local IDE MCP config may contain access tokens
 .cursor/mcp.json
 .mcp.json
+.claude/settings.json
 *.swp
 *.swo
 *~
