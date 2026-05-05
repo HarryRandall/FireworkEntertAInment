@@ -32,10 +32,10 @@ export class World {
     // Subtle reference grid on the ground so the scene reads as a real
     // surface rather than a void. GridHelper is a single LineSegments
     // draw call — effectively free.
-    const grid = new THREE.GridHelper(6000, 60, 0x2a3344, 0x161b26);
+    const grid = new THREE.GridHelper(6000, 60, 0x6a7a9a, 0x394560);
     grid.position.y = 0.6;
     (grid.material as THREE.Material).transparent = true;
-    (grid.material as THREE.Material).opacity = 0.55;
+    (grid.material as THREE.Material).opacity = 0.8;
     (grid.material as THREE.Material).depthWrite = false;
     this.group.add(grid);
     this.materials.push(grid.material as THREE.Material);
