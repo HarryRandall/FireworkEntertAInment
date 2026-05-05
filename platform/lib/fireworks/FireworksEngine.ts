@@ -15,6 +15,14 @@ import { Scheduler } from "@/lib/fireworks/Scheduler";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "@/lib/fireworks/shaders";
 import { createSeededRng, mixSeed } from "@/lib/fireworks/random";
 
+type PoolSnapshot = {
+  indices: Uint32Array;
+  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b] per particle */
+  data: Float32Array;
+  current: number;
+  aliveMax: number;
+};
+
 export type FireworksEngineStats = {
   cues: number;
   particles: number;
@@ -47,6 +55,10 @@ export class FireworksEngine {
 
   private elapsed = 0;
   private time = 0;
+  /** Snapshots keyed by elapsed seconds, used for fast backward seeks. */
+  private snapshots: { time: number; state: PoolSnapshot }[] = [];
+  private readonly SNAPSHOT_INTERVAL = 1.0;
+  private nextSnapshotAt = 0;
 
   constructor(scene: THREE.Scene, launchPositions: LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS) {
     this.scene = scene;
@@ -86,7 +98,7 @@ export class FireworksEngine {
       "size",
       new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage),
     );
-    this.geometry.setDrawRange(0, PARTICLE_CAPACITY);
+    this.geometry.setDrawRange(0, 0);
 
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.frustumCulled = false;
@@ -110,7 +122,9 @@ export class FireworksEngine {
 
   setCues(cues: ReplayCue[]): void {
     this.scheduler.setCues(cues);
-    this.rebuildAt(this.elapsed);
+    this.snapshots.length = 0;
+    this.nextSnapshotAt = 0;
+    this.seekTo(this.elapsed);
   }
 
   /**
@@ -121,11 +135,18 @@ export class FireworksEngine {
     const next = Math.max(0, target);
     const delta = next - this.elapsed;
     if (delta < -0.0001 || delta > LARGE_JUMP_SECONDS) {
-      this.rebuildAt(next);
+      this.seekTo(next);
       return;
     }
     if (delta <= 0.0001) return;
     this.advanceTo(next, true);
+  }
+
+  /** Drop all live particles & flash lights — used at end-of-show flush. */
+  clear(): void {
+    this.pool.reset();
+    this.lights.reset();
+    this.syncGeometry();
   }
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
@@ -145,12 +166,26 @@ export class FireworksEngine {
     });
   }
 
-  private rebuildAt(target: number): void {
+  /** Seek using nearest snapshot if available, otherwise full rebuild. */
+  private seekTo(target: number): void {
+    const snap = this.findSnapshot(target);
+    if (snap && snap.time <= target) {
+      this.restoreSnapshot(snap.state);
+      this.elapsed = snap.time;
+      this.time = snap.time;
+      this.scheduler.resetFiredAfter(snap.time);
+      this.nextSnapshotAt = snap.time + this.SNAPSHOT_INTERVAL;
+      this.syncGeometry();
+      if (target > snap.time) this.advanceTo(target, false);
+      return;
+    }
     this.pool.reset();
     this.lights.reset();
     this.scheduler.resetAll();
     this.elapsed = 0;
     this.time = 0;
+    this.snapshots.length = 0;
+    this.nextSnapshotAt = 0;
     this.syncGeometry();
     if (target > 0) this.advanceTo(target, false);
   }
@@ -165,6 +200,17 @@ export class FireworksEngine {
       }
       this.tick(next - cursor);
       cursor = next;
+      // Snapshot at coarse intervals while not in real-time playback.
+      // Skip frames with mid-flight shells: their detonation callbacks
+      // would be lost on restore and leave dangling ascending particles.
+      if (
+        !audible &&
+        cursor >= this.nextSnapshotAt &&
+        !this.poolHasMidFlightShells()
+      ) {
+        this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
+        this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
+      }
     }
     this.elapsed = target;
   }
@@ -172,10 +218,12 @@ export class FireworksEngine {
   private tick(dt: number): void {
     this.time += dt;
     const ps = this.pool.particles;
-    for (let i = 0; i < ps.length; i++) {
+    const cap = this.pool.aliveMax + 1;
+    for (let i = 0; i < cap; i++) {
       const p = ps[i];
       if (p.alive) p.update(dt, this.time);
     }
+    this.pool.compactAliveMax();
     this.syncGeometry();
     this.lights.update();
   }
@@ -185,7 +233,8 @@ export class FireworksEngine {
     const positions = this.positions;
     const colors = this.colors;
     const sizes = this.sizes;
-    for (let i = 0; i < ps.length; i++) {
+    const cap = this.pool.aliveMax + 1;
+    for (let i = 0; i < cap; i++) {
       const p = ps[i];
       const pi = i * 3;
       if (p.alive) {
@@ -200,9 +249,88 @@ export class FireworksEngine {
         sizes[i] = 0;
       }
     }
+    this.geometry.setDrawRange(0, cap);
     (this.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     (this.geometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
     (this.geometry.attributes.size as THREE.BufferAttribute).needsUpdate = true;
+  }
+
+  private captureSnapshot(): PoolSnapshot {
+    const ps = this.pool.particles;
+    const cap = this.pool.aliveMax + 1;
+    let count = 0;
+    for (let i = 0; i < cap; i++) if (ps[i].alive) count++;
+    const state: PoolSnapshot = {
+      indices: new Uint32Array(count),
+      data: new Float32Array(count * 11),
+      current: this.pool.current,
+      aliveMax: this.pool.aliveMax,
+    };
+    let w = 0;
+    for (let i = 0; i < cap; i++) {
+      const p = ps[i];
+      if (!p.alive) continue;
+      state.indices[w] = i;
+      const o = w * 11;
+      state.data[o] = p.x;
+      state.data[o + 1] = p.y;
+      state.data[o + 2] = p.z;
+      state.data[o + 3] = p.vx;
+      state.data[o + 4] = p.vy;
+      state.data[o + 5] = p.vz;
+      state.data[o + 6] = p.life;
+      state.data[o + 7] = p.size;
+      state.data[o + 8] = p.color.r;
+      state.data[o + 9] = p.color.g;
+      state.data[o + 10] = p.color.b;
+      w++;
+    }
+    return state;
+  }
+
+  private restoreSnapshot(state: PoolSnapshot): void {
+    // Wipe live state cheaply via reset, then write back snapshot slots.
+    this.pool.reset();
+    this.lights.reset();
+    const ps = this.pool.particles;
+    for (let w = 0; w < state.indices.length; w++) {
+      const i = state.indices[w];
+      const p = ps[i];
+      const o = w * 11;
+      p.alive = true;
+      p.x = state.data[o];
+      p.y = state.data[o + 1];
+      p.z = state.data[o + 2];
+      p.vx = state.data[o + 3];
+      p.vy = state.data[o + 4];
+      p.vz = state.data[o + 5];
+      p.life = state.data[o + 6];
+      p.size = state.data[o + 7];
+      p.color.setRGB(state.data[o + 8], state.data[o + 9], state.data[o + 10]);
+      // Behaviour callbacks are lost on snapshot restore; remaining motion
+      // is purely ballistic until life expires. Acceptable for scrubbing.
+    }
+    this.pool.current = state.current;
+    this.pool.aliveMax = state.aliveMax;
+  }
+
+  /** Shells use mass=0.5 (vs 0.001-0.02 for flair/smoke); detect by mass. */
+  private poolHasMidFlightShells(): boolean {
+    const ps = this.pool.particles;
+    const cap = this.pool.aliveMax + 1;
+    for (let i = 0; i < cap; i++) {
+      const p = ps[i];
+      if (p.alive && p.mass >= 0.1) return true;
+    }
+    return false;
+  }
+
+  private findSnapshot(target: number): { time: number; state: PoolSnapshot } | null {
+    let best: { time: number; state: PoolSnapshot } | null = null;
+    for (const s of this.snapshots) {
+      if (s.time <= target && (!best || s.time > best.time)) best = s;
+    }
+    return best;
   }
 
   getStats(): FireworksEngineStats {

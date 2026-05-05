@@ -26,7 +26,7 @@ test("firework replay is deterministic and silent when rebuilding after scrub", 
 
   assert.match(engine, /createSeededRng/);
   assert.match(engine, /mixSeed/);
-  assert.match(engine, /this\.rebuildAt\(next\)/);
+  assert.match(engine, /this\.seekTo\(next\)/);
   assert.match(engine, /this\.advanceTo\(target, false\)/);
   assert.match(engine, /this\.lights\.reset\(\)/);
   assert.match(effects, /audible: boolean/);
