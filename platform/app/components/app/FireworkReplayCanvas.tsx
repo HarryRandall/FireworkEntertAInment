@@ -68,8 +68,8 @@ export function FireworkReplayCanvas({
     scene.fog = new THREE.FogExp2(0x000000, 0.000185);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100000);
-    camera.position.set(0, 600, 1500);
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100000);
+    camera.position.set(0, 350, 1700);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -84,14 +84,15 @@ export function FireworkReplayCanvas({
     rendererRef.current = renderer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 400, 0);
+    controls.target.set(0, 600, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
     controls.minDistance = 400;
-    controls.maxDistance = 2500;
-    controls.minPolarAngle = 0.2;
-    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    controls.maxDistance = 4000;
+    // Allow looking nearly straight up so the burst apex is reachable.
+    controls.minPolarAngle = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
     controls.enabled = interactive;
     controls.update();
     controlsRef.current = controls;
