@@ -62,6 +62,7 @@ export class Particle {
     if (
       this.life <= 0 ||
       this.size <= 0 ||
+      (this.vy < 0 && this.y <= 0) ||
       !Number.isFinite(this.x) ||
       !Number.isFinite(this.y) ||
       !Number.isFinite(this.z)
