@@ -64,8 +64,8 @@ export function FireworkReplayCanvas({
     const height = container.clientHeight || 600;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.FogExp2(0x000000, 0.000185);
+    scene.background = new THREE.Color(0x05070d);
+    scene.fog = new THREE.FogExp2(0x05070d, 0.00022);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100000);

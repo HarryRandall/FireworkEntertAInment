@@ -33,7 +33,7 @@ export class Lights {
 
   constructor(scene: THREE.Scene, poolSize = 10) {
     this.scene = scene;
-    this.ambient = new THREE.AmbientLight(0x404040);
+    this.ambient = new THREE.AmbientLight(0x202530, 0.6);
     scene.add(this.ambient);
     this.hemi = new THREE.HemisphereLight(0xaa6677, 0xaacc22, 0.5);
     scene.add(this.hemi);
