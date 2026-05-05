@@ -3,36 +3,49 @@ import type { LaunchPosition } from "@/lib/fireworks/design";
 
 const MORTAR_TEXTURE_URL = "/textures/mortar.png";
 
-/** Soft radial gradient — white at centre, transparent at edge. */
-function buildGroundGlowTexture(): THREE.CanvasTexture {
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-  const grad = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    0,
-    size / 2,
-    size / 2,
-    size / 2,
-  );
-  grad.addColorStop(0, "rgba(80, 90, 120, 0.55)");
-  grad.addColorStop(0.45, "rgba(40, 45, 70, 0.25)");
-  grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+/**
+ * Smooth radial ground glow — computed per-fragment so it stays crisp
+ * regardless of the plane's world-space size (no texture banding).
+ */
+function buildGroundGlowMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uColorInner: { value: new THREE.Color(0x6878a8) },
+      uColorOuter: { value: new THREE.Color(0x10131c) },
+      uIntensity: { value: 0.55 },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      varying vec2 vUv;
+      uniform vec3 uColorInner;
+      uniform vec3 uColorOuter;
+      uniform float uIntensity;
+      void main() {
+        float d = length(vUv - vec2(0.5)) * 2.0;
+        // smooth quartic falloff — no visible banding, no harsh edge
+        float a = clamp(1.0 - d, 0.0, 1.0);
+        a = a * a * (3.0 - 2.0 * a); // smoothstep
+        a *= a;
+        vec3 col = mix(uColorOuter, uColorInner, a);
+        gl_FragColor = vec4(col * uIntensity, a);
+      }
+    `,
+  });
 }
 
 export class World {
   group: THREE.Group;
   private mortarPositions: LaunchPosition[] = [];
   private texture: THREE.Texture | null = null;
-  private glowTexture: THREE.Texture | null = null;
   private materials: THREE.Material[] = [];
   private geometries: THREE.BufferGeometry[] = [];
 
@@ -56,23 +69,17 @@ export class World {
     this.materials.push(groundMat);
 
     // Radial glow disc just above the ground, fading to transparent so
-    // the world isn't pitch-black around the launch site.
-    if (typeof document !== "undefined") {
-      this.glowTexture = buildGroundGlowTexture();
-      const glowGeo = new THREE.PlaneGeometry(3500, 3500);
-      const glowMat = new THREE.MeshBasicMaterial({
-        map: this.glowTexture,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      });
-      const glow = new THREE.Mesh(glowGeo, glowMat);
-      glow.rotation.x = -Math.PI / 2;
-      glow.position.y = 0.5;
-      this.group.add(glow);
-      this.geometries.push(glowGeo);
-      this.materials.push(glowMat);
-    }
+    // the world isn't pitch-black around the launch site. Procedural
+    // shader instead of a stretched canvas texture (no banding).
+    const glowGeo = new THREE.PlaneGeometry(3500, 3500, 1, 1);
+    const glowMat = buildGroundGlowMaterial();
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = 0.5;
+    glow.renderOrder = -1;
+    this.group.add(glow);
+    this.geometries.push(glowGeo);
+    this.materials.push(glowMat);
 
     // Load mortar texture (cylinder body).
     this.texture = new THREE.TextureLoader().load(MORTAR_TEXTURE_URL);
@@ -126,7 +133,6 @@ export class World {
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
     this.texture?.dispose();
-    this.glowTexture?.dispose();
     this.group.parent?.remove(this.group);
   }
 }

@@ -91,7 +91,7 @@ export class Effects {
       life: design.shellLife,
       decay: 10 + rng.next() * 20,
       effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, color, rng),
-      condition: (p) => p.vy <= -rng.next() * 20,
+      condition: (p) => p.vy <= 0,
       action: (p, dt, t) =>
         this.detonate(p, dt, t, design, color, seed, rng, options.audible),
     });
