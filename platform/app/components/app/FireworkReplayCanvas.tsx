@@ -69,7 +69,7 @@ export function FireworkReplayCanvas({
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100000);
-    camera.position.set(0, 350, 1700);
+    camera.position.set(0, 180, 1800);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -84,15 +84,17 @@ export function FireworkReplayCanvas({
     rendererRef.current = renderer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 600, 0);
+    controls.target.set(0, 200, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.enablePan = false;
-    controls.minDistance = 400;
-    controls.maxDistance = 4000;
-    // Allow looking nearly straight up so the burst apex is reachable.
+    // Vertical pan lets the viewer drop to ground level or rise up.
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 80;
+    controls.maxDistance = 5000;
     controls.minPolarAngle = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    // Just below horizon so the camera can sit at ground level looking up.
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
     controls.enabled = interactive;
     controls.update();
     controlsRef.current = controls;

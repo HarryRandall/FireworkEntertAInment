@@ -79,7 +79,7 @@ export class Effects {
       z: position.z,
       size,
       mass: 0.5,
-      vy: design.liftVelocity ?? 6 + Math.min(size / 50, 4),
+      vy: design.liftVelocity ?? 11 + Math.min(size / 40, 6),
       vx: 0,
       vz: 0,
       h: 0.9,
