@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Html, OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ReplayCue } from "@/lib/shows";
+import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
 import {
-  FireworksEngine,
-  type FireworksEngineStats,
-} from "@/lib/fireworks/FireworksEngine";
-import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
+  DEFAULT_LAUNCH_POSITIONS,
+  type LaunchPosition,
+} from "@/lib/fireworks/design";
 
 if (typeof window !== "undefined") {
   const origWarn = console.warn;
@@ -24,163 +23,147 @@ if (typeof window !== "undefined") {
   };
 }
 
-type ReplaySceneProps = {
+type Props = {
   cues: ReplayCue[];
   elapsed: number;
-  interactive: boolean;
-  debug: boolean;
+  launchPositions?: LaunchPosition[];
+  muted?: boolean;
+  interactive?: boolean;
 };
 
-function GroundGrid() {
-  return (
-    <group position={[0, -1.45, -1]}>
-      <gridHelper
-        args={[
-          18,
-          18,
-          staticShowCrafterPalette.gridMajor,
-          staticShowCrafterPalette.gridMinor,
-        ]}
-      />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
-        <planeGeometry args={[18, 18, 1, 1]} />
-        <meshBasicMaterial color={staticShowCrafterPalette.night} transparent opacity={0.08} />
-      </mesh>
-    </group>
-  );
-}
-
-function EngineBridge({ cues, elapsed, debug }: ReplaySceneProps) {
-  const { scene, gl } = useThree();
+export function FireworkReplayCanvas({
+  cues,
+  elapsed,
+  launchPositions = DEFAULT_LAUNCH_POSITIONS,
+  muted = false,
+  interactive = true,
+}: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
-  const latestStatsAt = useRef(0);
-  const [stats, setStats] = useState<FireworksEngineStats | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const elapsedRef = useRef(elapsed);
+
+  const positionsKey = useMemo(
+    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
+    [launchPositions],
+  );
 
   useEffect(() => {
-    const engine = new FireworksEngine(scene, {
-      pixelRatio: gl.getPixelRatio(),
-      debug,
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.FogExp2(0x000000, 0.000185);
+    sceneRef.current = scene;
+
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100000);
+    camera.position.set(0, 600, 1500);
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
     });
-    engineRef.current = engine;
-    return () => {
-      engineRef.current = null;
-      engine.dispose();
-    };
-  }, [debug, gl, scene]);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
-  useEffect(() => {
-    scene.background = new THREE.Color(staticShowCrafterPalette.night);
-    if (scene.fog instanceof THREE.Fog) {
-      scene.fog.color.set(staticShowCrafterPalette.night);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 400, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.minDistance = 400;
+    controls.maxDistance = 2500;
+    controls.minPolarAngle = 0.2;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05;
+    controls.enabled = interactive;
+    controls.update();
+    controlsRef.current = controls;
+
+    const engine = new FireworksEngine(scene, launchPositions);
+    engine.attachListenerToCamera(camera);
+    engine.setMuted(muted);
+    engineRef.current = engine;
+
+    function loop() {
+      const eng = engineRef.current;
+      const cam = cameraRef.current;
+      const rend = rendererRef.current;
+      const sc = sceneRef.current;
+      if (!eng || !cam || !rend || !sc) return;
+      eng.setElapsed(elapsedRef.current);
+      controls.update();
+      rend.render(sc, cam);
+      rafRef.current = requestAnimationFrame(loop);
     }
-  }, [scene]);
+    rafRef.current = requestAnimationFrame(loop);
+
+    function onResize() {
+      const w = container?.clientWidth || 800;
+      const h = container?.clientHeight || 600;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    const ro = new ResizeObserver(onResize);
+    ro.observe(container);
+
+    return () => {
+      ro.disconnect();
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      controls.dispose();
+      engine.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+      engineRef.current = null;
+      controlsRef.current = null;
+      cameraRef.current = null;
+      rendererRef.current = null;
+      sceneRef.current = null;
+    };
+    // launchPositions handled by separate effect to avoid full teardown on edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     engineRef.current?.setCues(cues);
   }, [cues]);
 
-  useFrame(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.setPixelRatio(gl.getPixelRatio());
-    engine.setElapsed(elapsed);
-    // const sky = engine.getSkyLight();
-    // scene.background = sky.color;
-    // if (scene.fog instanceof THREE.Fog) {
-    //   scene.fog.color.copy(sky.color);
-    // }
-    if (debug && elapsed - latestStatsAt.current > 0.3) {
-      latestStatsAt.current = elapsed;
-      setStats(engine.getStats());
-    }
-  });
+  useEffect(() => {
+    engineRef.current?.setLaunchPositions(launchPositions);
+    // positionsKey is the dependency surrogate so we don't re-fire on
+    // referentially-different but value-equal arrays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionsKey]);
 
-  if (!debug || !stats) return null;
-  return (
-    <Html position={[-3.7, 3.7, 0]} transform={false} zIndexRange={[20, 0]}>
-      <div className="w-56 rounded-xl border border-outline-variant/55 bg-surface-container-low/85 p-3 font-mono text-[10px] leading-relaxed text-on-surface shadow-[var(--shadow-card)] backdrop-blur">
-        <div>cues: {stats.cues}</div>
-        <div>events: {stats.scheduledEvents}</div>
-        <div>particles: {stats.particles}</div>
-        <div>trails: {stats.trailParticles}</div>
-        <div>smoke: {stats.smokeParticles}</div>
-      </div>
-    </Html>
-  );
-}
+  useEffect(() => {
+    engineRef.current?.setMuted(muted);
+  }, [muted]);
 
-function ReplayScene({
-  cues,
-  elapsed,
-  interactive,
-  debug,
-}: ReplaySceneProps) {
-  return (
-    <>
-      <ambientLight intensity={0.22} />
-      <hemisphereLight args={[0x27446a, 0x050712, 0.28]} />
-      <fog attach="fog" args={[staticShowCrafterPalette.night, 8.5, 30]} />
-      <GroundGrid />
-      <EngineBridge
-        cues={cues}
-        elapsed={elapsed}
-        interactive={interactive}
-        debug={debug}
-      />
-      {interactive ? (
-        <OrbitControls
-          target={[0, 0.9, -0.9]}
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={2.4}
-          maxDistance={12}
-          minPolarAngle={0.1}
-          maxPolarAngle={Math.PI / 2 - 0.04}
-        />
-      ) : null}
-    </>
-  );
-}
-
-export function FireworkReplayCanvas({
-  cues,
-  elapsed,
-  interactive = true,
-  debug = false,
-}: {
-  cues: ReplayCue[];
-  elapsed: number;
-  interactive?: boolean;
-  debug?: boolean;
-}) {
-  const maxDpr = useMemo(() => {
-    if (typeof window === "undefined") return 2;
-    return Math.min(3, Math.max(2, window.devicePixelRatio || 2));
-  }, []);
+  useEffect(() => {
+    if (controlsRef.current) controlsRef.current.enabled = interactive;
+  }, [interactive]);
 
   return (
-    <Canvas
-      className="h-full w-full min-h-0 touch-none bg-transparent"
-      gl={{
-        antialias: true,
-        alpha: false,
-        powerPreference: "high-performance",
-        precision: "highp",
-      }}
-      onCreated={({ gl }) => {
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.04;
-        gl.outputColorSpace = THREE.SRGBColorSpace;
-      }}
-      camera={{ position: [0, 1.45, 7.4], fov: 58 }}
-      dpr={[1.5, maxDpr]}
-    >
-      <ReplayScene
-        cues={cues}
-        elapsed={elapsed}
-        interactive={interactive}
-        debug={debug}
-      />
-    </Canvas>
+    <div
+      ref={containerRef}
+      className="absolute inset-0 h-full w-full bg-black"
+    />
   );
 }

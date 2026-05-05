@@ -28,7 +28,12 @@ export const FireworkDesignSchema = z.object({
       flairSizeStrobe: RangeSchema.optional(),
       flairColorMode: z.enum(["bombColor", "random", "mixed"]).default("mixed"),
     })
-    .default({}),
+    .default({
+      speed: [2, 4],
+      gravity: [-2.1, -0.1],
+      life: [0.5, 6.5],
+      flairColorMode: "mixed",
+    }),
   flair: z
     .object({ enabled: z.boolean().default(true) })
     .default({ enabled: true }),

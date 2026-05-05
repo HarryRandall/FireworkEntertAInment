@@ -16,6 +16,7 @@ const AddCueSchema = z.object({
   effectSpecId: z.string().uuid(),
   timeSeconds: z.coerce.number().min(0).max(60 * 60),
   description: z.string().trim().min(1).max(180),
+  launchPositionIndex: z.coerce.number().int().min(0).max(2).default(0),
 });
 
 const DeleteCueSchema = z.object({
@@ -32,6 +33,7 @@ export async function addPreviewCueAction(
     effectSpecId: formData.get("effectSpecId"),
     timeSeconds: formData.get("timeSeconds"),
     description: formData.get("description"),
+    launchPositionIndex: formData.get("launchPositionIndex") ?? 0,
   });
 
   if (!parsed.success) {
@@ -59,6 +61,7 @@ export async function addPreviewCueAction(
     time_seconds: parsed.data.timeSeconds,
     description: parsed.data.description,
     effect_spec_id: parsed.data.effectSpecId,
+    launch_position_index: parsed.data.launchPositionIndex,
     position_json: { x: 0, y: 0, z: 0 },
     rotation_json: { pan: 0, tilt: 90, roll: 0 },
     scale: 1,
