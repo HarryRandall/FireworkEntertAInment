@@ -138,8 +138,11 @@ export class Effects {
         max = rng.next() * 30;
         break;
       case 2:
-        particle.x += Math.cos(Math.PI * 2 * time) * rng.next() * 3;
-        particle.z += Math.sin(Math.PI * 2 * time) * rng.next() * 3;
+        // Tiny lateral wobble — was a strong spiral. Don't translate the
+        // shell; just let the trail particles (below) inherit a small drift.
+        particle.vx += (rng.next() - 0.5) * 0.05;
+        particle.vz += (rng.next() - 0.5) * 0.05;
+        max = rng.next() * 20;
         break;
       case 3:
         particle.size = rng.next() > 0.5 ? 150 : 10;
@@ -213,9 +216,15 @@ export class Effects {
           break;
         }
         case 2: {
-          vy = 1 + rng.next() * 2;
-          vx = Math.sin(i * Math.PI * 2 * speed) * (2 - rng.next() * 4);
-          vz = Math.sin(i * Math.PI * 2 * speed) * (2 - rng.next() * 4);
+          // Distribute over the full sphere (was upper-hemisphere only,
+          // which left wave bursts looking like a dome with no bottom).
+          vy = (i * offset - 1 + offset / 2) * speed;
+          const r = Math.sqrt(Math.max(0, 1 - (vy / speed) * (vy / speed)));
+          const phi = ((i + 1.0) % design.size) * inc;
+          // Slight wave warble on top of even spread.
+          const warble = 0.7 + rng.next() * 0.6;
+          vx = Math.cos(phi) * r * speed * warble;
+          vz = Math.sin(phi) * r * speed * warble;
           break;
         }
         default: {
@@ -296,9 +305,13 @@ export class Effects {
         }
         break;
       case 2:
-        if (particle.vy < 0) {
-          particle.x += Math.cos(Math.PI * 2 * time) * rng.next() * 3;
-          particle.z += Math.sin(Math.PI * 2 * time) * rng.next() * 3;
+        // Subtle drift on falling sparks only. Original implementation used
+        // raw time as the angle, so a small fraction of bursts ended up
+        // resonant with the per-particle phase and visibly spiralled.
+        if (particle.vy < 0 && rng.next() < 0.25) {
+          const phase = particle.i * 0.137;
+          particle.x += Math.cos(phase + time) * 0.6;
+          particle.z += Math.sin(phase + time) * 0.6;
         }
         break;
       case 3:
