@@ -51,6 +51,7 @@ export type FireworkSpecification = {
   durationSeconds: number | null;
   heightMeters: number | null;
   spec: FireworkSpec;
+  rawSpec: unknown;
 };
 
 export type ReplayCue = ShowCue & {

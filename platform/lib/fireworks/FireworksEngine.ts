@@ -13,6 +13,7 @@ import { World } from "@/lib/fireworks/World";
 import { Effects } from "@/lib/fireworks/Effects";
 import { Scheduler } from "@/lib/fireworks/Scheduler";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "@/lib/fireworks/shaders";
+import { createSeededRng, mixSeed } from "@/lib/fireworks/random";
 
 export type FireworksEngineStats = {
   cues: number;
@@ -23,7 +24,7 @@ export type FireworksEngineStats = {
 const PARTICLE_CAPACITY = 100_000;
 const SPARK_TEXTURE_URL = "/textures/spark1.png";
 const FIXED_DT = 1 / 60;
-const MAX_STEPS_PER_FRAME = 4;
+const LARGE_JUMP_SECONDS = 0.35;
 
 export class FireworksEngine {
   private scene: THREE.Scene;
@@ -45,8 +46,6 @@ export class FireworksEngine {
   private sizes: Float32Array;
 
   private elapsed = 0;
-  private accumulator = 0;
-  private lastSetElapsed = 0;
   private time = 0;
 
   constructor(scene: THREE.Scene, launchPositions: LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS) {
@@ -111,54 +110,83 @@ export class FireworksEngine {
 
   setCues(cues: ReplayCue[]): void {
     this.scheduler.setCues(cues);
-    this.scheduler.resetFiredAfter(this.elapsed);
+    this.rebuildAt(this.elapsed);
   }
 
   /**
-   * Drive timeline. On a backwards seek (target < lastSetElapsed) we clear the
-   * pool and rewind so cues prior to the new target play again.
+   * Drive timeline. Scrubbing or large jumps silently rebuild the particle
+   * state at the target time; normal forward playback emits sound.
    */
   setElapsed(target: number): void {
-    if (target < this.lastSetElapsed) {
-      this.pool.reset();
-      this.scheduler.resetAll();
-      this.elapsed = 0;
-      this.accumulator = 0;
+    const next = Math.max(0, target);
+    const delta = next - this.elapsed;
+    if (delta < -0.0001 || delta > LARGE_JUMP_SECONDS) {
+      this.rebuildAt(next);
+      return;
     }
-    const prevElapsed = this.elapsed;
-    const due = this.scheduler.pop(prevElapsed, target);
-    for (const cue of due) {
-      this.fireCue(cue);
-    }
-    const dt = Math.max(0, target - this.elapsed);
-    this.accumulator += dt;
-    let steps = 0;
-    while (this.accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
-      this.tick(FIXED_DT);
-      this.accumulator -= FIXED_DT;
-      steps++;
-    }
-    if (steps >= MAX_STEPS_PER_FRAME) this.accumulator = 0;
-    this.elapsed = target;
-    this.lastSetElapsed = target;
+    if (delta <= 0.0001) return;
+    this.advanceTo(next, true);
   }
 
-  private fireCue(cue: ReplayCue): void {
-    const design = safeParseFireworkDesign(cue.firework.spec as unknown);
+  private fireCue(cue: ReplayCue, audible: boolean): void {
+    const design = safeParseFireworkDesign(cue.firework.rawSpec);
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const pos = this.world.getLaunchPosition(idx);
-    this.effects.fire(design, pos);
+    const seed = mixSeed(
+      cue.seedOverride ?? undefined,
+      cue.id,
+      cue.firework.id,
+      cue.timeSeconds,
+      idx,
+    );
+    this.effects.fire(design, pos, {
+      rng: createSeededRng(seed),
+      audible,
+    });
+  }
+
+  private rebuildAt(target: number): void {
+    this.pool.reset();
+    this.lights.reset();
+    this.scheduler.resetAll();
+    this.elapsed = 0;
+    this.time = 0;
+    this.syncGeometry();
+    if (target > 0) this.advanceTo(target, false);
+  }
+
+  private advanceTo(target: number, audible: boolean): void {
+    let cursor = this.elapsed;
+    while (cursor + 0.0001 < target) {
+      const next = Math.min(target, cursor + FIXED_DT);
+      const due = this.scheduler.pop(cursor, next);
+      for (const cue of due) {
+        this.fireCue(cue, audible);
+      }
+      this.tick(next - cursor);
+      cursor = next;
+    }
+    this.elapsed = target;
   }
 
   private tick(dt: number): void {
     this.time += dt;
+    const ps = this.pool.particles;
+    for (let i = 0; i < ps.length; i++) {
+      const p = ps[i];
+      if (p.alive) p.update(dt, this.time);
+    }
+    this.syncGeometry();
+    this.lights.update();
+  }
+
+  private syncGeometry(): void {
     const ps = this.pool.particles;
     const positions = this.positions;
     const colors = this.colors;
     const sizes = this.sizes;
     for (let i = 0; i < ps.length; i++) {
       const p = ps[i];
-      if (p.alive) p.update(dt, this.time);
       const pi = i * 3;
       if (p.alive) {
         positions[pi] = p.x;
@@ -175,7 +203,6 @@ export class FireworksEngine {
     (this.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
     (this.geometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
     (this.geometry.attributes.size as THREE.BufferAttribute).needsUpdate = true;
-    this.lights.update();
   }
 
   getStats(): FireworksEngineStats {
@@ -189,7 +216,10 @@ export class FireworksEngine {
   /** Test/manual trigger from a specific design + launch index. */
   fireDesign(design: FireworkDesign, launchIndex = 0): void {
     const pos = this.world.getLaunchPosition(launchIndex);
-    this.effects.fire(design, pos);
+    this.effects.fire(design, pos, {
+      rng: createSeededRng(mixSeed("manual", this.elapsed, launchIndex)),
+      audible: true,
+    });
   }
 
   dispose(): void {

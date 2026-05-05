@@ -67,6 +67,15 @@ export class Lights {
     }
   }
 
+  reset(): void {
+    this.hemi.intensity = 0.5;
+    this.hemi.color.setRGB(0.66666, 0.4, 0.46666);
+    for (const l of this.pool) {
+      l.light.intensity = 0;
+      l.alive = false;
+    }
+  }
+
   dispose(): void {
     this.scene.remove(this.ambient);
     this.scene.remove(this.hemi);

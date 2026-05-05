@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { RandomSource } from "@/lib/fireworks/random";
 
 const BASE = "/sounds/lallassu";
 
@@ -59,27 +60,28 @@ export class SoundHandler {
     this.muted = muted;
   }
 
-  playRandomMortar(volume = 1): void {
-    this.playRandom("mortar", volume);
+  playRandomMortar(volume = 1, rng?: RandomSource): void {
+    this.playRandom("mortar", volume, rng);
   }
 
-  playRandomLightBoom(volume = 1): void {
-    this.playRandom("lightBoom", volume);
+  playRandomLightBoom(volume = 1, rng?: RandomSource): void {
+    this.playRandom("lightBoom", volume, rng);
   }
 
-  playRandomHeavyBoom(volume = 1): void {
-    this.playRandom("heavyBoom", volume);
+  playRandomHeavyBoom(volume = 1, rng?: RandomSource): void {
+    this.playRandom("heavyBoom", volume, rng);
   }
 
-  playRandomCrackle(volume = 0.1): void {
-    this.playRandom("crackle", volume);
+  playRandomCrackle(volume = 0.1, rng?: RandomSource): void {
+    this.playRandom("crackle", volume, rng);
   }
 
-  private playRandom(key: SoundKey, volume: number): void {
+  private playRandom(key: SoundKey, volume: number, rng?: RandomSource): void {
     if (this.muted) return;
     const pool = this.buffers[key];
     if (!pool.length) return;
-    const buffer = pool[Math.floor(Math.random() * pool.length)];
+    const random = rng?.next() ?? Math.random();
+    const buffer = pool[Math.floor(random * pool.length)];
     const sound = new THREE.Audio(this.listener);
     sound.setBuffer(buffer);
     sound.setLoop(false);

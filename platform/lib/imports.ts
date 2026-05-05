@@ -456,6 +456,7 @@ export function importedSpecToReplayCues(
         durationSeconds: imported.durationSeconds,
         heightMeters: imported.heightMeters ?? null,
         spec,
+        rawSpec: spec,
       },
     },
   ];

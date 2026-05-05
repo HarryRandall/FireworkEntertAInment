@@ -80,7 +80,7 @@ type ShoppingItemProjection = Pick<
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const CACHE_PREFIX = "shows:v1";
+const CACHE_PREFIX = "shows:v2";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
@@ -177,6 +177,7 @@ function mapEffectSpecification(
     durationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
     spec: safeParseFireworkSpec(row.spec_json),
+    rawSpec: row.spec_json,
   };
 }
 
