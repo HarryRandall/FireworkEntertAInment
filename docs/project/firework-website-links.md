@@ -4,7 +4,7 @@ title: Competitor Analysis
 date: '2026-03-16 02:22:00.000'
 from_notion: https://www.notion.so/Competitor-Analysis-325cd8a5bf0880c19edee49b88abe705
 author: From Notion
-last_edited_time: '2026-04-17 10:54:00.000'
+last_edited_time: '2026-05-04 05:49:00.000'
 ---
 🌍 A snapshot of the tools and brands adjacent to ShowCrafter. Each entry notes what they do, who they sell to, and how they relate to our MVP.
 
@@ -26,7 +26,7 @@ last_edited_time: '2026-04-17 10:54:00.000'
 
 ## 🔎 Detailed Profiles
 
-🎆 **[GLOW Fireworks - 3D Fireworks Visualization](https://glowfireworks.com/)**
+🎆 **[GLOW Fireworks - 3D Fireworks Visualisation](https://glowfireworks.com/)**
 
 	🔥 **[IGNITE™ USA - Smartphone Fireworks Firing System](https://www.ignitefiringsystems.com/)**
 

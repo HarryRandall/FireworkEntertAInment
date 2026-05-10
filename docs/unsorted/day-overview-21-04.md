@@ -3,7 +3,7 @@ notion-url: https://www.notion.so/Day-Overview-21-04-34ccd8a5bf0881b395c3cd41a62
 title: Day Overview (21/04)
 from_notion: https://www.notion.so/Day-Overview-21-04-34ccd8a5bf0881b395c3cd41a62841cf
 author: From Notion
-last_edited_time: '2026-04-27 06:27:00.000'
+last_edited_time: '2026-05-04 05:33:00.000'
 date: '2026-04-24 08:44:00.000'
 ---
 ---
@@ -15,12 +15,13 @@ date: '2026-04-24 08:44:00.000'
  | Stakeholder | Interim Meeting 4 debrief with Robert — MVP scope (Finale 3D-first), renderer expectations, MIR priority, **4 May** follow-up | Harrison, Fang | — | [Stakeholder Meeting 4](https://www.notion.so/34ccd8a5bf088143885cc94ca0c51bf3) | 
  | Process / Notion | Reformatted the Sprint 2 page (sprint goal callout, deliverables table, scheduling note) and seeded this Day Overview page so async work had a home | Harry | — | ([Sprint 2 - Platform Skeleton, Database & MIR](https://www.notion.so/345cd8a5bf0881139db2e8370f553d76]) | 
  | Process / Linear | Backfilled the Sprint 2 platform slice and seven supporting issues (skeleton review, Scrum 1 backfill, API surface, catalogue routes, auth, live-data wiring, docs) | Harry | [FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock), [FIR-52](https://linear.app/fireworkentertainment/issue/FIR-52/review-existing-nextjssupabase-platform-skeleton-for-sprint-2)–[FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps) | Linear backlog | 
- | Platform / design system | **ShowCrafter design system** — `SKILL.md` spec, editor rule cheatsheet, design-token aliases (Ember Gold, Sky Pulse, Night), Lucide icon set, foundation refactor | Harry | [FIR-60](https://linear.app/fireworkentertainment/issue/FIR-60/design-system-skill-pack), [FIR-63](https://linear.app/fireworkentertainment/issue/FIR-63/foundation-refactor-tokens-lucide-deps-drop-material-symbols) | [PR #80](https://github.com/HarryRandall/FireworkEntertAInment/pull/80), [PR #81](https://github.com/HarryRandall/FireworkEntertAInment/pull/81) | 
+ | Platform / design system | **ShowCrafter design system** — `SKILL.md` spec, Cursor rule, design-token aliases (Ember Gold, Sky Pulse, Night), Lucide icon set, foundation refactor | Harry | [FIR-60](https://linear.app/fireworkentertainment/issue/FIR-60/design-system-skill-pack), [FIR-63](https://linear.app/fireworkentertainment/issue/FIR-63/foundation-refactor-tokens-lucide-deps-drop-material-symbols) | [PR #80](https://github.com/HarryRandall/FireworkEntertAInment/pull/80), [PR #81](https://github.com/HarryRandall/FireworkEntertAInment/pull/81) | 
  | Platform / components | Shared UI / marketing / app component pack under `app/components/{ui,marketing,app}` (Button, Card, Hero, MarketingNavBar, AppShell, etc.) | Harry | [FIR-61](https://linear.app/fireworkentertainment/issue/FIR-61/ui-marketing-app-component-pack) | [PR #82](https://github.com/HarryRandall/FireworkEntertAInment/pull/82) | 
  | Platform / routes | `(marketing)`, `(app)`, `(dev)` route groups so chrome and access-control concerns stay isolated | Harry | [FIR-62](https://linear.app/fireworkentertainment/issue/FIR-62/route-groups-marketing-app-dev) | [PR #83](https://github.com/HarryRandall/FireworkEntertAInment/pull/83) | 
  | Platform / UI | Rebuilt `/` landing and a UI-only `/login` on the new component pack — the basic UI mockup direction we were aiming for this week | Harry | [FIR-64](https://linear.app/fireworkentertainment/issue/FIR-64/rebuild-landing-and-add-login-on-the-new-component-pack) | [PR #84](https://github.com/HarryRandall/FireworkEntertAInment/pull/84) | 
  | Platform / app pages | Authenticated app pages on the new shell — `/dashboard` bento grid, `/shows/new` form, `/shows/[id]` editor with timeline / shopping list / preview tabs | Harry | [FIR-65](https://linear.app/fireworkentertainment/issue/FIR-65/authenticated-app-pages-dashboard-new-show-show-editor-sub-routes) | [PR #85](https://github.com/HarryRandall/FireworkEntertAInment/pull/85) | 
- | Database | Supabase / database work from Sydney — documenting database helpers and catalogue integration patterns | Liam | [FIR-50](https://linear.app/fireworkentertainment/issue/FIR-50/catalogue-config-documentation), [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database) | Ongoing | 
+ | Database | Supabase / database work from Sydney — documenting database helpers and catalogue integration patterns | Liam | [FIR-50](https://linear.app/fireworkentertainment/issue/FIR-50/catalogue-config-documentation), [FIR-45](https://linear.app/fireworkentertainment/issue/FIR-45/update-supabase-with-new-sample-database) | FIR-45 done
+FIR-50 done but made redundant - will keep for optimisation stage later | 
  | MIR | Evolved `prototypes/audio-analyser` into a preprocessing module — `agent.md`  • `llm-harness.md`, expanded cue generation in `showcrafter.py`, `--personality` CLI, richer Markdown report + structured JSON for downstream validators | Fang | [FIR-24](https://linear.app/fireworkentertainment/issue/FIR-24/spike-evaluate-and-select-core-mir-librariesapis), [FIR-39](https://linear.app/fireworkentertainment/issue/FIR-39/enhance-audio-analysis-granularity-and-model-generalization) | Ongoing | 
  | Simulation | Godot visualiser spike — 2D particle system approximating two firework effect families; exploring VDL-driven authoring; needs alignment to Robert's Finale 3D format | Harrison | [FIR-28](https://linear.app/fireworkentertainment/issue/FIR-28/write-research-methods-for-firework-simulation) | Ongoing | 
  | Process | Recorded sprint progress + branch hygiene requests in Linear | Harry | [FIR-48](https://linear.app/fireworkentertainment/issue/FIR-48/could-you-please-help-me-delete-the-following-branches-they-are-no), [FIR-49](https://linear.app/fireworkentertainment/issue/FIR-49/can-you-open-the-failed-vercel-deployment-for-commit-438d9df-and-send) | FIR-48 done; FIR-49 tracks failed Vercel deploy investigation | 
@@ -51,7 +52,7 @@ date: '2026-04-24 08:44:00.000'
 
 	- Backfilled Linear with the Sprint 2 platform slice ([FIR-51](https://linear.app/fireworkentertainment/issue/FIR-51/feature-supabase-auth-catalogue-apis-and-sprint-2-ui-mock)) plus the supporting issues for skeleton review, Scrum 1 backfill, API surface, catalogue routes, auth, live-data wiring, and Sprint 2 docs ([FIR-52](https://linear.app/fireworkentertainment/issue/FIR-52/review-existing-nextjssupabase-platform-skeleton-for-sprint-2)–[FIR-58](https://linear.app/fireworkentertainment/issue/FIR-58/document-sprint-2-platform-setup-and-next-steps)).
 
-	- Stood up the **ShowCrafter design system** end-to-end — `SKILL.md` spec, in-repo editor rules, design-token aliases on top of our Ember Gold + Sky Pulse palette, and a Lucide-based component pack so the rest of the platform work has a single source of truth ([FIR-60](https://linear.app/fireworkentertainment/issue/FIR-60/design-system-skill-pack), [FIR-61](https://linear.app/fireworkentertainment/issue/FIR-61/ui-marketing-app-component-pack), [FIR-63](https://linear.app/fireworkentertainment/issue/FIR-63/foundation-refactor-tokens-lucide-deps-drop-material-symbols)).
+	- Stood up the **ShowCrafter design system** end-to-end — `SKILL.md` spec, Cursor rule, design-token aliases on top of our Ember Gold + Sky Pulse palette, and a Lucide-based component pack so the rest of the platform work has a single source of truth ([FIR-60](https://linear.app/fireworkentertainment/issue/FIR-60/design-system-skill-pack), [FIR-61](https://linear.app/fireworkentertainment/issue/FIR-61/ui-marketing-app-component-pack), [FIR-63](https://linear.app/fireworkentertainment/issue/FIR-63/foundation-refactor-tokens-lucide-deps-drop-material-symbols)).
 
 	- Reorganised the platform into `(marketing)`, `(app)`, `(dev)` route groups and ported every prototype HTML page onto the new components ([FIR-62](https://linear.app/fireworkentertainment/issue/FIR-62/route-groups-marketing-app-dev), [FIR-64](https://linear.app/fireworkentertainment/issue/FIR-64/rebuild-landing-and-add-login-on-the-new-component-pack)).
 
@@ -79,7 +80,11 @@ date: '2026-04-24 08:44:00.000'
 
 - What You’ve Done
 
-	- Roadblocks
+	- Completed supabase config file in application.
+
+	- Completed Supabase data access layer including generic functions and tools.
+
+- Roadblocks
 
 	- What You’re Gonna Do
 
@@ -87,16 +92,56 @@ date: '2026-04-24 08:44:00.000'
 
 - What You’ve Done
 
-	- Roadblocks
+	
+```markdown
+    - Picked up audio-analyser as my Sprint 2 stream. Read the
+      existing prototype, the `agent.md` maintenance guide, and the
+      `llm-harness.md` design notes for what downstream choreography
+      expects from the analyser.
+    - Shipped initial pipeline expansion + docs (`edd4a0f`,
+      +625 / -25 on `showcrafter.py`). Foundational work: cleaner
+      structure, baseline analysis flow, scaffolding for the
+      LLM-readiness work coming next.
+```
 
-	- What You’re Gonna Do
+- Roadblocks
 
-	### Harrison
+	
+```markdown
+the foundational commit shipped without synchronous group review — flagging as a process note, not a blocker
+```
+
+- What You’re Gonna Do
+
+	
+```markdown
+- Move into Phase A: lock the output contract before any
+      robustness work starts. Add `SCHEMA_VERSION`, split outputs
+      into the full analysis JSON + a token-efficient LLM payload
+      per `llm-harness.md` §Token Strategy, and pre-compute the
+      derived features the harness asks for (`finale_window`,
+      `anchor_windows`, energy ranking, etc.).
+- Document everything in `agent.md` / `README.md` alongside the
+      code so the schema is discoverable.
+```
+
+### Harrison
 
 - What You’ve Done
 
-	- Roadblocks
+	- Began working on the Godot renderer.
 
-	- What You’re Gonna Do
+	- Created a parser that can take a dummy firing script file and fire two different types of fireworks with two different colours in Godot.
 
-	
+- Roadblocks
+
+	- More time than I thought is being eaten up by documentation still, finding a way to optimise this process might help a bit.
+
+- What You’re Gonna Do
+
+	- Extend the Godot system to fully understand Finale3D VDL
+
+	- Implement all of Robert’s firework types in the 2D renderer.
+
+	<br/>
+

@@ -3,7 +3,7 @@ notion-url: https://www.notion.so/Stakeholder-Meeting-4-34ccd8a5bf088143885cc94c
 title: Stakeholder Meeting 4
 from_notion: https://www.notion.so/Stakeholder-Meeting-4-34ccd8a5bf088143885cc94ca0c51bf3
 author: From Notion
-last_edited_time: '2026-04-24 09:29:00.000'
+last_edited_time: '2026-05-04 05:49:00.000'
 date: '2026-04-24 08:44:00.000'
 ---
 [//]: # (table_of_contents is not supported)
@@ -16,9 +16,9 @@ date: '2026-04-24 08:44:00.000'
 
 ## Topics Discussed
 
-### Visualization approach
+### Visualisation approach
 
-- Harrison explained the website still needs a way to preview fireworks, currently leaning toward a **custom particle / engine-backed approach** (e.g. Godot) versus **re-using supplier videos**.
+- Harrison explained the website still needs a way to preview fireworks, currently leaning towards a **custom particle / engine-backed approach** (e.g. Godot) versus **re-using supplier videos**.
 
 - Robert cautioned that **accurate effect rendering from text descriptions is a multi-person, multi-year problem** for vendors like Glow and Finale; he recommended **re-using existing simulations/videos** where possible so the team does not ship something that looks “average” relative to industry tools.
 
@@ -26,7 +26,7 @@ date: '2026-04-24 08:44:00.000'
 
 ### MVP definition: Finale 3D as the simulator
 
-- Robert’s “big step” milestone: generate a **Finale 3D–compatible workbook / script export** that imports cleanly, carries the show, and syncs with the music—then **use Finale 3D for visualization**.
+- Robert’s “big step” milestone: generate a **Finale 3D–compatible workbook / script export** that imports cleanly, carries the show, and syncs with the music—then **use Finale 3D for visualisation**.
 
 - Fully bespoke web animation matching vendor quality was framed as **unlikely in scope**; Harrison agreed to keep investigating but not bet the sprint on it.
 
@@ -58,9 +58,9 @@ date: '2026-04-24 08:44:00.000'
 
 ### MIR status (Fang)
 
-- Fang summarized work on the **music analysis tool**: segmenting music, tempo/movement features, evaluating libraries that need tuning for commercial use.
+- Fang summarised work on the **music analysis tool**: segmenting music, tempo/movement features, evaluating libraries that need tuning for commercial use.
 
-- Noted **Harrison built the initial prototype** and Fang has been **optimizing / extending** it.
+- Noted **Harrison built the initial prototype** and Fang has been **optimising / extending** it.
 
 ---
 
