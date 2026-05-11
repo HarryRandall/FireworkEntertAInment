@@ -57,11 +57,11 @@ export type ReplayCue = ShowCue & {
 
 export type ShoppingListItem = {
   id: string;
-  position: number;
   name: string;
   qty: number;
   priceCents: number;
-  fireworkPartNumber: string | null;
+  partNumber: string;
+  manufacturer: string | null;
 };
 
 /**

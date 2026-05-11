@@ -24,8 +24,6 @@ import type { Database } from "@/lib/database.types";
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
 type EffectSpecRow = Database["public"]["Tables"]["effect_specs"]["Row"];
-type ShoppingItemRow =
-  Database["public"]["Tables"]["shopping_list_items"]["Row"];
 type ShowProjection = Pick<
   ShowRow,
   | "id"
@@ -69,10 +67,6 @@ type EffectSpecProjection = Pick<
   | "spec_json"
 >;
 type ReplayCueRow = ShowCueProjection;
-type ShoppingItemProjection = Pick<
-  ShoppingItemRow,
-  "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
->;
 
 const CACHE_PREFIX = "shows:v5";
 const SHOWS_TTL_SECONDS = 60;
@@ -83,8 +77,8 @@ const SHOW_CUE_SELECT =
   "id, position, time_seconds, description, product_id, seed_override, launch_position_index";
 const EFFECT_SPEC_SELECT =
   "id, slug, name, description, duration_seconds, height_meters, spec_json";
-const SHOPPING_ITEM_SELECT =
-  "id, position, name, qty, price_cents, firework_part_number";
+const SHOW_CUES_WITH_PRODUCT_SELECT =
+  "product_id, products(id, name, part_number, manufacturer)";
 
 function mapShow(row: ShowProjection): Show {
   return {
@@ -148,16 +142,6 @@ function mapReplayCueBase(row: ReplayCueRow): ShowCue | null {
   return mapCue(row);
 }
 
-function mapShoppingItem(row: ShoppingItemProjection): ShoppingListItem {
-  return {
-    id: row.id,
-    position: row.position,
-    name: row.name,
-    qty: row.qty,
-    priceCents: row.price_cents,
-    fireworkPartNumber: row.firework_part_number,
-  };
-}
 
 const getServerClient = cache(async () => {
   return createClient(await cookies());
@@ -468,18 +452,74 @@ export async function listShoppingItemsForShow(
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from("shopping_list_items")
-    .select(SHOPPING_ITEM_SELECT)
-    .eq("show_id", showId)
-    .order("position", { ascending: true });
-  if (error) {
-    console.error("[shows.server] listShoppingItemsForShow failed:", error);
+
+  const { data: cueRows, error: cueError } = await supabase
+    .from("show_cues")
+    .select(SHOW_CUES_WITH_PRODUCT_SELECT)
+    .eq("show_id", showId);
+  if (cueError) {
+    console.error("[shows.server] listShoppingItemsForShow cues failed:", cueError);
     return [];
   }
-  const mapped = (data ?? []).map(mapShoppingItem);
-  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
-  return mapped;
+
+  // Aggregate qty per product
+  const byProduct = new Map<string, { name: string; partNumber: string; manufacturer: string | null; qty: number }>();
+  for (const row of cueRows ?? []) {
+    const p = row.products as { id: string; name: string; part_number: string; manufacturer: string | null } | null;
+    if (!p) continue;
+    const existing = byProduct.get(p.id);
+    if (existing) {
+      existing.qty += 1;
+    } else {
+      byProduct.set(p.id, { name: p.name, partNumber: p.part_number, manufacturer: p.manufacturer, qty: 1 });
+    }
+  }
+
+  if (byProduct.size === 0) {
+    await setCachedJson(cacheKey, [], SHOWS_TTL_SECONDS);
+    return [];
+  }
+
+  // Fetch cheapest available price per product from supplier inventory
+  const productIds = Array.from(byProduct.keys());
+  const { data: inventoryRows } = await supabase
+    .from("supplier_inventory_items")
+    .select("product_id, price_cents")
+    .in("product_id", productIds)
+    .eq("available", true)
+    .not("price_cents", "is", null);
+
+  const cheapestPrice = new Map<string, number>();
+  for (const inv of inventoryRows ?? []) {
+    if (inv.product_id == null || inv.price_cents == null) continue;
+    const current = cheapestPrice.get(inv.product_id);
+    if (current == null || inv.price_cents < current) {
+      cheapestPrice.set(inv.product_id, inv.price_cents);
+    }
+  }
+
+  const items: ShoppingListItem[] = Array.from(byProduct.entries())
+    .map(([id, p]) => ({
+      id,
+      name: p.name,
+      qty: p.qty,
+      priceCents: cheapestPrice.get(id) ?? 0,
+      partNumber: p.partNumber,
+      manufacturer: p.manufacturer,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  await setCachedJson(cacheKey, items, SHOWS_TTL_SECONDS);
+
+  // Keep shows.total_cents in sync with the computed shopping list total
+  const totalCents = items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
+  await supabase
+    .from("shows")
+    .update({ total_cents: totalCents })
+    .eq("id", showId);
+  await invalidateShowCacheForUser(userId, { showId });
+
+  return items;
 }
 
 /**
