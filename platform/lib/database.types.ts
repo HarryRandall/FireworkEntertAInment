@@ -735,6 +735,7 @@ export type Database = {
           firework_product_id: string | null
           id: string
           label: string | null
+          launch_position_index: number
           layer: string | null
           locked: boolean
           overrides_json: Json
@@ -756,6 +757,7 @@ export type Database = {
           firework_product_id?: string | null
           id?: string
           label?: string | null
+          launch_position_index?: number
           layer?: string | null
           locked?: boolean
           overrides_json?: Json
@@ -777,6 +779,7 @@ export type Database = {
           firework_product_id?: string | null
           id?: string
           label?: string | null
+          launch_position_index?: number
           layer?: string | null
           locked?: boolean
           overrides_json?: Json
@@ -882,6 +885,7 @@ export type Database = {
           duration_seconds: number | null
           effects_count: number
           id: string
+          launch_positions_json: Json
           location: string | null
           mood_tags: string[]
           safety_meters: number | null
@@ -904,6 +908,7 @@ export type Database = {
           duration_seconds?: number | null
           effects_count?: number
           id?: string
+          launch_positions_json?: Json
           location?: string | null
           mood_tags?: string[]
           safety_meters?: number | null
@@ -926,6 +931,7 @@ export type Database = {
           duration_seconds?: number | null
           effects_count?: number
           id?: string
+          launch_positions_json?: Json
           location?: string | null
           mood_tags?: string[]
           safety_meters?: number | null

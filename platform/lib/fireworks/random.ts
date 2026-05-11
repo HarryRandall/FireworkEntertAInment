@@ -3,8 +3,9 @@ export type SeededRng = {
   range: (min: number, max: number) => number;
   signed: (amount?: number) => number;
   int: (min: number, max: number) => number;
-  pick: <T>(items: readonly T[]) => T;
 };
+
+export type RandomSource = Pick<SeededRng, "next">;
 
 export function hashStringToSeed(input: string): number {
   let hash = 2166136261;
@@ -40,6 +41,5 @@ export function createSeededRng(seed: number): SeededRng {
     range: (min, max) => min + (max - min) * next(),
     signed: (amount = 1) => (next() * 2 - 1) * amount,
     int: (min, max) => Math.floor(min + next() * (max - min + 1)),
-    pick: <T>(items: readonly T[]) => items[Math.floor(next() * items.length)] as T,
   };
 }

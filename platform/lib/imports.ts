@@ -446,6 +446,7 @@ export function importedSpecToReplayCues(
       scale: 1,
       overrides: {},
       seedOverride: null,
+      launchPositionIndex: 0,
       firework: {
         id,
         slug: spec.shellType,
@@ -455,6 +456,7 @@ export function importedSpecToReplayCues(
         durationSeconds: imported.durationSeconds,
         heightMeters: imported.heightMeters ?? null,
         spec,
+        rawSpec: spec,
       },
     },
   ];

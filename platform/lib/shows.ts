@@ -2,6 +2,7 @@
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
 import type { FireworkSpec, Rotation, Vec3 } from "@/lib/fireworks/spec";
+import type { LaunchPosition } from "@/lib/fireworks/design";
 
 export type ShowStatus = "draft" | "complete";
 
@@ -23,6 +24,7 @@ export type Show = {
   description: string | null;
   moodTags: string[];
   audioPath: string | null;
+  launchPositions: LaunchPosition[];
   updatedAt: string;
 };
 
@@ -37,6 +39,7 @@ export type ShowCue = {
   scale?: number;
   overrides?: Record<string, unknown>;
   seedOverride?: number | null;
+  launchPositionIndex: number;
 };
 
 export type FireworkSpecification = {
@@ -48,6 +51,7 @@ export type FireworkSpecification = {
   durationSeconds: number | null;
   heightMeters: number | null;
   spec: FireworkSpec;
+  rawSpec: unknown;
 };
 
 export type ReplayCue = ShowCue & {

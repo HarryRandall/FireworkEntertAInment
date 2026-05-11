@@ -18,6 +18,7 @@ import type {
   ShowStatus,
 } from "@/lib/shows";
 import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
+import { parseLaunchPositions } from "@/lib/fireworks/design";
 import type { Database, Json } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
@@ -44,6 +45,7 @@ type ShowProjection = Pick<
   | "description"
   | "mood_tags"
   | "audio_path"
+  | "launch_positions_json"
   | "updated_at"
 >;
 type ShowCueProjection = Pick<
@@ -58,6 +60,7 @@ type ShowCueProjection = Pick<
   | "scale"
   | "overrides_json"
   | "seed_override"
+  | "launch_position_index"
 >;
 type EffectSpecProjection = Pick<
   EffectSpecRow,
@@ -77,13 +80,13 @@ type ShoppingItemProjection = Pick<
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const CACHE_PREFIX = "shows:v1";
+const CACHE_PREFIX = "shows:v2";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
-  "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, updated_at";
+  "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, launch_positions_json, updated_at";
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, effect_spec_id, position_json, rotation_json, scale, overrides_json, seed_override";
+  "id, position, time_seconds, description, effect_spec_id, position_json, rotation_json, scale, overrides_json, seed_override, launch_position_index";
 const EFFECT_SPEC_SELECT =
   "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
@@ -137,6 +140,7 @@ function mapShow(row: ShowProjection): Show {
     description: row.description,
     moodTags: row.mood_tags ?? [],
     audioPath: row.audio_path,
+    launchPositions: parseLaunchPositions(row.launch_positions_json),
     updatedAt: row.updated_at,
   };
 }
@@ -153,6 +157,10 @@ function mapCue(row: ShowCueProjection): ShowCue {
     scale: row.scale == null ? 1 : Number(row.scale),
     overrides: parseOverrides(row.overrides_json),
     seedOverride: row.seed_override,
+    launchPositionIndex: Math.max(
+      0,
+      Math.min(2, Math.floor(Number(row.launch_position_index ?? 0))),
+    ),
   };
 }
 
@@ -169,6 +177,7 @@ function mapEffectSpecification(
     durationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
     spec: safeParseFireworkSpec(row.spec_json),
+    rawSpec: row.spec_json,
   };
 }
 
