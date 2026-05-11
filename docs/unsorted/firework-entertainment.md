@@ -3,7 +3,7 @@ notion-url: https://www.notion.so/Firework-EntertaINment-325cd8a5bf088050b0e6cd1
 title: Firework EntertaINment
 from_notion: https://www.notion.so/Firework-EntertaINment-325cd8a5bf088050b0e6cd10670fdfbb
 author: From Notion
-last_edited_time: '2026-04-27 07:42:00.000'
+last_edited_time: '2026-05-11 03:28:00.000'
 date: '2026-03-16 01:55:00.000'
 ---
 ---
@@ -41,6 +41,8 @@ date: '2026-03-16 01:55:00.000'
 ---
 
 ## Sprints
+
+[//]: # (child_page is not supported)
 
 [//]: # (child_page is not supported)
 

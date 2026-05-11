@@ -4,11 +4,11 @@ title: User Stories
 date: '2026-03-16 02:24:00.000'
 from_notion: https://www.notion.so/User-Stories-325cd8a5bf0880658ee3dce42797b5af
 author: From Notion
-last_edited_time: '2026-03-30 05:12:00.000'
+last_edited_time: '2026-05-04 05:49:00.000'
 ---
 ## Consumer
 
-1.  As a consumer I want to ability to visualise my fireworks show.
+1. As a consumer I want to ability to visualise my fireworks show.
 
 1. As a consumer, I want to have a choreographed firework show that is synced to a song of my choice.
 
@@ -82,7 +82,7 @@ last_edited_time: '2026-03-30 05:12:00.000'
 
 - **Key Needs:** A smooth, lag-free software experience that allows him to easily save and load his progress.
 
-	- The ability to use **natural language** to manipulate and customize the show without needing to know technical terms.
+	- The ability to use **natural language** to manipulate and customise the show without needing to know technical terms.
 
 	- A generated list of **in-stock fireworks **used in his design, so he can purchase them immediately from his preferred retailer.
 
@@ -90,7 +90,7 @@ last_edited_time: '2026-03-30 05:12:00.000'
 
 - **Demographics:** 26 years old, Amateur DJ / Audiovisual Creator.
 
-- **Background:** Lily is highly focused on the emotional impact of music and visual aesthetics. Like Jack, she has no pyrotechnical experience, but she cares deeply about precise audio-visual synchronization.
+- **Background:** Lily is highly focused on the emotional impact of music and visual aesthetics. Like Jack, she has no pyrotechnical experience, but she cares deeply about precise audio-visual synchronisation.
 
 - **Goals:** To choreograph a stunning visual experience perfectly synced to the beats and emotions of her chosen song.
 
@@ -100,7 +100,7 @@ last_edited_time: '2026-03-30 05:12:00.000'
 
 	- She doesn't understand traditional pyrotechnic terminology or product names.
 
-- **Key Needs:** High-quality, lag-free 3D visualization to preview her show accurately.
+- **Key Needs:** High-quality, lag-free 3D visualisation to preview her show accurately.
 
 	- An AI system that understands the "moods" of the music and automatically matches them with the right fireworks.
 
@@ -112,7 +112,7 @@ last_edited_time: '2026-03-30 05:12:00.000'
 
 - **Background:** Sarah manages a local retail store and is always looking for ways to engage customers and turn inventory over efficiently.
 
-- **Goals:** To **increase sales** by allowing clients to visualize what their shows will look like before purchasing.
+- **Goals:** To **increase sales** by allowing clients to visualise what their shows will look like before purchasing.
 
 	- To provide a service that helps sell the specific stock she currently holds in her warehouse.
 
@@ -136,7 +136,7 @@ last_edited_time: '2026-03-30 05:12:00.000'
 
 	- To provide a value-added service to retailers that makes selling his brand easier.
 
-- **Pain Points:** New, innovative fireworks are hard to sell if consumers can't visualize exactly what they do.
+- **Pain Points:** New, innovative fireworks are hard to sell if consumers can't visualise exactly what they do.
 
 	- Inaccurate simulations in other software make his products look worse than they are in reality.
 

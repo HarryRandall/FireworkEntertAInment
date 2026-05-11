@@ -4,7 +4,7 @@ title: Sprint Checklist
 date: '2026-03-16 03:50:00.000'
 from_notion: https://www.notion.so/Sprint-Checklist-325cd8a5bf08801eb32efb961637d294
 author: From Notion
-last_edited_time: '2026-04-17 10:38:00.000'
+last_edited_time: '2026-05-04 05:49:00.000'
 ---
 # Project Practices Checklist
 
@@ -46,7 +46,7 @@ last_edited_time: '2026-04-17 10:38:00.000'
 
 - [x] Identify and manage risks
 
-- [ ] Monitor team velocity and feed it into planning/estimation activities for subsequent sprints *(Deferred: Sprint 1 is our first sprint, so there is no prior velocity to monitor yet. Velocity tracking kicks in from Sprint 2 onward using Linear cycle metrics.)*
+- [x] Monitor team velocity and feed it into planning/estimation activities for subsequent sprints *(Sprint 2 now uses the Linear cycle history: 20 issues / 26 scope at the 4 May review point, with completed count/scope tracked across the cycle. This feeds Sprint 3 planning by showing the difference between platform work completed and export/MIR follow-ups carried forward.)*
 
 ---
 
@@ -76,13 +76,15 @@ last_edited_time: '2026-04-17 10:38:00.000'
 
 - [x] Conduct sprint review at the end of each sprint to demonstrate completed work, gather feedback, and adjust priorities as needed
 
-- [ ] Conduct sprint retrospective at the end of each sprint to reflect on team processes, identify issues, and agree on improvements for future sprints *(Deferred to Sprint 2 kick-off so we can consolidate it with tutor feedback. Sprint 1 included a sprint review at the final scrum, and individual retrospectives are captured per person on the **[Sprint 1 page](https://www.notion.so/333cd8a5bf0880f59cc5dbbb1b0331ac)**.)*
+- [x] Conduct sprint retrospective at the end of each sprint to reflect on team processes, identify issues, and agree on improvements for future sprints *(Sprint 2 reflections are captured on the **[Sprint 2 page](https://www.notion.so/345cd8a5bf0881139db2e8370f553d76)** and **[Day Overview 04/05](https://www.notion.so/356cd8a5bf08818b9019ee7b1a211664)**, with concrete follow-up PBIs in Linear: **[FIR-35](https://linear.app/fireworkentertainment/issue/FIR-35/implement-industry-and-generic-export-format-support-ignite-csv)**, **[FIR-79](https://linear.app/fireworkentertainment/issue/FIR-79/implement-stakeholder-approval-workflow-for-reconstructed-catalogue)**, and **[FIR-80](https://linear.app/fireworkentertainment/issue/FIR-80/lock-mir-to-choreography-payload-schema-v12)**.)*
 
 - [x] Create PBIs to implement all actions resulting from each retrospective and review
 
 - [x] Develop and record clear responses to each item of feedback
 
 - [x] *(Optional)* Record individual reflections at the end of each sprint. These notes can then be collated to support your Individual Reflection assessment at the end of the semester
+
+## Sprint 2 Evidence Notes
 
 ## Recommended Resources
 
