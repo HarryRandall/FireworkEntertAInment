@@ -53,8 +53,7 @@ function toReplayCue(
     position: index + 1,
     timeSeconds: cue.timeSeconds,
     description: cue.description,
-    effectSpecId: firework.id,
-    catalogueProductId: null,
+    productId: firework.id,
     launchPositionIndex: index % 3,
     firework,
   };

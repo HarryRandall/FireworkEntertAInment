@@ -39,8 +39,7 @@ type SupplierRow = Database["public"]["Tables"]["supplier_profiles"]["Row"];
 type ImportJobRow = Database["public"]["Tables"]["import_jobs"]["Row"];
 type ImportOutputRow = Database["public"]["Tables"]["import_outputs"]["Row"];
 type MediaAssetRow = Database["public"]["Tables"]["media_assets"]["Row"];
-type CatalogueProductRow =
-  Database["public"]["Tables"]["catalogue_products"]["Row"];
+type ProductRow = Database["public"]["Tables"]["products"]["Row"];
 type ShowTemplateRow = Database["public"]["Tables"]["show_templates"]["Row"];
 const PLATFORM_CACHE_PREFIX = "platform:v1";
 const SHOW_TEMPLATES_TTL_SECONDS = 60 * 10;
@@ -186,7 +185,7 @@ function mapImportJob(row: ImportJobRow): ImportJobSummary {
     mediaAssetId: row.media_asset_id,
     selectedModel: row.selected_model,
     processingProgress: row.processing_progress,
-    approvedCatalogueProductId: row.approved_catalogue_product_id,
+    approvedProductId: row.approved_product_id,
     approvedFireworkSpecificationId: row.approved_firework_specification_id,
     rowCount: row.row_count,
     errorMessage: row.error_message,
@@ -460,7 +459,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
   const { data, error } = await supabase
     .from("import_jobs")
     .select(
-      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
+      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
     )
     .order("updated_at", { ascending: false });
   if (error) {
@@ -492,7 +491,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
       mediaAssetId: null,
       selectedModel: null,
       processingProgress: row.status === "complete" ? 100 : 0,
-      approvedCatalogueProductId: null,
+      approvedProductId: null,
       approvedFireworkSpecificationId: null,
       rowCount: row.row_count,
       errorMessage: row.error_message,
@@ -511,7 +510,7 @@ export async function getImportJobDetail(
   const { data: job, error: jobError } = await supabase
     .from("import_jobs")
     .select(
-      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
+      "id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at",
     )
     .eq("id", jobId)
     .maybeSingle();
@@ -581,8 +580,8 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
   if (!(await requirePermission("admin.manage_catalogue"))) return [];
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("catalogue_products")
-    .select("id, part_number, name, manufacturer, category, firework_type, duration_seconds, updated_at")
+    .from("products")
+    .select("id, part_number, name, manufacturer, subtype, duration_seconds, updated_at")
     .order("updated_at", { ascending: false })
     .limit(100);
   if (error) {
@@ -590,13 +589,12 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     return [];
   }
   return ((data ?? []) as Pick<
-    CatalogueProductRow,
+    ProductRow,
     | "id"
     | "part_number"
     | "name"
     | "manufacturer"
-    | "category"
-    | "firework_type"
+    | "subtype"
     | "duration_seconds"
     | "updated_at"
   >[]).map((row) => ({
@@ -604,8 +602,8 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     partNumber: row.part_number,
     name: row.name,
     manufacturer: row.manufacturer,
-    category: row.category,
-    fireworkType: row.firework_type,
+    category: null,
+    fireworkType: row.subtype,
     fireworkSpecificationId: null,
     durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     updatedAt: row.updated_at,

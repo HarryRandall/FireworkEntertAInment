@@ -7,59 +7,13 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
-      catalogue_products: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          firework_subtype: string | null
-          firework_type: string | null
-          id: string
-          manufacturer: string | null
-          name: string
-          part_number: string
-          source_payload: Json | null
-          source_table: string | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name: string
-          part_number: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name?: string
-          part_number?: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       effect_specs: {
         Row: {
           confidence: number
@@ -110,8 +64,8 @@ export type Database = {
       }
       import_jobs: {
         Row: {
-          approved_catalogue_product_id: string | null
           approved_firework_specification_id: string | null
+          approved_product_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -130,8 +84,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          approved_catalogue_product_id?: string | null
           approved_firework_specification_id?: string | null
+          approved_product_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -150,8 +104,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          approved_catalogue_product_id?: string | null
           approved_firework_specification_id?: string | null
+          approved_product_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -171,10 +125,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "import_jobs_approved_catalogue_product_id_fkey"
-            columns: ["approved_catalogue_product_id"]
+            foreignKeyName: "import_jobs_approved_product_id_fkey"
+            columns: ["approved_product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -290,50 +244,86 @@ export type Database = {
         }
         Relationships: []
       }
-      product_effect_sequences: {
+      product_shots: {
         Row: {
-          color: string | null
           created_at: string | null
           effect_spec_id: string
           id: string
           pan_degrees: number
           product_id: string
+          shot_index: number
           time_offset_seconds: number
         }
         Insert: {
-          color?: string | null
           created_at?: string | null
           effect_spec_id: string
           id?: string
           pan_degrees?: number
           product_id: string
+          shot_index: number
           time_offset_seconds?: number
         }
         Update: {
-          color?: string | null
           created_at?: string | null
           effect_spec_id?: string
           id?: string
           pan_degrees?: number
           product_id?: string
+          shot_index?: number
           time_offset_seconds?: number
         }
         Relationships: [
           {
-            foreignKeyName: "product_effect_sequences_effect_spec_id_fkey"
+            foreignKeyName: "product_shots_effect_spec_id_fkey"
             columns: ["effect_spec_id"]
             isOneToOne: false
             referencedRelation: "effect_specs"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_effect_sequences_product_id_fkey"
+            foreignKeyName: "product_shots_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          manufacturer: string | null
+          name: string
+          part_number: string
+          subtype: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          part_number: string
+          subtype?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          part_number?: string
+          subtype?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -480,16 +470,15 @@ export type Database = {
       }
       show_cues: {
         Row: {
-          catalogue_product_id: string | null
           created_at: string
           description: string
-          effect_spec_id: string | null
           id: string
           label: string | null
           launch_position_index: number
           layer: string | null
           locked: boolean
           position: number
+          product_id: string
           seed_override: number | null
           show_id: string
           time_seconds: number | null
@@ -497,16 +486,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          catalogue_product_id?: string | null
           created_at?: string
           description: string
-          effect_spec_id?: string | null
           id?: string
           label?: string | null
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
           position?: number
+          product_id: string
           seed_override?: number | null
           show_id: string
           time_seconds?: number | null
@@ -514,16 +502,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          catalogue_product_id?: string | null
           created_at?: string
           description?: string
-          effect_spec_id?: string | null
           id?: string
           label?: string | null
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
           position?: number
+          product_id?: string
           seed_override?: number | null
           show_id?: string
           time_seconds?: number | null
@@ -532,17 +519,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "show_cues_catalogue_product_id_fkey"
-            columns: ["catalogue_product_id"]
+            foreignKeyName: "show_cues_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "show_cues_effect_spec_id_fkey"
-            columns: ["effect_spec_id"]
-            isOneToOne: false
-            referencedRelation: "effect_specs"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -738,7 +718,7 @@ export type Database = {
             foreignKeyName: "supplier_inventory_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {

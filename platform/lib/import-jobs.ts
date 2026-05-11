@@ -440,8 +440,7 @@ export function importedSpecToReplayCues(
       position: 1,
       timeSeconds: 0,
       description: imported.description ?? imported.name,
-      effectSpecId: id,
-      catalogueProductId: null,
+      productId: id,
       seedOverride: null,
       launchPositionIndex: 0,
       firework: {

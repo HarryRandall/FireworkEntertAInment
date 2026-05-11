@@ -47,20 +47,43 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   }
 
   if (template.previewCues.length > 0) {
-    const { data: specs } = await supabase
-      .from("effect_specs")
-      .select("id, slug");
-    const specBySlug = new Map((specs ?? []).map((spec) => [spec.slug, spec.id]));
-    const cueRows = template.previewCues.map((cue, index) => ({
-      show_id: show.id,
-      position: index + 1,
-      time_seconds: cue.timeSeconds,
-      description: cue.description,
-      effect_spec_id: specBySlug.get(cue.fireworkSlug) ?? null,
-    }));
-    const { error: cuesError } = await supabase.from("show_cues").insert(cueRows);
-    if (cuesError) {
-      console.error("[cloneShowTemplateAction] cue insert failed:", cuesError);
+    // Map every effect_spec slug to a product whose first product_shot
+    // references that effect_spec. After the schema restructure, every
+    // legacy effect_spec has at least an `auto-<slug>` wrapper product, so
+    // the lookup is total for any slug the templates use.
+    type ProductShotRow = {
+      product_id: string;
+      shot_index: number;
+      effect_specs: { slug: string } | null;
+    };
+    const { data: shots } = await supabase
+      .from("product_shots")
+      .select("product_id, shot_index, effect_specs ( slug )")
+      .eq("shot_index", 1);
+    const productByEffectSlug = new Map<string, string>();
+    for (const shot of ((shots ?? []) as ProductShotRow[])) {
+      const slug = shot.effect_specs?.slug;
+      if (!slug || productByEffectSlug.has(slug)) continue;
+      productByEffectSlug.set(slug, shot.product_id);
+    }
+    const cueRows = template.previewCues
+      .map((cue, index) => {
+        const productId = productByEffectSlug.get(cue.fireworkSlug);
+        if (!productId) return null;
+        return {
+          show_id: show.id,
+          position: index + 1,
+          time_seconds: cue.timeSeconds,
+          description: cue.description,
+          product_id: productId,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row != null);
+    if (cueRows.length > 0) {
+      const { error: cuesError } = await supabase.from("show_cues").insert(cueRows);
+      if (cuesError) {
+        console.error("[cloneShowTemplateAction] cue insert failed:", cuesError);
+      }
     }
   }
 

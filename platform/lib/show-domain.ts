@@ -33,8 +33,7 @@ export type ShowCue = {
   position: number;
   timeSeconds: number | null;
   description: string;
-  effectSpecId: string | null;
-  catalogueProductId: string | null;
+  productId: string;
   seedOverride?: number | null;
   launchPositionIndex: number;
 };

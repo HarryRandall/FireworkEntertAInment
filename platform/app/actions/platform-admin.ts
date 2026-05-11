@@ -388,12 +388,11 @@ export async function createCatalogueProductAction(
     typeof parsed.data.durationSeconds === "number"
       ? parsed.data.durationSeconds
       : null;
-  const { error } = await supabase.from("catalogue_products").insert({
+  const { error } = await supabase.from("products").insert({
     part_number: parsed.data.partNumber,
     name: parsed.data.name,
     manufacturer: parsed.data.manufacturer || null,
-    category: parsed.data.category || null,
-    firework_type: parsed.data.fireworkType || null,
+    subtype: parsed.data.fireworkType || null,
     duration_seconds: duration,
   });
   if (error) {
@@ -419,13 +418,12 @@ export async function updateCatalogueProductAction(formData: FormData): Promise<
     typeof parsed.data.durationSeconds === "number" ? parsed.data.durationSeconds : null;
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from("catalogue_products")
+    .from("products")
     .update({
       part_number: parsed.data.partNumber,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
-      category: parsed.data.category || null,
-      firework_type: parsed.data.fireworkType || null,
+      subtype: parsed.data.fireworkType || null,
       duration_seconds: duration,
     })
     .eq("id", parsed.data.id);
@@ -439,7 +437,7 @@ export async function deleteCatalogueProductAction(formData: FormData): Promise<
   if (!parsed.success) return console.error(firstError(parsed.error));
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from("catalogue_products")
+    .from("products")
     .delete()
     .eq("id", parsed.data.id);
   if (error) console.error("[deleteCatalogueProductAction] failed:", error);
@@ -860,22 +858,14 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   }
 
   const { data: product, error: productError } = await supabase
-    .from("catalogue_products")
+    .from("products")
     .insert({
       part_number: parsed.data.partNumber,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
-      category: parsed.data.category || "Imported video",
-      firework_type: parsed.data.fireworkType || "Video reconstructed",
+      subtype: parsed.data.fireworkType || "Video reconstructed",
       duration_seconds: spec.durationSeconds,
       description: spec.description || null,
-      effect_spec_id: effect.id,
-      source_table: "import_jobs",
-      source_payload: {
-        importJobId: parsed.data.id,
-        confidence: spec.confidence,
-        generatedSpec: fireworkSpec,
-      } as Json,
     })
     .select("id")
     .single();
@@ -884,12 +874,24 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     return;
   }
 
+  const { error: shotError } = await supabase.from("product_shots").insert({
+    product_id: product.id,
+    effect_spec_id: effect.id,
+    shot_index: 1,
+    time_offset_seconds: 0,
+    pan_degrees: 0,
+  });
+  if (shotError) {
+    console.error("[approveImportJobAction] product_shots insert failed:", shotError);
+    return;
+  }
+
   const { error: jobError } = await supabase
     .from("import_jobs")
     .update({
       status: "complete",
       processing_progress: 100,
-      approved_catalogue_product_id: product.id,
+      approved_product_id: product.id,
       approved_firework_specification_id: null,
       completed_at: new Date().toISOString(),
       error_message: null,

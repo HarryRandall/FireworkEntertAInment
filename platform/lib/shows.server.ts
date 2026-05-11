@@ -19,7 +19,7 @@ import type {
 } from "@/lib/show-domain";
 import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
 import { parseLaunchPositions } from "@/lib/fireworks/design";
-import type { Database, Json } from "@/lib/database.types";
+import type { Database } from "@/lib/database.types";
 
 type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
 type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
@@ -54,8 +54,7 @@ type ShowCueProjection = Pick<
   | "position"
   | "time_seconds"
   | "description"
-  | "effect_spec_id"
-  | "catalogue_product_id"
+  | "product_id"
   | "seed_override"
   | "launch_position_index"
 >;
@@ -69,26 +68,23 @@ type EffectSpecProjection = Pick<
   | "height_meters"
   | "spec_json"
 >;
-type ReplayCueRow = ShowCueProjection & {
-  effect_specs: EffectSpecProjection | null;
-};
+type ReplayCueRow = ShowCueProjection;
 type ShoppingItemProjection = Pick<
   ShoppingItemRow,
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const CACHE_PREFIX = "shows:v4";
+const CACHE_PREFIX = "shows:v5";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
   "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, launch_positions_json, updated_at";
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, effect_spec_id, catalogue_product_id, seed_override, launch_position_index";
+  "id, position, time_seconds, description, product_id, seed_override, launch_position_index";
 const EFFECT_SPEC_SELECT =
   "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
   "id, position, name, qty, price_cents, firework_part_number";
-const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, effect_specs (${EFFECT_SPEC_SELECT})`;
 
 function mapShow(row: ShowProjection): Show {
   return {
@@ -121,8 +117,7 @@ function mapCue(row: ShowCueProjection): ShowCue {
     position: row.position,
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
-    effectSpecId: row.effect_spec_id,
-    catalogueProductId: row.catalogue_product_id,
+    productId: row.product_id,
     seedOverride: row.seed_override,
     launchPositionIndex: Math.max(
       0,
@@ -148,14 +143,9 @@ function mapEffectSpecification(
   };
 }
 
-function mapReplayCue(row: ReplayCueRow): ReplayCue | null {
+function mapReplayCueBase(row: ReplayCueRow): ShowCue | null {
   if (row.time_seconds == null) return null;
-  if (!row.effect_specs) return null;
-  return {
-    ...mapCue(row),
-    timeSeconds: Number(row.time_seconds),
-    firework: mapEffectSpecification(row.effect_specs),
-  };
+  return mapCue(row);
 }
 
 function mapShoppingItem(row: ShoppingItemProjection): ShoppingListItem {
@@ -308,6 +298,77 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
   return mapped;
 }
 
+export function getFireworkProductsCacheKey(): string {
+  return `${CACHE_PREFIX}:firework-products`;
+}
+
+/**
+ * Return one FireworkSpecification per product, with the renderer details
+ * filled in from the product's first product_shot. This is what the cue
+ * builder presents to the user: they pick a *product*, the renderer figures
+ * out how many shots to fire (and which design per shot) via product_shots.
+ *
+ * `id` on the returned rows is `products.id` so the cue-add form can insert
+ * directly into `show_cues.product_id`.
+ */
+export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
+  const cacheKey = getFireworkProductsCacheKey();
+  const cached = await getCachedJson<FireworkSpecification[]>(cacheKey);
+  if (cached) return cached;
+
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      `id, name, part_number, description, duration_seconds,
+       product_shots (
+         shot_index,
+         effect_specs (${EFFECT_SPEC_SELECT})
+       )`,
+    )
+    .order("name", { ascending: true });
+  if (error) {
+    console.error("[shows.server] listFireworkProducts failed:", error);
+    return [];
+  }
+
+  type ProductRow = {
+    id: string;
+    name: string;
+    part_number: string;
+    description: string | null;
+    duration_seconds: number | null;
+    product_shots: Array<{
+      shot_index: number;
+      effect_specs: EffectSpecProjection | null;
+    }>;
+  };
+
+  const mapped: FireworkSpecification[] = [];
+  for (const row of (data ?? []) as ProductRow[]) {
+    const shots = [...(row.product_shots ?? [])].sort(
+      (a, b) => a.shot_index - b.shot_index,
+    );
+    const primary = shots.find((s) => s.effect_specs != null);
+    if (!primary?.effect_specs) continue;
+    const effectSpec = primary.effect_specs;
+    mapped.push({
+      id: row.id,
+      slug: row.part_number,
+      name: row.name,
+      description: row.description ?? effectSpec.description,
+      sortOrder: mapped.length,
+      durationSeconds: row.duration_seconds ?? effectSpec.duration_seconds,
+      heightMeters: effectSpec.height_meters,
+      spec: safeParseFireworkSpec(effectSpec.spec_json),
+      rawSpec: effectSpec.spec_json,
+    });
+  }
+
+  await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+  return mapped;
+}
+
 export async function listReplayCuesForShow(
   showId: string,
 ): Promise<ReplayCue[]> {
@@ -321,10 +382,9 @@ export async function listReplayCuesForShow(
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("show_cues")
-    .select(REPLAY_CUE_SELECT)
+    .select(SHOW_CUE_SELECT)
     .eq("show_id", showId)
     .not("time_seconds", "is", null)
-    .not("effect_spec_id", "is", null)
     .order("time_seconds", { ascending: true })
     .order("position", { ascending: true });
   if (error) {
@@ -334,66 +394,61 @@ export async function listReplayCuesForShow(
 
   const rows = (data ?? []) as ReplayCueRow[];
 
-  // Load product_effect_sequences so multi-shot products expand into one ReplayCue per tube.
+  // Load product_shots so multi-shot products expand into one ReplayCue per
+  // shot. Single-shot products have exactly one row at time_offset_seconds=0.
   const productIds = [
-    ...new Set(
-      rows
-        .map((r) => r.catalogue_product_id)
-        .filter((id): id is string => id != null),
-    ),
+    ...new Set(rows.map((r) => r.product_id).filter((id): id is string => id != null)),
   ];
 
-  type SeqRow = {
+  type ShotRow = {
     product_id: string;
+    shot_index: number;
     time_offset_seconds: number;
     effect_specs: EffectSpecProjection | null;
   };
 
   type ShotSpec = { timeOffsetSeconds: number; firework: FireworkSpecification };
-  const seqsByProduct = new Map<string, ShotSpec[]>();
+  const shotsByProduct = new Map<string, ShotSpec[]>();
 
   if (productIds.length > 0) {
-    const { data: seqs, error: seqErr } = await supabase
-      .from("product_effect_sequences")
-      .select(`product_id, time_offset_seconds, effect_specs (${EFFECT_SPEC_SELECT})`)
+    const { data: shots, error: shotsErr } = await supabase
+      .from("product_shots")
+      .select(
+        `product_id, shot_index, time_offset_seconds, effect_specs (${EFFECT_SPEC_SELECT})`,
+      )
       .in("product_id", productIds)
-      .order("time_offset_seconds", { ascending: true });
+      .order("shot_index", { ascending: true });
 
-    if (seqErr) {
-      console.error("[shows.server] product_effect_sequences load failed:", seqErr);
+    if (shotsErr) {
+      console.error("[shows.server] product_shots load failed:", shotsErr);
     } else {
-      for (const seq of (seqs ?? []) as SeqRow[]) {
-        if (!seq.effect_specs) continue;
-        const arr = seqsByProduct.get(seq.product_id) ?? [];
+      for (const shot of (shots ?? []) as ShotRow[]) {
+        if (!shot.effect_specs) continue;
+        const arr = shotsByProduct.get(shot.product_id) ?? [];
         arr.push({
-          timeOffsetSeconds: Number(seq.time_offset_seconds),
-          firework: mapEffectSpecification(seq.effect_specs, arr.length),
+          timeOffsetSeconds: Number(shot.time_offset_seconds),
+          firework: mapEffectSpecification(shot.effect_specs, arr.length),
         });
-        seqsByProduct.set(seq.product_id, arr);
+        shotsByProduct.set(shot.product_id, arr);
       }
     }
   }
 
-  // Expand each product cue into one ReplayCue per tube in the sequence.
   const expanded: ReplayCue[] = [];
   for (const row of rows) {
-    const baseCue = mapReplayCue(row);
+    const baseCue = mapReplayCueBase(row);
     if (!baseCue) continue;
-    if (row.catalogue_product_id) {
-      const shots = seqsByProduct.get(row.catalogue_product_id);
-      if (shots && shots.length > 0) {
-        for (let i = 0; i < shots.length; i++) {
-          expanded.push({
-            ...baseCue,
-            id: `${baseCue.id}-shot-${i}`,
-            timeSeconds: baseCue.timeSeconds + shots[i].timeOffsetSeconds,
-            firework: shots[i].firework,
-          });
-        }
-        continue;
-      }
+    const shots = shotsByProduct.get(row.product_id);
+    if (!shots || shots.length === 0) continue;
+    const startSeconds = Number(row.time_seconds);
+    for (let i = 0; i < shots.length; i++) {
+      expanded.push({
+        ...baseCue,
+        id: shots.length === 1 ? baseCue.id : `${baseCue.id}-shot-${i}`,
+        timeSeconds: startSeconds + shots[i].timeOffsetSeconds,
+        firework: shots[i].firework,
+      });
     }
-    expanded.push(baseCue);
   }
 
   expanded.sort((a, b) => a.timeSeconds - b.timeSeconds);
