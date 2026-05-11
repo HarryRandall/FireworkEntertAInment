@@ -17,10 +17,19 @@ const PATTERN_SEED: Record<FireworkDesign["pattern"], 1 | 2 | 3> = {
   wave: 2,
   strobe: 3,
 };
+const STAR_DRAG = 2.4;
+const TRAIL_DRAG = 3.0;
+const FLASH_DRAG = 4.0;
+const MIN_STAR_GRAVITY = -0.24;
+const TRAIL_GRAVITY = -0.03;
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
   return a + rng.next() * (b - a);
+}
+
+function clampStarGravity(gravity: number): number {
+  return Math.max(gravity, MIN_STAR_GRAVITY);
 }
 
 function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
@@ -195,7 +204,7 @@ export class Effects {
     this.lights.setHemi(design.size / 100, color.r, color.g, color.b);
     this.explodeBurst(particle, rng);
 
-    const grav = rangeRand(design.burst.gravity, rng);
+    const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
     const speed = rangeRand(design.burst.speed, rng);
     const lifeRange = design.burst.life;
     const offset = 2 / design.size;
@@ -245,6 +254,7 @@ export class Effects {
         size: design.size,
         mass: 0.001,
         gravity: grav,
+        drag: STAR_DRAG,
         vx,
         vy,
         vz,
@@ -271,7 +281,8 @@ export class Effects {
         z: particle.z,
         size: rng.next() * 80,
         mass: 0.5,
-        gravity: -0.5,
+        gravity: TRAIL_GRAVITY,
+        drag: FLASH_DRAG,
         vy: 1 - rng.next() * 2,
         vx: 1 - rng.next() * 2,
         vz: 1 - rng.next() * 2,
@@ -342,7 +353,8 @@ export class Effects {
       y: particle.y,
       z: particle.z,
       mass: 0.002,
-      gravity: -0.2,
+      gravity: TRAIL_GRAVITY,
+      drag: TRAIL_DRAG,
       size: 20 + rng.next() * 40,
       r,
       g,

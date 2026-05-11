@@ -143,7 +143,7 @@ export function PageGrid() {
 
   return (
     <div ref={containerRef} className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
-      {/* Base grid — fades toward edges */}
+      {/* Base grid — fades towards edges */}
       <svg
         className="absolute inset-0 h-full w-full opacity-[0.10]"
         style={{

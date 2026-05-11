@@ -17,7 +17,7 @@ import { createSeededRng, mixSeed } from "@/lib/fireworks/random";
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -33,6 +33,7 @@ const PARTICLE_CAPACITY = 100_000;
 const SPARK_TEXTURE_URL = "/textures/spark1.png";
 const FIXED_DT = 1 / 60;
 const LARGE_JUMP_SECONDS = 0.35;
+const SNAPSHOT_STRIDE = 15;
 
 export class FireworksEngine {
   private scene: THREE.Scene;
@@ -262,7 +263,7 @@ export class FireworksEngine {
     for (let i = 0; i < cap; i++) if (ps[i].alive) count++;
     const state: PoolSnapshot = {
       indices: new Uint32Array(count),
-      data: new Float32Array(count * 11),
+      data: new Float32Array(count * SNAPSHOT_STRIDE),
       current: this.pool.current,
       aliveMax: this.pool.aliveMax,
     };
@@ -271,7 +272,7 @@ export class FireworksEngine {
       const p = ps[i];
       if (!p.alive) continue;
       state.indices[w] = i;
-      const o = w * 11;
+      const o = w * SNAPSHOT_STRIDE;
       state.data[o] = p.x;
       state.data[o + 1] = p.y;
       state.data[o + 2] = p.z;
@@ -283,6 +284,10 @@ export class FireworksEngine {
       state.data[o + 8] = p.color.r;
       state.data[o + 9] = p.color.g;
       state.data[o + 10] = p.color.b;
+      state.data[o + 11] = p.mass;
+      state.data[o + 12] = p.decay;
+      state.data[o + 13] = p.gravity;
+      state.data[o + 14] = p.drag;
       w++;
     }
     return state;
@@ -296,7 +301,7 @@ export class FireworksEngine {
     for (let w = 0; w < state.indices.length; w++) {
       const i = state.indices[w];
       const p = ps[i];
-      const o = w * 11;
+      const o = w * SNAPSHOT_STRIDE;
       p.alive = true;
       p.x = state.data[o];
       p.y = state.data[o + 1];
@@ -307,8 +312,12 @@ export class FireworksEngine {
       p.life = state.data[o + 6];
       p.size = state.data[o + 7];
       p.color.setRGB(state.data[o + 8], state.data[o + 9], state.data[o + 10]);
+      p.mass = state.data[o + 11];
+      p.decay = state.data[o + 12];
+      p.gravity = state.data[o + 13];
+      p.drag = state.data[o + 14];
       // Behaviour callbacks are lost on snapshot restore; remaining motion
-      // is purely ballistic until life expires. Acceptable for scrubbing.
+      // keeps the captured physics until life expires. Acceptable for scrubbing.
     }
     this.pool.current = state.current;
     this.pool.aliveMax = state.aliveMax;

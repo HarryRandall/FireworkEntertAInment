@@ -19,6 +19,7 @@ export class Particle {
   decay = 0;
   life = 0;
   gravity = -9.82;
+  drag = 0;
 
   condition: Callback = NOOP;
   action: Callback = NOOP;
@@ -35,12 +36,30 @@ export class Particle {
     // Quadratic drag, sign-preserving. Avoids NaN from 0/|0|.
     const k = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
     const ax = (-k * this.vx * Math.abs(this.vx)) / this.mass;
-    const ay = this.gravity + (-k * this.vy * Math.abs(this.vy)) / this.mass;
+    const ay = (-k * this.vy * Math.abs(this.vy)) / this.mass;
     const az = (-k * this.vz * Math.abs(this.vz)) / this.mass;
 
-    this.vx += ax * dt;
-    this.vy += ay * dt;
-    this.vz += az * dt;
+    this.vx = applyDragStep(this.vx, ax * dt);
+    this.vy = applyDragStep(this.vy, ay * dt) + this.gravity * dt;
+    this.vz = applyDragStep(this.vz, az * dt);
+
+    if (this.drag > 0) {
+      const damping = Math.exp(-this.drag * dt);
+      this.vx *= damping;
+      this.vy *= damping;
+      this.vz *= damping;
+    }
+
+    // Terminal-velocity clamp. Without this, sparks free-fall through
+    // the entire scene because gravity*dt accumulates over multi-second
+    // lifetimes. Asymmetric so rising shells aren't capped as hard.
+    const VMAX_DOWN = 4;
+    const VMAX_LATERAL = 6;
+    if (this.vy < -VMAX_DOWN) this.vy = -VMAX_DOWN;
+    if (this.vx > VMAX_LATERAL) this.vx = VMAX_LATERAL;
+    else if (this.vx < -VMAX_LATERAL) this.vx = -VMAX_LATERAL;
+    if (this.vz > VMAX_LATERAL) this.vz = VMAX_LATERAL;
+    else if (this.vz < -VMAX_LATERAL) this.vz = -VMAX_LATERAL;
 
     this.x += this.vx * dt * 100;
     this.y += this.vy * dt * 100;
@@ -79,6 +98,8 @@ export class Particle {
     this.mass = 1;
     this.size = 0;
     this.decay = 0;
+    this.gravity = -9.82;
+    this.drag = 0;
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;
@@ -87,4 +108,10 @@ export class Particle {
     this.action = NOOP;
     this.effect = NOOP;
   }
+}
+
+function applyDragStep(velocity: number, delta: number): number {
+  const next = velocity + delta;
+  if (velocity !== 0 && Math.sign(next) !== Math.sign(velocity)) return 0;
+  return next;
 }

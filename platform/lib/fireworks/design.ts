@@ -23,14 +23,14 @@ export const FireworkDesignSchema = z.object({
   burst: z
     .object({
       speed: RangeSchema.default([2, 4]),
-      gravity: RangeSchema.default([-2.1, -0.1]),
+      gravity: RangeSchema.default([-0.24, -0.02]),
       life: RangeSchema.default([0.5, 6.5]),
       flairSizeStrobe: RangeSchema.optional(),
       flairColorMode: z.enum(["bombColor", "random", "mixed"]).default("mixed"),
     })
     .default({
       speed: [2, 4],
-      gravity: [-2.1, -0.1],
+      gravity: [-0.24, -0.02],
       life: [0.5, 6.5],
       flairColorMode: "mixed",
     }),

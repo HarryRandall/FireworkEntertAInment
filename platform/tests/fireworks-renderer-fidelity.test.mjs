@@ -58,3 +58,20 @@ test("Lallassu seed creates pattern, colour, and replay test shows for every use
   assert.match(seed, /lallassu-wave-cyan/);
   assert.match(seed, /lallassu-strobe-white/);
 });
+
+test("burst physics hang like firework stars instead of free-falling", () => {
+  const effects = read("lib/fireworks/Effects.ts");
+  const particle = read("lib/fireworks/Particle.ts");
+  const engine = read("lib/fireworks/FireworksEngine.ts");
+
+  assert.match(effects, /const STAR_DRAG = 2\.4/);
+  assert.match(effects, /clampStarGravity\(rangeRand\(design\.burst\.gravity, rng\)\)/);
+  assert.match(effects, /drag: STAR_DRAG/);
+  assert.match(effects, /gravity: TRAIL_GRAVITY/);
+  assert.match(particle, /drag = 0/);
+  assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
+  assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 15/);
+  assert.match(engine, /state\.data\[o \+ 14\] = p\.drag/);
+  assert.match(engine, /p\.drag = state\.data\[o \+ 14\]/);
+});
