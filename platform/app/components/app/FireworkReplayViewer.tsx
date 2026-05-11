@@ -15,8 +15,8 @@ import { Input } from "@/app/components/ui/Input";
 import { NumberInput } from "@/app/components/ui/NumberInput";
 import { SelectField } from "@/app/components/ui/SelectField";
 import { StatTile } from "@/app/components/ui/StatTile";
-import type { FireworkSpecification, ReplayCue } from "@/lib/shows";
-import { formatDuration } from "@/lib/shows";
+import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
+import { formatDuration } from "@/lib/show-domain";
 import type { LaunchPosition } from "@/lib/fireworks/design";
 
 if (typeof window !== "undefined") {

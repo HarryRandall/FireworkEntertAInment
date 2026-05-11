@@ -22,9 +22,9 @@ import type {
   ShowTemplateCue,
   SupplierSummary,
   ThemePreference,
-} from "@/lib/platform.types";
+} from "@/lib/admin.types";
 import type { Database, Json } from "@/lib/database.types";
-import { IMPORT_VIDEO_BUCKET } from "@/lib/imports";
+import { IMPORT_VIDEO_BUCKET } from "@/lib/import-jobs";
 import { getPreferredImportVideoSource } from "@/lib/import-video-preview.js";
 import { createServiceRoleSupabase } from "@/utils/supabase/service-role";
 
@@ -106,7 +106,7 @@ async function createSignedImportVideoUrl(
       return svcResult.data.signedUrl;
     }
     console.error(
-      "[platform.server] service-role import video signing failed:",
+      "[admin.server] service-role import video signing failed:",
       svcResult.error?.message ?? "unknown",
     );
   }
@@ -116,7 +116,7 @@ async function createSignedImportVideoUrl(
     .createSignedUrl(storagePath, 60 * 60);
   if (signedError || !signed?.signedUrl) {
     console.error(
-      "[platform.server] session import video signing failed:",
+      "[admin.server] session import video signing failed:",
       signedError?.message ?? "missing URL",
     );
     return null;
@@ -336,7 +336,7 @@ export async function listRoles(): Promise<Role[]> {
     .select("id, key, name, description, sort_order, created_at, updated_at")
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error("[platform.server] listRoles failed:", error);
+    console.error("[admin.server] listRoles failed:", error);
     return [];
   }
   return (data ?? []).map(mapRole);
@@ -350,7 +350,7 @@ export async function listPermissions(): Promise<Permission[]> {
     .order("category", { ascending: true })
     .order("key", { ascending: true });
   if (error) {
-    console.error("[platform.server] listPermissions failed:", error);
+    console.error("[admin.server] listPermissions failed:", error);
     return [];
   }
   return (data ?? []).map(mapPermission);
@@ -436,7 +436,7 @@ export async function listSuppliers(): Promise<SupplierSummary[]> {
     .select("id, name, slug, status, contact_email, phone, website_url, updated_at")
     .order("updated_at", { ascending: false });
   if (error) {
-    console.error("[platform.server] listSuppliers failed:", error);
+    console.error("[admin.server] listSuppliers failed:", error);
     return [];
   }
   return ((data ?? []) as Pick<
@@ -469,7 +469,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
       .select("id, kind, status, source_name, source_url, row_count, error_message, created_at, updated_at")
       .order("updated_at", { ascending: false });
     if (fallbackError) {
-      console.error("[platform.server] listImportJobs failed:", fallbackError);
+      console.error("[admin.server] listImportJobs failed:", fallbackError);
       return [];
     }
     return ((fallbackData ?? []) as Pick<
@@ -516,7 +516,7 @@ export async function getImportJobDetail(
     .eq("id", jobId)
     .maybeSingle();
   if (jobError) {
-    console.error("[platform.server] getImportJobDetail failed:", jobError);
+    console.error("[admin.server] getImportJobDetail failed:", jobError);
     return null;
   }
   if (!job) return null;
@@ -539,10 +539,10 @@ export async function getImportJobDetail(
   ]);
 
   if (mediaResult.error) {
-    console.error("[platform.server] import media lookup failed:", mediaResult.error);
+    console.error("[admin.server] import media lookup failed:", mediaResult.error);
   }
   if (outputsResult.error) {
-    console.error("[platform.server] import outputs lookup failed:", outputsResult.error);
+    console.error("[admin.server] import outputs lookup failed:", outputsResult.error);
   }
 
   const media = mediaResult.data ? mapMediaAsset(mediaResult.data as MediaAssetRow) : null;
@@ -586,7 +586,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     .order("updated_at", { ascending: false })
     .limit(100);
   if (error) {
-    console.error("[platform.server] listCatalogueProducts failed:", error);
+    console.error("[admin.server] listCatalogueProducts failed:", error);
     return [];
   }
   return ((data ?? []) as Pick<
@@ -626,7 +626,7 @@ export async function listShowTemplates(): Promise<ShowTemplate[]> {
     .order("is_featured", { ascending: false })
     .order("sort_order", { ascending: true });
   if (error) {
-    console.error("[platform.server] listShowTemplates failed:", error);
+    console.error("[admin.server] listShowTemplates failed:", error);
     return [];
   }
   const mapped = ((data ?? []) as ShowTemplateRow[]).map(mapShowTemplate);
@@ -650,7 +650,7 @@ export async function getShowTemplateBySlug(
     .eq("slug", slug)
     .maybeSingle();
   if (error) {
-    console.error("[platform.server] getShowTemplateBySlug failed:", error);
+    console.error("[admin.server] getShowTemplateBySlug failed:", error);
     return null;
   }
   return data ? mapShowTemplate(data as ShowTemplateRow) : null;

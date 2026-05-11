@@ -7,7 +7,7 @@ import {
   listCatalogueProducts,
   listImportJobs,
   listSuppliers,
-} from "@/lib/platform.server";
+} from "@/lib/admin.server";
 
 export default async function AdminOverviewPage() {
   const [users, suppliers, imports, catalogue] = await Promise.all([

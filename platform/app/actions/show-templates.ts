@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { slugifyTitle } from "@/lib/shows";
+import { slugifyTitle } from "@/lib/show-domain";
 import { invalidateShowsCacheForUser } from "@/lib/shows.server";
-import { getShowTemplateBySlug } from "@/lib/platform.server";
+import { getShowTemplateBySlug } from "@/lib/admin.server";
 
 export async function cloneShowTemplateAction(formData: FormData): Promise<void> {
   const slug = String(formData.get("slug") ?? "");

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ReplayCue } from "@/lib/shows";
+import type { ReplayCue } from "@/lib/show-domain";
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,

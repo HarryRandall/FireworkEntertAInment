@@ -16,7 +16,7 @@ import type {
   ShowCue,
   ShoppingListItem,
   ShowStatus,
-} from "@/lib/shows";
+} from "@/lib/show-domain";
 import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
 import { parseLaunchPositions } from "@/lib/fireworks/design";
 import type { Database, Json } from "@/lib/database.types";

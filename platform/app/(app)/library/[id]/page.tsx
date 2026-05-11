@@ -7,8 +7,8 @@ import { TemplateLikeButton } from "@/app/components/app/TemplateLikeButton";
 import { TemplateReplayPreview } from "@/app/components/app/TemplateReplayPreview";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
-import { formatBudget, formatDuration } from "@/lib/shows";
-import { getShowTemplateBySlug } from "@/lib/platform.server";
+import { formatBudget, formatDuration } from "@/lib/show-domain";
+import { getShowTemplateBySlug } from "@/lib/admin.server";
 import { listFireworkSpecifications } from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };

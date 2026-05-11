@@ -1,5 +1,5 @@
 import { Card } from "@/app/components/ui/Card";
-import type { ShowCue } from "@/lib/shows";
+import type { ShowCue } from "@/lib/show-domain";
 
 type ShowGuideListProps = {
   steps: ShowCue[];

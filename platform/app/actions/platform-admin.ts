@@ -6,8 +6,8 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
-import { requirePermission } from "@/lib/platform.server";
-import { slugifyTitle } from "@/lib/shows";
+import { requirePermission } from "@/lib/admin.server";
+import { slugifyTitle } from "@/lib/show-domain";
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,
@@ -16,7 +16,7 @@ import {
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
   type ImportedFireworkSpec,
-} from "@/lib/imports";
+} from "@/lib/import-jobs";
 import type { Json } from "@/lib/database.types";
 
 const ProfileSchema = z.object({

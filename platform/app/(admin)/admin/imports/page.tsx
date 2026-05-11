@@ -7,7 +7,7 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
-import { listImportJobs } from "@/lib/platform.server";
+import { listImportJobs } from "@/lib/admin.server";
 import { VideoImportUploadForm } from "./VideoImportUploadForm";
 
 const KIND_OPTIONS = [

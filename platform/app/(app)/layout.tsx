@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/components/app/AppShell";
-import { getCurrentProfile } from "@/lib/platform.server";
+import { getCurrentProfile } from "@/lib/admin.server";
 import { measureServerTask } from "@/lib/perf.server";
 
 // Authenticated routes always need a fresh session check.

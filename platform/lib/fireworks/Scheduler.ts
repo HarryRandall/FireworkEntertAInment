@@ -1,4 +1,4 @@
-import type { ReplayCue } from "@/lib/shows";
+import type { ReplayCue } from "@/lib/show-domain";
 
 export type ScheduledCue = {
   cue: ReplayCue;

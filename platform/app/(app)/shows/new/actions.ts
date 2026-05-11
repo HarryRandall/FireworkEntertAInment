@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { slugifyTitle } from "@/lib/shows";
+import { slugifyTitle } from "@/lib/show-domain";
 import { invalidateShowsCacheForUser } from "@/lib/shows.server";
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;

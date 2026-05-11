@@ -13,7 +13,7 @@ import {
 } from "@/app/components/ui/DataTable";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
-import { listAdminUsers } from "@/lib/platform.server";
+import { listAdminUsers } from "@/lib/admin.server";
 
 type PageProps = {
   searchParams: Promise<{ q?: string; role?: string; status?: string }>;

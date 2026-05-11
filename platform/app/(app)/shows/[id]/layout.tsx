@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Button } from "@/app/components/ui/Button";
 import { ShowTabs } from "./ShowTabs";
-import { formatDuration, formatTotal } from "@/lib/shows";
+import { formatDuration, formatTotal } from "@/lib/show-domain";
 import { getShowBySlug } from "@/lib/shows.server";
 
 type LayoutProps = {

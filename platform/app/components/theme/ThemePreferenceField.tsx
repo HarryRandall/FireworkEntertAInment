@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import type { ThemePreference } from "@/lib/platform.types";
+import type { ThemePreference } from "@/lib/admin.types";
 
 const OPTIONS: {
   value: ThemePreference;

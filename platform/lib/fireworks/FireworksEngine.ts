@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { ReplayCue } from "@/lib/shows";
+import type { ReplayCue } from "@/lib/show-domain";
 import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
