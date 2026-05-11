@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 
 type AppPageHeaderProps = {
   title: ReactNode;
@@ -14,13 +14,15 @@ export function AppPageHeader({
   return (
     <header
       className={cn(
-        "-mx-6 border-b border-outline-variant/55 px-6 pb-1 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12",
+        "-mx-6 flex items-center border-b border-outline-variant/55 px-6 py-8 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12",
         className,
       )}
     >
-      <h1 className="min-w-0 text-3xl font-extrabold leading-none tracking-tight text-on-surface sm:text-4xl">
-        {title}
-      </h1>
+      <div className="min-w-0">
+        <h1 className="min-w-0 text-3xl font-extrabold leading-none tracking-tight text-on-surface sm:text-4xl">
+          {title}
+        </h1>
+      </div>
     </header>
   );
 }

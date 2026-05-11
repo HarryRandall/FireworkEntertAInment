@@ -63,6 +63,15 @@ inside WebGL/SVG simulation assets where CSS tokens cannot be consumed directly.
 
 ## Component Rules
 
+- Build UI in this order: `components/ui` primitives first,
+  domain-specific components second, route-level composition last.
+- New UI primitives and shared variants belong in `components/ui`; do not create
+  one-off page components when an existing primitive can be composed.
+- Prefer imports from `@/app/components/ui` in new code. Direct file imports are
+  allowed in existing code, but do not introduce duplicate component wrappers.
+- Use `cn()` from `@/lib/cn` for class merging.
+- Use `components/ui/styles.ts` for shared class conventions and
+  `components/ui/tokens.ts` for code-only colour access.
 - Buttons are pill-shaped, 44px+ touch targets, visible focus rings.
 - Cards use 12-16px radii, token borders, subtle glassy surfaces, and restrained
   neon shadows only on hover or primary action states.
@@ -72,6 +81,13 @@ inside WebGL/SVG simulation assets where CSS tokens cannot be consumed directly.
 - Do not use warm brown, parchment, burnt orange, or ember-led visuals.
 - Do not nest cards inside cards unless the inner item is a repeated object.
 - Keep app screens dense, scannable, and utilitarian; this is a working tool.
+- Form fields should use the `Field`, `FieldLabel`, `FieldHint`, and
+  `FieldError` pattern.
+- Loading states should use `Skeleton` shapes that match the loaded content.
+- Empty states should include a clear message and an action when recovery is
+  available.
+- Destructive actions should use the destructive button variant and a clear
+  confirmation flow when the action cannot be easily undone.
 
 ## Accessibility
 

@@ -48,7 +48,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
 
   if (template.previewCues.length > 0) {
     const { data: specs } = await supabase
-      .from("firework_specifications")
+      .from("effect_specs")
       .select("id, slug");
     const specBySlug = new Map((specs ?? []).map((spec) => [spec.slug, spec.id]));
     const cueRows = template.previewCues.map((cue, index) => ({
@@ -56,7 +56,11 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       position: index + 1,
       time_seconds: cue.timeSeconds,
       description: cue.description,
-      firework_specification_id: specBySlug.get(cue.fireworkSlug) ?? null,
+      effect_spec_id: specBySlug.get(cue.fireworkSlug) ?? null,
+      position_json: { x: 0, y: 0, z: 0 },
+      rotation_json: { pan: 0, tilt: 90, roll: 0 },
+      scale: 1,
+      overrides_json: {},
     }));
     const { error: cuesError } = await supabase.from("show_cues").insert(cueRows);
     if (cuesError) {

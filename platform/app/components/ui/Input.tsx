@@ -1,5 +1,9 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { Input as ShadcnInput } from "@/components/ui/input";
+import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { uiStyles } from "@/app/components/ui/styles";
+import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
 
 type InputProps = ComponentPropsWithoutRef<"input"> & {
   iconLeft?: ReactNode;
@@ -10,14 +14,16 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   return (
     <div className="relative">
       {iconLeft ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-outline">
+        <div className={uiStyles.control.icon}>
           {iconLeft}
         </div>
       ) : null}
-      <input
+      <ShadcnInput
         {...rest}
+        aria-invalid={invalid || rest["aria-invalid"] || undefined}
         className={cn(
-          "focus-glow-field h-11 w-full rounded-lg border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200 focus:outline-none focus-visible:outline-none",
+          uiStyles.focus.field,
+          "h-11 w-full rounded-xl border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
           invalid ? "border-error/60" : "border-outline/55",
           iconLeft ? "pl-11 pr-4" : "px-4",
           className,
@@ -31,10 +37,11 @@ type TextareaProps = ComponentPropsWithoutRef<"textarea">;
 
 export function Textarea({ className, ...rest }: TextareaProps) {
   return (
-    <textarea
+    <ShadcnTextarea
       {...rest}
       className={cn(
-        "focus-glow-field w-full resize-none rounded-lg border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant transition-all duration-200 focus:outline-none focus-visible:outline-none",
+        uiStyles.focus.field,
+        "w-full resize-none rounded-xl border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
         className,
       )}
     />
@@ -43,14 +50,41 @@ export function Textarea({ className, ...rest }: TextareaProps) {
 
 type SelectProps = ComponentPropsWithoutRef<"select">;
 
-export function Select({ className, ...rest }: SelectProps) {
+export function Select({
+  className,
+  children,
+  name,
+  value,
+  defaultValue,
+  required,
+  disabled,
+  "aria-label": ariaLabel,
+}: SelectProps) {
+  const options: SelectOption[] = Children.toArray(children)
+    .filter(isValidElement)
+    .map((child) => {
+      const childProps = child.props as {
+        value?: string | number;
+        children?: ReactNode;
+        disabled?: boolean;
+      };
+      return {
+        value: String(childProps.value ?? ""),
+        label: String(childProps.children ?? ""),
+        disabled: Boolean(childProps.disabled),
+      };
+    });
+
   return (
-    <select
-      {...rest}
-      className={cn(
-        "focus-glow-field h-11 w-full cursor-pointer rounded-lg border border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200 focus:outline-none focus-visible:outline-none",
-        className,
-      )}
+    <SelectField
+      name={name}
+      value={typeof value === "string" ? value : undefined}
+      defaultValue={defaultValue != null ? String(defaultValue) : undefined}
+      required={required}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      options={options}
+      className={cn("w-full", className)}
     />
   );
 }

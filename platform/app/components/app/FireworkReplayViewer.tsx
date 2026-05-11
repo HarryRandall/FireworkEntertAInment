@@ -17,6 +17,7 @@ import { SelectField } from "@/app/components/ui/SelectField";
 import { StatTile } from "@/app/components/ui/StatTile";
 import type { FireworkSpecification, ReplayCue } from "@/lib/shows";
 import { formatDuration } from "@/lib/shows";
+import type { LaunchPosition } from "@/lib/fireworks/design";
 
 if (typeof window !== "undefined") {
   const origWarn = console.warn;
@@ -38,7 +39,14 @@ type FireworkReplayViewerProps = {
   durationSeconds: number | null;
   cues: ReplayCue[];
   specifications: FireworkSpecification[];
+  launchPositions: LaunchPosition[];
 };
+
+const LAUNCH_POSITION_OPTIONS = [
+  { value: "0", label: "Mortar 1 (left)" },
+  { value: "1", label: "Mortar 2 (centre)" },
+  { value: "2", label: "Mortar 3 (right)" },
+];
 
 function EmptyPreview() {
   return (
@@ -63,6 +71,7 @@ export function FireworkReplayViewer({
   durationSeconds,
   cues,
   specifications,
+  launchPositions,
 }: FireworkReplayViewerProps) {
   const inferredDuration =
     cues.length > 0 ? Math.max(...cues.map((cue) => cue.timeSeconds)) + 5 : 30;
@@ -170,7 +179,12 @@ export function FireworkReplayViewer({
             </p>
           </div>
 
-          <FireworkReplayCanvas cues={sortedCues} elapsed={elapsed} />
+          <FireworkReplayCanvas
+            cues={sortedCues}
+            elapsed={elapsed}
+            launchPositions={launchPositions}
+            muted={!isPlaying}
+          />
 
           {!hasReplayCues ? <EmptyPreview /> : null}
         </div>
@@ -249,7 +263,7 @@ export function FireworkReplayViewer({
           <form
             ref={formRef}
             action={addCue}
-            className="grid grid-cols-1 gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 md:grid-cols-[1fr_140px_1.4fr_auto] md:items-end"
+            className="grid grid-cols-1 gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4 md:grid-cols-[1fr_120px_140px_1.4fr_auto] md:items-end"
           >
             <input type="hidden" name="showId" value={showId} />
             <input type="hidden" name="showSlug" value={showSlug} />
@@ -258,7 +272,7 @@ export function FireworkReplayViewer({
                 Firework
               </span>
               <SelectField
-                name="fireworkSpecificationId"
+                name="effectSpecId"
                 required
                 placeholder="Select firework"
                 defaultValue={specifications[0]?.id}
@@ -266,6 +280,16 @@ export function FireworkReplayViewer({
                   value: spec.id,
                   label: spec.name,
                 }))}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                Mortar
+              </span>
+              <SelectField
+                name="launchPositionIndex"
+                defaultValue="1"
+                options={LAUNCH_POSITION_OPTIONS}
               />
             </label>
             <label className="space-y-2">

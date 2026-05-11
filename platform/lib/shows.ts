@@ -1,7 +1,8 @@
 // Domain types for ShowCrafter shows. Pure types only — no in-memory data.
 // Persistence helpers live in `lib/shows.server.ts` (server-only).
 
-import type { FireworkEffectSpecV2 } from "@/lib/fireworks/spec-v2";
+import type { FireworkSpec, Rotation, Vec3 } from "@/lib/fireworks/spec";
+import type { LaunchPosition } from "@/lib/fireworks/design";
 
 export type ShowStatus = "draft" | "complete";
 
@@ -23,6 +24,7 @@ export type Show = {
   description: string | null;
   moodTags: string[];
   audioPath: string | null;
+  launchPositions: LaunchPosition[];
   updatedAt: string;
 };
 
@@ -31,51 +33,13 @@ export type ShowCue = {
   position: number;
   timeSeconds: number | null;
   description: string;
-  fireworkSpecificationId: string | null;
-  renderParams: FireworkRenderParams | null;
-};
-
-export type FireworkRenderSpec = {
-  particleCount: number;
-  burstDuration: number;
-  colors: string[];
-  spread: number;
-  launchHeight: number;
-  gravity: number;
-  drag: number;
-  sparkSize: number;
-  trailLength: number;
-  secondaryBursts?: number;
-  sections?: FireworkRenderSection[];
-  audioSync?: FireworkAudioSyncEvent[];
-};
-
-export type FireworkRenderParams = Partial<FireworkRenderSpec>;
-
-export type FireworkRenderSection = {
-  id: string;
-  label: string;
-  phase: "launch" | "burst" | "afterglow" | "secondary";
-  startTimeSeconds: number;
-  endTimeSeconds: number;
-  burstTimeSeconds: number;
-  colors: string[];
-  particleCount: number;
-  spread: number;
-  launchHeight: number;
-  burstDuration: number;
-  gravity: number;
-  drag: number;
-  sparkSize: number;
-  trailLength: number;
-  secondaryBursts?: number;
-  confidence?: number;
-};
-
-export type FireworkAudioSyncEvent = {
-  timeSeconds: number;
-  kind: "launch" | "burst" | "crackle" | "fade";
-  confidence: number;
+  effectSpecId: string | null;
+  positionMeters?: Vec3;
+  rotation?: Rotation;
+  scale?: number;
+  overrides?: Record<string, unknown>;
+  seedOverride?: number | null;
+  launchPositionIndex: number;
 };
 
 export type FireworkSpecification = {
@@ -84,7 +48,10 @@ export type FireworkSpecification = {
   name: string;
   description: string | null;
   sortOrder: number;
-  spec: FireworkRenderSpec | FireworkEffectSpecV2;
+  durationSeconds: number | null;
+  heightMeters: number | null;
+  spec: FireworkSpec;
+  rawSpec: unknown;
 };
 
 export type ReplayCue = ShowCue & {

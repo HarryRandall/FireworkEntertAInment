@@ -13,9 +13,10 @@ export type CueActionResult =
 const AddCueSchema = z.object({
   showId: z.string().uuid(),
   showSlug: z.string().min(1),
-  fireworkSpecificationId: z.string().uuid(),
+  effectSpecId: z.string().uuid(),
   timeSeconds: z.coerce.number().min(0).max(60 * 60),
   description: z.string().trim().min(1).max(180),
+  launchPositionIndex: z.coerce.number().int().min(0).max(2).default(0),
 });
 
 const DeleteCueSchema = z.object({
@@ -29,9 +30,10 @@ export async function addPreviewCueAction(
   const parsed = AddCueSchema.safeParse({
     showId: formData.get("showId"),
     showSlug: formData.get("showSlug"),
-    fireworkSpecificationId: formData.get("fireworkSpecificationId"),
+    effectSpecId: formData.get("effectSpecId"),
     timeSeconds: formData.get("timeSeconds"),
     description: formData.get("description"),
+    launchPositionIndex: formData.get("launchPositionIndex") ?? 0,
   });
 
   if (!parsed.success) {
@@ -58,7 +60,12 @@ export async function addPreviewCueAction(
     position: (lastCue?.position ?? 0) + 1,
     time_seconds: parsed.data.timeSeconds,
     description: parsed.data.description,
-    firework_specification_id: parsed.data.fireworkSpecificationId,
+    effect_spec_id: parsed.data.effectSpecId,
+    launch_position_index: parsed.data.launchPositionIndex,
+    position_json: { x: 0, y: 0, z: 0 },
+    rotation_json: { pan: 0, tilt: 90, roll: 0 },
+    scale: 1,
+    overrides_json: {},
   });
 
   if (error) {

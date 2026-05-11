@@ -8,6 +8,7 @@ import {
 import { Button } from "@/app/components/ui/Button";
 import { Input } from "@/app/components/ui/Input";
 import { InlineAlert } from "@/app/components/ui/Feedback";
+import { Field, FieldLabel } from "@/app/components/ui/Field";
 
 const initialState: PasswordActionState = { status: "idle" };
 
@@ -30,43 +31,40 @@ export function PasswordChangeForm() {
       action={formAction}
       className="space-y-4"
     >
-      <label className="block space-y-1.5">
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-          Current password
-        </span>
+      <Field>
+        <FieldLabel htmlFor="currentPassword">Current password</FieldLabel>
         <Input
+          id="currentPassword"
           type="password"
           name="currentPassword"
           autoComplete="current-password"
           required
         />
-      </label>
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block space-y-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            New password
-          </span>
+        <Field>
+          <FieldLabel htmlFor="newPassword">New password</FieldLabel>
           <Input
+            id="newPassword"
             type="password"
             name="newPassword"
             autoComplete="new-password"
             minLength={8}
             required
           />
-        </label>
-        <label className="block space-y-1.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-            Confirm new password
-          </span>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="confirmPassword">Confirm new password</FieldLabel>
           <Input
+            id="confirmPassword"
             type="password"
             name="confirmPassword"
             autoComplete="new-password"
             minLength={8}
             required
           />
-        </label>
+        </Field>
       </div>
 
       {state.status === "error" && state.message ? (

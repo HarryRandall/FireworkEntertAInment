@@ -20,7 +20,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Textarea } from "@/app/components/ui/Input";
 import { SelectField } from "@/app/components/ui/SelectField";
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { createShowAction } from "./actions";
 
 const TIME_OF_DAY = ["Daytime", "Dusk", "Night"] as const;
@@ -207,7 +207,7 @@ export default function NewShowPage() {
                   className={cn(
                     "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black transition-colors",
                     isActive &&
-                      "border-primary bg-primary text-white shadow-[0_10px_22px_-16px_color-mix(in_srgb,var(--color-primary)_70%,transparent)]",
+                      "border-primary bg-primary text-on-primary shadow-[0_10px_22px_-16px_color-mix(in_srgb,var(--color-primary)_70%,transparent)]",
                     isComplete && "border-primary/30 bg-primary/10 text-primary",
                     !isActive &&
                       !isComplete &&

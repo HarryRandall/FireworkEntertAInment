@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Html, OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ReplayCue } from "@/lib/shows";
+import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
 import {
-  FireworksEngine,
-  type FireworksEngineStats,
-} from "@/lib/fireworks/FireworksEngine";
-import { createSeededRng } from "@/lib/fireworks/random";
+  DEFAULT_LAUNCH_POSITIONS,
+  type LaunchPosition,
+} from "@/lib/fireworks/design";
 
 if (typeof window !== "undefined") {
   const origWarn = console.warn;
@@ -24,184 +23,150 @@ if (typeof window !== "undefined") {
   };
 }
 
-type ReplaySceneProps = {
+type Props = {
   cues: ReplayCue[];
   elapsed: number;
-  interactive: boolean;
-  debug: boolean;
+  launchPositions?: LaunchPosition[];
+  muted?: boolean;
+  interactive?: boolean;
 };
 
-function Starfield() {
-  const geometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    const rng = createSeededRng(20260214);
-    const count = 1_100;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = rng.signed(18);
-      positions[i * 3 + 1] = rng.range(-0.4, 11.5);
-      positions[i * 3 + 2] = -rng.range(2, 20);
-      const warmth = rng.range(0.72, 1);
-      colors[i * 3 + 0] = warmth;
-      colors[i * 3 + 1] = warmth * rng.range(0.85, 1);
-      colors[i * 3 + 2] = 1;
-    }
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    return geom;
-  }, []);
-
-  useEffect(() => {
-    return () => geometry.dispose();
-  }, [geometry]);
-
-  return (
-    <points geometry={geometry} renderOrder={1}>
-      <pointsMaterial
-        size={0.026}
-        vertexColors
-        transparent
-        opacity={0.58}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
-  );
-}
-
-function GroundGrid() {
-  return (
-    <group position={[0, -1.45, -1]}>
-      <gridHelper args={[18, 18, "#40516F", "#22304A"]} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.012, 0]}>
-        <planeGeometry args={[18, 18, 1, 1]} />
-        <meshBasicMaterial color="#05070D" transparent opacity={0.22} />
-      </mesh>
-    </group>
-  );
-}
-
-function EngineBridge({ cues, elapsed, debug }: ReplaySceneProps) {
-  const { scene, gl } = useThree();
+export function FireworkReplayCanvas({
+  cues,
+  elapsed,
+  launchPositions = DEFAULT_LAUNCH_POSITIONS,
+  muted = false,
+  interactive = true,
+}: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
-  const latestStatsAt = useRef(0);
-  const [stats, setStats] = useState<FireworksEngineStats | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const elapsedRef = useRef(elapsed);
+
+  const positionsKey = useMemo(
+    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
+    [launchPositions],
+  );
 
   useEffect(() => {
-    const engine = new FireworksEngine(scene, {
-      pixelRatio: gl.getPixelRatio(),
-      debug,
+    elapsedRef.current = elapsed;
+  }, [elapsed]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 600;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05070d);
+    scene.fog = new THREE.FogExp2(0x05070d, 0.00022);
+    sceneRef.current = scene;
+
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100000);
+    camera.position.set(0, 180, 1800);
+    cameraRef.current = camera;
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
     });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(width, height);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    container.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 200, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    // Vertical pan lets the viewer drop to ground level or rise up.
+    controls.enablePan = true;
+    controls.screenSpacePanning = true;
+    controls.minDistance = 80;
+    controls.maxDistance = 5000;
+    controls.minPolarAngle = 0.05;
+    // Just below horizon so the camera can sit at ground level looking up.
+    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.enabled = interactive;
+    controls.update();
+    controlsRef.current = controls;
+
+    const engine = new FireworksEngine(scene, launchPositions);
+    engine.attachListenerToCamera(camera);
+    engine.setMuted(muted);
     engineRef.current = engine;
+
+    function loop() {
+      const eng = engineRef.current;
+      const cam = cameraRef.current;
+      const rend = rendererRef.current;
+      const sc = sceneRef.current;
+      if (!eng || !cam || !rend || !sc) return;
+      eng.setElapsed(elapsedRef.current);
+      controls.update();
+      rend.render(sc, cam);
+      rafRef.current = requestAnimationFrame(loop);
+    }
+    rafRef.current = requestAnimationFrame(loop);
+
+    function onResize() {
+      const w = container?.clientWidth || 800;
+      const h = container?.clientHeight || 600;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    const ro = new ResizeObserver(onResize);
+    ro.observe(container);
+
     return () => {
-      engineRef.current = null;
+      ro.disconnect();
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      controls.dispose();
       engine.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+      engineRef.current = null;
+      controlsRef.current = null;
+      cameraRef.current = null;
+      rendererRef.current = null;
+      sceneRef.current = null;
     };
-  }, [debug, gl, scene]);
+    // launchPositions handled by separate effect to avoid full teardown on edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     engineRef.current?.setCues(cues);
   }, [cues]);
 
-  useFrame(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-    engine.setPixelRatio(gl.getPixelRatio());
-    engine.setElapsed(elapsed);
-    if (debug && elapsed - latestStatsAt.current > 0.3) {
-      latestStatsAt.current = elapsed;
-      setStats(engine.getStats());
-    }
-  });
+  useEffect(() => {
+    engineRef.current?.setLaunchPositions(launchPositions);
+    // positionsKey is the dependency surrogate so we don't re-fire on
+    // referentially-different but value-equal arrays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionsKey]);
 
-  if (!debug || !stats) return null;
-  return (
-    <Html position={[-3.7, 3.7, 0]} transform={false} zIndexRange={[20, 0]}>
-      <div className="w-56 rounded-xl border border-white/10 bg-black/55 p-3 font-mono text-[10px] leading-relaxed text-white shadow-2xl backdrop-blur">
-        <div>cues: {stats.cues}</div>
-        <div>events: {stats.scheduledEvents}</div>
-        <div>particles: {stats.particles}</div>
-        <div>trails: {stats.trailParticles}</div>
-        <div>smoke: {stats.smokeParticles}</div>
-      </div>
-    </Html>
-  );
-}
+  useEffect(() => {
+    engineRef.current?.setMuted(muted);
+  }, [muted]);
 
-function ReplayScene({
-  cues,
-  elapsed,
-  interactive,
-  debug,
-}: ReplaySceneProps) {
-  return (
-    <>
-      <color attach="background" args={["#05070D"]} />
-      <ambientLight intensity={0.36} />
-      <fog attach="fog" args={["#05070D", 7, 24]} />
-      <Starfield />
-      <GroundGrid />
-      <EngineBridge
-        cues={cues}
-        elapsed={elapsed}
-        interactive={interactive}
-        debug={debug}
-      />
-      {interactive ? (
-        <OrbitControls
-          target={[0, 0.9, -0.9]}
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={2.4}
-          maxDistance={12}
-          minPolarAngle={0.1}
-          maxPolarAngle={Math.PI / 2 - 0.04}
-        />
-      ) : null}
-    </>
-  );
-}
-
-export function FireworkReplayCanvas({
-  cues,
-  elapsed,
-  interactive = true,
-  debug = false,
-}: {
-  cues: ReplayCue[];
-  elapsed: number;
-  interactive?: boolean;
-  debug?: boolean;
-}) {
-  const maxDpr = useMemo(() => {
-    if (typeof window === "undefined") return 2;
-    return Math.min(3, Math.max(2, window.devicePixelRatio || 2));
-  }, []);
+  useEffect(() => {
+    if (controlsRef.current) controlsRef.current.enabled = interactive;
+  }, [interactive]);
 
   return (
-    <Canvas
-      className="h-full w-full min-h-0 touch-none bg-transparent"
-      gl={{
-        antialias: true,
-        alpha: false,
-        powerPreference: "high-performance",
-        precision: "highp",
-      }}
-      onCreated={({ gl }) => {
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.04;
-        gl.outputColorSpace = THREE.SRGBColorSpace;
-      }}
-      camera={{ position: [0, 1.45, 7.4], fov: 58 }}
-      dpr={[1.5, maxDpr]}
-    >
-      <ReplayScene
-        cues={cues}
-        elapsed={elapsed}
-        interactive={interactive}
-        debug={debug}
-      />
-    </Canvas>
+    <div
+      ref={containerRef}
+      className="absolute inset-0 h-full w-full bg-black"
+    />
   );
 }

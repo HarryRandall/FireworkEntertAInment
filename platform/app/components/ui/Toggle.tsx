@@ -1,7 +1,9 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { uiStyles } from "@/app/components/ui/styles";
 
 type ToggleProps = {
   name?: string;
@@ -40,8 +42,9 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        "focus-glow-field-group group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-white p-4 transition-colors",
-        "hover:border-primary/35 hover:bg-surface-container-low",
+        uiStyles.focus.fieldGroup,
+        "group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low p-4 transition-colors",
+        "hover:border-primary/35 hover:bg-surface-container-high",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
@@ -58,31 +61,14 @@ export function Toggle({
           </span>
         ) : null}
       </span>
-      <span className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center">
-        <input
+      <span className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center justify-center">
+        <Switch
           id={id}
-          type="checkbox"
           name={name}
           checked={value}
-          onChange={handle}
+          onCheckedChange={handle}
           disabled={disabled}
-          className="peer sr-only"
-        />
-        <span
-          aria-hidden
-          className={cn(
-            "h-6 w-11 rounded-full transition-colors",
-            value ? "bg-primary" : "bg-outline/45",
-          )}
-        />
-        <span
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full shadow-sm transition-transform duration-200",
-            value
-              ? "translate-x-5 bg-on-primary"
-              : "translate-x-0 bg-surface",
-          )}
+          className="h-6 w-11 data-checked:bg-primary data-unchecked:bg-outline/45 [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-surface [&_[data-slot=switch-thumb]]:data-checked:bg-on-primary [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
         />
       </span>
     </label>

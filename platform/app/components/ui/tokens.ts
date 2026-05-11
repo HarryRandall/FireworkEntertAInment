@@ -1,0 +1,46 @@
+export const cssTokens = {
+  color: {
+    background: "var(--color-background)",
+    surface: "var(--color-surface)",
+    surfaceContainerLow: "var(--color-surface-container-low)",
+    surfaceContainer: "var(--color-surface-container)",
+    surfaceContainerHigh: "var(--color-surface-container-high)",
+    surfaceContainerHighest: "var(--color-surface-container-highest)",
+    onSurface: "var(--color-on-surface)",
+    onSurfaceVariant: "var(--color-on-surface-variant)",
+    primary: "var(--color-primary)",
+    secondary: "var(--color-secondary)",
+    tertiary: "var(--color-tertiary)",
+    success: "var(--color-success)",
+    danger: "var(--color-danger)",
+    highlight: "var(--color-highlight)",
+    outline: "var(--color-outline)",
+    outlineVariant: "var(--color-outline-variant)",
+  },
+  radius: {
+    pill: "var(--radius-pill)",
+    card: "var(--radius-card)",
+    cardLg: "var(--radius-card-lg)",
+    hero: "var(--radius-hero)",
+  },
+  shadow: {
+    card: "var(--shadow-card)",
+    cardHover: "var(--shadow-card-hover)",
+    cta: "var(--shadow-cta)",
+    modal: "var(--shadow-modal)",
+  },
+} as const;
+
+export const staticShowCrafterPalette = {
+  night: "#05070D",
+  surfaceDeep: "#0B1020",
+  gridMajor: "#40516F",
+  gridMinor: "#22304A",
+  onSurface: "#F5F7FA",
+  primary: "#00E5FF",
+  secondary: "#3B82F6",
+  tertiary: "#8B5CF6",
+  magenta: "#FF3DF2",
+  highlight: "#FFD166",
+  success: "#00FF9C",
+} as const;

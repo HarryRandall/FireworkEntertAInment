@@ -25,6 +25,7 @@ export default async function ShowPreviewPage({ params }: PageProps) {
       durationSeconds={show.durationSeconds}
       cues={cues}
       specifications={specifications}
+      launchPositions={show.launchPositions}
     />
   );
 }

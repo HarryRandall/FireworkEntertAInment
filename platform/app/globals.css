@@ -1,21 +1,27 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/*
+ ---break---
+ */
+@custom-variant dark (&:is(.dark *));
 
 /*
  * ShowCrafter design tokens.
  *
- * The product now uses a dark cinematic AI-control aesthetic by default:
- * deep navy/black surfaces, neon cyan/blue/violet interaction accents, and
- * yellow only for highlight/wow states. Token names map 1:1 to Tailwind v4
- * utilities (e.g. `bg-primary`, `text-on-surface-variant`).
+ * The product uses a restrained dark control-room aesthetic by default:
+ * black surfaces, charcoal elevation, and cyan reserved for primary actions
+ * or small focus accents. Token names map 1:1 to Tailwind v4 utilities
+ * (e.g. `bg-primary`, `text-on-surface-variant`).
  */
 @theme {
   /* Type */
-  --font-headline: var(--font-geist-sans), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-body: var(--font-geist-sans), Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-headline: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-body: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 
   /* Brand aliases */
-  --color-night: #05070D;
+  --color-night: #050506;
   --color-neon-cyan: #00E5FF;
   --color-electric-blue: #3B82F6;
   --color-violet: #8B5CF6;
@@ -24,24 +30,24 @@
   --color-live-green: #00FF9C;
   --color-soft-gold: #8B5CF6;
   --color-sky-pulse: #00E5FF;
-  --color-sky-pulse-container: #3B82F6;
+  --color-sky-pulse-container: #101114;
 
   /* Surface ladder */
-  --color-background: #05070D;
-  --color-surface: #05070D;
-  --color-surface-dim: #070B15;
-  --color-surface-bright: #1A2540;
-  --color-surface-container-lowest: #05070D;
-  --color-surface-container-low: #0B1020;
-  --color-surface-container: #0F1628;
-  --color-surface-container-high: #11182A;
-  --color-surface-container-highest: #141B2E;
-  --color-surface-variant: #18243B;
+  --color-background: #08080A;
+  --color-surface: #050506;
+  --color-surface-dim: #050506;
+  --color-surface-bright: #191B20;
+  --color-surface-container-lowest: #050506;
+  --color-surface-container-low: #0A0B0E;
+  --color-surface-container: #0E0F13;
+  --color-surface-container-high: #14161B;
+  --color-surface-container-highest: #1B1D23;
+  --color-surface-variant: #242730;
   --color-surface-tint: #00E5FF;
 
   /* On-surface text */
   --color-on-surface: #F5F7FA;
-  --color-on-surface-variant: #AAB6C8;
+  --color-on-surface-variant: #A8AFBD;
   --color-on-background: #F5F7FA;
 
   /* Primary (Neon Cyan) */
@@ -55,15 +61,15 @@
   --color-on-primary-fixed-variant: #0B4A55;
   --color-inverse-primary: #006DDB;
 
-  /* Secondary (Electric Blue) */
-  --color-secondary: #3B82F6;
-  --color-secondary-container: #173B77;
-  --color-secondary-fixed: #CFE2FF;
-  --color-secondary-fixed-dim: #93C5FD;
-  --color-on-secondary: #F5F7FA;
-  --color-on-secondary-container: #D9E8FF;
-  --color-on-secondary-fixed: #071327;
-  --color-on-secondary-fixed-variant: #173B77;
+  /* Secondary (neutral elevation) */
+  --color-secondary: #B7BECA;
+  --color-secondary-container: #17191F;
+  --color-secondary-fixed: #D8DCE4;
+  --color-secondary-fixed-dim: #AEB6C3;
+  --color-on-secondary: #08080A;
+  --color-on-secondary-container: #F1F3F6;
+  --color-on-secondary-fixed: #0E0F13;
+  --color-on-secondary-fixed-variant: #363A44;
 
   /* Tertiary (Violet / Magenta) */
   --color-tertiary: #8B5CF6;
@@ -85,12 +91,12 @@
   --color-highlight: #FFD166;
 
   /* Borders */
-  --color-outline: #31415F;
-  --color-outline-variant: #22304A;
+  --color-outline: #3B3F4A;
+  --color-outline-variant: #272B34;
 
   /* Inverse */
   --color-inverse-surface: #F5F7FA;
-  --color-inverse-on-surface: #0B1020;
+  --color-inverse-on-surface: #0E0F13;
 
   /* Radius scale */
   --radius-pill: 9999px;
@@ -99,8 +105,10 @@
   --radius-hero: 24px;
 
   /* Shadow scale */
-  --shadow-card: 0 16px 50px -36px rgba(0, 229, 255, 0.34);
-  --shadow-card-hover: 0 22px 70px -40px rgba(139, 92, 246, 0.52);
+  --shadow-card: 0 18px 55px -42px rgba(0, 0, 0, 0.82);
+  --shadow-card-hover:
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 24%, transparent),
+    0 24px 80px -44px color-mix(in srgb, var(--color-primary) 78%, transparent);
   --shadow-cta: 0 14px 36px -16px rgba(0, 229, 255, 0.72);
   --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.55);
 
@@ -321,5 +329,104 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+/*
+ ---break---
+ */
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+/*
+ ---break---
+ */
+:root,
+.dark,
+[data-theme="dark"],
+[data-theme="light"] {
+  --background: var(--color-background);
+  --foreground: var(--color-on-surface);
+  --card: var(--color-surface-container-low);
+  --card-foreground: var(--color-on-surface);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-on-surface);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-on-primary);
+  --secondary: var(--color-secondary-container);
+  --secondary-foreground: var(--color-on-secondary-container);
+  --muted: var(--color-surface-container-high);
+  --muted-foreground: var(--color-on-surface-variant);
+  --accent: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface-container-high));
+  --accent-foreground: var(--color-on-surface);
+  --destructive: var(--color-error);
+  --border: color-mix(in srgb, var(--color-outline-variant) 72%, transparent);
+  --input: color-mix(in srgb, var(--color-outline) 66%, transparent);
+  --ring: var(--color-primary);
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-secondary);
+  --chart-3: var(--color-tertiary);
+  --chart-4: var(--color-success);
+  --chart-5: var(--color-highlight);
+  --radius: var(--radius-card);
+  --sidebar: var(--color-surface-container-lowest);
+  --sidebar-foreground: var(--color-on-surface);
+  --sidebar-primary: var(--color-primary);
+  --sidebar-primary-foreground: var(--color-on-primary);
+  --sidebar-accent: var(--color-surface-container-high);
+  --sidebar-accent-foreground: var(--color-on-surface);
+  --sidebar-border: var(--color-outline-variant);
+  --sidebar-ring: var(--color-primary);
+}
+/*
+ ---break---
+ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }

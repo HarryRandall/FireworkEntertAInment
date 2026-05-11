@@ -1,30 +1,42 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { cn } from "@/lib/cn";
+import type { ComponentProps, ComponentPropsWithoutRef, ReactNode } from "react";
+import { Button as ShadcnButton } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg" | "icon";
 
-const baseClasses =
-  "focus-glow-action inline-flex items-center justify-center gap-2 rounded-lg font-bold tracking-tight transition-all duration-200 ease-out cursor-pointer active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0 focus:outline-none focus-visible:outline-none";
+type ShadcnVariant = NonNullable<
+  ComponentProps<typeof ShadcnButton>["variant"]
+>;
+type ShadcnSize = NonNullable<
+  ComponentProps<typeof ShadcnButton>["size"]
+>;
 
-const variantClasses: Record<Variant, string> = {
-  primary:
-    "border border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105",
-  secondary:
-    "border border-outline/45 bg-surface-container-low text-on-surface hover:border-primary/45 hover:bg-surface-container-high",
-  ghost:
-    "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
-  destructive:
-    "border border-error/35 bg-error/10 text-error hover:bg-error/15",
+const variantMap: Record<Variant, ShadcnVariant> = {
+  primary: "default",
+  secondary: "outline",
+  ghost: "ghost",
+  destructive: "destructive",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "min-h-9 px-5 text-sm",
-  md: "min-h-11 px-8 text-sm",
-  lg: "min-h-14 px-10 text-base",
-  icon: "h-11 w-11 p-0",
+  sm: "h-9 rounded-full px-5 text-sm font-bold",
+  md: "h-11 rounded-full px-8 text-sm font-bold",
+  lg: "h-14 rounded-full px-10 text-base font-bold",
+  icon: "size-11 rounded-full p-0",
+};
+
+const variantClasses: Record<Variant, string> = {
+  primary:
+    "border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105 hover:bg-primary-container",
+  secondary:
+    "border-outline-variant/55 bg-surface text-on-surface hover:border-primary/45 hover:bg-surface-container-high hover:text-on-surface",
+  ghost:
+    "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
+  destructive:
+    "border-error/70 bg-error text-on-error hover:bg-error hover:brightness-105",
 };
 
 type CommonProps = {
@@ -56,11 +68,12 @@ export function Button(props: ButtonProps) {
     loading = false,
   } = props;
   const classes = cn(
-    baseClasses,
-    variantClasses[variant],
     sizeClasses[size],
+    "cursor-pointer gap-2 transition-all duration-200 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0",
+    variantClasses[variant],
     className,
   );
+  const shadcnSize: ShadcnSize = size === "icon" ? "icon-lg" : "default";
 
   if ("href" in props && props.href !== undefined) {
     const {
@@ -78,10 +91,17 @@ export function Button(props: ButtonProps) {
     void _ch;
     void _l;
     return (
-      <Link href={href} className={classes} {...rest}>
-        {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-        {children}
-      </Link>
+      <ShadcnButton
+        asChild
+        variant={variantMap[variant]}
+        size={shadcnSize}
+        className={classes}
+      >
+        <Link href={href} aria-disabled={loading || undefined} {...rest}>
+          {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+          {children}
+        </Link>
+      </ShadcnButton>
     );
   }
 
@@ -100,9 +120,15 @@ export function Button(props: ButtonProps) {
   void _ch;
   void _l;
   return (
-    <button className={classes} disabled={disabled || loading} {...rest}>
+    <ShadcnButton
+      variant={variantMap[variant]}
+      size={shadcnSize}
+      className={classes}
+      disabled={disabled || loading}
+      {...rest}
+    >
       {loading ? <Loader2 size={16} className="animate-spin" /> : null}
       {children}
-    </button>
+    </ShadcnButton>
   );
 }

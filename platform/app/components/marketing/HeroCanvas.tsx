@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
 
 // r3f 9.x still constructs THREE.Clock, which three 0.184 deprecated in favor of
 // THREE.Timer. Filter that one warning until r3f migrates.
@@ -15,11 +16,11 @@ if (typeof window !== "undefined") {
 }
 
 const PALETTE = [
-  new THREE.Color("#00E5FF"),
-  new THREE.Color("#3B82F6"),
-  new THREE.Color("#8B5CF6"),
-  new THREE.Color("#FF3DF2"),
-  new THREE.Color("#FFD166"),
+  new THREE.Color(staticShowCrafterPalette.primary),
+  new THREE.Color(staticShowCrafterPalette.secondary),
+  new THREE.Color(staticShowCrafterPalette.tertiary),
+  new THREE.Color(staticShowCrafterPalette.magenta),
+  new THREE.Color(staticShowCrafterPalette.highlight),
 ];
 
 const PARTICLES_PER_BURST = 220;
@@ -139,7 +140,7 @@ function Starfield() {
     <points geometry={geom}>
       <pointsMaterial
         ref={matRef}
-        color="#F5F7FA"
+        color={staticShowCrafterPalette.onSurface}
         size={0.025}
         sizeAttenuation
         transparent
@@ -204,7 +205,7 @@ export default function HeroCanvas() {
         camera={{ position: [0, 0, 8], fov: 55 }}
         dpr={[1, 1.75]}
       >
-        <fog attach="fog" args={["#05070D", 8, 22]} />
+        <fog attach="fog" args={[staticShowCrafterPalette.night, 8, 22]} />
         <ambientLight intensity={0.4} />
         <Starfield />
         <BurstManager />
