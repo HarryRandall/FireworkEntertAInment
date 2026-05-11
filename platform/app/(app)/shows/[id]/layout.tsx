@@ -52,7 +52,7 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
           >
             Refine
           </Link>
-          <Button size="sm">Export</Button>
+          <Button href={`/api/shows/${show.slug}/export`} size="sm">Export</Button>
         </div>
       </div>
 

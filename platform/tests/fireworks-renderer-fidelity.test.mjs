@@ -59,6 +59,14 @@ test("QA seed creates pattern, colour, and replay test shows for every user", ()
   assert.match(seed, /'strobe-white'/);
 });
 
+test("burst patterns distribute over the full sphere", () => {
+  const effects = read("lib/fireworks/Effects.ts");
+  // Fibonacci pattern previously wrapped vy in Math.abs, leaving only the
+  // upper hemisphere visible. The fix unwraps it; lock that in.
+  assert.doesNotMatch(effects, /vy = Math\.abs\(i \* offset/);
+  assert.match(effects, /vy = i \* offset - 1 \+ offset \/ 2;[\s\S]*case 2:/);
+});
+
 test("burst physics hang like firework stars instead of free-falling", () => {
   const effects = read("lib/fireworks/Effects.ts");
   const particle = read("lib/fireworks/Particle.ts");
