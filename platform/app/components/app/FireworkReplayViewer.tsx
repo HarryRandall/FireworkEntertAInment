@@ -118,6 +118,21 @@ export function FireworkReplayViewer({
     [cues],
   );
 
+  // Collapse expanded shots back to one row per show_cue for the builder list.
+  // Multi-shot IDs are "{baseCueId}-shot-N"; single-shot IDs are just the UUID.
+  const builderCues = useMemo(() => {
+    const seen = new Map<string, { cue: ReplayCue; baseCueId: string; shotCount: number }>();
+    for (const cue of sortedCues) {
+      const baseCueId = cue.id.replace(/-shot-\d+$/, "");
+      if (!seen.has(baseCueId)) {
+        seen.set(baseCueId, { cue, baseCueId, shotCount: 1 });
+      } else {
+        seen.get(baseCueId)!.shotCount += 1;
+      }
+    }
+    return Array.from(seen.values());
+  }, [sortedCues]);
+
   const activeCue = useMemo(() => {
     return [...sortedCues]
       .reverse()
@@ -326,10 +341,10 @@ export function FireworkReplayViewer({
           </form>
 
           <div className="space-y-3">
-            {sortedCues.length > 0 ? (
-              sortedCues.map((cue) => (
+            {builderCues.length > 0 ? (
+              builderCues.map(({ cue, baseCueId, shotCount }) => (
                 <div
-                  key={cue.id}
+                  key={baseCueId}
                   className="flex flex-col gap-3 rounded-xl border border-outline-variant/10 bg-surface-container-highest/60 p-4 md:flex-row md:items-center md:justify-between"
                 >
                   <div>
@@ -340,19 +355,16 @@ export function FireworkReplayViewer({
                       <span className="font-semibold text-on-surface">
                         {cue.description || cue.firework.name}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                        {cue.firework.slug}
-                      </span>
+                      {shotCount > 1 && (
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                          {shotCount} shots
+                        </span>
+                      )}
                     </div>
-                    {cue.description && (
-                      <p className="mt-1 text-sm text-on-surface-variant">
-                        {cue.firework.name}
-                      </p>
-                    )}
                   </div>
                   <button
                     type="button"
-                    onClick={() => deleteCue(cue.id)}
+                    onClick={() => deleteCue(baseCueId)}
                     disabled={isPending}
                     className="focus-glow-action inline-flex h-10 items-center justify-center gap-2 rounded-full border border-outline/20 px-4 text-sm font-semibold text-on-surface-variant transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
                   >
