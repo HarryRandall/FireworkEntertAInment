@@ -17,7 +17,7 @@ import type {
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
-import { safeParseFireworkSpec, type FireworkSpec } from "@/lib/fireworks/spec";
+import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
 import { parseLaunchPositions } from "@/lib/fireworks/design";
 import type { Database, Json } from "@/lib/database.types";
 
@@ -81,7 +81,7 @@ type ShoppingItemProjection = Pick<
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const CACHE_PREFIX = "shows:v2";
+const CACHE_PREFIX = "shows:v3";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
@@ -369,8 +369,7 @@ export async function listReplayCuesForShow(
 
   const rows = (data ?? []) as ReplayCueRow[];
 
-  // Load product_effect_sequences for any catalogue-product cues so the engine
-  // can fire the correct multi-shot sequence.
+  // Load product_effect_sequences so multi-shot products expand into one ReplayCue per tube.
   const productIds = [
     ...new Set(
       rows
@@ -382,18 +381,16 @@ export async function listReplayCuesForShow(
   type SeqRow = {
     product_id: string;
     time_offset_seconds: number;
-    pan_degrees: number;
-    color: string | null;
-    effect_specs: { spec_json: unknown } | null;
+    effect_specs: EffectSpecProjection | null;
   };
 
-  type ShotEntry = NonNullable<FireworkSpec["shots"]>[number];
-  const shotsMap = new Map<string, ShotEntry[]>();
+  type ShotSpec = { timeOffsetSeconds: number; firework: FireworkSpecification };
+  const seqsByProduct = new Map<string, ShotSpec[]>();
 
   if (productIds.length > 0) {
     const { data: seqs, error: seqErr } = await supabase
       .from("product_effect_sequences")
-      .select("product_id, time_offset_seconds, pan_degrees, color, effect_specs(spec_json)")
+      .select(`product_id, time_offset_seconds, effect_specs (${EFFECT_SPEC_SELECT})`)
       .in("product_id", productIds)
       .order("time_offset_seconds", { ascending: true });
 
@@ -401,48 +398,43 @@ export async function listReplayCuesForShow(
       console.error("[shows.server] product_effect_sequences load failed:", seqErr);
     } else {
       for (const seq of (seqs ?? []) as SeqRow[]) {
-        const arr = shotsMap.get(seq.product_id) ?? [];
-        const shot: ShotEntry = {
-          index: arr.length,
+        if (!seq.effect_specs) continue;
+        const arr = seqsByProduct.get(seq.product_id) ?? [];
+        arr.push({
           timeOffsetSeconds: Number(seq.time_offset_seconds),
-        };
-        if (seq.pan_degrees !== 0) shot.panDegrees = seq.pan_degrees;
-        // Prefer the sequence-level color override; fall back to the effect_spec's color
-        const specColor =
-          seq.color ??
-          (typeof (seq.effect_specs?.spec_json as Record<string, unknown>)?.color === "string"
-            ? ((seq.effect_specs?.spec_json as Record<string, unknown>).color as string)
-            : null);
-        if (specColor) shot.color = specColor as `#${string}`;
-        arr.push(shot);
-        shotsMap.set(seq.product_id, arr);
+          firework: mapEffectSpecification(seq.effect_specs, arr.length),
+        });
+        seqsByProduct.set(seq.product_id, arr);
       }
     }
   }
 
-  const mapped = rows
-    .map((row) => {
-      const cue = mapReplayCue(row);
-      if (!cue) return null;
-      // Inject the multi-shot sequence into the firework rawSpec so the engine
-      // fires the correct per-tube timing and colours.
-      if (row.catalogue_product_id) {
-        const shots = shotsMap.get(row.catalogue_product_id);
-        if (shots && shots.length > 0) {
-          const injectedRaw = { ...(cue.firework.rawSpec as object), shots };
-          cue.firework = {
-            ...cue.firework,
-            rawSpec: injectedRaw,
-            spec: safeParseFireworkSpec(injectedRaw),
-          };
+  // Expand each product cue into one ReplayCue per tube in the sequence.
+  const expanded: ReplayCue[] = [];
+  for (const row of rows) {
+    const baseCue = mapReplayCue(row);
+    if (!baseCue) continue;
+    if (row.catalogue_product_id) {
+      const shots = seqsByProduct.get(row.catalogue_product_id);
+      if (shots && shots.length > 0) {
+        for (let i = 0; i < shots.length; i++) {
+          expanded.push({
+            ...baseCue,
+            id: `${baseCue.id}-shot-${i}`,
+            timeSeconds: baseCue.timeSeconds + shots[i].timeOffsetSeconds,
+            firework: shots[i].firework,
+          });
         }
+        continue;
       }
-      return cue;
-    })
-    .filter((cue): cue is ReplayCue => cue !== null);
+    }
+    expanded.push(baseCue);
+  }
 
-  await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
-  return mapped;
+  expanded.sort((a, b) => a.timeSeconds - b.timeSeconds);
+
+  await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
+  return expanded;
 }
 
 export async function listShoppingItemsForShow(

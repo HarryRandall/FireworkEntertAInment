@@ -338,15 +338,17 @@ export function FireworkReplayViewer({
                         {formatDuration(cue.timeSeconds)}
                       </span>
                       <span className="font-semibold text-on-surface">
-                        {cue.firework.name}
+                        {cue.description || cue.firework.name}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                         {cue.firework.slug}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-on-surface-variant">
-                      {cue.description}
-                    </p>
+                    {cue.description && (
+                      <p className="mt-1 text-sm text-on-surface-variant">
+                        {cue.firework.name}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -415,11 +417,13 @@ export function FireworkReplayViewer({
                   >
                     <div>
                       <p className="text-sm font-semibold text-on-surface">
-                        {cue.firework.name}
+                        {cue.description || cue.firework.name}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
-                        {cue.description}
-                      </p>
+                      {cue.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
+                          {cue.firework.name}
+                        </p>
+                      )}
                     </div>
                     <span className="font-mono text-xs text-tertiary tabular-nums">
                       {formatDuration(cue.timeSeconds)}
