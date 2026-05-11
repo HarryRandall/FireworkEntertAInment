@@ -15,8 +15,8 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from "@/app/components/ui/DataTable";
-import { formatDuration } from "@/lib/shows";
-import { listCatalogueProducts } from "@/lib/platform.server";
+import { formatDuration } from "@/lib/show-domain";
+import { listCatalogueProducts } from "@/lib/admin.server";
 
 export default async function AdminCataloguePage() {
   const products = await listCatalogueProducts();

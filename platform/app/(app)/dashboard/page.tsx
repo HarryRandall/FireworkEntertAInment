@@ -14,7 +14,7 @@ import {
   formatBudget,
   formatDuration,
   formatRelativeDate,
-} from "@/lib/shows";
+} from "@/lib/show-domain";
 import { listShowsForCurrentUser } from "@/lib/shows.server";
 
 const ROTATING_ICONS: LucideIcon[] = [Music4, Sparkles, Zap];

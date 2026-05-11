@@ -1,6 +1,6 @@
 import { Package } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
-import type { ShoppingListItem } from "@/lib/shows";
+import type { ShoppingListItem } from "@/lib/show-domain";
 
 type ShoppingListTableProps = {
   items: ShoppingListItem[];

@@ -15,8 +15,8 @@ import { Input } from "@/app/components/ui/Input";
 import { NumberInput } from "@/app/components/ui/NumberInput";
 import { SelectField } from "@/app/components/ui/SelectField";
 import { StatTile } from "@/app/components/ui/StatTile";
-import type { FireworkSpecification, ReplayCue } from "@/lib/shows";
-import { formatDuration } from "@/lib/shows";
+import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
+import { formatDuration } from "@/lib/show-domain";
 import type { LaunchPosition } from "@/lib/fireworks/design";
 
 if (typeof window !== "undefined") {
@@ -272,7 +272,7 @@ export function FireworkReplayViewer({
                 Firework
               </span>
               <SelectField
-                name="effectSpecId"
+                name="productId"
                 required
                 placeholder="Select firework"
                 defaultValue={specifications[0]?.id}
@@ -338,15 +338,17 @@ export function FireworkReplayViewer({
                         {formatDuration(cue.timeSeconds)}
                       </span>
                       <span className="font-semibold text-on-surface">
-                        {cue.firework.name}
+                        {cue.description || cue.firework.name}
                       </span>
                       <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                         {cue.firework.slug}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-on-surface-variant">
-                      {cue.description}
-                    </p>
+                    {cue.description && (
+                      <p className="mt-1 text-sm text-on-surface-variant">
+                        {cue.firework.name}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -415,11 +417,13 @@ export function FireworkReplayViewer({
                   >
                     <div>
                       <p className="text-sm font-semibold text-on-surface">
-                        {cue.firework.name}
+                        {cue.description || cue.firework.name}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
-                        {cue.description}
-                      </p>
+                      {cue.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
+                          {cue.firework.name}
+                        </p>
+                      )}
                     </div>
                     <span className="font-mono text-xs text-tertiary tabular-nums">
                       {formatDuration(cue.timeSeconds)}

@@ -1,9 +1,9 @@
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { ShowTemplatePreview } from "@/app/components/app/ShowTemplatePreview";
 import { LibraryControls } from "@/app/(app)/library/LibraryControls";
-import { listShowTemplates } from "@/lib/platform.server";
+import { listShowTemplates } from "@/lib/admin.server";
 import { listFireworkSpecifications } from "@/lib/shows.server";
-import type { ShowTemplate } from "@/lib/platform.types";
+import type { ShowTemplate } from "@/lib/admin.types";
 
 type SortKey = "popular" | "recent" | "featured" | "shortest" | "budget";
 

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import type { ThemePreference } from "@/lib/platform.types";
+import type { ThemePreference } from "@/lib/admin.types";
 
 export function ThemePreferenceSync({
   themePreference,

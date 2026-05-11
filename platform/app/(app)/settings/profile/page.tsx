@@ -7,7 +7,7 @@ import { Button } from "@/app/components/ui/Button";
 import { Field, FieldHint, FieldLabel } from "@/app/components/ui/Field";
 import { Input } from "@/app/components/ui/Input";
 import { SignOutButton } from "../SignOutButton";
-import { getCurrentProfile } from "@/lib/platform.server";
+import { getCurrentProfile } from "@/lib/admin.server";
 
 type PageProps = {
   searchParams?: Promise<{ returnTo?: string }>;

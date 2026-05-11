@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { FireworkReplayViewer } from "@/app/components/app/FireworkReplayViewer";
 import {
   getShowBySlug,
-  listFireworkSpecifications,
+  listFireworkProducts,
   listReplayCuesForShow,
 } from "@/lib/shows.server";
 
@@ -14,7 +14,7 @@ export default async function ShowPreviewPage({ params }: PageProps) {
   if (!show) notFound();
   const [cues, specifications] = await Promise.all([
     listReplayCuesForShow(show.id),
-    listFireworkSpecifications(),
+    listFireworkProducts(),
   ]);
 
   return (

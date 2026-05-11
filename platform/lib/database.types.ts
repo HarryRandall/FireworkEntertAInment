@@ -14,65 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      catalogue_products: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          effect_spec_id: string | null
-          firework_subtype: string | null
-          firework_type: string | null
-          id: string
-          manufacturer: string | null
-          name: string
-          part_number: string
-          source_payload: Json | null
-          source_table: string | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effect_spec_id?: string | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name: string
-          part_number: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effect_spec_id?: string | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name?: string
-          part_number?: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "catalogue_products_effect_spec_id_fkey"
-            columns: ["effect_spec_id"]
-            isOneToOne: false
-            referencedRelation: "effect_specs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       effect_specs: {
         Row: {
           confidence: number
@@ -121,124 +62,10 @@ export type Database = {
         }
         Relationships: []
       }
-      "Finale3D CSV Import Sample": {
-        Row: {
-          available: string | null
-          category: string | null
-          ceNumber: string | null
-          color: string | null
-          customPartField: string | null
-          description: string | null
-          dmxFixtureDefinition: string | null
-          dmxPatch: string | null
-          duration: number | null
-          ematches: string | null
-          exNumber: string | null
-          fuseDelay: string | null
-          height: number | null
-          internalDelay: number | null
-          lockoutDefault: string | null
-          manufacturer: string | null
-          manufacturerPartNumber: string | null
-          neq: string | null
-          numDevices: number | null
-          numTubes: string | null
-          partNotes: string | null
-          partNumber: string
-          partType: string | null
-          physicalSpecifications: string | null
-          qoh: string | null
-          rackType: string | null
-          safetyDistance: string | null
-          size: string | null
-          stdCost: string | null
-          stdLocation: string | null
-          stdPrice: string | null
-          subtype: string | null
-          unNumber: string | null
-          vdl: string | null
-          weight: string | null
-        }
-        Insert: {
-          available?: string | null
-          category?: string | null
-          ceNumber?: string | null
-          color?: string | null
-          customPartField?: string | null
-          description?: string | null
-          dmxFixtureDefinition?: string | null
-          dmxPatch?: string | null
-          duration?: number | null
-          ematches?: string | null
-          exNumber?: string | null
-          fuseDelay?: string | null
-          height?: number | null
-          internalDelay?: number | null
-          lockoutDefault?: string | null
-          manufacturer?: string | null
-          manufacturerPartNumber?: string | null
-          neq?: string | null
-          numDevices?: number | null
-          numTubes?: string | null
-          partNotes?: string | null
-          partNumber: string
-          partType?: string | null
-          physicalSpecifications?: string | null
-          qoh?: string | null
-          rackType?: string | null
-          safetyDistance?: string | null
-          size?: string | null
-          stdCost?: string | null
-          stdLocation?: string | null
-          stdPrice?: string | null
-          subtype?: string | null
-          unNumber?: string | null
-          vdl?: string | null
-          weight?: string | null
-        }
-        Update: {
-          available?: string | null
-          category?: string | null
-          ceNumber?: string | null
-          color?: string | null
-          customPartField?: string | null
-          description?: string | null
-          dmxFixtureDefinition?: string | null
-          dmxPatch?: string | null
-          duration?: number | null
-          ematches?: string | null
-          exNumber?: string | null
-          fuseDelay?: string | null
-          height?: number | null
-          internalDelay?: number | null
-          lockoutDefault?: string | null
-          manufacturer?: string | null
-          manufacturerPartNumber?: string | null
-          neq?: string | null
-          numDevices?: number | null
-          numTubes?: string | null
-          partNotes?: string | null
-          partNumber?: string
-          partType?: string | null
-          physicalSpecifications?: string | null
-          qoh?: string | null
-          rackType?: string | null
-          safetyDistance?: string | null
-          size?: string | null
-          stdCost?: string | null
-          stdLocation?: string | null
-          stdPrice?: string | null
-          subtype?: string | null
-          unNumber?: string | null
-          vdl?: string | null
-          weight?: string | null
-        }
-        Relationships: []
-      }
       import_jobs: {
         Row: {
-          approved_catalogue_product_id: string | null
           approved_firework_specification_id: string | null
+          approved_product_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -257,8 +84,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          approved_catalogue_product_id?: string | null
           approved_firework_specification_id?: string | null
+          approved_product_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -277,8 +104,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          approved_catalogue_product_id?: string | null
           approved_firework_specification_id?: string | null
+          approved_product_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -298,10 +125,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "import_jobs_approved_catalogue_product_id_fkey"
-            columns: ["approved_catalogue_product_id"]
+            foreignKeyName: "import_jobs_approved_product_id_fkey"
+            columns: ["approved_product_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -341,48 +168,6 @@ export type Database = {
             columns: ["import_job_id"]
             isOneToOne: false
             referencedRelation: "import_jobs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      inferred_video_observations: {
-        Row: {
-          confidence: number
-          created_at: string
-          effect_spec_id: string | null
-          id: string
-          observation_json: Json
-          video_id: string | null
-        }
-        Insert: {
-          confidence?: number
-          created_at?: string
-          effect_spec_id?: string | null
-          id?: string
-          observation_json: Json
-          video_id?: string | null
-        }
-        Update: {
-          confidence?: number
-          created_at?: string
-          effect_spec_id?: string | null
-          id?: string
-          observation_json?: Json
-          video_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "inferred_video_observations_effect_spec_id_fkey"
-            columns: ["effect_spec_id"]
-            isOneToOne: false
-            referencedRelation: "effect_specs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inferred_video_observations_video_id_fkey"
-            columns: ["video_id"]
-            isOneToOne: false
-            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -459,82 +244,86 @@ export type Database = {
         }
         Relationships: []
       }
-      products: {
+      product_shots: {
         Row: {
-          caliber: string | null
-          category: string | null
-          created_at: string
-          default_effect_spec_id: string | null
-          description: string | null
-          duration_seconds: number | null
-          height_meters: number | null
+          created_at: string | null
+          effect_spec_id: string
           id: string
-          manufacturer: string | null
-          media_references: Json
-          name: string
-          product_code: string | null
-          product_dimensions: Json
-          safety_distance_meters: number | null
-          shot_count: number | null
-          subtype: string | null
-          tags: string[]
-          updated_at: string
-          vdl_like_description: string | null
-          width_meters: number | null
+          pan_degrees: number
+          product_id: string
+          shot_index: number
+          time_offset_seconds: number
         }
         Insert: {
-          caliber?: string | null
-          category?: string | null
-          created_at?: string
-          default_effect_spec_id?: string | null
-          description?: string | null
-          duration_seconds?: number | null
-          height_meters?: number | null
+          created_at?: string | null
+          effect_spec_id: string
           id?: string
-          manufacturer?: string | null
-          media_references?: Json
-          name: string
-          product_code?: string | null
-          product_dimensions?: Json
-          safety_distance_meters?: number | null
-          shot_count?: number | null
-          subtype?: string | null
-          tags?: string[]
-          updated_at?: string
-          vdl_like_description?: string | null
-          width_meters?: number | null
+          pan_degrees?: number
+          product_id: string
+          shot_index: number
+          time_offset_seconds?: number
         }
         Update: {
-          caliber?: string | null
-          category?: string | null
-          created_at?: string
-          default_effect_spec_id?: string | null
-          description?: string | null
-          duration_seconds?: number | null
-          height_meters?: number | null
+          created_at?: string | null
+          effect_spec_id?: string
           id?: string
-          manufacturer?: string | null
-          media_references?: Json
-          name?: string
-          product_code?: string | null
-          product_dimensions?: Json
-          safety_distance_meters?: number | null
-          shot_count?: number | null
-          subtype?: string | null
-          tags?: string[]
-          updated_at?: string
-          vdl_like_description?: string | null
-          width_meters?: number | null
+          pan_degrees?: number
+          product_id?: string
+          shot_index?: number
+          time_offset_seconds?: number
         }
         Relationships: [
           {
-            foreignKeyName: "products_default_effect_spec_id_fkey"
-            columns: ["default_effect_spec_id"]
+            foreignKeyName: "product_shots_effect_spec_id_fkey"
+            columns: ["effect_spec_id"]
             isOneToOne: false
             referencedRelation: "effect_specs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_shots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          manufacturer: string | null
+          name: string
+          part_number: string
+          subtype: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          manufacturer?: string | null
+          name: string
+          part_number: string
+          subtype?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          manufacturer?: string | null
+          name?: string
+          part_number?: string
+          subtype?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -683,19 +472,13 @@ export type Database = {
         Row: {
           created_at: string
           description: string
-          effect_spec_id: string | null
-          firework_product_id: string | null
           id: string
           label: string | null
           launch_position_index: number
           layer: string | null
           locked: boolean
-          overrides_json: Json
           position: number
-          position_json: Json
-          render_params: Json | null
-          rotation_json: Json
-          scale: number
+          product_id: string
           seed_override: number | null
           show_id: string
           time_seconds: number | null
@@ -705,19 +488,13 @@ export type Database = {
         Insert: {
           created_at?: string
           description: string
-          effect_spec_id?: string | null
-          firework_product_id?: string | null
           id?: string
           label?: string | null
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
-          overrides_json?: Json
           position?: number
-          position_json?: Json
-          render_params?: Json | null
-          rotation_json?: Json
-          scale?: number
+          product_id: string
           seed_override?: number | null
           show_id: string
           time_seconds?: number | null
@@ -727,19 +504,13 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
-          effect_spec_id?: string | null
-          firework_product_id?: string | null
           id?: string
           label?: string | null
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
-          overrides_json?: Json
           position?: number
-          position_json?: Json
-          render_params?: Json | null
-          rotation_json?: Json
-          scale?: number
+          product_id?: string
           seed_override?: number | null
           show_id?: string
           time_seconds?: number | null
@@ -748,17 +519,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "show_cues_effect_spec_id_fkey"
-            columns: ["effect_spec_id"]
+            foreignKeyName: "show_cues_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "effect_specs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "show_cues_firework_product_id_fkey"
-            columns: ["firework_product_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_products"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -1109,81 +873,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      vdl_terms: {
-        Row: {
-          created_at: string
-          description: string | null
-          example_vdl_phrase: string | null
-          id: string
-          term: string
-          updated_at: string
-          video_url: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          example_vdl_phrase?: string | null
-          id?: string
-          term: string
-          updated_at?: string
-          video_url?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          example_vdl_phrase?: string | null
-          id?: string
-          term?: string
-          updated_at?: string
-          video_url?: string | null
-        }
-        Relationships: []
-      }
-      "Wikifireworks sample database": {
-        Row: {
-          "BARCODE 1 (optional)": string | null
-          "BARCODE 2 (optional)": string | null
-          DESCRIPTION: string | null
-          DURATION: number | null
-          "FIREWORK TYPE": string | null
-          "IMAGE URL": string | null
-          NAME: string | null
-          "PART NUMBER": string
-          "PRO USE": boolean | null
-          "QR CODE (optional)": string | null
-          "WEBSITE URL": string | null
-          "YOUTUBE URL": string | null
-        }
-        Insert: {
-          "BARCODE 1 (optional)"?: string | null
-          "BARCODE 2 (optional)"?: string | null
-          DESCRIPTION?: string | null
-          DURATION?: number | null
-          "FIREWORK TYPE"?: string | null
-          "IMAGE URL"?: string | null
-          NAME?: string | null
-          "PART NUMBER": string
-          "PRO USE"?: boolean | null
-          "QR CODE (optional)"?: string | null
-          "WEBSITE URL"?: string | null
-          "YOUTUBE URL"?: string | null
-        }
-        Update: {
-          "BARCODE 1 (optional)"?: string | null
-          "BARCODE 2 (optional)"?: string | null
-          DESCRIPTION?: string | null
-          DURATION?: number | null
-          "FIREWORK TYPE"?: string | null
-          "IMAGE URL"?: string | null
-          NAME?: string | null
-          "PART NUMBER"?: string
-          "PRO USE"?: boolean | null
-          "QR CODE (optional)"?: string | null
-          "WEBSITE URL"?: string | null
-          "YOUTUBE URL"?: string | null
-        }
-        Relationships: []
       }
     }
     Views: {

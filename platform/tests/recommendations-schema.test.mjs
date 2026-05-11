@@ -33,10 +33,10 @@ test("template migration seeds featured show templates", () => {
 });
 
 test("show library templates use semi-static caching", () => {
-  const platformServer = readFileSync(join(root, "lib/platform.server.ts"), "utf8");
-  assert.match(platformServer, /SHOW_TEMPLATES_TTL_SECONDS/);
-  assert.match(platformServer, /getCachedJson<ShowTemplate\[]>/);
-  assert.match(platformServer, /setCachedJson\(cacheKey, mapped/);
+  const adminServer = readFileSync(join(root, "lib/admin.server.ts"), "utf8");
+  assert.match(adminServer, /SHOW_TEMPLATES_TTL_SECONDS/);
+  assert.match(adminServer, /getCachedJson<ShowTemplate\[]>/);
+  assert.match(adminServer, /setCachedJson\(cacheKey, mapped/);
 });
 
 test("main navigation includes show library", () => {

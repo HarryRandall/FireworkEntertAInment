@@ -3,7 +3,7 @@ import { Wand2, RefreshCw } from "lucide-react";
 import { Card } from "@/app/components/ui/Card";
 import { Textarea } from "@/app/components/ui/Input";
 import { StatTile } from "@/app/components/ui/StatTile";
-import { formatDuration } from "@/lib/shows";
+import { formatDuration } from "@/lib/show-domain";
 import { getShowBySlug } from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };

@@ -7,8 +7,8 @@ import { Button } from "@/app/components/ui/Button";
 import {
   importedSpecToReplayCues,
   type ImportedFireworkSpec,
-} from "@/lib/imports";
-import { formatDuration } from "@/lib/shows";
+} from "@/lib/import-jobs";
+import { formatDuration } from "@/lib/show-domain";
 
 type FireworkImportPreviewProps = {
   videoUrl: string | null;

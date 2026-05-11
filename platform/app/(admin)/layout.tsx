@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/app/components/admin/AdminShell";
-import { requirePermission } from "@/lib/platform.server";
+import { requirePermission } from "@/lib/admin.server";
 import { measureServerTask } from "@/lib/perf.server";
 
 export const dynamic = "force-dynamic";

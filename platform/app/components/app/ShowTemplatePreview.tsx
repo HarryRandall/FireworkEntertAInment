@@ -6,9 +6,9 @@ import { Clock, Heart, Sparkles, Wallet } from "lucide-react";
 import { TemplateReplayPreview } from "@/app/components/app/TemplateReplayPreview";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
-import { formatBudget, formatDuration } from "@/lib/shows";
-import type { FireworkSpecification } from "@/lib/shows";
-import type { ShowTemplate } from "@/lib/platform.types";
+import { formatBudget, formatDuration } from "@/lib/show-domain";
+import type { FireworkSpecification } from "@/lib/show-domain";
+import type { ShowTemplate } from "@/lib/admin.types";
 
 export function ShowTemplatePreview({
   template,

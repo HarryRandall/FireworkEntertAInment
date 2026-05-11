@@ -1,8 +1,26 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import type { Json } from "@/lib/database.types";
 import { createClient } from "@/utils/supabase/server";
 import { getShowBySlug } from "@/lib/shows.server";
 import { buildFinale3dCsv } from "@/lib/finale3d";
+
+function productToSourcePayload(row: {
+  part_number: string;
+  manufacturer: string | null;
+  subtype: string | null;
+  duration_seconds: number | null;
+  description: string | null;
+}): Json {
+  return {
+    partNumber: row.part_number,
+    manufacturerPartNumber: row.manufacturer ?? undefined,
+    category: row.subtype ?? undefined,
+    duration:
+      row.duration_seconds != null ? String(row.duration_seconds) : undefined,
+    vdl: row.description ?? undefined,
+  } as Json;
+}
 
 export async function GET(
   _req: Request,
@@ -16,39 +34,36 @@ export async function GET(
 
   const { data: cues, error: cuesError } = await supabase
     .from("show_cues")
-    .select("time_seconds, effect_spec_id")
+    .select("time_seconds, product_id")
     .eq("show_id", show.id)
     .not("time_seconds", "is", null)
-    .not("effect_spec_id", "is", null)
     .order("time_seconds", { ascending: true });
 
   if (cuesError || !cues?.length) {
     return new NextResponse("No cues found", { status: 404 });
   }
 
-  const effectSpecIds = [...new Set(cues.map((c) => c.effect_spec_id as string))];
+  const productIds = [...new Set(cues.map((c) => c.product_id))];
 
   const { data: products, error: productsError } = await supabase
-    .from("catalogue_products")
-    .select("effect_spec_id, name, source_payload")
-    .in("effect_spec_id", effectSpecIds);
+    .from("products")
+    .select("id, part_number, name, manufacturer, subtype, duration_seconds, description")
+    .in("id", productIds);
 
   if (productsError) {
     return new NextResponse("Failed to fetch products", { status: 500 });
   }
 
-  const productByEffectSpecId = new Map(
-    (products ?? []).map((p) => [p.effect_spec_id, p]),
-  );
+  const productById = new Map((products ?? []).map((p) => [p.id, p]));
 
   const csvCues = cues
-    .filter((c) => productByEffectSpecId.has(c.effect_spec_id as string))
+    .filter((c) => productById.has(c.product_id))
     .map((c) => {
-      const product = productByEffectSpecId.get(c.effect_spec_id as string)!;
+      const product = productById.get(c.product_id)!;
       return {
         timeSeconds: Number(c.time_seconds),
         effectName: product.name,
-        sourcePayload: product.source_payload,
+        sourcePayload: productToSourcePayload(product),
       };
     });
 

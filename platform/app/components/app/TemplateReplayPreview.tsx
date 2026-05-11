@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { FireworkReplayCanvas } from "@/app/components/app/FireworkReplayCanvas";
-import type { ShowTemplate, ShowTemplateCue } from "@/lib/platform.types";
-import type { FireworkSpecification, ReplayCue } from "@/lib/shows";
-import { formatDuration } from "@/lib/shows";
+import type { ShowTemplate, ShowTemplateCue } from "@/lib/admin.types";
+import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
+import { formatDuration } from "@/lib/show-domain";
 
 type TemplateReplayPreviewProps = {
   template: ShowTemplate;
@@ -53,7 +53,7 @@ function toReplayCue(
     position: index + 1,
     timeSeconds: cue.timeSeconds,
     description: cue.description,
-    effectSpecId: firework.id,
+    productId: firework.id,
     launchPositionIndex: index % 3,
     firework,
   };

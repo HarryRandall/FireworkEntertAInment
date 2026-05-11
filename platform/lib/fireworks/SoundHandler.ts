@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { RandomSource } from "@/lib/fireworks/random";
 
-const BASE = "/sounds/lallassu";
+const BASE = "/sounds/fireworks";
 
 type SoundKey = "mortar" | "lightBoom" | "heavyBoom" | "crackle";
 

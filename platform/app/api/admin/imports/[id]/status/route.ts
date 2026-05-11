@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/lib/platform.server";
+import { requirePermission } from "@/lib/admin.server";
 
 export const dynamic = "force-dynamic";
 

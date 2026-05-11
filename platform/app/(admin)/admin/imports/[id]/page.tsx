@@ -16,9 +16,9 @@ import {
   DEFAULT_OPENROUTER_MODEL,
   latestImportedSpecFromOutputs,
   OPENROUTER_MODEL_OPTIONS,
-} from "@/lib/imports";
-import { getImportJobDetail } from "@/lib/platform.server";
-import { formatDuration } from "@/lib/shows";
+} from "@/lib/import-jobs";
+import { getImportJobDetail } from "@/lib/admin.server";
+import { formatDuration } from "@/lib/show-domain";
 import { FireworkImportPreview } from "./FireworkImportPreview";
 import { ImportProgressWatcher } from "./ImportProgressWatcher";
 

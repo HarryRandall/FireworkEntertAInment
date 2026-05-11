@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { Container } from "@/app/components/ui/Container";
 import { uiStyles } from "@/app/components/ui/styles";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
-import type { CurrentProfile, PermissionKey } from "@/lib/platform.types";
+import type { CurrentProfile, PermissionKey } from "@/lib/admin.types";
 
 type AppNavLink = {
   href: string;
