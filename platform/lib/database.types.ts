@@ -73,54 +73,6 @@ export type Database = {
           },
         ]
       }
-      products: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          firework_subtype: string | null
-          firework_type: string | null
-          id: string
-          manufacturer: string | null
-          name: string
-          part_number: string
-          source_payload: Json | null
-          source_table: string | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name: string
-          part_number: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          firework_subtype?: string | null
-          firework_type?: string | null
-          id?: string
-          manufacturer?: string | null
-          name?: string
-          part_number?: string
-          source_payload?: Json | null
-          source_table?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       effect_specs: {
         Row: {
           confidence: number
