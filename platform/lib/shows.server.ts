@@ -56,10 +56,6 @@ type ShowCueProjection = Pick<
   | "description"
   | "effect_spec_id"
   | "catalogue_product_id"
-  | "position_json"
-  | "rotation_json"
-  | "scale"
-  | "overrides_json"
   | "seed_override"
   | "launch_position_index"
 >;
@@ -81,45 +77,18 @@ type ShoppingItemProjection = Pick<
   "id" | "position" | "name" | "qty" | "price_cents" | "firework_part_number"
 >;
 
-const CACHE_PREFIX = "shows:v3";
+const CACHE_PREFIX = "shows:v4";
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
   "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, launch_positions_json, updated_at";
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, effect_spec_id, catalogue_product_id, position_json, rotation_json, scale, overrides_json, seed_override, launch_position_index";
+  "id, position, time_seconds, description, effect_spec_id, catalogue_product_id, seed_override, launch_position_index";
 const EFFECT_SPEC_SELECT =
   "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
   "id, position, name, qty, price_cents, firework_part_number";
 const REPLAY_CUE_SELECT = `${SHOW_CUE_SELECT}, effect_specs (${EFFECT_SPEC_SELECT})`;
-
-function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function parseVec3(value: Json): { x: number; y: number; z: number } {
-  if (!isRecord(value)) return { x: 0, y: 0, z: 0 };
-  return {
-    x: typeof value.x === "number" && Number.isFinite(value.x) ? value.x : 0,
-    y: typeof value.y === "number" && Number.isFinite(value.y) ? value.y : 0,
-    z: typeof value.z === "number" && Number.isFinite(value.z) ? value.z : 0,
-  };
-}
-
-function parseRotation(value: Json): { pan: number; tilt: number; roll: number } {
-  if (!isRecord(value)) return { pan: 0, tilt: 90, roll: 0 };
-  return {
-    pan: typeof value.pan === "number" && Number.isFinite(value.pan) ? value.pan : 0,
-    tilt: typeof value.tilt === "number" && Number.isFinite(value.tilt) ? value.tilt : 90,
-    roll: typeof value.roll === "number" && Number.isFinite(value.roll) ? value.roll : 0,
-  };
-}
-
-function parseOverrides(value: Json): Record<string, unknown> {
-  if (!isRecord(value)) return {};
-  return value as Record<string, unknown>;
-}
 
 function mapShow(row: ShowProjection): Show {
   return {
@@ -154,10 +123,6 @@ function mapCue(row: ShowCueProjection): ShowCue {
     description: row.description,
     effectSpecId: row.effect_spec_id,
     catalogueProductId: row.catalogue_product_id,
-    positionMeters: parseVec3(row.position_json),
-    rotation: parseRotation(row.rotation_json),
-    scale: row.scale == null ? 1 : Number(row.scale),
-    overrides: parseOverrides(row.overrides_json),
     seedOverride: row.seed_override,
     launchPositionIndex: Math.max(
       0,

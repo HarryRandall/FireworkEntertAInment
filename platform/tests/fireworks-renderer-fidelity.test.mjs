@@ -9,14 +9,14 @@ function read(path) {
 test("firework replay uses raw spec_json and cache-busts old shapes", () => {
   const engine = read("lib/fireworks/FireworksEngine.ts");
   const showsServer = read("lib/shows.server.ts");
-  const shows = read("lib/shows.ts");
-  const imports = read("lib/imports.ts");
+  const showDomain = read("lib/show-domain.ts");
+  const importJobs = read("lib/import-jobs.ts");
 
   assert.match(engine, /safeParseFireworkDesign\(cue\.firework\.rawSpec\)/);
   assert.match(showsServer, /rawSpec: row\.spec_json/);
-  assert.match(showsServer, /CACHE_PREFIX = "shows:v2"/);
-  assert.match(shows, /rawSpec: unknown/);
-  assert.match(imports, /rawSpec: spec/);
+  assert.match(showsServer, /CACHE_PREFIX = "shows:v4"/);
+  assert.match(showDomain, /rawSpec: unknown/);
+  assert.match(importJobs, /rawSpec: spec/);
 });
 
 test("firework replay is deterministic and silent when rebuilding after scrub", () => {

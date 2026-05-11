@@ -57,10 +57,6 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       time_seconds: cue.timeSeconds,
       description: cue.description,
       effect_spec_id: specBySlug.get(cue.fireworkSlug) ?? null,
-      position_json: { x: 0, y: 0, z: 0 },
-      rotation_json: { pan: 0, tilt: 90, roll: 0 },
-      scale: 1,
-      overrides_json: {},
     }));
     const { error: cuesError } = await supabase.from("show_cues").insert(cueRows);
     if (cuesError) {

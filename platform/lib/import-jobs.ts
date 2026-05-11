@@ -442,10 +442,6 @@ export function importedSpecToReplayCues(
       description: imported.description ?? imported.name,
       effectSpecId: id,
       catalogueProductId: null,
-      positionMeters: { x: 0, y: 0, z: 0 },
-      rotation: { pan: 0, tilt: 90, roll: 0 },
-      scale: 1,
-      overrides: {},
       seedOverride: null,
       launchPositionIndex: 0,
       firework: {
