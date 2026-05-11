@@ -6,7 +6,7 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 }
 
-test("firework replay uses raw Lallassu spec_json and cache-busts old shapes", () => {
+test("firework replay uses raw spec_json and cache-busts old shapes", () => {
   const engine = read("lib/fireworks/FireworksEngine.ts");
   const showsServer = read("lib/shows.server.ts");
   const shows = read("lib/shows.ts");
@@ -34,7 +34,7 @@ test("firework replay is deterministic and silent when rebuilding after scrub", 
   assert.match(sound, /rng\?: RandomSource/);
 });
 
-test("Lallassu effects drive shell and trail colours from the selected design", () => {
+test("renderer effects drive shell and trail colours from the selected design", () => {
   const effects = read("lib/fireworks/Effects.ts");
 
   assert.match(effects, /resolveColor\(design\.color, rng\)/);
@@ -45,18 +45,18 @@ test("Lallassu effects drive shell and trail colours from the selected design", 
   assert.doesNotMatch(effects, /r:\s*1\.0,\s*g:\s*0,\s*b:\s*0/s);
 });
 
-test("Lallassu seed creates pattern, colour, and replay test shows for every user", () => {
-  const seed = read("supabase/seed-lallassu-test-shows.sql");
+test("QA seed creates pattern, colour, and replay test shows for every user", () => {
+  const seed = read("supabase/seed-qa-test-shows.sql");
 
   assert.match(seed, /for demo_user in/);
   assert.match(seed, /from auth\.users/);
-  assert.match(seed, /lallassu-pattern-check/);
-  assert.match(seed, /lallassu-colour-check/);
-  assert.match(seed, /lallassu-replay-scrub-check/);
+  assert.match(seed, /qa-pattern-check/);
+  assert.match(seed, /qa-colour-check/);
+  assert.match(seed, /qa-replay-scrub-check/);
   assert.match(seed, /launch_position_index/);
-  assert.match(seed, /lallassu-fib-gold/);
-  assert.match(seed, /lallassu-wave-cyan/);
-  assert.match(seed, /lallassu-strobe-white/);
+  assert.match(seed, /'fib-gold'/);
+  assert.match(seed, /'wave-cyan'/);
+  assert.match(seed, /'strobe-white'/);
 });
 
 test("burst physics hang like firework stars instead of free-falling", () => {
