@@ -34,6 +34,7 @@ export type ShowCue = {
   timeSeconds: number | null;
   description: string;
   effectSpecId: string | null;
+  catalogueProductId: string | null;
   positionMeters?: Vec3;
   rotation?: Rotation;
   scale?: number;

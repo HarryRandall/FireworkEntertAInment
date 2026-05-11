@@ -17,7 +17,7 @@ import type {
   ShoppingListItem,
   ShowStatus,
 } from "@/lib/shows";
-import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
+import { safeParseFireworkSpec, type FireworkSpec } from "@/lib/fireworks/spec";
 import { parseLaunchPositions } from "@/lib/fireworks/design";
 import type { Database, Json } from "@/lib/database.types";
 
@@ -55,6 +55,7 @@ type ShowCueProjection = Pick<
   | "time_seconds"
   | "description"
   | "effect_spec_id"
+  | "catalogue_product_id"
   | "position_json"
   | "rotation_json"
   | "scale"
@@ -86,7 +87,7 @@ const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
   "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, launch_positions_json, updated_at";
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, effect_spec_id, position_json, rotation_json, scale, overrides_json, seed_override, launch_position_index";
+  "id, position, time_seconds, description, effect_spec_id, catalogue_product_id, position_json, rotation_json, scale, overrides_json, seed_override, launch_position_index";
 const EFFECT_SPEC_SELECT =
   "id, slug, name, description, duration_seconds, height_meters, spec_json";
 const SHOPPING_ITEM_SELECT =
@@ -152,6 +153,7 @@ function mapCue(row: ShowCueProjection): ShowCue {
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
     effectSpecId: row.effect_spec_id,
+    catalogueProductId: row.catalogue_product_id,
     positionMeters: parseVec3(row.position_json),
     rotation: parseRotation(row.rotation_json),
     scale: row.scale == null ? 1 : Number(row.scale),
@@ -364,9 +366,81 @@ export async function listReplayCuesForShow(
     console.error("[shows.server] listReplayCuesForShow failed:", error);
     return [];
   }
-  const mapped = ((data ?? []) as ReplayCueRow[])
-    .map(mapReplayCue)
+
+  const rows = (data ?? []) as ReplayCueRow[];
+
+  // Load product_effect_sequences for any catalogue-product cues so the engine
+  // can fire the correct multi-shot sequence.
+  const productIds = [
+    ...new Set(
+      rows
+        .map((r) => r.catalogue_product_id)
+        .filter((id): id is string => id != null),
+    ),
+  ];
+
+  type SeqRow = {
+    product_id: string;
+    time_offset_seconds: number;
+    pan_degrees: number;
+    color: string | null;
+    effect_specs: { spec_json: unknown } | null;
+  };
+
+  type ShotEntry = NonNullable<FireworkSpec["shots"]>[number];
+  const shotsMap = new Map<string, ShotEntry[]>();
+
+  if (productIds.length > 0) {
+    const { data: seqs, error: seqErr } = await supabase
+      .from("product_effect_sequences")
+      .select("product_id, time_offset_seconds, pan_degrees, color, effect_specs(spec_json)")
+      .in("product_id", productIds)
+      .order("time_offset_seconds", { ascending: true });
+
+    if (seqErr) {
+      console.error("[shows.server] product_effect_sequences load failed:", seqErr);
+    } else {
+      for (const seq of (seqs ?? []) as SeqRow[]) {
+        const arr = shotsMap.get(seq.product_id) ?? [];
+        const shot: ShotEntry = {
+          index: arr.length,
+          timeOffsetSeconds: Number(seq.time_offset_seconds),
+        };
+        if (seq.pan_degrees !== 0) shot.panDegrees = seq.pan_degrees;
+        // Prefer the sequence-level color override; fall back to the effect_spec's color
+        const specColor =
+          seq.color ??
+          (typeof (seq.effect_specs?.spec_json as Record<string, unknown>)?.color === "string"
+            ? ((seq.effect_specs?.spec_json as Record<string, unknown>).color as string)
+            : null);
+        if (specColor) shot.color = specColor as `#${string}`;
+        arr.push(shot);
+        shotsMap.set(seq.product_id, arr);
+      }
+    }
+  }
+
+  const mapped = rows
+    .map((row) => {
+      const cue = mapReplayCue(row);
+      if (!cue) return null;
+      // Inject the multi-shot sequence into the firework rawSpec so the engine
+      // fires the correct per-tube timing and colours.
+      if (row.catalogue_product_id) {
+        const shots = shotsMap.get(row.catalogue_product_id);
+        if (shots && shots.length > 0) {
+          const injectedRaw = { ...(cue.firework.rawSpec as object), shots };
+          cue.firework = {
+            ...cue.firework,
+            rawSpec: injectedRaw,
+            spec: safeParseFireworkSpec(injectedRaw),
+          };
+        }
+      }
+      return cue;
+    })
     .filter((cue): cue is ReplayCue => cue !== null);
+
   await setCachedJson(cacheKey, mapped, SHOWS_TTL_SECONDS);
   return mapped;
 }

@@ -441,6 +441,7 @@ export function importedSpecToReplayCues(
       timeSeconds: 0,
       description: imported.description ?? imported.name,
       effectSpecId: id,
+      catalogueProductId: null,
       positionMeters: { x: 0, y: 0, z: 0 },
       rotation: { pan: 0, tilt: 90, roll: 0 },
       scale: 1,
