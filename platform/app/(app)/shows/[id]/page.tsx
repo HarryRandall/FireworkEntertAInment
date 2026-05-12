@@ -1,79 +1,27 @@
 import { notFound } from "next/navigation";
 import { Wand2, RefreshCw } from "lucide-react";
+import { AudioAnalysisTimeline } from "@/app/components/app/AudioAnalysisTimeline";
 import { Card } from "@/app/components/ui/Card";
 import { Textarea } from "@/app/components/ui/Input";
-import { StatTile } from "@/app/components/ui/StatTile";
-import { formatDuration } from "@/lib/show-domain";
+import { getLatestAnalysisForShow } from "@/lib/show-analyses.server";
 import { getShowBySlug } from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };
-
-function buildTimeLabels(durationSeconds: number | null): string[] {
-  const total = durationSeconds && durationSeconds > 0 ? durationSeconds : 240;
-  const stops = 6;
-  return Array.from({ length: stops }, (_, i) => {
-    const t = (total / (stops - 1)) * i;
-    return formatDuration(Math.round(t));
-  });
-}
 
 export default async function ShowTimelinePage({ params }: PageProps) {
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) notFound();
-
-  const timeLabels = buildTimeLabels(show.durationSeconds);
+  const latestAnalysis = await getLatestAnalysisForShow(show.id);
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-      <Card
-        elevation="low"
-        radius="md"
-        className="relative min-h-[500px] overflow-hidden p-8 lg:col-span-8"
-      >
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
-
-        <div className="relative mb-12 flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 tabular-nums">
-          {timeLabels.map((label, i) => (
-            <span key={`${label}-${i}`}>{label}</span>
-          ))}
-        </div>
-
-        <div className="relative flex h-64 items-center justify-between gap-[2px]">
-          <div className="absolute inset-0 my-auto flex h-32 items-center justify-center gap-[3px] opacity-25">
-            {Array.from({ length: 96 }).map((_, i) => {
-              const h = 12 + Math.abs(Math.sin(i * 0.4) * 70);
-              return (
-                <span
-                  key={i}
-                  className="block w-1 rounded-full bg-on-surface-variant"
-                  style={{ height: `${h}%` }}
-                />
-              );
-            })}
-          </div>
-          <div
-            className="absolute h-full w-[2px] bg-tertiary shadow-[0_0_15px_color-mix(in_srgb,var(--color-tertiary)_55%,transparent)] z-10"
-            style={{ left: "24%" }}
-          >
-            <div className="absolute -left-1 -top-1 h-2.5 w-2.5 rotate-45 bg-tertiary" />
-          </div>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatTile label="Total effects" value={show.effectsCount} />
-          <StatTile
-            label="Sync precision"
-            value={show.syncPercent != null ? show.syncPercent.toFixed(1) : "—"}
-            unit={show.syncPercent != null ? "%" : undefined}
-          />
-          <StatTile
-            label="Safety clearance"
-            value={show.safetyMeters ?? "—"}
-            unit={show.safetyMeters != null ? "m" : undefined}
-          />
-        </div>
-      </Card>
+      <AudioAnalysisTimeline
+        showId={show.id}
+        hasAudio={Boolean(show.audioPath)}
+        durationSeconds={show.durationSeconds}
+        initialAnalysis={latestAnalysis}
+      />
 
       <div className="space-y-6 lg:col-span-4">
         <Card

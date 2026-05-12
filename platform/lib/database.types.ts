@@ -468,6 +468,71 @@ export type Database = {
           },
         ]
       }
+      show_analyses: {
+        Row: {
+          analysis_json: Json | null
+          analysis_storage_path: string | null
+          compact_payload: Json | null
+          created_at: string
+          error_message: string | null
+          id: string
+          markdown: string | null
+          markdown_storage_path: string | null
+          personality_preset: string
+          runtime_ms: number | null
+          schema_version: string | null
+          show_id: string
+          source_audio_path: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_json?: Json | null
+          analysis_storage_path?: string | null
+          compact_payload?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          markdown?: string | null
+          markdown_storage_path?: string | null
+          personality_preset?: string
+          runtime_ms?: number | null
+          schema_version?: string | null
+          show_id: string
+          source_audio_path: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_json?: Json | null
+          analysis_storage_path?: string | null
+          compact_payload?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          markdown?: string | null
+          markdown_storage_path?: string | null
+          personality_preset?: string
+          runtime_ms?: number | null
+          schema_version?: string | null
+          show_id?: string
+          source_audio_path?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_analyses_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       show_cues: {
         Row: {
           created_at: string
