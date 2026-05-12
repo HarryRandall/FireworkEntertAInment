@@ -1,0 +1,55 @@
+---
+description: Require row-level security policies on every new public-schema table introduced by a Supabase migration.
+globs:
+  - "platform/supabase/migrations/**/*.sql"
+alwaysApply: false
+---
+
+# Supabase RLS — required on every new table
+
+Every `CREATE TABLE` in `public` that lives in a Supabase migration MUST also:
+
+1. `ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;`
+2. Include AT LEAST one `CREATE POLICY ... ON <table>` covering `SELECT`. Add separate policies for `INSERT` / `UPDATE` / `DELETE` (or one combined `FOR ALL`) as needed.
+
+This is non-negotiable. The product_effect_sequences table shipped with RLS enabled but no policies, which silently returned zero rows to the SSR client and caused multi-shot fireworks to fire only one shot in the preview. We do not want that class of bug again.
+
+## Standard patterns in this codebase
+
+- **Catalogue / shared reference data** (e.g. `effect_specs`, `catalogue_products`, `product_effect_sequences`): authenticated users can read; only the `admin.manage_catalogue` permission can write.
+
+  ```sql
+  ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY <table>_select_authenticated
+    ON public.<table>
+    FOR SELECT
+    USING (auth.uid() IS NOT NULL);
+
+  CREATE POLICY <table>_admin_write
+    ON public.<table>
+    FOR ALL
+    USING (public.has_permission(auth.uid(), 'admin.manage_catalogue'))
+    WITH CHECK (public.has_permission(auth.uid(), 'admin.manage_catalogue'));
+  ```
+
+- **Per-user data** (e.g. `shows`, `show_cues`, `shopping_list_items`): scope by `auth.uid()` against the owning user/show.
+
+  ```sql
+  CREATE POLICY <table>_owner_all
+    ON public.<table>
+    FOR ALL
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+  ```
+
+## Review checklist
+
+When reviewing a migration PR, confirm:
+
+- [ ] Every new table has `ENABLE ROW LEVEL SECURITY`.
+- [ ] Every new table has at least one `CREATE POLICY ... FOR SELECT` (or a `FOR ALL` policy that covers it).
+- [ ] Write paths are gated by an explicit permission check or ownership check.
+- [ ] The migration filename version (the prefix before the first `_`) is unique across the `platform/supabase/migrations/` directory.
+
+If a table is intentionally meant to be queryable by anonymous users, document why in a SQL comment immediately above the policy.

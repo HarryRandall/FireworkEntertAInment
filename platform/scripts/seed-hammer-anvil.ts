@@ -671,13 +671,9 @@ async function main() {
     part_number: p.partNumber,
     name: p.name,
     manufacturer: 'HA',
-    firework_type: p.partType,
-    firework_subtype: p.fireworkSubtype,
-    category: p.category,
+    subtype: p.fireworkSubtype ?? p.partType ?? null,
     duration_seconds: p.durationSeconds != null ? parseFloat(String(p.durationSeconds)) : null,
     description: p.vdl,
-    source_table: 'hammer_anvil_xlsx',
-    source_payload: JSON.parse(p.sourcePayload),
   }));
 
   const { data: catalogueRows, error: catalogueErr } = await supabase

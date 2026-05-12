@@ -75,7 +75,7 @@ export type ImportJobSummary = {
   mediaAssetId: string | null;
   selectedModel: string | null;
   processingProgress: number;
-  approvedCatalogueProductId: string | null;
+  approvedProductId: string | null;
   approvedFireworkSpecificationId: string | null;
   rowCount: number | null;
   errorMessage: string | null;

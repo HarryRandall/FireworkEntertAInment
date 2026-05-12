@@ -14,7 +14,7 @@ import {
   getAdminUserById,
   listPermissions,
   listRoles,
-} from "@/lib/platform.server";
+} from "@/lib/admin.server";
 
 type PageProps = { params: Promise<{ id: string }> };
 

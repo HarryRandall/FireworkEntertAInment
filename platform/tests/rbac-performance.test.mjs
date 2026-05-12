@@ -18,7 +18,7 @@ test("RBAC migration keeps role defaults and admin seed", () => {
 });
 
 test("current profile prefers one RPC call with fallback queries", () => {
-  const server = readFileSync(join(root, "lib/platform.server.ts"), "utf8");
+  const server = readFileSync(join(root, "lib/admin.server.ts"), "utf8");
   assert.match(server, /\.rpc\(\s*"current_user_access"/);
   assert.match(server, /parseAccessRpc/);
   assert.match(server, /accessError/);

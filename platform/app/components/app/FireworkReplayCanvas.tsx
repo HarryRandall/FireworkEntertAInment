@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import type { ReplayCue } from "@/lib/shows";
+import type { ReplayCue } from "@/lib/show-domain";
 import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
 import {
   DEFAULT_LAUNCH_POSITIONS,

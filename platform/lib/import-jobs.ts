@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ReplayCue } from "@/lib/shows";
+import type { ReplayCue } from "@/lib/show-domain";
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,
@@ -440,11 +440,7 @@ export function importedSpecToReplayCues(
       position: 1,
       timeSeconds: 0,
       description: imported.description ?? imported.name,
-      effectSpecId: id,
-      positionMeters: { x: 0, y: 0, z: 0 },
-      rotation: { pan: 0, tilt: 90, roll: 0 },
-      scale: 1,
-      overrides: {},
+      productId: id,
       seedOverride: null,
       launchPositionIndex: 0,
       firework: {

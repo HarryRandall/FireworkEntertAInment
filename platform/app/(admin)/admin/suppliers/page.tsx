@@ -8,7 +8,7 @@ import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Select } from "@/app/components/ui/Input";
-import { listSuppliers } from "@/lib/platform.server";
+import { listSuppliers } from "@/lib/admin.server";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },

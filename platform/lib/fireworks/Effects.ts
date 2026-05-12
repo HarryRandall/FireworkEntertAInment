@@ -216,8 +216,10 @@ export class Effects {
       let vz: number;
       switch (seed) {
         case 1: {
-          vy = Math.abs(i * offset - 1 + offset / 2);
-          const r = Math.sqrt(1 - vy * vy);
+          // Full Fibonacci sphere — the original Math.abs() folded the
+          // lower hemisphere upward, leaving bursts looking like domes.
+          vy = i * offset - 1 + offset / 2;
+          const r = Math.sqrt(Math.max(0, 1 - vy * vy));
           const phi = ((i + 1.0) % design.size) * inc;
           vx = Math.cos(phi) * r * speed;
           vz = Math.sin(phi) * r * speed;

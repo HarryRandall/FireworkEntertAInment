@@ -53,7 +53,7 @@ test("container worker exists and calls OpenRouter JSON mode with schema validat
 });
 
 test("generated import specs keep inferred renderer mapping fields", () => {
-  const imports = readFileSync(join(root, "lib/imports.ts"), "utf8");
+  const imports = readFileSync(join(root, "lib/import-jobs.ts"), "utf8");
   const actions = readFileSync(join(root, "app/actions/platform-admin.ts"), "utf8");
   const worker = readFileSync(
     join(repoRoot, "workers/firework-import-worker/worker.py"),

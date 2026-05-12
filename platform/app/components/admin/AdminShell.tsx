@@ -26,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
 import { uiStyles } from "@/app/components/ui/styles";
-import type { CurrentProfile } from "@/lib/platform.types";
+import type { CurrentProfile } from "@/lib/admin.types";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
