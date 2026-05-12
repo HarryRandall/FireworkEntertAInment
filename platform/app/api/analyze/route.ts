@@ -17,7 +17,6 @@ import { createClient } from "@/utils/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
 
 const INLINE_ARTIFACT_LIMIT_BYTES = 1_000_000;
 const ANALYSER_SCHEMA_VERSION = "1.2.0";
