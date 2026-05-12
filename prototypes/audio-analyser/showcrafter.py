@@ -5,24 +5,30 @@ Output: a Markdown file of timestamped musical events ready to feed into an LLM.
 """
 
 import argparse
+from typing import Annotated, Any, Literal
 import librosa
 import numpy as np
 import json
 import os
+import sys
 import scipy.ndimage
 import scipy.sparse.csgraph
 import sklearn.cluster
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from scipy.signal import find_peaks, savgol_filter
 
 
 # Bumped when the output contract changes. Downstream harnesses can read
 # `schema_version` from the result / LLM payload to gate compatibility.
 #
+# 1.2.0 — added Pydantic validation for analysis + LLM payloads; compact
+#         LLM payload now summarizes/samples heuristic cues instead of
+#         duplicating the full `firework_cues` list.
 # 1.1.0 — added `key_moments[].prominence`; `key_moments[].type` is now
 #         decided by relative prominence ranking (top quartile = climax)
 #         instead of an absolute energy threshold.
 # 1.0.0 — initial versioned contract.
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"
 
 # Anchor windows around climaxes and build-up peaks (seconds before/after).
 ANCHOR_PRE_SEC = 3.0
@@ -34,6 +40,17 @@ ANCHOR_POST_SEC = 4.0
 # parameters and can disagree by a couple of frames on the same musical
 # event, so a small tolerance is needed.
 FINALE_BUILDUP_TOLERANCE_SEC = 3.0
+
+# FIR-39 pragmatic tuning: keep musical anchors useful for choreography
+# instead of marking every local loudness peak as a climax.
+KEY_MOMENT_DISTANCE_SEC = 6.0
+CLIMAX_TARGET_SECONDS = 55.0
+CLIMAX_MIN_SPACING_SEC = 18.0
+MAX_CLIMAXES = 6
+BUILDUP_TARGET_SECONDS = 45.0
+BUILDUP_MIN_SPACING_SEC = 14.0
+MAX_BUILDUPS = 6
+PRE_CHORUS_MAX_DURATION_SEC = 24.0
 
 STYLE_DIMENSIONS = (
     "boldness",
@@ -111,6 +128,331 @@ PERSONALITY_PRESETS = {
     },
 }
 
+SchemaVersion = Literal["1.2.0"]
+Score = Annotated[float, Field(ge=0.0, le=1.0)]
+NonNegativeFloat = Annotated[float, Field(ge=0.0)]
+NonNegativeInt = Annotated[int, Field(ge=0)]
+SectionLabel = Literal["intro", "verse", "pre-chorus", "chorus", "bridge", "outro", "unknown"]
+SectionIntensity = Literal["low", "medium", "high"]
+MomentType = Literal["build", "climax"]
+CueEffect = Literal["barrage", "accent", "crackle", "single"]
+DensityLevel = Literal["low", "medium", "high"]
+
+
+class SchemaModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class KeySignatureModel(SchemaModel):
+    root: str
+    mode: Literal["major", "minor"]
+    confidence: Score
+
+
+class StyleVectorModel(SchemaModel):
+    boldness: Score
+    elegance: Score
+    playfulness: Score
+    warmth: Score
+    brightness: Score
+    grandeur: Score
+    tension: Score
+    precision: Score
+
+
+class DescriptorModel(SchemaModel):
+    energy: Score
+    drive: Score
+    brightness: Score
+    warmth: Score
+    tension: Score
+    grandeur: Score
+    playfulness: Score
+    precision: Score
+    dynamic_range: Score
+    bass_impact: Score
+    section_contrast: Score
+
+
+class RawMetricsModel(SchemaModel):
+    tempo_bpm: NonNegativeFloat
+    onset_density_per_sec: NonNegativeFloat
+    key_moments_per_min: NonNegativeFloat
+    buildups_per_min: NonNegativeFloat
+    beat_stability: Score
+    section_contrast: NonNegativeFloat
+    bass_ratio: NonNegativeFloat
+
+
+class BlendWeightsModel(SchemaModel):
+    user: Score
+    music: Score
+
+
+class PaletteDirectionModel(SchemaModel):
+    primary: str
+    secondary: str
+    accent: str
+
+
+class MusicProfileModel(SchemaModel):
+    genre_hint: str
+    key_signature: KeySignatureModel
+    descriptors: DescriptorModel
+    style_vector: StyleVectorModel
+    dominant_traits: list[str]
+    raw_metrics: RawMetricsModel
+
+
+class ShowPersonalityModel(SchemaModel):
+    preset: Literal["balanced", "bold", "cinematic", "elegant", "intimate", "playful"]
+    blend_weights: BlendWeightsModel
+    dimensions: StyleVectorModel
+    dominant_traits: list[str]
+    palette_direction: PaletteDirectionModel
+    density_level: DensityLevel
+    genre_hint: str
+
+
+class EnergyPointModel(SchemaModel):
+    time: NonNegativeFloat
+    energy: Score
+
+
+class SectionModel(SchemaModel):
+    start: NonNegativeFloat
+    end: NonNegativeFloat
+    duration: NonNegativeFloat
+    avg_energy: Score
+    peak_energy: Score
+    intensity: SectionIntensity
+    cluster_id: int
+    label: SectionLabel
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.end < self.start:
+            raise ValueError("section end must be greater than or equal to start")
+        if abs(self.duration - (self.end - self.start)) > 0.06:
+            raise ValueError("section duration must match end - start")
+        return self
+
+
+class CompactSectionModel(SchemaModel):
+    index: NonNegativeInt
+    label: SectionLabel
+    start: NonNegativeFloat
+    end: NonNegativeFloat
+    duration: NonNegativeFloat
+    avg_energy: Score
+    peak_energy: Score
+    intensity: SectionIntensity
+    cue_counts: dict[CueEffect, NonNegativeInt]
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.end < self.start:
+            raise ValueError("section end must be greater than or equal to start")
+        if abs(self.duration - (self.end - self.start)) > 0.06:
+            raise ValueError("section duration must match end - start")
+        return self
+
+
+class KeyMomentModel(SchemaModel):
+    time: NonNegativeFloat
+    energy: Score
+    prominence: NonNegativeFloat
+    type: MomentType
+
+
+class BuildupModel(SchemaModel):
+    start: NonNegativeFloat
+    peak: NonNegativeFloat
+    duration: NonNegativeFloat
+    energy_rise: NonNegativeFloat
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.peak < self.start:
+            raise ValueError("buildup peak must be greater than or equal to start")
+        if abs(self.duration - (self.peak - self.start)) > 0.06:
+            raise ValueError("buildup duration must match peak - start")
+        return self
+
+
+class FireworkCueModel(SchemaModel):
+    time: NonNegativeFloat
+    end: NonNegativeFloat | None = None
+    effect: CueEffect
+    reason: str
+    energy: Score
+    section: SectionLabel
+    palette: str
+    shape: str
+    height: str
+    spread: str
+    density: str
+    style_tags: list[str]
+    genre_hint: str
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.end is not None and self.end < self.time:
+            raise ValueError("cue end must be greater than or equal to time")
+        return self
+
+
+class AnalysisResultModel(SchemaModel):
+    schema_version: SchemaVersion
+    file: str
+    duration_seconds: NonNegativeFloat
+    tempo_bpm: NonNegativeFloat
+    total_beats: NonNegativeInt
+    beat_times: list[NonNegativeFloat]
+    onset_times: list[NonNegativeFloat]
+    energy_timeline: list[EnergyPointModel]
+    sections: list[SectionModel]
+    key_moments: list[KeyMomentModel]
+    buildups: list[BuildupModel]
+    music_profile: MusicProfileModel
+    show_personality: ShowPersonalityModel
+    firework_cues: list[FireworkCueModel]
+
+    @model_validator(mode="after")
+    def validate_times_within_duration(self):
+        duration = self.duration_seconds + 0.75
+        timed_values = [
+            *self.beat_times,
+            *self.onset_times,
+            *(point.time for point in self.energy_timeline),
+            *(section.end for section in self.sections),
+            *(moment.time for moment in self.key_moments),
+            *(buildup.peak for buildup in self.buildups),
+            *(cue.end if cue.end is not None else cue.time for cue in self.firework_cues),
+        ]
+        if any(value > duration for value in timed_values):
+            raise ValueError("timed analysis fields must not exceed song duration")
+        return self
+
+
+class FinaleWindowModel(SchemaModel):
+    start: NonNegativeFloat
+    end: NonNegativeFloat
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.end < self.start:
+            raise ValueError("finale window end must be greater than or equal to start")
+        return self
+
+
+class AnchorWindowModel(SchemaModel):
+    type: Literal["climax", "buildup"]
+    anchor_time: NonNegativeFloat
+    start: NonNegativeFloat
+    end: NonNegativeFloat
+    energy: Score | None = None
+    energy_rise: NonNegativeFloat | None = None
+
+    @model_validator(mode="after")
+    def validate_anchor_payload(self):
+        if self.end < self.start:
+            raise ValueError("anchor window end must be greater than or equal to start")
+        if self.type == "climax" and self.energy is None:
+            raise ValueError("climax anchor windows require energy")
+        if self.type == "buildup" and self.energy_rise is None:
+            raise ValueError("buildup anchor windows require energy_rise")
+        return self
+
+
+class DerivedFeaturesModel(SchemaModel):
+    finale_window: FinaleWindowModel | None
+    quietest_section_index: NonNegativeInt | None
+    highest_energy_section_index: NonNegativeInt | None
+    repeated_chorus_count: NonNegativeInt
+    section_rank_by_energy: list[NonNegativeInt]
+    anchor_windows: list[AnchorWindowModel]
+
+
+class SongPayloadModel(SchemaModel):
+    duration_seconds: NonNegativeFloat
+    tempo_bpm: NonNegativeFloat
+    total_beats: NonNegativeInt
+    genre_hint: str
+    key_signature: KeySignatureModel
+
+
+class MusicStylePayloadModel(SchemaModel):
+    dominant_traits: list[str]
+    style_vector: StyleVectorModel
+    descriptors: DescriptorModel
+
+
+class ShowPersonalityPayloadModel(SchemaModel):
+    preset: Literal["balanced", "bold", "cinematic", "elegant", "intimate", "playful"]
+    blend_weights: BlendWeightsModel
+    dimensions: StyleVectorModel
+    dominant_traits: list[str]
+    palette_direction: PaletteDirectionModel
+    density_level: DensityLevel
+
+
+class AnchorsPayloadModel(SchemaModel):
+    key_moments: list[KeyMomentModel]
+    buildups: list[BuildupModel]
+
+
+class SectionCueSummaryModel(SchemaModel):
+    section_index: NonNegativeInt
+    label: SectionLabel
+    start: NonNegativeFloat
+    end: NonNegativeFloat
+    total_count: NonNegativeInt
+    counts_by_effect: dict[CueEffect, NonNegativeInt]
+
+
+class FireworkCueSummaryModel(SchemaModel):
+    total_count: NonNegativeInt
+    counts_by_effect: dict[CueEffect, NonNegativeInt]
+    counts_by_section: list[SectionCueSummaryModel]
+
+
+class CueReferenceModel(SchemaModel):
+    full_cues_source: Literal["analysis_json"]
+    json_path: Literal["firework_cues"]
+    note: str
+
+
+class LLMPayloadModel(SchemaModel):
+    schema_version: SchemaVersion
+    source_file: str
+    song: SongPayloadModel
+    music_style: MusicStylePayloadModel
+    show_personality: ShowPersonalityPayloadModel
+    sections: list[CompactSectionModel]
+    anchors: AnchorsPayloadModel
+    derived: DerivedFeaturesModel
+    firework_cue_summary: FireworkCueSummaryModel
+    firework_cue_samples: Annotated[list[FireworkCueModel], Field(max_length=12)]
+    cue_reference: CueReferenceModel
+    user_constraints: dict[str, Any]
+    inventory: list[Any]
+
+
+def validate_schema(model_cls: type[BaseModel], payload: dict, label: str) -> dict:
+    try:
+        return model_cls.model_validate(payload).model_dump(mode="json", exclude_none=True)
+    except ValidationError as exc:
+        raise ValueError(f"{label} failed schema {SCHEMA_VERSION} validation:\n{exc}") from exc
+
+
+def validate_analysis_result(result: dict) -> dict:
+    return validate_schema(AnalysisResultModel, result, "analysis result")
+
+
+def validate_llm_payload(payload: dict) -> dict:
+    return validate_schema(LLMPayloadModel, payload, "LLM payload")
+
 
 def clamp01(value: float) -> float:
     return max(0.0, min(1.0, float(value)))
@@ -130,6 +472,13 @@ def normalise_series(values: np.ndarray) -> np.ndarray:
     if value_range <= 1e-10:
         return np.zeros_like(values, dtype=float)
     return (values - values.min()) / value_range
+
+
+def smooth_energy_curve(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=float)
+    if values.size > 51:
+        values = savgol_filter(values, window_length=51, polyorder=3)
+    return np.clip(values, 0.0, 1.0)
 
 
 def rounded_scores(scores: dict) -> dict:
@@ -416,6 +765,69 @@ def build_show_personality(music_profile: dict, preset_name: str) -> dict:
     }
 
 
+def select_climax_indices(
+    peak_times: np.ndarray,
+    peak_energies: np.ndarray,
+    prominences: np.ndarray,
+    sections: list,
+    duration: float,
+) -> set:
+    if len(peak_times) == 0:
+        return set()
+
+    target = int(round(duration / CLIMAX_TARGET_SECONDS))
+    target = max(1, min(MAX_CLIMAXES, target, len(peak_times)))
+    prominence_scores = normalise_series(prominences)
+
+    def section_for_time(t: float) -> dict | None:
+        for section in sections:
+            if section["start"] <= t <= section["end"]:
+                return section
+        return None
+
+    ranked = []
+    for i, t in enumerate(peak_times):
+        section = section_for_time(float(t))
+        label = section["label"] if section else "unknown"
+        intensity = section["intensity"] if section else "low"
+        label_bonus = 0.0
+        if label == "chorus":
+            label_bonus = 0.35
+        elif label == "bridge" or intensity == "high":
+            label_bonus = 0.22
+        elif label in {"intro", "outro"}:
+            label_bonus = -0.18
+        elif label == "verse":
+            label_bonus = -0.08
+
+        late_show_bonus = 0.08 * score01(float(t), 0.0, max(duration, 1.0))
+        score = (
+            0.52 * float(prominence_scores[i])
+            + 0.34 * float(peak_energies[i])
+            + label_bonus
+            + late_show_bonus
+        )
+        ranked.append((score, i))
+
+    ranked.sort(reverse=True)
+
+    def pick_spaced(min_spacing: float) -> list:
+        selected = []
+        for _, idx in ranked:
+            t = float(peak_times[idx])
+            if any(abs(t - float(peak_times[chosen])) < min_spacing for chosen in selected):
+                continue
+            selected.append(idx)
+            if len(selected) >= target:
+                break
+        return selected
+
+    selected = pick_spaced(CLIMAX_MIN_SPACING_SEC)
+    if len(selected) < target:
+        selected = pick_spaced(CLIMAX_MIN_SPACING_SEC * 0.65)
+    return set(selected[:target])
+
+
 def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     """
     Analyse a song and return structured data for firework choreography.
@@ -442,12 +854,13 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
         rms_high = np.percentile(rms, 95)
         rms = np.clip(rms, rms_low, rms_high)
     rms_normalised = normalise_series(rms)
+    energy_curve = smooth_energy_curve(rms_normalised)
     rms_times = librosa.frames_to_time(range(len(rms)), sr=sr, hop_length=hop_length)
 
     # Downsample energy to ~1 reading per second
     step = max(1, int(sr / hop_length))
     energy_timeline = [
-        {"time": round(float(rms_times[i]), 2), "energy": round(float(rms_normalised[i]), 3)}
+        {"time": round(float(rms_times[i]), 2), "energy": round(float(energy_curve[i]), 3)}
         for i in range(0, len(rms), step)
     ]
 
@@ -462,29 +875,36 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     #    Based on McFee & Ellis 2014 — beat-synchronised CQT + MFCC
     #    with recurrence + path similarity for clean boundaries.
     # ──────────────────────────────────────────────
-    sections = laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration)
+    sections = laplacian_segment(y, sr, beat_frames, energy_curve, hop_length, duration)
 
     # ──────────────────────────────────────────────
     # 5. KEY MOMENTS (energy peaks — climaxes and drops)
     # ──────────────────────────────────────────────
-    if len(rms_normalised) > 51:
-        smoothed = savgol_filter(rms_normalised, window_length=51, polyorder=3)
+    smoothed = energy_curve
+    fps = sr / hop_length
+    if smoothed.size:
+        energy_span = float(np.percentile(smoothed, 90) - np.percentile(smoothed, 10))
+        peak_height = max(0.45, float(np.percentile(smoothed, 55)))
+        prominence = max(0.1, 0.2 * energy_span)
     else:
-        smoothed = rms_normalised
+        peak_height = 0.5
+        prominence = 0.1
 
     peaks, peak_props = find_peaks(
-        smoothed, height=0.5, distance=sr // hop_length * 3, prominence=0.1
+        smoothed,
+        height=peak_height,
+        distance=max(1, int(fps * KEY_MOMENT_DISTANCE_SEC)),
+        prominence=prominence,
     )
     peak_times_arr = librosa.frames_to_time(peaks, sr=sr, hop_length=hop_length)
     prominences = peak_props.get("prominences", np.zeros(len(peaks)))
 
-    # Top quartile of detected peaks (by prominence) are climaxes; the rest
-    # are builds. Replaces the old absolute energy threshold (>0.8), which
-    # silently produced zero climaxes on loudness-flat mixes (modern EDM /
-    # heavily compressed pop) and starved the show of barrage cues.
-    n_climaxes = max(1, len(peaks) // 4) if len(peaks) > 0 else 0
-    climax_idx = (
-        set(np.argsort(prominences)[-n_climaxes:].tolist()) if n_climaxes > 0 else set()
+    climax_idx = select_climax_indices(
+        peak_times_arr,
+        smoothed[peaks] if len(peaks) else np.array([]),
+        prominences,
+        sections,
+        duration,
     )
 
     key_moments = [
@@ -539,7 +959,7 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     # ──────────────────────────────────────────────
     # ASSEMBLE OUTPUT
     # ──────────────────────────────────────────────
-    return {
+    result = {
         "schema_version": SCHEMA_VERSION,
         "file": file_path,
         "duration_seconds": round(duration, 2),
@@ -555,6 +975,7 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
         "show_personality": show_personality,
         "firework_cues": firework_cues,
     }
+    return validate_analysis_result(result)
 
 
 def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
@@ -714,8 +1135,9 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
         end_frame = min(int(end * sr / hop_length), len(rms_normalised))
 
         if start_frame < end_frame:
-            avg_energy = float(np.mean(rms_normalised[start_frame:end_frame]))
-            peak_energy = float(np.max(rms_normalised[start_frame:end_frame]))
+            section_energy = rms_normalised[start_frame:end_frame]
+            avg_energy = float(np.mean(section_energy))
+            peak_energy = float(np.percentile(section_energy, 90))
         else:
             avg_energy = 0.0
             peak_energy = 0.0
@@ -805,12 +1227,22 @@ def label_sections_from_clusters(sections):
                 verse_cluster = cid
 
     # Assign labels
-    for s in sections:
+    for idx, s in enumerate(sections):
         if s["label"] != "unknown":
             continue
         cid = s["cluster_id"]
+        precedes_chorus = idx + 1 < n and sections[idx + 1].get("cluster_id") == chorus_cluster
         if cid == chorus_cluster:
             s["label"] = "chorus"
+        elif (
+            precedes_chorus
+            and idx > 0
+            and s["duration"] <= PRE_CHORUS_MAX_DURATION_SEC
+            and s["avg_energy"] < median_energy
+        ):
+            s["label"] = "pre-chorus"
+        elif s["intensity"] == "high" and s["avg_energy"] >= median_energy:
+            s["label"] = "bridge"
         elif cid == verse_cluster:
             s["label"] = "verse"
         elif cluster_avg_energy.get(cid, 0) > median_energy * 1.2:
@@ -819,7 +1251,6 @@ def label_sections_from_clusters(sections):
             s["label"] = "pre-chorus"
         else:
             # Check if it precedes a chorus section
-            idx = sections.index(s)
             if idx + 1 < n and sections[idx + 1].get("label") == "chorus":
                 s["label"] = "pre-chorus"
             else:
@@ -833,6 +1264,31 @@ def classify_intensity(energy: float, low: float, high: float) -> str:
         return "medium"
     else:
         return "low"
+
+
+def filter_buildups(buildups: list, duration: float) -> list:
+    if not buildups:
+        return []
+
+    target = int(round(duration / BUILDUP_TARGET_SECONDS))
+    target = max(1, min(MAX_BUILDUPS, target, len(buildups)))
+    ranked = sorted(buildups, key=lambda bu: (bu["energy_rise"], bu["duration"]), reverse=True)
+
+    def pick_spaced(min_spacing: float) -> list:
+        selected = []
+        for bu in ranked:
+            peak = float(bu["peak"])
+            if any(abs(peak - float(chosen["peak"])) < min_spacing for chosen in selected):
+                continue
+            selected.append(bu)
+            if len(selected) >= target:
+                break
+        return selected
+
+    selected = pick_spaced(BUILDUP_MIN_SPACING_SEC)
+    if len(selected) < target:
+        selected = pick_spaced(BUILDUP_MIN_SPACING_SEC * 0.65)
+    return sorted(selected[:target], key=lambda bu: bu["peak"])
 
 
 def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
@@ -871,7 +1327,8 @@ def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
                 "energy_rise": round(energy_rise, 3),
             })
 
-    return buildups
+    duration = len(smoothed) / fps if fps > 0 else 0.0
+    return filter_buildups(buildups, duration)
 
 
 def get_section_at_time(t: float, sections: list) -> dict | None:
@@ -1195,6 +1652,55 @@ def compute_derived_features(result: dict) -> dict:
     }
 
 
+def build_firework_cue_summary(cues: list[dict], sections: list[dict]) -> dict:
+    counts_by_effect = {}
+    for cue in cues:
+        effect = cue["effect"]
+        counts_by_effect[effect] = counts_by_effect.get(effect, 0) + 1
+
+    counts_by_section = []
+    for section in sections:
+        section_cues = [
+            cue for cue in cues
+            if section["start"] <= cue["time"] <= section["end"]
+        ]
+        section_counts = {}
+        for cue in section_cues:
+            effect = cue["effect"]
+            section_counts[effect] = section_counts.get(effect, 0) + 1
+        counts_by_section.append({
+            "section_index": section["index"],
+            "label": section["label"],
+            "start": section["start"],
+            "end": section["end"],
+            "total_count": len(section_cues),
+            "counts_by_effect": section_counts,
+        })
+
+    return {
+        "total_count": len(cues),
+        "counts_by_effect": counts_by_effect,
+        "counts_by_section": counts_by_section,
+    }
+
+
+def select_firework_cue_samples(cues: list[dict], limit: int = 12) -> list[dict]:
+    """
+    Keep a small set of representative heuristic cues in the compact payload.
+    The complete list remains in the full analysis JSON at `firework_cues`.
+    """
+    effect_priority = {"barrage": 4, "crackle": 3, "accent": 2, "single": 1}
+    ranked = sorted(
+        cues,
+        key=lambda cue: (
+            -effect_priority.get(cue["effect"], 0),
+            -float(cue.get("energy", 0.0)),
+            float(cue["time"]),
+        ),
+    )
+    return sorted(ranked[:limit], key=lambda cue: cue["time"])
+
+
 def build_llm_payload(result: dict) -> dict:
     """
     Compact, token-efficient payload for downstream LLM consumption.
@@ -1225,7 +1731,7 @@ def build_llm_payload(result: dict) -> dict:
             "cue_counts": cue_counts,
         })
 
-    return {
+    payload = {
         "schema_version": SCHEMA_VERSION,
         "source_file": os.path.basename(result["file"]),
         "song": {
@@ -1254,10 +1760,17 @@ def build_llm_payload(result: dict) -> dict:
             "buildups": result["buildups"],
         },
         "derived": compute_derived_features(result),
-        "firework_cues_baseline": cues,
+        "firework_cue_summary": build_firework_cue_summary(cues, sections_compact),
+        "firework_cue_samples": select_firework_cue_samples(cues),
+        "cue_reference": {
+            "full_cues_source": "analysis_json",
+            "json_path": "firework_cues",
+            "note": "The full heuristic cue list is kept only in the full analysis JSON and is intentionally not duplicated in this compact LLM payload.",
+        },
         "user_constraints": {},
         "inventory": [],
     }
+    return validate_llm_payload(payload)
 
 
 def fmt_time(seconds: float) -> str:
@@ -1683,6 +2196,11 @@ def parse_args(argv=None):
         help="Path for the full analysis JSON (default: <song>_analysis.json)",
     )
     parser.add_argument(
+        "--markdown-out",
+        default=None,
+        help="Path for the Markdown report (default: <song>_analysis.md)",
+    )
+    parser.add_argument(
         "--llm-out",
         default=None,
         help="Path for the compact LLM payload JSON (default: <song>_llm.json)",
@@ -1702,13 +2220,17 @@ if __name__ == "__main__":
     options = parse_args()
 
     print("Analysing...", flush=True)
-    result = analyse_song(options.path, personality_preset=options.personality)
+    try:
+        result = analyse_song(options.path, personality_preset=options.personality)
+    except ValueError as exc:
+        print(f"Validation error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
 
     if options.play:
         live_player(result, options.path)
     else:
         song_name = os.path.splitext(os.path.basename(options.path))[0]
-        md_path = f"{song_name}_analysis.md"
+        md_path = options.markdown_out or f"{song_name}_analysis.md"
         write_markdown(result, md_path)
         print(f"Markdown report:     {md_path}")
 

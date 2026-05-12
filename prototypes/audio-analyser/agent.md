@@ -88,7 +88,7 @@ Optional:
 
 - `--json` also echoes the full analysis JSON to stdout
 - `--no-json-file` skips both JSON files (Markdown only)
-- `--analysis-out PATH` / `--llm-out PATH` override the JSON paths
+- `--analysis-out PATH` / `--markdown-out PATH` / `--llm-out PATH` override output paths
 
 ## Pipeline Overview
 
@@ -97,7 +97,7 @@ Its current flow is:
 
 1. load mono audio with `librosa`
 2. estimate tempo and beat frames
-3. compute RMS energy and downsample it into a coarse energy timeline
+3. compute, smooth, and downsample RMS energy into a coarse energy timeline
 4. detect onsets
 5. segment musical structure via Laplacian spectral clustering
 6. detect key moments from energy peaks
@@ -116,7 +116,9 @@ Its current flow is:
 - `laplacian_segment(...)`
   Beat-synchronised structural segmentation using CQT + MFCC features.
 - `detect_buildups(...)`
-  Finds sustained energy ramps before peaks.
+  Finds sustained energy ramps before peaks, then filters nearby duplicate anchors.
+- `select_climax_indices(...)`
+  Chooses a spaced, duration-capped set of climax peaks, weighted toward chorus/bridge/high-intensity sections.
 - `analyse_music_personality(...)`
   Converts raw features into style descriptors and an 8-dimensional style vector.
 - `build_show_personality(...)`
@@ -161,10 +163,13 @@ Downstream systems should assume the top-level result object contains:
 - `show_personality`
 - `firework_cues`
 
-The current schema version is `1.1.0`. Bump it when introducing any change a downstream consumer could not absorb by reading the new fields it understands and ignoring the rest.
+The current schema version is `1.2.0`. Bump it when introducing any change a downstream consumer could not absorb by reading the new fields it understands and ignoring the rest.
+
+The Python boundary validates both the full analysis result and the compact LLM payload with Pydantic before writing JSON files. Validation failures should be treated as contract bugs, not as warnings.
 
 #### Schema changelog
 
+- **1.2.0** — Added Pydantic validation for the full analysis JSON and compact LLM payload. Clamps filtered energy values to `0.0-1.0`. Replaced compact-payload `firework_cues_baseline` with `firework_cue_summary`, up to 12 `firework_cue_samples`, and a `cue_reference` back to the full analysis JSON.
 - **1.1.0** — Added `key_moments[].prominence`. Reclassified `key_moments[].type` from an absolute `energy > 0.8` threshold to relative prominence ranking (top quartile = `climax`).
 - **1.0.0** — Initial versioned contract.
 
@@ -179,10 +184,12 @@ A separate, token-efficient view of the result is written to `<song>_llm.json` a
 - `sections[]`: `index`, `label`, `start`, `end`, `duration`, `avg_energy`, `peak_energy`, `intensity`, `cue_counts`
 - `anchors`: `key_moments`, `buildups`
 - `derived`: `finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`
-- `firework_cues_baseline`: heuristic cue list (treat as hint, not authoritative)
+- `firework_cue_summary`: total and per-section heuristic cue counts
+- `firework_cue_samples`: up to 12 high-signal heuristic cues
+- `cue_reference`: points consumers to `analysis_json.firework_cues` for the complete heuristic cue list
 - `user_constraints`, `inventory`: empty placeholders for the next stage to populate
 
-Raw `beat_times`, `onset_times`, and `energy_timeline` are intentionally **omitted** from this payload — fetch them from `<song>_analysis.json` only when the harness explicitly needs micro-timing.
+Raw `beat_times`, `onset_times`, `energy_timeline`, and the complete `firework_cues` list are intentionally **omitted** from this payload — fetch them from `<song>_analysis.json` only when the harness explicitly needs micro-timing or every baseline cue.
 
 ### `sections[]`
 
@@ -221,7 +228,7 @@ Expected `type` values today:
 - `build`
 - `climax`
 
-`type` is decided by **relative prominence ranking**: the top quartile of detected peaks (by `prominence`, with a minimum of one) are labelled `climax`; the rest are `build`. This replaces the previous absolute `energy > 0.8` threshold, which produced zero climaxes on heavily compressed mixes (modern EDM / pop) and consequently starved the show of `barrage` cues.
+`type` is decided by a **section-aware prominence ranking**. Candidate peaks are scored by prominence, energy, position, and section context; spaced peaks in chorus/bridge/high-intensity sections are preferred, and the climax count is capped by song duration. The rest are labelled `build`. This replaces the earlier top-quartile rule, which could over-label repeated early loudness pulses as climaxes.
 
 ### `buildups[]`
 
@@ -317,7 +324,7 @@ If you modify this prototype, treat the following as stability rules unless you 
 - better section naming confidence
 - multi-pass climax/finale detection
 - richer cue metadata for export targets
-- formal schema validation for JSON output (e.g. JSON Schema or pydantic models keyed on `schema_version`)
+- JSON Schema export from the Pydantic models for non-Python consumers
 
 ### Risky Changes
 

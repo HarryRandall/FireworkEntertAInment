@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "source_file": "example_3.mp3",
   "song": {
     "duration_seconds": 242.97,
@@ -14,8 +14,8 @@
   },
   "music_style": {
     "dominant_traits": [
-      "tension",
       "grandeur",
+      "tension",
       "warmth"
     ],
     "style_vector": {
@@ -25,7 +25,7 @@
       "warmth": 0.742,
       "brightness": 0.613,
       "grandeur": 0.787,
-      "tension": 0.791,
+      "tension": 0.755,
       "precision": 0.595
     },
     "descriptors": {
@@ -33,7 +33,7 @@
       "drive": 0.472,
       "brightness": 0.613,
       "warmth": 0.742,
-      "tension": 0.791,
+      "tension": 0.755,
       "grandeur": 0.787,
       "playfulness": 0.482,
       "precision": 0.595,
@@ -55,13 +55,13 @@
       "warmth": 0.636,
       "brightness": 0.551,
       "grandeur": 0.717,
-      "tension": 0.643,
+      "tension": 0.627,
       "precision": 0.598
     },
     "dominant_traits": [
       "grandeur",
-      "tension",
-      "warmth"
+      "warmth",
+      "tension"
     ],
     "palette_direction": {
       "primary": "gold",
@@ -78,12 +78,11 @@
       "end": 49.3,
       "duration": 49.3,
       "avg_energy": 0.325,
-      "peak_energy": 1.0,
+      "peak_energy": 0.688,
       "intensity": "low",
       "cue_counts": {
         "single": 6,
-        "crackle": 2,
-        "barrage": 7
+        "crackle": 1
       }
     },
     {
@@ -92,13 +91,12 @@
       "start": 49.3,
       "end": 81.2,
       "duration": 31.9,
-      "avg_energy": 0.541,
-      "peak_energy": 1.0,
-      "intensity": "medium",
+      "avg_energy": 0.542,
+      "peak_energy": 0.745,
+      "intensity": "low",
       "cue_counts": {
         "single": 4,
-        "crackle": 2,
-        "barrage": 1
+        "crackle": 1
       }
     },
     {
@@ -108,22 +106,22 @@
       "end": 106.79,
       "duration": 25.59,
       "avg_energy": 0.695,
-      "peak_energy": 1.0,
+      "peak_energy": 0.83,
       "intensity": "medium",
       "cue_counts": {
         "accent": 8,
-        "crackle": 1,
-        "barrage": 1
+        "barrage": 2,
+        "crackle": 1
       }
     },
     {
       "index": 3,
-      "label": "verse",
+      "label": "pre-chorus",
       "start": 106.79,
       "end": 125.99,
       "duration": 19.2,
-      "avg_energy": 0.639,
-      "peak_energy": 1.0,
+      "avg_energy": 0.638,
+      "peak_energy": 0.758,
       "intensity": "medium",
       "cue_counts": {
         "single": 3,
@@ -136,8 +134,8 @@
       "start": 125.99,
       "end": 142.78,
       "duration": 16.79,
-      "avg_energy": 0.728,
-      "peak_energy": 1.0,
+      "avg_energy": 0.73,
+      "peak_energy": 0.837,
       "intensity": "medium",
       "cue_counts": {
         "accent": 6
@@ -145,12 +143,12 @@
     },
     {
       "index": 5,
-      "label": "verse",
+      "label": "bridge",
       "start": 142.78,
       "end": 163.56,
       "duration": 20.78,
-      "avg_energy": 0.761,
-      "peak_energy": 1.0,
+      "avg_energy": 0.76,
+      "peak_energy": 0.938,
       "intensity": "high",
       "cue_counts": {
         "accent": 5,
@@ -159,16 +157,15 @@
     },
     {
       "index": 6,
-      "label": "verse",
+      "label": "bridge",
       "start": 163.56,
       "end": 183.58,
       "duration": 20.02,
-      "avg_energy": 0.763,
-      "peak_energy": 1.0,
+      "avg_energy": 0.762,
+      "peak_energy": 0.944,
       "intensity": "high",
       "cue_counts": {
         "accent": 5,
-        "crackle": 1,
         "barrage": 1
       }
     },
@@ -179,10 +176,11 @@
       "end": 201.15,
       "duration": 17.58,
       "avg_energy": 0.723,
-      "peak_energy": 1.0,
+      "peak_energy": 0.83,
       "intensity": "medium",
       "cue_counts": {
-        "accent": 6
+        "accent": 6,
+        "barrage": 1
       }
     },
     {
@@ -191,8 +189,8 @@
       "start": 201.15,
       "end": 224.35,
       "duration": 23.2,
-      "avg_energy": 0.706,
-      "peak_energy": 1.0,
+      "avg_energy": 0.707,
+      "peak_energy": 0.857,
       "intensity": "medium",
       "cue_counts": {
         "single": 4
@@ -205,7 +203,7 @@
       "end": 242.97,
       "duration": 18.62,
       "avg_energy": 0.086,
-      "peak_energy": 0.364,
+      "peak_energy": 0.236,
       "intensity": "low",
       "cue_counts": {}
     }
@@ -213,63 +211,27 @@
   "anchors": {
     "key_moments": [
       {
-        "time": 13.4,
-        "energy": 0.541,
-        "prominence": 0.529,
-        "type": "climax"
-      },
-      {
         "time": 16.79,
         "energy": 0.99,
         "prominence": 0.941,
-        "type": "climax"
-      },
-      {
-        "time": 21.99,
-        "energy": 0.739,
-        "prominence": 0.55,
-        "type": "climax"
-      },
-      {
-        "time": 28.4,
-        "energy": 0.728,
-        "prominence": 0.514,
-        "type": "climax"
+        "type": "build"
       },
       {
         "time": 32.53,
         "energy": 0.879,
         "prominence": 0.816,
-        "type": "climax"
-      },
-      {
-        "time": 38.57,
-        "energy": 0.817,
-        "prominence": 0.619,
-        "type": "climax"
+        "type": "build"
       },
       {
         "time": 42.98,
         "energy": 0.992,
-        "prominence": 1.009,
-        "type": "climax"
-      },
-      {
-        "time": 57.33,
-        "energy": 0.564,
-        "prominence": 0.134,
+        "prominence": 0.992,
         "type": "build"
       },
       {
         "time": 61.02,
         "energy": 0.941,
         "prominence": 0.543,
-        "type": "climax"
-      },
-      {
-        "time": 64.2,
-        "energy": 0.735,
-        "prominence": 0.332,
         "type": "build"
       },
       {
@@ -279,22 +241,16 @@
         "type": "build"
       },
       {
-        "time": 80.81,
-        "energy": 0.787,
-        "prominence": 0.198,
+        "time": 77.88,
+        "energy": 0.698,
+        "prominence": 0.2,
         "type": "build"
       },
       {
         "time": 86.4,
         "energy": 0.885,
         "prominence": 0.462,
-        "type": "build"
-      },
-      {
-        "time": 89.88,
-        "energy": 0.783,
-        "prominence": 0.196,
-        "type": "build"
+        "type": "climax"
       },
       {
         "time": 96.32,
@@ -309,27 +265,9 @@
         "type": "climax"
       },
       {
-        "time": 110.83,
-        "energy": 0.72,
-        "prominence": 0.142,
-        "type": "build"
-      },
-      {
         "time": 115.24,
         "energy": 0.842,
         "prominence": 0.342,
-        "type": "build"
-      },
-      {
-        "time": 118.42,
-        "energy": 0.803,
-        "prominence": 0.184,
-        "type": "build"
-      },
-      {
-        "time": 122.39,
-        "energy": 0.704,
-        "prominence": 0.199,
         "type": "build"
       },
       {
@@ -339,27 +277,15 @@
         "type": "build"
       },
       {
-        "time": 131.24,
-        "energy": 0.812,
-        "prominence": 0.214,
-        "type": "build"
-      },
-      {
         "time": 134.68,
         "energy": 0.863,
         "prominence": 0.317,
         "type": "build"
       },
       {
-        "time": 139.53,
-        "energy": 0.879,
-        "prominence": 0.262,
-        "type": "build"
-      },
-      {
-        "time": 143.06,
-        "energy": 0.924,
-        "prominence": 0.471,
+        "time": 141.06,
+        "energy": 0.914,
+        "prominence": 0.222,
         "type": "build"
       },
       {
@@ -375,27 +301,15 @@
         "type": "build"
       },
       {
-        "time": 158.36,
-        "energy": 0.845,
-        "prominence": 0.228,
-        "type": "build"
-      },
-      {
         "time": 161.59,
         "energy": 0.998,
         "prominence": 0.379,
         "type": "build"
       },
       {
-        "time": 166.07,
-        "energy": 0.941,
-        "prominence": 0.303,
-        "type": "build"
-      },
-      {
-        "time": 173.57,
-        "energy": 1.044,
-        "prominence": 1.046,
+        "time": 170.76,
+        "energy": 1.0,
+        "prominence": 1.0,
         "type": "climax"
       },
       {
@@ -405,45 +319,21 @@
         "type": "build"
       },
       {
-        "time": 183.11,
-        "energy": 0.788,
-        "prominence": 0.162,
-        "type": "build"
-      },
-      {
         "time": 188.8,
         "energy": 0.88,
         "prominence": 0.332,
-        "type": "build"
+        "type": "climax"
       },
       {
-        "time": 192.03,
-        "energy": 0.787,
-        "prominence": 0.139,
-        "type": "build"
-      },
-      {
-        "time": 195.6,
-        "energy": 0.846,
-        "prominence": 0.262,
-        "type": "build"
-      },
-      {
-        "time": 200.74,
-        "energy": 0.895,
-        "prominence": 0.456,
+        "time": 198.44,
+        "energy": 0.858,
+        "prominence": 0.267,
         "type": "build"
       },
       {
         "time": 205.57,
         "energy": 0.908,
         "prominence": 0.216,
-        "type": "build"
-      },
-      {
-        "time": 210.4,
-        "energy": 0.883,
-        "prominence": 0.159,
         "type": "build"
       },
       {
@@ -461,22 +351,10 @@
         "energy_rise": 0.623
       },
       {
-        "start": 18.0,
-        "peak": 21.99,
-        "duration": 3.99,
-        "energy_rise": 0.488
-      },
-      {
         "start": 57.03,
         "peak": 61.02,
         "duration": 3.99,
         "energy_rise": 0.442
-      },
-      {
-        "start": 76.81,
-        "peak": 80.81,
-        "duration": 3.99,
-        "energy_rise": 0.269
       },
       {
         "start": 101.47,
@@ -495,18 +373,12 @@
         "peak": 148.65,
         "duration": 3.99,
         "energy_rise": 0.396
-      },
-      {
-        "start": 169.58,
-        "peak": 173.57,
-        "duration": 3.99,
-        "energy_rise": 0.273
       }
     ]
   },
   "derived": {
     "finale_window": {
-      "start": 169.58,
+      "start": 183.58,
       "end": 242.97
     },
     "quietest_section_index": 9,
@@ -526,74 +398,11 @@
     ],
     "anchor_windows": [
       {
-        "type": "climax",
-        "anchor_time": 13.4,
-        "start": 10.4,
-        "end": 17.4,
-        "energy": 0.541
-      },
-      {
-        "type": "climax",
-        "anchor_time": 16.79,
-        "start": 13.79,
-        "end": 20.79,
-        "energy": 0.99
-      },
-      {
         "type": "buildup",
         "anchor_time": 16.79,
         "start": 12.79,
         "end": 20.79,
         "energy_rise": 0.623
-      },
-      {
-        "type": "climax",
-        "anchor_time": 21.99,
-        "start": 18.99,
-        "end": 25.99,
-        "energy": 0.739
-      },
-      {
-        "type": "buildup",
-        "anchor_time": 21.99,
-        "start": 18.0,
-        "end": 25.99,
-        "energy_rise": 0.488
-      },
-      {
-        "type": "climax",
-        "anchor_time": 28.4,
-        "start": 25.4,
-        "end": 32.4,
-        "energy": 0.728
-      },
-      {
-        "type": "climax",
-        "anchor_time": 32.53,
-        "start": 29.53,
-        "end": 36.53,
-        "energy": 0.879
-      },
-      {
-        "type": "climax",
-        "anchor_time": 38.57,
-        "start": 35.57,
-        "end": 42.57,
-        "energy": 0.817
-      },
-      {
-        "type": "climax",
-        "anchor_time": 42.98,
-        "start": 39.98,
-        "end": 46.98,
-        "energy": 0.992
-      },
-      {
-        "type": "climax",
-        "anchor_time": 61.02,
-        "start": 58.02,
-        "end": 65.02,
-        "energy": 0.941
       },
       {
         "type": "buildup",
@@ -603,11 +412,11 @@
         "energy_rise": 0.442
       },
       {
-        "type": "buildup",
-        "anchor_time": 80.81,
-        "start": 76.81,
-        "end": 84.81,
-        "energy_rise": 0.269
+        "type": "climax",
+        "anchor_time": 86.4,
+        "start": 83.4,
+        "end": 90.4,
+        "energy": 0.885
       },
       {
         "type": "climax",
@@ -639,38 +448,138 @@
       },
       {
         "type": "climax",
-        "anchor_time": 173.57,
-        "start": 170.57,
-        "end": 177.57,
-        "energy": 1.044
+        "anchor_time": 170.76,
+        "start": 167.76,
+        "end": 174.76,
+        "energy": 1.0
       },
       {
-        "type": "buildup",
-        "anchor_time": 173.57,
-        "start": 169.58,
-        "end": 177.57,
-        "energy_rise": 0.273
+        "type": "climax",
+        "anchor_time": 188.8,
+        "start": 185.8,
+        "end": 192.8,
+        "energy": 0.88
       }
     ]
   },
-  "firework_cues_baseline": [
-    {
-      "time": 10.635,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.427,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
+  "firework_cue_summary": {
+    "total_count": 55,
+    "counts_by_effect": {
+      "single": 17,
+      "crackle": 5,
+      "accent": 29,
+      "barrage": 4
     },
+    "counts_by_section": [
+      {
+        "section_index": 0,
+        "label": "intro",
+        "start": 0.0,
+        "end": 49.3,
+        "total_count": 7,
+        "counts_by_effect": {
+          "single": 6,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 1,
+        "label": "verse",
+        "start": 49.3,
+        "end": 81.2,
+        "total_count": 5,
+        "counts_by_effect": {
+          "single": 4,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 2,
+        "label": "chorus",
+        "start": 81.2,
+        "end": 106.79,
+        "total_count": 11,
+        "counts_by_effect": {
+          "accent": 8,
+          "barrage": 2,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 3,
+        "label": "pre-chorus",
+        "start": 106.79,
+        "end": 125.99,
+        "total_count": 4,
+        "counts_by_effect": {
+          "single": 3,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 4,
+        "label": "chorus",
+        "start": 125.99,
+        "end": 142.78,
+        "total_count": 6,
+        "counts_by_effect": {
+          "accent": 6
+        }
+      },
+      {
+        "section_index": 5,
+        "label": "bridge",
+        "start": 142.78,
+        "end": 163.56,
+        "total_count": 6,
+        "counts_by_effect": {
+          "accent": 5,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 6,
+        "label": "bridge",
+        "start": 163.56,
+        "end": 183.58,
+        "total_count": 6,
+        "counts_by_effect": {
+          "accent": 5,
+          "barrage": 1
+        }
+      },
+      {
+        "section_index": 7,
+        "label": "chorus",
+        "start": 183.58,
+        "end": 201.15,
+        "total_count": 7,
+        "counts_by_effect": {
+          "accent": 6,
+          "barrage": 1
+        }
+      },
+      {
+        "section_index": 8,
+        "label": "verse",
+        "start": 201.15,
+        "end": 224.35,
+        "total_count": 4,
+        "counts_by_effect": {
+          "single": 4
+        }
+      },
+      {
+        "section_index": 9,
+        "label": "outro",
+        "start": 224.35,
+        "end": 242.97,
+        "total_count": 0,
+        "counts_by_effect": {}
+      }
+    ]
+  },
+  "firework_cue_samples": [
     {
       "time": 12.79,
       "end": 16.79,
@@ -685,246 +594,7 @@
       "density": "sustained",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 13.4,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.541,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 16.79,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.99,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 17.252,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.436,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 18.0,
-      "end": 21.99,
-      "effect": "crackle",
-      "reason": "buildup",
-      "energy": 0.488,
-      "section": "intro",
-      "palette": "silver/gold",
-      "shape": "crackle_tail",
-      "height": "mid_high",
-      "spread": "trail",
-      "density": "sustained",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 21.99,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.739,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 24.126,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.355,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "low",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 28.4,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.728,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 30.557,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.306,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "low",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 32.53,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.879,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 37.059,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.608,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 38.57,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.817,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 42.98,
-      "effect": "barrage",
-      "reason": "climax",
-      "energy": 0.992,
-      "section": "intro",
-      "palette": "gold/gold",
-      "shape": "chrysanthemum",
-      "height": "high",
-      "spread": "wide",
-      "density": "layered",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 43.468,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.776,
-      "section": "intro",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 56.424,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.458,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -942,16 +612,16 @@
       "density": "sustained",
       "style_tags": [
         "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
     {
-      "time": 61.02,
+      "time": 86.4,
       "effect": "barrage",
       "reason": "climax",
-      "energy": 0.941,
-      "section": "verse",
+      "energy": 0.885,
+      "section": "chorus",
       "palette": "gold/gold",
       "shape": "chrysanthemum",
       "height": "high",
@@ -959,144 +629,7 @@
       "density": "layered",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 62.787,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.677,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 69.195,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.686,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 75.604,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.624,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 76.81,
-      "end": 80.81,
-      "effect": "crackle",
-      "reason": "buildup",
-      "energy": 0.269,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "crackle_tail",
-      "height": "mid_high",
-      "spread": "trail",
-      "density": "sustained",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 81.99,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.618,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 85.194,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.697,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 88.398,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.789,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 91.58,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.689,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1113,41 +646,7 @@
       "density": "punchy",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 97.988,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.795,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 101.193,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.573,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1165,24 +664,7 @@
       "density": "sustained",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 104.258,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.602,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1199,58 +681,7 @@
       "density": "layered",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 107.578,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.522,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 113.987,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.802,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 120.372,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.551,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1260,83 +691,15 @@
       "effect": "crackle",
       "reason": "buildup",
       "energy": 0.302,
-      "section": "verse",
+      "section": "pre-chorus",
       "palette": "silver/gold",
       "shape": "crackle_tail",
       "height": "mid_high",
-      "spread": "trail",
+      "spread": "fan",
       "density": "sustained",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 126.781,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.776,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 129.985,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.734,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 133.166,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.734,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 136.371,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.815,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1353,41 +716,7 @@
       "density": "punchy",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 142.78,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.842,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 144.382,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.68,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "mid",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1397,118 +726,32 @@
       "effect": "crackle",
       "reason": "buildup",
       "energy": 0.396,
-      "section": "verse",
+      "section": "bridge",
       "palette": "silver/gold",
       "shape": "crackle_tail",
       "height": "mid_high",
-      "spread": "trail",
+      "spread": "fan",
       "density": "sustained",
       "style_tags": [
         "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
     {
-      "time": 149.165,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.848,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
+      "time": 170.76,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 1.0,
+      "section": "bridge",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
       "height": "high",
-      "spread": "focused",
-      "density": "punchy",
+      "spread": "wide",
+      "density": "layered",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 153.972,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.821,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 158.755,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.748,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "mid",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 163.561,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.767,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "mid",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 168.368,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.834,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 169.58,
-      "end": 173.57,
-      "effect": "crackle",
-      "reason": "buildup",
-      "energy": 0.273,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "crackle_tail",
-      "height": "mid_high",
-      "spread": "trail",
-      "density": "sustained",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
@@ -1517,24 +760,24 @@
       "effect": "accent",
       "reason": "high_energy_beat",
       "energy": 0.871,
-      "section": "verse",
-      "palette": "silver/gold",
+      "section": "bridge",
+      "palette": "emerald/gold",
       "shape": "palm",
       "height": "high",
       "spread": "focused",
       "density": "punchy",
       "style_tags": [
         "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     },
     {
-      "time": 173.57,
+      "time": 188.8,
       "effect": "barrage",
       "reason": "climax",
-      "energy": 1.044,
-      "section": "verse",
+      "energy": 0.88,
+      "section": "chorus",
       "palette": "gold/gold",
       "shape": "chrysanthemum",
       "height": "high",
@@ -1542,215 +785,16 @@
       "density": "layered",
       "style_tags": [
         "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 177.958,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.618,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "mid",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 182.764,
-      "effect": "accent",
-      "reason": "high_energy_beat",
-      "energy": 0.692,
-      "section": "verse",
-      "palette": "silver/gold",
-      "shape": "palm",
-      "height": "mid",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 184.366,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.738,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 187.571,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.693,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 190.752,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.778,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 193.956,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.745,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 197.161,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.816,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 200.365,
-      "effect": "accent",
-      "reason": "chorus_beat",
-      "energy": 0.77,
-      "section": "chorus",
-      "palette": "emerald/gold",
-      "shape": "palm",
-      "height": "high",
-      "spread": "focused",
-      "density": "punchy",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 203.569,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.634,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 209.955,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.78,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 216.364,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.81,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
-      ],
-      "genre_hint": "cinematic"
-    },
-    {
-      "time": 222.749,
-      "effect": "single",
-      "reason": "verse_accent",
-      "energy": 0.417,
-      "section": "verse",
-      "palette": "gold/silver",
-      "shape": "pearl",
-      "height": "mid",
-      "spread": "narrow",
-      "density": "sparse",
-      "style_tags": [
-        "grandeur",
-        "tension"
+        "warmth"
       ],
       "genre_hint": "cinematic"
     }
   ],
+  "cue_reference": {
+    "full_cues_source": "analysis_json",
+    "json_path": "firework_cues",
+    "note": "The full heuristic cue list is kept only in the full analysis JSON and is intentionally not duplicated in this compact LLM payload."
+  },
   "user_constraints": {},
   "inventory": []
 }

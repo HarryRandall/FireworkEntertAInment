@@ -18,7 +18,7 @@ This folder contains the current Python prototype for ShowCrafter's audio-analys
 - `llm-harness.md`
   Design notes for downstream LLM integration. It explains how to package this analyser's outputs for a choreography model, what fields to send, how to structure prompts, and how to validate model outputs.
 - `llm-test-results/`
-  Example analysis outputs for three real songs. Each example contains the full analysis JSON (`_analysis.json`), the human-readable Markdown report (`_analysis.md`), the compact LLM payload (`_llm.json`), and the downstream LLM choreography result (`payload.json` / `analysis-report.md`).
+  Example analysis outputs for three real songs. Each example contains the full analysis JSON (`_analysis.json`), the human-readable Markdown report (`_analysis.md`), the compact LLM payload (`_llm.json`), and a `payload*.json` alias used by older harness notes.
 
 ## What This Prototype Covers
 
@@ -44,10 +44,10 @@ It does **not** yet handle:
 - Automatic music analysis from audio:
 	- Tempo and beat timeline
 	- Onset (hit/transient) timeline
-	- Energy timeline (RMS, normalised with 5th/95th percentile clipping for stability on compressed mixes)
+	- Energy timeline (RMS, normalised with 5th/95th percentile clipping, then smoothed for stability on compressed mixes)
 	- Song structure segmentation via Laplacian spectral clustering (intro / verse / chorus / bridge / outro)
-	- Key moments (builds and climaxes) — climaxes are the top quartile by prominence, not a fixed energy threshold
-	- Build-up detection (rise threshold is relative to the song's own dynamic range)
+	- Key moments (builds and climaxes) — climaxes are prominence-ranked, section-aware, spaced, and capped for usable choreography
+	- Build-up detection (rise threshold is relative to the song's own dynamic range, with noisy duplicate ramps filtered)
 - Personality-driven show design:
 	- 8 quantified style dimensions: `boldness`, `elegance`, `playfulness`, `warmth`, `brightness`, `grandeur`, `tension`, `precision`
 	- 6 presets: `balanced`, `bold`, `elegant`, `playful`, `cinematic`, `intimate`
@@ -95,7 +95,8 @@ pip install -r requirements.txt
 
 ```bash
 python showcrafter.py [path_to_audio] [--json] [--play] [--personality PRESET]
-                      [--analysis-out PATH] [--llm-out PATH] [--no-json-file]
+                      [--analysis-out PATH] [--markdown-out PATH]
+                      [--llm-out PATH] [--no-json-file]
 ```
 
 Arguments:
@@ -105,6 +106,7 @@ Arguments:
 - `--play`: launch live terminal playback visualizer
 - `--personality PRESET`: choose show personality preset
 - `--analysis-out PATH`: override the full analysis JSON output path (default: `<song>_analysis.json`)
+- `--markdown-out PATH`: override the Markdown report output path (default: `<song>_analysis.md`)
 - `--llm-out PATH`: override the compact LLM payload JSON output path (default: `<song>_llm.json`)
 - `--no-json-file`: skip writing both JSON files (Markdown only)
 
@@ -136,12 +138,21 @@ By default, ShowCrafter writes three files alongside each run:
 - `<song_name>_analysis.json` — full analysis result, schema-stable, suitable for programmatic post-processing
 - `<song_name>_llm.json` — **compact, token-efficient payload** for downstream LLM consumption (shape per `llm-harness.md`)
 
-All JSON outputs include a top-level `schema_version` field so downstream harnesses can gate compatibility. The current version is **`1.1.0`**.
+All JSON outputs include a top-level `schema_version` field so downstream harnesses can gate compatibility. The current version is **`1.2.0`**.
+
+Both JSON outputs are validated with Pydantic before they are written. Invalid output fails the CLI with a `Validation error:` message instead of silently emitting a drifting contract.
 
 #### Schema changelog
 
+- **1.2.0** — Added Pydantic validation for the full analysis JSON and compact LLM payload. The compact LLM payload no longer duplicates the full heuristic cue list as `firework_cues_baseline`; it now emits `firework_cue_summary`, up to 12 `firework_cue_samples`, and `cue_reference` pointing to `analysis_json.firework_cues`. The smoothed energy curve is clamped back to `0.0-1.0` after filtering so downstream scores stay in range.
 - **1.1.0** — Added `key_moments[].prominence`. Reclassified `key_moments[].type` from an absolute `energy > 0.8` threshold to relative prominence ranking (top quartile = `climax`). This fixes zero-climax output on heavily compressed mixes (modern EDM / pop).
 - **1.0.0** — Initial versioned contract.
+
+#### FIR-39 tuning notes
+
+- Energy timeline output now uses the smoothed/clamped RMS curve, and section `peak_energy` uses a robust 90th percentile rather than a single-frame max. This avoids every compressed section reporting a peak of `1.0`.
+- Climax selection now prefers spaced peaks in chorus/bridge/high-intensity sections and caps the count by song duration. This keeps early repeated loudness pulses from being mislabeled as climaxes.
+- Build-up anchors are filtered by spacing and energy rise so the compact payload stays useful instead of listing every nearby ramp.
 
 The Markdown report includes:
 
@@ -155,7 +166,7 @@ The Markdown report includes:
 
 The full analysis JSON mirrors the in-memory result object (sections, beats, onsets, energy timeline, music profile, show personality, firework cues, etc.). Each `key_moments` entry includes `time`, `energy`, `prominence`, and `type` (`climax` or `build`).
 
-The compact LLM payload contains only the highest-signal fields plus pre-computed derived features (`finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`) and placeholder `user_constraints` / `inventory` blocks for the next stage to populate. It deliberately omits raw beat/onset/energy arrays — fetch those from the full analysis JSON when micro-timing is needed.
+The compact LLM payload contains only the highest-signal fields plus pre-computed derived features (`finale_window`, `quietest_section_index`, `highest_energy_section_index`, `repeated_chorus_count`, `section_rank_by_energy`, `anchor_windows`) and placeholder `user_constraints` / `inventory` blocks for the next stage to populate. It deliberately omits raw beat/onset/energy arrays and the full heuristic cue list — fetch those from the full analysis JSON when micro-timing or every baseline cue is needed.
 
 When `--json` is enabled, the full analysis JSON is **also** echoed to stdout (in addition to the file) for programmatic piping. Use `--no-json-file` if you only want the Markdown.
 

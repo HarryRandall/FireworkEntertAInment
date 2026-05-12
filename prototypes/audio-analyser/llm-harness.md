@@ -63,8 +63,12 @@ Recommended always-on fields:
 
 Recommended optional fields:
 
-- `firework_cues`
-  Useful as a baseline suggestion or fallback plan.
+- `firework_cue_summary`
+  Useful for understanding the analyser's suggested density by effect type and section.
+- `firework_cue_samples`
+  Up to 12 high-signal heuristic cues. Treat these as examples or fallback anchors, not as authoritative choreography.
+- `cue_reference`
+  Points to `analysis_json.firework_cues` when the complete heuristic cue list is needed.
 - `energy_timeline`
   Useful if the model needs macro energy pacing.
 - `beat_times`
@@ -73,10 +77,10 @@ Recommended optional fields:
 
 ## Token Strategy
 
-The full beat and onset arrays can become expensive.
+The full beat, onset, energy, and heuristic cue arrays can become expensive.
 A good harness should use **progressive disclosure**:
 
-1. first pass: send section summaries, key moments, build-ups, and style/personality data
+1. first pass: send section summaries, key moments, build-ups, cue summary/samples, and style/personality data
 2. second pass: send beat windows only for sections that need dense cue placement
 3. final pass: convert approved section plans into exact timed events
 
@@ -169,6 +173,36 @@ An effective LLM payload can look like this:
   "anchors": {
     "key_moments": [],
     "buildups": []
+  },
+  "firework_cue_summary": {
+    "total_count": 42,
+    "counts_by_effect": {
+      "barrage": 4,
+      "accent": 22,
+      "crackle": 5,
+      "single": 11
+    },
+    "counts_by_section": []
+  },
+  "firework_cue_samples": [
+    {
+      "time": 92.1,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.91,
+      "section": "chorus",
+      "palette": "crimson/deep_blue",
+      "shape": "layered_chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "dense",
+      "style_tags": ["grandeur", "tension"],
+      "genre_hint": "edm"
+    }
+  ],
+  "cue_reference": {
+    "full_cues_source": "analysis_json",
+    "json_path": "firework_cues"
   },
   "user_constraints": {},
   "inventory": []
