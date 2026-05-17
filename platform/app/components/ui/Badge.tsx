@@ -56,8 +56,8 @@ export function ChoiceChip({
       className={cn(
         "focus-glow-action inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border px-4 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:outline-none",
         selected
-          ? "border-primary/60 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)]"
-          : "border-outline-variant/55 bg-surface-container-low text-on-surface-variant hover:border-primary/40 hover:bg-surface-container-high hover:text-on-surface",
+          ? "border-on-surface bg-surface-container-low text-on-surface hover:bg-surface-container-high hover:text-on-surface aria-pressed:border-on-surface aria-pressed:bg-surface-container-low aria-pressed:text-on-surface aria-pressed:hover:bg-surface-container-high aria-pressed:hover:text-on-surface"
+          : "border-outline-variant/55 bg-surface-container-low text-on-surface-variant hover:border-outline hover:bg-surface-container-high hover:text-on-surface",
         className,
       )}
       {...rest}
