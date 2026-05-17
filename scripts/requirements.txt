@@ -1,3 +1,0 @@
-# Notion page discovery script
-requests>=2.28
-pyyaml>=6.0

@@ -8,6 +8,7 @@ import {
   Gauge,
   Menu,
   PlusCircle,
+  Settings,
   Star,
   Shield,
   X,
@@ -17,6 +18,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
@@ -120,6 +122,7 @@ export function AppShell({
           </span>
         ) : null}
       </span>
+      <Settings className="ml-auto shrink-0 text-on-surface-variant" size={16} />
     </Link>
   );
 
@@ -172,6 +175,9 @@ export function AppShell({
                 className="w-[min(86vw,320px)] border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)] lg:hidden"
               >
                 <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Jump between dashboard, new show, library, and admin sections.
+                </SheetDescription>
                 <div className="mb-6 flex items-center justify-between">
                   <Link
                     href="/dashboard"

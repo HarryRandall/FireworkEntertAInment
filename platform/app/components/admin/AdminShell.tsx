@@ -20,6 +20,7 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
@@ -170,6 +171,9 @@ export function AdminShell({
               className="w-[min(86vw,320px)] border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)] lg:hidden"
             >
               <SheetTitle className="sr-only">Admin navigation</SheetTitle>
+              <SheetDescription className="sr-only">
+                Browse admin tools, then return to the main app when you are done.
+              </SheetDescription>
               <div className="mb-6 flex items-center justify-between gap-3">
                 {brand}
                 <SheetClose asChild>

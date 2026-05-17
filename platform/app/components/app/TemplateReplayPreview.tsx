@@ -22,16 +22,19 @@ const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   willow: "willow-gold",
 };
 
-function posterTimeFor(template: ShowTemplate): number {
-  if (template.previewCues.length === 0) return 0;
+// Card previews only simulate this window — keeps initial seek fast.
+const CARD_PREVIEW_SECONDS = 10;
+
+function posterTimeFor(slug: string, cues: ShowTemplateCue[]): number {
+  if (cues.length === 0) return 0;
   let hash = 0;
-  for (const char of template.slug) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  const cue = template.previewCues[hash % template.previewCues.length];
+  for (const char of slug) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  const cue = cues[hash % cues.length];
   return Math.max(0, cue.timeSeconds + 1.6);
 }
 
-function hoverStartTimeFor(template: ShowTemplate): number {
-  const firstCueTime = template.previewCues.reduce<number | null>(
+function hoverStartTimeFor(cues: ShowTemplateCue[]): number {
+  const firstCueTime = cues.reduce<number | null>(
     (earliest, cue) =>
       earliest == null ? cue.timeSeconds : Math.min(earliest, cue.timeSeconds),
     null,
@@ -65,34 +68,74 @@ export function TemplateReplayPreview({
   mode = "card",
   isCardHovered = false,
 }: TemplateReplayPreviewProps) {
-  const duration = Math.max(template.durationSeconds ?? 30, 30);
-  const posterTime = useMemo(() => posterTimeFor(template), [template]);
-  const hoverStartTime = useMemo(() => hoverStartTimeFor(template), [template]);
+  const isDetail = mode === "detail";
+
+  // In card mode, only simulate the first CARD_PREVIEW_SECONDS of the show.
+  // This keeps poster seeks and hover playback near-instant regardless of
+  // how long the full template is.
+  const visibleCues = useMemo(
+    () =>
+      isDetail
+        ? template.previewCues
+        : template.previewCues.filter((c) => c.timeSeconds <= CARD_PREVIEW_SECONDS),
+    [isDetail, template.previewCues],
+  );
+
+  const duration = isDetail
+    ? Math.max(template.durationSeconds ?? 30, 30)
+    : CARD_PREVIEW_SECONDS;
+
+  const posterTime = useMemo(() => posterTimeFor(template.slug, visibleCues), [template.slug, visibleCues]);
+  const hoverStartTime = useMemo(() => hoverStartTimeFor(visibleCues), [visibleCues]);
   const [elapsed, setElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
   const elapsedRef = useRef(elapsed);
+  const hoverStartTimeRef = useRef(hoverStartTime);
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
-  const isDetail = mode === "detail";
+  const detailAutoplayRef = useRef(false);
   const active = isDetail ? isPlaying : isCardHovered;
   const playbackRate = isDetail ? 1 : 1.15;
 
   const cues = useMemo(() => {
     const specBySlug = new Map(specifications.map((spec) => [spec.slug, spec]));
-    return template.previewCues
+    return visibleCues
       .map((cue, index) => toReplayCue(cue, index, specBySlug))
       .filter((cue): cue is ReplayCue => Boolean(cue))
       .sort((a, b) => a.timeSeconds - b.timeSeconds);
-  }, [specifications, template.previewCues]);
+  }, [specifications, visibleCues]);
 
   useEffect(() => {
     elapsedRef.current = elapsed;
   }, [elapsed]);
 
   useEffect(() => {
+    hoverStartTimeRef.current = hoverStartTime;
+  }, [hoverStartTime]);
+
+  useEffect(() => {
     if (isDetail) return;
     setElapsed(isCardHovered ? hoverStartTime : posterTime);
   }, [hoverStartTime, isCardHovered, isDetail, posterTime]);
+
+  useEffect(() => {
+    detailAutoplayRef.current = false;
+  }, [template.slug]);
+
+  useEffect(() => {
+    if (!isDetail || cues.length === 0 || detailAutoplayRef.current) return;
+    detailAutoplayRef.current = true;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setElapsed(hoverStartTimeRef.current);
+      setIsPlaying(false);
+      return;
+    }
+    setElapsed(0);
+    setIsPlaying(true);
+  }, [isDetail, cues.length]);
 
   useEffect(() => {
     if (!active || cues.length === 0) return;
@@ -153,6 +196,7 @@ export function TemplateReplayPreview({
           cues={cues}
           elapsed={elapsed}
           interactive={isDetail}
+          muted={isDetail ? !isPlaying : true}
         />
       </div>
       {!isDetail ? (
