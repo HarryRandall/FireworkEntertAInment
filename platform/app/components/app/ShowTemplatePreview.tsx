@@ -23,9 +23,10 @@ export function ShowTemplatePreview({
     <Link
       href={`/library/${template.slug}`}
       prefetch
-      className="group block h-full focus:outline-none"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="group block h-full touch-manipulation rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      aria-label={`Open template: ${template.title}`}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
       onFocus={() => setIsHovered(true)}
       onBlur={() => setIsHovered(false)}
     >

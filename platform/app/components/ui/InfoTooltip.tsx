@@ -17,6 +17,7 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
       <TooltipTrigger asChild>
         <button
           type="button"
+          suppressHydrationWarning
           aria-label="More information"
           className={cn(
             "inline-flex h-5 w-5 items-center justify-center rounded-full border border-outline-variant/70 bg-surface text-on-surface-variant transition-colors hover:border-outline hover:text-on-surface focus:outline-none focus-visible:border-outline focus-visible:text-on-surface",
@@ -31,7 +32,7 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
       <TooltipContent
         side="top"
         sideOffset={8}
-        className="w-56 border border-outline-variant/70 bg-surface px-3 py-2 text-xs font-medium normal-case tracking-normal text-on-surface-variant"
+        className="w-56 rounded-lg bg-surface-container-highest px-3 py-2 text-xs font-medium normal-case tracking-normal text-on-surface-variant shadow-[var(--shadow-card)]"
       >
         {text}
       </TooltipContent>

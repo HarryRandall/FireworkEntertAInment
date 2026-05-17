@@ -6,13 +6,39 @@ type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 type JsonObject = { [key: string]: JsonValue };
 
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Require real Upstash REST credentials — env.example placeholders must not
+ * instantiate a client or every get/set pays DNS/connect timeouts (~seconds).
+ */
+function resolveUpstashRestConfig(): { url: string; token: string } | null {
+  const rawUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "";
+  const rawToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "";
+  if (!rawUrl || !rawToken) return null;
 
-const redis =
-  redisUrl && redisToken
-    ? new Redis({ url: redisUrl, token: redisToken })
-    : null;
+  if (rawToken === "your-upstash-token") return null;
+
+  let hostname = "";
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "https:") return null;
+    hostname = parsed.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+
+  if (
+    hostname === "your-cache.upstash.io" ||
+    !hostname.endsWith(".upstash.io")
+  )
+    return null;
+
+  return { url: rawUrl, token: rawToken };
+}
+
+const redisConfig = resolveUpstashRestConfig();
+const redis = redisConfig
+  ? new Redis({ url: redisConfig.url, token: redisConfig.token })
+  : null;
 
 const CACHE_TTL_SECONDS = 60;
 const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
