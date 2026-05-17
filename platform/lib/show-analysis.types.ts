@@ -30,9 +30,57 @@ export type AnalyzerBuildup = {
   energy_rise: number;
 };
 
+export type AnalyzerFireworkCue = {
+  time: number;
+  effect: string;
+  reason?: string;
+  energy?: number;
+  section?: string;
+  palette?: string;
+  shape?: string;
+  height?: string;
+  spread?: string;
+  density?: string;
+  style_tags?: string[];
+  genre_hint?: string;
+};
+
+export type AnalyzerMusicProfile = {
+  genre_hint?: string;
+  key_signature?: {
+    root?: string;
+    mode?: string;
+    confidence?: number;
+  };
+  dominant_traits?: string[];
+  style_vector?: Record<string, number>;
+  descriptors?: Record<string, number>;
+};
+
+export type AnalyzerShowPersonality = {
+  preset?: string;
+  dominant_traits?: string[];
+  dimensions?: Record<string, number>;
+  palette_direction?: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
+  density_level?: "low" | "medium" | "high" | string;
+};
+
 export type AnalyzerFinaleWindow = {
   start: number;
   end: number;
+};
+
+export type AnalyzerAnchorWindow = {
+  type: "climax" | "buildup" | string;
+  anchor_time: number;
+  start: number;
+  end: number;
+  energy?: number;
+  energy_rise?: number;
 };
 
 export type AnalyzerDerivedFeatures = {
@@ -41,6 +89,7 @@ export type AnalyzerDerivedFeatures = {
   highest_energy_section_index?: number | null;
   repeated_chorus_count?: number;
   section_rank_by_energy?: number[];
+  anchor_windows?: AnalyzerAnchorWindow[];
 };
 
 export type AnalyzerResult = {
@@ -53,6 +102,11 @@ export type AnalyzerResult = {
   sections: AnalyzerSection[];
   key_moments: AnalyzerKeyMoment[];
   buildups: AnalyzerBuildup[];
+  beat_times?: number[];
+  onset_times?: number[];
+  music_profile?: AnalyzerMusicProfile;
+  show_personality?: AnalyzerShowPersonality;
+  firework_cues?: AnalyzerFireworkCue[];
 };
 
 export type ShowAnalysisSnapshot = {
