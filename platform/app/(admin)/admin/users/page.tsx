@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Search, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
+import { FilterBar } from "@/app/components/ui/FilterBar";
+import { TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -11,34 +12,35 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from "@/app/components/ui/DataTable";
-import { Card } from "@/app/components/ui/Card";
-import { Input, Select } from "@/app/components/ui/Input";
 import { listAdminUsers } from "@/lib/admin.server";
+import type { ProfileStatus, RoleKey } from "@/lib/admin.types";
+import { UserRowActions } from "./UserRowActions";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; role?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string }>;
 };
 
-const ROLE_OPTIONS = [
-  { value: "all", label: "All roles" },
-  { value: "admin", label: "Admin" },
-  { value: "supplier", label: "Supplier" },
-  { value: "user", label: "User" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "active", label: "Active" },
-  { value: "suspended", label: "Suspended" },
-];
-
 const rowLinkClasses = "block px-5 py-4";
+const PAGE_SIZE = 10;
+
+function roleTone(role: RoleKey) {
+  if (role === "admin") return "violet" as const;
+  if (role === "supplier") return "sky" as const;
+  return "neutral" as const;
+}
+
+function statusTone(status: ProfileStatus) {
+  if (status === "active") return "success" as const;
+  if (status === "suspended") return "danger" as const;
+  return "amber-soft" as const;
+}
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const query = (params.q ?? "").trim().toLowerCase();
-  const role = params.role ?? "all";
-  const status = params.status ?? "all";
+  const roleFilter = params.role;
+  const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
   const users = await listAdminUsers();
   const filtered = users.filter((user) => {
     const text = [user.fullName, user.email, user.phone, user.roles.join(" ")]
@@ -46,156 +48,111 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       .join(" ")
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
-    const matchesRole = role === "all" || user.roles.some((userRole) => userRole === role);
-    const matchesStatus = status === "all" || user.status === status;
+    const matchesRole = !roleFilter || user.roles.some((r) => r === roleFilter);
+    const matchesStatus = !statusFilter || user.status === statusFilter;
     return matchesQuery && matchesRole && matchesStatus;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <AppPageHeader
-        title="Search user records"
-        description="Search, filter, and scan platform users with tokenized status and role indicators."
+        title="Users"
+        description="Search, filter, and manage platform users."
       />
 
-      <div className="flex flex-col gap-8">
-        <Card
-          elevation="low"
-          radius="lg"
-          className="p-0"
-        >
-          <form className="grid grid-cols-1 gap-3 p-5 md:grid-cols-[minmax(0,1fr)_170px_170px_auto] md:items-end">
-            <Input
-              name="q"
-              defaultValue={params.q ?? ""}
-              placeholder="Search name, email, phone, or role"
-              aria-label="Search user records"
-              iconLeft={<Search size={17} />}
-              className="h-12"
-            />
-            <Select
-              name="role"
-              defaultValue={role}
-              aria-label="Filter by role"
-              className="h-12 min-w-0 px-4"
-            >
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Select
-              name="status"
-              defaultValue={status}
-              aria-label="Filter by status"
-              className="h-12 min-w-0 px-4"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Button className="h-12 px-6">
-              Search
-            </Button>
-          </form>
-        </Card>
+      <FilterBar
+        searchPlaceholder="Search name, email, phone…"
+        filters={[
+          {
+            key: "role",
+            label: "Role",
+            type: "select",
+            options: [
+              { value: "admin", label: "Admin" },
+              { value: "supplier", label: "Supplier" },
+              { value: "user", label: "User" },
+            ],
+          },
+          {
+            key: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { value: "active", label: "Active" },
+              { value: "suspended", label: "Suspended" },
+            ],
+          },
+        ]}
+      />
 
-        <DataTableShell
-          caption={(
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-on-surface">
-                {filtered.length} user{filtered.length === 1 ? "" : "s"}
-              </span>
-              <span className="hidden text-xs text-on-surface-variant sm:inline">
-                Click a row to open the user record
-              </span>
-            </div>
-          )}
-        >
-            <table className={tableClasses()}>
-              <thead className={tableHeadClasses()}>
-                <tr>
-                  <th className={tableHeaderCellClasses("px-5 py-3")}>
-                    User
-                  </th>
-                  <th className={tableHeaderCellClasses("px-5 py-3")}>
-                    Role
-                  </th>
-                  <th className={tableHeaderCellClasses("px-5 py-3")}>
-                    Status
-                  </th>
-                  <th className={tableHeaderCellClasses("px-5 py-3")}>
-                    Updated
-                  </th>
-                  <th className={tableHeaderCellClasses("px-5 py-3 text-right")}>
-                    Actions
-                  </th>
+      <DataTableShell>
+        <table className={tableClasses()}>
+          <thead className={tableHeadClasses()}>
+            <tr>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>User</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Role</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Status</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Updated</th>
+              <th className={tableHeaderCellClasses("px-5 py-3 text-right")}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((user) => {
+              const href = `/admin/users/${user.id}`;
+              const primaryRole = user.roles[0] ?? "user";
+              return (
+                <tr key={user.id} className={tableRowClasses("group")}>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={`${rowLinkClasses} flex items-center gap-3`}>
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)]">
+                        <UserRound size={16} />
+                      </span>
+                      <span>
+                        <span className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+                          {user.fullName || "Unnamed user"}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-[color:var(--color-content-subtle)]">
+                          {user.email || "No email"}
+                        </span>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      <Badge solid tone={roleTone(primaryRole)}>{primaryRole}</Badge>
+                    </Link>
+                  </td>
+                  <td className={tableCellClasses("p-0")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      <Badge solid tone={statusTone(user.status)}>{user.status}</Badge>
+                    </Link>
+                  </td>
+                  <td className={tableCellClasses("p-0 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums")}>
+                    <Link href={href} prefetch className={rowLinkClasses}>
+                      {new Date(user.updatedAt).toLocaleDateString()}
+                    </Link>
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4 text-right")}>
+                    <UserRowActions userId={user.id} email={user.email} status={user.status} />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((user) => {
-                  const href = `/admin/users/${user.id}`;
-                  const primaryRole = user.roles[0] ?? "user";
-                  return (
-                  <tr
-                    key={user.id}
-                    className={tableRowClasses("group cursor-pointer")}
-                  >
-                    <td className={tableCellClasses("p-0")}>
-                      <Link href={href} prefetch className={`${rowLinkClasses} flex items-center gap-3`}>
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/55 bg-surface-container-high text-on-surface-variant">
-                          <UserRound size={17} />
-                        </span>
-                        <span>
-                          <span className="block text-[15px] font-semibold text-on-surface">
-                            {user.fullName || "Unnamed user"}
-                          </span>
-                          <span className="mt-0.5 block text-sm text-on-surface-variant">
-                            {user.email || "No email"}
-                          </span>
-                        </span>
-                      </Link>
-                    </td>
-                    <td className={tableCellClasses("p-0")}>
-                      <Link href={href} prefetch className={rowLinkClasses}>
-                        <Badge
-                          tone={primaryRole === "admin" ? "primary" : "neutral"}
-                          className="px-3.5 py-1.5 text-[11px] tracking-[0.16em]"
-                        >
-                          {primaryRole}
-                        </Badge>
-                      </Link>
-                    </td>
-                    <td className={tableCellClasses("p-0")}>
-                      <Link href={href} prefetch className={rowLinkClasses}>
-                        <Badge
-                          tone={user.status === "active" ? "success" : "neutral"}
-                          className="px-3.5 py-1.5 text-[11px] tracking-[0.16em]"
-                        >
-                          {user.status}
-                        </Badge>
-                      </Link>
-                    </td>
-                    <td className={tableCellClasses("p-0 font-mono text-xs text-on-surface-variant tabular-nums")}>
-                      <Link href={href} prefetch className={rowLinkClasses}>
-                        {new Date(user.updatedAt).toLocaleDateString()}
-                      </Link>
-                    </td>
-                    <td className={tableCellClasses("px-5 py-4 text-right")}>
-                      <Button href={`/admin/users/${user.id}`} prefetch variant="secondary" size="sm">
-                        Open
-                      </Button>
-                    </td>
-                  </tr>
-                );
-                })}
-              </tbody>
-            </table>
-        </DataTableShell>
-      </div>
+              );
+            })}
+          </tbody>
+        </table>
+      </DataTableShell>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={params}
+      />
     </div>
   );
 }

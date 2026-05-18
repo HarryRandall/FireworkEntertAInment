@@ -13,6 +13,30 @@ type ShoppingListTableProps = {
   items: ShoppingListItem[];
 };
 
+type SortButtonProps = {
+  active: boolean;
+  col: SortKey;
+  label: string;
+  onToggle: (key: SortKey) => void;
+};
+
+function SortButton({ active, col, label, onToggle }: SortButtonProps) {
+  return (
+    <button
+      onClick={() => onToggle(col)}
+      className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+        active ? "text-primary" : "text-on-surface-variant hover:text-on-surface"
+      }`}
+    >
+      {label}
+      <ArrowUpDown
+        size={12}
+        className={active ? "opacity-100" : "opacity-40"}
+      />
+    </button>
+  );
+}
+
 export function ShoppingListTable({ items }: ShoppingListTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -36,24 +60,6 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
       setSortKey(key);
       setSortDir("asc");
     }
-  }
-
-  function SortButton({ col, label }: { col: SortKey; label: string }) {
-    const active = sortKey === col;
-    return (
-      <button
-        onClick={() => toggleSort(col)}
-        className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-          active ? "text-primary" : "text-on-surface-variant hover:text-on-surface"
-        }`}
-      >
-        {label}
-        <ArrowUpDown
-          size={12}
-          className={active ? "opacity-100" : "opacity-40"}
-        />
-      </button>
-    );
   }
 
   return (
@@ -87,9 +93,24 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
           {/* Sort controls */}
           <div className="flex items-center gap-4 print:hidden">
             <span className="text-xs text-on-surface-variant">Sort by</span>
-            <SortButton col="name" label="Name" />
-            <SortButton col="qty" label="Qty" />
-            <SortButton col="total" label="Total" />
+            <SortButton
+              active={sortKey === "name"}
+              col="name"
+              label="Name"
+              onToggle={toggleSort}
+            />
+            <SortButton
+              active={sortKey === "qty"}
+              col="qty"
+              label="Qty"
+              onToggle={toggleSort}
+            />
+            <SortButton
+              active={sortKey === "total"}
+              col="total"
+              label="Total"
+              onToggle={toggleSort}
+            />
           </div>
 
           <ul className="space-y-3">

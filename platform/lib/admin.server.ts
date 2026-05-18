@@ -422,6 +422,67 @@ export async function getAdminUserById(userId: string): Promise<AdminUser | null
   return users.find((user) => user.id === userId) ?? null;
 }
 
+export type UserActivity = {
+  shows30d: { date: string; count: number }[];
+  stats: {
+    accountAgeDays: number | null;
+    lastSignInAt: string | null;
+    totalShows: number;
+    shows30dCount: number;
+  };
+};
+
+export async function getUserActivity(userId: string): Promise<UserActivity | null> {
+  if (!(await requirePermission("admin.manage_users"))) return null;
+
+  const now = new Date();
+  const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sinceIso = since.toISOString();
+
+  const service = createServiceRoleSupabase();
+  const supabase = service ?? (await getServerClient());
+
+  const [{ data: showsAll }, { data: showsRecent }] = await Promise.all([
+    supabase.from("shows").select("id", { count: "exact", head: false }).eq("user_id", userId),
+    supabase.from("shows").select("created_at").eq("user_id", userId).gte("created_at", sinceIso),
+  ]);
+
+  const buckets = new Map<string, number>();
+  for (let i = 0; i < 30; i += 1) {
+    const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
+    buckets.set(d.toISOString().slice(0, 10), 0);
+  }
+  for (const row of (showsRecent ?? []) as { created_at: string }[]) {
+    const key = row.created_at.slice(0, 10);
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+  const shows30d = Array.from(buckets.entries()).map(([date, count]) => ({ date, count }));
+
+  let lastSignInAt: string | null = null;
+  let accountAgeDays: number | null = null;
+  if (service) {
+    const { data: authUser } = await service.auth.admin.getUserById(userId);
+    if (authUser?.user) {
+      lastSignInAt = authUser.user.last_sign_in_at ?? null;
+      const createdAt = authUser.user.created_at ?? null;
+      if (createdAt) {
+        const ms = now.getTime() - new Date(createdAt).getTime();
+        accountAgeDays = Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
+      }
+    }
+  }
+
+  return {
+    shows30d,
+    stats: {
+      accountAgeDays,
+      lastSignInAt,
+      totalShows: showsAll?.length ?? 0,
+      shows30dCount: (showsRecent ?? []).length,
+    },
+  };
+}
+
 export async function listSuppliers(): Promise<SupplierSummary[]> {
   if (
     !(await requirePermission("admin.manage_suppliers")) &&

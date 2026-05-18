@@ -12,6 +12,9 @@ type Tone =
   | "warning"
   | "info"
   | "accent"
+  | "violet"
+  | "sky"
+  | "amber-soft"
   // Legacy tones — kept so existing call sites compile during the page sweep.
   | "primary"
   | "live"
@@ -24,14 +27,41 @@ const dotClasses: Record<Tone, string> = {
   warning: "bg-[color:var(--color-status-warning)]",
   info: "bg-[color:var(--color-status-info)]",
   accent: "bg-[color:var(--color-accent)]",
+  violet: "bg-violet-500",
+  sky: "bg-sky-500",
+  "amber-soft": "bg-amber-500",
   primary: "bg-[color:var(--color-content-emphasis)]",
   live: "bg-[color:var(--color-status-success)]",
   wow: "bg-[color:var(--color-accent)]",
 };
 
+// Coloured pill chips (Dub-style). Only applied when `solid` is true.
+const solidClasses: Record<Tone, string> = {
+  neutral:
+    "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-default)]",
+  success:
+    "border-transparent bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]",
+  danger:
+    "border-transparent bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]",
+  warning:
+    "border-transparent bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)]",
+  info: "border-transparent bg-[color:var(--color-status-info-subtle)] text-[color:var(--color-status-info)]",
+  accent:
+    "border-transparent bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)]",
+  violet: "border-transparent bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+  sky: "border-transparent bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+  "amber-soft":
+    "border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+  primary:
+    "border-[color:var(--color-border-default)] bg-[color:var(--color-bg-emphasis)] text-[color:var(--color-content-emphasis)]",
+  live: "border-transparent bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]",
+  wow: "border-transparent bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)]",
+};
+
 type BadgeProps = {
   tone?: Tone;
   dot?: boolean;
+  solid?: boolean;
   className?: string;
   children: ReactNode;
 };
@@ -39,13 +69,17 @@ type BadgeProps = {
 export function Badge({
   tone = "neutral",
   dot = false,
+  solid = false,
   className,
   children,
 }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-content-default)]",
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+        solid
+          ? solidClasses[tone]
+          : "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)]",
         className,
       )}
     >
