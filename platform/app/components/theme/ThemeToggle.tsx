@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
@@ -16,11 +17,12 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       type="button"
       aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
       onClick={() => setTheme(isLight ? "dark" : "light")}
-      className={`group relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-outline-variant/30 bg-surface-container/60 text-on-surface-variant transition-colors hover:border-primary/50 hover:text-primary ${className}`}
+      className={cn(
+        "inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]",
+        className,
+      )}
     >
-      <span className="inline-flex transition-transform duration-200 group-hover:scale-110" aria-hidden>
-        {isLight ? <Sun size={16} strokeWidth={1.75} /> : <Moon size={16} strokeWidth={1.75} />}
-      </span>
+      {isLight ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }

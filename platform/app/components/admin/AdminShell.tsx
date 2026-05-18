@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
-  Boxes,
   Database,
   FileInput,
   LayoutDashboard,
   Menu,
   Settings,
+  Sparkles,
   Store,
   Users,
   X,
@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
-import { uiStyles } from "@/app/components/ui/styles";
 import type { CurrentProfile } from "@/lib/admin.types";
 
 const ADMIN_LINKS = [
@@ -36,6 +35,13 @@ const ADMIN_LINKS = [
   { href: "/admin/catalogue", label: "Catalogue", icon: Database },
   { href: "/admin/imports", label: "Imports", icon: FileInput },
 ];
+
+const navBase =
+  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
+const navActive =
+  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]";
+const navInactive =
+  "text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]";
 
 export function AdminShell({
   children,
@@ -57,28 +63,28 @@ export function AdminShell({
       .map((part) => part[0]?.toUpperCase())
       .join("") || "A";
 
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-  };
+  const closeDrawer = () => setDrawerOpen(false);
 
   useEffect(() => {
     closeDrawer();
   }, [pathname]);
 
   const brand = (
-    <div className="flex items-center gap-3">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-outline-variant/55 bg-surface text-primary">
-        <Boxes size={20} strokeWidth={1.8} />
+    <Link
+      href="/admin"
+      prefetch={false}
+      className="flex items-center gap-2 px-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
+    >
+      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
+        <Sparkles size={14} strokeWidth={2.2} />
       </span>
-      <div>
-        <p className="text-xl font-semibold tracking-tight text-on-surface">
-          ShowCrafter
-        </p>
-        <p className="text-xs font-semibold text-on-surface-variant">
+      <span className="flex flex-col leading-tight">
+        ShowCrafter
+        <span className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--color-content-subtle)]">
           Admin
-        </p>
-      </div>
-    </div>
+        </span>
+      </span>
+    </Link>
   );
 
   const renderNavLinks = (onClick?: () => void) =>
@@ -93,13 +99,9 @@ export function AdminShell({
           href={link.href}
           prefetch
           onClick={onClick}
-          className={cn(
-            uiStyles.action.navBase,
-            "font-bold",
-            active ? uiStyles.action.navActive : uiStyles.action.navInactive,
-          )}
+          className={cn(navBase, active ? navActive : navInactive)}
         >
-          <Icon size={17} strokeWidth={1.9} />
+          <Icon size={16} strokeWidth={2} />
           {link.label}
         </Link>
       );
@@ -110,108 +112,100 @@ export function AdminShell({
       href={profileHref}
       prefetch
       onClick={closeDrawer}
-      className="flex items-center gap-3 rounded-xl border border-outline-variant/45 bg-surface p-3 transition-colors hover:bg-surface-container-high"
+      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-variant/55 bg-surface-container-high text-sm font-bold text-on-surface-variant">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-xs font-medium text-[color:var(--color-content-default)]">
         {initials}
       </span>
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-bold text-on-surface">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
           {displayName}
         </span>
-        <span className="block truncate text-xs text-on-surface-variant">
+        <span className="block truncate text-xs text-[color:var(--color-content-subtle)]">
           {secondaryLine}
         </span>
       </span>
-      <Settings className="ml-auto text-on-surface-variant" size={16} />
+      <Settings className="shrink-0 text-[color:var(--color-content-subtle)]" size={14} />
+    </Link>
+  );
+
+  const backToApp = (onClick?: () => void) => (
+    <Link
+      href="/dashboard"
+      prefetch
+      onClick={onClick}
+      className="flex h-8 items-center gap-2 rounded-lg px-2 text-sm text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+    >
+      <ArrowLeft size={14} />
+      Back to app
     </Link>
   );
 
   return (
-    <div className="min-h-screen bg-background text-on-surface lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-screen bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)] lg:p-2">
       <ThemePreferenceSync themePreference={profile.themePreference} />
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] border-r border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-card)] lg:flex lg:flex-col">
-        <div className="mb-8">{brand}</div>
+      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-2">
+        <aside className="hidden lg:sticky lg:top-2 lg:flex lg:h-[calc(100vh-1rem)] lg:flex-col lg:gap-6 lg:p-3">
+          <div className="pt-2">{brand}</div>
+          <nav className="flex flex-col gap-0.5">{renderNavLinks()}</nav>
+          <div className="border-t border-[color:var(--color-border-subtle)] pt-3">
+            {backToApp()}
+          </div>
+          <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
+            {profileCard}
+          </div>
+        </aside>
 
-        <nav className="space-y-1">{renderNavLinks()}</nav>
-        <Link
-          href="/dashboard"
-          prefetch
-          className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
-        >
-          <ArrowLeft size={16} strokeWidth={1.9} />
-          Back to app
-        </Link>
-
-        <div className="mt-auto pt-4">{profileCard}</div>
-      </aside>
-
-      <header className="fixed top-0 z-40 w-full border-b border-outline-variant/50 bg-surface/92 backdrop-blur-xl lg:hidden">
-        <div className="flex h-16 items-center justify-between px-5">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-base font-semibold tracking-tight text-on-surface"
-          >
-            <Boxes size={18} strokeWidth={1.85} />
-            ShowCrafter
-          </Link>
-          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Open admin navigation"
-                className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/45 bg-surface text-on-surface transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high"
-              >
-                <Menu size={20} strokeWidth={1.85} />
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              showCloseButton={false}
-              className="w-[min(86vw,320px)] border-outline-variant/60 bg-surface-container-lowest p-4 shadow-[var(--shadow-modal)] lg:hidden"
-            >
-              <SheetTitle className="sr-only">Admin navigation</SheetTitle>
-              <SheetDescription className="sr-only">
-                Browse admin tools, then return to the main app when you are done.
-              </SheetDescription>
-              <div className="mb-6 flex items-center justify-between gap-3">
-                {brand}
-                <SheetClose asChild>
-                  <button
-                    type="button"
-                    aria-label="Close admin navigation"
-                    className="focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/45 text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
-                  >
-                    <X size={18} strokeWidth={1.85} />
-                  </button>
-                </SheetClose>
-              </div>
-
-              <ScrollArea className="min-h-0 flex-1">
-                <nav className="space-y-1 pr-3">
-                  {renderNavLinks(closeDrawer)}
-                </nav>
-                <Link
-                  href="/dashboard"
-                  prefetch
-                  onClick={closeDrawer}
-                  className="focus-glow-action mt-4 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold text-on-surface-variant transition-colors focus:outline-none focus-visible:outline-none hover:bg-surface-container-high hover:text-on-surface"
+        <div className="min-w-0 bg-[color:var(--color-bg-default)] lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
+          <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3 lg:hidden">
+            {brand}
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open admin navigation"
+                  className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)]"
                 >
-                  <ArrowLeft size={16} strokeWidth={1.9} />
-                  Back to app
-                </Link>
-              </ScrollArea>
+                  <Menu size={18} />
+                </button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                showCloseButton={false}
+                className="w-[min(86vw,300px)] border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 lg:hidden"
+              >
+                <SheetTitle className="sr-only">Admin navigation</SheetTitle>
+                <SheetDescription className="sr-only">
+                  Browse admin tools, then return to the main app.
+                </SheetDescription>
+                <div className="mb-6 flex items-center justify-between">
+                  {brand}
+                  <SheetClose asChild>
+                    <button
+                      type="button"
+                      aria-label="Close admin navigation"
+                      className="flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)]"
+                    >
+                      <X size={18} />
+                    </button>
+                  </SheetClose>
+                </div>
+                <ScrollArea className="min-h-0 flex-1">
+                  <nav className="flex flex-col gap-0.5">
+                    {renderNavLinks(closeDrawer)}
+                  </nav>
+                  <div className="mt-4 border-t border-[color:var(--color-border-subtle)] pt-3">
+                    {backToApp(closeDrawer)}
+                  </div>
+                </ScrollArea>
+                <div className="mt-auto pt-4">{profileCard}</div>
+              </SheetContent>
+            </Sheet>
+          </header>
 
-              <div className="mt-auto pt-4">{profileCard}</div>
-            </SheetContent>
-          </Sheet>
+          <main>{children}</main>
         </div>
-      </header>
-
-      <main className="min-w-0 bg-background px-6 pb-16 pt-0 sm:px-8 lg:col-start-2 lg:px-12">
-        <div className="mx-auto w-full max-w-[1500px]">{children}</div>
-      </main>
-
+      </div>
     </div>
   );
 }
