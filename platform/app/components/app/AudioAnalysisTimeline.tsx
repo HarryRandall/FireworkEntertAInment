@@ -235,6 +235,99 @@ export function AudioAnalysisTimeline({
               ) : null}
             </div>
 
+            {(keyMoments.length > 0 || buildups.length > 0 || sections.length > 0) ? (
+              <div className="rounded-lg border border-outline-variant/30 p-3">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                    Anchor map
+                  </span>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-on-surface-variant" />
+                      Peak
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-rose-300" />
+                      Climax
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-1.5 w-4 rounded-full bg-amber-300" />
+                      Build-up
+                    </span>
+                  </div>
+                </div>
+                <div className="mb-2 flex justify-between text-[10px] font-bold text-on-surface-variant/55 tabular-nums">
+                  {labels.map((label, index) => (
+                    <span key={`map-${label}-${index}`}>{label}</span>
+                  ))}
+                </div>
+                <div className="relative h-20 overflow-hidden rounded-lg border border-outline-variant/25 bg-surface">
+                  {sections.map((section: AnalyzerSection, index) => {
+                    const left = timePercent(section.start, duration);
+                    const width = clampPercent(
+                      timePercent(section.end, duration) - left,
+                    );
+                    return (
+                      <div
+                        key={`map-section-${section.start}-${section.end}-${index}`}
+                        className={cn(
+                          "absolute top-8 h-3 min-w-[2px]",
+                          sectionStyle(section.label),
+                        )}
+                        style={{
+                          left: `${left}%`,
+                          width: `${Math.max(width, 0.5)}%`,
+                        }}
+                      />
+                    );
+                  })}
+
+                  {buildups.map((buildup, index) => {
+                    const left = timePercent(buildup.start, duration);
+                    const width = clampPercent(
+                      timePercent(buildup.peak, duration) - left,
+                    );
+                    return (
+                      <span
+                        key={`map-buildup-${buildup.start}-${buildup.peak}-${index}`}
+                        className="absolute bottom-4 h-1.5 min-w-2 rounded-full bg-amber-300"
+                        style={{
+                          left: `${left}%`,
+                          width: `${Math.max(width, 0.8)}%`,
+                        }}
+                        title={`Build-up ${formatDuration(buildup.start)}-${formatDuration(buildup.peak)}`}
+                      />
+                    );
+                  })}
+
+                  {keyMoments.map((moment, index) => {
+                    const left = timePercent(moment.time, duration);
+                    const isClimax = moment.type === "climax";
+                    return (
+                      <span
+                        key={`map-moment-${moment.time}-${index}`}
+                        className={cn(
+                          "absolute top-2 h-14 border-l",
+                          isClimax
+                            ? "border-rose-300/75"
+                            : "border-on-surface-variant/45",
+                        )}
+                        style={{ left: `${left}%` }}
+                        title={`${moment.type} ${formatDuration(moment.time)} energy ${moment.energy.toFixed(3)}`}
+                      >
+                        <span
+                          className={cn(
+                            "absolute -left-1.5 top-0 h-3 w-3 rounded-full",
+                            isClimax ? "bg-rose-300" : "bg-on-surface-variant",
+                          )}
+                        />
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
             {keyMoments.length > 0 ? (
               <div className="overflow-hidden rounded-lg border border-outline-variant/30">
                 <div className="grid grid-cols-4 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
