@@ -1,8 +1,7 @@
-import { PlusCircle } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
 import { FilterBar } from "@/app/components/ui/FilterBar";
+import { TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -16,8 +15,10 @@ import { SupplierFormDialog } from "./SupplierFormDialog";
 import { SupplierRowActions } from "./SupplierRowActions";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 };
+
+const PAGE_SIZE = 10;
 
 function statusTone(status: string) {
   switch (status) {
@@ -36,6 +37,7 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const query = (params.q ?? "").trim().toLowerCase();
   const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
 
   const suppliers = await listSuppliers();
   const filtered = suppliers.filter((s) => {
@@ -44,22 +46,19 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
     const matchesStatus = !statusFilter || s.status === statusFilter;
     return matchesQuery && matchesStatus;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-8">
       <AppPageHeader
         title="Suppliers"
         description="Manage supplier records, contacts, and status."
-        actions={
-          <SupplierFormDialog
-            trigger={
-              <Button size="sm">
-                <PlusCircle size={14} />
-                New supplier
-              </Button>
-            }
-          />
-        }
+        actions={<SupplierFormDialog />}
       />
 
       <FilterBar
@@ -79,13 +78,7 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
         ]}
       />
 
-      <DataTableShell
-        caption={
-          <span className="text-sm font-medium text-[color:var(--color-content-default)]">
-            {filtered.length} supplier{filtered.length === 1 ? "" : "s"}
-          </span>
-        }
-      >
+      <DataTableShell>
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -98,7 +91,7 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((s) => {
+            {paginated.map((s) => {
               const supplierForActions = {
                 id: s.id,
                 name: s.name,
@@ -146,6 +139,12 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
           </tbody>
         </table>
       </DataTableShell>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={params}
+      />
     </div>
   );
 }

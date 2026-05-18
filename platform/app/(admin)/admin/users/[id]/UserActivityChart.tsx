@@ -1,11 +1,32 @@
 "use client";
 
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useRef, useState } from "react";
+import { Area, AreaChart, Tooltip, XAxis, YAxis } from "recharts";
 
 type Datum = { date: string; count: number };
 
 export function UserActivityChart({ data }: { data: Datum[] }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const total = data.reduce((sum, d) => sum + d.count, 0);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      const rect = container.getBoundingClientRect();
+      setSize({
+        width: Math.floor(rect.width),
+        height: Math.floor(rect.height),
+      });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   if (total === 0) {
     return (
@@ -16,9 +37,14 @@ export function UserActivityChart({ data }: { data: Datum[] }) {
   }
 
   return (
-    <div className="h-44 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+    <div ref={containerRef} className="h-44 min-w-0 w-full">
+      {size.width > 0 && size.height > 0 ? (
+        <AreaChart
+          data={data}
+          width={size.width}
+          height={size.height}
+          margin={{ top: 6, right: 6, bottom: 0, left: 0 }}
+        >
           <defs>
             <linearGradient id="userShowsFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-content-emphasis)" stopOpacity={0.18} />
@@ -58,7 +84,7 @@ export function UserActivityChart({ data }: { data: Datum[] }) {
             fill="url(#userShowsFill)"
           />
         </AreaChart>
-      </ResponsiveContainer>
+      ) : null}
     </div>
   );
 }

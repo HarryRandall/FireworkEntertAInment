@@ -88,8 +88,8 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : controlledOpen === undefined ? (
         <DialogTrigger asChild>
-          <Button>
-            <Plus size={16} /> New product
+          <Button size="sm">
+            <Plus size={14} /> New product
           </Button>
         </DialogTrigger>
       ) : null}

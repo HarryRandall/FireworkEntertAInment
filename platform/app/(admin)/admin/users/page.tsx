@@ -3,6 +3,7 @@ import { UserRound } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
+import { TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -16,10 +17,11 @@ import type { ProfileStatus, RoleKey } from "@/lib/admin.types";
 import { UserRowActions } from "./UserRowActions";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; role?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string }>;
 };
 
 const rowLinkClasses = "block px-5 py-4";
+const PAGE_SIZE = 10;
 
 function roleTone(role: RoleKey) {
   if (role === "admin") return "violet" as const;
@@ -38,6 +40,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   const query = (params.q ?? "").trim().toLowerCase();
   const roleFilter = params.role;
   const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
   const users = await listAdminUsers();
   const filtered = users.filter((user) => {
     const text = [user.fullName, user.email, user.phone, user.roles.join(" ")]
@@ -49,6 +52,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     const matchesStatus = !statusFilter || user.status === statusFilter;
     return matchesQuery && matchesRole && matchesStatus;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-8">
@@ -82,15 +91,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         ]}
       />
 
-      <DataTableShell
-        caption={
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-[color:var(--color-content-default)]">
-              {filtered.length} user{filtered.length === 1 ? "" : "s"}
-            </span>
-          </div>
-        }
-      >
+      <DataTableShell>
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -102,7 +103,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((user) => {
+            {paginated.map((user) => {
               const href = `/admin/users/${user.id}`;
               const primaryRole = user.roles[0] ?? "user";
               return (
@@ -146,6 +147,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </tbody>
         </table>
       </DataTableShell>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={params}
+      />
     </div>
   );
 }

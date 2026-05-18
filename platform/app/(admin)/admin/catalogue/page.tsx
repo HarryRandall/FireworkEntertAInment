@@ -1,8 +1,7 @@
-import { PlusCircle } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
 import { FilterBar } from "@/app/components/ui/FilterBar";
+import { TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -23,8 +22,11 @@ type PageProps = {
     type?: string;
     duration_min?: string;
     duration_max?: string;
+    page?: string;
   }>;
 };
+
+const PAGE_SIZE = 10;
 
 export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -33,6 +35,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const typeFilter = params.type;
   const minDuration = params.duration_min ? Number(params.duration_min) : null;
   const maxDuration = params.duration_max ? Number(params.duration_max) : null;
+  const requestedPage = Number(params.page ?? "1");
 
   const products = await listCatalogueProducts();
 
@@ -61,22 +64,19 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
     const matchesMax = maxDuration == null || (d != null && d <= maxDuration);
     return matchesQuery && matchesManufacturer && matchesType && matchesMin && matchesMax;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-8">
       <AppPageHeader
         title="Catalogue"
         description="Browse and edit catalogue products."
-        actions={
-          <ProductFormDialog
-            trigger={
-              <Button size="sm">
-                <PlusCircle size={14} />
-                New product
-              </Button>
-            }
-          />
-        }
+        actions={<ProductFormDialog />}
       />
 
       <FilterBar
@@ -103,13 +103,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
         ]}
       />
 
-      <DataTableShell
-        caption={
-          <span className="text-sm font-medium text-[color:var(--color-content-default)]">
-            {filtered.length} product{filtered.length === 1 ? "" : "s"}
-          </span>
-        }
-      >
+      <DataTableShell>
         <table className={tableClasses("min-w-[960px]")}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -122,7 +116,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((product) => (
+            {paginated.map((product) => (
               <tr key={product.id} className={tableRowClasses()}>
                 <td className={tableCellClasses("px-5 py-4 font-mono text-xs tabular-nums text-[color:var(--color-content-subtle)]")}>
                   {product.partNumber}
@@ -163,6 +157,12 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
           </tbody>
         </table>
       </DataTableShell>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={params}
+      />
     </div>
   );
 }
