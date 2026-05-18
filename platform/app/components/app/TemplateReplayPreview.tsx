@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
-import { FireworkReplayCanvas } from "@/app/components/app/FireworkReplayCanvas";
 import type { ShowTemplate, ShowTemplateCue } from "@/lib/admin.types";
 import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
 import { formatDuration } from "@/lib/show-domain";
@@ -24,6 +24,23 @@ const FIREWORK_SLUG_ALIASES: Record<string, string> = {
 
 // Card previews only simulate this window — keeps initial seek fast.
 const CARD_PREVIEW_SECONDS = 10;
+
+function ReplayCanvasSkeleton() {
+  return (
+    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+  );
+}
+
+const LazyFireworkReplayCanvas = dynamic(
+  () =>
+    import("@/app/components/app/FireworkReplayCanvas").then(
+      (mod) => mod.FireworkReplayCanvas,
+    ),
+  {
+    ssr: false,
+    loading: () => <ReplayCanvasSkeleton />,
+  },
+);
 
 function posterTimeFor(slug: string, cues: ShowTemplateCue[]): number {
   if (cues.length === 0) return 0;
@@ -89,6 +106,8 @@ export function TemplateReplayPreview({
   const hoverStartTime = useMemo(() => hoverStartTimeFor(visibleCues), [visibleCues]);
   const [elapsed, setElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isVisible, setIsVisible] = useState(isDetail);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const elapsedRef = useRef(elapsed);
   const hoverStartTimeRef = useRef(hoverStartTime);
   const startedAt = useRef<number | null>(null);
@@ -108,6 +127,26 @@ export function TemplateReplayPreview({
   useEffect(() => {
     elapsedRef.current = elapsed;
   }, [elapsed]);
+
+  useEffect(() => {
+    if (isDetail || isVisible) return;
+    const element = containerRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "160px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [isDetail, isVisible]);
 
   useEffect(() => {
     hoverStartTimeRef.current = hoverStartTime;
@@ -178,8 +217,11 @@ export function TemplateReplayPreview({
     setElapsed(0);
   }
 
+  const shouldMountCanvas = isDetail || isVisible || isCardHovered;
+
   return (
     <div
+      ref={containerRef}
       className={
         isDetail
           ? "overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-low"
@@ -191,13 +233,17 @@ export function TemplateReplayPreview({
           : { backgroundImage: "var(--preview-card-bg)" }
       }
     >
-      <div className={isDetail ? "h-[min(58vh,560px)] min-h-[380px]" : "h-full"}>
-        <FireworkReplayCanvas
-          cues={cues}
-          elapsed={elapsed}
-          interactive={isDetail}
-          muted={isDetail ? !isPlaying : true}
-        />
+      <div className={isDetail ? "relative h-[min(58vh,560px)] min-h-[380px]" : "relative h-full"}>
+        {shouldMountCanvas ? (
+          <LazyFireworkReplayCanvas
+            cues={cues}
+            elapsed={elapsed}
+            interactive={isDetail}
+            muted={isDetail ? !isPlaying : true}
+          />
+        ) : (
+          <ReplayCanvasSkeleton />
+        )}
       </div>
       {!isDetail ? (
         <div

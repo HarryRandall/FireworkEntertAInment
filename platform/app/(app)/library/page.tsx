@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { LibraryCardsSkeleton } from "@/app/components/app/RouteSkeletons";
 import { ShowTemplatePreview } from "@/app/components/app/ShowTemplatePreview";
 import { LibraryControls } from "@/app/(app)/library/LibraryControls";
 import { listShowTemplates } from "@/lib/admin.server";
@@ -45,11 +47,6 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   const sort = SORTS.some((item) => item.key === requestedSort)
     ? (requestedSort as SortKey)
     : "popular";
-  const [templates, specifications] = await Promise.all([
-    listShowTemplates(),
-    listFireworkSpecifications(),
-  ]);
-  const sortedTemplates = sortTemplates(templates, sort);
 
   return (
     <div className="space-y-8">
@@ -63,6 +60,22 @@ export default async function LibraryPage({ searchParams }: PageProps) {
         sorts={SORTS}
       />
 
+      <Suspense fallback={<LibraryCardsSkeleton />}>
+        <LibraryTemplateGrid sort={sort} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function LibraryTemplateGrid({ sort }: { sort: SortKey }) {
+  const [templates, specifications] = await Promise.all([
+    listShowTemplates(),
+    listFireworkSpecifications(),
+  ]);
+  const sortedTemplates = sortTemplates(templates, sort);
+
+  return (
+    <>
       {sortedTemplates.length > 0 ? (
         <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
           {sortedTemplates.map((template) => (
@@ -78,6 +91,6 @@ export default async function LibraryPage({ searchParams }: PageProps) {
           No shows are available right now. Adjust the sort or check back later.
         </p>
       )}
-    </div>
+    </>
   );
 }

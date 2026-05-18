@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/lib/admin.server";
+import {
+  invalidateAdminUsersCache,
+  requirePermission,
+} from "@/lib/admin.server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -33,6 +36,9 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
   if (!admin) return { ok: false, error: "Not permitted." };
   const parsed = SetStatusSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input." };
+  if (parsed.data.userId === admin.id && parsed.data.status === "suspended") {
+    return { ok: false, error: "You cannot suspend your own account." };
+  }
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
@@ -41,6 +47,7 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
     .eq("id", parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
+  await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
@@ -53,6 +60,14 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   if (!parsed.success) return { ok: false, error: "Invalid input." };
 
   const supabase = createClient(await cookies());
+  const { data: role, error: roleError } = await supabase
+    .from("roles")
+    .select("id")
+    .eq("id", parsed.data.roleId)
+    .maybeSingle();
+  if (roleError) return { ok: false, error: roleError.message };
+  if (!role) return { ok: false, error: "Choose a valid role." };
+
   const { error: deleteError } = await supabase
     .from("user_roles")
     .delete()
@@ -68,6 +83,7 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
     });
   if (insertError) return { ok: false, error: insertError.message };
 
+  await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath("/admin/users");
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
@@ -78,11 +94,15 @@ export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>):
   if (!admin) return { ok: false, error: "Not permitted." };
   const parsed = DeleteUserSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid input." };
+  if (parsed.data.userId === admin.id) {
+    return { ok: false, error: "You cannot delete your own account." };
+  }
 
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("profiles").delete().eq("id", parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
+  await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -113,6 +133,7 @@ export async function setUserPermissionOverrideAction(
     if (error) return { ok: false, error: error.message };
   }
 
+  await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
 }

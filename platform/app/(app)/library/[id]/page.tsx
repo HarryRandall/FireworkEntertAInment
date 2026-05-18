@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Heart, Sparkles, Wallet } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { cloneShowTemplateAction } from "@/app/actions/show-templates";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { ReplayPanelSkeleton } from "@/app/components/app/RouteSkeletons";
 import { TemplateLikeButton } from "@/app/components/app/TemplateLikeButton";
 import { TemplateReplayPreview } from "@/app/components/app/TemplateReplayPreview";
 import { Badge } from "@/app/components/ui/Badge";
@@ -10,15 +12,13 @@ import { Card } from "@/app/components/ui/Card";
 import { formatBudget, formatDuration } from "@/lib/show-domain";
 import { getShowTemplateBySlug } from "@/lib/admin.server";
 import { listFireworkSpecifications } from "@/lib/shows.server";
+import type { ShowTemplate } from "@/lib/admin.types";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function LibraryDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [template, specifications] = await Promise.all([
-    getShowTemplateBySlug(id),
-    listFireworkSpecifications(),
-  ]);
+  const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
 
   return (
@@ -57,11 +57,9 @@ export default async function LibraryDetailPage({ params }: PageProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <TemplateReplayPreview
-          template={template}
-          specifications={specifications}
-          mode="detail"
-        />
+        <Suspense fallback={<ReplayPanelSkeleton />}>
+          <LibraryDetailReplay template={template} />
+        </Suspense>
 
         <aside className="space-y-4">
           <Card elevation="high" radius="md" className="p-6">
@@ -107,5 +105,16 @@ export default async function LibraryDetailPage({ params }: PageProps) {
         </aside>
       </div>
     </div>
+  );
+}
+
+async function LibraryDetailReplay({ template }: { template: ShowTemplate }) {
+  const specifications = await listFireworkSpecifications();
+  return (
+    <TemplateReplayPreview
+      template={template}
+      specifications={specifications}
+      mode="detail"
+    />
   );
 }

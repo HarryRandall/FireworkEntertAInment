@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { FilterSkeleton, TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import { TablePagination } from "@/app/components/ui/TablePagination";
@@ -25,11 +27,35 @@ type PageProps = {
     page?: string;
   }>;
 };
+type CatalogueSearchParams = Awaited<PageProps["searchParams"]>;
 
 const PAGE_SIZE = 10;
 
 export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
+  return (
+    <div className="space-y-8">
+      <AppPageHeader
+        title="Catalogue"
+        description="Browse and edit catalogue products."
+        actions={<ProductFormDialog />}
+      />
+
+      <Suspense
+        fallback={
+          <>
+            <FilterSkeleton />
+            <TableSkeleton rows={10} columns={6} />
+          </>
+        }
+      >
+        <CatalogueData params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
   const query = (params.q ?? "").trim().toLowerCase();
   const manufacturerFilter = params.manufacturer;
   const typeFilter = params.type;
@@ -72,13 +98,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
-    <div className="space-y-8">
-      <AppPageHeader
-        title="Catalogue"
-        description="Browse and edit catalogue products."
-        actions={<ProductFormDialog />}
-      />
-
+    <>
       <FilterBar
         searchPlaceholder="Search part #, name, manufacturer…"
         filters={[
@@ -163,6 +183,6 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
         totalPages={totalPages}
         searchParams={params}
       />
-    </div>
+    </>
   );
 }

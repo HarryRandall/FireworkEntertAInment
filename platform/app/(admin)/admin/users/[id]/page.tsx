@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowLeft, UserRound } from "lucide-react";
+import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { Card } from "@/app/components/ui/Card";
 import { StatTile } from "@/app/components/ui/StatTile";
@@ -10,7 +12,7 @@ import {
   listPermissions,
   listRoles,
 } from "@/lib/admin.server";
-import type { ProfileStatus, RoleKey } from "@/lib/admin.types";
+import type { AdminUser, ProfileStatus, RoleKey } from "@/lib/admin.types";
 import { UserActivityChart } from "./UserActivityChart";
 import { UserHeaderActions } from "./UserHeaderActions";
 import { UserRoleSelect } from "./UserRoleSelect";
@@ -47,20 +49,10 @@ function formatDate(value: string | null) {
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [user, roles, permissions, activity] = await Promise.all([
-    getAdminUserById(id),
-    listRoles(),
-    listPermissions(),
-    getUserActivity(id),
-  ]);
+  const user = await getAdminUserById(id);
   if (!user) notFound();
 
   const primaryRole = user.roles[0] ?? "user";
-  const primaryRoleRow = roles.find((r) => r.key === primaryRole) ?? roles[0];
-
-  const overrideByPermissionId = new Map(
-    user.permissionOverrides.map((o) => [o.permissionId, o.enabled ? "grant" : "deny"] as const),
-  );
 
   return (
     <div className="space-y-8">
@@ -98,6 +90,29 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         <UserHeaderActions userId={user.id} />
       </header>
 
+      <Suspense fallback={<ListSkeleton rows={3} />}>
+        <AdminUserActivity userId={user.id} />
+      </Suspense>
+
+      <Suspense fallback={<ListSkeleton rows={1} />}>
+        <AdminUserRoleCard user={user} />
+      </Suspense>
+
+      <Suspense fallback={<ListSkeleton rows={6} />}>
+        <AdminUserPermissionsCard user={user} />
+      </Suspense>
+
+      <p className="text-xs text-[color:var(--color-content-muted)]">
+        Last updated {formatDate(user.updatedAt)}
+      </p>
+    </div>
+  );
+}
+
+async function AdminUserActivity({ userId }: { userId: string }) {
+  const activity = await getUserActivity(userId);
+  return (
+    <>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile
           label="Account age"
@@ -125,53 +140,64 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         </div>
         <UserActivityChart data={activity?.shows30d ?? []} />
       </Card>
+    </>
+  );
+}
 
-      <Card elevation="low" radius="lg" className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">Role</h2>
-            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-              Changes save automatically.
-            </p>
-          </div>
-          {primaryRoleRow ? (
-            <UserRoleSelect userId={user.id} roles={roles} initialRoleId={primaryRoleRow.id} />
-          ) : null}
+async function AdminUserRoleCard({ user }: { user: AdminUser }) {
+  const roles = await listRoles();
+  const primaryRole = user.roles[0] ?? "user";
+  const primaryRoleRow = roles.find((r) => r.key === primaryRole) ?? roles[0];
+  return (
+    <Card elevation="low" radius="lg" className="p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">Role</h2>
+          <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+            Changes save automatically.
+          </p>
         </div>
-      </Card>
+        {primaryRoleRow ? (
+          <UserRoleSelect userId={user.id} roles={roles} initialRoleId={primaryRoleRow.id} />
+        ) : null}
+      </div>
+    </Card>
+  );
+}
 
-      <Card elevation="low" radius="lg" className="p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-              Permission overrides
-            </h2>
-            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-              Override role permissions per user. Defaults to inherit.
-            </p>
-          </div>
+async function AdminUserPermissionsCard({ user }: { user: AdminUser }) {
+  const permissions = await listPermissions();
+  const overrideByPermissionId = new Map(
+    user.permissionOverrides.map((o) => [o.permissionId, o.enabled ? "grant" : "deny"] as const),
+  );
+  return (
+    <Card elevation="low" radius="lg" className="p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            Permission overrides
+          </h2>
+          <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+            Override role permissions per user. Defaults to inherit.
+          </p>
         </div>
-        <div className="divide-y divide-[color:var(--color-border-subtle)]">
-          {permissions.map((permission) => {
-            const mode = (overrideByPermissionId.get(permission.id) ?? "clear") as
-              | "grant"
-              | "deny"
-              | "clear";
-            return (
-              <PermissionOverrideRow
-                key={permission.id}
-                userId={user.id}
-                permission={permission}
-                initialMode={mode}
-              />
-            );
-          })}
-        </div>
-      </Card>
-
-      <p className="text-xs text-[color:var(--color-content-muted)]">
-        Last updated {formatDate(user.updatedAt)}
-      </p>
-    </div>
+      </div>
+      <div className="divide-y divide-[color:var(--color-border-subtle)]">
+        {permissions.map((permission) => {
+          const mode = (overrideByPermissionId.get(permission.id) ?? "clear") as
+            | "grant"
+            | "deny"
+            | "clear";
+          return (
+            <PermissionOverrideRow
+              key={permission.id}
+              userId={user.id}
+              permission={permission}
+              initialMode={mode}
+            />
+          );
+        })}
+      </div>
+    </Card>
   );
 }

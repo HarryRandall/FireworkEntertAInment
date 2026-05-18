@@ -47,12 +47,12 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/shows/new"
-            prefetch={false}
+            prefetch
             className="rounded-full border border-outline/20 px-6 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-surface-container-highest"
           >
             Refine
           </Link>
-          <Button href={`/api/shows/${show.slug}/export`} size="sm">Export</Button>
+          <Button href={`/api/shows/${show.slug}/export`} prefetch={false} size="sm">Export</Button>
         </div>
       </div>
 

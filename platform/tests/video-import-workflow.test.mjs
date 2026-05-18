@@ -101,7 +101,9 @@ test("finalize action validates uploaded object lives under caller's admin folde
   assert.match(actions, /finalizeVideoImportJobAction/);
   assert.match(actions, /FinalizeVideoImportSchema/);
   // Path-prefix check stops a caller from finalizing someone else's upload.
-  assert.match(actions, /storagePath\.startsWith\(`\$\{admin\.id\}\/`\)/);
+  assert.match(actions, /verifyCallerOwnedUploadObject/);
+  assert.match(actions, /storagePath\.startsWith\(`\$\{adminId\}\/`\)/);
+  assert.match(actions, /\.storage\s*\.from\(IMPORT_VIDEO_BUCKET\)\s*\.list/);
   // Storage errors are surfaced verbatim rather than always blamed on
   // the migration not being applied.
   assert.match(actions, /mediaError\?\.message/);
