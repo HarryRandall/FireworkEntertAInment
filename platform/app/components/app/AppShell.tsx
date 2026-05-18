@@ -59,9 +59,9 @@ type AppShellProps = {
 };
 
 const navBase =
-  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-[background-color] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
+  "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']";
 const navActive =
-  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]";
+  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]";
 const navInactive =
   "text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]";
 

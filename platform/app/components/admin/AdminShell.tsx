@@ -37,9 +37,9 @@ const ADMIN_LINKS = [
 ];
 
 const navBase =
-  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
+  "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']";
 const navActive =
-  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]";
+  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]";
 const navInactive =
   "text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]";
 
@@ -112,7 +112,7 @@ export function AdminShell({
       href={profileHref}
       prefetch
       onClick={closeDrawer}
-      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
+      className="flex items-center gap-2.5 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-xs font-medium text-[color:var(--color-content-default)]">
         {initials}
@@ -151,7 +151,7 @@ export function AdminShell({
           <div className="border-t border-[color:var(--color-border-subtle)] pt-3">
             {backToApp()}
           </div>
-          <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
+          <div className="mt-auto pt-3">
             {profileCard}
           </div>
         </aside>
@@ -203,7 +203,9 @@ export function AdminShell({
             </Sheet>
           </header>
 
-          <main className="flex min-h-0 flex-1 flex-col px-6 py-6 sm:px-8 lg:px-10">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+            {children}
+          </main>
         </div>
       </div>
     </div>
