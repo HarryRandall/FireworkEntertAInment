@@ -75,10 +75,6 @@ function statusText(analysis: ShowAnalysisSnapshot | null): string {
   return "Running";
 }
 
-function peakTypeCode(moment: AnalyzerKeyMoment): number {
-  return moment.type === "climax" ? 2 : 1;
-}
-
 export function AudioAnalysisTimeline({
   showId,
   hasAudio,
@@ -95,20 +91,6 @@ export function AudioAnalysisTimeline({
   const keyMoments = result?.key_moments ?? EMPTY_KEY_MOMENTS;
   const buildups = result?.buildups ?? EMPTY_BUILDUPS;
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
-  const topAnchors = useMemo(
-    () =>
-      keyMoments
-        .map((moment) => ({
-          time: moment.time,
-          energy: moment.energy,
-          prominence: moment.prominence,
-          typeCode: peakTypeCode(moment),
-        }))
-        .sort((a, b) => b.prominence - a.prominence)
-        .slice(0, 3)
-        .sort((a, b) => a.time - b.time),
-    [keyMoments],
-  );
 
   const runAnalysis = () => {
     setError(null);
@@ -235,27 +217,6 @@ export function AudioAnalysisTimeline({
           ))}
         </div>
 
-        {topAnchors.length > 0 ? (
-          <div className="mt-4 overflow-hidden rounded-lg border border-outline-variant/35">
-            <div className="grid grid-cols-3 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-              <span>Time</span>
-              <span>Strength</span>
-              <span>Peak type</span>
-            </div>
-            <div className="divide-y divide-outline-variant/25">
-              {topAnchors.map((anchor, index) => (
-                <div
-                  key={`${anchor.time}-${index}`}
-                  className="grid grid-cols-3 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
-                >
-                  <span>{formatDuration(anchor.time)}</span>
-                  <span>{Math.round(anchor.energy * 100)}%</span>
-                  <span>{anchor.typeCode === 2 ? "Climax" : "Peak"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </div>
     </Card>
   );
