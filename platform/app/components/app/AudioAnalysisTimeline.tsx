@@ -75,6 +75,10 @@ function statusText(analysis: ShowAnalysisSnapshot | null): string {
   return "Running";
 }
 
+function peakTypeCode(moment: AnalyzerKeyMoment): number {
+  return moment.type === "climax" ? 2 : 1;
+}
+
 export function AudioAnalysisTimeline({
   showId,
   hasAudio,
@@ -230,6 +234,54 @@ export function AudioAnalysisTimeline({
                 </span>
               ) : null}
             </div>
+
+            {keyMoments.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-outline-variant/30">
+                <div className="grid grid-cols-4 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  <span>Time</span>
+                  <span>Energy</span>
+                  <span>Prominence</span>
+                  <span>Type code</span>
+                </div>
+                <div className="divide-y divide-outline-variant/20">
+                  {keyMoments.map((moment, index) => (
+                    <div
+                      key={`${moment.time}-${index}`}
+                      className="grid grid-cols-4 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
+                    >
+                      <span>{formatDuration(moment.time)}</span>
+                      <span>{moment.energy.toFixed(3)}</span>
+                      <span>{moment.prominence.toFixed(3)}</span>
+                      <span>{peakTypeCode(moment)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {buildups.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-outline-variant/30">
+                <div className="grid grid-cols-4 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  <span>Start</span>
+                  <span>Peak</span>
+                  <span>Duration</span>
+                  <span>Rise</span>
+                </div>
+                <div className="divide-y divide-outline-variant/20">
+                  {buildups.map((buildup, index) => (
+                    <div
+                      key={`${buildup.start}-${buildup.peak}-${index}`}
+                      className="grid grid-cols-4 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
+                    >
+                      <span>{formatDuration(buildup.start)}</span>
+                      <span>{formatDuration(buildup.peak)}</span>
+                      <span>{buildup.duration.toFixed(1)}s</span>
+                      <span>{buildup.energy_rise.toFixed(3)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
