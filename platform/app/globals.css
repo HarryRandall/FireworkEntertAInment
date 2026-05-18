@@ -137,11 +137,11 @@
 /* ---------- Dark theme overrides ---------- */
 [data-theme="dark"],
 .dark {
-  /* Surfaces */
-  --color-bg-default: #0a0a0a;    /* near-black */
-  --color-bg-muted: #111111;
-  --color-bg-subtle: #171717;     /* neutral-900 */
-  --color-bg-emphasis: #1f1f1f;
+  /* Surfaces — inner content panel slightly lighter than the page so it lifts */
+  --color-bg-default: #111111;    /* inner content card */
+  --color-bg-muted: #0a0a0a;      /* page background (darker, recessed) */
+  --color-bg-subtle: #1a1a1a;     /* hover / subtle fill on the inner card */
+  --color-bg-emphasis: #262626;
   --color-bg-inverted: #fafafa;
 
   /* Borders */
