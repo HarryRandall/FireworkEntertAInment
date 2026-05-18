@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CheckCircle2,
   CloudUpload,
+  FileCode2,
   MapPin,
   Music4,
   SlidersHorizontal,
@@ -40,6 +41,7 @@ const MOOD_TAGS = [
   "Grand finale focused",
 ];
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+const MAX_ANALYSIS_JSON_BYTES = 5 * 1024 * 1024;
 const STEPS = [
   {
     key: "constraints",
@@ -77,6 +79,7 @@ export default function NewShowPage() {
     new Set(["High energy"]),
   );
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [analysisJsonFile, setAnalysisJsonFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<"location" | "title" | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -123,6 +126,16 @@ export default function NewShowPage() {
       data.set("audio", audioFile);
     } else {
       data.delete("audio");
+    }
+
+    if (analysisJsonFile) {
+      if (analysisJsonFile.size > MAX_ANALYSIS_JSON_BYTES) {
+        setError("Analysis JSON must be 5MB or smaller.");
+        return;
+      }
+      data.set("analysisJson", analysisJsonFile);
+    } else {
+      data.delete("analysisJson");
     }
 
     startTransition(async () => {
@@ -331,22 +344,43 @@ export default function NewShowPage() {
                 if (error) setError(null);
               }}
             />
-            <label className="group relative flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/55 bg-surface-container-low/35 p-6 text-center transition-colors hover:cursor-pointer hover:border-primary/45 hover:bg-surface-container-low">
-              <CloudUpload size={38} strokeWidth={1.5} className="mb-4 text-primary" />
-              <span className="max-w-full truncate font-bold text-on-surface">
-                {audioFile ? audioFile.name : "Upload audio"}
-              </span>
-              <span className="mt-1 text-xs text-on-surface-variant">
-                MP3, WAV, AAC, or M4A up to 50MB
-              </span>
-              <input
-                className="absolute inset-0 cursor-pointer opacity-0"
-                type="file"
-                name="audio"
-                accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
+            <div className="grid gap-3 lg:grid-cols-2">
+              <label className="group relative flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/55 bg-surface-container-low/35 p-6 text-center transition-colors hover:cursor-pointer hover:border-primary/45 hover:bg-surface-container-low">
+                <CloudUpload size={38} strokeWidth={1.5} className="mb-4 text-primary" />
+                <span className="max-w-full truncate font-bold text-on-surface">
+                  {audioFile ? audioFile.name : "Upload audio"}
+                </span>
+                <span className="mt-1 text-xs text-on-surface-variant">
+                  MP3, WAV, AAC, or M4A up to 50MB
+                </span>
+                <input
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  type="file"
+                  name="audio"
+                  accept="audio/*"
+                  onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+
+              <label className="group relative flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/55 bg-surface-container-low/35 p-6 text-center transition-colors hover:cursor-pointer hover:border-tertiary/55 hover:bg-surface-container-low">
+                <FileCode2 size={38} strokeWidth={1.5} className="mb-4 text-tertiary" />
+                <span className="max-w-full truncate font-bold text-on-surface">
+                  {analysisJsonFile
+                    ? analysisJsonFile.name
+                    : "Generate from analysis JSON"}
+                </span>
+                <span className="mt-1 text-xs text-on-surface-variant">
+                  Beat, onset, section, energy, and key moment data
+                </span>
+                <input
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  type="file"
+                  name="analysisJson"
+                  accept="application/json,.json"
+                  onChange={(e) => setAnalysisJsonFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
             <Input
               name="vibe"
               placeholder="Track vibe or style"
