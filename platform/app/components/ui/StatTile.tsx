@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type StatTileProps = {
@@ -12,22 +11,24 @@ type StatTileProps = {
 
 export function StatTile({ label, labelAddon, value, unit, className }: StatTileProps) {
   return (
-    <Card
+    <div
       className={cn(
-        "gap-0 rounded-xl border border-outline-variant/55 bg-surface-container-low px-4 py-3 shadow-[var(--shadow-card)]",
+        "rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3",
         className,
       )}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-[color:var(--color-content-subtle)]">
         <span>{label}</span>
         {labelAddon}
       </div>
-      <div className="text-xl font-bold tabular-nums text-on-surface">
+      <div className="text-2xl font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
         {value}
         {unit ? (
-          <span className="ml-0.5 text-sm font-medium text-primary">{unit}</span>
+          <span className="ml-1 text-sm font-normal text-[color:var(--color-content-subtle)]">
+            {unit}
+          </span>
         ) : null}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -1,47 +1,40 @@
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import type { ComponentProps, ComponentPropsWithoutRef, ReactNode } from "react";
-import { Button as ShadcnButton } from "@/components/ui/button";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "ghost" | "destructive";
-type Size = "sm" | "md" | "lg" | "icon";
+const button = cva(
+  "inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        primary:
+          "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] hover:bg-[color:var(--color-bg-inverted)] hover:ring-4 hover:ring-[color:var(--color-bg-subtle)]",
+        secondary:
+          "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] hover:bg-[color:var(--color-bg-muted)]",
+        ghost:
+          "border-transparent bg-transparent text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]",
+        accent:
+          "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] hover:ring-4 hover:ring-[color:var(--color-accent-subtle)]",
+        destructive:
+          "border-[color:var(--color-status-danger)] bg-[color:var(--color-status-danger)] text-white hover:ring-4 hover:ring-[color:var(--color-status-danger-subtle)]",
+      },
+      size: {
+        sm: "h-8 px-3",
+        md: "h-10 px-4",
+        lg: "h-12 px-6",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+      size: "md",
+    },
+  },
+);
 
-type ShadcnVariant = NonNullable<
-  ComponentProps<typeof ShadcnButton>["variant"]
->;
-type ShadcnSize = NonNullable<
-  ComponentProps<typeof ShadcnButton>["size"]
->;
-
-const variantMap: Record<Variant, ShadcnVariant> = {
-  primary: "default",
-  secondary: "outline",
-  ghost: "ghost",
-  destructive: "destructive",
-};
-
-const sizeClasses: Record<Size, string> = {
-  sm: "h-9 rounded-full px-5 text-sm font-bold",
-  md: "h-11 rounded-full px-8 text-sm font-bold",
-  lg: "h-14 rounded-full px-10 text-base font-bold",
-  icon: "size-11 rounded-full p-0",
-};
-
-const variantClasses: Record<Variant, string> = {
-  primary:
-    "border-primary/70 bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] hover:brightness-105 hover:bg-primary-container",
-  secondary:
-    "border-outline-variant/55 bg-surface text-on-surface hover:border-primary/45 hover:bg-surface-container-high hover:text-on-surface",
-  ghost:
-    "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
-  destructive:
-    "border-error/70 bg-error text-on-error hover:bg-error hover:brightness-105",
-};
-
-type CommonProps = {
-  variant?: Variant;
-  size?: Size;
+type CommonProps = VariantProps<typeof button> & {
   children: ReactNode;
   className?: string;
   loading?: boolean;
@@ -67,13 +60,7 @@ export function Button(props: ButtonProps) {
     children,
     loading = false,
   } = props;
-  const classes = cn(
-    sizeClasses[size],
-    "cursor-pointer gap-2 transition-all duration-200 ease-out active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:active:translate-y-0",
-    variantClasses[variant],
-    className,
-  );
-  const shadcnSize: ShadcnSize = size === "icon" ? "icon-lg" : "default";
+  const classes = cn(button({ variant, size }), className);
 
   if ("href" in props && props.href !== undefined) {
     const {
@@ -91,17 +78,15 @@ export function Button(props: ButtonProps) {
     void _ch;
     void _l;
     return (
-      <ShadcnButton
-        asChild
-        variant={variantMap[variant]}
-        size={shadcnSize}
+      <Link
+        href={href}
+        aria-disabled={loading || undefined}
         className={classes}
+        {...rest}
       >
-        <Link href={href} aria-disabled={loading || undefined} {...rest}>
-          {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-          {children}
-        </Link>
-      </ShadcnButton>
+        {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+        {children}
+      </Link>
     );
   }
 
@@ -112,6 +97,7 @@ export function Button(props: ButtonProps) {
     children: _ch,
     loading: _l,
     disabled,
+    type = "button",
     ...rest
   } = props as ButtonAsButton;
   void _v;
@@ -120,15 +106,14 @@ export function Button(props: ButtonProps) {
   void _ch;
   void _l;
   return (
-    <ShadcnButton
-      variant={variantMap[variant]}
-      size={shadcnSize}
+    <button
+      type={type}
       className={classes}
       disabled={disabled || loading}
       {...rest}
     >
       {loading ? <Loader2 size={16} className="animate-spin" /> : null}
       {children}
-    </ShadcnButton>
+    </button>
   );
 }
