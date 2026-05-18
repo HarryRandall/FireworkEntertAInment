@@ -42,6 +42,10 @@ type ProcessResult = {
   stderr: string;
 };
 type ShowAnalysisInsert = Database["public"]["Tables"]["show_analyses"]["Insert"];
+type ShowAnalysisInsertPayload = ShowAnalysisInsert & {
+  personality_preset?: string;
+  source_audio_path?: string;
+};
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -51,6 +55,14 @@ function supabaseErrorMessage(error: unknown): string | null {
   if (!error || typeof error !== "object") return null;
   const message = (error as Record<string, unknown>).message;
   return typeof message === "string" ? message : null;
+}
+
+function shouldRetryWithLegacyAnalysisColumns(error: unknown): boolean {
+  const message = supabaseErrorMessage(error)?.toLowerCase() ?? "";
+  return (
+    message.includes("source_audio_path") ||
+    message.includes("personality_preset")
+  );
 }
 
 function truncate(value: string, length = 1800): string {
@@ -240,7 +252,7 @@ export async function POST(request: Request) {
 
   const analysisId = randomUUID();
   const startedAt = Date.now();
-  const analysisInsert: ShowAnalysisInsert = {
+  const analysisInsert: ShowAnalysisInsertPayload = {
     id: analysisId,
     show_id: show.id,
     user_id: user.id,
@@ -254,14 +266,38 @@ export async function POST(request: Request) {
     .from("show_analyses")
     .insert(analysisInsert);
   if (insertError) {
-    console.error("[api/analyze] analysis row insert failed:", insertError);
-    const message =
-      process.env.NODE_ENV === "development"
-        ? `Could not create analysis record: ${
-            supabaseErrorMessage(insertError) ?? "unknown Supabase error"
-          }`
-        : "Could not create analysis record.";
-    return jsonError(message, 500);
+    if (shouldRetryWithLegacyAnalysisColumns(insertError)) {
+      const legacyInsert: ShowAnalysisInsertPayload = {
+        ...analysisInsert,
+        personality_preset: parsed.data.personality,
+        source_audio_path: show.audio_path,
+      };
+      const { error: legacyInsertError } = await supabase
+        .from("show_analyses")
+        .insert(legacyInsert);
+      if (legacyInsertError) {
+        console.error("[api/analyze] legacy analysis row insert failed:", {
+          original: insertError,
+          retry: legacyInsertError,
+        });
+        const message =
+          process.env.NODE_ENV === "development"
+            ? `Could not create analysis record: ${
+                supabaseErrorMessage(legacyInsertError) ?? "unknown Supabase error"
+              }`
+            : "Could not create analysis record.";
+        return jsonError(message, 500);
+      }
+    } else {
+      console.error("[api/analyze] analysis row insert failed:", insertError);
+      const message =
+        process.env.NODE_ENV === "development"
+          ? `Could not create analysis record: ${
+              supabaseErrorMessage(insertError) ?? "unknown Supabase error"
+            }`
+          : "Could not create analysis record.";
+      return jsonError(message, 500);
+    }
   }
 
   let tempDir: string | null = null;

@@ -15,10 +15,16 @@ test("audio analysis route stores song analysis artifacts only", () => {
   assert.match(route, /markdown/);
   assert.match(route, /stripFireworkRecommendationsFromAnalysis/);
   assert.match(route, /stripFireworkRecommendationsFromPayload/);
-  assert.doesNotMatch(route, /personality_preset/);
-  assert.doesNotMatch(route, /source_audio_path/);
   assert.doesNotMatch(route, /compact_payload/);
   assert.doesNotMatch(route, /analysis_storage_path/);
+});
+
+test("audio analysis insert has a legacy retry for old live schemas", () => {
+  const route = readFileSync(join(root, "app/api/analyze/route.ts"), "utf8");
+
+  assert.match(route, /shouldRetryWithLegacyAnalysisColumns/);
+  assert.match(route, /personality_preset: parsed\.data\.personality/);
+  assert.match(route, /source_audio_path: show\.audio_path/);
 });
 
 test("show analyses migration matches the current database contract", () => {
@@ -36,6 +42,18 @@ test("show analyses migration matches the current database contract", () => {
   assert.doesNotMatch(migration, /source_audio_path/);
   assert.doesNotMatch(migration, /compact_payload/);
   assert.doesNotMatch(migration, /analysis_storage_path/);
+});
+
+test("show analyses repair migration relaxes legacy not-null columns", () => {
+  const migration = readFileSync(
+    join(root, "supabase/migrations/20260518071112_repair_show_analyses_legacy_columns.sql"),
+    "utf8",
+  );
+
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS audio_path text/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS llm_payload jsonb/);
+  assert.match(migration, /source_audio_path DROP NOT NULL/);
+  assert.match(migration, /personality_preset DROP NOT NULL/);
 });
 
 test("show timeline exposes stored analysis instead of cue generation", () => {
