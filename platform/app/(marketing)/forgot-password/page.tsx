@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { Mail, CheckCircle } from "lucide-react";
+import { Mail, CheckCircle, Sparkles } from "lucide-react";
 import { Input } from "@/app/components/ui/Input";
 import { Button } from "@/app/components/ui/Button";
 import { createClient } from "@/utils/supabase/client";
-import { FireworkArt } from "../components/FireworkArt";
 import { FormError } from "../components/FormError";
 
 export default function ForgotPasswordPage() {
@@ -38,96 +37,85 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="relative flex min-h-[calc(100vh-4rem)] mx-auto w-full max-w-screen-xl">
-      <div className="relative flex flex-col items-center justify-center px-8 py-16 w-full lg:w-[50%] lg:max-w-[600px] lg:flex-none">
-        <div className="w-full max-w-md space-y-8">
-          {sent ? (
-            <div className="space-y-6 text-center">
-              <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-success/30 bg-success/10 text-success">
-                <CheckCircle size={28} strokeWidth={1.5} />
-              </div>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight text-on-surface">
-                  Check your inbox
-                </h1>
-                <p className="text-base text-on-surface-variant">
-                  If an account exists for{" "}
-                  <span className="font-medium text-on-surface">{email}</span>,
-                  we&apos;ve sent a password reset link. The link expires in 1
-                  hour.
-                </p>
-              </div>
-              <p className="text-sm text-on-surface-variant">
-                <Link
-                  href="/login"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Back to sign in
-                </Link>
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-on-surface">
-                  Reset your password
-                </h1>
-                <p className="text-base text-on-surface-variant">
-                  Enter the email associated with your ShowCrafter account and
-                  we&apos;ll send you a reset link.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-on-surface"
-                  >
-                    Email address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="you@example.com"
-                    iconLeft={<Mail size={16} strokeWidth={1.75} />}
-                    autoComplete="email"
-                    autoFocus
-                    className="h-12 text-base"
-                  />
-                </div>
-                {error && <FormError message={error} />}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? "Sending…" : "Send reset link"}
-                </Button>
-              </form>
-
-              <p className="text-sm text-on-surface-variant">
-                Remembered it?{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Sign in
-                </Link>
-              </p>
-            </>
-          )}
+    <AuthShell>
+      {sent ? (
+        <div className="space-y-5 text-center">
+          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
+            <CheckCircle size={22} strokeWidth={1.8} />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+              Check your inbox
+            </h1>
+            <p className="text-sm text-[color:var(--color-content-subtle)]">
+              If an account exists for{" "}
+              <span className="font-medium text-[color:var(--color-content-emphasis)]">{email}</span>,
+              we&apos;ve sent a password reset link. The link expires in 1 hour.
+            </p>
+          </div>
+          <p className="text-sm text-[color:var(--color-content-subtle)]">
+            <Link href="/login" className="font-medium text-[color:var(--color-content-emphasis)] hover:underline">
+              Back to sign in
+            </Link>
+          </p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+              Reset your password
+            </h1>
+            <p className="text-sm text-[color:var(--color-content-subtle)]">
+              Enter the email associated with your ShowCrafter account and we&apos;ll send you a reset link.
+            </p>
+          </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+                Email address
+              </label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                placeholder="you@example.com"
+                iconLeft={<Mail size={16} />}
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+            {error && <FormError message={error} />}
+            <Button type="submit" className="w-full" loading={loading}>
+              {loading ? "Sending…" : "Send reset link"}
+            </Button>
+          </form>
+          <p className="text-sm text-[color:var(--color-content-subtle)]">
+            Remembered it?{" "}
+            <Link href="/login" className="font-medium text-[color:var(--color-content-emphasis)] hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </>
+      )}
+    </AuthShell>
+  );
+}
 
-      <div className="relative hidden lg:flex flex-1">
-        <FireworkArt />
+function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg-muted)] px-4 py-12">
+      <Link
+        href="/"
+        className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
+          <Sparkles size={14} strokeWidth={2.2} />
+        </span>
+        ShowCrafter
+      </Link>
+      <div className="w-full max-w-sm space-y-6 rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-8 shadow-[var(--shadow-card)]">
+        {children}
       </div>
     </div>
   );
