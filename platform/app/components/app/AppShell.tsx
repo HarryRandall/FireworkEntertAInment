@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import {
+  ArrowLeft,
   Gauge,
   Menu,
   PlusCircle,
@@ -11,6 +12,10 @@ import {
   Sparkles,
   Star,
   Shield,
+  ShieldCheck,
+  Bell,
+  CreditCard,
+  UserRound,
   X,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +45,13 @@ const APP_LINKS: AppNavLink[] = [
   { href: "/admin", label: "Admin", icon: Shield, permission: "admin.view" },
 ];
 
+const SETTINGS_LINKS = [
+  { href: "/settings/profile", label: "Personal details", icon: UserRound },
+  { href: "/settings/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings/billing", label: "Billing", icon: CreditCard },
+  { href: "/settings/security", label: "Security", icon: ShieldCheck },
+] as const;
+
 type AppShellProps = {
   children: ReactNode;
   containerWidth?: "default" | "wide" | "fluid";
@@ -58,6 +70,7 @@ export function AppShell({
   profile,
 }: AppShellProps) {
   const pathname = usePathname();
+  const inSettings = pathname?.startsWith("/settings");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
@@ -87,6 +100,24 @@ export function AppShell({
       const active =
         pathname === link.href ||
         (link.href !== "/" && pathname?.startsWith(link.href));
+      return (
+        <Link
+          key={link.href}
+          href={link.href}
+          prefetch
+          onClick={onClick}
+          className={cn(navBase, active ? navActive : navInactive)}
+        >
+          <Icon size={16} strokeWidth={2} />
+          {link.label}
+        </Link>
+      );
+    });
+
+  const renderSettingsLinks = (onClick?: () => void) =>
+    SETTINGS_LINKS.map((link) => {
+      const Icon = link.icon;
+      const active = pathname === link.href || pathname?.startsWith(link.href + "/");
       return (
         <Link
           key={link.href}
@@ -138,6 +169,31 @@ export function AppShell({
     </Link>
   );
 
+  const settingsBackLink = (onClick?: () => void) => (
+    <Link
+      href="/dashboard"
+      prefetch
+      onClick={onClick}
+      className="flex h-8 items-center gap-2 rounded-lg px-2 text-sm text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+    >
+      <ArrowLeft size={14} />
+      Back to app
+    </Link>
+  );
+
+  const navContent = inSettings ? renderSettingsLinks() : renderNavLinks();
+  const mobileNavContent = inSettings
+    ? renderSettingsLinks(closeDrawer)
+    : renderNavLinks(closeDrawer);
+  const mobileDescription = inSettings
+    ? "Jump between personal details, notifications, billing, and security."
+    : "Jump between dashboard, new show, library, and admin sections.";
+  const profileFooter = inSettings ? null : (
+    <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
+      {profileCard}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)] lg:p-2">
       <ThemePreferenceSync themePreference={profile?.themePreference} />
@@ -145,10 +201,13 @@ export function AppShell({
         {/* Sidebar */}
         <aside className="hidden lg:sticky lg:top-2 lg:flex lg:h-[calc(100vh-1rem)] lg:flex-col lg:gap-6 lg:p-3">
           <div className="pt-2">{brand}</div>
-          <nav className="flex flex-col gap-0.5">{renderNavLinks()}</nav>
-          <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
-            {profileCard}
-          </div>
+          <nav className="flex flex-col gap-0.5">{navContent}</nav>
+          {inSettings ? (
+            <div className="border-t border-[color:var(--color-border-subtle)] pt-3">
+              {settingsBackLink()}
+            </div>
+          ) : null}
+          {profileFooter}
         </aside>
 
         {/* Content panel */}
@@ -173,7 +232,7 @@ export function AppShell({
               >
                 <SheetTitle className="sr-only">Navigation menu</SheetTitle>
                 <SheetDescription className="sr-only">
-                  Jump between dashboard, new show, library, and admin sections.
+                  {mobileDescription}
                 </SheetDescription>
                 <div className="mb-6 flex items-center justify-between">
                   {brand}
@@ -190,11 +249,16 @@ export function AppShell({
 
                 <ScrollArea className="min-h-0 flex-1">
                   <nav className="flex flex-col gap-0.5">
-                    {renderNavLinks(closeDrawer)}
+                    {mobileNavContent}
                   </nav>
+                  {inSettings ? (
+                    <div className="mt-4 border-t border-[color:var(--color-border-subtle)] pt-3">
+                      {settingsBackLink(closeDrawer)}
+                    </div>
+                  ) : null}
                 </ScrollArea>
 
-                <div className="mt-auto pt-4">{profileCard}</div>
+                {!inSettings ? <div className="mt-auto pt-4">{profileCard}</div> : null}
               </SheetContent>
             </Sheet>
           </header>
