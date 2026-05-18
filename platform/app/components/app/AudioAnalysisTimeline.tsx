@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -86,6 +86,7 @@ export function AudioAnalysisTimeline({
   initialAnalysis,
 }: AudioAnalysisTimelineProps) {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const [error, setError] = useState<string | null>(initialAnalysis?.errorMessage ?? null);
   const [isPending, startTransition] = useTransition();
@@ -96,6 +97,10 @@ export function AudioAnalysisTimeline({
   const buildups = result?.buildups ?? EMPTY_BUILDUPS;
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const runAnalysis = () => {
     setError(null);
@@ -114,6 +119,31 @@ export function AudioAnalysisTimeline({
       router.refresh();
     });
   };
+
+  if (!isMounted) {
+    return (
+      <Card
+        elevation="low"
+        radius="md"
+        className="relative overflow-hidden p-6 lg:col-span-8"
+      >
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 space-y-2">
+            <span className="inline-flex h-8 items-center gap-2 rounded-full border border-outline-variant/45 bg-surface px-3 text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">
+              Loading
+            </span>
+            <h2 className="text-xl font-extrabold text-on-surface">
+              Audio analysis
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
+              Preparing analyser view.
+            </p>
+          </div>
+        </div>
+        <div className="h-36 rounded-xl border border-outline-variant/45 bg-surface/70" />
+      </Card>
+    );
+  }
 
   return (
     <Card
