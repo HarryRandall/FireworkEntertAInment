@@ -1,4 +1,13 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleDashed,
+  CircleDot,
+  Info,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,33 +44,53 @@ const dotClasses: Record<Tone, string> = {
   wow: "bg-[color:var(--color-accent)]",
 };
 
-// Coloured pill chips (Dub-style). Only applied when `solid` is true.
+// Coloured pill chips — Dub StatusBadge pattern: tinted subtle background,
+// saturated tone-coloured text, leading tone icon. Uses explicit color-mix so
+// the background opacity renders reliably on every theme. Applied when `solid` is true.
 const solidClasses: Record<Tone, string> = {
   neutral:
-    "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-default)]",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-content-muted)_18%,transparent)] text-[color:var(--color-content-default)]",
   success:
-    "border-transparent bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]",
   danger:
-    "border-transparent bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-danger)_18%,transparent)] text-[color:var(--color-status-danger)]",
   warning:
-    "border-transparent bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)]",
-  info: "border-transparent bg-[color:var(--color-status-info-subtle)] text-[color:var(--color-status-info)]",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-warning)_18%,transparent)] text-[color:var(--color-status-warning)]",
+  info: "border-transparent bg-[color-mix(in_srgb,var(--color-status-info)_18%,transparent)] text-[color:var(--color-status-info)]",
   accent:
-    "border-transparent bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)]",
-  violet: "border-transparent bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
-  sky: "border-transparent bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]",
+  violet:
+    "border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300",
+  sky: "border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300",
   "amber-soft":
-    "border-transparent bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    "border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300",
   primary:
-    "border-[color:var(--color-border-default)] bg-[color:var(--color-bg-emphasis)] text-[color:var(--color-content-emphasis)]",
-  live: "border-transparent bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]",
-  wow: "border-transparent bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)]",
+    "border-transparent bg-[color-mix(in_srgb,var(--color-content-emphasis)_18%,transparent)] text-[color:var(--color-content-emphasis)]",
+  live: "border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]",
+  wow: "border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]",
+};
+
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+const toneIcons: Record<Tone, IconComponent> = {
+  neutral: CircleDashed,
+  success: CircleCheck,
+  danger: CircleAlert,
+  warning: TriangleAlert,
+  info: Info,
+  accent: Sparkles,
+  violet: CircleDot,
+  sky: Info,
+  "amber-soft": TriangleAlert,
+  primary: CircleDot,
+  live: CircleCheck,
+  wow: Sparkles,
 };
 
 type BadgeProps = {
   tone?: Tone;
   dot?: boolean;
   solid?: boolean;
+  icon?: IconComponent | null;
   className?: string;
   children: ReactNode;
 };
@@ -70,9 +99,11 @@ export function Badge({
   tone = "neutral",
   dot = false,
   solid = false,
+  icon,
   className,
   children,
 }: BadgeProps) {
+  const Icon = icon === null ? null : icon ?? (solid ? toneIcons[tone] : null);
   return (
     <span
       className={cn(
@@ -88,6 +119,8 @@ export function Badge({
           aria-hidden
           className={cn("inline-block h-1.5 w-1.5 rounded-full", dotClasses[tone])}
         />
+      ) : Icon ? (
+        <Icon aria-hidden className="h-3.5 w-3.5" strokeWidth={2.25} />
       ) : null}
       {children}
     </span>

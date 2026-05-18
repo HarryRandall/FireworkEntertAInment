@@ -51,6 +51,7 @@ export function RowActionsMenu({ items, label = "Actions" }: RowActionsMenuProps
                 if (!item.disabled) item.onSelect();
               }}
               disabled={item.disabled}
+              variant={item.destructive ? "destructive" : "default"}
               className={cn(
                 "gap-2",
                 item.destructive &&
