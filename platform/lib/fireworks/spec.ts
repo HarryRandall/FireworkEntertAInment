@@ -144,6 +144,7 @@ export function safeParseFireworkSpec(input: unknown): FireworkSpec {
   return DEFAULT_FIREWORK_SPEC;
 }
 
+
 export function hexToRgb(hex: FireworkColor | string): [number, number, number] {
   const value = hex.replace("#", "");
   const int = Number.parseInt(value, 16);
