@@ -20,8 +20,11 @@ import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { Input, Textarea } from "@/app/components/ui/Input";
 import { SelectField } from "@/app/components/ui/SelectField";
+import { toast } from "@/app/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { createShowAction } from "./actions";
+
+const BUDGET_PRESETS = [250, 500, 1000, 2500, 5000] as const;
 
 const TIME_OF_DAY = ["Daytime", "Dusk", "Night"] as const;
 const DURATION_OPTIONS = [
@@ -127,7 +130,10 @@ export default function NewShowPage() {
 
     startTransition(async () => {
       const result = await createShowAction(data);
-      if (result && !result.ok) setError(result.error);
+      if (result && !result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+      }
     });
   };
   const activeStep = STEPS[stepIndex];
@@ -141,6 +147,7 @@ export default function NewShowPage() {
       if (!location) {
         setFieldError("location");
         setError("Event location is required before you continue.");
+        toast.error("Event location is required before you continue.");
         return false;
       }
     }
@@ -150,6 +157,7 @@ export default function NewShowPage() {
       if (!title) {
         setFieldError("title");
         setError("Show title is required before you continue.");
+        toast.error("Show title is required before you continue.");
         return false;
       }
     }
@@ -186,82 +194,12 @@ export default function NewShowPage() {
         description={activeStep.description}
       />
 
-      <div className="grid gap-3 md:grid-cols-[auto_minmax(72px,1fr)_auto_minmax(72px,1fr)_auto] md:items-center">
-        {STEPS.map((step, index) => {
-          const isActive = index === stepIndex;
-          const isComplete = index < stepIndex;
-
-          return (
-            <div key={step.key} className="contents">
-              <button
-                type="button"
-                onClick={() => goToStep(index)}
-                aria-label={`Step ${index + 1}: ${step.label}`}
-                className={cn(
-                  "focus-glow-action flex items-center rounded-full px-0 py-0 text-left transition-colors focus:outline-none focus-visible:outline-none",
-                  !isActive && !isComplete && "hover:text-on-surface",
-                )}
-                style={{ gridColumn: index * 2 + 1 }}
-              >
-                <span
-                  className={cn(
-                    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black transition-colors",
-                    isActive &&
-                      "border-primary bg-primary text-on-primary shadow-[0_10px_22px_-16px_color-mix(in_srgb,var(--color-primary)_70%,transparent)]",
-                    isComplete && "border-primary/30 bg-primary/10 text-primary",
-                    !isActive &&
-                      !isComplete &&
-                      "border-outline-variant/50 bg-surface text-on-surface-variant",
-                  )}
-                >
-                  {isComplete ? (
-                    <CheckCircle2 size={14} strokeWidth={2.4} />
-                  ) : (
-                    `0${index + 1}`
-                  )}
-                </span>
-              </button>
-              {index < STEPS.length - 1 ? (
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "hidden h-px w-full rounded-full md:block",
-                    index < stepIndex
-                      ? "bg-primary/40"
-                      : "bg-outline-variant/35",
-                  )}
-                  style={{ gridColumn: index * 2 + 2 }}
-                />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+      <StepIndicator steps={STEPS} current={stepIndex} onSelect={goToStep} />
 
       <StepPanel active={stepIndex === 0}>
         <div className="grid grid-cols-1 gap-6 xl:items-stretch xl:grid-cols-[minmax(0,1fr)_320px]">
           <Card elevation="low" radius="md" className="space-y-6 p-6 sm:p-8 xl:min-h-[34rem]">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/35 bg-surface-container-low/45 px-4 py-4">
-                <span className="inline-flex items-center gap-2 text-base font-bold text-on-surface">
-                  <Wallet size={17} />
-                  Budget
-                </span>
-                <span className="text-2xl font-extrabold tabular-nums text-primary">
-                  ${budget.toLocaleString()}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={50}
-                max={5000}
-                step={50}
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-container-highest accent-primary"
-                aria-label="Budget"
-              />
-            </div>
+            <BudgetPicker budget={budget} onChange={setBudget} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <LabeledField label="Duration">
@@ -441,6 +379,122 @@ export default function NewShowPage() {
         </div>
       </div>
     </form>
+  );
+}
+
+function StepIndicator({
+  steps,
+  current,
+  onSelect,
+}: {
+  steps: readonly { key: string; label: string }[];
+  current: number;
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <ol className="flex items-center gap-3" aria-label="Show creation steps">
+      {steps.map((step, index) => {
+        const isActive = index === current;
+        const isComplete = index < current;
+        const isUpcoming = !isActive && !isComplete;
+        return (
+          <li key={step.key} className="flex flex-1 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => onSelect(index)}
+              aria-current={isActive ? "step" : undefined}
+              aria-label={`Step ${index + 1}: ${step.label}`}
+              className="group flex items-center gap-2 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-content-emphasis)]"
+            >
+              <span
+                className={cn(
+                  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                  isActive &&
+                    "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]",
+                  isComplete &&
+                    "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]",
+                  isUpcoming &&
+                    "border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-muted)]",
+                )}
+              >
+                {isComplete ? <CheckCircle2 size={14} strokeWidth={2.4} /> : index + 1}
+              </span>
+              <span
+                className={cn(
+                  "text-sm font-medium",
+                  isActive
+                    ? "text-[color:var(--color-content-emphasis)]"
+                    : isComplete
+                      ? "text-[color:var(--color-content-default)]"
+                      : "text-[color:var(--color-content-muted)]",
+                )}
+              >
+                {step.label}
+              </span>
+            </button>
+            {index < steps.length - 1 ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-px flex-1 rounded-full",
+                  index < current
+                    ? "bg-[color:var(--color-content-emphasis)]"
+                    : "bg-[color:var(--color-border-subtle)]",
+                )}
+              />
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function BudgetPicker({ budget, onChange }: { budget: number; onChange: (n: number) => void }) {
+  const isPreset = BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <span className="inline-flex items-center gap-2 text-sm font-medium text-[color:var(--color-content-emphasis)]">
+          <Wallet size={16} />
+          Budget
+        </span>
+        <span className="text-xl font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
+          ${budget.toLocaleString()}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {BUDGET_PRESETS.map((preset) => (
+          <ChoiceChip
+            key={preset}
+            selected={isPreset && budget === preset}
+            onClick={() => onChange(preset)}
+          >
+            ${preset.toLocaleString()}
+            {preset === 5000 ? "+" : ""}
+          </ChoiceChip>
+        ))}
+      </div>
+      <label className="block space-y-1">
+        <span className="text-xs font-medium text-[color:var(--color-content-subtle)]">
+          Or set a custom amount (USD)
+        </span>
+        <Input
+          type="number"
+          min={50}
+          step={50}
+          inputMode="numeric"
+          value={isPreset ? "" : String(budget)}
+          placeholder="e.g. 1750"
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === "") return;
+            const n = Number(value);
+            if (Number.isFinite(n) && n >= 0) onChange(n);
+          }}
+        />
+      </label>
+    </div>
   );
 }
 
