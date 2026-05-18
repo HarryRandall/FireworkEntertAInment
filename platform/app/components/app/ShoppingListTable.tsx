@@ -15,15 +15,15 @@ type ShoppingListTableProps = {
 
 type SortButtonProps = {
   active: boolean;
+  col: SortKey;
   label: string;
-  onClick: () => void;
+  onToggle: (key: SortKey) => void;
 };
 
-function SortButton({ active, label, onClick }: SortButtonProps) {
+function SortButton({ active, col, label, onToggle }: SortButtonProps) {
   return (
     <button
-      type="button"
-      onClick={onClick}
+      onClick={() => onToggle(col)}
       className={`flex items-center gap-1 text-xs font-medium transition-colors ${
         active ? "text-primary" : "text-on-surface-variant hover:text-on-surface"
       }`}
@@ -93,9 +93,24 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
           {/* Sort controls */}
           <div className="flex items-center gap-4 print:hidden">
             <span className="text-xs text-on-surface-variant">Sort by</span>
-            <SortButton active={sortKey === "name"} label="Name" onClick={() => toggleSort("name")} />
-            <SortButton active={sortKey === "qty"} label="Qty" onClick={() => toggleSort("qty")} />
-            <SortButton active={sortKey === "total"} label="Total" onClick={() => toggleSort("total")} />
+            <SortButton
+              active={sortKey === "name"}
+              col="name"
+              label="Name"
+              onToggle={toggleSort}
+            />
+            <SortButton
+              active={sortKey === "qty"}
+              col="qty"
+              label="Qty"
+              onToggle={toggleSort}
+            />
+            <SortButton
+              active={sortKey === "total"}
+              col="total"
+              label="Total"
+              onToggle={toggleSort}
+            />
           </div>
 
           <ul className="space-y-3">

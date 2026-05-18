@@ -32,12 +32,14 @@ The tool is provided to consumers by fireworks retailers, either in-store (as a 
 ### Installation
 
 ```bash
+cd platform
 npm install
 ```
 
 ### Development
 
 ```bash
+cd platform
 npm run dev
 ```
 
@@ -46,13 +48,25 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 ### Build
 
 ```bash
+cd platform
 npm run build
 ```
 
-### Lint
+### Checks
 
 ```bash
+cd platform
 npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Run the full local gate with:
+
+```bash
+cd platform
+npm run check
 ```
 
 ## Deployment

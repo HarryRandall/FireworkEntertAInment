@@ -1,4 +1,13 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleDashed,
+  CircleDot,
+  Info,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -12,6 +21,9 @@ type Tone =
   | "warning"
   | "info"
   | "accent"
+  | "violet"
+  | "sky"
+  | "amber-soft"
   // Legacy tones — kept so existing call sites compile during the page sweep.
   | "primary"
   | "live"
@@ -24,14 +36,61 @@ const dotClasses: Record<Tone, string> = {
   warning: "bg-[color:var(--color-status-warning)]",
   info: "bg-[color:var(--color-status-info)]",
   accent: "bg-[color:var(--color-accent)]",
+  violet: "bg-violet-500",
+  sky: "bg-sky-500",
+  "amber-soft": "bg-amber-500",
   primary: "bg-[color:var(--color-content-emphasis)]",
   live: "bg-[color:var(--color-status-success)]",
   wow: "bg-[color:var(--color-accent)]",
 };
 
+// Coloured pill chips — Dub StatusBadge pattern: tinted subtle background,
+// saturated tone-coloured text, leading tone icon. Uses explicit color-mix so
+// the background opacity renders reliably on every theme. Applied when `solid` is true.
+const solidClasses: Record<Tone, string> = {
+  neutral:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-content-muted)_18%,transparent)] text-[color:var(--color-content-default)]",
+  success:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]",
+  danger:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-danger)_18%,transparent)] text-[color:var(--color-status-danger)]",
+  warning:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-status-warning)_18%,transparent)] text-[color:var(--color-status-warning)]",
+  info: "border-transparent bg-[color-mix(in_srgb,var(--color-status-info)_18%,transparent)] text-[color:var(--color-status-info)]",
+  accent:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]",
+  violet:
+    "border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300",
+  sky: "border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300",
+  "amber-soft":
+    "border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300",
+  primary:
+    "border-transparent bg-[color-mix(in_srgb,var(--color-content-emphasis)_18%,transparent)] text-[color:var(--color-content-emphasis)]",
+  live: "border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]",
+  wow: "border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]",
+};
+
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+const toneIcons: Record<Tone, IconComponent> = {
+  neutral: CircleDashed,
+  success: CircleCheck,
+  danger: CircleAlert,
+  warning: TriangleAlert,
+  info: Info,
+  accent: Sparkles,
+  violet: CircleDot,
+  sky: Info,
+  "amber-soft": TriangleAlert,
+  primary: CircleDot,
+  live: CircleCheck,
+  wow: Sparkles,
+};
+
 type BadgeProps = {
   tone?: Tone;
   dot?: boolean;
+  solid?: boolean;
+  icon?: IconComponent | null;
   className?: string;
   children: ReactNode;
 };
@@ -39,13 +98,19 @@ type BadgeProps = {
 export function Badge({
   tone = "neutral",
   dot = false,
+  solid = false,
+  icon,
   className,
   children,
 }: BadgeProps) {
+  const Icon = icon === null ? null : icon ?? (solid ? toneIcons[tone] : null);
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-content-default)]",
+        "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
+        solid
+          ? solidClasses[tone]
+          : "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)]",
         className,
       )}
     >
@@ -54,6 +119,8 @@ export function Badge({
           aria-hidden
           className={cn("inline-block h-1.5 w-1.5 rounded-full", dotClasses[tone])}
         />
+      ) : Icon ? (
+        <Icon aria-hidden className="h-3.5 w-3.5" strokeWidth={2.25} />
       ) : null}
       {children}
     </span>

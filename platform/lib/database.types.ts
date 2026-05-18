@@ -246,6 +246,7 @@ export type Database = {
       }
       product_shots: {
         Row: {
+          caliber: string | null
           created_at: string | null
           effect_spec_id: string
           id: string
@@ -255,6 +256,7 @@ export type Database = {
           time_offset_seconds: number
         }
         Insert: {
+          caliber?: string | null
           created_at?: string | null
           effect_spec_id: string
           id?: string
@@ -264,6 +266,7 @@ export type Database = {
           time_offset_seconds?: number
         }
         Update: {
+          caliber?: string | null
           created_at?: string | null
           effect_spec_id?: string
           id?: string
@@ -274,14 +277,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "product_shots_effect_spec_id_fkey"
+            foreignKeyName: "product_effect_sequences_effect_spec_id_fkey"
             columns: ["effect_spec_id"]
             isOneToOne: false
             referencedRelation: "effect_specs"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_shots_product_id_fkey"
+            foreignKeyName: "product_effect_sequences_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
@@ -471,54 +474,54 @@ export type Database = {
       show_analyses: {
         Row: {
           analysis_json: Json | null
-          analysis_storage_path: string | null
-          compact_payload: Json | null
+          audio_path: string
+          completed_at: string | null
           created_at: string
           error_message: string | null
           id: string
+          llm_payload: Json | null
           markdown: string | null
-          markdown_storage_path: string | null
-          personality_preset: string
+          personality: string
+          runner_version: string | null
           runtime_ms: number | null
-          schema_version: string | null
+          schema_version: string
           show_id: string
-          source_audio_path: string
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
-          compact_payload?: Json | null
+          audio_path: string
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
-          personality_preset?: string
+          personality?: string
+          runner_version?: string | null
           runtime_ms?: number | null
-          schema_version?: string | null
+          schema_version?: string
           show_id: string
-          source_audio_path: string
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
-          compact_payload?: Json | null
+          audio_path?: string
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
-          personality_preset?: string
+          personality?: string
+          runner_version?: string | null
           runtime_ms?: number | null
-          schema_version?: string | null
+          schema_version?: string
           show_id?: string
-          source_audio_path?: string
           status?: string
           updated_at?: string
           user_id?: string

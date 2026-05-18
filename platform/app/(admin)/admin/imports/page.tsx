@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import {
   deleteImportJobAction,
   updateImportJobAction,
 } from "@/app/actions/platform-admin";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -23,9 +25,7 @@ const STATUS_OPTIONS = [
   { value: "failed", label: "Failed" },
 ];
 
-export default async function AdminImportsPage() {
-  const jobs = await listImportJobs();
-
+export default function AdminImportsPage() {
   return (
     <div className="space-y-6">
       <AppPageHeader
@@ -46,8 +46,19 @@ export default async function AdminImportsPage() {
         <VideoImportUploadForm />
       </Card>
 
-      <div className="space-y-3">
-        {jobs.map((job) => (
+      <Suspense fallback={<ListSkeleton rows={6} />}>
+        <ImportJobList />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ImportJobList() {
+  const jobs = await listImportJobs();
+
+  return (
+    <div className="space-y-3">
+      {jobs.map((job) => (
           <Card key={job.id} elevation="low" radius="md" className="p-5">
             <form action={updateImportJobAction} className="space-y-4">
               <input type="hidden" name="id" value={job.id} />
@@ -127,8 +138,7 @@ export default async function AdminImportsPage() {
               </p>
             ) : null}
           </Card>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }

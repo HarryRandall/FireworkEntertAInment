@@ -5,6 +5,7 @@ import {
   type FireworkDesign,
   type LaunchPosition,
   safeParseFireworkDesign,
+  scaleDesignForCaliber,
 } from "@/lib/fireworks/design";
 import { ParticlePool } from "@/lib/fireworks/ParticlePool";
 import { SoundHandler } from "@/lib/fireworks/SoundHandler";
@@ -151,7 +152,7 @@ export class FireworksEngine {
   }
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
-    const design = safeParseFireworkDesign(cue.firework.rawSpec);
+    const design = scaleDesignForCaliber(safeParseFireworkDesign(cue.firework.rawSpec), cue.firework.caliber);
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const pos = this.world.getLaunchPosition(idx);
     const seed = mixSeed(

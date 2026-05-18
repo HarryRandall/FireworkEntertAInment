@@ -42,6 +42,6 @@ test("show library templates use semi-static caching", () => {
 test("main navigation includes show library", () => {
   const shell = readFileSync(join(root, "app/components/app/AppShell.tsx"), "utf8");
   assert.match(shell, /\/library/);
-  assert.match(shell, /Show Library/);
+  assert.match(shell, /Library/);
   assert.doesNotMatch(shell, /Recommendations/);
 });

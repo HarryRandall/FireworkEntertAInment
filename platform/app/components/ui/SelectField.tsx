@@ -73,7 +73,7 @@ export function SelectField({
         <SelectTrigger
           aria-label={ariaLabel}
           className={cn(
-            "h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--color-content-emphasis)] focus:border-[color:var(--color-content-emphasis)]",
+            "h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:outline-none focus:border-[color:var(--color-content-emphasis)]",
             disabled && "cursor-not-allowed opacity-60",
             className,
           )}

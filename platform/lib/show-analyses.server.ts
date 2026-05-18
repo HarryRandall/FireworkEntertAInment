@@ -6,7 +6,6 @@ import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
 import type { Database, Json } from "@/lib/database.types";
 import type {
-  AnalyzerDerivedFeatures,
   AnalyzerResult,
   AnalysisStatus,
   ShowAnalysisSnapshot,
@@ -15,7 +14,7 @@ import type {
 type ShowAnalysisRow = Database["public"]["Tables"]["show_analyses"]["Row"];
 
 const SHOW_ANALYSIS_SELECT =
-  "id, show_id, status, schema_version, personality_preset, source_audio_path, runtime_ms, error_message, created_at, analysis_json, compact_payload, markdown, analysis_storage_path, markdown_storage_path";
+  "id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, analysis_json, llm_payload, markdown";
 
 const getServerClient = cache(async () => {
   return createClient(await cookies());
@@ -34,57 +33,22 @@ function asAnalysis(value: Json | null): AnalyzerResult | null {
   return value as unknown as AnalyzerResult;
 }
 
-function asDerived(value: Json | null): AnalyzerDerivedFeatures | null {
-  if (!isRecord(value)) return null;
-  const derived = value.derived;
-  if (!isRecord(derived)) return null;
-  return derived as unknown as AnalyzerDerivedFeatures;
-}
-
-async function downloadText(storagePath: string | null): Promise<string | null> {
-  if (!storagePath) return null;
-  const supabase = await getServerClient();
-  const { data, error } = await supabase.storage
-    .from("audio")
-    .download(storagePath);
-  if (error) {
-    console.error("[show-analyses.server] storage download failed:", error);
-    return null;
-  }
-  return data.text();
-}
-
 async function hydrateAnalysis(row: ShowAnalysisRow): Promise<ShowAnalysisSnapshot> {
-  let analysis = asAnalysis(row.analysis_json);
-  if (!analysis && row.analysis_storage_path) {
-    const text = await downloadText(row.analysis_storage_path);
-    if (text) {
-      try {
-        analysis = asAnalysis(JSON.parse(text) as Json);
-      } catch (error) {
-        console.error("[show-analyses.server] analysis JSON parse failed:", error);
-      }
-    }
-  }
-
-  let markdown = row.markdown;
-  if (!markdown && row.markdown_storage_path) {
-    markdown = await downloadText(row.markdown_storage_path);
-  }
-
   return {
     id: row.id,
     showId: row.show_id,
     status: row.status as AnalysisStatus,
     schemaVersion: row.schema_version,
-    personalityPreset: row.personality_preset,
-    sourceAudioPath: row.source_audio_path,
+    personality: row.personality,
+    audioPath: row.audio_path,
+    runnerVersion: row.runner_version,
     runtimeMs: row.runtime_ms,
     errorMessage: row.error_message,
     createdAt: row.created_at,
-    analysis,
-    derived: asDerived(row.compact_payload),
-    markdown,
+    completedAt: row.completed_at,
+    analysis: asAnalysis(row.analysis_json),
+    llmPayload: row.llm_payload,
+    markdown: row.markdown,
   };
 }
 

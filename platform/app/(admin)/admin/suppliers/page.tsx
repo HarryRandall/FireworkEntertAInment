@@ -1,118 +1,164 @@
-import {
-  createSupplierAction,
-  deleteSupplierAction,
-  updateSupplierAction,
-} from "@/app/actions/platform-admin";
+import { Suspense } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
-import { Card } from "@/app/components/ui/Card";
-import { Input, Select } from "@/app/components/ui/Input";
+import { FilterBar } from "@/app/components/ui/FilterBar";
+import { TablePagination } from "@/app/components/ui/TablePagination";
+import {
+  DataTableShell,
+  tableCellClasses,
+  tableClasses,
+  tableHeadClasses,
+  tableHeaderCellClasses,
+  tableRowClasses,
+} from "@/app/components/ui/DataTable";
 import { listSuppliers } from "@/lib/admin.server";
+import { SupplierFormDialog } from "./SupplierFormDialog";
+import { SupplierRowActions } from "./SupplierRowActions";
 
-const STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "suspended", label: "Suspended" },
-  { value: "archived", label: "Archived" },
-];
+type PageProps = {
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+};
+type SuppliersSearchParams = Awaited<PageProps["searchParams"]>;
 
-export default async function AdminSuppliersPage() {
-  const suppliers = await listSuppliers();
+const PAGE_SIZE = 10;
+
+function statusTone(status: string) {
+  switch (status) {
+    case "active":
+      return "success" as const;
+    case "suspended":
+      return "danger" as const;
+    case "archived":
+      return "neutral" as const;
+    default:
+      return "amber-soft" as const;
+  }
+}
+
+export default async function AdminSuppliersPage({ searchParams }: PageProps) {
+  const params = await searchParams;
 
   return (
-    <div className="space-y-6">
-      <AppPageHeader title="Supplier records" />
+    <div className="space-y-8">
+      <AppPageHeader
+        title="Suppliers"
+        description="Manage supplier records, contacts, and status."
+        actions={<SupplierFormDialog />}
+      />
 
-      <Card elevation="high" radius="md" className="p-5">
-        <form
-          action={createSupplierAction}
-          className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px_160px_1fr_150px_auto]"
-        >
-          <Input name="name" placeholder="Supplier name" required />
-          <Input name="contactEmail" placeholder="Contact email" />
-          <Input name="phone" placeholder="Phone" />
-          <Input name="websiteUrl" placeholder="Website URL" />
-          <Select name="status" defaultValue="draft">
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-          <Button type="submit" size="sm">
-            Create
-          </Button>
-        </form>
-      </Card>
+      <FilterBar
+        searchPlaceholder="Search name, email, phone, website…"
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { value: "draft", label: "Draft" },
+              { value: "active", label: "Active" },
+              { value: "suspended", label: "Suspended" },
+              { value: "archived", label: "Archived" },
+            ],
+          },
+        ]}
+      />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {suppliers.map((supplier) => (
-          <Card key={supplier.id} elevation="low" radius="md" className="p-5">
-            <form action={updateSupplierAction} className="space-y-4">
-              <input type="hidden" name="id" value={supplier.id} />
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1 space-y-3">
-                  <Input
-                    name="name"
-                    defaultValue={supplier.name}
-                    className="text-base font-bold"
-                  />
-                  <Input
-                    name="contactEmail"
-                    defaultValue={supplier.contactEmail ?? ""}
-                    placeholder="Contact email"
-                    className="h-10"
-                  />
-                </div>
-                <Badge
-                  tone={supplier.status === "active" ? "success" : "neutral"}
-                >
-                  {supplier.status}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input
-                  name="phone"
-                  defaultValue={supplier.phone ?? ""}
-                  placeholder="Phone"
-                  className="h-10"
-                />
-                <Input
-                  name="websiteUrl"
-                  defaultValue={supplier.websiteUrl ?? ""}
-                  placeholder="Website URL"
-                  className="h-10"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]">
-                <Select
-                  name="status"
-                  defaultValue={supplier.status}
-                  className="h-10"
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </Select>
-                <Button type="submit" variant="secondary" size="sm">
-                  Save
-                </Button>
-                <Button
-                  type="submit"
-                  formAction={deleteSupplierAction}
-                  variant="destructive"
-                  size="sm"
-                >
-                  Delete
-                </Button>
-              </div>
-            </form>
-          </Card>
-        ))}
-      </div>
+      <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+        <SuppliersTable params={params} />
+      </Suspense>
     </div>
+  );
+}
+
+async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
+  const query = (params.q ?? "").trim().toLowerCase();
+  const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
+
+  const suppliers = await listSuppliers();
+  const filtered = suppliers.filter((s) => {
+    const text = [s.name, s.contactEmail, s.phone, s.websiteUrl].filter(Boolean).join(" ").toLowerCase();
+    const matchesQuery = !query || text.includes(query);
+    const matchesStatus = !statusFilter || s.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  return (
+    <>
+      <DataTableShell>
+        <table className={tableClasses()}>
+          <thead className={tableHeadClasses()}>
+            <tr>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Name</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Email</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Phone</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Website</th>
+              <th className={tableHeaderCellClasses("px-5 py-3")}>Status</th>
+              <th className={tableHeaderCellClasses("px-5 py-3 text-right")}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((s) => {
+              const supplierForActions = {
+                id: s.id,
+                name: s.name,
+                contactEmail: s.contactEmail ?? "",
+                phone: s.phone ?? undefined,
+                websiteUrl: s.websiteUrl ?? "",
+                status: (s.status as "draft" | "active" | "suspended" | "archived") ?? "draft",
+              };
+              return (
+                <tr key={s.id} className={tableRowClasses()}>
+                  <td className={tableCellClasses("px-5 py-4 font-medium text-[color:var(--color-content-emphasis)]")}>
+                    {s.name}
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4 text-[color:var(--color-content-subtle)]")}>
+                    {s.contactEmail || "—"}
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4 font-mono text-xs tabular-nums text-[color:var(--color-content-subtle)]")}>
+                    {s.phone || "—"}
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4 text-[color:var(--color-content-subtle)]")}>
+                    {s.websiteUrl ? (
+                      <a
+                        href={s.websiteUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-dotted underline-offset-2 hover:text-[color:var(--color-content-emphasis)]"
+                      >
+                        {s.websiteUrl.replace(/^https?:\/\//, "")}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4")}>
+                    <Badge solid tone={statusTone(s.status)}>
+                      {s.status}
+                    </Badge>
+                  </td>
+                  <td className={tableCellClasses("px-5 py-4 text-right")}>
+                    <SupplierRowActions supplier={supplierForActions} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </DataTableShell>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={params}
+      />
+    </>
   );
 }

@@ -11,10 +11,12 @@ function productToSourcePayload(row: {
   subtype: string | null;
   duration_seconds: number | null;
   description: string | null;
+  caliber?: string | null;
 }): Json {
   return {
     partNumber: row.part_number,
     manufacturerPartNumber: row.manufacturer ?? undefined,
+    size: row.caliber ?? undefined,
     category: row.subtype ?? undefined,
     duration:
       row.duration_seconds != null ? String(row.duration_seconds) : undefined,
@@ -56,6 +58,20 @@ export async function GET(
 
   const productById = new Map((products ?? []).map((p) => [p.id, p]));
 
+  // Fetch the first shot's caliber for each product (shot_index=0 = smallest bore)
+  const { data: shots } = await supabase
+    .from("product_shots")
+    .select("product_id, caliber")
+    .in("product_id", productIds)
+    .order("shot_index", { ascending: true });
+
+  const caliberByProduct = new Map<string, string | null>();
+  for (const shot of shots ?? []) {
+    if (!caliberByProduct.has(shot.product_id)) {
+      caliberByProduct.set(shot.product_id, shot.caliber ?? null);
+    }
+  }
+
   const csvCues = cues
     .filter((c) => productById.has(c.product_id))
     .map((c) => {
@@ -63,7 +79,10 @@ export async function GET(
       return {
         timeSeconds: Number(c.time_seconds),
         effectName: product.name,
-        sourcePayload: productToSourcePayload(product),
+        sourcePayload: productToSourcePayload({
+          ...product,
+          caliber: caliberByProduct.get(c.product_id) ?? null,
+        }),
       };
     });
 

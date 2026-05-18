@@ -53,7 +53,7 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        "flex h-10 items-center rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] transition-colors focus-within:border-[color:var(--color-content-emphasis)] focus-within:ring-1 focus-within:ring-[color:var(--color-content-emphasis)]",
+        "flex h-10 items-center rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] transition-colors focus-within:border-[color:var(--color-content-emphasis)]",
         disabled && "opacity-60",
         className,
       )}

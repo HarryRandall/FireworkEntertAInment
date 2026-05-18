@@ -6,7 +6,11 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
-import { requirePermission } from "@/lib/admin.server";
+import {
+  invalidateAdminCatalogueCache,
+  invalidateAdminImportsCache,
+  requirePermission,
+} from "@/lib/admin.server";
 import { slugifyTitle } from "@/lib/show-domain";
 import {
   DEFAULT_OPENROUTER_MODEL,
@@ -17,43 +21,13 @@ import {
   OPENROUTER_MODEL_OPTIONS,
   type ImportedFireworkSpec,
 } from "@/lib/import-jobs";
+import { invalidateFireworkCatalogueCaches } from "@/lib/shows.server";
 import type { Json } from "@/lib/database.types";
 
 const ProfileSchema = z.object({
   fullName: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(40).optional(),
   themePreference: z.enum(["dark", "light", "system"]).default("dark"),
-});
-
-const AdminUserSchema = z.object({
-  userId: z.string().uuid(),
-  fullName: z.string().trim().max(120).optional(),
-  phone: z.string().trim().max(40).optional(),
-  status: z.enum(["active", "suspended"]),
-  role: z.string().uuid(),
-});
-
-const PermissionOverrideSchema = z.object({
-  userId: z.string().uuid(),
-  permissionId: z.string().uuid(),
-  mode: z.enum(["grant", "deny", "clear"]),
-});
-
-const SupplierSchema = z.object({
-  name: z.string().trim().min(1).max(160),
-  contactEmail: z.string().trim().email().optional().or(z.literal("")),
-  phone: z.string().trim().max(40).optional(),
-  websiteUrl: z.string().trim().url().optional().or(z.literal("")),
-  status: z.enum(["draft", "active", "suspended", "archived"]),
-});
-
-const CatalogueProductSchema = z.object({
-  partNumber: z.string().trim().min(1).max(80),
-  name: z.string().trim().min(1).max(180),
-  manufacturer: z.string().trim().max(120).optional(),
-  category: z.string().trim().max(80).optional(),
-  fireworkType: z.string().trim().max(80).optional(),
-  durationSeconds: z.coerce.number().min(0).max(60 * 60).optional().or(z.literal("")),
 });
 
 const ImportJobSchema = z.object({
@@ -153,6 +127,31 @@ function sanitizeStorageName(name: string): string {
     .slice(0, 80) || "firework-video";
 }
 
+async function verifyCallerOwnedUploadObject(
+  supabase: ReturnType<typeof createClient>,
+  adminId: string,
+  storagePath: string,
+): Promise<string | null> {
+  if (!storagePath.startsWith(`${adminId}/`)) {
+    return "Uploaded object is not in your admin folder; refresh and retry.";
+  }
+
+  const objectName = storagePath.slice(adminId.length + 1);
+  if (!objectName || objectName.includes("/")) {
+    return "Uploaded object path is invalid; upload the video again.";
+  }
+
+  const { data, error } = await supabase.storage
+    .from(IMPORT_VIDEO_BUCKET)
+    .list(adminId, { limit: 100, search: objectName });
+  if (error) {
+    console.error("[verifyCallerOwnedUploadObject] storage lookup failed:", error);
+    return `Could not verify the uploaded video: ${error.message}`;
+  }
+  const exists = (data ?? []).some((item) => item.name === objectName);
+  return exists ? null : "Uploaded video was not found in storage. Upload it again.";
+}
+
 async function latestSpecForImport(
   importJobId: string,
 ): Promise<ImportedFireworkSpec | null> {
@@ -204,246 +203,6 @@ export async function updateProfileAction(
   revalidatePath("/dashboard");
 }
 
-export async function updateAdminUserAction(
-  formData: FormData,
-): Promise<void> {
-  const admin = await requirePermission("admin.manage_users");
-  if (!admin) return;
-
-  const parsed = AdminUserSchema.safeParse({
-    userId: formData.get("userId"),
-    fullName: formData.get("fullName") ?? "",
-    phone: formData.get("phone") ?? "",
-    status: formData.get("status") ?? "active",
-    role: formData.get("role"),
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      full_name: parsed.data.fullName || null,
-      phone: parsed.data.phone || null,
-      status: parsed.data.status,
-    })
-    .eq("id", parsed.data.userId);
-  if (profileError) {
-    console.error("[updateAdminUserAction] profile failed:", profileError);
-    return;
-  }
-
-  const { error: deleteError } = await supabase
-    .from("user_roles")
-    .delete()
-    .eq("user_id", parsed.data.userId);
-  if (deleteError) {
-    console.error("[updateAdminUserAction] delete roles failed:", deleteError);
-    return;
-  }
-
-  const { error: insertError } = await supabase.from("user_roles").insert(
-    {
-      user_id: parsed.data.userId,
-      role_id: parsed.data.role,
-      assigned_by: admin.id,
-    },
-  );
-  if (insertError) {
-    console.error("[updateAdminUserAction] insert roles failed:", insertError);
-    return;
-  }
-
-  revalidatePath("/admin/users");
-}
-
-export async function setPermissionOverrideAction(
-  formData: FormData,
-): Promise<void> {
-  const admin = await requirePermission("admin.manage_users");
-  if (!admin) return;
-
-  const parsed = PermissionOverrideSchema.safeParse({
-    userId: formData.get("userId"),
-    permissionId: formData.get("permissionId"),
-    mode: formData.get("mode"),
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  if (parsed.data.mode === "clear") {
-    const { error } = await supabase
-      .from("user_permission_overrides")
-      .delete()
-      .eq("user_id", parsed.data.userId)
-      .eq("permission_id", parsed.data.permissionId);
-    if (error) {
-      console.error("[setPermissionOverrideAction] clear failed:", error);
-      return;
-    }
-  } else {
-    const { error } = await supabase.from("user_permission_overrides").upsert({
-      user_id: parsed.data.userId,
-      permission_id: parsed.data.permissionId,
-      enabled: parsed.data.mode === "grant",
-      assigned_by: admin.id,
-    });
-    if (error) {
-      console.error("[setPermissionOverrideAction] upsert failed:", error);
-      return;
-    }
-  }
-
-  revalidatePath("/admin/users");
-}
-
-export async function createSupplierAction(
-  formData: FormData,
-): Promise<void> {
-  if (!(await requirePermission("admin.manage_suppliers"))) {
-    return;
-  }
-  const parsed = SupplierSchema.safeParse({
-    name: formData.get("name"),
-    contactEmail: formData.get("contactEmail") ?? "",
-    phone: formData.get("phone") ?? "",
-    websiteUrl: formData.get("websiteUrl") ?? "",
-    status: formData.get("status") ?? "draft",
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from("supplier_profiles").insert({
-    name: parsed.data.name,
-    slug: `${slugifyTitle(parsed.data.name)}-${crypto.randomUUID().slice(0, 8)}`,
-    contact_email: parsed.data.contactEmail || null,
-    phone: parsed.data.phone || null,
-    website_url: parsed.data.websiteUrl || null,
-    status: parsed.data.status,
-  });
-  if (error) {
-    console.error("[createSupplierAction] failed:", error);
-    return;
-  }
-  revalidatePath("/admin/suppliers");
-}
-
-export async function updateSupplierAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_suppliers"))) return;
-  const parsed = SupplierSchema.extend({ id: z.string().uuid() }).safeParse({
-    id: formData.get("id"),
-    name: formData.get("name"),
-    contactEmail: formData.get("contactEmail") ?? "",
-    phone: formData.get("phone") ?? "",
-    websiteUrl: formData.get("websiteUrl") ?? "",
-    status: formData.get("status") ?? "draft",
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("supplier_profiles")
-    .update({
-      name: parsed.data.name,
-      contact_email: parsed.data.contactEmail || null,
-      phone: parsed.data.phone || null,
-      website_url: parsed.data.websiteUrl || null,
-      status: parsed.data.status,
-    })
-    .eq("id", parsed.data.id);
-  if (error) console.error("[updateSupplierAction] failed:", error);
-  revalidatePath("/admin/suppliers");
-}
-
-export async function deleteSupplierAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_suppliers"))) return;
-  const parsed = IdSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("supplier_profiles")
-    .delete()
-    .eq("id", parsed.data.id);
-  if (error) console.error("[deleteSupplierAction] failed:", error);
-  revalidatePath("/admin/suppliers");
-}
-
-export async function createCatalogueProductAction(
-  formData: FormData,
-): Promise<void> {
-  if (!(await requirePermission("admin.manage_catalogue"))) {
-    return;
-  }
-  const parsed = CatalogueProductSchema.safeParse({
-    partNumber: formData.get("partNumber"),
-    name: formData.get("name"),
-    manufacturer: formData.get("manufacturer") ?? "",
-    category: formData.get("category") ?? "",
-    fireworkType: formData.get("fireworkType") ?? "",
-    durationSeconds: formData.get("durationSeconds") ?? "",
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  const duration =
-    typeof parsed.data.durationSeconds === "number"
-      ? parsed.data.durationSeconds
-      : null;
-  const { error } = await supabase.from("products").insert({
-    part_number: parsed.data.partNumber,
-    name: parsed.data.name,
-    manufacturer: parsed.data.manufacturer || null,
-    subtype: parsed.data.fireworkType || null,
-    duration_seconds: duration,
-  });
-  if (error) {
-    console.error("[createCatalogueProductAction] failed:", error);
-    return;
-  }
-  revalidatePath("/admin/catalogue");
-}
-
-export async function updateCatalogueProductAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_catalogue"))) return;
-  const parsed = CatalogueProductSchema.extend({ id: z.string().uuid() }).safeParse({
-    id: formData.get("id"),
-    partNumber: formData.get("partNumber"),
-    name: formData.get("name"),
-    manufacturer: formData.get("manufacturer") ?? "",
-    category: formData.get("category") ?? "",
-    fireworkType: formData.get("fireworkType") ?? "",
-    durationSeconds: formData.get("durationSeconds") ?? "",
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const duration =
-    typeof parsed.data.durationSeconds === "number" ? parsed.data.durationSeconds : null;
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("products")
-    .update({
-      part_number: parsed.data.partNumber,
-      name: parsed.data.name,
-      manufacturer: parsed.data.manufacturer || null,
-      subtype: parsed.data.fireworkType || null,
-      duration_seconds: duration,
-    })
-    .eq("id", parsed.data.id);
-  if (error) console.error("[updateCatalogueProductAction] failed:", error);
-  revalidatePath("/admin/catalogue");
-}
-
-export async function deleteCatalogueProductAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission("admin.manage_catalogue"))) return;
-  const parsed = IdSchema.safeParse({ id: formData.get("id") });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", parsed.data.id);
-  if (error) console.error("[deleteCatalogueProductAction] failed:", error);
-  revalidatePath("/admin/catalogue");
-}
-
 export async function createImportJobAction(
   formData: FormData,
 ): Promise<void> {
@@ -472,6 +231,7 @@ export async function createImportJobAction(
     console.error("[createImportJobAction] failed:", error);
     return;
   }
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
 }
 
@@ -590,6 +350,7 @@ export async function createVideoImportJobAction(
     };
   }
 
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
   redirect(`/admin/imports/${job.id}`);
 }
@@ -616,16 +377,16 @@ export async function finalizeVideoImportJobAction(
     return { ok: false, error: firstError(parsed.error) };
   }
 
-  // Storage RLS requires the path live under the admin's own UUID prefix.
-  // Reject anything that wasn't uploaded into the caller's namespace.
-  if (!parsed.data.storagePath.startsWith(`${admin.id}/`)) {
-    return {
-      ok: false,
-      error: "Uploaded object is not in your admin folder; refresh and retry.",
-    };
+  const supabase = createClient(await cookies());
+  const uploadError = await verifyCallerOwnedUploadObject(
+    supabase,
+    admin.id,
+    parsed.data.storagePath,
+  );
+  if (uploadError) {
+    return { ok: false, error: uploadError };
   }
 
-  const supabase = createClient(await cookies());
   const duration =
     typeof parsed.data.reportedDurationSeconds === "number"
       ? parsed.data.reportedDurationSeconds
@@ -679,6 +440,7 @@ export async function finalizeVideoImportJobAction(
     };
   }
 
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
   redirect(`/admin/imports/${job.id}`);
 }
@@ -709,6 +471,7 @@ export async function queueImportJobAction(formData: FormData): Promise<void> {
     console.error("[queueImportJobAction] failed:", error);
     return;
   }
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
@@ -754,6 +517,7 @@ export async function requestImportRefinementAction(
     })
     .eq("id", parsed.data.id);
   if (jobError) console.error("[requestImportRefinementAction] job failed:", jobError);
+  await invalidateAdminImportsCache();
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 
@@ -810,6 +574,7 @@ export async function updateImportDraftSpecAction(
     .from("import_jobs")
     .update({ status: "needs_review", processing_progress: 100 })
     .eq("id", parsed.data.id);
+  await invalidateAdminImportsCache();
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 
@@ -898,6 +663,9 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     })
     .eq("id", parsed.data.id);
   if (jobError) console.error("[approveImportJobAction] job update failed:", jobError);
+  await invalidateAdminImportsCache();
+  await invalidateAdminCatalogueCache();
+  await invalidateFireworkCatalogueCaches();
   revalidatePath("/admin/imports");
   revalidatePath("/admin/catalogue");
   revalidatePath(`/admin/imports/${parsed.data.id}`);
@@ -929,6 +697,7 @@ export async function updateImportJobAction(formData: FormData): Promise<void> {
     })
     .eq("id", parsed.data.id);
   if (error) console.error("[updateImportJobAction] failed:", error);
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
 }
 
@@ -942,5 +711,6 @@ export async function deleteImportJobAction(formData: FormData): Promise<void> {
     .delete()
     .eq("id", parsed.data.id);
   if (error) console.error("[deleteImportJobAction] failed:", error);
+  await invalidateAdminImportsCache();
   revalidatePath("/admin/imports");
 }

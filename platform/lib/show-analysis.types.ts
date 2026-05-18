@@ -1,3 +1,5 @@
+import type { Json } from "@/lib/database.types";
+
 export type AnalysisStatus = "running" | "completed" | "failed";
 
 export type AnalyzerEnergyPoint = {
@@ -113,13 +115,15 @@ export type ShowAnalysisSnapshot = {
   id: string;
   showId: string;
   status: AnalysisStatus;
-  schemaVersion: string | null;
-  personalityPreset: string;
-  sourceAudioPath: string;
+  schemaVersion: string;
+  personality: string;
+  audioPath: string;
+  runnerVersion: string | null;
   runtimeMs: number | null;
   errorMessage: string | null;
   createdAt: string;
+  completedAt: string | null;
   analysis: AnalyzerResult | null;
-  derived: AnalyzerDerivedFeatures | null;
+  llmPayload: Json | null;
   markdown: string | null;
 };

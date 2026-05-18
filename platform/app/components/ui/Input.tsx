@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
 
 const controlBase =
-  "h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-1";
+  "h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none";
 
 type InputProps = ComponentPropsWithoutRef<"input"> & {
   iconLeft?: ReactNode;
@@ -24,8 +24,8 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
         className={cn(
           controlBase,
           invalid
-            ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)] focus:ring-[color:var(--color-status-danger)]"
-            : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)] focus:ring-[color:var(--color-content-emphasis)]",
+            ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]"
+            : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]",
           iconLeft ? "pl-10 pr-3" : "px-3",
           className,
         )}
@@ -42,10 +42,10 @@ export function Textarea({ className, invalid = false, ...rest }: TextareaProps)
       {...rest}
       aria-invalid={invalid || rest["aria-invalid"] || undefined}
       className={cn(
-        "w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] placeholder:text-[color:var(--color-content-muted)] transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60",
+        "w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] placeholder:text-[color:var(--color-content-muted)] transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-60",
         invalid
-          ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)] focus:ring-[color:var(--color-status-danger)]"
-          : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)] focus:ring-[color:var(--color-content-emphasis)]",
+          ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]"
+          : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]",
         className,
       )}
     />

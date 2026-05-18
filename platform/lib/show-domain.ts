@@ -46,6 +46,7 @@ export type FireworkSpecification = {
   sortOrder: number;
   durationSeconds: number | null;
   heightMeters: number | null;
+  caliber: string | null;
   spec: FireworkSpec;
   rawSpec: unknown;
 };

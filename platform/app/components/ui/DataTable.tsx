@@ -13,7 +13,7 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]",
+        "overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]",
         className,
       )}
     >

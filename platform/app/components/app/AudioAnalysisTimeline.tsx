@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   AlertCircle,
-  BarChart3,
-  Clock3,
   RefreshCw,
   Sparkles,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -109,7 +106,6 @@ export function AudioAnalysisTimeline({
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
   const points = useMemo(() => compactEnergyPoints(analysis), [analysis]);
   const pathD = useMemo(() => energyPath(points, duration), [points, duration]);
-  const finaleWindow = analysis?.derived?.finale_window ?? null;
 
   const runAnalysis = () => {
     setError(null);
@@ -219,24 +215,6 @@ export function AudioAnalysisTimeline({
             );
           })}
 
-          {finaleWindow ? (
-            <div
-              className="absolute bottom-0 top-0 border-x border-tertiary/70 bg-tertiary/10"
-              style={{
-                left: `${timePercent(finaleWindow.start, duration)}%`,
-                width: `${Math.max(
-                  timePercent(finaleWindow.end, duration) -
-                    timePercent(finaleWindow.start, duration),
-                  0.8,
-                )}%`,
-              }}
-            >
-              <span className="absolute bottom-3 left-2 rounded-full bg-tertiary px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-on-tertiary">
-                Finale
-              </span>
-            </div>
-          ) : null}
-
           {pathD ? (
             <svg
               viewBox="0 0 1000 190"
@@ -305,18 +283,9 @@ export function AudioAnalysisTimeline({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-on-surface-variant">
-          <span className="inline-flex items-center gap-2">
-            <BarChart3 size={14} className="text-primary" />
-            Energy
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <Zap size={14} className="text-rose-300" />
-            Climax
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <Clock3 size={14} className="text-amber-300" />
-            Build-up
-          </span>
+          <span>Energy curve</span>
+          <span>Climax markers</span>
+          <span>Build-up ranges</span>
           {analysis?.createdAt ? (
             <span className="ml-auto tabular-nums">
               {new Date(analysis.createdAt).toLocaleString()}

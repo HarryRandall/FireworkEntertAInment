@@ -7,9 +7,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { Json } from "@/lib/database.types";
+import type { Database, Json } from "@/lib/database.types";
 import type {
-  AnalyzerDerivedFeatures,
   AnalyzerResult,
   ShowAnalysisSnapshot,
 } from "@/lib/show-analysis.types";
@@ -18,8 +17,8 @@ import { createClient } from "@/utils/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const INLINE_ARTIFACT_LIMIT_BYTES = 1_000_000;
 const ANALYSER_SCHEMA_VERSION = "1.2.0";
+const ANALYSER_RUNNER_VERSION = "local-librosa-1";
 
 const AnalyzeRequestSchema = z.object({
   showId: z.string().uuid(),
@@ -42,14 +41,68 @@ type ProcessResult = {
   stdout: string;
   stderr: string;
 };
+type ShowAnalysisInsert = Database["public"]["Tables"]["show_analyses"]["Insert"];
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
+function supabaseErrorMessage(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const message = (error as Record<string, unknown>).message;
+  return typeof message === "string" ? message : null;
+}
+
 function truncate(value: string, length = 1800): string {
   if (value.length <= length) return value;
   return `${value.slice(0, length)}...`;
+}
+
+function isJsonObject(value: Json | null | undefined): value is Record<string, Json | undefined> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stripFireworkRecommendationsFromAnalysis(
+  analysis: AnalyzerResult,
+): AnalyzerResult {
+  const songAnalysis: AnalyzerResult = { ...analysis };
+  delete songAnalysis.firework_cues;
+  return songAnalysis;
+}
+
+function stripCueCountsFromSections(sections: Json | undefined): Json | undefined {
+  if (!Array.isArray(sections)) return sections;
+  return sections.map((section) => {
+    if (!isJsonObject(section)) return section;
+    const songSection = { ...section };
+    delete songSection.cue_counts;
+    return songSection as Json;
+  }) as Json;
+}
+
+function stripFireworkRecommendationsFromPayload(payload: Json): Json {
+  if (!isJsonObject(payload)) return payload;
+  const songPayload = { ...payload };
+  delete songPayload.firework_cue_summary;
+  delete songPayload.firework_cue_samples;
+  delete songPayload.cue_reference;
+  delete songPayload.inventory;
+  delete songPayload.user_constraints;
+  return {
+    ...songPayload,
+    sections: stripCueCountsFromSections(songPayload.sections),
+  } as Json;
+}
+
+function stripFireworkRecommendationsFromMarkdown(markdown: string): string {
+  return markdown
+    .replace(/\n- \*\*Total firework cues:\*\*.*(?=\n)/g, "")
+    .replace(/\n- Firework cues:.*(?=\n)/g, "")
+    .replace(
+      "\nThese are energy ramps leading into peaks — ideal for gradually ramping up firework intensity.\n",
+      "\nThese are energy ramps leading into musical peaks.\n",
+    )
+    .replace(/\n## Firework Cues\n[\s\S]*?(?=\n## Beat Times\n)/, "\n");
 }
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -108,55 +161,31 @@ function analysisSnapshot(params: {
   showId: string;
   personality: string;
   audioPath: string;
+  runnerVersion: string | null;
   runtimeMs: number | null;
   analysis: AnalyzerResult | null;
-  derived: AnalyzerDerivedFeatures | null;
+  llmPayload: Json | null;
   markdown: string | null;
   errorMessage?: string | null;
   createdAt?: string;
+  completedAt?: string | null;
 }): ShowAnalysisSnapshot {
   return {
     id: params.id,
     showId: params.showId,
     status: params.errorMessage ? "failed" : "completed",
     schemaVersion: params.analysis?.schema_version ?? ANALYSER_SCHEMA_VERSION,
-    personalityPreset: params.personality,
-    sourceAudioPath: params.audioPath,
+    personality: params.personality,
+    audioPath: params.audioPath,
+    runnerVersion: params.runnerVersion,
     runtimeMs: params.runtimeMs,
     errorMessage: params.errorMessage ?? null,
     createdAt: params.createdAt ?? new Date().toISOString(),
+    completedAt: params.completedAt ?? new Date().toISOString(),
     analysis: params.analysis,
-    derived: params.derived,
+    llmPayload: params.llmPayload,
     markdown: params.markdown,
   };
-}
-
-async function persistLargeText(params: {
-  supabase: ReturnType<typeof createClient>;
-  userId: string;
-  analysisId: string;
-  filename: string;
-  contentType: string;
-  body: string;
-}): Promise<{ inline: string | null; storagePath: string | null }> {
-  if (Buffer.byteLength(params.body, "utf8") <= INLINE_ARTIFACT_LIMIT_BYTES) {
-    return { inline: params.body, storagePath: null };
-  }
-
-  const storagePath = `${params.userId}/analyses/${params.analysisId}/${params.filename}`;
-  const { error } = await params.supabase.storage
-    .from("audio")
-    .upload(storagePath, Buffer.from(params.body, "utf8"), {
-      contentType: params.contentType,
-      upsert: false,
-    });
-  if (error) {
-    throw new AnalyzeError(
-      `Could not persist analyser artifact: ${error.message}`,
-      500,
-    );
-  }
-  return { inline: null, storagePath };
 }
 
 async function markAnalysisFailed(params: {
@@ -211,17 +240,28 @@ export async function POST(request: Request) {
 
   const analysisId = randomUUID();
   const startedAt = Date.now();
-  const { error: insertError } = await supabase.from("show_analyses").insert({
+  const analysisInsert: ShowAnalysisInsert = {
     id: analysisId,
     show_id: show.id,
     user_id: user.id,
-    personality_preset: parsed.data.personality,
-    source_audio_path: show.audio_path,
+    audio_path: show.audio_path,
+    personality: parsed.data.personality,
+    runner_version: ANALYSER_RUNNER_VERSION,
+    schema_version: ANALYSER_SCHEMA_VERSION,
     status: "running",
-  });
+  };
+  const { error: insertError } = await supabase
+    .from("show_analyses")
+    .insert(analysisInsert);
   if (insertError) {
     console.error("[api/analyze] analysis row insert failed:", insertError);
-    return jsonError("Could not create analysis record.", 500);
+    const message =
+      process.env.NODE_ENV === "development"
+        ? `Could not create analysis record: ${
+            supabaseErrorMessage(insertError) ?? "unknown Supabase error"
+          }`
+        : "Could not create analysis record.";
+    return jsonError(message, 500);
   }
 
   let tempDir: string | null = null;
@@ -282,47 +322,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const [analysisText, markdown, llmText] = await Promise.all([
+    const [analysisText, rawMarkdown, llmText] = await Promise.all([
       readFile(analysisPath, "utf8"),
       readFile(markdownPath, "utf8"),
       readFile(llmPath, "utf8"),
     ]);
-    const analysis = JSON.parse(analysisText) as AnalyzerResult;
-    const llmPayload = JSON.parse(llmText) as Record<string, unknown>;
+    const analysis = stripFireworkRecommendationsFromAnalysis(
+      JSON.parse(analysisText) as AnalyzerResult,
+    );
+    const llmPayload = stripFireworkRecommendationsFromPayload(
+      JSON.parse(llmText) as Json,
+    );
+    const markdown = stripFireworkRecommendationsFromMarkdown(rawMarkdown);
     const runtimeMs = Date.now() - startedAt;
-
-    const [analysisArtifact, markdownArtifact] = await Promise.all([
-      persistLargeText({
-        supabase,
-        userId: user.id,
-        analysisId,
-        filename: "analysis.json",
-        contentType: "application/json",
-        body: analysisText,
-      }),
-      persistLargeText({
-        supabase,
-        userId: user.id,
-        analysisId,
-        filename: "analysis.md",
-        contentType: "text/markdown; charset=utf-8",
-        body: markdown,
-      }),
-    ]);
+    const completedAt = new Date().toISOString();
 
     const { error: updateError } = await supabase
       .from("show_analyses")
       .update({
         status: "completed",
         schema_version: analysis.schema_version,
+        completed_at: completedAt,
         runtime_ms: runtimeMs,
-        analysis_json: analysisArtifact.inline
-          ? (analysis as unknown as Json)
-          : null,
-        compact_payload: llmPayload as unknown as Json,
-        markdown: markdownArtifact.inline,
-        analysis_storage_path: analysisArtifact.storagePath,
-        markdown_storage_path: markdownArtifact.storagePath,
+        analysis_json: analysis as unknown as Json,
+        llm_payload: llmPayload,
+        markdown,
         error_message: null,
       })
       .eq("id", analysisId);
@@ -345,13 +369,12 @@ export async function POST(request: Request) {
         showId: show.id,
         personality: parsed.data.personality,
         audioPath: show.audio_path,
+        runnerVersion: ANALYSER_RUNNER_VERSION,
         runtimeMs,
         analysis,
-        derived:
-          typeof llmPayload.derived === "object" && llmPayload.derived !== null
-            ? (llmPayload.derived as AnalyzerDerivedFeatures)
-            : null,
+        llmPayload,
         markdown,
+        completedAt,
       }),
     });
   } catch (error) {

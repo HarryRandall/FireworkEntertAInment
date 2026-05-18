@@ -10,19 +10,6 @@ import {
   type LaunchPosition,
 } from "@/lib/fireworks/design";
 
-if (typeof window !== "undefined") {
-  const origWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
-    if (
-      typeof args[0] === "string" &&
-      args[0].includes("Clock: This module has been deprecated")
-    ) {
-      return;
-    }
-    origWarn(...args);
-  };
-}
-
 type Props = {
   cues: ReplayCue[];
   elapsed: number;
