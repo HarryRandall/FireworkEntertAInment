@@ -2,11 +2,14 @@
   "name": "showcrafter",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "worker:firework-import": "../workers/firework-import-worker/run-worker.sh",
     "test": "node --test tests/**/*.test.mjs"
   },

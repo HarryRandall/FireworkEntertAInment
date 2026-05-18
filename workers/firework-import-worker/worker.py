@@ -1192,10 +1192,11 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
     return spec, data
 
 
-def process_job(supabase, job):
+def claim_queued_job(supabase, job):
     job_id = job["id"]
-    model = job.get("selected_model") or DEFAULT_MODEL
-    supabase.table("import_jobs").update(
+    # The status guard is the claim. If another worker got there first, this
+    # update affects zero rows and this worker skips the job.
+    result = supabase.table("import_jobs").update(
         {
             "status": "processing",
             "processing_progress": 5,
@@ -1203,8 +1204,15 @@ def process_job(supabase, job):
             "started_at": now_iso(),
             "error_message": None,
         }
-    ).eq("id", job_id).execute()
+    ).eq("id", job_id).eq("status", "queued").execute()
+    if not result.data:
+        return None
+    return supabase.table("import_jobs").select("*").eq("id", job_id).single().execute().data
 
+
+def process_job(supabase, job):
+    job_id = job["id"]
+    model = job.get("selected_model") or DEFAULT_MODEL
     media_id = job.get("media_asset_id")
     if not media_id:
         raise RuntimeError("Import job has no media asset")
@@ -1349,12 +1357,16 @@ def main():
             time.sleep(POLL_SECONDS)
             continue
         job = jobs[0]
+        claimed = claim_queued_job(supabase, job)
+        if not claimed:
+            print(f"skipped already-claimed import {job['id']}")
+            continue
         try:
-            print(f"processing import {job['id']}")
-            process_job(supabase, job)
-            print(f"completed import {job['id']}")
+            print(f"processing import {claimed['id']}")
+            process_job(supabase, claimed)
+            print(f"completed import {claimed['id']}")
         except Exception as exc:
-            print(f"failed import {job['id']}: {exc}")
+            print(f"failed import {claimed['id']}: {exc}")
             supabase.table("import_jobs").update(
                 {
                     "status": "failed",
@@ -1362,7 +1374,7 @@ def main():
                     "completed_at": now_iso(),
                     "error_message": str(exc)[:2000],
                 }
-            ).eq("id", job["id"]).execute()
+            ).eq("id", claimed["id"]).execute()
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { slugifyTitle } from "@/lib/show-domain";
-import { invalidateShowsCacheForUser } from "@/lib/shows.server";
+import { syncShowDerivedFieldsForUser } from "@/lib/shows.server";
 import { getShowTemplateBySlug } from "@/lib/admin.server";
 
 export async function cloneShowTemplateAction(formData: FormData): Promise<void> {
@@ -87,7 +87,10 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     }
   }
 
-  await invalidateShowsCacheForUser(user.id);
+  await syncShowDerivedFieldsForUser(user.id, {
+    showId: show.id,
+    showSlug: show.slug,
+  });
   revalidatePath("/dashboard");
   redirect(`/shows/${show.slug}`);
 }

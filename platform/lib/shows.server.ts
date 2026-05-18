@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { cache } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
 import {
@@ -67,6 +68,10 @@ type EffectSpecProjection = Pick<
   | "spec_json"
 >;
 type ReplayCueRow = ShowCueProjection;
+type ShoppingListComputation = {
+  items: ShoppingListItem[];
+  effectsCount: number;
+};
 
 const CACHE_PREFIX = "shows:v5";
 const SHOWS_TTL_SECONDS = 60;
@@ -193,6 +198,29 @@ export async function invalidateShowCacheForUser(
   await deleteCachedKeys(keys);
 }
 
+export async function syncShowDerivedFieldsForUser(
+  userId: string,
+  params: { showId: string; showSlug?: string | null },
+): Promise<void> {
+  const supabase = await getServerClient();
+  const computed = await computeShoppingListForShow(supabase, params.showId);
+  if (!computed) return;
+
+  const totalCents = computed.items.reduce(
+    (sum, item) => sum + item.qty * item.priceCents,
+    0,
+  );
+  await supabase
+    .from("shows")
+    .update({
+      total_cents: totalCents,
+      effects_count: computed.effectsCount,
+    })
+    .eq("id", params.showId)
+    .eq("user_id", userId);
+  await invalidateShowCacheForUser(userId, params);
+}
+
 export async function listShowsForCurrentUser(): Promise<Show[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
@@ -286,6 +314,13 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
 
 export function getFireworkProductsCacheKey(): string {
   return `${CACHE_PREFIX}:firework-products`;
+}
+
+export async function invalidateFireworkCatalogueCaches(): Promise<void> {
+  await deleteCachedKeys([
+    getFireworkSpecificationsCacheKey(),
+    getFireworkProductsCacheKey(),
+  ]);
 }
 
 /**
@@ -454,15 +489,26 @@ export async function listShoppingItemsForShow(
   if (cached) return cached;
 
   const supabase = await getServerClient();
+  const computed = await computeShoppingListForShow(supabase, showId);
+  if (!computed) return [];
 
+  await setCachedJson(cacheKey, computed.items, SHOWS_TTL_SECONDS);
+  return computed.items;
+}
+
+async function computeShoppingListForShow(
+  supabase: SupabaseClient<Database>,
+  showId: string,
+): Promise<ShoppingListComputation | null> {
   const { data: cueRows, error: cueError } = await supabase
     .from("show_cues")
     .select(SHOW_CUES_WITH_PRODUCT_SELECT)
     .eq("show_id", showId);
   if (cueError) {
     console.error("[shows.server] listShoppingItemsForShow cues failed:", cueError);
-    return [];
+    return null;
   }
+  const effectsCount = cueRows?.length ?? 0;
 
   // Aggregate qty per product
   const byProduct = new Map<string, { name: string; partNumber: string; manufacturer: string | null; qty: number }>();
@@ -478,8 +524,7 @@ export async function listShoppingItemsForShow(
   }
 
   if (byProduct.size === 0) {
-    await setCachedJson(cacheKey, [], SHOWS_TTL_SECONDS);
-    return [];
+    return { items: [], effectsCount };
   }
 
   // Fetch cheapest available price per product from supplier inventory
@@ -511,17 +556,7 @@ export async function listShoppingItemsForShow(
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  await setCachedJson(cacheKey, items, SHOWS_TTL_SECONDS);
-
-  // Keep shows.total_cents in sync with the computed shopping list total
-  const totalCents = items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
-  await supabase
-    .from("shows")
-    .update({ total_cents: totalCents })
-    .eq("id", showId);
-  await invalidateShowCacheForUser(userId, { showId });
-
-  return items;
+  return { items, effectsCount };
 }
 
 /**

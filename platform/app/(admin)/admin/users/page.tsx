@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { UserRound } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import { TablePagination } from "@/app/components/ui/TablePagination";
@@ -19,6 +21,7 @@ import { UserRowActions } from "./UserRowActions";
 type PageProps = {
   searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string }>;
 };
+type UsersSearchParams = Awaited<PageProps["searchParams"]>;
 
 const rowLinkClasses = "block px-5 py-4";
 const PAGE_SIZE = 10;
@@ -37,27 +40,6 @@ function statusTone(status: ProfileStatus) {
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const query = (params.q ?? "").trim().toLowerCase();
-  const roleFilter = params.role;
-  const statusFilter = params.status;
-  const requestedPage = Number(params.page ?? "1");
-  const users = await listAdminUsers();
-  const filtered = users.filter((user) => {
-    const text = [user.fullName, user.email, user.phone, user.roles.join(" ")]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    const matchesQuery = !query || text.includes(query);
-    const matchesRole = !roleFilter || user.roles.some((r) => r === roleFilter);
-    const matchesStatus = !statusFilter || user.status === statusFilter;
-    return matchesQuery && matchesRole && matchesStatus;
-  });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Number.isFinite(requestedPage)
-    ? Math.min(Math.max(1, requestedPage), totalPages)
-    : 1;
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-8">
@@ -91,6 +73,38 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         ]}
       />
 
+      <Suspense fallback={<TableSkeleton rows={10} columns={5} />}>
+        <AdminUsersTable params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
+  const query = (params.q ?? "").trim().toLowerCase();
+  const roleFilter = params.role;
+  const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
+  const users = await listAdminUsers();
+  const filtered = users.filter((user) => {
+    const text = [user.fullName, user.email, user.phone, user.roles.join(" ")]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const matchesQuery = !query || text.includes(query);
+    const matchesRole = !roleFilter || user.roles.some((r) => r === roleFilter);
+    const matchesStatus = !statusFilter || user.status === statusFilter;
+    return matchesQuery && matchesRole && matchesStatus;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  return (
+    <>
       <DataTableShell>
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
@@ -153,6 +167,6 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         totalPages={totalPages}
         searchParams={params}
       />
-    </div>
+    </>
   );
 }

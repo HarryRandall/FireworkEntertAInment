@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
-import { FireworkReplayCanvas } from "@/app/components/app/FireworkReplayCanvas";
 import { Button } from "@/app/components/ui/Button";
 import {
   importedSpecToReplayCues,
@@ -17,6 +17,23 @@ type FireworkImportPreviewProps = {
   spec: ImportedFireworkSpec | null;
   fallbackDuration: number;
 };
+
+function ReplayCanvasSkeleton() {
+  return (
+    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+  );
+}
+
+const LazyFireworkReplayCanvas = dynamic(
+  () =>
+    import("@/app/components/app/FireworkReplayCanvas").then(
+      (mod) => mod.FireworkReplayCanvas,
+    ),
+  {
+    ssr: false,
+    loading: () => <ReplayCanvasSkeleton />,
+  },
+);
 
 export function FireworkImportPreview({
   videoUrl,
@@ -308,7 +325,7 @@ export function FireworkImportPreview({
         <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-outline-variant/35 bg-surface-container-lowest">
           <div className="absolute inset-0 min-h-[200px]">
             {spec ? (
-              <FireworkReplayCanvas cues={cues} elapsed={elapsed} interactive />
+              <LazyFireworkReplayCanvas cues={cues} elapsed={elapsed} interactive />
             ) : (
               <div className="flex h-full items-center justify-center p-6 text-center text-sm text-on-surface-variant">
                 The generated 3D reconstruction will appear after processing.

@@ -135,7 +135,7 @@ export function AppShell({
   const brand = (
     <Link
       href="/dashboard"
-      prefetch={false}
+      prefetch
       className="flex items-center gap-2 px-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
     >
       <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">

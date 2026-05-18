@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import {
@@ -7,7 +8,6 @@ import {
   deletePreviewCueAction,
   type CueActionResult,
 } from "@/app/actions/preview-cues";
-import { FireworkReplayCanvas } from "@/app/components/app/FireworkReplayCanvas";
 import { Badge, Eyebrow } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -18,19 +18,6 @@ import { StatTile } from "@/app/components/ui/StatTile";
 import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
 import { formatDuration } from "@/lib/show-domain";
 import type { LaunchPosition } from "@/lib/fireworks/design";
-
-if (typeof window !== "undefined") {
-  const origWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
-    if (
-      typeof args[0] === "string" &&
-      args[0].includes("Clock: This module has been deprecated")
-    ) {
-      return;
-    }
-    origWarn(...args);
-  };
-}
 
 type FireworkReplayViewerProps = {
   showId: string;
@@ -47,6 +34,23 @@ const LAUNCH_POSITION_OPTIONS = [
   { value: "1", label: "Mortar 2 (centre)" },
   { value: "2", label: "Mortar 3 (right)" },
 ];
+
+function ReplayCanvasSkeleton() {
+  return (
+    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+  );
+}
+
+const LazyFireworkReplayCanvas = dynamic(
+  () =>
+    import("@/app/components/app/FireworkReplayCanvas").then(
+      (mod) => mod.FireworkReplayCanvas,
+    ),
+  {
+    ssr: false,
+    loading: () => <ReplayCanvasSkeleton />,
+  },
+);
 
 function EmptyPreview() {
   return (
@@ -195,7 +199,7 @@ export function FireworkReplayViewer({
             </p>
           </div>
 
-          <FireworkReplayCanvas
+          <LazyFireworkReplayCanvas
             cues={sortedCues}
             elapsed={elapsed}
             launchPositions={launchPositions}

@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
-import { invalidateShowCacheForUser } from "@/lib/shows.server";
+import { syncShowDerivedFieldsForUser } from "@/lib/shows.server";
 import type { Database } from "@/lib/database.types";
 
 export type CueActionResult =
@@ -141,7 +141,7 @@ export async function addPreviewCueAction(
   }
 
   if (user) {
-    await invalidateShowCacheForUser(user.id, {
+    await syncShowDerivedFieldsForUser(user.id, {
       showId: parsed.data.showId,
       showSlug: parsed.data.showSlug,
     });
@@ -179,7 +179,7 @@ export async function deletePreviewCueAction(
   }
 
   if (user && deletedCue?.show_id) {
-    await invalidateShowCacheForUser(user.id, {
+    await syncShowDerivedFieldsForUser(user.id, {
       showId: deletedCue.show_id,
       showSlug: parsed.data.showSlug,
     });

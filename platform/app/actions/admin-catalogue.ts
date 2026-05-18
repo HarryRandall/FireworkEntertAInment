@@ -4,9 +4,18 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/lib/admin.server";
+import {
+  invalidateAdminCatalogueCache,
+  requirePermission,
+} from "@/lib/admin.server";
+import { invalidateFireworkCatalogueCaches } from "@/lib/shows.server";
 
 type Result = { ok: true } | { ok: false; error: string };
+const MAX_PRODUCT_DURATION_SECONDS = 60 * 60;
+
+function clampProductDurationSeconds(value: number): number {
+  return Math.min(MAX_PRODUCT_DURATION_SECONDS, Math.max(0, value));
+}
 
 const ProductInput = z.object({
   partNumber: z.string().trim().min(1).max(80),
@@ -19,7 +28,7 @@ const ProductInput = z.object({
     .transform((v) => {
       if (v === undefined || v === "" || v === null) return null;
       const n = typeof v === "string" ? Number(v) : v;
-      return Number.isFinite(n) ? n : null;
+      return Number.isFinite(n) ? clampProductDurationSeconds(n) : null;
     }),
 });
 
@@ -44,6 +53,8 @@ export async function createProduct(input: ProductInputType): Promise<Result> {
     duration_seconds: parsed.data.durationSeconds,
   });
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminCatalogueCache();
+  await invalidateFireworkCatalogueCaches();
   revalidatePath("/admin/catalogue");
   return { ok: true };
 }
@@ -67,6 +78,8 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
     })
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminCatalogueCache();
+  await invalidateFireworkCatalogueCaches();
   revalidatePath("/admin/catalogue");
   return { ok: true };
 }
@@ -81,6 +94,8 @@ export async function deleteProduct(input: z.infer<typeof DeleteProduct>): Promi
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("products").delete().eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminCatalogueCache();
+  await invalidateFireworkCatalogueCaches();
   revalidatePath("/admin/catalogue");
   return { ok: true };
 }

@@ -4,7 +4,11 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
-import { getCachedJson, setCachedJson } from "@/lib/server-cache";
+import {
+  deleteCachedKeys,
+  getCachedJson,
+  setCachedJson,
+} from "@/lib/server-cache";
 import type {
   AdminUser,
   CatalogueProductSummary,
@@ -42,6 +46,8 @@ type MediaAssetRow = Database["public"]["Tables"]["media_assets"]["Row"];
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
 type ShowTemplateRow = Database["public"]["Tables"]["show_templates"]["Row"];
 const PLATFORM_CACHE_PREFIX = "platform:v1";
+const ADMIN_CACHE_PREFIX = `${PLATFORM_CACHE_PREFIX}:admin`;
+const ADMIN_CACHE_TTL_SECONDS = 60;
 const SHOW_TEMPLATES_TTL_SECONDS = 60 * 10;
 
 const ROLE_KEYS: readonly RoleKey[] = ["admin", "supplier", "user"];
@@ -88,6 +94,63 @@ function mapPermission(row: PermissionRow): Permission {
 
 function unique<T>(items: T[]): T[] {
   return Array.from(new Set(items));
+}
+
+export function getAdminUsersCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:users`;
+}
+
+export function getAdminUserCacheKey(userId: string): string {
+  return `${ADMIN_CACHE_PREFIX}:users:${userId}`;
+}
+
+export function getAdminSuppliersCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:suppliers`;
+}
+
+export function getAdminCatalogueCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:catalogue`;
+}
+
+export function getAdminImportsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:imports`;
+}
+
+export function getAdminRolesCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:roles`;
+}
+
+export function getAdminPermissionsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:permissions`;
+}
+
+export async function invalidateAdminUsersCache(userId?: string): Promise<void> {
+  const keys = [getAdminUsersCacheKey()];
+  if (userId) keys.push(getAdminUserCacheKey(userId));
+  await deleteCachedKeys(keys);
+}
+
+export async function invalidateAdminSuppliersCache(): Promise<void> {
+  await deleteCachedKeys([getAdminSuppliersCacheKey()]);
+}
+
+export async function invalidateAdminCatalogueCache(): Promise<void> {
+  await deleteCachedKeys([getAdminCatalogueCacheKey()]);
+}
+
+export async function invalidateAdminImportsCache(): Promise<void> {
+  await deleteCachedKeys([getAdminImportsCacheKey()]);
+}
+
+export async function invalidateAdminRolesCache(): Promise<void> {
+  await deleteCachedKeys([getAdminRolesCacheKey(), getAdminUsersCacheKey()]);
+}
+
+export async function invalidateAdminPermissionsCache(): Promise<void> {
+  await deleteCachedKeys([
+    getAdminPermissionsCacheKey(),
+    getAdminUsersCacheKey(),
+  ]);
 }
 
 const getServerClient = cache(async () => createClient(await cookies()));
@@ -329,6 +392,10 @@ export async function requirePermission(permission: PermissionKey) {
 }
 
 export async function listRoles(): Promise<Role[]> {
+  const cacheKey = getAdminRolesCacheKey();
+  const cached = await getCachedJson<Role[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("roles")
@@ -338,10 +405,16 @@ export async function listRoles(): Promise<Role[]> {
     console.error("[admin.server] listRoles failed:", error);
     return [];
   }
-  return (data ?? []).map(mapRole);
+  const mapped = (data ?? []).map(mapRole);
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listPermissions(): Promise<Permission[]> {
+  const cacheKey = getAdminPermissionsCacheKey();
+  const cached = await getCachedJson<Permission[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("permissions")
@@ -352,12 +425,18 @@ export async function listPermissions(): Promise<Permission[]> {
     console.error("[admin.server] listPermissions failed:", error);
     return [];
   }
-  return (data ?? []).map(mapPermission);
+  const mapped = (data ?? []).map(mapPermission);
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listAdminUsers(): Promise<AdminUser[]> {
   const admin = await requirePermission("admin.manage_users");
   if (!admin) return [];
+
+  const cacheKey = getAdminUsersCacheKey();
+  const cached = await getCachedJson<AdminUser[]>(cacheKey);
+  if (cached) return cached;
 
   const supabase = await getServerClient();
   const [{ data: profiles }, { data: userRoles }, { data: roles }, { data: overrides }, { data: permissions }] =
@@ -378,20 +457,47 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
         .select("id, key, name, description, category, created_at, updated_at"),
     ]);
 
+  const mapped = mapAdminUsersFromRows({
+    profiles: (profiles ?? []) as Pick<
+      ProfileRow,
+      "id" | "email" | "full_name" | "phone" | "status" | "updated_at"
+    >[],
+    userRoles: (userRoles ?? []) as UserRoleRow[],
+    roles: (roles ?? []) as RoleRow[],
+    overrides: (overrides ?? []) as UserPermissionOverrideRow[],
+    permissions: (permissions ?? []) as PermissionRow[],
+  });
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
+}
+
+function mapAdminUsersFromRows({
+  profiles,
+  userRoles,
+  roles,
+  overrides,
+  permissions,
+}: {
+  profiles: Pick<
+    ProfileRow,
+    "id" | "email" | "full_name" | "phone" | "status" | "updated_at"
+  >[];
+  userRoles: UserRoleRow[];
+  roles: RoleRow[];
+  overrides: UserPermissionOverrideRow[];
+  permissions: PermissionRow[];
+}): AdminUser[] {
   const roleById = new Map((roles ?? []).map((role) => [role.id, mapRole(role)]));
   const permissionById = new Map(
     (permissions ?? []).map((permission) => [permission.id, mapPermission(permission)]),
   );
 
-  return ((profiles ?? []) as Pick<
-    ProfileRow,
-    "id" | "email" | "full_name" | "phone" | "status" | "updated_at"
-  >[]).map((profile) => {
-    const assignedRoles = ((userRoles ?? []) as UserRoleRow[])
+  return profiles.map((profile) => {
+    const assignedRoles = userRoles
       .filter((row) => row.user_id === profile.id)
       .map((row) => roleById.get(row.role_id)?.key)
       .filter((key): key is RoleKey => Boolean(key));
-    const permissionOverrides = ((overrides ?? []) as UserPermissionOverrideRow[])
+    const permissionOverrides = overrides
       .filter((row) => row.user_id === profile.id)
       .map((row) => {
         const permission = permissionById.get(row.permission_id);
@@ -418,8 +524,61 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
 }
 
 export async function getAdminUserById(userId: string): Promise<AdminUser | null> {
-  const users = await listAdminUsers();
-  return users.find((user) => user.id === userId) ?? null;
+  if (!(await requirePermission("admin.manage_users"))) return null;
+
+  const cacheKey = getAdminUserCacheKey(userId);
+  const cached = await getCachedJson<AdminUser>(cacheKey);
+  if (cached) return cached;
+
+  const supabase = await getServerClient();
+  const [
+    { data: profile, error: profileError },
+    { data: userRoles },
+    { data: roles },
+    { data: overrides },
+    { data: permissions },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, email, full_name, phone, status, updated_at")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("user_roles")
+      .select("user_id, role_id, assigned_by, created_at")
+      .eq("user_id", userId),
+    supabase
+      .from("roles")
+      .select("id, key, name, description, sort_order, created_at, updated_at"),
+    supabase
+      .from("user_permission_overrides")
+      .select("user_id, permission_id, enabled, assigned_by, created_at, updated_at")
+      .eq("user_id", userId),
+    supabase
+      .from("permissions")
+      .select("id, key, name, description, category, created_at, updated_at"),
+  ]);
+
+  if (profileError) {
+    console.error("[admin.server] getAdminUserById failed:", profileError);
+    return null;
+  }
+  if (!profile) return null;
+
+  const [mapped] = mapAdminUsersFromRows({
+    profiles: [profile as Pick<
+      ProfileRow,
+      "id" | "email" | "full_name" | "phone" | "status" | "updated_at"
+    >],
+    userRoles: (userRoles ?? []) as UserRoleRow[],
+    roles: (roles ?? []) as RoleRow[],
+    overrides: (overrides ?? []) as UserPermissionOverrideRow[],
+    permissions: (permissions ?? []) as PermissionRow[],
+  });
+  if (mapped) {
+    await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  }
+  return mapped ?? null;
 }
 
 export type UserActivity = {
@@ -490,6 +649,10 @@ export async function listSuppliers(): Promise<SupplierSummary[]> {
   ) {
     return [];
   }
+  const cacheKey = getAdminSuppliersCacheKey();
+  const cached = await getCachedJson<SupplierSummary[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("supplier_profiles")
@@ -499,7 +662,7 @@ export async function listSuppliers(): Promise<SupplierSummary[]> {
     console.error("[admin.server] listSuppliers failed:", error);
     return [];
   }
-  return ((data ?? []) as Pick<
+  const mapped = ((data ?? []) as Pick<
     SupplierRow,
     "id" | "name" | "slug" | "status" | "contact_email" | "phone" | "website_url" | "updated_at"
   >[]).map((row) => ({
@@ -512,10 +675,16 @@ export async function listSuppliers(): Promise<SupplierSummary[]> {
     websiteUrl: row.website_url,
     updatedAt: row.updated_at,
   }));
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listImportJobs(): Promise<ImportJobSummary[]> {
   if (!(await requirePermission("admin.manage_imports"))) return [];
+  const cacheKey = getAdminImportsCacheKey();
+  const cached = await getCachedJson<ImportJobSummary[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("import_jobs")
@@ -532,7 +701,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
       console.error("[admin.server] listImportJobs failed:", fallbackError);
       return [];
     }
-    return ((fallbackData ?? []) as Pick<
+    const fallbackMapped = ((fallbackData ?? []) as Pick<
       ImportJobRow,
       | "id"
       | "kind"
@@ -559,8 +728,12 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
+    await setCachedJson(cacheKey, fallbackMapped, ADMIN_CACHE_TTL_SECONDS);
+    return fallbackMapped;
   }
-  return ((data ?? []) as ImportJobRow[]).map(mapImportJob);
+  const mapped = ((data ?? []) as ImportJobRow[]).map(mapImportJob);
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
 }
 
 export async function getImportJobDetail(
@@ -639,6 +812,10 @@ export async function getImportJobDetail(
 
 export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]> {
   if (!(await requirePermission("admin.manage_catalogue"))) return [];
+  const cacheKey = getAdminCatalogueCacheKey();
+  const cached = await getCachedJson<CatalogueProductSummary[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from("products")
@@ -649,7 +826,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     console.error("[admin.server] listCatalogueProducts failed:", error);
     return [];
   }
-  return ((data ?? []) as Pick<
+  const mapped = ((data ?? []) as Pick<
     ProductRow,
     | "id"
     | "part_number"
@@ -669,6 +846,8 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     updatedAt: row.updated_at,
   }));
+  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
 }
 
 export async function listShowTemplates(): Promise<ShowTemplate[]> {

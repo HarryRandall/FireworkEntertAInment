@@ -4,10 +4,29 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/lib/admin.server";
+import {
+  invalidateAdminSuppliersCache,
+  requirePermission,
+} from "@/lib/admin.server";
 import { slugifyTitle } from "@/lib/show-domain";
 
 type Result = { ok: true } | { ok: false; error: string };
+
+const SafeWebsiteUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .transform((v) => v ?? "")
+  .refine((value) => {
+    if (!value) return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Website URL must start with http:// or https://.");
 
 const SupplierInput = z.object({
   name: z.string().trim().min(1).max(160),
@@ -18,12 +37,7 @@ const SupplierInput = z.object({
     .optional()
     .transform((v) => v ?? ""),
   phone: z.string().trim().max(40).optional(),
-  websiteUrl: z
-    .string()
-    .trim()
-    .max(500)
-    .optional()
-    .transform((v) => v ?? ""),
+  websiteUrl: SafeWebsiteUrl,
   status: z.enum(["draft", "active", "suspended", "archived"]),
 });
 
@@ -49,6 +63,7 @@ export async function createSupplier(input: SupplierInputType): Promise<Result> 
     status: parsed.data.status,
   });
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminSuppliersCache();
   revalidatePath("/admin/suppliers");
   return { ok: true };
 }
@@ -72,6 +87,7 @@ export async function updateSupplier(input: z.infer<typeof UpdateSupplier>): Pro
     })
     .eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminSuppliersCache();
   revalidatePath("/admin/suppliers");
   return { ok: true };
 }
@@ -86,6 +102,7 @@ export async function deleteSupplier(input: z.infer<typeof DeleteSupplier>): Pro
   const supabase = createClient(await cookies());
   const { error } = await supabase.from("supplier_profiles").delete().eq("id", parsed.data.id);
   if (error) return { ok: false, error: error.message };
+  await invalidateAdminSuppliersCache();
   revalidatePath("/admin/suppliers");
   return { ok: true };
 }

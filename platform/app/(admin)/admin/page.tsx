@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { AdminOverviewSkeleton } from "@/app/components/app/RouteSkeletons";
 import { InfoTooltip } from "@/app/components/ui/InfoTooltip";
 import { Card } from "@/app/components/ui/Card";
 import { StatTile } from "@/app/components/ui/StatTile";
@@ -9,7 +11,22 @@ import {
   listSuppliers,
 } from "@/lib/admin.server";
 
-export default async function AdminOverviewPage() {
+export default function AdminOverviewPage() {
+  return (
+    <div className="space-y-8">
+      <AppPageHeader
+        title="Platform command centre"
+        description="Manage access, suppliers, catalogue data, and VDL/video import records from a dedicated control surface."
+      />
+
+      <Suspense fallback={<AdminOverviewSkeleton />}>
+        <AdminOverviewData />
+      </Suspense>
+    </div>
+  );
+}
+
+async function AdminOverviewData() {
   const [users, suppliers, imports, catalogue] = await Promise.all([
     listAdminUsers(),
     listSuppliers(),
@@ -18,12 +35,7 @@ export default async function AdminOverviewPage() {
   ]);
 
   return (
-    <div className="space-y-8">
-      <AppPageHeader
-        title="Platform command centre"
-        description="Manage access, suppliers, catalogue data, and VDL/video import records from a dedicated control surface."
-      />
-
+    <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Users"
@@ -54,7 +66,7 @@ export default async function AdminOverviewPage() {
         />
       </div>
 
-    </div>
+    </>
   );
 }
 

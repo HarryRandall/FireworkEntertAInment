@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import { TablePagination } from "@/app/components/ui/TablePagination";
@@ -17,6 +19,7 @@ import { SupplierRowActions } from "./SupplierRowActions";
 type PageProps = {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 };
+type SuppliersSearchParams = Awaited<PageProps["searchParams"]>;
 
 const PAGE_SIZE = 10;
 
@@ -35,23 +38,6 @@ function statusTone(status: string) {
 
 export default async function AdminSuppliersPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const query = (params.q ?? "").trim().toLowerCase();
-  const statusFilter = params.status;
-  const requestedPage = Number(params.page ?? "1");
-
-  const suppliers = await listSuppliers();
-  const filtered = suppliers.filter((s) => {
-    const text = [s.name, s.contactEmail, s.phone, s.websiteUrl].filter(Boolean).join(" ").toLowerCase();
-    const matchesQuery = !query || text.includes(query);
-    const matchesStatus = !statusFilter || s.status === statusFilter;
-    return matchesQuery && matchesStatus;
-  });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Number.isFinite(requestedPage)
-    ? Math.min(Math.max(1, requestedPage), totalPages)
-    : 1;
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   return (
     <div className="space-y-8">
@@ -78,6 +64,34 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
         ]}
       />
 
+      <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+        <SuppliersTable params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
+  const query = (params.q ?? "").trim().toLowerCase();
+  const statusFilter = params.status;
+  const requestedPage = Number(params.page ?? "1");
+
+  const suppliers = await listSuppliers();
+  const filtered = suppliers.filter((s) => {
+    const text = [s.name, s.contactEmail, s.phone, s.websiteUrl].filter(Boolean).join(" ").toLowerCase();
+    const matchesQuery = !query || text.includes(query);
+    const matchesStatus = !statusFilter || s.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  return (
+    <>
       <DataTableShell>
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
@@ -145,6 +159,6 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
         totalPages={totalPages}
         searchParams={params}
       />
-    </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   PlusCircle,
   Music4,
@@ -7,6 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
+import { CardGridSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
@@ -28,28 +30,38 @@ function pickIcon(slug: string): LucideIcon {
   return ROTATING_ICONS[hash % ROTATING_ICONS.length];
 }
 
-export default async function DashboardPage() {
-  const shows = await listShowsForCurrentUser();
-
+export default function DashboardPage() {
   return (
     <div>
       <AppPageHeader
         title="Your shows"
         description="Open a draft, or start something new."
         actions={
-          <Button href="/shows/new" prefetch={false} size="sm">
+          <Button href="/shows/new" size="sm">
             <PlusCircle size={14} />
             New show
           </Button>
         }
       />
 
+      <Suspense fallback={<CardGridSkeleton />}>
+        <DashboardShows />
+      </Suspense>
+    </div>
+  );
+}
+
+async function DashboardShows() {
+  const shows = await listShowsForCurrentUser();
+
+  return (
+    <>
       {shows.length === 0 ? (
         <EmptyState
           icon={<Sparkles size={28} strokeWidth={1.5} />}
           title="No shows yet"
           action={
-            <Button href="/shows/new" prefetch={false}>
+            <Button href="/shows/new">
               <PlusCircle size={16} />
               Create your first show
             </Button>
@@ -66,7 +78,7 @@ export default async function DashboardPage() {
               <Link
                 key={show.id}
                 href={`/shows/${show.slug}`}
-                prefetch={false}
+                prefetch
                 className="group block focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] rounded-xl"
               >
                 <Card radius="lg" hoverable className="p-6">
@@ -117,6 +129,6 @@ export default async function DashboardPage() {
           })}
         </div>
       )}
-    </div>
+    </>
   );
 }
