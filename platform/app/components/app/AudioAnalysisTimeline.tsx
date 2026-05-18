@@ -95,7 +95,7 @@ export function AudioAnalysisTimeline({
   const keyMoments = result?.key_moments ?? EMPTY_KEY_MOMENTS;
   const buildups = result?.buildups ?? EMPTY_BUILDUPS;
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
-  const numericAnchors = useMemo(
+  const topAnchors = useMemo(
     () =>
       keyMoments
         .map((moment) => ({
@@ -104,8 +104,9 @@ export function AudioAnalysisTimeline({
           prominence: moment.prominence,
           typeCode: peakTypeCode(moment),
         }))
-        .sort((a, b) => a.time - b.time)
-        .slice(0, 10),
+        .sort((a, b) => b.prominence - a.prominence)
+        .slice(0, 3)
+        .sort((a, b) => a.time - b.time),
     [keyMoments],
   );
 
@@ -182,17 +183,13 @@ export function AudioAnalysisTimeline({
       </div>
 
       <div className="mt-7 rounded-xl border border-outline-variant/45 bg-surface/70 p-4">
-        <div className="mb-3 flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/55 tabular-nums">
+        <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/55 tabular-nums">
           {labels.map((label, index) => (
             <span key={`${label}-${index}`}>{label}</span>
           ))}
         </div>
 
-        <div className="relative h-72 overflow-hidden rounded-lg border border-outline-variant/35 bg-surface-container-low">
-          <div className="absolute inset-x-0 top-0 h-16 border-b border-outline-variant/20" />
-          <div className="absolute inset-x-0 top-16 h-16 border-b border-outline-variant/20" />
-          <div className="absolute inset-x-0 top-32 h-16 border-b border-outline-variant/20" />
-
+        <div className="relative h-4 overflow-hidden rounded-full bg-surface-container-low">
           {sections.map((section: AnalyzerSection, index) => {
             const left = timePercent(section.start, duration);
             const width = clampPercent(
@@ -202,7 +199,7 @@ export function AudioAnalysisTimeline({
               <div
                 key={`${section.start}-${section.end}-${index}`}
                 className={cn(
-                  "absolute top-0 h-full min-w-[2px] border-r",
+                  "absolute top-0 h-full min-w-[2px]",
                   sectionStyle(section.label),
                 )}
                 style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
@@ -219,7 +216,7 @@ export function AudioAnalysisTimeline({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-on-surface-variant">
-          <span>Song sections</span>
+          <span>Song structure</span>
           <span>AI peak anchors: {keyMoments.length}</span>
           <span>Build-up anchors: {buildups.length}</span>
           {analysis?.createdAt ? (
@@ -238,24 +235,22 @@ export function AudioAnalysisTimeline({
           ))}
         </div>
 
-        {numericAnchors.length > 0 ? (
+        {topAnchors.length > 0 ? (
           <div className="mt-4 overflow-hidden rounded-lg border border-outline-variant/35">
-            <div className="grid grid-cols-4 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <div className="grid grid-cols-3 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
               <span>Time</span>
-              <span>Energy</span>
-              <span>Prominence</span>
-              <span>Type code</span>
+              <span>Strength</span>
+              <span>Peak type</span>
             </div>
             <div className="divide-y divide-outline-variant/25">
-              {numericAnchors.map((anchor, index) => (
+              {topAnchors.map((anchor, index) => (
                 <div
                   key={`${anchor.time}-${index}`}
-                  className="grid grid-cols-4 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
+                  className="grid grid-cols-3 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
                 >
                   <span>{formatDuration(anchor.time)}</span>
-                  <span>{anchor.energy.toFixed(3)}</span>
-                  <span>{anchor.prominence.toFixed(3)}</span>
-                  <span>{anchor.typeCode}</span>
+                  <span>{Math.round(anchor.energy * 100)}%</span>
+                  <span>{anchor.typeCode === 2 ? "Climax" : "Peak"}</span>
                 </div>
               ))}
             </div>
