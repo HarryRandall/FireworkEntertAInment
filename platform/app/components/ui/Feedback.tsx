@@ -1,24 +1,23 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, Info, Loader2, Sparkles } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton as ShadcnSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type AlertTone = "info" | "success" | "warning" | "danger";
 
-const alertToneClasses: Record<AlertTone, string> = {
-  info: "border-primary/25 bg-primary/10 text-on-surface",
-  success: "border-success/25 bg-success/10 text-on-surface",
-  warning: "border-highlight/30 bg-highlight/10 text-on-surface",
-  danger: "border-error/30 bg-error/10 text-on-surface",
+const alertIconClasses: Record<AlertTone, string> = {
+  info: "text-[color:var(--color-status-info)]",
+  success: "text-[color:var(--color-status-success)]",
+  warning: "text-[color:var(--color-status-warning)]",
+  danger: "text-[color:var(--color-status-danger)]",
 };
 
-const alertIconClasses: Record<AlertTone, string> = {
-  info: "text-primary",
-  success: "text-success",
-  warning: "text-highlight",
-  danger: "text-error",
+const alertIcons: Record<AlertTone, typeof Info> = {
+  info: Info,
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  danger: AlertTriangle,
 };
 
 export function InlineAlert({
@@ -32,21 +31,20 @@ export function InlineAlert({
   children?: ReactNode;
   className?: string;
 }) {
-  const Icon = tone === "danger" || tone === "warning" ? AlertTriangle : Info;
+  const Icon = alertIcons[tone];
   return (
     <div
       className={cn(
-        "flex gap-3 rounded-xl border p-4 text-sm",
-        alertToneClasses[tone],
+        "flex gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 text-sm",
         className,
       )}
       role={tone === "danger" ? "alert" : "status"}
     >
       <Icon className={cn("mt-0.5 shrink-0", alertIconClasses[tone])} size={18} />
       <div>
-        <p className="font-bold">{title}</p>
+        <p className="font-medium text-[color:var(--color-content-emphasis)]">{title}</p>
         {children ? (
-          <div className="mt-1 leading-relaxed text-on-surface-variant">
+          <div className="mt-1 leading-relaxed text-[color:var(--color-content-subtle)]">
             {children}
           </div>
         ) : null}
@@ -60,39 +58,41 @@ export function EmptyState({
   children,
   action,
   className,
+  icon,
 }: {
   title: string;
   children?: ReactNode;
   action?: ReactNode;
   className?: string;
+  icon?: ReactNode;
 }) {
   return (
-    <Card
+    <div
       className={cn(
-        "flex flex-col items-center gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low/80 p-10 text-center",
+        "flex flex-col items-center gap-4 rounded-xl border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-muted)] p-10 text-center",
         className,
       )}
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-        <Sparkles size={22} strokeWidth={1.8} />
-      </span>
+      {icon ? (
+        <span className="text-[color:var(--color-content-muted)]">{icon}</span>
+      ) : null}
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold text-on-surface">{title}</h2>
+        <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">{title}</h2>
         {children ? (
-          <p className="max-w-md text-sm leading-relaxed text-on-surface-variant">
+          <p className="max-w-md text-sm leading-relaxed text-[color:var(--color-content-subtle)]">
             {children}
           </p>
         ) : null}
       </div>
       {action}
-    </Card>
+    </div>
   );
 }
 
 export function Skeleton({ className }: { className?: string }) {
   return (
     <ShadcnSkeleton
-      className={cn("rounded-xl bg-surface-container-highest/70", className)}
+      className={cn("rounded-md bg-[color:var(--color-bg-subtle)]", className)}
     />
   );
 }
@@ -106,11 +106,14 @@ export function ProgressIndicator({
 }) {
   return (
     <div className="space-y-2" role="status" aria-label={label}>
-      <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
-        <Loader2 size={14} className="animate-spin text-primary" />
+      <div className="flex items-center gap-2 text-xs text-[color:var(--color-content-subtle)]">
+        <Loader2 size={14} className="animate-spin" />
         {label}
       </div>
-      <Progress value={value ?? 42} className="h-2 bg-surface-container-highest" />
+      <Progress
+        value={value ?? 42}
+        className="h-1 bg-[color:var(--color-bg-subtle)] [&>div]:bg-[color:var(--color-accent)]"
+      />
     </div>
   );
 }

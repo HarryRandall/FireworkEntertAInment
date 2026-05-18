@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { uiStyles } from "@/app/components/ui/styles";
 
 export function DataTableShell({
   caption,
@@ -13,20 +11,19 @@ export function DataTableShell({
   className?: string;
 }) {
   return (
-    <Card
+    <div
       className={cn(
-        uiStyles.table.shell,
-        "gap-0 py-0",
+        "overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]",
         className,
       )}
     >
       {caption ? (
-        <div className={uiStyles.table.caption}>
+        <div className="border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-sm font-medium text-[color:var(--color-content-default)]">
           {caption}
         </div>
       ) : null}
       <div className="overflow-x-auto">{children}</div>
-    </Card>
+    </div>
   );
 }
 
@@ -36,25 +33,28 @@ export function tableClasses(className?: string) {
 
 export function tableHeadClasses(className?: string) {
   return cn(
-    uiStyles.table.head,
+    "sticky top-0 z-10 bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]",
     className,
   );
 }
 
 export function tableHeaderCellClasses(className?: string) {
   return cn(
-    uiStyles.table.headerCell,
+    "px-4 py-2.5 text-xs font-medium uppercase tracking-wide",
     className,
   );
 }
 
 export function tableRowClasses(className?: string) {
   return cn(
-    uiStyles.table.row,
+    "border-t border-[color:var(--color-border-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)]",
     className,
   );
 }
 
 export function tableCellClasses(className?: string) {
-  return cn(uiStyles.table.cell, className);
+  return cn(
+    "px-4 py-3 align-middle text-sm text-[color:var(--color-content-default)]",
+    className,
+  );
 }

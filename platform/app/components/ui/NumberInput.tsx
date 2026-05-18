@@ -2,10 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { uiStyles } from "@/app/components/ui/styles";
 
 type NumberInputProps = {
   name?: string;
@@ -56,16 +53,15 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        uiStyles.focus.fieldGroup,
-        "flex h-11 items-center rounded-xl border border-outline/55 bg-surface text-on-surface transition-all duration-200",
+        "flex h-10 items-center rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] transition-colors focus-within:border-[color:var(--color-content-emphasis)] focus-within:ring-1 focus-within:ring-[color:var(--color-content-emphasis)]",
         disabled && "opacity-60",
         className,
       )}
     >
       {iconLeft ? (
-        <span className="pl-3 text-on-surface-variant">{iconLeft}</span>
+        <span className="pl-3 text-[color:var(--color-content-subtle)]">{iconLeft}</span>
       ) : null}
-      <Input
+      <input
         type="number"
         name={name}
         value={Number.isFinite(current) ? current : ""}
@@ -86,33 +82,29 @@ export function NumberInput({
         required={required}
         disabled={disabled}
         aria-label={ariaLabel}
-        className="h-full w-full appearance-none border-0 bg-transparent px-3 text-sm font-semibold tabular-nums text-on-surface shadow-none outline-none focus-visible:border-0 focus-visible:ring-0 placeholder:text-on-surface-variant/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-full w-full appearance-none border-0 bg-transparent px-3 text-sm font-medium tabular-nums text-[color:var(--color-content-emphasis)] shadow-none outline-none placeholder:text-[color:var(--color-content-muted)] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
-      <div className="flex h-full shrink-0 flex-col border-l border-outline/45">
-        <Button
+      <div className="flex h-full shrink-0 flex-col border-l border-[color:var(--color-border-subtle)]">
+        <button
           type="button"
-          variant="ghost"
-          size="icon-xs"
           tabIndex={-1}
           aria-label="Increase"
           disabled={disabled || (typeof max === "number" && current >= max)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) + step)}
-          className="flex h-1/2 w-8 rounded-none text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-1/2 w-8 items-center justify-center text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={12} strokeWidth={2.5} />
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="ghost"
-          size="icon-xs"
           tabIndex={-1}
           aria-label="Decrease"
           disabled={disabled || (typeof min === "number" && current <= min)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) - step)}
-          className="flex h-1/2 w-8 rounded-none border-t border-outline/45 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-1/2 w-8 items-center justify-center border-t border-[color:var(--color-border-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Minus size={12} strokeWidth={2.5} />
-        </Button>
+        </button>
       </div>
     </div>
   );

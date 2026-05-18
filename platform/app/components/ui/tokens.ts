@@ -40,7 +40,24 @@ export const cssTokens = {
   },
 } as const;
 
+/**
+ * Static colour palette used by Three.js / SVG art that doesn't theme-switch
+ * (HeroCanvas, FireworkArt, VendorNetwork). These are deliberately kept as a
+ * vivid set independent of the app's neutral UI palette.
+ */
 export const staticShowCrafterPalette = {
+  night: "#05070D",
+  surfaceDeep: "#0B1020",
+  gridMajor: "#40516F",
+  gridMinor: "#22304A",
+  onSurface: "#F5F7FA",
+  primary: "#00E5FF",
+  secondary: "#3B82F6",
+  tertiary: "#8B5CF6",
+  magenta: "#FF3DF2",
+  highlight: "#FFD166",
+  success: "#00FF9C",
+
   bgDefault: "#ffffff",
   bgMuted: "#fafafa",
   borderSubtle: "#e5e5e5",
