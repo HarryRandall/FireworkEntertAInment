@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { StatTile } from "@/app/components/ui/StatTile";
-import { formatDuration } from "@/lib/show-domain";
+import { formatDuration, formatStableDateTime } from "@/lib/show-domain";
 import type {
   AnalyzerKeyMoment,
   AnalyzerSection,
@@ -257,7 +257,7 @@ export function AudioAnalysisTimeline({
           <span>Build-up anchors: {buildups.length}</span>
           {analysis?.createdAt ? (
             <span className="ml-auto tabular-nums">
-              {new Date(analysis.createdAt).toLocaleString()}
+              {formatStableDateTime(analysis.createdAt)}
             </span>
           ) : null}
         </div>
