@@ -79,6 +79,7 @@ export function FireworkReplayViewer({
   const [elapsed, setElapsed] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [actionResult, setActionResult] = useState<CueActionResult | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(specifications[0]?.id);
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const startedAt = useRef<number | null>(null);
@@ -295,6 +296,7 @@ export function FireworkReplayViewer({
                   value: spec.id,
                   label: spec.name,
                 }))}
+                onChange={(value) => setSelectedProductId(value)}
               />
             </label>
             <label className="space-y-2">
@@ -326,8 +328,9 @@ export function FireworkReplayViewer({
                 Label
               </span>
               <Input
+                key={selectedProductId}
                 name="description"
-                defaultValue="Custom firework cue"
+                defaultValue={specifications.find((s) => s.id === selectedProductId)?.name ?? ""}
                 required
               />
             </label>
@@ -354,6 +357,9 @@ export function FireworkReplayViewer({
                       </span>
                       <span className="font-semibold text-on-surface">
                         {cue.description || cue.firework.name}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                        {LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ?? `Mortar ${cue.launchPositionIndex + 1}`}
                       </span>
                       {shotCount > 1 && (
                         <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
