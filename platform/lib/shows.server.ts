@@ -123,6 +123,7 @@ function mapCue(row: ShowCueProjection): ShowCue {
 function mapEffectSpecification(
   row: EffectSpecProjection,
   index = 0,
+  caliber: string | null = null,
 ): FireworkSpecification {
   return {
     id: row.id,
@@ -132,6 +133,7 @@ function mapEffectSpecification(
     sortOrder: index,
     durationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
+    caliber,
     spec: safeParseFireworkSpec(row.spec_json),
     rawSpec: row.spec_json,
   };
@@ -277,7 +279,7 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
     console.error("[shows.server] listFireworkSpecifications failed:", error);
     return [];
   }
-  const mapped = ((data ?? []) as EffectSpecProjection[]).map(mapEffectSpecification);
+  const mapped = ((data ?? []) as EffectSpecProjection[]).map((row, i) => mapEffectSpecification(row, i));
   await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
   return mapped;
 }
@@ -307,6 +309,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
       `id, name, part_number, description, duration_seconds,
        product_shots (
          shot_index,
+         caliber,
          effect_specs (${EFFECT_SPEC_SELECT})
        )`,
     )
@@ -324,6 +327,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
     duration_seconds: number | null;
     product_shots: Array<{
       shot_index: number;
+      caliber: string | null;
       effect_specs: EffectSpecProjection | null;
     }>;
   };
@@ -337,15 +341,12 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
     if (!primary?.effect_specs) continue;
     const effectSpec = primary.effect_specs;
     mapped.push({
+      ...mapEffectSpecification(effectSpec, mapped.length, primary.caliber ?? null),
       id: row.id,
       slug: row.part_number,
       name: row.name,
       description: row.description ?? effectSpec.description,
-      sortOrder: mapped.length,
       durationSeconds: row.duration_seconds ?? effectSpec.duration_seconds,
-      heightMeters: effectSpec.height_meters,
-      spec: safeParseFireworkSpec(effectSpec.spec_json),
-      rawSpec: effectSpec.spec_json,
     });
   }
 
@@ -388,6 +389,7 @@ export async function listReplayCuesForShow(
     product_id: string;
     shot_index: number;
     time_offset_seconds: number;
+    caliber: string | null;
     effect_specs: EffectSpecProjection | null;
   };
 
@@ -398,7 +400,7 @@ export async function listReplayCuesForShow(
     const { data: shots, error: shotsErr } = await supabase
       .from("product_shots")
       .select(
-        `product_id, shot_index, time_offset_seconds, effect_specs (${EFFECT_SPEC_SELECT})`,
+        `product_id, shot_index, time_offset_seconds, caliber, effect_specs (${EFFECT_SPEC_SELECT})`,
       )
       .in("product_id", productIds)
       .order("shot_index", { ascending: true });
@@ -411,7 +413,7 @@ export async function listReplayCuesForShow(
         const arr = shotsByProduct.get(shot.product_id) ?? [];
         arr.push({
           timeOffsetSeconds: Number(shot.time_offset_seconds),
-          firework: mapEffectSpecification(shot.effect_specs, arr.length),
+          firework: mapEffectSpecification(shot.effect_specs, arr.length, shot.caliber ?? null),
         });
         shotsByProduct.set(shot.product_id, arr);
       }

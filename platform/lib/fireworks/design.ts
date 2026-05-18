@@ -66,6 +66,31 @@ export function safeParseFireworkDesign(input: unknown): FireworkDesign {
   return parsed.success ? parsed.data : DEFAULT_DESIGN;
 }
 
+const CALIBER_BASELINE_MM = 30;
+
+function parseCaliberMm(caliber: string): number | null {
+  const mm = caliber.match(/^(\d+(?:\.\d+)?)\s*mm$/i);
+  if (mm) return parseFloat(mm[1]);
+  const inches = caliber.match(/^(\d+(?:\.\d+)?)\s*["""]/);
+  if (inches) return parseFloat(inches[1]) * 25.4;
+  return null;
+}
+
+export function scaleDesignForCaliber(design: FireworkDesign, caliber: string | null): FireworkDesign {
+  if (!caliber) return design;
+  const mm = parseCaliberMm(caliber);
+  if (!mm) return design;
+  const scale = mm / CALIBER_BASELINE_MM;
+  return {
+    ...design,
+    size: Math.round(Math.max(20, Math.min(370, design.size * scale))),
+    burst: {
+      ...design.burst,
+      speed: [design.burst.speed[0] * scale, design.burst.speed[1] * scale],
+    },
+  };
+}
+
 export type LaunchPosition = { x: number; y: number; z: number };
 
 export const DEFAULT_LAUNCH_POSITIONS: LaunchPosition[] = [
