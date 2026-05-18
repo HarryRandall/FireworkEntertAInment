@@ -145,9 +145,9 @@
   --color-bg-inverted: #fafafa;
 
   /* Borders */
-  --color-border-subtle: #262626;     /* neutral-800 */
-  --color-border-default: #333333;
-  --color-border-emphasis: #525252;   /* neutral-600 */
+  --color-border-subtle: #333333;
+  --color-border-default: #454545;
+  --color-border-emphasis: #666666;
 
   /* Content */
   --color-content-emphasis: #fafafa;
@@ -196,17 +196,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-button,
-input,
-textarea,
-select,
-a {
-  outline-offset: 2px;
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-content-emphasis);
-  outline-offset: 2px;
+/* Components own their focus styling; suppress browser/default outlines that
+   create a second harsh box around inputs and popover search fields. */
+:where(*):focus,
+:where(*):focus-visible {
+  outline: none;
 }
 
 ::selection {

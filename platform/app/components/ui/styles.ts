@@ -8,16 +8,16 @@ import { cn } from "@/lib/utils";
  */
 export const uiStyles = {
   focus: {
-    action: "focus:outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--color-content-emphasis)] focus-visible:outline-offset-2",
-    field: "focus:outline-none focus-visible:outline-none focus:border-[color:var(--color-content-emphasis)] focus:ring-1 focus:ring-[color:var(--color-content-emphasis)]",
-    fieldGroup: "focus-within:border-[color:var(--color-content-emphasis)] focus-within:ring-1 focus-within:ring-[color:var(--color-content-emphasis)]",
+    action: "focus:outline-none focus-visible:outline-none",
+    field: "focus:outline-none focus-visible:outline-none focus:border-[color:var(--color-content-emphasis)]",
+    fieldGroup: "focus-within:border-[color:var(--color-content-emphasis)]",
   },
   control: {
     base:
       "h-10 w-full rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60",
     select:
       "h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-    invalid: "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)] focus:ring-[color:var(--color-status-danger)]",
+    invalid: "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]",
     icon: "pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[color:var(--color-content-subtle)]",
   },
   text: {
@@ -43,9 +43,9 @@ export const uiStyles = {
   },
   action: {
     iconButton:
-      "inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--color-content-emphasis)] focus-visible:outline-offset-2",
+      "inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-none",
     navBase:
-      "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-[color:var(--color-content-emphasis)] focus-visible:outline-offset-2",
+      "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-none",
     navActive:
       "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]",
     navInactive:

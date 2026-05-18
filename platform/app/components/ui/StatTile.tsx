@@ -13,7 +13,7 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
   return (
     <div
       className={cn(
-        "rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3",
+        "rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3",
         className,
       )}
     >

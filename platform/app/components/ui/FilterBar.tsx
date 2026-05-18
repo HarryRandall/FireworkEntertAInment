@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ListFilter, Search, X } from "lucide-react";
+import { ArrowLeft, ListFilter, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
 import { Button } from "./Button";
@@ -231,6 +231,10 @@ function FilterPopover({
           </Command>
         ) : activeFilter.type === "select" ? (
           <Command>
+            <FilterPopoverBackButton
+              label="All filters"
+              onClick={() => setActiveFilter(null)}
+            />
             <CommandInput placeholder={`Filter by ${activeFilter.label.toLowerCase()}…`} />
             <CommandList>
               <CommandEmpty>No options.</CommandEmpty>
@@ -246,7 +250,6 @@ function FilterPopover({
                           if (selected) p.delete(activeFilter.key);
                           else p.set(activeFilter.key, opt.value);
                         });
-                        setOpen(false);
                       }}
                     >
                       <span
@@ -269,6 +272,7 @@ function FilterPopover({
             filter={activeFilter}
             searchParams={searchParams}
             updateParams={updateParams}
+            onBack={() => setActiveFilter(null)}
             onClose={() => setOpen(false)}
           />
         )}
@@ -277,15 +281,36 @@ function FilterPopover({
   );
 }
 
+function FilterPopoverBackButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mx-1 mt-1 flex h-8 items-center gap-2 rounded-md px-2 text-sm font-medium text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)]"
+    >
+      <ArrowLeft size={14} />
+      {label}
+    </button>
+  );
+}
+
 function RangeFilterPanel({
   filter,
   searchParams,
   updateParams,
+  onBack,
   onClose,
 }: {
   filter: Extract<FilterConfig, { type: "range" }>;
   searchParams: URLSearchParams;
   updateParams: (m: (p: URLSearchParams) => void) => void;
+  onBack: () => void;
   onClose: () => void;
 }) {
   const [min, setMin] = useState(searchParams.get(`${filter.key}_min`) ?? "");
@@ -305,9 +330,8 @@ function RangeFilterPanel({
         onClose();
       }}
     >
-      <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-        {filter.label}
-      </div>
+      <FilterPopoverBackButton label="All filters" onClick={onBack} />
+      <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">{filter.label}</div>
       <div className="flex items-center gap-2">
         <Input
           type="number"

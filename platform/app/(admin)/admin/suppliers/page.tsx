@@ -1,5 +1,7 @@
+import { PlusCircle } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import {
   DataTableShell,
@@ -45,10 +47,20 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-4">
-        <AppPageHeader title="Suppliers" description="Manage supplier records, contacts, and status." />
-        <SupplierFormDialog />
-      </div>
+      <AppPageHeader
+        title="Suppliers"
+        description="Manage supplier records, contacts, and status."
+        actions={
+          <SupplierFormDialog
+            trigger={
+              <Button size="sm">
+                <PlusCircle size={14} />
+                New supplier
+              </Button>
+            }
+          />
+        }
+      />
 
       <FilterBar
         searchPlaceholder="Search name, email, phone, website…"

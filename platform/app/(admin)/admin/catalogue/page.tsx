@@ -1,5 +1,7 @@
+import { PlusCircle } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { Badge } from "@/app/components/ui/Badge";
+import { Button } from "@/app/components/ui/Button";
 import { FilterBar } from "@/app/components/ui/FilterBar";
 import {
   DataTableShell,
@@ -62,10 +64,20 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between gap-4">
-        <AppPageHeader title="Catalogue" description="Browse and edit catalogue products." />
-        <ProductFormDialog />
-      </div>
+      <AppPageHeader
+        title="Catalogue"
+        description="Browse and edit catalogue products."
+        actions={
+          <ProductFormDialog
+            trigger={
+              <Button size="sm">
+                <PlusCircle size={14} />
+                New product
+              </Button>
+            }
+          />
+        }
+      />
 
       <FilterBar
         searchPlaceholder="Search part #, name, manufacturer…"

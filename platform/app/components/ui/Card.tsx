@@ -34,10 +34,9 @@ export function Card({
       className={cn(
         radiusClasses[radius],
         "bg-[color:var(--color-bg-default)]",
-        bordered && "border border-[color:var(--color-border-subtle)]",
+        bordered && "border border-[color:var(--color-border-default)]",
         shadow && "shadow-[var(--shadow-card)]",
-        hoverable &&
-          "transition-colors hover:border-[color:var(--color-border-default)]",
+        hoverable && "transition-colors hover:bg-[color:var(--color-bg-muted)]",
         className,
       )}
       {...rest}
