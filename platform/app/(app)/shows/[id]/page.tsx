@@ -17,6 +17,17 @@ function jsonArrayLength(value: Json | null | undefined): number {
 
 function aiAnchorCount(payload: Json | null): number | null {
   if (!isJsonObject(payload)) return null;
+  const counts = isJsonObject(payload.counts) ? payload.counts : null;
+  const countPeaks = typeof counts?.peaks === "number" ? counts.peaks : null;
+  const countBuildups = typeof counts?.buildups === "number" ? counts.buildups : null;
+  if (countPeaks != null || countBuildups != null) {
+    return (countPeaks ?? 0) + (countBuildups ?? 0);
+  }
+  const numericPeaks = jsonArrayLength(payload.peaks);
+  const numericBuildups = jsonArrayLength(payload.buildups);
+  if (numericPeaks > 0 || numericBuildups > 0) {
+    return numericPeaks + numericBuildups;
+  }
   const anchors = isJsonObject(payload.anchors) ? payload.anchors : null;
   const derived = isJsonObject(payload.derived) ? payload.derived : null;
   const keyMoments = anchors ? jsonArrayLength(anchors.key_moments) : 0;

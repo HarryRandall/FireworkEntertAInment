@@ -70,40 +70,12 @@ function truncate(value: string, length = 1800): string {
   return `${value.slice(0, length)}...`;
 }
 
-function isJsonObject(value: Json | null | undefined): value is Record<string, Json | undefined> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function stripFireworkRecommendationsFromAnalysis(
   analysis: AnalyzerResult,
 ): AnalyzerResult {
   const songAnalysis: AnalyzerResult = { ...analysis };
   delete songAnalysis.firework_cues;
   return songAnalysis;
-}
-
-function stripCueCountsFromSections(sections: Json | undefined): Json | undefined {
-  if (!Array.isArray(sections)) return sections;
-  return sections.map((section) => {
-    if (!isJsonObject(section)) return section;
-    const songSection = { ...section };
-    delete songSection.cue_counts;
-    return songSection as Json;
-  }) as Json;
-}
-
-function stripFireworkRecommendationsFromPayload(payload: Json): Json {
-  if (!isJsonObject(payload)) return payload;
-  const songPayload = { ...payload };
-  delete songPayload.firework_cue_summary;
-  delete songPayload.firework_cue_samples;
-  delete songPayload.cue_reference;
-  delete songPayload.inventory;
-  delete songPayload.user_constraints;
-  return {
-    ...songPayload,
-    sections: stripCueCountsFromSections(songPayload.sections),
-  } as Json;
 }
 
 function stripFireworkRecommendationsFromMarkdown(markdown: string): string {
@@ -115,6 +87,66 @@ function stripFireworkRecommendationsFromMarkdown(markdown: string): string {
       "\nThese are energy ramps leading into musical peaks.\n",
     )
     .replace(/\n## Firework Cues\n[\s\S]*?(?=\n## Beat Times\n)/, "\n");
+}
+
+function sectionIndexForTime(analysis: AnalyzerResult, timeSeconds: number): number | null {
+  const index = analysis.sections.findIndex((section) => {
+    return timeSeconds >= section.start && timeSeconds <= section.end;
+  });
+  return index >= 0 ? index : null;
+}
+
+function intensityScore(intensity: string): number {
+  if (intensity === "high") return 3;
+  if (intensity === "medium") return 2;
+  if (intensity === "low") return 1;
+  return 0;
+}
+
+function buildNumericAiPayload(analysis: AnalyzerResult): Json {
+  const peaks = analysis.key_moments.map((moment, index) => ({
+    index,
+    time_seconds: moment.time,
+    energy: moment.energy,
+    prominence: moment.prominence,
+    type_code: moment.type === "climax" ? 2 : 1,
+    section_index: sectionIndexForTime(analysis, moment.time),
+  }));
+  const buildups = analysis.buildups.map((buildup, index) => ({
+    index,
+    start_seconds: buildup.start,
+    peak_seconds: buildup.peak,
+    duration_seconds: buildup.duration,
+    energy_rise: buildup.energy_rise,
+    section_index: sectionIndexForTime(analysis, buildup.peak),
+  }));
+
+  return {
+    schema_version: analysis.schema_version,
+    payload_type: "numeric_song_analysis",
+    song: {
+      duration_seconds: analysis.duration_seconds,
+      tempo_bpm: analysis.tempo_bpm,
+      total_beats: analysis.total_beats,
+    },
+    counts: {
+      sections: analysis.sections.length,
+      peaks: peaks.length,
+      climaxes: peaks.filter((peak) => peak.type_code === 2).length,
+      buildups: buildups.length,
+    },
+    sections: analysis.sections.map((section, index) => ({
+      index,
+      start_seconds: section.start,
+      end_seconds: section.end,
+      duration_seconds: section.duration,
+      avg_energy: section.avg_energy,
+      peak_energy: section.peak_energy,
+      intensity_code: intensityScore(section.intensity),
+    })),
+    peaks,
+    buildups,
+  } as Json;
 }
 
 async function pathExists(filePath: string): Promise<boolean> {
@@ -358,17 +390,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const [analysisText, rawMarkdown, llmText] = await Promise.all([
+    const [analysisText, rawMarkdown] = await Promise.all([
       readFile(analysisPath, "utf8"),
       readFile(markdownPath, "utf8"),
-      readFile(llmPath, "utf8"),
     ]);
     const analysis = stripFireworkRecommendationsFromAnalysis(
       JSON.parse(analysisText) as AnalyzerResult,
     );
-    const llmPayload = stripFireworkRecommendationsFromPayload(
-      JSON.parse(llmText) as Json,
-    );
+    const llmPayload = buildNumericAiPayload(analysis);
     const markdown = stripFireworkRecommendationsFromMarkdown(rawMarkdown);
     const runtimeMs = Date.now() - startedAt;
     const completedAt = new Date().toISOString();

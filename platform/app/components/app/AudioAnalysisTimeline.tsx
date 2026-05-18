@@ -2,12 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Activity,
-  AlertCircle,
-  RefreshCw,
-  Sparkles,
-} from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import { StatTile } from "@/app/components/ui/StatTile";
@@ -35,6 +29,10 @@ const SECTION_STYLES: Record<string, string> = {
   outro: "bg-slate-400/18 border-slate-300/30 text-on-surface",
   unknown: "bg-on-surface-variant/12 border-outline-variant/30 text-on-surface-variant",
 };
+
+const EMPTY_SECTIONS: AnalyzerSection[] = [];
+const EMPTY_KEY_MOMENTS: AnalyzerKeyMoment[] = [];
+const EMPTY_BUILDUPS: NonNullable<ShowAnalysisSnapshot["analysis"]>["buildups"] = [];
 
 function clampPercent(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -88,6 +86,10 @@ function statusText(analysis: ShowAnalysisSnapshot | null): string {
   return "Running";
 }
 
+function peakTypeCode(moment: AnalyzerKeyMoment): number {
+  return moment.type === "climax" ? 2 : 1;
+}
+
 export function AudioAnalysisTimeline({
   showId,
   hasAudio,
@@ -100,12 +102,25 @@ export function AudioAnalysisTimeline({
   const [isPending, startTransition] = useTransition();
   const result = analysis?.analysis ?? null;
   const duration = result?.duration_seconds ?? durationSeconds ?? 240;
-  const sections = result?.sections ?? [];
-  const keyMoments = result?.key_moments ?? [];
-  const buildups = result?.buildups ?? [];
+  const sections = result?.sections ?? EMPTY_SECTIONS;
+  const keyMoments = result?.key_moments ?? EMPTY_KEY_MOMENTS;
+  const buildups = result?.buildups ?? EMPTY_BUILDUPS;
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
   const points = useMemo(() => compactEnergyPoints(analysis), [analysis]);
   const pathD = useMemo(() => energyPath(points, duration), [points, duration]);
+  const numericAnchors = useMemo(
+    () =>
+      keyMoments
+        .map((moment) => ({
+          time: moment.time,
+          energy: moment.energy,
+          prominence: moment.prominence,
+          typeCode: peakTypeCode(moment),
+        }))
+        .sort((a, b) => a.time - b.time)
+        .slice(0, 10),
+    [keyMoments],
+  );
 
   const runAnalysis = () => {
     setError(null);
@@ -135,7 +150,6 @@ export function AudioAnalysisTimeline({
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex h-8 items-center gap-2 rounded-full border border-outline-variant/45 bg-surface px-3 text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">
-              <Activity size={14} />
               {statusText(analysis)}
             </span>
             {analysis?.schemaVersion ? (
@@ -159,14 +173,12 @@ export function AudioAnalysisTimeline({
           loading={isPending}
           className="shrink-0"
         >
-          {analysis ? <RefreshCw size={16} /> : <Sparkles size={16} />}
           {analysis ? "Re-run" : "Run analysis"}
         </Button>
       </div>
 
       {error ? (
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-error/35 bg-error/10 p-4 text-sm text-on-surface">
-          <AlertCircle size={17} className="mt-0.5 shrink-0 text-error" />
           <span>{error}</span>
         </div>
       ) : null}
@@ -203,15 +215,11 @@ export function AudioAnalysisTimeline({
               <div
                 key={`${section.start}-${section.end}-${index}`}
                 className={cn(
-                  "absolute top-0 h-full min-w-[2px] border-r px-2 pt-3",
+                  "absolute top-0 h-full min-w-[2px] border-r",
                   sectionStyle(section.label),
                 )}
                 style={{ left: `${left}%`, width: `${Math.max(width, 0.5)}%` }}
-              >
-                <span className="block truncate text-[10px] font-black uppercase tracking-[0.14em]">
-                  {section.label}
-                </span>
-              </div>
+              />
             );
           })}
 
@@ -241,57 +249,42 @@ export function AudioAnalysisTimeline({
             </div>
           )}
 
-          {buildups.map((buildup, index) => {
-            const left = timePercent(buildup.start, duration);
-            const width = clampPercent(
-              timePercent(buildup.peak, duration) - left,
-            );
-            return (
-              <span
-                key={`${buildup.start}-${buildup.peak}-${index}`}
-                className="absolute bottom-5 h-2 min-w-3 rounded-full bg-amber-300"
-                style={{ left: `${left}%`, width: `${Math.max(width, 0.8)}%` }}
-                title={`Build-up ${formatDuration(buildup.start)}-${formatDuration(buildup.peak)}`}
-              />
-            );
-          })}
-
-          {keyMoments.map((moment, index) => {
-            const left = timePercent(moment.time, duration);
-            const isClimax = moment.type === "climax";
-            return (
-              <span
-                key={`${moment.time}-${index}`}
-                className={cn(
-                  "absolute bottom-7 top-3 w-px",
-                  isClimax ? "bg-rose-200" : "bg-on-surface-variant/45",
-                )}
-                style={{ left: `${left}%` }}
-                title={`${moment.type} ${formatDuration(moment.time)}`}
-              >
-                <span
-                  className={cn(
-                    "absolute -left-1.5 top-0 h-3 w-3 rounded-full border",
-                    isClimax
-                      ? "border-rose-100 bg-rose-400 shadow-[0_0_18px_rgba(251,113,133,0.45)]"
-                      : "border-outline-variant bg-surface",
-                  )}
-                />
-              </span>
-            );
-          })}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-on-surface-variant">
           <span>Energy curve</span>
-          <span>Climax markers</span>
-          <span>Build-up ranges</span>
+          <span>AI peak anchors: {keyMoments.length}</span>
+          <span>Build-up anchors: {buildups.length}</span>
           {analysis?.createdAt ? (
             <span className="ml-auto tabular-nums">
               {new Date(analysis.createdAt).toLocaleString()}
             </span>
           ) : null}
         </div>
+
+        {numericAnchors.length > 0 ? (
+          <div className="mt-4 overflow-hidden rounded-lg border border-outline-variant/35">
+            <div className="grid grid-cols-4 bg-surface-container-high px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              <span>Time</span>
+              <span>Energy</span>
+              <span>Prominence</span>
+              <span>Type code</span>
+            </div>
+            <div className="divide-y divide-outline-variant/25">
+              {numericAnchors.map((anchor, index) => (
+                <div
+                  key={`${anchor.time}-${index}`}
+                  className="grid grid-cols-4 px-3 py-2 text-xs font-semibold tabular-nums text-on-surface"
+                >
+                  <span>{formatDuration(anchor.time)}</span>
+                  <span>{anchor.energy.toFixed(3)}</span>
+                  <span>{anchor.prominence.toFixed(3)}</span>
+                  <span>{anchor.typeCode}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </Card>
   );

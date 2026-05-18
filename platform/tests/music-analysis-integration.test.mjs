@@ -14,9 +14,13 @@ test("audio analysis route stores song analysis artifacts only", () => {
   assert.match(route, /llm_payload: llmPayload/);
   assert.match(route, /markdown/);
   assert.match(route, /stripFireworkRecommendationsFromAnalysis/);
-  assert.match(route, /stripFireworkRecommendationsFromPayload/);
+  assert.match(route, /buildNumericAiPayload/);
+  assert.match(route, /payload_type: "numeric_song_analysis"/);
+  assert.match(route, /type_code: moment\.type === "climax" \? 2 : 1/);
   assert.doesNotMatch(route, /compact_payload/);
   assert.doesNotMatch(route, /analysis_storage_path/);
+  assert.doesNotMatch(route, /firework_cue_samples/);
+  assert.doesNotMatch(route, /firework_cue_summary/);
 });
 
 test("audio analysis insert has a legacy retry for old live schemas", () => {
