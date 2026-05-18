@@ -181,6 +181,9 @@
 }
 
 html {
+  min-height: 100%;
+  overscroll-behavior-y: none;
+  background-color: var(--color-bg-default);
   color-scheme: light;
 }
 [data-theme="dark"],
@@ -189,6 +192,8 @@ html {
 }
 
 body {
+  min-height: 100vh;
+  overscroll-behavior-y: none;
   font-family: var(--font-body);
   background-color: var(--color-bg-default);
   color: var(--color-content-default);
