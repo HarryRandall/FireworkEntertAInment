@@ -1,0 +1,2763 @@
+{
+  "schema_version": "1.2.0",
+  "file": "/Users/isorokuyamamoto/Desktop/FireworkEntertAInment/prototypes/audio-analyser/spot-check/inputs/E lucevan le stelle.mp3",
+  "duration_seconds": 182.19,
+  "tempo_bpm": 143.6,
+  "total_beats": 391,
+  "beat_times": [
+    18.088,
+    18.506,
+    18.924,
+    19.342,
+    19.76,
+    20.178,
+    20.596,
+    21.014,
+    21.432,
+    21.85,
+    22.268,
+    22.686,
+    23.104,
+    23.522,
+    23.94,
+    24.358,
+    24.776,
+    25.194,
+    25.612,
+    26.03,
+    26.448,
+    26.865,
+    27.283,
+    27.701,
+    28.119,
+    28.537,
+    28.979,
+    29.396,
+    29.814,
+    30.232,
+    30.65,
+    31.068,
+    31.486,
+    31.904,
+    32.322,
+    32.74,
+    33.158,
+    33.576,
+    33.994,
+    34.412,
+    34.83,
+    35.248,
+    35.666,
+    36.084,
+    36.502,
+    36.92,
+    37.338,
+    37.756,
+    38.174,
+    38.592,
+    39.01,
+    39.427,
+    39.845,
+    40.263,
+    40.681,
+    41.099,
+    41.517,
+    41.912,
+    42.353,
+    42.725,
+    43.073,
+    43.375,
+    43.77,
+    44.164,
+    44.606,
+    45.047,
+    45.488,
+    45.906,
+    46.37,
+    46.788,
+    47.206,
+    47.624,
+    48.042,
+    48.46,
+    48.878,
+    49.296,
+    49.714,
+    50.132,
+    50.55,
+    50.991,
+    51.432,
+    51.873,
+    52.315,
+    52.733,
+    53.15,
+    53.568,
+    53.986,
+    54.428,
+    54.846,
+    55.263,
+    55.681,
+    56.099,
+    56.517,
+    56.935,
+    57.423,
+    57.864,
+    58.305,
+    58.677,
+    59.095,
+    59.513,
+    59.931,
+    60.349,
+    60.767,
+    61.185,
+    61.603,
+    62.02,
+    62.438,
+    62.856,
+    63.274,
+    63.692,
+    64.11,
+    64.528,
+    64.946,
+    65.364,
+    65.782,
+    66.2,
+    66.618,
+    67.013,
+    67.477,
+    67.895,
+    68.336,
+    68.778,
+    69.195,
+    69.613,
+    70.031,
+    70.449,
+    70.891,
+    71.332,
+    71.773,
+    72.214,
+    72.655,
+    73.096,
+    73.514,
+    73.932,
+    74.35,
+    74.768,
+    75.186,
+    75.604,
+    76.022,
+    76.44,
+    76.858,
+    77.276,
+    77.694,
+    78.112,
+    78.53,
+    78.948,
+    79.366,
+    79.784,
+    80.202,
+    80.62,
+    81.038,
+    81.456,
+    81.874,
+    82.292,
+    82.709,
+    83.127,
+    83.545,
+    83.987,
+    84.428,
+    84.846,
+    85.264,
+    85.682,
+    86.1,
+    86.518,
+    86.936,
+    87.353,
+    87.771,
+    88.189,
+    88.607,
+    89.002,
+    89.397,
+    89.792,
+    90.186,
+    90.627,
+    91.069,
+    91.463,
+    91.905,
+    92.346,
+    92.787,
+    93.251,
+    93.669,
+    94.087,
+    94.505,
+    94.923,
+    95.341,
+    95.759,
+    96.177,
+    96.595,
+    96.99,
+    97.384,
+    97.779,
+    98.197,
+    98.638,
+    99.08,
+    99.451,
+    99.846,
+    100.264,
+    100.682,
+    101.1,
+    101.518,
+    101.982,
+    102.423,
+    102.864,
+    103.306,
+    103.747,
+    104.141,
+    104.536,
+    104.931,
+    105.326,
+    105.744,
+    106.115,
+    106.556,
+    106.998,
+    107.462,
+    107.926,
+    108.391,
+    108.809,
+    109.25,
+    109.645,
+    110.109,
+    110.481,
+    110.875,
+    111.27,
+    111.665,
+    112.083,
+    112.477,
+    112.872,
+    113.267,
+    113.708,
+    114.149,
+    114.614,
+    115.032,
+    115.426,
+    115.821,
+    116.239,
+    116.657,
+    117.075,
+    117.47,
+    117.864,
+    118.259,
+    118.654,
+    119.049,
+    119.467,
+    119.885,
+    120.303,
+    120.721,
+    121.139,
+    121.556,
+    121.974,
+    122.392,
+    122.81,
+    123.205,
+    123.6,
+    123.995,
+    124.389,
+    124.784,
+    125.179,
+    125.574,
+    125.991,
+    126.409,
+    126.827,
+    127.245,
+    127.64,
+    128.035,
+    128.43,
+    128.824,
+    129.219,
+    129.66,
+    130.078,
+    130.496,
+    130.937,
+    131.355,
+    131.796,
+    132.238,
+    132.679,
+    133.097,
+    133.515,
+    133.933,
+    134.374,
+    134.838,
+    135.233,
+    135.651,
+    136.069,
+    136.487,
+    136.882,
+    137.276,
+    137.694,
+    138.182,
+    138.623,
+    139.041,
+    139.505,
+    139.9,
+    140.295,
+    140.69,
+    141.084,
+    141.479,
+    141.874,
+    142.338,
+    142.78,
+    143.151,
+    143.546,
+    143.894,
+    144.266,
+    144.637,
+    144.985,
+    145.403,
+    145.821,
+    146.262,
+    146.68,
+    147.098,
+    147.516,
+    147.981,
+    148.352,
+    148.747,
+    149.165,
+    149.606,
+    150.024,
+    150.465,
+    150.86,
+    151.255,
+    151.65,
+    152.044,
+    152.462,
+    152.857,
+    153.252,
+    153.646,
+    154.041,
+    154.413,
+    154.784,
+    155.179,
+    155.597,
+    156.015,
+    156.433,
+    156.874,
+    157.269,
+    157.71,
+    158.105,
+    158.523,
+    158.941,
+    159.382,
+    159.823,
+    160.287,
+    160.729,
+    161.193,
+    161.588,
+    161.959,
+    162.377,
+    162.795,
+    163.236,
+    163.608,
+    163.956,
+    164.351,
+    164.722,
+    165.117,
+    165.512,
+    165.93,
+    166.417,
+    166.859,
+    167.277,
+    167.764,
+    168.136,
+    168.53,
+    168.948,
+    169.39,
+    169.831,
+    170.295,
+    170.713,
+    171.131,
+    171.503,
+    171.967,
+    172.408,
+    172.849,
+    173.291,
+    173.732,
+    174.15,
+    174.591,
+    175.009,
+    175.45,
+    175.868,
+    176.239,
+    176.657,
+    177.099,
+    177.563,
+    178.004,
+    178.469,
+    178.91,
+    179.351,
+    179.769,
+    180.164,
+    180.535,
+    180.953
+  ],
+  "onset_times": [
+    1.927,
+    2.74,
+    4.389,
+    4.83,
+    5.294,
+    6.014,
+    6.13,
+    6.711,
+    7.268,
+    9.079,
+    9.265,
+    13.56,
+    14.396,
+    17.694,
+    18.181,
+    18.506,
+    18.878,
+    19.923,
+    20.108,
+    20.364,
+    22.175,
+    26.355,
+    26.494,
+    26.703,
+    28.282,
+    28.514,
+    28.909,
+    29.118,
+    29.28,
+    29.373,
+    29.791,
+    30.07,
+    30.674,
+    30.859,
+    31.022,
+    34.342,
+    35.968,
+    36.455,
+    37.036,
+    37.222,
+    37.384,
+    39.567,
+    40.217,
+    41.517,
+    41.912,
+    41.958,
+    42.075,
+    42.33,
+    42.493,
+    42.585,
+    42.748,
+    42.887,
+    43.05,
+    43.166,
+    43.212,
+    43.352,
+    43.584,
+    43.955,
+    44.048,
+    44.141,
+    44.466,
+    44.559,
+    44.606,
+    44.745,
+    44.931,
+    45.256,
+    45.767,
+    45.906,
+    46.347,
+    46.51,
+    46.788,
+    46.997,
+    47.137,
+    47.299,
+    47.415,
+    47.601,
+    48.437,
+    48.599,
+    48.669,
+    48.808,
+    48.901,
+    49.273,
+    49.389,
+    49.644,
+    49.807,
+    50.364,
+    50.457,
+    50.689,
+    50.828,
+    51.107,
+    51.27,
+    52.268,
+    52.524,
+    53.963,
+    54.428,
+    56.099,
+    56.401,
+    56.517,
+    56.587,
+    56.796,
+    56.912,
+    57.051,
+    57.423,
+    57.493,
+    57.655,
+    57.818,
+    57.957,
+    58.12,
+    58.189,
+    58.305,
+    58.375,
+    58.538,
+    58.654,
+    58.816,
+    58.979,
+    59.141,
+    59.304,
+    59.466,
+    59.536,
+    59.791,
+    60.047,
+    60.233,
+    60.395,
+    60.581,
+    60.72,
+    61.254,
+    61.835,
+    63.205,
+    63.739,
+    64.691,
+    66.595,
+    66.757,
+    67.013,
+    67.175,
+    67.477,
+    67.593,
+    67.872,
+    68.058,
+    68.476,
+    68.917,
+    69.103,
+    70.147,
+    70.449,
+    70.798,
+    72.353,
+    74.675,
+    74.838,
+    75.0,
+    75.326,
+    75.581,
+    75.999,
+    76.788,
+    77.555,
+    79.946,
+    80.062,
+    80.875,
+    81.456,
+    81.92,
+    82.384,
+    82.617,
+    82.965,
+    83.36,
+    83.545,
+    83.963,
+    84.381,
+    85.658,
+    86.262,
+    89.258,
+    90.186,
+    90.302,
+    90.465,
+    90.767,
+    90.883,
+    91.069,
+    91.208,
+    91.371,
+    91.44,
+    91.58,
+    92.137,
+    92.206,
+    92.439,
+    92.485,
+    92.996,
+    93.089,
+    93.275,
+    93.414,
+    93.576,
+    93.693,
+    94.064,
+    94.459,
+    94.668,
+    94.854,
+    95.062,
+    95.271,
+    95.364,
+    95.48,
+    95.55,
+    95.922,
+    96.386,
+    96.502,
+    96.688,
+    96.85,
+    97.013,
+    97.199,
+    97.361,
+    97.547,
+    97.71,
+    97.779,
+    98.011,
+    98.174,
+    98.36,
+    98.754,
+    98.94,
+    99.056,
+    99.219,
+    99.405,
+    99.498,
+    99.59,
+    99.846,
+    99.939,
+    100.008,
+    100.055,
+    100.821,
+    100.984,
+    101.1,
+    101.239,
+    101.425,
+    101.518,
+    101.587,
+    101.634,
+    101.773,
+    101.959,
+    102.145,
+    102.284,
+    102.446,
+    102.748,
+    103.143,
+    103.747,
+    104.095,
+    104.211,
+    104.513,
+    104.652,
+    104.931,
+    105.302,
+    105.72,
+    105.906,
+    106.046,
+    106.115,
+    106.812,
+    106.974,
+    107.323,
+    108.391,
+    108.553,
+    109.041,
+    109.25,
+    109.482,
+    109.645,
+    109.83,
+    110.109,
+    110.179,
+    110.341,
+    110.481,
+    110.666,
+    110.806,
+    110.968,
+    111.084,
+    111.247,
+    111.456,
+    111.572,
+    111.758,
+    112.222,
+    112.385,
+    112.477,
+    112.57,
+    112.64,
+    112.733,
+    113.244,
+    113.383,
+    113.569,
+    113.755,
+    113.917,
+    114.08,
+    114.242,
+    114.428,
+    114.614,
+    114.707,
+    114.823,
+    115.008,
+    115.217,
+    115.403,
+    115.519,
+    115.612,
+    115.705,
+    115.821,
+    116.03,
+    116.239,
+    116.471,
+    117.307,
+    117.493,
+    117.911,
+    118.097,
+    118.282,
+    118.399,
+    118.7,
+    118.863,
+    119.049,
+    119.142,
+    119.327,
+    119.42,
+    119.629,
+    119.815,
+    119.978,
+    120.186,
+    120.303,
+    120.465,
+    120.674,
+    120.86,
+    121.069,
+    121.255,
+    121.347,
+    121.44,
+    121.626,
+    121.812,
+    121.974,
+    122.067,
+    122.323,
+    122.648,
+    122.996,
+    123.391,
+    123.6,
+    123.786,
+    123.995,
+    124.111,
+    124.204,
+    124.366,
+    124.459,
+    124.575,
+    125.063,
+    125.179,
+    125.388,
+    125.574,
+    125.782,
+    125.991,
+    126.293,
+    126.409,
+    126.665,
+    126.804,
+    128.035,
+    128.685,
+    128.824,
+    128.917,
+    129.08,
+    129.219,
+    129.544,
+    129.66,
+    129.8,
+    130.032,
+    130.078,
+    130.218,
+    130.473,
+    130.752,
+    130.821,
+    130.914,
+    131.077,
+    131.309,
+    131.355,
+    131.587,
+    131.75,
+    132.214,
+    132.354,
+    132.423,
+    132.54,
+    132.702,
+    132.957,
+    133.329,
+    133.422,
+    133.608,
+    133.747,
+    133.84,
+    134.327,
+    134.513,
+    134.676,
+    134.815,
+    135.094,
+    135.233,
+    136.046,
+    136.464,
+    136.626,
+    137.253,
+    137.369,
+    137.555,
+    137.694,
+    138.019,
+    138.414,
+    138.461,
+    138.6,
+    138.879,
+    139.088,
+    139.204,
+    139.297,
+    139.505,
+    140.04,
+    140.179,
+    140.272,
+    140.411,
+    140.574,
+    140.69,
+    140.875,
+    141.084,
+    141.27,
+    141.363,
+    141.456,
+    141.665,
+    141.851,
+    142.153,
+    142.338,
+    142.431,
+    142.617,
+    142.803,
+    142.872,
+    143.105,
+    143.523,
+    143.708,
+    143.894,
+    144.08,
+    144.242,
+    144.428,
+    144.614,
+    144.8,
+    144.985,
+    145.612,
+    145.752,
+    145.984,
+    146.309,
+    146.657,
+    146.797,
+    147.052,
+    147.261,
+    147.331,
+    147.423,
+    147.516,
+    147.795,
+    147.981,
+    148.352,
+    148.584,
+    148.654,
+    148.724,
+    148.84,
+    148.933,
+    149.142,
+    149.328,
+    149.42,
+    149.606,
+    149.769,
+    150.605,
+    150.86,
+    152.021,
+    152.184,
+    152.3,
+    152.485,
+    152.578,
+    152.648,
+    152.787,
+    153.159,
+    153.716,
+    154.064,
+    154.413,
+    155.04,
+    155.597,
+    155.783,
+    155.945,
+    156.131,
+    156.433,
+    156.619,
+    156.897,
+    157.013,
+    157.269,
+    157.385,
+    158.221,
+    158.523,
+    159.544,
+    159.637,
+    159.823,
+    160.241,
+    160.403,
+    160.961,
+    161.17,
+    161.936,
+    162.168,
+    162.354,
+    162.516,
+    162.888,
+    163.004,
+    163.236,
+    163.352,
+    163.515,
+    163.608,
+    163.77,
+    163.956,
+    164.049,
+    164.119,
+    164.328,
+    164.513,
+    164.722,
+    164.908,
+    165.024,
+    165.117,
+    165.233,
+    165.326,
+    165.419,
+    165.535,
+    165.628,
+    165.721,
+    165.837,
+    165.93,
+    166.116,
+    166.232,
+    166.325,
+    166.417,
+    166.487,
+    166.65,
+    166.835,
+    166.998,
+    167.184,
+    167.277,
+    167.369,
+    167.648,
+    167.764,
+    167.834,
+    168.02,
+    168.112,
+    168.252,
+    168.321,
+    168.53,
+    168.716,
+    169.134,
+    169.273,
+    169.366,
+    169.552,
+    169.622,
+    169.831,
+    169.993,
+    170.249,
+    170.434,
+    170.527,
+    170.713,
+    170.806,
+    170.969,
+    171.386,
+    171.503,
+    171.804,
+    171.967,
+    172.106,
+    172.362,
+    172.64,
+    172.756,
+    172.849,
+    173.012,
+    173.151,
+    173.36,
+    173.569,
+    174.312,
+    174.498,
+    174.777,
+    175.009,
+    175.45,
+    175.682,
+    175.868,
+    176.054,
+    176.216,
+    176.448,
+    176.541,
+    176.657,
+    176.866,
+    177.308,
+    177.563,
+    178.167,
+    178.376,
+    178.585,
+    178.701,
+    178.887,
+    179.792,
+    179.978,
+    180.164,
+    180.349,
+    180.535,
+    182.114
+  ],
+  "energy_timeline": [
+    {
+      "time": 0.0,
+      "energy": 0.0
+    },
+    {
+      "time": 1.0,
+      "energy": 0.0
+    },
+    {
+      "time": 2.0,
+      "energy": 0.032
+    },
+    {
+      "time": 3.0,
+      "energy": 0.098
+    },
+    {
+      "time": 3.99,
+      "energy": 0.037
+    },
+    {
+      "time": 4.99,
+      "energy": 0.024
+    },
+    {
+      "time": 5.99,
+      "energy": 0.007
+    },
+    {
+      "time": 6.99,
+      "energy": 0.0
+    },
+    {
+      "time": 7.99,
+      "energy": 0.0
+    },
+    {
+      "time": 8.99,
+      "energy": 0.004
+    },
+    {
+      "time": 9.98,
+      "energy": 0.008
+    },
+    {
+      "time": 10.98,
+      "energy": 0.002
+    },
+    {
+      "time": 11.98,
+      "energy": 0.005
+    },
+    {
+      "time": 12.98,
+      "energy": 0.072
+    },
+    {
+      "time": 13.98,
+      "energy": 0.119
+    },
+    {
+      "time": 14.98,
+      "energy": 0.085
+    },
+    {
+      "time": 15.98,
+      "energy": 0.118
+    },
+    {
+      "time": 16.97,
+      "energy": 0.034
+    },
+    {
+      "time": 17.97,
+      "energy": 0.023
+    },
+    {
+      "time": 18.97,
+      "energy": 0.187
+    },
+    {
+      "time": 19.97,
+      "energy": 0.091
+    },
+    {
+      "time": 20.97,
+      "energy": 0.033
+    },
+    {
+      "time": 21.97,
+      "energy": 0.026
+    },
+    {
+      "time": 22.96,
+      "energy": 0.016
+    },
+    {
+      "time": 23.96,
+      "energy": 0.014
+    },
+    {
+      "time": 24.96,
+      "energy": 0.098
+    },
+    {
+      "time": 25.96,
+      "energy": 0.008
+    },
+    {
+      "time": 26.96,
+      "energy": 0.086
+    },
+    {
+      "time": 27.96,
+      "energy": 0.119
+    },
+    {
+      "time": 28.96,
+      "energy": 0.099
+    },
+    {
+      "time": 29.95,
+      "energy": 0.077
+    },
+    {
+      "time": 30.95,
+      "energy": 0.049
+    },
+    {
+      "time": 31.95,
+      "energy": 0.013
+    },
+    {
+      "time": 32.95,
+      "energy": 0.021
+    },
+    {
+      "time": 33.95,
+      "energy": 0.13
+    },
+    {
+      "time": 34.95,
+      "energy": 0.103
+    },
+    {
+      "time": 35.94,
+      "energy": 0.018
+    },
+    {
+      "time": 36.94,
+      "energy": 0.001
+    },
+    {
+      "time": 37.94,
+      "energy": 0.013
+    },
+    {
+      "time": 38.94,
+      "energy": 0.0
+    },
+    {
+      "time": 39.94,
+      "energy": 0.0
+    },
+    {
+      "time": 40.94,
+      "energy": 0.0
+    },
+    {
+      "time": 41.94,
+      "energy": 0.103
+    },
+    {
+      "time": 42.93,
+      "energy": 0.131
+    },
+    {
+      "time": 43.93,
+      "energy": 0.201
+    },
+    {
+      "time": 44.93,
+      "energy": 0.233
+    },
+    {
+      "time": 45.93,
+      "energy": 0.027
+    },
+    {
+      "time": 46.93,
+      "energy": 0.188
+    },
+    {
+      "time": 47.93,
+      "energy": 0.183
+    },
+    {
+      "time": 48.92,
+      "energy": 0.136
+    },
+    {
+      "time": 49.92,
+      "energy": 0.054
+    },
+    {
+      "time": 50.92,
+      "energy": 0.159
+    },
+    {
+      "time": 51.92,
+      "energy": 0.14
+    },
+    {
+      "time": 52.92,
+      "energy": 0.029
+    },
+    {
+      "time": 53.92,
+      "energy": 0.033
+    },
+    {
+      "time": 54.92,
+      "energy": 0.03
+    },
+    {
+      "time": 55.91,
+      "energy": 0.079
+    },
+    {
+      "time": 56.91,
+      "energy": 0.038
+    },
+    {
+      "time": 57.91,
+      "energy": 0.131
+    },
+    {
+      "time": 58.91,
+      "energy": 0.093
+    },
+    {
+      "time": 59.91,
+      "energy": 0.072
+    },
+    {
+      "time": 60.91,
+      "energy": 0.071
+    },
+    {
+      "time": 61.9,
+      "energy": 0.105
+    },
+    {
+      "time": 62.9,
+      "energy": 0.167
+    },
+    {
+      "time": 63.9,
+      "energy": 0.118
+    },
+    {
+      "time": 64.9,
+      "energy": 0.205
+    },
+    {
+      "time": 65.9,
+      "energy": 0.19
+    },
+    {
+      "time": 66.9,
+      "energy": 0.113
+    },
+    {
+      "time": 67.9,
+      "energy": 0.104
+    },
+    {
+      "time": 68.89,
+      "energy": 0.194
+    },
+    {
+      "time": 69.89,
+      "energy": 0.087
+    },
+    {
+      "time": 70.89,
+      "energy": 0.128
+    },
+    {
+      "time": 71.89,
+      "energy": 0.126
+    },
+    {
+      "time": 72.89,
+      "energy": 0.107
+    },
+    {
+      "time": 73.89,
+      "energy": 0.121
+    },
+    {
+      "time": 74.88,
+      "energy": 0.099
+    },
+    {
+      "time": 75.88,
+      "energy": 0.076
+    },
+    {
+      "time": 76.88,
+      "energy": 0.081
+    },
+    {
+      "time": 77.88,
+      "energy": 0.048
+    },
+    {
+      "time": 78.88,
+      "energy": 0.069
+    },
+    {
+      "time": 79.88,
+      "energy": 0.089
+    },
+    {
+      "time": 80.88,
+      "energy": 0.07
+    },
+    {
+      "time": 81.87,
+      "energy": 0.036
+    },
+    {
+      "time": 82.87,
+      "energy": 0.024
+    },
+    {
+      "time": 83.87,
+      "energy": 0.007
+    },
+    {
+      "time": 84.87,
+      "energy": 0.203
+    },
+    {
+      "time": 85.87,
+      "energy": 0.148
+    },
+    {
+      "time": 86.87,
+      "energy": 0.049
+    },
+    {
+      "time": 87.86,
+      "energy": 0.08
+    },
+    {
+      "time": 88.86,
+      "energy": 0.013
+    },
+    {
+      "time": 89.86,
+      "energy": 0.09
+    },
+    {
+      "time": 90.86,
+      "energy": 0.075
+    },
+    {
+      "time": 91.86,
+      "energy": 0.055
+    },
+    {
+      "time": 92.86,
+      "energy": 0.203
+    },
+    {
+      "time": 93.86,
+      "energy": 0.109
+    },
+    {
+      "time": 94.85,
+      "energy": 0.091
+    },
+    {
+      "time": 95.85,
+      "energy": 0.049
+    },
+    {
+      "time": 96.85,
+      "energy": 0.079
+    },
+    {
+      "time": 97.85,
+      "energy": 0.342
+    },
+    {
+      "time": 98.85,
+      "energy": 0.132
+    },
+    {
+      "time": 99.85,
+      "energy": 0.154
+    },
+    {
+      "time": 100.84,
+      "energy": 0.066
+    },
+    {
+      "time": 101.84,
+      "energy": 0.103
+    },
+    {
+      "time": 102.84,
+      "energy": 0.126
+    },
+    {
+      "time": 103.84,
+      "energy": 0.086
+    },
+    {
+      "time": 104.84,
+      "energy": 0.197
+    },
+    {
+      "time": 105.84,
+      "energy": 0.311
+    },
+    {
+      "time": 106.84,
+      "energy": 0.169
+    },
+    {
+      "time": 107.83,
+      "energy": 0.164
+    },
+    {
+      "time": 108.83,
+      "energy": 0.068
+    },
+    {
+      "time": 109.83,
+      "energy": 0.228
+    },
+    {
+      "time": 110.83,
+      "energy": 0.461
+    },
+    {
+      "time": 111.83,
+      "energy": 0.804
+    },
+    {
+      "time": 112.83,
+      "energy": 0.294
+    },
+    {
+      "time": 113.82,
+      "energy": 0.605
+    },
+    {
+      "time": 114.82,
+      "energy": 0.982
+    },
+    {
+      "time": 115.82,
+      "energy": 0.922
+    },
+    {
+      "time": 116.82,
+      "energy": 0.325
+    },
+    {
+      "time": 117.82,
+      "energy": 0.102
+    },
+    {
+      "time": 118.82,
+      "energy": 0.418
+    },
+    {
+      "time": 119.81,
+      "energy": 0.294
+    },
+    {
+      "time": 120.81,
+      "energy": 0.381
+    },
+    {
+      "time": 121.81,
+      "energy": 0.282
+    },
+    {
+      "time": 122.81,
+      "energy": 0.225
+    },
+    {
+      "time": 123.81,
+      "energy": 0.16
+    },
+    {
+      "time": 124.81,
+      "energy": 0.221
+    },
+    {
+      "time": 125.81,
+      "energy": 0.149
+    },
+    {
+      "time": 126.8,
+      "energy": 0.052
+    },
+    {
+      "time": 127.8,
+      "energy": 0.088
+    },
+    {
+      "time": 128.8,
+      "energy": 0.197
+    },
+    {
+      "time": 129.8,
+      "energy": 0.255
+    },
+    {
+      "time": 130.8,
+      "energy": 0.289
+    },
+    {
+      "time": 131.8,
+      "energy": 0.439
+    },
+    {
+      "time": 132.79,
+      "energy": 0.171
+    },
+    {
+      "time": 133.79,
+      "energy": 0.227
+    },
+    {
+      "time": 134.79,
+      "energy": 0.168
+    },
+    {
+      "time": 135.79,
+      "energy": 0.209
+    },
+    {
+      "time": 136.79,
+      "energy": 0.156
+    },
+    {
+      "time": 137.79,
+      "energy": 0.447
+    },
+    {
+      "time": 138.79,
+      "energy": 0.273
+    },
+    {
+      "time": 139.78,
+      "energy": 0.721
+    },
+    {
+      "time": 140.78,
+      "energy": 0.927
+    },
+    {
+      "time": 141.78,
+      "energy": 0.917
+    },
+    {
+      "time": 142.78,
+      "energy": 0.828
+    },
+    {
+      "time": 143.78,
+      "energy": 0.852
+    },
+    {
+      "time": 144.78,
+      "energy": 0.949
+    },
+    {
+      "time": 145.77,
+      "energy": 0.837
+    },
+    {
+      "time": 146.77,
+      "energy": 0.382
+    },
+    {
+      "time": 147.77,
+      "energy": 0.852
+    },
+    {
+      "time": 148.77,
+      "energy": 0.794
+    },
+    {
+      "time": 149.77,
+      "energy": 0.483
+    },
+    {
+      "time": 150.77,
+      "energy": 0.194
+    },
+    {
+      "time": 151.77,
+      "energy": 0.056
+    },
+    {
+      "time": 152.76,
+      "energy": 0.462
+    },
+    {
+      "time": 153.76,
+      "energy": 0.311
+    },
+    {
+      "time": 154.76,
+      "energy": 0.19
+    },
+    {
+      "time": 155.76,
+      "energy": 0.234
+    },
+    {
+      "time": 156.76,
+      "energy": 0.307
+    },
+    {
+      "time": 157.76,
+      "energy": 0.311
+    },
+    {
+      "time": 158.75,
+      "energy": 0.512
+    },
+    {
+      "time": 159.75,
+      "energy": 0.398
+    },
+    {
+      "time": 160.75,
+      "energy": 0.423
+    },
+    {
+      "time": 161.75,
+      "energy": 0.831
+    },
+    {
+      "time": 162.75,
+      "energy": 1.0
+    },
+    {
+      "time": 163.75,
+      "energy": 1.0
+    },
+    {
+      "time": 164.75,
+      "energy": 1.0
+    },
+    {
+      "time": 165.74,
+      "energy": 1.0
+    },
+    {
+      "time": 166.74,
+      "energy": 0.503
+    },
+    {
+      "time": 167.74,
+      "energy": 0.809
+    },
+    {
+      "time": 168.74,
+      "energy": 0.548
+    },
+    {
+      "time": 169.74,
+      "energy": 1.0
+    },
+    {
+      "time": 170.74,
+      "energy": 0.737
+    },
+    {
+      "time": 171.73,
+      "energy": 0.742
+    },
+    {
+      "time": 172.73,
+      "energy": 0.651
+    },
+    {
+      "time": 173.73,
+      "energy": 0.417
+    },
+    {
+      "time": 174.73,
+      "energy": 0.616
+    },
+    {
+      "time": 175.73,
+      "energy": 0.467
+    },
+    {
+      "time": 176.73,
+      "energy": 0.341
+    },
+    {
+      "time": 177.73,
+      "energy": 0.62
+    },
+    {
+      "time": 178.72,
+      "energy": 0.731
+    },
+    {
+      "time": 179.72,
+      "energy": 0.933
+    },
+    {
+      "time": 180.72,
+      "energy": 0.848
+    },
+    {
+      "time": 181.72,
+      "energy": 0.071
+    }
+  ],
+  "sections": [
+    {
+      "start": 0.0,
+      "end": 28.12,
+      "duration": 28.12,
+      "avg_energy": 0.045,
+      "peak_energy": 0.111,
+      "intensity": "low",
+      "cluster_id": 2,
+      "label": "intro"
+    },
+    {
+      "start": 28.12,
+      "end": 41.91,
+      "duration": 13.79,
+      "avg_energy": 0.042,
+      "peak_energy": 0.108,
+      "intensity": "low",
+      "cluster_id": 2,
+      "label": "verse"
+    },
+    {
+      "start": 41.91,
+      "end": 61.18,
+      "duration": 19.27,
+      "avg_energy": 0.109,
+      "peak_energy": 0.189,
+      "intensity": "medium",
+      "cluster_id": 5,
+      "label": "verse"
+    },
+    {
+      "start": 61.18,
+      "end": 78.11,
+      "duration": 16.93,
+      "avg_energy": 0.125,
+      "peak_energy": 0.195,
+      "intensity": "medium",
+      "cluster_id": 5,
+      "label": "verse"
+    },
+    {
+      "start": 78.11,
+      "end": 92.79,
+      "duration": 14.68,
+      "avg_energy": 0.075,
+      "peak_energy": 0.142,
+      "intensity": "low",
+      "cluster_id": 4,
+      "label": "pre-chorus"
+    },
+    {
+      "start": 92.79,
+      "end": 113.27,
+      "duration": 20.48,
+      "avg_energy": 0.196,
+      "peak_energy": 0.423,
+      "intensity": "medium",
+      "cluster_id": 0,
+      "label": "bridge"
+    },
+    {
+      "start": 113.27,
+      "end": 129.22,
+      "duration": 15.95,
+      "avg_energy": 0.332,
+      "peak_energy": 0.895,
+      "intensity": "high",
+      "cluster_id": 3,
+      "label": "bridge"
+    },
+    {
+      "start": 129.22,
+      "end": 142.34,
+      "duration": 13.12,
+      "avg_energy": 0.418,
+      "peak_energy": 0.919,
+      "intensity": "high",
+      "cluster_id": 0,
+      "label": "bridge"
+    },
+    {
+      "start": 142.34,
+      "end": 166.86,
+      "duration": 24.52,
+      "avg_energy": 0.581,
+      "peak_energy": 0.981,
+      "intensity": "high",
+      "cluster_id": 1,
+      "label": "chorus"
+    },
+    {
+      "start": 166.86,
+      "end": 182.19,
+      "duration": 15.33,
+      "avg_energy": 0.61,
+      "peak_energy": 0.951,
+      "intensity": "high",
+      "cluster_id": 1,
+      "label": "chorus"
+    }
+  ],
+  "key_moments": [
+    {
+      "time": 114.78,
+      "energy": 0.993,
+      "prominence": 0.967,
+      "type": "climax"
+    },
+    {
+      "time": 131.56,
+      "energy": 0.54,
+      "prominence": 0.471,
+      "type": "build"
+    },
+    {
+      "time": 137.83,
+      "energy": 0.452,
+      "prominence": 0.267,
+      "type": "build"
+    },
+    {
+      "time": 145.4,
+      "energy": 1.0,
+      "prominence": 1.0,
+      "type": "climax"
+    },
+    {
+      "time": 152.44,
+      "energy": 0.594,
+      "prominence": 0.465,
+      "type": "build"
+    },
+    {
+      "time": 162.77,
+      "energy": 1.0,
+      "prominence": 1.0,
+      "type": "build"
+    },
+    {
+      "time": 169.88,
+      "energy": 1.0,
+      "prominence": 1.0,
+      "type": "build"
+    },
+    {
+      "time": 180.33,
+      "energy": 1.0,
+      "prominence": 1.0,
+      "type": "climax"
+    }
+  ],
+  "buildups": [
+    {
+      "start": 110.78,
+      "peak": 114.78,
+      "duration": 3.99,
+      "energy_rise": 0.52
+    },
+    {
+      "start": 135.47,
+      "peak": 139.46,
+      "duration": 3.99,
+      "energy_rise": 0.699
+    },
+    {
+      "start": 158.78,
+      "peak": 162.77,
+      "duration": 3.99,
+      "energy_rise": 0.489
+    },
+    {
+      "start": 176.33,
+      "peak": 180.33,
+      "duration": 3.99,
+      "energy_rise": 0.716
+    }
+  ],
+  "music_profile": {
+    "genre_hint": "hybrid",
+    "key_signature": {
+      "root": "B",
+      "mode": "minor",
+      "confidence": 0.505
+    },
+    "descriptors": {
+      "energy": 0.25,
+      "drive": 0.712,
+      "brightness": 0.135,
+      "warmth": 0.643,
+      "tension": 0.678,
+      "grandeur": 0.507,
+      "playfulness": 0.487,
+      "precision": 0.561,
+      "dynamic_range": 1.0,
+      "bass_impact": 0.483,
+      "section_contrast": 0.123
+    },
+    "style_vector": {
+      "boldness": 0.428,
+      "elegance": 0.411,
+      "playfulness": 0.487,
+      "warmth": 0.643,
+      "brightness": 0.135,
+      "grandeur": 0.507,
+      "tension": 0.678,
+      "precision": 0.561
+    },
+    "dominant_traits": [
+      "tension",
+      "warmth",
+      "precision"
+    ],
+    "raw_metrics": {
+      "tempo_bpm": 143.6,
+      "onset_density_per_sec": 3.222,
+      "key_moments_per_min": 2.635,
+      "buildups_per_min": 1.317,
+      "beat_stability": 0.779,
+      "section_contrast": 0.075,
+      "bass_ratio": 2.103
+    }
+  },
+  "show_personality": {
+    "preset": "balanced",
+    "blend_weights": {
+      "user": 0.55,
+      "music": 0.45
+    },
+    "dimensions": {
+      "boldness": 0.495,
+      "elegance": 0.487,
+      "playfulness": 0.467,
+      "warmth": 0.592,
+      "brightness": 0.336,
+      "grandeur": 0.531,
+      "tension": 0.553,
+      "precision": 0.582
+    },
+    "dominant_traits": [
+      "warmth",
+      "precision",
+      "tension"
+    ],
+    "palette_direction": {
+      "primary": "gold",
+      "secondary": "white",
+      "accent": "emerald"
+    },
+    "density_level": "medium",
+    "genre_hint": "hybrid"
+  },
+  "firework_cues": [
+    {
+      "time": 44.606,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.281,
+      "section": "verse",
+      "palette": "gold/white",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 64.946,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.201,
+      "section": "verse",
+      "palette": "gold/white",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 105.326,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.215,
+      "section": "bridge",
+      "palette": "gold/white",
+      "shape": "pearl",
+      "height": "low",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 110.78,
+      "end": 114.78,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.52,
+      "section": "bridge",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "fan",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 112.083,
+      "effect": "single",
+      "reason": "verse_accent",
+      "energy": 0.535,
+      "section": "bridge",
+      "palette": "gold/white",
+      "shape": "pearl",
+      "height": "mid",
+      "spread": "narrow",
+      "density": "sparse",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 113.708,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.702,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 114.78,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.993,
+      "section": "bridge",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 116.239,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.866,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 118.654,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.261,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 121.139,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.374,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 123.6,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.204,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 125.991,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.128,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 128.43,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.144,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 130.937,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.402,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 133.515,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.332,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 135.47,
+      "end": 139.46,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.699,
+      "section": "bridge",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "fan",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 136.069,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.219,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 138.623,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.187,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "mid",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 141.084,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.953,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 143.546,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.533,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 144.985,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.926,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 145.4,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 146.68,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.382,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 148.352,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.756,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 150.024,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.292,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 151.65,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.033,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 153.252,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.383,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 154.784,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.19,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 156.433,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.344,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 158.105,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.38,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 158.78,
+      "end": 162.77,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.489,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 159.823,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.377,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 161.588,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.747,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 163.236,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.951,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 164.722,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 166.417,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.798,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 168.136,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.788,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 169.831,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 171.503,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.571,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 173.291,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.564,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 175.009,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.474,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 176.33,
+      "end": 180.33,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.716,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 176.657,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.306,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 178.469,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.638,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 180.164,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.977,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 180.33,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    }
+  ]
+}
