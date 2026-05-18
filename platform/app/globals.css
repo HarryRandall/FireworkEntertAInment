@@ -345,3 +345,98 @@ body {
     @apply font-sans;
   }
 }
+
+/* Toast (sonner) — minimal: neutral surface, accent-tinted status icon */
+
+.cn-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  color: var(--color-content-emphasis);
+  box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cn-toast-title {
+  font-weight: 600;
+  color: var(--color-content-emphasis);
+}
+
+.cn-toast-description {
+  color: var(--color-content-default);
+  font-size: 12.5px;
+}
+
+.cn-toast [data-icon] {
+  width: 22px !important;
+  height: 22px !important;
+  margin: 1px 2px 0 0 !important;
+}
+
+.cn-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 1px solid transparent;
+}
+
+.cn-toast-icon-success {
+  background: color-mix(in srgb, var(--color-status-success) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-success) 28%, transparent);
+  color: var(--color-status-success);
+}
+
+.cn-toast-icon-error {
+  background: color-mix(in srgb, var(--color-status-danger) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-danger) 32%, transparent);
+  color: var(--color-status-danger);
+}
+
+.cn-toast-icon-warning {
+  background: color-mix(in srgb, var(--color-status-warning) 20%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-warning) 32%, transparent);
+  color: var(--color-status-warning);
+}
+
+.cn-toast-icon-info {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  color: var(--color-accent);
+}
+
+.cn-toast-close {
+  color: var(--color-content-subtle);
+}
+
+.cn-toast[data-type="success"],
+[data-sonner-toast][data-type="success"].cn-toast {
+  border-color: color-mix(in srgb, var(--color-status-success) 40%, transparent) !important;
+  box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
+}
+
+.cn-toast[data-type="error"],
+[data-sonner-toast][data-type="error"].cn-toast {
+  border-color: color-mix(in srgb, var(--color-status-danger) 40%, transparent) !important;
+  box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
+}
+
+.cn-toast[data-type="warning"],
+[data-sonner-toast][data-type="warning"].cn-toast {
+  border-color: color-mix(in srgb, var(--color-status-warning) 40%, transparent) !important;
+  box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
+}
+
+.cn-toast[data-type="info"],
+[data-sonner-toast][data-type="info"].cn-toast {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
+  box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
+}

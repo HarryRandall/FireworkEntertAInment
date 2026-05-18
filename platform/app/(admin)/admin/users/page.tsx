@@ -5,7 +5,7 @@ import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TablePagination } from "@/app/components/ui/TablePagination";
+import { TABLE_PAGE_SIZE, TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -24,7 +24,6 @@ type PageProps = {
 type UsersSearchParams = Awaited<PageProps["searchParams"]>;
 
 const rowLinkClasses = "block px-5 py-4";
-const PAGE_SIZE = 10;
 
 function roleTone(role: RoleKey) {
   if (role === "admin") return "violet" as const;
@@ -42,7 +41,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <div className="space-y-8">
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
       <AppPageHeader
         title="Users"
         description="Search, filter, and manage platform users."
@@ -73,7 +72,13 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         ]}
       />
 
-      <Suspense fallback={<TableSkeleton rows={10} columns={5} />}>
+      <Suspense
+        fallback={
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <TableSkeleton rows={TABLE_PAGE_SIZE} columns={5} />
+          </div>
+        }
+      >
         <AdminUsersTable params={params} />
       </Suspense>
     </div>
@@ -96,12 +101,12 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
     const matchesStatus = !statusFilter || user.status === statusFilter;
     return matchesQuery && matchesRole && matchesStatus;
   });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
     ? Math.min(Math.max(1, requestedPage), totalPages)
     : 1;
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
 
   return (
     <>

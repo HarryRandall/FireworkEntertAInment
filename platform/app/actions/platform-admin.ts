@@ -27,7 +27,7 @@ import type { Json } from "@/lib/database.types";
 const ProfileSchema = z.object({
   fullName: z.string().trim().max(120).optional(),
   phone: z.string().trim().max(40).optional(),
-  themePreference: z.enum(["dark", "light", "system"]).default("dark"),
+  themePreference: z.enum(["dark", "light", "system"]).optional(),
 });
 
 const ImportJobSchema = z.object({
@@ -173,34 +173,45 @@ async function latestSpecForImport(
   );
 }
 
+type ProfilePatch = {
+  fullName?: string;
+  phone?: string;
+  themePreference?: "dark" | "light" | "system";
+};
+
 export async function updateProfileAction(
-  formData: FormData,
-): Promise<void> {
-  const parsed = ProfileSchema.safeParse({
-    fullName: formData.get("fullName") ?? "",
-    phone: formData.get("phone") ?? "",
-    themePreference: formData.get("themePreference") ?? "dark",
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
+  input: ProfilePatch,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = ProfileSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const userId = await getCurrentUserId();
-  if (!userId) return;
+  if (!userId) return { ok: false, error: "Not signed in" };
+
+  const patch: Record<string, string | null> = {};
+  if ("fullName" in parsed.data) {
+    patch.full_name = parsed.data.fullName ? parsed.data.fullName : null;
+  }
+  if ("phone" in parsed.data) {
+    patch.phone = parsed.data.phone ? parsed.data.phone : null;
+  }
+  if (parsed.data.themePreference) {
+    patch.theme_preference = parsed.data.themePreference;
+  }
+  if (Object.keys(patch).length === 0) return { ok: true };
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
     .from("profiles")
-    .update({
-      full_name: parsed.data.fullName || null,
-      phone: parsed.data.phone || null,
-      theme_preference: parsed.data.themePreference,
-    })
+    .update(patch)
     .eq("id", userId);
   if (error) {
     console.error("[updateProfileAction] failed:", error);
-    return;
+    return { ok: false, error: "Could not save changes" };
   }
   revalidatePath("/settings/profile");
   revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function createImportJobAction(

@@ -1,6 +1,8 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./Button";
 
+export const TABLE_PAGE_SIZE = 8;
+
 type SearchParams = Record<string, string | undefined>;
 
 type TablePaginationProps = {
@@ -43,7 +45,7 @@ export function TablePagination({
   return (
     <nav
       aria-label="Table pagination"
-      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      className="mt-auto flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <span className="text-sm text-[color:var(--color-content-subtle)]">
         Page {currentPage} of {totalPages}
