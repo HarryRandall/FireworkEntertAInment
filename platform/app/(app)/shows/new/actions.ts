@@ -28,6 +28,17 @@ const DURATION_TO_SECONDS: Record<string, number> = {
   "10 minutes": 600,
 };
 
+function parseDurationSeconds(duration: string) {
+  if (DURATION_TO_SECONDS[duration] != null) return DURATION_TO_SECONDS[duration];
+
+  const match = duration.trim().match(/^(\d+)\s+minutes?$/i);
+  if (!match) return null;
+
+  const minutes = Number(match[1]);
+  if (!Number.isFinite(minutes) || minutes < 1 || minutes > 60) return null;
+  return minutes * 60;
+}
+
 const NewShowSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(120),
   vibe: z.string().trim().max(280).optional(),
@@ -108,7 +119,7 @@ export async function createShowAction(
   }
 
   const baseSlug = slugifyTitle(parsed.data.title);
-  const durationSeconds = DURATION_TO_SECONDS[parsed.data.duration] ?? null;
+  const durationSeconds = parseDurationSeconds(parsed.data.duration);
 
   // Avoid clashing with an existing slug for the same user.
   let slug = baseSlug;
