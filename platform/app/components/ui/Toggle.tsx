@@ -3,7 +3,6 @@
 import { useId, useState, type ReactNode } from "react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { uiStyles } from "@/app/components/ui/styles";
 
 type ToggleProps = {
   name?: string;
@@ -42,21 +41,23 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        uiStyles.focus.fieldGroup,
-        "group flex cursor-pointer items-start gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low p-4 transition-colors",
-        "hover:border-primary/35 hover:bg-surface-container-high",
+        "group flex cursor-pointer items-start gap-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 transition-colors hover:bg-[color:var(--color-bg-muted)]",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
       {icon ? (
-        <span className="mt-0.5 shrink-0 text-primary">{icon}</span>
+        <span className="mt-0.5 shrink-0 text-[color:var(--color-content-subtle)]">
+          {icon}
+        </span>
       ) : null}
       <span className="min-w-0 flex-1">
         {label ? (
-          <span className="block font-bold text-on-surface">{label}</span>
+          <span className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            {label}
+          </span>
         ) : null}
         {description ? (
-          <span className="mt-1 block text-sm text-on-surface-variant">
+          <span className="mt-1 block text-sm text-[color:var(--color-content-subtle)]">
             {description}
           </span>
         ) : null}
@@ -68,7 +69,7 @@ export function Toggle({
           checked={value}
           onCheckedChange={handle}
           disabled={disabled}
-          className="h-6 w-11 data-checked:bg-primary data-unchecked:bg-outline/45 [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-surface [&_[data-slot=switch-thumb]]:data-checked:bg-on-primary [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
+          className="h-6 w-11 data-checked:bg-[color:var(--color-content-emphasis)] data-unchecked:bg-[color:var(--color-border-default)] [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
         />
       </span>
     </label>

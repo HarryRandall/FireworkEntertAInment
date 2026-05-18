@@ -1,51 +1,48 @@
 import type { ComponentPropsWithoutRef } from "react";
-import { Card as ShadcnCard } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type Elevation = "low" | "high";
 type Radius = "md" | "lg" | "xl";
 
-const elevationClasses: Record<Elevation, string> = {
-  low: "bg-surface-container-low/88",
-  high: "bg-surface-container-high/92",
-};
-
 const radiusClasses: Record<Radius, string> = {
-  md: "rounded-xl",
-  lg: "rounded-2xl",
-  xl: "rounded-[var(--radius-hero)]",
+  md: "rounded-lg",
+  lg: "rounded-xl",
+  xl: "rounded-2xl",
 };
 
 type CardProps = ComponentPropsWithoutRef<"div"> & {
-  elevation?: Elevation;
   radius?: Radius;
   bordered?: boolean;
   hoverable?: boolean;
+  shadow?: boolean;
+  /** @deprecated kept for backwards compatibility — no longer affects styling */
+  elevation?: "low" | "high";
 };
 
 export function Card({
-  elevation = "low",
-  radius = "md",
+  radius = "lg",
   bordered = true,
   hoverable = false,
+  shadow = false,
   className,
   children,
+  elevation: _elevation,
   ...rest
 }: CardProps) {
+  void _elevation;
   return (
-    <ShadcnCard
+    <div
       className={cn(
-        elevationClasses[elevation],
         radiusClasses[radius],
-        bordered && "border border-outline-variant/55",
-        "gap-0 py-0 shadow-[var(--shadow-card)] backdrop-blur-xl",
+        "bg-[color:var(--color-bg-default)]",
+        bordered && "border border-[color:var(--color-border-subtle)]",
+        shadow && "shadow-[var(--shadow-card)]",
         hoverable &&
-          "transition-all duration-200 ease-out hover:border-primary/55 hover:bg-surface-container-high hover:shadow-[var(--shadow-card-hover)] focus-visible:border-primary/65 focus-visible:shadow-[var(--shadow-card-hover)]",
+          "transition-colors hover:border-[color:var(--color-border-default)]",
         className,
       )}
       {...rest}
     >
       {children}
-    </ShadcnCard>
+    </div>
   );
 }

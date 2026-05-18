@@ -1,9 +1,9 @@
 import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
-import { Input as ShadcnInput } from "@/components/ui/input";
-import { Textarea as ShadcnTextarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { uiStyles } from "@/app/components/ui/styles";
 import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
+
+const controlBase =
+  "h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-1";
 
 type InputProps = ComponentPropsWithoutRef<"input"> & {
   iconLeft?: ReactNode;
@@ -14,18 +14,19 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   return (
     <div className="relative">
       {iconLeft ? (
-        <div className={uiStyles.control.icon}>
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[color:var(--color-content-subtle)]">
           {iconLeft}
         </div>
       ) : null}
-      <ShadcnInput
+      <input
         {...rest}
         aria-invalid={invalid || rest["aria-invalid"] || undefined}
         className={cn(
-          uiStyles.focus.field,
-          "h-11 w-full rounded-xl border bg-surface text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
-          invalid ? "border-error/60" : "border-outline/55",
-          iconLeft ? "pl-11 pr-4" : "px-4",
+          controlBase,
+          invalid
+            ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)] focus:ring-[color:var(--color-status-danger)]"
+            : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)] focus:ring-[color:var(--color-content-emphasis)]",
+          iconLeft ? "pl-10 pr-3" : "px-3",
           className,
         )}
       />
@@ -33,15 +34,18 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   );
 }
 
-type TextareaProps = ComponentPropsWithoutRef<"textarea">;
+type TextareaProps = ComponentPropsWithoutRef<"textarea"> & { invalid?: boolean };
 
-export function Textarea({ className, ...rest }: TextareaProps) {
+export function Textarea({ className, invalid = false, ...rest }: TextareaProps) {
   return (
-    <ShadcnTextarea
+    <textarea
       {...rest}
+      aria-invalid={invalid || rest["aria-invalid"] || undefined}
       className={cn(
-        uiStyles.focus.field,
-        "w-full resize-none rounded-xl border border-outline/55 bg-surface p-4 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all duration-200",
+        "w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] placeholder:text-[color:var(--color-content-muted)] transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60",
+        invalid
+          ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)] focus:ring-[color:var(--color-status-danger)]"
+          : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)] focus:ring-[color:var(--color-content-emphasis)]",
         className,
       )}
     />

@@ -1,36 +1,50 @@
 export const cssTokens = {
   color: {
-    background: "var(--color-background)",
-    surface: "var(--color-surface)",
-    surfaceContainerLow: "var(--color-surface-container-low)",
-    surfaceContainer: "var(--color-surface-container)",
-    surfaceContainerHigh: "var(--color-surface-container-high)",
-    surfaceContainerHighest: "var(--color-surface-container-highest)",
-    onSurface: "var(--color-on-surface)",
-    onSurfaceVariant: "var(--color-on-surface-variant)",
-    primary: "var(--color-primary)",
-    secondary: "var(--color-secondary)",
-    tertiary: "var(--color-tertiary)",
-    success: "var(--color-success)",
-    danger: "var(--color-danger)",
-    highlight: "var(--color-highlight)",
-    outline: "var(--color-outline)",
-    outlineVariant: "var(--color-outline-variant)",
+    bgDefault: "var(--color-bg-default)",
+    bgMuted: "var(--color-bg-muted)",
+    bgSubtle: "var(--color-bg-subtle)",
+    bgEmphasis: "var(--color-bg-emphasis)",
+    bgInverted: "var(--color-bg-inverted)",
+
+    borderSubtle: "var(--color-border-subtle)",
+    borderDefault: "var(--color-border-default)",
+    borderEmphasis: "var(--color-border-emphasis)",
+
+    contentEmphasis: "var(--color-content-emphasis)",
+    contentDefault: "var(--color-content-default)",
+    contentSubtle: "var(--color-content-subtle)",
+    contentMuted: "var(--color-content-muted)",
+    contentInverted: "var(--color-content-inverted)",
+
+    accent: "var(--color-accent)",
+    accentHover: "var(--color-accent-hover)",
+    accentSubtle: "var(--color-accent-subtle)",
+    accentEmphasis: "var(--color-accent-emphasis)",
+    onAccent: "var(--color-on-accent)",
+
+    success: "var(--color-status-success)",
+    danger: "var(--color-status-danger)",
+    warning: "var(--color-status-warning)",
+    info: "var(--color-status-info)",
   },
   radius: {
-    pill: "var(--radius-pill)",
-    card: "var(--radius-card)",
-    cardLg: "var(--radius-card-lg)",
-    hero: "var(--radius-hero)",
+    sm: "6px",
+    md: "8px",
+    lg: "12px",
+    xl: "16px",
   },
   shadow: {
     card: "var(--shadow-card)",
     cardHover: "var(--shadow-card-hover)",
-    cta: "var(--shadow-cta)",
     modal: "var(--shadow-modal)",
   },
 } as const;
 
+/**
+ * Static colour palette used by Three.js / SVG art that doesn't theme-switch
+ * (HeroCanvas, FireworkArt, VendorNetwork). These are deliberately kept as a
+ * vivid set independent of the app's neutral UI palette.
+ */
 export const staticShowCrafterPalette = {
   night: "#05070D",
   surfaceDeep: "#0B1020",
@@ -43,4 +57,12 @@ export const staticShowCrafterPalette = {
   magenta: "#FF3DF2",
   highlight: "#FFD166",
   success: "#00FF9C",
+
+  bgDefault: "#ffffff",
+  bgMuted: "#fafafa",
+  borderSubtle: "#e5e5e5",
+  contentEmphasis: "#171717",
+  contentDefault: "#404040",
+  contentSubtle: "#737373",
+  accent: "#f59e0b",
 } as const;

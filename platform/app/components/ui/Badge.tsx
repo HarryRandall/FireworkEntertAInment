@@ -1,88 +1,105 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { Badge as ShadcnBadge } from "@/components/ui/badge";
-import { Toggle as ShadcnToggle } from "@/components/ui/toggle";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "primary" | "neutral" | "success" | "live" | "danger" | "wow";
+/**
+ * Minimal status badge. Use sparingly — only when the status is
+ * non-obvious from context (e.g. show state, import state).
+ */
+type Tone =
+  | "neutral"
+  | "success"
+  | "danger"
+  | "warning"
+  | "info"
+  | "accent"
+  // Legacy tones — kept so existing call sites compile during the page sweep.
+  | "primary"
+  | "live"
+  | "wow";
 
-const toneClasses: Record<Tone, string> = {
-  primary: "border border-primary/25 bg-primary/10 text-primary",
-  neutral:
-    "border border-outline-variant/45 bg-surface-container-highest/80 text-on-surface-variant",
-  success:
-    "border border-success/25 bg-[color-mix(in_srgb,_var(--color-success)_14%,_transparent)] text-[color:var(--color-success)]",
-  live: "border border-secondary/25 bg-secondary/10 text-secondary",
-  danger:
-    "border border-error/25 bg-[color-mix(in_srgb,_var(--color-error)_14%,_transparent)] text-error",
-  wow: "border border-highlight/35 bg-highlight/12 text-highlight",
+const dotClasses: Record<Tone, string> = {
+  neutral: "bg-[color:var(--color-content-muted)]",
+  success: "bg-[color:var(--color-status-success)]",
+  danger: "bg-[color:var(--color-status-danger)]",
+  warning: "bg-[color:var(--color-status-warning)]",
+  info: "bg-[color:var(--color-status-info)]",
+  accent: "bg-[color:var(--color-accent)]",
+  primary: "bg-[color:var(--color-content-emphasis)]",
+  live: "bg-[color:var(--color-status-success)]",
+  wow: "bg-[color:var(--color-accent)]",
 };
 
 type BadgeProps = {
   tone?: Tone;
+  dot?: boolean;
   className?: string;
   children: ReactNode;
 };
 
-export function Badge({ tone = "primary", className, children }: BadgeProps) {
+export function Badge({
+  tone = "neutral",
+  dot = false,
+  className,
+  children,
+}: BadgeProps) {
   return (
-    <ShadcnBadge
-      variant="outline"
+    <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest",
-        toneClasses[tone],
+        "inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-2 py-0.5 text-xs font-medium text-[color:var(--color-content-default)]",
         className,
       )}
     >
+      {dot ? (
+        <span
+          aria-hidden
+          className={cn("inline-block h-1.5 w-1.5 rounded-full", dotClasses[tone])}
+        />
+      ) : null}
       {children}
-    </ShadcnBadge>
+    </span>
   );
 }
 
-type ChoiceChipProps = ComponentPropsWithoutRef<"button"> & {
-  selected?: boolean;
-};
-
+/**
+ * Legacy shims — kept so existing imports don't break during the page sweep.
+ * Both render as a minimal Badge; remove imports as you sweep each page.
+ */
 export function ChoiceChip({
   selected = false,
   className,
   children,
   ...rest
-}: ChoiceChipProps) {
+}: React.ComponentPropsWithoutRef<"button"> & { selected?: boolean }) {
   return (
-    <ShadcnToggle
+    <button
       type="button"
-      pressed={selected}
-      variant="outline"
+      aria-pressed={selected}
       className={cn(
-        "focus-glow-action inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border px-4 py-2 text-sm font-bold transition-colors focus:outline-none focus-visible:outline-none",
+        "inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]",
         selected
-          ? "border-on-surface bg-surface-container-low text-on-surface hover:bg-surface-container-high hover:text-on-surface aria-pressed:border-on-surface aria-pressed:bg-surface-container-low aria-pressed:text-on-surface aria-pressed:hover:bg-surface-container-high aria-pressed:hover:text-on-surface"
-          : "border-outline-variant/55 bg-surface-container-low text-on-surface-variant hover:border-outline hover:bg-surface-container-high hover:text-on-surface",
+          ? "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]"
+          : "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-muted)]",
         className,
       )}
       {...rest}
     >
       {children}
-    </ShadcnToggle>
+    </button>
   );
 }
 
-type EyebrowProps = {
+export function Eyebrow({
+  className,
+  children,
+}: {
   className?: string;
   tone?: "primary" | "muted";
   children: ReactNode;
-};
-
-export function Eyebrow({
-  className,
-  tone = "primary",
-  children,
-}: EyebrowProps) {
+}) {
   return (
     <span
       className={cn(
-        "block text-xs font-bold uppercase tracking-[0.2em]",
-        tone === "primary" ? "text-primary" : "text-on-surface-variant",
+        "block text-xs font-medium uppercase tracking-wide text-[color:var(--color-content-subtle)]",
         className,
       )}
     >

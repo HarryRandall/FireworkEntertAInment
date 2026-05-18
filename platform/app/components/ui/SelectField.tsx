@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { uiStyles } from "@/app/components/ui/styles";
 
 export type SelectOption = {
   value: string;
@@ -74,14 +73,13 @@ export function SelectField({
         <SelectTrigger
           aria-label={ariaLabel}
           className={cn(
-            uiStyles.focus.field,
-            "h-11 w-full cursor-pointer rounded-xl border-outline/55 bg-surface px-3 text-sm font-semibold text-on-surface transition-all duration-200",
+            "h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:outline-none focus:ring-1 focus:ring-[color:var(--color-content-emphasis)] focus:border-[color:var(--color-content-emphasis)]",
             disabled && "cursor-not-allowed opacity-60",
             className,
           )}
         >
           {iconLeft ? (
-            <span className="text-on-surface-variant">{iconLeft}</span>
+            <span className="text-[color:var(--color-content-subtle)]">{iconLeft}</span>
           ) : null}
           <SelectValue placeholder={placeholder}>
             {selected?.label}
@@ -89,10 +87,10 @@ export function SelectField({
         </SelectTrigger>
         <SelectContent
           align="start"
-          className="rounded-xl border-outline/55 bg-surface p-1.5 text-on-surface shadow-[var(--shadow-modal)]"
+          className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-1 shadow-[var(--shadow-modal)]"
         >
           {options.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-on-surface-variant">
+            <div className="px-3 py-2 text-sm text-[color:var(--color-content-subtle)]">
               No options
             </div>
           ) : null}
@@ -101,14 +99,12 @@ export function SelectField({
               key={option.value}
               value={option.value}
               disabled={option.disabled}
-              className="rounded-lg text-on-surface-variant focus:bg-surface-container-high focus:text-on-surface data-[state=checked]:text-primary"
+              className="rounded-md text-sm text-[color:var(--color-content-default)] focus:bg-[color:var(--color-bg-muted)] focus:text-[color:var(--color-content-emphasis)] data-[state=checked]:font-medium data-[state=checked]:text-[color:var(--color-content-emphasis)]"
             >
               <span className="min-w-0">
-                <span className="block truncate font-semibold">
-                  {option.label}
-                </span>
+                <span className="block truncate">{option.label}</span>
                 {option.description ? (
-                  <span className="mt-0.5 block truncate text-xs text-on-surface-variant">
+                  <span className="mt-0.5 block truncate text-xs text-[color:var(--color-content-subtle)]">
                     {option.description}
                   </span>
                 ) : null}
