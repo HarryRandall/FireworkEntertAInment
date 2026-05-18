@@ -33,6 +33,7 @@ const ImportedFireworkSpecBaseSchema = z.object({
   description: z.string().trim().max(1200).optional().nullable(),
   durationSeconds: z.coerce.number().min(0.1).max(MAX_IMPORT_VIDEO_SECONDS),
   heightMeters: z.coerce.number().min(0).max(220).optional().nullable(),
+  caliber: z.string().trim().min(1).max(40).optional().nullable(),
   confidence: z.coerce.number().min(0).max(1).default(0.5),
   spec: FireworkSpecSchema,
   fieldConfidence: z.record(z.string(), z.number().min(0).max(1)).optional(),
@@ -52,6 +53,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function finiteNumber(value: unknown): number | null {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function textValue(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -402,14 +409,21 @@ function normalizeImportedFireworkSpecInput(value: unknown): unknown {
   }
 
   const launch = isRecord(value.effectSpec.launch) ? value.effectSpec.launch : {};
+  const shell = isRecord(value.effectSpec.shell) ? value.effectSpec.shell : {};
   const heightMeters =
     finiteNumber(value.heightMeters) ??
     finiteNumber(value.effectSpec.heightMeters) ??
     finiteNumber(launch.heightMeters);
+  const caliber =
+    textValue(value.caliber) ??
+    textValue(value.effectSpec.caliber) ??
+    textValue(value.effectSpec.bore) ??
+    textValue(shell.caliber);
 
   return {
     ...value,
     heightMeters,
+    caliber,
     spec: fireworkSpecFromEffectSpec(value.effectSpec),
   };
 }
@@ -451,6 +465,7 @@ export function importedSpecToReplayCues(
         sortOrder: 1,
         durationSeconds: imported.durationSeconds,
         heightMeters: imported.heightMeters ?? null,
+        caliber: imported.caliber ?? null,
         spec,
         rawSpec: spec,
       },
