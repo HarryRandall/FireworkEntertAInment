@@ -91,6 +91,7 @@ export function AudioAnalysisTimeline({
   const keyMoments = result?.key_moments ?? EMPTY_KEY_MOMENTS;
   const buildups = result?.buildups ?? EMPTY_BUILDUPS;
   const labels = useMemo(() => buildTimeLabels(duration), [duration]);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   const runAnalysis = () => {
     setError(null);
@@ -165,10 +166,17 @@ export function AudioAnalysisTimeline({
       </div>
 
       <div className="mt-7 rounded-xl border border-outline-variant/45 bg-surface/70 p-4">
-        <div className="mb-2 flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/55 tabular-nums">
-          {labels.map((label, index) => (
-            <span key={`${label}-${index}`}>{label}</span>
-          ))}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+            Song structure
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowTechnicalDetails((value) => !value)}
+            className="text-xs font-bold text-on-surface-variant underline-offset-4 hover:text-on-surface hover:underline"
+          >
+            {showTechnicalDetails ? "Hide details" : "Show technical details"}
+          </button>
         </div>
 
         <div className="relative h-4 overflow-hidden rounded-full bg-surface-container-low">
@@ -197,17 +205,6 @@ export function AudioAnalysisTimeline({
 
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-on-surface-variant">
-          <span>Song structure</span>
-          <span>AI peak anchors: {keyMoments.length}</span>
-          <span>Build-up anchors: {buildups.length}</span>
-          {analysis?.createdAt ? (
-            <span className="ml-auto tabular-nums">
-              {formatStableDateTime(analysis.createdAt)}
-            </span>
-          ) : null}
-        </div>
-
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-on-surface-variant">
           {SECTION_LEGEND.map((item) => (
             <span key={item.label} className="inline-flex items-center gap-2">
@@ -217,6 +214,24 @@ export function AudioAnalysisTimeline({
           ))}
         </div>
 
+        {showTechnicalDetails ? (
+          <div className="mt-4 space-y-3 rounded-lg border border-outline-variant/35 bg-surface-container-low p-3">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/55 tabular-nums">
+              {labels.map((label, index) => (
+                <span key={`${label}-${index}`}>{label}</span>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-on-surface-variant">
+              <span>AI peak anchors: {keyMoments.length}</span>
+              <span>Build-up anchors: {buildups.length}</span>
+              {analysis?.createdAt ? (
+                <span className="ml-auto tabular-nums">
+                  {formatStableDateTime(analysis.createdAt)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     </Card>
   );
