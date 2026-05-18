@@ -7,10 +7,8 @@ export default function LibraryLoading() {
         <Skeleton className="mt-8 h-10 w-56" />
         <Skeleton className="h-4 w-full max-w-xl" />
       </div>
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Skeleton key={index} className="h-10 w-32 rounded-full" />
-        ))}
+      <div className="flex justify-end">
+        <Skeleton className="h-9 w-48 rounded-md" />
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
