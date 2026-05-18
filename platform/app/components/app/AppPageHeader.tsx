@@ -26,7 +26,7 @@ export function AppPageHeader({
   return (
     <header
       className={cn(
-        "border-b border-[color:var(--color-border-subtle)] px-6 py-5 sm:px-8 lg:px-10",
+        "-mx-6 -mt-6 mb-6 border-b border-[color:var(--color-border-subtle)] px-6 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10",
         className,
       )}
     >

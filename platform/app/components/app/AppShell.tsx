@@ -199,7 +199,7 @@ export function AppShell({
             </Sheet>
           </header>
 
-          <main>{children}</main>
+          <main className="px-6 py-6 sm:px-8 lg:px-10">{children}</main>
         </div>
       </div>
     </div>
