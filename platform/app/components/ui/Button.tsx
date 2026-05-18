@@ -18,7 +18,7 @@ const button = cva(
         accent:
           "border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] hover:ring-4 hover:ring-[color:var(--color-accent-subtle)]",
         destructive:
-          "border-[color:var(--color-status-danger)] bg-[color:var(--color-status-danger)] text-white hover:ring-4 hover:ring-[color:var(--color-status-danger-subtle)]",
+          "border-[#dc2626] bg-[#dc2626] text-white hover:bg-[#b91c1c] hover:border-[#b91c1c] hover:ring-4 hover:ring-[#dc2626]/15",
       },
       size: {
         sm: "h-8 px-3",

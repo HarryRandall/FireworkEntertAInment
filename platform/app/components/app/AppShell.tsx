@@ -59,7 +59,7 @@ type AppShellProps = {
 };
 
 const navBase =
-  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
+  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-[background-color] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
 const navActive =
   "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]";
 const navInactive =
@@ -70,7 +70,9 @@ export function AppShell({
   profile,
 }: AppShellProps) {
   const pathname = usePathname();
-  const inSettings = pathname?.startsWith("/settings");
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const effectivePath = pendingHref ?? pathname;
+  const inSettings = effectivePath?.startsWith("/settings");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
@@ -92,20 +94,26 @@ export function AppShell({
 
   useEffect(() => {
     closeDrawer();
+    setPendingHref(null);
   }, [pathname]);
 
   const renderNavLinks = (onClick?: () => void) =>
     visibleLinks.map((link) => {
       const Icon = link.icon;
       const active =
-        pathname === link.href ||
-        (link.href !== "/" && pathname?.startsWith(link.href));
+        effectivePath === link.href ||
+        (link.href !== "/" && effectivePath?.startsWith(link.href));
       return (
         <Link
           key={link.href}
           href={link.href}
           prefetch
-          onClick={onClick}
+          onClick={(event) => {
+            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+              setPendingHref(link.href);
+            }
+            onClick?.();
+          }}
           className={cn(navBase, active ? navActive : navInactive)}
         >
           <Icon size={16} strokeWidth={2} />
@@ -117,13 +125,18 @@ export function AppShell({
   const renderSettingsLinks = (onClick?: () => void) =>
     SETTINGS_LINKS.map((link) => {
       const Icon = link.icon;
-      const active = pathname === link.href || pathname?.startsWith(link.href + "/");
+      const active = effectivePath === link.href || effectivePath?.startsWith(link.href + "/");
       return (
         <Link
           key={link.href}
           href={link.href}
           prefetch
-          onClick={onClick}
+          onClick={(event) => {
+            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+              setPendingHref(link.href);
+            }
+            onClick?.();
+          }}
           className={cn(navBase, active ? navActive : navInactive)}
         >
           <Icon size={16} strokeWidth={2} />
@@ -150,7 +163,7 @@ export function AppShell({
       href="/settings/profile"
       prefetch
       onClick={closeDrawer}
-      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
+      className="flex items-center gap-2.5 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-xs font-medium text-[color:var(--color-content-default)]">
         {initials}
@@ -189,7 +202,7 @@ export function AppShell({
     ? "Jump between personal details, notifications, billing, and security."
     : "Jump between dashboard, new show, library, and admin sections.";
   const profileFooter = inSettings ? null : (
-    <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
+    <div className="mt-auto pt-3">
       {profileCard}
     </div>
   );

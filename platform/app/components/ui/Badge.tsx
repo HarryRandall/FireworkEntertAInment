@@ -131,18 +131,30 @@ export function Badge({
  * Legacy shims — kept so existing imports don't break during the page sweep.
  * Both render as a minimal Badge; remove imports as you sweep each page.
  */
+type ChoiceChipSize = "sm" | "md";
+
+const chipSizeClasses: Record<ChoiceChipSize, string> = {
+  sm: "h-7 gap-1.5 rounded-md px-2.5 text-xs",
+  md: "h-8 gap-2 rounded-md px-3 text-sm",
+};
+
 export function ChoiceChip({
   selected = false,
+  size = "sm",
   className,
   children,
   ...rest
-}: React.ComponentPropsWithoutRef<"button"> & { selected?: boolean }) {
+}: React.ComponentPropsWithoutRef<"button"> & {
+  selected?: boolean;
+  size?: ChoiceChipSize;
+}) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       className={cn(
-        "inline-flex h-8 items-center rounded-md border px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]",
+        "inline-flex items-center border font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]",
+        chipSizeClasses[size],
         selected
           ? "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]"
           : "border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-muted)]",

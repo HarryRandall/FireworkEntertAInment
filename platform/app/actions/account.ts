@@ -1,8 +1,10 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { createServiceRoleSupabase } from "@/utils/supabase/service-role";
 
 const PasswordSchema = z
   .object({
@@ -67,4 +69,72 @@ export async function updatePasswordAction(
   }
 
   return { status: "success", message: "Password updated." };
+}
+
+const DeleteAccountSchema = z.object({
+  password: z.string().min(1, "Enter your current password."),
+  confirmation: z.string(),
+});
+
+export type DeleteAccountState = {
+  status: "idle" | "error";
+  message?: string;
+};
+
+export async function deleteAccountAction(
+  _prev: DeleteAccountState,
+  formData: FormData,
+): Promise<DeleteAccountState> {
+  const parsed = DeleteAccountSchema.safeParse({
+    password: formData.get("password") ?? "",
+    confirmation: formData.get("confirmation") ?? "",
+  });
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Check the form details.",
+    };
+  }
+  if (parsed.data.confirmation.trim().toLowerCase() !== "delete my account") {
+    return {
+      status: "error",
+      message: 'Type "delete my account" exactly to confirm.',
+    };
+  }
+
+  const supabase = createClient(await cookies());
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user?.email) {
+    return { status: "error", message: "You are not signed in." };
+  }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: parsed.data.password,
+  });
+  if (signInError) {
+    return { status: "error", message: "Password is incorrect." };
+  }
+
+  const admin = createServiceRoleSupabase();
+  if (!admin) {
+    return {
+      status: "error",
+      message: "Account deletion is unavailable. Contact support.",
+    };
+  }
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+  if (deleteError) {
+    return {
+      status: "error",
+      message: deleteError.message || "Could not delete account.",
+    };
+  }
+
+  await supabase.auth.signOut();
+  redirect("/login?deleted=1");
 }

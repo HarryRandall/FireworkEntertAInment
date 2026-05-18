@@ -54,7 +54,7 @@ export function AdminShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
   const secondaryLine = profile.fullName && profile.email ? profile.email : "Platform admin";
-  const profileHref = `/settings/profile?returnTo=${encodeURIComponent(pathname || "/admin")}`;
+  const profileHref = "/settings/profile";
   const initials =
     displayName
       .split(/\s+/)
@@ -156,7 +156,7 @@ export function AdminShell({
           </div>
         </aside>
 
-        <div className="min-w-0 bg-[color:var(--color-bg-default)] lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
+        <div className="flex min-w-0 flex-col bg-[color:var(--color-bg-default)] lg:h-[calc(100vh-1rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
           <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3 lg:hidden">
             {brand}
             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -203,7 +203,7 @@ export function AdminShell({
             </Sheet>
           </header>
 
-          <main className="px-6 py-6 sm:px-8 lg:px-10">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col px-6 py-6 sm:px-8 lg:px-10">{children}</main>
         </div>
       </div>
     </div>

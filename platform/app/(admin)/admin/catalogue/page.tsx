@@ -3,7 +3,7 @@ import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { FilterSkeleton, TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TablePagination } from "@/app/components/ui/TablePagination";
+import { TABLE_PAGE_SIZE, TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -29,12 +29,11 @@ type PageProps = {
 };
 type CatalogueSearchParams = Awaited<PageProps["searchParams"]>;
 
-const PAGE_SIZE = 10;
 
 export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
-    <div className="space-y-8">
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
       <AppPageHeader
         title="Catalogue"
         description="Browse and edit catalogue products."
@@ -45,7 +44,9 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
         fallback={
           <>
             <FilterSkeleton />
-            <TableSkeleton rows={10} columns={6} />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <TableSkeleton rows={TABLE_PAGE_SIZE} columns={6} />
+            </div>
           </>
         }
       >
@@ -90,12 +91,12 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
     const matchesMax = maxDuration == null || (d != null && d <= maxDuration);
     return matchesQuery && matchesManufacturer && matchesType && matchesMin && matchesMax;
   });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
     ? Math.min(Math.max(1, requestedPage), totalPages)
     : 1;
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
 
   return (
     <>

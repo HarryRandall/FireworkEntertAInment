@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+import { CheckIcon, InfoIcon, TriangleAlertIcon, XIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -13,32 +13,45 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       icons={{
         success: (
-          <CircleCheckIcon className="size-4" />
+          <span className="cn-toast-icon cn-toast-icon-success">
+            <CheckIcon className="size-3.5" strokeWidth={2.5} />
+          </span>
         ),
         info: (
-          <InfoIcon className="size-4" />
+          <span className="cn-toast-icon cn-toast-icon-info">
+            <InfoIcon className="size-3.5" strokeWidth={2.5} />
+          </span>
         ),
         warning: (
-          <TriangleAlertIcon className="size-4" />
+          <span className="cn-toast-icon cn-toast-icon-warning">
+            <TriangleAlertIcon className="size-3.5" strokeWidth={2.5} />
+          </span>
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <span className="cn-toast-icon cn-toast-icon-error">
+            <XIcon className="size-3.5" strokeWidth={2.5} />
+          </span>
         ),
         loading: (
-          <Loader2Icon className="size-4 animate-spin" />
+          <span className="cn-toast-icon cn-toast-icon-info">
+            <Loader2Icon className="size-3.5 animate-spin" />
+          </span>
         ),
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "var(--color-bg-elevated, var(--popover))",
+          "--normal-text": "var(--color-content-emphasis, var(--popover-foreground))",
+          "--normal-border": "var(--color-border-default, var(--border))",
+          "--border-radius": "12px",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          title: "cn-toast-title",
+          description: "cn-toast-description",
+          closeButton: "cn-toast-close",
         },
       }}
       {...props}
