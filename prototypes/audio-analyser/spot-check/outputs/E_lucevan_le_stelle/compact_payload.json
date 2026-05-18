@@ -1,0 +1,685 @@
+{
+  "schema_version": "1.2.0",
+  "source_file": "E lucevan le stelle.mp3",
+  "song": {
+    "duration_seconds": 182.19,
+    "tempo_bpm": 143.6,
+    "total_beats": 391,
+    "genre_hint": "hybrid",
+    "key_signature": {
+      "root": "B",
+      "mode": "minor",
+      "confidence": 0.505
+    }
+  },
+  "music_style": {
+    "dominant_traits": [
+      "tension",
+      "warmth",
+      "precision"
+    ],
+    "style_vector": {
+      "boldness": 0.428,
+      "elegance": 0.411,
+      "playfulness": 0.487,
+      "warmth": 0.643,
+      "brightness": 0.135,
+      "grandeur": 0.507,
+      "tension": 0.678,
+      "precision": 0.561
+    },
+    "descriptors": {
+      "energy": 0.25,
+      "drive": 0.712,
+      "brightness": 0.135,
+      "warmth": 0.643,
+      "tension": 0.678,
+      "grandeur": 0.507,
+      "playfulness": 0.487,
+      "precision": 0.561,
+      "dynamic_range": 1.0,
+      "bass_impact": 0.483,
+      "section_contrast": 0.123
+    }
+  },
+  "show_personality": {
+    "preset": "balanced",
+    "blend_weights": {
+      "user": 0.55,
+      "music": 0.45
+    },
+    "dimensions": {
+      "boldness": 0.495,
+      "elegance": 0.487,
+      "playfulness": 0.467,
+      "warmth": 0.592,
+      "brightness": 0.336,
+      "grandeur": 0.531,
+      "tension": 0.553,
+      "precision": 0.582
+    },
+    "dominant_traits": [
+      "warmth",
+      "precision",
+      "tension"
+    ],
+    "palette_direction": {
+      "primary": "gold",
+      "secondary": "white",
+      "accent": "emerald"
+    },
+    "density_level": "medium"
+  },
+  "sections": [
+    {
+      "index": 0,
+      "label": "intro",
+      "start": 0.0,
+      "end": 28.12,
+      "duration": 28.12,
+      "avg_energy": 0.045,
+      "peak_energy": 0.111,
+      "intensity": "low",
+      "cue_counts": {}
+    },
+    {
+      "index": 1,
+      "label": "verse",
+      "start": 28.12,
+      "end": 41.91,
+      "duration": 13.79,
+      "avg_energy": 0.042,
+      "peak_energy": 0.108,
+      "intensity": "low",
+      "cue_counts": {}
+    },
+    {
+      "index": 2,
+      "label": "verse",
+      "start": 41.91,
+      "end": 61.18,
+      "duration": 19.27,
+      "avg_energy": 0.109,
+      "peak_energy": 0.189,
+      "intensity": "medium",
+      "cue_counts": {
+        "single": 1
+      }
+    },
+    {
+      "index": 3,
+      "label": "verse",
+      "start": 61.18,
+      "end": 78.11,
+      "duration": 16.93,
+      "avg_energy": 0.125,
+      "peak_energy": 0.195,
+      "intensity": "medium",
+      "cue_counts": {
+        "single": 1
+      }
+    },
+    {
+      "index": 4,
+      "label": "pre-chorus",
+      "start": 78.11,
+      "end": 92.79,
+      "duration": 14.68,
+      "avg_energy": 0.075,
+      "peak_energy": 0.142,
+      "intensity": "low",
+      "cue_counts": {}
+    },
+    {
+      "index": 5,
+      "label": "bridge",
+      "start": 92.79,
+      "end": 113.27,
+      "duration": 20.48,
+      "avg_energy": 0.196,
+      "peak_energy": 0.423,
+      "intensity": "medium",
+      "cue_counts": {
+        "single": 2,
+        "crackle": 1
+      }
+    },
+    {
+      "index": 6,
+      "label": "bridge",
+      "start": 113.27,
+      "end": 129.22,
+      "duration": 15.95,
+      "avg_energy": 0.332,
+      "peak_energy": 0.895,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 7,
+        "barrage": 1
+      }
+    },
+    {
+      "index": 7,
+      "label": "bridge",
+      "start": 129.22,
+      "end": 142.34,
+      "duration": 13.12,
+      "avg_energy": 0.418,
+      "peak_energy": 0.919,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 5,
+        "crackle": 1
+      }
+    },
+    {
+      "index": 8,
+      "label": "chorus",
+      "start": 142.34,
+      "end": 166.86,
+      "duration": 24.52,
+      "avg_energy": 0.581,
+      "peak_energy": 0.981,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 15,
+        "barrage": 1,
+        "crackle": 1
+      }
+    },
+    {
+      "index": 9,
+      "label": "chorus",
+      "start": 166.86,
+      "end": 182.19,
+      "duration": 15.33,
+      "avg_energy": 0.61,
+      "peak_energy": 0.951,
+      "intensity": "high",
+      "cue_counts": {
+        "accent": 8,
+        "crackle": 1,
+        "barrage": 1
+      }
+    }
+  ],
+  "anchors": {
+    "key_moments": [
+      {
+        "time": 114.78,
+        "energy": 0.993,
+        "prominence": 0.967,
+        "type": "climax"
+      },
+      {
+        "time": 131.56,
+        "energy": 0.54,
+        "prominence": 0.471,
+        "type": "build"
+      },
+      {
+        "time": 137.83,
+        "energy": 0.452,
+        "prominence": 0.267,
+        "type": "build"
+      },
+      {
+        "time": 145.4,
+        "energy": 1.0,
+        "prominence": 1.0,
+        "type": "climax"
+      },
+      {
+        "time": 152.44,
+        "energy": 0.594,
+        "prominence": 0.465,
+        "type": "build"
+      },
+      {
+        "time": 162.77,
+        "energy": 1.0,
+        "prominence": 1.0,
+        "type": "build"
+      },
+      {
+        "time": 169.88,
+        "energy": 1.0,
+        "prominence": 1.0,
+        "type": "build"
+      },
+      {
+        "time": 180.33,
+        "energy": 1.0,
+        "prominence": 1.0,
+        "type": "climax"
+      }
+    ],
+    "buildups": [
+      {
+        "start": 110.78,
+        "peak": 114.78,
+        "duration": 3.99,
+        "energy_rise": 0.52
+      },
+      {
+        "start": 135.47,
+        "peak": 139.46,
+        "duration": 3.99,
+        "energy_rise": 0.699
+      },
+      {
+        "start": 158.78,
+        "peak": 162.77,
+        "duration": 3.99,
+        "energy_rise": 0.489
+      },
+      {
+        "start": 176.33,
+        "peak": 180.33,
+        "duration": 3.99,
+        "energy_rise": 0.716
+      }
+    ]
+  },
+  "derived": {
+    "finale_window": {
+      "start": 176.33,
+      "end": 182.19
+    },
+    "quietest_section_index": 1,
+    "highest_energy_section_index": 9,
+    "repeated_chorus_count": 2,
+    "section_rank_by_energy": [
+      9,
+      8,
+      7,
+      6,
+      5,
+      3,
+      2,
+      4,
+      0,
+      1
+    ],
+    "anchor_windows": [
+      {
+        "type": "climax",
+        "anchor_time": 114.78,
+        "start": 111.78,
+        "end": 118.78,
+        "energy": 0.993
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 114.78,
+        "start": 110.78,
+        "end": 118.78,
+        "energy_rise": 0.52
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 139.46,
+        "start": 135.47,
+        "end": 143.46,
+        "energy_rise": 0.699
+      },
+      {
+        "type": "climax",
+        "anchor_time": 145.4,
+        "start": 142.4,
+        "end": 149.4,
+        "energy": 1.0
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 162.77,
+        "start": 158.78,
+        "end": 166.77,
+        "energy_rise": 0.489
+      },
+      {
+        "type": "climax",
+        "anchor_time": 180.33,
+        "start": 177.33,
+        "end": 182.19,
+        "energy": 1.0
+      },
+      {
+        "type": "buildup",
+        "anchor_time": 180.33,
+        "start": 176.33,
+        "end": 182.19,
+        "energy_rise": 0.716
+      }
+    ]
+  },
+  "firework_cue_summary": {
+    "total_count": 46,
+    "counts_by_effect": {
+      "single": 4,
+      "crackle": 4,
+      "accent": 35,
+      "barrage": 3
+    },
+    "counts_by_section": [
+      {
+        "section_index": 0,
+        "label": "intro",
+        "start": 0.0,
+        "end": 28.12,
+        "total_count": 0,
+        "counts_by_effect": {}
+      },
+      {
+        "section_index": 1,
+        "label": "verse",
+        "start": 28.12,
+        "end": 41.91,
+        "total_count": 0,
+        "counts_by_effect": {}
+      },
+      {
+        "section_index": 2,
+        "label": "verse",
+        "start": 41.91,
+        "end": 61.18,
+        "total_count": 1,
+        "counts_by_effect": {
+          "single": 1
+        }
+      },
+      {
+        "section_index": 3,
+        "label": "verse",
+        "start": 61.18,
+        "end": 78.11,
+        "total_count": 1,
+        "counts_by_effect": {
+          "single": 1
+        }
+      },
+      {
+        "section_index": 4,
+        "label": "pre-chorus",
+        "start": 78.11,
+        "end": 92.79,
+        "total_count": 0,
+        "counts_by_effect": {}
+      },
+      {
+        "section_index": 5,
+        "label": "bridge",
+        "start": 92.79,
+        "end": 113.27,
+        "total_count": 3,
+        "counts_by_effect": {
+          "single": 2,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 6,
+        "label": "bridge",
+        "start": 113.27,
+        "end": 129.22,
+        "total_count": 8,
+        "counts_by_effect": {
+          "accent": 7,
+          "barrage": 1
+        }
+      },
+      {
+        "section_index": 7,
+        "label": "bridge",
+        "start": 129.22,
+        "end": 142.34,
+        "total_count": 6,
+        "counts_by_effect": {
+          "accent": 5,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 8,
+        "label": "chorus",
+        "start": 142.34,
+        "end": 166.86,
+        "total_count": 17,
+        "counts_by_effect": {
+          "accent": 15,
+          "barrage": 1,
+          "crackle": 1
+        }
+      },
+      {
+        "section_index": 9,
+        "label": "chorus",
+        "start": 166.86,
+        "end": 182.19,
+        "total_count": 10,
+        "counts_by_effect": {
+          "accent": 8,
+          "crackle": 1,
+          "barrage": 1
+        }
+      }
+    ]
+  },
+  "firework_cue_samples": [
+    {
+      "time": 110.78,
+      "end": 114.78,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.52,
+      "section": "bridge",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "fan",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 114.78,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 0.993,
+      "section": "bridge",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 135.47,
+      "end": 139.46,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.699,
+      "section": "bridge",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "fan",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 141.084,
+      "effect": "accent",
+      "reason": "high_energy_beat",
+      "energy": 0.953,
+      "section": "bridge",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 145.4,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 158.78,
+      "end": 162.77,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.489,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 163.236,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.951,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 164.722,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 169.831,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 176.33,
+      "end": 180.33,
+      "effect": "crackle",
+      "reason": "buildup",
+      "energy": 0.716,
+      "section": "chorus",
+      "palette": "white/gold",
+      "shape": "crackle_tail",
+      "height": "mid",
+      "spread": "trail",
+      "density": "sustained",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 180.164,
+      "effect": "accent",
+      "reason": "chorus_beat",
+      "energy": 0.977,
+      "section": "chorus",
+      "palette": "emerald/gold",
+      "shape": "palm",
+      "height": "high",
+      "spread": "focused",
+      "density": "punchy",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    },
+    {
+      "time": 180.33,
+      "effect": "barrage",
+      "reason": "climax",
+      "energy": 1.0,
+      "section": "chorus",
+      "palette": "gold/gold",
+      "shape": "chrysanthemum",
+      "height": "high",
+      "spread": "wide",
+      "density": "layered",
+      "style_tags": [
+        "warmth",
+        "precision"
+      ],
+      "genre_hint": "hybrid"
+    }
+  ],
+  "cue_reference": {
+    "full_cues_source": "analysis_json",
+    "json_path": "firework_cues",
+    "note": "The full heuristic cue list is kept only in the full analysis JSON and is intentionally not duplicated in this compact LLM payload."
+  },
+  "user_constraints": {},
+  "inventory": []
+}

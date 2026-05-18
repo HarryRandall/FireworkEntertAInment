@@ -1,0 +1,2 @@
+.cache/
+!outputs/**/run.log
