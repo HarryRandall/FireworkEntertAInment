@@ -1,10 +1,12 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { runShowAnalysisForShow } from "@/lib/show-analysis-runner.server";
 import { slugifyTitle } from "@/lib/show-domain";
 import { invalidateShowsCacheForUser } from "@/lib/shows.server";
 
@@ -134,21 +136,25 @@ export async function createShowAction(
     slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
-  const { error: insertError } = await supabase.from("shows").insert({
-    user_id: user.id,
-    slug,
-    title: parsed.data.title,
-    description: parsed.data.description || parsed.data.vibe || null,
-    duration_seconds: durationSeconds,
-    budget_cents: parsed.data.budget * 100,
-    time_of_day: parsed.data.timeOfDay,
-    location: parsed.data.location || null,
-    mood_tags: parsed.data.moodTags,
-    audio_path: audioPath,
-    status: "draft",
-  });
+  const { data: show, error: insertError } = await supabase
+    .from("shows")
+    .insert({
+      user_id: user.id,
+      slug,
+      title: parsed.data.title,
+      description: parsed.data.description || parsed.data.vibe || null,
+      duration_seconds: durationSeconds,
+      budget_cents: parsed.data.budget * 100,
+      time_of_day: parsed.data.timeOfDay,
+      location: parsed.data.location || null,
+      mood_tags: parsed.data.moodTags,
+      audio_path: audioPath,
+      status: "draft",
+    })
+    .select("id, slug")
+    .single();
 
-  if (insertError) {
+  if (insertError || !show) {
     console.error("[createShowAction] insert failed:", insertError);
     if (audioPath) {
       await supabase.storage.from("audio").remove([audioPath]);
@@ -158,5 +164,18 @@ export async function createShowAction(
 
   await invalidateShowsCacheForUser(user.id);
   revalidatePath("/dashboard");
+  if (audioPath) {
+    after(async () => {
+      const result = await runShowAnalysisForShow({
+        supabase,
+        userId: user.id,
+        showId: show.id,
+        personality: "balanced",
+      });
+      if (!result.ok) {
+        console.error("[createShowAction] background analysis failed:", result.error);
+      }
+    });
+  }
   redirect(`/shows/${slug}`);
 }

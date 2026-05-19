@@ -17,15 +17,15 @@ Core modules live in `lib/fireworks`:
 
 Add new reusable effects in the database using `effect_specs.spec_json`. For local/manual seeding, start from `supabase/seed-codepen-fireworks-v3.sql`. The active library should not depend on hard-coded TypeScript presets.
 
-Use v3 `shots` for cakes, fans, zippers, rows, and volleys. Do not fake these as one large burst. Shows can reuse one effect many times by adding multiple cue rows with different `time_seconds`, `position_json`, `rotation_json`, `scale`, and `effect_spec_id`.
+Use v3 `shots` for cakes, fans, zippers, rows, and volleys. Do not fake these as one large burst. Shows can reuse one product many times by adding multiple cue rows with different `time_seconds`, `track`, `layer`, `launch_position_index`, `label`, `locked`, `seed_override`, and `product_id`.
 
 ## Database Model
 
-Migration `0009_firework_effect_spec_v2.sql` adds the normalized effect tables, and `0010_effect_specs_v3_catalogue.sql` wires v3 catalogue/product references:
+The current product schema uses the 2026-05-11 product catalogue migrations:
 
 - `products`: queryable product metadata and default effect link.
-- `effect_specs`: queryable spec headers plus flexible versioned `spec_json`.
-- `show_cues` v2 columns: `effect_spec_id`, `firework_product_id`, spatial position/rotation JSON, overrides, track/layer, lock, and seed override.
+- `product_shots`: per-product shot rows used by the renderer/compiler.
+- `show_cues` columns: `product_id`, `time_seconds`, `label`, `track`, `layer`, `launch_position_index`, `locked`, and `seed_override`.
 - `inferred_video_observations`: stores video observation JSON linked to an effect spec.
 
 The existing `firework_specifications` path remains supported. Server parsing detects `version: 3` and `version: 2`; otherwise it returns the old legacy spec and the renderer migrates it at runtime.
