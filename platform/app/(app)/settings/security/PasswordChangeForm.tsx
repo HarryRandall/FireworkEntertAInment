@@ -78,7 +78,7 @@ export function PasswordChangeForm() {
         </InlineAlert>
       ) : null}
 
-      <div>
+      <div className="flex justify-end">
         <Button type="submit" loading={pending}>
           Update password
         </Button>

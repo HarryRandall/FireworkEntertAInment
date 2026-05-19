@@ -69,7 +69,7 @@ export function Toggle({
           checked={value}
           onCheckedChange={handle}
           disabled={disabled}
-          className="h-6 w-11 data-checked:bg-[color:var(--color-content-emphasis)] data-unchecked:bg-[color:var(--color-border-default)] [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
+          className="h-6 w-11 data-checked:bg-[color:var(--color-accent)] data-unchecked:bg-[color:var(--color-border-default)] [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
         />
       </span>
     </label>

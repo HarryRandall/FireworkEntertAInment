@@ -14,7 +14,7 @@ const SETTINGS_COPY = {
   },
   "/settings/billing": {
     title: "Billing",
-    description: "Review your plan, payment setup, and invoice history.",
+    description: "Plans, invoices, and payment methods will live here once subscriptions go live.",
   },
   "/settings/security": {
     title: "Security",

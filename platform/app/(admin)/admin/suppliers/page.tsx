@@ -3,7 +3,7 @@ import { AppPageHeader } from "@/app/components/app/AppPageHeader";
 import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
 import { Badge } from "@/app/components/ui/Badge";
 import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TablePagination } from "@/app/components/ui/TablePagination";
+import { TABLE_PAGE_SIZE, TablePagination } from "@/app/components/ui/TablePagination";
 import {
   DataTableShell,
   tableCellClasses,
@@ -21,7 +21,6 @@ type PageProps = {
 };
 type SuppliersSearchParams = Awaited<PageProps["searchParams"]>;
 
-const PAGE_SIZE = 10;
 
 function statusTone(status: string) {
   switch (status) {
@@ -40,7 +39,7 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   return (
-    <div className="space-y-8">
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
       <AppPageHeader
         title="Suppliers"
         description="Manage supplier records, contacts, and status."
@@ -64,7 +63,13 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
         ]}
       />
 
-      <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+      <Suspense
+        fallback={
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <TableSkeleton rows={TABLE_PAGE_SIZE} columns={6} />
+          </div>
+        }
+      >
         <SuppliersTable params={params} />
       </Suspense>
     </div>
@@ -83,12 +88,12 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
     const matchesStatus = !statusFilter || s.status === statusFilter;
     return matchesQuery && matchesStatus;
   });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
     ? Math.min(Math.max(1, requestedPage), totalPages)
     : 1;
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
 
   return (
     <>

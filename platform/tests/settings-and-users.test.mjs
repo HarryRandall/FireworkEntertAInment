@@ -9,11 +9,16 @@ test("settings exposes modern account sections", () => {
   const layout = readFileSync(join(root, "app/(app)/settings/layout.tsx"), "utf8");
   const header = readFileSync(join(root, "app/(app)/settings/SettingsPageHeader.tsx"), "utf8");
   const profile = readFileSync(join(root, "app/(app)/settings/profile/page.tsx"), "utf8");
+  const personalDetails = readFileSync(
+    join(root, "app/(app)/settings/profile/PersonalDetailsForm.tsx"),
+    "utf8",
+  );
   for (const label of ["Personal details", "Notifications", "Billing", "Security"]) {
     assert.match(header, new RegExp(label));
   }
   assert.match(layout, /SettingsPageHeader/);
-  assert.match(profile, /ThemePreferenceField/);
+  assert.match(profile, /PersonalDetailsForm/);
+  assert.match(personalDetails, /Interface theme/);
   assert.equal(existsSync(join(root, "app/(app)/settings/billing/page.tsx")), true);
   assert.equal(existsSync(join(root, "app/(app)/settings/notifications/page.tsx")), true);
 });

@@ -37,9 +37,9 @@ const ADMIN_LINKS = [
 ];
 
 const navBase =
-  "flex h-8 items-center gap-2 rounded-lg px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]";
+  "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']";
 const navActive =
-  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent)]";
+  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]";
 const navInactive =
   "text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]";
 
@@ -54,7 +54,7 @@ export function AdminShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const displayName = profile.fullName || profile.email || "Admin";
   const secondaryLine = profile.fullName && profile.email ? profile.email : "Platform admin";
-  const profileHref = `/settings/profile?returnTo=${encodeURIComponent(pathname || "/admin")}`;
+  const profileHref = "/settings/profile";
   const initials =
     displayName
       .split(/\s+/)
@@ -112,7 +112,7 @@ export function AdminShell({
       href={profileHref}
       prefetch
       onClick={closeDrawer}
-      className="flex items-center gap-2.5 rounded-lg p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
+      className="flex items-center gap-2.5 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-2 transition-colors hover:bg-[color:var(--color-bg-subtle)]"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-xs font-medium text-[color:var(--color-content-default)]">
         {initials}
@@ -151,12 +151,12 @@ export function AdminShell({
           <div className="border-t border-[color:var(--color-border-subtle)] pt-3">
             {backToApp()}
           </div>
-          <div className="mt-auto border-t border-[color:var(--color-border-subtle)] pt-3">
+          <div className="mt-auto pt-3">
             {profileCard}
           </div>
         </aside>
 
-        <div className="min-w-0 bg-[color:var(--color-bg-default)] lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
+        <div className="flex min-w-0 flex-col bg-[color:var(--color-bg-default)] lg:h-[calc(100vh-1rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
           <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3 lg:hidden">
             {brand}
             <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
@@ -203,7 +203,9 @@ export function AdminShell({
             </Sheet>
           </header>
 
-          <main className="px-6 py-6 sm:px-8 lg:px-10">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+            {children}
+          </main>
         </div>
       </div>
     </div>

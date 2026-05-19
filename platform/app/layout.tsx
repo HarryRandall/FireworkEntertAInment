@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className="font-body bg-background text-on-surface overflow-x-hidden">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster position="top-right" closeButton />
         </ThemeProvider>
       </body>
     </html>

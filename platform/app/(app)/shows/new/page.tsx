@@ -1,15 +1,27 @@
 "use client";
 
-import { useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  CheckCircle2,
+  Check,
   CloudUpload,
   MapPin,
+  Moon,
   Music4,
-  SlidersHorizontal,
+  Pencil,
   Sparkles,
+  Sun,
+  Sunset,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { AppPageHeader } from "@/app/components/app/AppPageHeader";
@@ -23,7 +35,12 @@ import { createShowAction } from "./actions";
 
 const BUDGET_PRESETS = [250, 500, 1000, 2500, 5000] as const;
 const DURATION_PRESETS = [1, 2, 3, 5, 10] as const;
-const TIME_OF_DAY = ["Daytime", "Dusk", "Night"] as const;
+const TIME_OF_DAY = [
+  { value: "Daytime", icon: Sun },
+  { value: "Dusk", icon: Sunset },
+  { value: "Night", icon: Moon },
+] as const;
+type TimeOfDay = (typeof TIME_OF_DAY)[number]["value"];
 const MOOD_TAGS = [
   "Patriotic",
   "Romantic",
@@ -37,22 +54,24 @@ const STEPS = [
   {
     key: "constraints",
     label: "Constraints",
-    title: "Show constraints",
-    description: "Set the practical limits first.",
+    title: "Set the show constraints",
+    description: "Tell us the budget, length, and where it'll happen.",
   },
   {
     key: "sound",
     label: "Sound",
-    title: "Sound and title",
-    description: "Add the track and a clear working title.",
+    title: "Add a track and title",
+    description: "Pick the music you want the show choreographed to.",
   },
   {
     key: "brief",
     label: "Brief",
-    title: "Creative brief",
-    description: "Describe the show direction and mood.",
+    title: "Describe the show",
+    description: "A short brief helps us draft something close to your vision.",
   },
 ] as const;
+
+type FieldError = "location" | "title" | null;
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -62,20 +81,46 @@ export default function NewShowPage() {
   const [durationMode, setDurationMode] = useState<"preset" | "custom">("preset");
   const [durationPreset, setDurationPreset] = useState<(typeof DURATION_PRESETS)[number]>(3);
   const [customDuration, setCustomDuration] = useState("");
-  const [timeOfDay, setTimeOfDay] = useState<(typeof TIME_OF_DAY)[number]>("Night");
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Night");
   const [stepIndex, setStepIndex] = useState(0);
-  const [activeMoods, setActiveMoods] = useState<Set<string>>(
-    new Set(["High energy"]),
-  );
+  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(["High energy"]));
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [fieldError, setFieldError] = useState<"location" | "title" | null>(null);
+  const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [location, setLocation] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [fieldError, setFieldError] = useState<FieldError>(null);
   const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const durationValue = durationMode === "custom"
     ? `${customDuration.trim()} minute${customDuration.trim() === "1" ? "" : "s"}`
     : `${durationPreset} minute${durationPreset === 1 ? "" : "s"}`;
-  const durationSummary = durationMode === "custom" && customDuration.trim()
-    ? `${customDuration.trim()} minute${customDuration.trim() === "1" ? "" : "s"}`
-    : `${durationPreset} minute${durationPreset === 1 ? "" : "s"}`;
+
+  const stepValid = useMemo(() => {
+    if (stepIndex === 0) {
+      const budgetOk = budgetMode === "preset" || !!customBudget.trim();
+      const durationOk = durationMode === "preset" || !!customDuration.trim();
+      return budgetOk && durationOk && location.trim().length > 0;
+    }
+    if (stepIndex === 1) return title.trim().length > 0;
+    return true;
+  }, [stepIndex, budgetMode, customBudget, durationMode, customDuration, location, title]);
+
+  useEffect(() => {
+    if (!audioFile) {
+      setAudioDuration(null);
+      return;
+    }
+    const url = URL.createObjectURL(audioFile);
+    const audio = new Audio(url);
+    const onLoaded = () => setAudioDuration(audio.duration || null);
+    audio.addEventListener("loadedmetadata", onLoaded);
+    return () => {
+      audio.removeEventListener("loadedmetadata", onLoaded);
+      URL.revokeObjectURL(url);
+    };
+  }, [audioFile]);
 
   const toggleMood = (mood: string) => {
     setActiveMoods((prev) => {
@@ -86,92 +131,59 @@ export default function NewShowPage() {
     });
   };
 
+  const onFilePicked = (file: File | null) => {
+    if (!file) {
+      setAudioFile(null);
+      return;
+    }
+    if (file.size > MAX_AUDIO_BYTES) {
+      toast.error("File too large", { description: "Audio must be 50MB or smaller." });
+      return;
+    }
+    if (file.type && !file.type.startsWith("audio/")) {
+      toast.error("Unsupported file", { description: "Please pick an audio file." });
+      return;
+    }
+    setAudioFile(file);
+    toast.success("Track attached", { description: file.name });
+  };
+
+  const clearAudio = () => {
+    setAudioFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFieldError(null);
-    const data = new FormData(e.currentTarget);
+    // Native form submits, including Enter in an input, should move through the
+    // wizard until the final step instead of creating a draft early.
+    if (stepIndex < STEPS.length - 1) {
+      goToStep(stepIndex + 1);
+      return;
+    }
+    if (!title.trim()) {
+      setFieldError("title");
+      setStepIndex(1);
+      toast.error("Show title is required.");
+      return;
+    }
+    const data = new FormData();
     data.set("budget", String(budget));
     data.set("duration", durationValue);
     data.set("timeOfDay", timeOfDay);
-    data.delete("moodTags");
+    data.set("location", location.trim());
+    data.set("title", title.trim());
+    data.set("description", description);
+    const vibeInput = formRef.current?.elements.namedItem("vibe");
+    if (vibeInput instanceof HTMLInputElement) data.set("vibe", vibeInput.value);
     activeMoods.forEach((mood) => data.append("moodTags", mood));
-
-    const location = String(data.get("location") ?? "").trim();
-    const title = String(data.get("title") ?? "").trim();
-    if (budgetMode === "custom" && !customBudget.trim()) {
-      toast.error("Custom budget is required before you continue.");
-      setStepIndex(0);
-      return;
-    }
-    if (durationMode === "custom" && !customDuration.trim()) {
-      toast.error("Custom duration is required before you continue.");
-      setStepIndex(0);
-      return;
-    }
-    if (!location) {
-      setFieldError("location");
-      toast.error("Event location is required before you continue.");
-      setStepIndex(0);
-      return;
-    }
-    if (!title) {
-      setFieldError("title");
-      toast.error("Show title is required before you continue.");
-      setStepIndex(1);
-      return;
-    }
-
-    if (audioFile) {
-      if (audioFile.size > MAX_AUDIO_BYTES) {
-        toast.error("Audio file must be 50MB or smaller.");
-        return;
-      }
-      data.set("audio", audioFile);
-    } else {
-      data.delete("audio");
-    }
+    if (audioFile) data.set("audio", audioFile);
 
     startTransition(async () => {
       const result = await createShowAction(data);
-      if (result && !result.ok) {
-        toast.error(result.error);
-      }
+      if (result && !result.ok) toast.error(result.error);
     });
-  };
-  const activeStep = STEPS[stepIndex];
-
-  const validateStep = (index: number) => {
-    if (!formRef.current) return false;
-    const data = new FormData(formRef.current);
-
-    if (index >= 0) {
-      if (budgetMode === "custom" && !customBudget.trim()) {
-        toast.error("Custom budget is required before you continue.");
-        return false;
-      }
-      if (durationMode === "custom" && !customDuration.trim()) {
-        toast.error("Custom duration is required before you continue.");
-        return false;
-      }
-      const location = String(data.get("location") ?? "").trim();
-      if (!location) {
-        setFieldError("location");
-        toast.error("Event location is required before you continue.");
-        return false;
-      }
-    }
-
-    if (index >= 1) {
-      const title = String(data.get("title") ?? "").trim();
-      if (!title) {
-        setFieldError("title");
-        toast.error("Show title is required before you continue.");
-        return false;
-      }
-    }
-
-    setFieldError(null);
-    return true;
   };
 
   const goToStep = (nextIndex: number) => {
@@ -180,208 +192,221 @@ export default function NewShowPage() {
       setStepIndex(nextIndex);
       return;
     }
-
-    for (let index = stepIndex; index < nextIndex; index++) {
-      if (!validateStep(index)) return;
+    if (!stepValid) {
+      if (stepIndex === 0 && !location.trim()) {
+        setFieldError("location");
+        toast.error("Event location is required.");
+      } else if (stepIndex === 1 && !title.trim()) {
+        setFieldError("title");
+        toast.error("Show title is required.");
+      } else {
+        toast.error("Complete the required fields to continue.");
+      }
+      return;
     }
-
+    setFieldError(null);
     setStepIndex(nextIndex);
   };
+
+  const activeStep = STEPS[stepIndex];
 
   return (
     <form
       ref={formRef}
       noValidate
       onSubmit={handleSubmit}
-      className="w-full space-y-4 pb-2"
+      className="space-y-6"
     >
       <AppPageHeader
-        title={activeStep.title}
-        description={activeStep.description}
+        title="Create a new show"
+        description="Three quick steps and we'll draft a show you can refine."
       />
 
-      <StepIndicator steps={STEPS} current={stepIndex} onSelect={goToStep} />
+      <div className="mx-auto max-w-3xl">
+        <Card radius="lg" className="overflow-hidden">
+          <div className="border-b border-[color:var(--color-border-subtle)] px-5 py-4 sm:px-6">
+            <ProgressTrack steps={STEPS} current={stepIndex} onSelect={goToStep} />
+            <div className="mt-5">
+              <h2 className="text-base font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+                {activeStep.title}
+              </h2>
+              <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
+                {activeStep.description}
+              </p>
+            </div>
+          </div>
 
-      <StepPanel active={stepIndex === 0}>
-        <div className="grid grid-cols-1 gap-6">
-          <Card elevation="low" radius="md" className="space-y-6 p-6 sm:p-8 xl:min-h-[34rem]">
-            <BudgetPicker
-              budget={budget}
-              mode={budgetMode}
-              customValue={customBudget}
-              onBudgetChange={setBudget}
-              onModeChange={setBudgetMode}
-              onCustomValueChange={setCustomBudget}
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <DurationPicker
-                mode={durationMode}
-                preset={durationPreset}
-                customValue={customDuration}
-                onModeChange={setDurationMode}
-                onPresetChange={setDurationPreset}
-                onCustomValueChange={setCustomDuration}
-              />
-
-              <LabeledField label="Event location">
-                <Input
-                  name="location"
-                  required={stepIndex === 0}
-                  invalid={fieldError === "location"}
-                  placeholder="Park, venue, or suburb"
-                  iconLeft={<MapPin size={16} strokeWidth={1.75} />}
-                  onChange={() => {
-                    if (fieldError === "location") setFieldError(null);
-                  }}
+          <div className="p-5 sm:p-6">
+            <StepPanel active={stepIndex === 0}>
+              <div className="space-y-6">
+                <BudgetPicker
+                  budget={budget}
+                  mode={budgetMode}
+                  customValue={customBudget}
+                  onBudgetChange={setBudget}
+                  onModeChange={setBudgetMode}
+                  onCustomValueChange={setCustomBudget}
                 />
-              </LabeledField>
-            </div>
 
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-                Time of day
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {TIME_OF_DAY.map((option) => (
-                  <ChoiceChip
-                    key={option}
-                    selected={option === timeOfDay}
-                    onClick={() => setTimeOfDay(option)}
-                  >
-                    {option}
-                  </ChoiceChip>
-                ))}
+                <DurationPicker
+                  mode={durationMode}
+                  preset={durationPreset}
+                  customValue={customDuration}
+                  onModeChange={setDurationMode}
+                  onPresetChange={setDurationPreset}
+                  onCustomValueChange={setCustomDuration}
+                />
+
+                <Field label="Event location" required helper="Where the show will be fired.">
+                  <Input
+                    name="location"
+                    value={location}
+                    invalid={fieldError === "location"}
+                    placeholder="Park, venue, or suburb"
+                    iconLeft={<MapPin size={16} strokeWidth={1.75} />}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      if (fieldError === "location") setFieldError(null);
+                    }}
+                  />
+                  {fieldError === "location" ? (
+                    <FieldError>Event location is required.</FieldError>
+                  ) : null}
+                </Field>
+
+                <Field label="Time of day" required>
+                  <div className="flex flex-wrap gap-2">
+                    {TIME_OF_DAY.map(({ value, icon: Icon }) => (
+                      <ChoiceChip
+                        key={value}
+                        selected={value === timeOfDay}
+                        onClick={() => setTimeOfDay(value)}
+                      >
+                        <Icon size={13} strokeWidth={1.75} />
+                        {value}
+                      </ChoiceChip>
+                    ))}
+                  </div>
+                </Field>
               </div>
-            </div>
-          </Card>
-        </div>
-      </StepPanel>
+            </StepPanel>
 
-      <StepPanel active={stepIndex === 1}>
-        <div className="grid grid-cols-1 gap-6 xl:items-stretch xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Card elevation="low" radius="md" className="space-y-4 p-6 sm:p-8 xl:min-h-[34rem]">
-            <Input
-              name="title"
-              required={stepIndex === 1}
-              invalid={fieldError === "title"}
-              placeholder="Show title"
-              iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
-              className="h-12 text-base font-semibold"
-              onChange={() => {
-                if (fieldError === "title") setFieldError(null);
-              }}
-            />
-            <label className="group relative flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/55 bg-surface-container-low/35 p-6 text-center transition-colors hover:cursor-pointer hover:border-primary/45 hover:bg-surface-container-low">
-              <CloudUpload size={38} strokeWidth={1.5} className="mb-4 text-primary" />
-              <span className="max-w-full truncate font-bold text-on-surface">
-                {audioFile ? audioFile.name : "Upload audio"}
-              </span>
-              <span className="mt-1 text-xs text-on-surface-variant">
-                MP3, WAV, AAC, or M4A up to 50MB
-              </span>
-              <input
-                className="absolute inset-0 cursor-pointer opacity-0"
-                type="file"
-                name="audio"
-                accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <Input
-              name="vibe"
-              placeholder="Track vibe or style"
-              iconLeft={<Music4 size={16} strokeWidth={1.75} />}
-            />
-          </Card>
+            <StepPanel active={stepIndex === 1}>
+              <div className="space-y-6">
+                <Field label="Show title" required helper="A working title — you can rename later.">
+                  <Input
+                    name="title"
+                    value={title}
+                    invalid={fieldError === "title"}
+                    placeholder="e.g. New Year's Eve at Bondi"
+                    iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
+                    className="h-11"
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      if (fieldError === "title") setFieldError(null);
+                    }}
+                  />
+                  {fieldError === "title" ? (
+                    <FieldError>Show title is required.</FieldError>
+                  ) : null}
+                </Field>
 
-          <ConstraintsSidebar
-            budget={budget}
-            duration={durationSummary}
-            timeOfDay={timeOfDay}
-            moodsSelected={activeMoods.size}
-          />
-        </div>
-      </StepPanel>
+                <Field label="Audio track" helper="Optional — drives the choreography if added.">
+                  <AudioUpload
+                    file={audioFile}
+                    duration={audioDuration}
+                    inputRef={fileInputRef}
+                    onFile={onFilePicked}
+                    onClear={clearAudio}
+                  />
+                </Field>
 
-      <StepPanel active={stepIndex === 2}>
-        <div className="grid grid-cols-1 gap-6 xl:items-stretch xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Card elevation="low" radius="md" className="space-y-4 p-6 sm:p-8 xl:min-h-[34rem]">
-            <Textarea
-              name="description"
-              rows={10}
-              placeholder="Describe the sequence, colours, key moments, crowd reaction, and desired finale."
-            />
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-                Mood tags
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {MOOD_TAGS.map((mood) => {
-                  const active = activeMoods.has(mood);
-                  return (
-                    <ChoiceChip
-                      key={mood}
-                      selected={active}
-                      onClick={() => toggleMood(mood)}
-                      className="min-h-9 px-3 py-1.5 text-xs"
-                    >
-                      {active ? <CheckCircle2 size={14} /> : null}
-                      {mood}
-                    </ChoiceChip>
-                  );
-                })}
+                <Field label="Track vibe" helper="Optional — a word or two about the energy or style.">
+                  <Input
+                    name="vibe"
+                    placeholder="e.g. cinematic build into a euphoric drop"
+                    iconLeft={<Music4 size={16} strokeWidth={1.75} />}
+                  />
+                </Field>
               </div>
-            </div>
-          </Card>
+            </StepPanel>
 
-          <ConstraintsSidebar
-            budget={budget}
-            duration={durationSummary}
-            timeOfDay={timeOfDay}
-            moodsSelected={activeMoods.size}
-          />
-        </div>
-      </StepPanel>
+            <StepPanel active={stepIndex === 2}>
+              <div className="space-y-6">
+                <Field
+                  label="Creative brief"
+                  helper="The richer your brief, the better the draft. 2-4 sentences works well."
+                >
+                  <Textarea
+                    name="description"
+                    rows={8}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe the sequence, colours, key moments, crowd reaction, and desired finale."
+                  />
+                  <div className="mt-1 text-right text-xs text-[color:var(--color-content-muted)]">
+                    {description.length} chars
+                  </div>
+                </Field>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-            disabled={stepIndex === 0}
-          >
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-          {stepIndex < STEPS.length - 1 ? (
+                <Field label="Mood tags" helper="Pick any that fit — guides the AI's tone.">
+                  <div className="flex flex-wrap gap-2">
+                    {MOOD_TAGS.map((mood) => {
+                      const active = activeMoods.has(mood);
+                      return (
+                        <ChoiceChip
+                          key={mood}
+                          selected={active}
+                          onClick={() => toggleMood(mood)}
+                        >
+                          {active ? <Check size={12} strokeWidth={2.5} /> : null}
+                          {mood}
+                        </ChoiceChip>
+                      );
+                    })}
+                  </div>
+                </Field>
+              </div>
+            </StepPanel>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-border-subtle)] px-5 py-4 sm:px-6">
             <Button
-              key="continue-step"
               type="button"
-              onClick={() => goToStep(Math.min(STEPS.length - 1, stepIndex + 1))}
-              className="sm:min-w-56"
+              variant="secondary"
+              onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
+              disabled={stepIndex === 0}
             >
-              Continue
-              <ArrowRight size={16} />
+              <ArrowLeft size={16} />
+              Back
             </Button>
-          ) : (
-            <Button
-              key="submit-show"
-              type="submit"
-              size="lg"
-              loading={isPending}
-              className="sm:min-w-72"
-            >
-              Generate draft show
-              <Sparkles size={19} strokeWidth={2} />
-            </Button>
-          )}
+            {stepIndex < STEPS.length - 1 ? (
+              <Button
+                type="button"
+                onClick={() => goToStep(stepIndex + 1)}
+                disabled={!stepValid}
+              >
+                Continue
+                <ArrowRight size={16} />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                loading={isPending}
+                disabled={!title.trim()}
+              >
+                Generate draft
+                <Sparkles size={16} strokeWidth={2} />
+              </Button>
+            )}
+          </div>
+        </Card>
       </div>
     </form>
   );
 }
 
-function StepIndicator({
+function ProgressTrack({
   steps,
   current,
   onSelect,
@@ -391,52 +416,42 @@ function StepIndicator({
   onSelect: (index: number) => void;
 }) {
   return (
-    <ol
-      className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-center gap-4 px-1"
-      aria-label="Show creation steps"
-    >
+    <ol className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
       {steps.map((step, index) => {
         const isActive = index === current;
         const isComplete = index < current;
-        const isUpcoming = !isActive && !isComplete;
-        const isLast = index === steps.length - 1;
+        const isClickable = index <= current;
         return (
-          <li key={step.key} className="contents">
+          <li key={step.key}>
             <button
               type="button"
               onClick={() => onSelect(index)}
-              aria-current={isActive ? "step" : undefined}
-              aria-label={`Step ${index + 1}: ${step.label}`}
+              disabled={!isClickable}
               className={cn(
-                "group flex h-10 w-10 shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--color-content-emphasis)]",
-                isLast && "justify-self-end",
+                "inline-flex items-center gap-2 rounded-md py-1 text-sm transition-colors",
+                isActive
+                  ? "text-[color:var(--color-content-emphasis)]"
+                  : isComplete
+                    ? "text-[color:var(--color-content-default)] hover:text-[color:var(--color-content-emphasis)]"
+                    : "cursor-not-allowed text-[color:var(--color-content-muted)]",
               )}
+              aria-current={isActive ? "step" : undefined}
             >
               <span
                 className={cn(
-                  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
-                  isActive &&
-                    "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]",
+                  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium",
                   isComplete &&
                     "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]",
-                  isUpcoming &&
-                    "border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-muted)]",
+                  isActive &&
+                    "border-[color:var(--color-content-emphasis)] text-[color:var(--color-content-emphasis)]",
+                  !isActive && !isComplete &&
+                    "border-[color:var(--color-border-default)] text-[color:var(--color-content-muted)]",
                 )}
               >
-                {isComplete ? <CheckCircle2 size={14} strokeWidth={2.4} /> : index + 1}
+                {isComplete ? <Check size={12} strokeWidth={2.5} /> : index + 1}
               </span>
+              <span className="font-medium">{step.label}</span>
             </button>
-            {!isLast ? (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "h-px min-w-0 rounded-full",
-                  index < current
-                    ? "bg-[color:var(--color-content-emphasis)]"
-                    : "bg-[color:var(--color-border-subtle)]",
-                )}
-              />
-            ) : null}
           </li>
         );
       })}
@@ -459,18 +474,19 @@ function BudgetPicker({
   onModeChange: (mode: "preset" | "custom") => void;
   onCustomValueChange: (value: string) => void;
 }) {
-  const isPreset = mode === "preset" && BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
+  const isPreset =
+    mode === "preset" && BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-4">
-        <span className="inline-flex items-center gap-2 text-sm font-medium text-[color:var(--color-content-emphasis)]">
-          <Wallet size={16} />
-          Budget
-        </span>
-        <span className="text-xl font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
+    <Field
+      label="Budget"
+      required
+      icon={<Wallet size={13} strokeWidth={1.75} />}
+      trailing={
+        <span className="text-sm font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
           ${budget.toLocaleString()}
         </span>
-      </div>
+      }
+    >
       <div className="flex flex-wrap gap-2">
         {BUDGET_PRESETS.map((preset) => (
           <ChoiceChip
@@ -504,6 +520,7 @@ function BudgetPicker({
           inputMode="numeric"
           value={customValue}
           placeholder="Custom budget"
+          className="mt-3"
           onChange={(e) => {
             const value = e.target.value;
             onCustomValueChange(value);
@@ -513,7 +530,7 @@ function BudgetPicker({
           }}
         />
       ) : null}
-    </div>
+    </Field>
   );
 }
 
@@ -533,105 +550,193 @@ function DurationPicker({
   onCustomValueChange: (value: string) => void;
 }) {
   return (
-    <LabeledField label="Duration">
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {DURATION_PRESETS.map((minutes) => (
-            <ChoiceChip
-              key={minutes}
-              selected={mode === "preset" && preset === minutes}
-              onClick={() => {
-                onModeChange("preset");
-                onPresetChange(minutes);
-              }}
-            >
-              {minutes} minute{minutes === 1 ? "" : "s"}
-            </ChoiceChip>
-          ))}
+    <Field label="Duration" required>
+      <div className="flex flex-wrap gap-2">
+        {DURATION_PRESETS.map((minutes) => (
           <ChoiceChip
-            selected={mode === "custom"}
+            key={minutes}
+            selected={mode === "preset" && preset === minutes}
             onClick={() => {
-              onModeChange("custom");
-              onCustomValueChange(customValue || String(preset));
+              onModeChange("preset");
+              onPresetChange(minutes);
             }}
           >
-            Custom
+            {minutes} min
           </ChoiceChip>
-        </div>
-        {mode === "custom" ? (
-          <Input
-            type="number"
-            min={1}
-            max={60}
-            step={1}
-            inputMode="numeric"
-            value={customValue}
-            placeholder="Custom duration in minutes"
-            onChange={(e) => onCustomValueChange(e.target.value)}
-          />
-        ) : null}
+        ))}
+        <ChoiceChip
+          selected={mode === "custom"}
+          onClick={() => {
+            onModeChange("custom");
+            onCustomValueChange(customValue || String(preset));
+          }}
+        >
+          Custom
+        </ChoiceChip>
       </div>
-    </LabeledField>
+      {mode === "custom" ? (
+        <Input
+          type="number"
+          min={1}
+          max={60}
+          step={1}
+          inputMode="numeric"
+          value={customValue}
+          placeholder="Custom duration in minutes"
+          className="mt-3"
+          onChange={(e) => onCustomValueChange(e.target.value)}
+        />
+      ) : null}
+    </Field>
+  );
+}
+
+function AudioUpload({
+  file,
+  duration,
+  inputRef,
+  onFile,
+  onClear,
+}: {
+  file: File | null;
+  duration: number | null;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onFile: (file: File | null) => void;
+  onClear: () => void;
+}) {
+  if (file) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)] p-4">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-default)] text-[color:var(--color-status-success)]">
+          <Music4 size={18} strokeWidth={1.75} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Check size={14} strokeWidth={2.5} className="shrink-0 text-[color:var(--color-status-success)]" />
+            <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
+              {file.name}
+            </span>
+          </div>
+          <div className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+            {formatBytes(file.size)}
+            {duration ? ` · ${formatDuration(duration)}` : ""}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+          >
+            <Pencil size={13} />
+            Replace
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Remove track"
+            onClick={onClear}
+            className="h-8 w-8"
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
+        <input
+          ref={inputRef}
+          className="hidden"
+          type="file"
+          accept="audio/*"
+          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/40 p-6 text-center transition-colors hover:border-[color:var(--color-content-emphasis)]/45 hover:bg-[color:var(--color-bg-subtle)]">
+      <CloudUpload size={28} strokeWidth={1.5} className="mb-3 text-[color:var(--color-content-subtle)]" />
+      <span className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+        Drop track or click to browse
+      </span>
+      <span className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+        MP3, WAV, AAC, or M4A · up to 50MB
+      </span>
+      <input
+        ref={inputRef}
+        className="absolute inset-0 cursor-pointer opacity-0"
+        type="file"
+        accept="audio/*"
+        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+      />
+    </label>
   );
 }
 
 function StepPanel({ active, children }: { active: boolean; children: ReactNode }) {
-  return (
-    <section className={cn("space-y-5", !active && "hidden")}>
-      {children}
-    </section>
-  );
+  return <section className={cn(!active && "hidden")}>{children}</section>;
 }
 
-function LabeledField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="block space-y-2">
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant/35 bg-surface px-3 py-2">
-      <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-on-surface-variant">
-        <SlidersHorizontal size={13} />
-        {label}
-      </span>
-      <span className="truncate text-sm font-bold text-on-surface">{value}</span>
-    </div>
-  );
-}
-
-function ConstraintsSidebar({
-  budget,
-  duration,
-  timeOfDay,
-  moodsSelected,
+function Field({
+  label,
+  required,
+  helper,
+  icon,
+  trailing,
+  children,
 }: {
-  budget: number;
-  duration: string;
-  timeOfDay: string;
-  moodsSelected: number;
+  label: string;
+  required?: boolean;
+  helper?: string;
+  icon?: ReactNode;
+  trailing?: ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <Card
-      elevation="low"
-      radius="md"
-      className="space-y-4 p-6 xl:sticky xl:top-6 xl:self-start"
-    >
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-        Current setup
-      </p>
-      <div className="space-y-3">
-        <SummaryRow label="Budget" value={`$${budget.toLocaleString()}`} />
-        <SummaryRow label="Duration" value={duration} />
-        <SummaryRow label="Time" value={timeOfDay} />
-        <SummaryRow label="Moods" value={`${moodsSelected} selected`} />
+    <div className="space-y-2">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <label className="inline-flex items-center gap-1.5 text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            {icon}
+            {label}
+            {required ? (
+              <span
+                aria-label="required"
+                className="text-[color:var(--color-status-danger)]"
+              >
+                *
+              </span>
+            ) : null}
+          </label>
+          {helper ? (
+            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+              {helper}
+            </p>
+          ) : null}
+        </div>
+        {trailing}
       </div>
-    </Card>
+      {children}
+    </div>
   );
+}
+
+function FieldError({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs text-[color:var(--color-status-danger)]">{children}</p>
+  );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDuration(seconds: number) {
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
