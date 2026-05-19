@@ -1,55 +1,23 @@
 import { notFound } from "next/navigation";
 import { AudioAnalysisTimeline } from "@/app/components/app/AudioAnalysisTimeline";
 import { Card } from "@/app/components/ui/Card";
-import type { Json } from "@/lib/database.types";
 import { getLatestAnalysisForShow } from "@/lib/show-analyses.server";
 import { getShowBySlug } from "@/lib/shows.server";
 
 type PageProps = { params: Promise<{ id: string }> };
-
-function isJsonObject(value: Json | null | undefined): value is Record<string, Json | undefined> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function jsonArrayLength(value: Json | null | undefined): number {
-  return Array.isArray(value) ? value.length : 0;
-}
-
-function aiAnchorCount(payload: Json | null): number | null {
-  if (!isJsonObject(payload)) return null;
-  const counts = isJsonObject(payload.counts) ? payload.counts : null;
-  const countPeaks = typeof counts?.peaks === "number" ? counts.peaks : null;
-  const countBuildups = typeof counts?.buildups === "number" ? counts.buildups : null;
-  if (countPeaks != null || countBuildups != null) {
-    return (countPeaks ?? 0) + (countBuildups ?? 0);
-  }
-  const numericPeaks = jsonArrayLength(payload.peaks);
-  const numericBuildups = jsonArrayLength(payload.buildups);
-  if (numericPeaks > 0 || numericBuildups > 0) {
-    return numericPeaks + numericBuildups;
-  }
-  const anchors = isJsonObject(payload.anchors) ? payload.anchors : null;
-  const derived = isJsonObject(payload.derived) ? payload.derived : null;
-  const keyMoments = anchors ? jsonArrayLength(anchors.key_moments) : 0;
-  const buildups = anchors ? jsonArrayLength(anchors.buildups) : 0;
-  const windows = derived ? jsonArrayLength(derived.anchor_windows) : 0;
-  return Math.max(keyMoments + buildups, windows);
-}
 
 export default async function ShowTimelinePage({ params }: PageProps) {
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) notFound();
   const latestAnalysis = await getLatestAnalysisForShow(show.id);
-  const anchorCount =
-    aiAnchorCount(latestAnalysis?.llmPayload ?? null) ??
-    ((latestAnalysis?.analysis?.key_moments.length ?? 0) +
-      (latestAnalysis?.analysis?.buildups.length ?? 0));
+  const contextWordCount = latestAnalysis?.contextMarkdown
+    ? latestAnalysis.contextMarkdown.trim().split(/\s+/).filter(Boolean).length
+    : 0;
 
   return (
     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
       <AudioAnalysisTimeline
-        showId={show.id}
         hasAudio={Boolean(show.audioPath)}
         durationSeconds={show.durationSeconds}
         initialAnalysis={latestAnalysis}
@@ -58,44 +26,44 @@ export default async function ShowTimelinePage({ params }: PageProps) {
       <div className="space-y-6 lg:col-span-4">
         <Card elevation="high" radius="md" className="space-y-5 p-6">
           <h3 className="text-lg font-bold text-on-surface">
-            Stored song analysis
+            Stored song context
           </h3>
           <p className="text-sm leading-relaxed text-on-surface-variant">
-            The latest analyser run is saved as structured JSON, compact AI
-            payload, and Markdown for downstream prompting.
+            The analyser saves one AI-ready Markdown context for the song. It
+            does not store separate JSON reports or prompt payloads.
           </p>
 
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg border border-outline-variant/55 p-3">
               <dt className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                AI anchors
+                Context
               </dt>
               <dd className="mt-2 text-2xl font-black text-on-surface">
-                {anchorCount || "—"}
+                {latestAnalysis?.contextMarkdown ? "Ready" : "—"}
               </dd>
             </div>
             <div className="rounded-lg border border-outline-variant/55 p-3">
               <dt className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                JSON
+                Words
               </dt>
               <dd className="mt-2 text-sm font-bold text-on-surface">
-                {latestAnalysis?.analysis ? "Stored" : "Missing"}
+                {contextWordCount || "—"}
               </dd>
             </div>
             <div className="rounded-lg border border-outline-variant/55 p-3">
               <dt className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                Markdown
+                Status
               </dt>
               <dd className="mt-2 text-sm font-bold text-on-surface">
-                {latestAnalysis?.markdown ? "Stored" : "Missing"}
+                {latestAnalysis?.status ?? "Queued"}
               </dd>
             </div>
             <div className="rounded-lg border border-outline-variant/55 p-3">
               <dt className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-                AI payload
+                Audio
               </dt>
               <dd className="mt-2 text-sm font-bold text-on-surface">
-                {latestAnalysis?.llmPayload ? "Stored" : "Missing"}
+                {show.audioPath ? "Uploaded" : "Missing"}
               </dd>
             </div>
           </dl>
