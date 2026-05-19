@@ -22,7 +22,7 @@ from scipy.signal import find_peaks, savgol_filter
 # `schema_version` from the result / LLM payload to gate compatibility.
 #
 # 1.2.0 — added Pydantic validation for analysis + LLM payloads; compact
-#         LLM payload now summarizes/samples heuristic cues instead of
+#         LLM payload now summarises/samples heuristic cues instead of
 #         duplicating the full `firework_cues` list.
 # 1.1.0 — added `key_moments[].prominence`; `key_moments[].type` is now
 #         decided by relative prominence ranking (top quartile = climax)
@@ -1966,224 +1966,10 @@ def write_markdown(result: dict, output_path: str):
     return output_path
 
 
-def live_player(result: dict, file_path: str):
-    """Real-time terminal visualizer with smooth output."""
-    import sounddevice as sd
-    import soundfile as sf
-    import time
-    import shutil
-    import sys
-    import bisect
-    import re
-
-    data, playback_sr = sf.read(file_path, dtype="float32")
-    if data.ndim == 1:
-        data = data.reshape(-1, 1)
-
-    beat_times = sorted(result["beat_times"])
-    cue_list = sorted(result["firework_cues"], key=lambda c: c["time"])
-    cue_times = [c["time"] for c in cue_list]
-    energy_times = [e["time"] for e in result["energy_timeline"]]
-    energy_vals = [e["energy"] for e in result["energy_timeline"]]
-    sections = result["sections"]
-    buildups = result.get("buildups", [])
-    duration = result["duration_seconds"]
-    genre_hint = result["music_profile"]["genre_hint"]
-    preset = result["show_personality"]["preset"]
-    cols = shutil.get_terminal_size().columns
-
-    # ANSI
-    RST = "\033[0m"
-    BLD = "\033[1m"
-    DIM = "\033[2m"
-    R = "\033[91m"
-    O = "\033[38;5;208m"
-    Y = "\033[93m"
-    C = "\033[96m"
-    G = "\033[92m"
-    W = "\033[97m"
-    M = "\033[95m"
-
-    SEC_CLR = {
-        "chorus": R, "verse": C, "bridge": Y, "pre-chorus": M,
-        "intro": DIM, "outro": DIM,
-    }
-
-    def get_energy(t):
-        i = bisect.bisect_right(energy_times, t)
-        if i == 0:
-            return energy_vals[0]
-        if i >= len(energy_vals):
-            return energy_vals[-1]
-        t0, t1 = energy_times[i - 1], energy_times[i]
-        e0, e1 = energy_vals[i - 1], energy_vals[i]
-        frac = (t - t0) / (t1 - t0) if t1 != t0 else 0
-        return e0 + (e1 - e0) * frac
-
-    def get_section_idx(t):
-        for i, s in enumerate(sections):
-            if s["start"] <= t <= s["end"]:
-                return i
-        return -1
-
-    def is_buildup(t):
-        for bu in buildups:
-            if bu["start"] <= t <= bu["peak"]:
-                return True
-        return False
-
-    def vlen(s):
-        return len(re.sub(r'\033\[[0-9;]*m', '', s))
-
-    def pad(s, width):
-        return s + " " * max(0, width - vlen(s))
-
-    def fmt_time_short(t):
-        m, s = divmod(int(t), 60)
-        return f"{m}:{s:02d}"
-
-    section_map_lines = []
-    for i, s in enumerate(sections):
-        label = s["label"]
-        clr = SEC_CLR.get(label, DIM)
-        dur_str = fmt_time_short(s["duration"])
-        time_range = f"{fmt_time_short(s['start'])} - {fmt_time_short(s['end'])}"
-        num = f"{i + 1}."
-        section_map_lines.append({
-            "num": num,
-            "label": label.upper(),
-            "time_range": time_range,
-            "dur": dur_str,
-            "clr": clr,
-        })
-
-    # State
-    beat_brightness = 0.0
-    cue_text = ""
-    cue_fade = 0.0
-    fired_cues = set()
-    REFRESH = 1 / 30
-
-    n_sections = len(sections)
-    DISPLAY_LINES = 3 + n_sections + 1 + 4
-
-    sys.stdout.write("\033[?25l")
-    for _ in range(DISPLAY_LINES):
-        print()
-
-    sd.play(data, playback_sr)
-    start_wall = time.time()
-
-    try:
-        while True:
-            now = time.time() - start_wall
-            if now >= duration:
-                break
-
-            energy = get_energy(now)
-            current_idx = get_section_idx(now)
-            current_sec = sections[current_idx] if current_idx >= 0 else None
-            buildup = is_buildup(now)
-
-            bi = bisect.bisect_right(beat_times, now)
-            if bi > 0 and (now - beat_times[bi - 1]) < 0.08:
-                beat_brightness = 1.0
-            beat_brightness = max(0.0, beat_brightness - REFRESH * 5)
-
-            ci = bisect.bisect_right(cue_times, now)
-            if ci > 0 and (ci - 1) not in fired_cues:
-                cue = cue_list[ci - 1]
-                if abs(now - cue["time"]) < 0.15:
-                    fired_cues.add(ci - 1)
-                    eff = cue["effect"]
-                    if eff == "barrage":
-                        cue_text = f"{R}{BLD}FIREWORK *** BARRAGE *** [{cue['shape']}]{RST}"
-                    elif eff == "accent":
-                        cue_text = f"{O}{BLD}FIREWORK * ACCENT * [{cue['shape']}]{RST}"
-                    elif eff == "crackle":
-                        cue_text = f"{Y}FIREWORK ~ crackle ~ [{cue['shape']}]{RST}"
-                    else:
-                        cue_text = f"{C}FIREWORK . single . [{cue['shape']}]{RST}"
-                    cue_fade = 1.0
-            cue_fade = max(0.0, cue_fade - REFRESH * 2.5)
-
-            m, s = divmod(int(now), 60)
-            tm, ts = divmod(int(duration), 60)
-            time_str = f"{m}:{s:02d} / {tm}:{ts:02d}"
-
-            bar_w = min(50, cols - 35)
-            filled = int(energy * bar_w)
-            if energy > 0.7:
-                bc = R
-            elif energy > 0.4:
-                bc = O
-            else:
-                bc = G
-            if beat_brightness > 0.3:
-                pulse = f"{W}{BLD}" if beat_brightness > 0.6 else f"{bc}{BLD}"
-            else:
-                pulse = bc
-            bar = f"{pulse}{'█' * filled}{RST}{DIM}{'░' * (bar_w - filled)}{RST}"
-
-            prog_w = min(50, cols - 35)
-            prog_filled = int((now / duration) * prog_w)
-            prog = f"{DIM}{'━' * prog_filled}{'╸' if prog_filled < prog_w else ''}{' ' * max(0, prog_w - prog_filled - 1)}{RST}"
-
-            lines = []
-            lines.append(f"  {BLD}ShowCrafter{RST}  {DIM}{result['file']}{RST}")
-            lines.append(
-                f"  {DIM}{result['tempo_bpm']} BPM  |  {genre_hint}  |  {preset} preset  |  "
-                f"{len(result['firework_cues'])} cues  |  Ctrl+C to stop{RST}"
-            )
-            lines.append("")
-
-            for i, sm in enumerate(section_map_lines):
-                if i == current_idx:
-                    marker = f"{sm['clr']}{BLD}>{RST}"
-                    line = f"  {marker} {sm['clr']}{BLD}{sm['num']:>3} {sm['label']:<12}{RST}  {sm['time_range']}  {DIM}({sm['dur']}){RST}"
-                    if current_sec:
-                        sec_progress = (now - current_sec["start"]) / max(current_sec["duration"], 0.1)
-                        sec_bar_w = 15
-                        sec_filled = int(sec_progress * sec_bar_w)
-                        line += f"  {sm['clr']}{'▓' * sec_filled}{'░' * (sec_bar_w - sec_filled)}{RST}"
-                else:
-                    line = f"    {DIM}{sm['num']:>3} {sm['label']:<12}  {sm['time_range']}  ({sm['dur']}){RST}"
-                lines.append(line)
-
-            lines.append("")
-
-            sec_label = current_sec["label"].upper() if current_sec else "---"
-            sec_clr = SEC_CLR.get(current_sec["label"], DIM) if current_sec else DIM
-            buildup_str = f"  {Y}{BLD}▲ BUILDUP{RST}" if buildup else ""
-            fw_str = f"  {cue_text}" if cue_fade > 0.1 else ""
-
-            lines.append(f"  {DIM}{time_str}{RST}  {sec_clr}{BLD}{sec_label}{RST}{buildup_str}")
-            lines.append(f"  {bar}{fw_str}")
-            lines.append(f"  {prog}")
-            lines.append("")
-
-            sys.stdout.write(f"\033[{DISPLAY_LINES}A\r")
-            for line in lines:
-                sys.stdout.write(pad(line, cols)[:cols] + "\n")
-            for _ in range(DISPLAY_LINES - len(lines)):
-                sys.stdout.write(" " * cols + "\n")
-
-            sys.stdout.flush()
-            time.sleep(REFRESH)
-
-    except KeyboardInterrupt:
-        pass
-    finally:
-        sd.stop()
-        sys.stdout.write("\033[?25h")
-        print(f"\n  {DIM}Done.{RST}\n")
-
-
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Analyse a song and generate style-aware firework cues.")
     parser.add_argument("path", nargs="?", default="song.mp3", help="Path to the audio file")
     parser.add_argument("--json", dest="json_output", action="store_true", help="Also print full JSON to stdout")
-    parser.add_argument("--play", action="store_true", help="Play audio with the live terminal visualizer")
     parser.add_argument(
         "--personality",
         default="balanced",
@@ -2226,24 +2012,21 @@ if __name__ == "__main__":
         print(f"Validation error: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
-    if options.play:
-        live_player(result, options.path)
-    else:
-        song_name = os.path.splitext(os.path.basename(options.path))[0]
-        md_path = options.markdown_out or f"{song_name}_analysis.md"
-        write_markdown(result, md_path)
-        print(f"Markdown report:     {md_path}")
+    song_name = os.path.splitext(os.path.basename(options.path))[0]
+    md_path = options.markdown_out or f"{song_name}_analysis.md"
+    write_markdown(result, md_path)
+    print(f"Markdown report:     {md_path}")
 
-        if not options.no_json_file:
-            analysis_path = options.analysis_out or f"{song_name}_analysis.json"
-            with open(analysis_path, "w") as f:
-                json.dump(result, f, indent=2)
-            print(f"Full analysis JSON:  {analysis_path}")
+    if not options.no_json_file:
+        analysis_path = options.analysis_out or f"{song_name}_analysis.json"
+        with open(analysis_path, "w") as f:
+            json.dump(result, f, indent=2)
+        print(f"Full analysis JSON:  {analysis_path}")
 
-            llm_path = options.llm_out or f"{song_name}_llm.json"
-            with open(llm_path, "w") as f:
-                json.dump(build_llm_payload(result), f, indent=2)
-            print(f"LLM payload JSON:    {llm_path}")
+        llm_path = options.llm_out or f"{song_name}_llm.json"
+        with open(llm_path, "w") as f:
+            json.dump(build_llm_payload(result), f, indent=2)
+        print(f"LLM payload JSON:    {llm_path}")
 
-        if options.json_output:
-            print(json.dumps(result, indent=2))
+    if options.json_output:
+        print(json.dumps(result, indent=2))

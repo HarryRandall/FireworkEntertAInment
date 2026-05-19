@@ -5,8 +5,8 @@ import { join } from "node:path";
 
 const root = process.cwd();
 
-test("audio analysis route stores song analysis artifacts only", () => {
-  const route = readFileSync(join(root, "app/api/analyze/route.ts"), "utf8");
+test("audio analysis route stores song analysis artefacts only", () => {
+  const route = readFileSync(join(root, "app/api/analyse/route.ts"), "utf8");
 
   assert.match(route, /audio_path: show\.audio_path/);
   assert.match(route, /personality: parsed\.data\.personality/);
@@ -24,7 +24,7 @@ test("audio analysis route stores song analysis artifacts only", () => {
 });
 
 test("audio analysis insert has a legacy retry for old live schemas", () => {
-  const route = readFileSync(join(root, "app/api/analyze/route.ts"), "utf8");
+  const route = readFileSync(join(root, "app/api/analyse/route.ts"), "utf8");
 
   assert.match(route, /shouldRetryWithLegacyAnalysisColumns/);
   assert.match(route, /personality_preset: parsed\.data\.personality/);
@@ -63,7 +63,11 @@ test("show analyses repair migration relaxes legacy not-null columns", () => {
 test("show timeline exposes stored analysis instead of cue generation", () => {
   const page = readFileSync(join(root, "app/(app)/shows/[id]/page.tsx"), "utf8");
   const panelPath = join(root, "app/components/app/ShowGenerationPanel.tsx");
-  assert.equal(existsSync(panelPath), true);
+  const actionPath = join(root, "app/actions/show-generation.ts");
+  const plannerPath = join(root, "lib/music-cue-planner.ts");
+  assert.equal(existsSync(panelPath), false);
+  assert.equal(existsSync(actionPath), false);
+  assert.equal(existsSync(plannerPath), false);
 
   assert.match(page, /Stored song analysis/);
   assert.match(page, /AI anchors/);

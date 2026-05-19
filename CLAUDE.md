@@ -14,7 +14,7 @@ AI tool for designing real consumer firework shows, in partnership with ICON Pyr
 - **Styling**: Tailwind CSS v4
 - **Backend/Storage**: Supabase
 - **Hosting**: Vercel (main = production, other branches = preview deployments)
-- **Audio Analysis**: Python (librosa) — see `prototypes/audio-analyser/`
+- **Audio Analysis**: Python (librosa) — see `platform/analyser/`
 - **Choreography**: LLM-based agent (API)
 
 ## Development
@@ -61,12 +61,13 @@ Server-side data access goes through [`platform/lib/shows.server.ts`](platform/l
 ```
 platform/         — Next.js web app (deploy root for Vercel)
   app/            — App Router pages, layouts, styles
+  analyser/       — Python song analysis runner
   lib/            — shared server/client utilities
   utils/          — Supabase client helpers
   public/         — static assets
 docs/             — project documentation and planning
 data/             — sample data and example audio tracks
-prototypes/       — standalone prototypes (audio analyser, site mockup)
+prototypes/       — standalone prototypes (site mockup)
 scripts/          — utility scripts (e.g. Notion discovery)
 ```
 

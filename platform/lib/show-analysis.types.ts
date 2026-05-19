@@ -2,12 +2,12 @@ import type { Json } from "@/lib/database.types";
 
 export type AnalysisStatus = "running" | "completed" | "failed";
 
-export type AnalyzerEnergyPoint = {
+export type AnalyserEnergyPoint = {
   time: number;
   energy: number;
 };
 
-export type AnalyzerSection = {
+export type AnalyserSection = {
   start: number;
   end: number;
   duration: number;
@@ -18,21 +18,21 @@ export type AnalyzerSection = {
   label: string;
 };
 
-export type AnalyzerKeyMoment = {
+export type AnalyserKeyMoment = {
   time: number;
   energy: number;
   prominence: number;
   type: "build" | "climax";
 };
 
-export type AnalyzerBuildup = {
+export type AnalyserBuildup = {
   start: number;
   peak: number;
   duration: number;
   energy_rise: number;
 };
 
-export type AnalyzerFireworkCue = {
+export type AnalyserFireworkCue = {
   time: number;
   effect: string;
   reason?: string;
@@ -47,7 +47,7 @@ export type AnalyzerFireworkCue = {
   genre_hint?: string;
 };
 
-export type AnalyzerMusicProfile = {
+export type AnalyserMusicProfile = {
   genre_hint?: string;
   key_signature?: {
     root?: string;
@@ -59,7 +59,7 @@ export type AnalyzerMusicProfile = {
   descriptors?: Record<string, number>;
 };
 
-export type AnalyzerShowPersonality = {
+export type AnalyserShowPersonality = {
   preset?: string;
   dominant_traits?: string[];
   dimensions?: Record<string, number>;
@@ -71,12 +71,12 @@ export type AnalyzerShowPersonality = {
   density_level?: "low" | "medium" | "high" | string;
 };
 
-export type AnalyzerFinaleWindow = {
+export type AnalyserFinaleWindow = {
   start: number;
   end: number;
 };
 
-export type AnalyzerAnchorWindow = {
+export type AnalyserAnchorWindow = {
   type: "climax" | "buildup" | string;
   anchor_time: number;
   start: number;
@@ -85,30 +85,30 @@ export type AnalyzerAnchorWindow = {
   energy_rise?: number;
 };
 
-export type AnalyzerDerivedFeatures = {
-  finale_window?: AnalyzerFinaleWindow | null;
+export type AnalyserDerivedFeatures = {
+  finale_window?: AnalyserFinaleWindow | null;
   quietest_section_index?: number | null;
   highest_energy_section_index?: number | null;
   repeated_chorus_count?: number;
   section_rank_by_energy?: number[];
-  anchor_windows?: AnalyzerAnchorWindow[];
+  anchor_windows?: AnalyserAnchorWindow[];
 };
 
-export type AnalyzerResult = {
+export type AnalyserResult = {
   schema_version: string;
   file: string;
   duration_seconds: number;
   tempo_bpm: number;
   total_beats: number;
-  energy_timeline: AnalyzerEnergyPoint[];
-  sections: AnalyzerSection[];
-  key_moments: AnalyzerKeyMoment[];
-  buildups: AnalyzerBuildup[];
+  energy_timeline: AnalyserEnergyPoint[];
+  sections: AnalyserSection[];
+  key_moments: AnalyserKeyMoment[];
+  buildups: AnalyserBuildup[];
   beat_times?: number[];
   onset_times?: number[];
-  music_profile?: AnalyzerMusicProfile;
-  show_personality?: AnalyzerShowPersonality;
-  firework_cues?: AnalyzerFireworkCue[];
+  music_profile?: AnalyserMusicProfile;
+  show_personality?: AnalyserShowPersonality;
+  firework_cues?: AnalyserFireworkCue[];
 };
 
 export type ShowAnalysisSnapshot = {
@@ -123,7 +123,7 @@ export type ShowAnalysisSnapshot = {
   errorMessage: string | null;
   createdAt: string;
   completedAt: string | null;
-  analysis: AnalyzerResult | null;
+  analysis: AnalyserResult | null;
   llmPayload: Json | null;
   markdown: string | null;
 };

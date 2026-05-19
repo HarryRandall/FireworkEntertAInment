@@ -92,14 +92,14 @@ docs/                      — project documentation and planning
   sprints/                 — sprint scrum notes and stakeholder meeting records
 data/                      — sample data and example audio tracks
 prototypes/                — standalone prototypes
-  audio-analyser/          — song analysis pipeline (librosa/MIR prototype)
   site-mockup/             — static HTML/Tailwind landing page mockup
+platform/analyser/         — Python song analysis runner (librosa/MIR)
 ```
 
 ## Components
 
 - **Web App** (`app/`): Next.js application — the main platform.
-- **Audio Analyser** (`prototypes/audio-analyser/`): Python-based song analysis pipeline that extracts musical structure, timestamps beats, and classifies sections (highs, lows, drops, builds) for the choreography engine.
+- **Audio Analyser** (`platform/analyser/`): Python-based song analysis pipeline that extracts musical structure, timestamps beats, and classifies sections (highs, lows, drops, builds) for the choreography engine.
 - **Site Mockup** (`prototypes/site-mockup/`): Original static HTML mockups used during early design exploration.
 
 ## Contributing

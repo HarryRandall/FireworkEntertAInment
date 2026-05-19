@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { Database, Json } from "@/lib/database.types";
 import type {
-  AnalyzerResult,
+  AnalyserResult,
   ShowAnalysisSnapshot,
 } from "@/lib/show-analysis.types";
 import { createClient } from "@/utils/supabase/server";
@@ -20,14 +20,14 @@ export const dynamic = "force-dynamic";
 const ANALYSER_SCHEMA_VERSION = "1.2.0";
 const ANALYSER_RUNNER_VERSION = "local-librosa-1";
 
-const AnalyzeRequestSchema = z.object({
+const AnalyseRequestSchema = z.object({
   showId: z.string().uuid(),
   personality: z
     .enum(["balanced", "bold", "cinematic", "elegant", "intimate", "playful"])
     .default("balanced"),
 });
 
-class AnalyzeError extends Error {
+class AnalyseError extends Error {
   constructor(
     message: string,
     readonly status = 500,
@@ -71,9 +71,9 @@ function truncate(value: string, length = 1800): string {
 }
 
 function stripFireworkRecommendationsFromAnalysis(
-  analysis: AnalyzerResult,
-): AnalyzerResult {
-  const songAnalysis: AnalyzerResult = { ...analysis };
+  analysis: AnalyserResult,
+): AnalyserResult {
+  const songAnalysis: AnalyserResult = { ...analysis };
   delete songAnalysis.firework_cues;
   return songAnalysis;
 }
@@ -89,7 +89,7 @@ function stripFireworkRecommendationsFromMarkdown(markdown: string): string {
     .replace(/\n## Firework Cues\n[\s\S]*?(?=\n## Beat Times\n)/, "\n");
 }
 
-function sectionIndexForTime(analysis: AnalyzerResult, timeSeconds: number): number | null {
+function sectionIndexForTime(analysis: AnalyserResult, timeSeconds: number): number | null {
   const index = analysis.sections.findIndex((section) => {
     return timeSeconds >= section.start && timeSeconds <= section.end;
   });
@@ -103,7 +103,7 @@ function intensityScore(intensity: string): number {
   return 0;
 }
 
-function buildNumericAiPayload(analysis: AnalyzerResult): Json {
+function buildNumericAiPayload(analysis: AnalyserResult): Json {
   const peaks = analysis.key_moments.map((moment, index) => ({
     index,
     time_seconds: moment.time,
@@ -158,11 +158,9 @@ async function pathExists(filePath: string): Promise<boolean> {
   }
 }
 
-async function resolvePythonExecutable(repoRoot: string): Promise<string> {
+async function resolvePythonExecutable(analyserDir: string): Promise<string> {
   const venvPython = path.join(
-    repoRoot,
-    "prototypes",
-    "audio-analyser",
+    analyserDir,
     ".venv",
     "bin",
     "python",
@@ -207,7 +205,7 @@ function analysisSnapshot(params: {
   audioPath: string;
   runnerVersion: string | null;
   runtimeMs: number | null;
-  analysis: AnalyzerResult | null;
+  analysis: AnalyserResult | null;
   llmPayload: Json | null;
   markdown: string | null;
   errorMessage?: string | null;
@@ -247,14 +245,14 @@ async function markAnalysisFailed(params: {
     })
     .eq("id", params.analysisId);
   if (error) {
-    console.error("[api/analyze] failed to persist failure state:", error);
+    console.error("[api/analyse] failed to persist failure state:", error);
   }
 }
 
 export async function POST(request: Request) {
-  const parsed = AnalyzeRequestSchema.safeParse(await request.json().catch(() => null));
+  const parsed = AnalyseRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return jsonError("Invalid analyze request.", 400);
+    return jsonError("Invalid analyse request.", 400);
   }
 
   const supabase = createClient(await cookies());
@@ -263,7 +261,7 @@ export async function POST(request: Request) {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    return jsonError("You must be signed in to analyze a show.", 401);
+    return jsonError("You must be signed in to analyse a show.", 401);
   }
 
   const { data: show, error: showError } = await supabase
@@ -274,12 +272,12 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (showError) {
-    console.error("[api/analyze] show lookup failed:", showError);
+    console.error("[api/analyse] show lookup failed:", showError);
     return jsonError("Could not load show for analysis.", 500);
   }
   if (!show) return jsonError("Show not found.", 404);
   if (!show.audio_path) {
-    return jsonError("This show has no uploaded audio to analyze.", 400);
+    return jsonError("This show has no uploaded audio to analyse.", 400);
   }
 
   const analysisId = randomUUID();
@@ -308,7 +306,7 @@ export async function POST(request: Request) {
         .from("show_analyses")
         .insert(legacyInsert);
       if (legacyInsertError) {
-        console.error("[api/analyze] legacy analysis row insert failed:", {
+        console.error("[api/analyse] legacy analysis row insert failed:", {
           original: insertError,
           retry: legacyInsertError,
         });
@@ -321,7 +319,7 @@ export async function POST(request: Request) {
         return jsonError(message, 500);
       }
     } else {
-      console.error("[api/analyze] analysis row insert failed:", insertError);
+      console.error("[api/analyse] analysis row insert failed:", insertError);
       const message =
         process.env.NODE_ENV === "development"
           ? `Could not create analysis record: ${
@@ -335,11 +333,10 @@ export async function POST(request: Request) {
   let tempDir: string | null = null;
 
   try {
-    const repoRoot = path.resolve(process.cwd(), "..");
-    const analyserDir = path.join(repoRoot, "prototypes", "audio-analyser");
+    const analyserDir = path.join(process.cwd(), "analyser");
     const analyserScript = path.join(analyserDir, "showcrafter.py");
     if (!(await pathExists(analyserScript))) {
-      throw new AnalyzeError(
+      throw new AnalyseError(
         "ShowCrafter analyser script was not found on this server.",
         500,
       );
@@ -349,7 +346,7 @@ export async function POST(request: Request) {
       .from("audio")
       .download(show.audio_path);
     if (downloadError || !audioBlob) {
-      throw new AnalyzeError(
+      throw new AnalyseError(
         downloadError?.message || "Could not download the show audio.",
         400,
       );
@@ -365,7 +362,7 @@ export async function POST(request: Request) {
     const audioBuffer = Buffer.from(await audioBlob.arrayBuffer());
     await writeFile(inputPath, audioBuffer);
 
-    const python = await resolvePythonExecutable(repoRoot);
+    const python = await resolvePythonExecutable(analyserDir);
     const result = await runProcess(
       python,
       [
@@ -384,7 +381,7 @@ export async function POST(request: Request) {
     );
 
     if (result.code !== 0) {
-      throw new AnalyzeError(
+      throw new AnalyseError(
         truncate(result.stderr || result.stdout || "The analyser failed."),
         422,
       );
@@ -395,7 +392,7 @@ export async function POST(request: Request) {
       readFile(markdownPath, "utf8"),
     ]);
     const analysis = stripFireworkRecommendationsFromAnalysis(
-      JSON.parse(analysisText) as AnalyzerResult,
+      JSON.parse(analysisText) as AnalyserResult,
     );
     const llmPayload = buildNumericAiPayload(analysis);
     const markdown = stripFireworkRecommendationsFromMarkdown(rawMarkdown);
@@ -416,7 +413,7 @@ export async function POST(request: Request) {
       })
       .eq("id", analysisId);
     if (updateError) {
-      throw new AnalyzeError(
+      throw new AnalyseError(
         `Could not save analysis output: ${updateError.message}`,
         500,
       );
@@ -451,7 +448,7 @@ export async function POST(request: Request) {
       runtimeMs,
       errorMessage: message,
     });
-    const status = error instanceof AnalyzeError ? error.status : 500;
+    const status = error instanceof AnalyseError ? error.status : 500;
     return jsonError(message, status);
   } finally {
     if (tempDir) {

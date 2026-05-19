@@ -136,7 +136,7 @@ class SchemaValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.2.0"):
             validate_analysis_result(payload)
 
-    def test_llm_payload_summarizes_baseline_cues(self):
+    def test_llm_payload_summarises_baseline_cues(self):
         validated = validate_analysis_result(make_analysis_payload())
         payload = build_llm_payload(validated)
 

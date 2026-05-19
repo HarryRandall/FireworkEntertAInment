@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
 import type { Database, Json } from "@/lib/database.types";
 import type {
-  AnalyzerResult,
+  AnalyserResult,
   AnalysisStatus,
   ShowAnalysisSnapshot,
 } from "@/lib/show-analysis.types";
@@ -24,13 +24,13 @@ function isRecord(value: Json | null | undefined): value is Record<string, Json 
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function asAnalysis(value: Json | null): AnalyzerResult | null {
+function asAnalysis(value: Json | null): AnalyserResult | null {
   if (!isRecord(value)) return null;
   if (typeof value.schema_version !== "string") return null;
   if (!Array.isArray(value.energy_timeline)) return null;
   if (!Array.isArray(value.sections)) return null;
   if (!Array.isArray(value.key_moments)) return null;
-  return value as unknown as AnalyzerResult;
+  return value as unknown as AnalyserResult;
 }
 
 async function hydrateAnalysis(row: ShowAnalysisRow): Promise<ShowAnalysisSnapshot> {
