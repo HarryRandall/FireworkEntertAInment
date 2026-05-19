@@ -5,30 +5,35 @@ import { join } from "node:path";
 
 const root = process.cwd();
 
-test("audio analysis route stores song analysis artefacts only", () => {
+test("audio analysis runner stores only AI-ready song context", () => {
   const route = readFileSync(join(root, "app/api/analyse/route.ts"), "utf8");
+  const runner = readFileSync(join(root, "lib/show-analysis-runner.server.ts"), "utf8");
 
-  assert.match(route, /audio_path: show\.audio_path/);
-  assert.match(route, /personality: parsed\.data\.personality/);
-  assert.match(route, /runner_version: ANALYSER_RUNNER_VERSION/);
-  assert.match(route, /llm_payload: llmPayload/);
-  assert.match(route, /markdown/);
-  assert.match(route, /stripFireworkRecommendationsFromAnalysis/);
-  assert.match(route, /buildNumericAiPayload/);
-  assert.match(route, /payload_type: "numeric_song_analysis"/);
-  assert.match(route, /type_code: moment\.type === "climax" \? 2 : 1/);
+  assert.match(route, /runShowAnalysisForShow/);
+  assert.match(runner, /audio_path: typedShow\.audio_path/);
+  assert.match(runner, /runner_version: ANALYSER_RUNNER_VERSION/);
+  assert.match(runner, /buildAiContextMarkdown/);
+  assert.match(runner, /analysis_json: null/);
+  assert.match(runner, /llm_payload: null/);
+  assert.match(runner, /markdown: contextMarkdown/);
+  assert.match(runner, /# AI Song Context/);
+  assert.match(runner, /"--no-json-file"/);
+  assert.match(runner, /"--json"/);
   assert.doesNotMatch(route, /compact_payload/);
   assert.doesNotMatch(route, /analysis_storage_path/);
-  assert.doesNotMatch(route, /firework_cue_samples/);
-  assert.doesNotMatch(route, /firework_cue_summary/);
+  assert.doesNotMatch(runner, /"--llm-out"/);
+  assert.doesNotMatch(runner, /payload_type: "numeric_song_analysis"/);
+  assert.doesNotMatch(runner, /firework_cue_samples/);
+  assert.doesNotMatch(runner, /firework_cue_summary/);
 });
 
-test("audio analysis insert has a legacy retry for old live schemas", () => {
-  const route = readFileSync(join(root, "app/api/analyse/route.ts"), "utf8");
+test("new show creation starts analysis in the background", () => {
+  const action = readFileSync(join(root, "app/(app)/shows/new/actions.ts"), "utf8");
 
-  assert.match(route, /shouldRetryWithLegacyAnalysisColumns/);
-  assert.match(route, /personality_preset: parsed\.data\.personality/);
-  assert.match(route, /source_audio_path: show\.audio_path/);
+  assert.match(action, /after\(async \(\) =>/);
+  assert.match(action, /runShowAnalysisForShow/);
+  assert.match(action, /showId: show\.id/);
+  assert.match(action, /if \(audioPath\)/);
 });
 
 test("show analyses migration matches the current database contract", () => {
@@ -60,8 +65,12 @@ test("show analyses repair migration relaxes legacy not-null columns", () => {
   assert.match(migration, /personality_preset DROP NOT NULL/);
 });
 
-test("show timeline exposes stored analysis instead of cue generation", () => {
+test("show timeline exposes stored context instead of cue generation", () => {
   const page = readFileSync(join(root, "app/(app)/shows/[id]/page.tsx"), "utf8");
+  const timeline = readFileSync(
+    join(root, "app/components/app/AudioAnalysisTimeline.tsx"),
+    "utf8",
+  );
   const panelPath = join(root, "app/components/app/ShowGenerationPanel.tsx");
   const actionPath = join(root, "app/actions/show-generation.ts");
   const plannerPath = join(root, "lib/music-cue-planner.ts");
@@ -69,8 +78,12 @@ test("show timeline exposes stored analysis instead of cue generation", () => {
   assert.equal(existsSync(actionPath), false);
   assert.equal(existsSync(plannerPath), false);
 
-  assert.match(page, /Stored song analysis/);
-  assert.match(page, /AI anchors/);
-  assert.match(page, /latestAnalysis\?\.llmPayload/);
+  assert.match(page, /Stored song context/);
+  assert.match(page, /latestAnalysis\?\.contextMarkdown/);
+  assert.match(timeline, /AI song context/);
+  assert.match(timeline, /window\.setInterval\(\(\) => router\.refresh\(\), 5000\)/);
+  assert.doesNotMatch(timeline, /Run analysis/);
+  assert.doesNotMatch(timeline, /Re-run/);
+  assert.doesNotMatch(page, /latestAnalysis\?\.llmPayload/);
   assert.doesNotMatch(page, /ShowGenerationPanel/);
 });

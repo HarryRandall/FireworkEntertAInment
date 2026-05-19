@@ -1,5 +1,3 @@
-import type { Json } from "@/lib/database.types";
-
 export type AnalysisStatus = "running" | "completed" | "failed";
 
 export type AnalyserEnergyPoint = {
@@ -123,7 +121,5 @@ export type ShowAnalysisSnapshot = {
   errorMessage: string | null;
   createdAt: string;
   completedAt: string | null;
-  analysis: AnalyserResult | null;
-  llmPayload: Json | null;
-  markdown: string | null;
+  contextMarkdown: string | null;
 };

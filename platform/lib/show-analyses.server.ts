@@ -4,34 +4,17 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getCurrentUserId } from "@/lib/current-user.server";
-import type { Database, Json } from "@/lib/database.types";
-import type {
-  AnalyserResult,
-  AnalysisStatus,
-  ShowAnalysisSnapshot,
-} from "@/lib/show-analysis.types";
+import type { Database } from "@/lib/database.types";
+import type { AnalysisStatus, ShowAnalysisSnapshot } from "@/lib/show-analysis.types";
 
 type ShowAnalysisRow = Database["public"]["Tables"]["show_analyses"]["Row"];
 
 const SHOW_ANALYSIS_SELECT =
-  "id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, analysis_json, llm_payload, markdown";
+  "id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown";
 
 const getServerClient = cache(async () => {
   return createClient(await cookies());
 });
-
-function isRecord(value: Json | null | undefined): value is Record<string, Json | undefined> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function asAnalysis(value: Json | null): AnalyserResult | null {
-  if (!isRecord(value)) return null;
-  if (typeof value.schema_version !== "string") return null;
-  if (!Array.isArray(value.energy_timeline)) return null;
-  if (!Array.isArray(value.sections)) return null;
-  if (!Array.isArray(value.key_moments)) return null;
-  return value as unknown as AnalyserResult;
-}
 
 async function hydrateAnalysis(row: ShowAnalysisRow): Promise<ShowAnalysisSnapshot> {
   return {
@@ -46,9 +29,7 @@ async function hydrateAnalysis(row: ShowAnalysisRow): Promise<ShowAnalysisSnapsh
     errorMessage: row.error_message,
     createdAt: row.created_at,
     completedAt: row.completed_at,
-    analysis: asAnalysis(row.analysis_json),
-    llmPayload: row.llm_payload,
-    markdown: row.markdown,
+    contextMarkdown: row.markdown,
   };
 }
 

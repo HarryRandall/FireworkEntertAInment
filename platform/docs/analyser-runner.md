@@ -1,19 +1,38 @@
 # Local Analyser Runner
 
-`POST /api/analyse` runs the Python ShowCrafter analyser for an existing show
-that already has `shows.audio_path` set by the `/shows/new` upload flow.
+The analyser runs automatically after a show is created with uploaded audio.
+There is no user-facing "run analysis" action.
 
-## Prerequisites
+## Runtime
 
-- Run the Next.js app from `platform/`.
-- Configure Supabase environment variables in `platform/.env.local`.
-- Apply the `show_analyses` migration before using the endpoint.
-- Create the Python analyser virtualenv under `platform/analyser/.venv`
-  and install `platform/analyser/requirements.txt`.
-- Upload audio through `/shows/new`; the endpoint does not accept a separate
-  upload form.
+- The Next.js server action in `app/(app)/shows/new/actions.ts` creates the show.
+- If the show has audio, it schedules `runShowAnalysisForShow` with `after`.
+- `runShowAnalysisForShow` runs on the server, downloads the Supabase Storage
+  audio object, writes it to a temporary directory, and spawns Python.
+- The Python entry point is `platform/analyser/showcrafter.py`.
+- The preferred interpreter is `platform/analyser/.venv/bin/python`; if that is
+  missing, the runner falls back to `python3`.
+- Temporary audio and the scratch Markdown report are deleted after the run.
 
-## Request
+This does not run in the browser. The client only refreshes the show page while
+the server-side job is queued or running.
+
+## Persistence
+
+The database stores a single AI-ready Markdown context in
+`show_analyses.markdown`. The context includes the show brief, song summary,
+style direction, musical sections, primary anchors, build-ups, and timing
+samples.
+
+`analysis_json` and `llm_payload` are deliberately left `null`. The Python
+script prints its structured result to stdout with `--no-json-file`, so no JSON
+or LLM payload files are written by the server runner.
+
+## Manual Route
+
+`POST /api/analyse` remains as a thin authenticated wrapper around the same
+server runner for development and repair use. The product flow does not expose
+it as a button.
 
 ```http
 POST /api/analyse
@@ -27,45 +46,23 @@ Content-Type: application/json
 }
 ```
 
-`personality` is optional and accepts the analyser presets.
-
-## Response
-
-The endpoint returns:
+The response contains:
 
 - `analysisId`
-- full analyser JSON
-- Markdown report
-- compact LLM payload
-- persisted `analysisRow` summary for the timeline UI
-
-The full JSON and Markdown are stored inline while they are under 1 MB. Larger
-artefacts are stored in the private `audio` bucket under the signed-in user's
-prefix, and the row keeps the storage path.
+- `contextMarkdown`
 
 ## Failure Modes
 
-- `400` when the show has no uploaded audio or storage cannot return the file.
+- `400` when the request is invalid or the show has no uploaded audio.
 - `401` when the user is not signed in.
-- `404` when the show does not belong to the current user.
 - `422` when Python rejects or cannot decode the audio.
-- `500` when persistence or server setup fails.
+- `500` when server setup, storage, or persistence fails.
 
-## Local vs External Blockers
+## Production Notes
 
-Completed locally:
-
-- Local Python analyser runner using `platform/analyser/.venv`.
-- Storage of analyser JSON, Markdown, and compact numeric AI payloads.
-- Timeline UI for song sections, climaxes, build-ups, and technical anchors.
-- Local lint, build, Node tests, and analyser schema validation.
-
-Still needs external or production environment:
-
-- Live Supabase verification against the linked project; the local CLI currently
-  needs a project ref/authenticated link.
-- Production/Vercel runtime validation for Python packaging, filesystem access,
-  and execution time limits.
-- Real authenticated end-to-end demo with uploaded music and catalogue data.
-- LLM choreography that consumes the stored numeric payload and creates editable
-  show cues.
+- Supabase environment variables must be configured in the server environment.
+- The `show_analyses` migrations must be applied.
+- The Python dependencies from `platform/analyser/requirements.txt` must be
+  available wherever the Next.js server runs.
+- Production hosting must allow spawning Python, temporary filesystem writes,
+  and enough execution time for audio analysis.
