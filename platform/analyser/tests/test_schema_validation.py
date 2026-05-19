@@ -2,19 +2,25 @@ import sys
 import unittest
 from pathlib import Path
 
-import numpy as np
+try:
+    import numpy as np
+except ModuleNotFoundError as exc:
+    raise unittest.SkipTest("Install platform/analyser/requirements.txt to run analyser tests") from exc
 
 
 ANALYSER_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ANALYSER_DIR))
 
-from showcrafter import (  # noqa: E402
-    SCHEMA_VERSION,
-    build_llm_payload,
-    filter_buildups,
-    select_climax_indices,
-    validate_analysis_result,
-)
+try:
+    from showcrafter import (  # noqa: E402
+        SCHEMA_VERSION,
+        build_llm_payload,
+        filter_buildups,
+        select_climax_indices,
+        validate_analysis_result,
+    )
+except ModuleNotFoundError as exc:
+    raise unittest.SkipTest("Install platform/analyser/requirements.txt to run analyser tests") from exc
 
 
 STYLE_VECTOR = {
