@@ -111,8 +111,9 @@ test("renderer draws only compact live square particles", () => {
   assert.doesNotMatch(shaders, /attribute float alpha|vAlpha/);
   assert.match(shaders, /gl_FragColor = vec4\(vColor, 1\.0\)/);
   assert.match(shaders, /gl_PointSize = clamp/);
-  assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.5/);
+  assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
   assert.match(canvas, /antialias: false/);
+  assert.match(canvas, /renderer\.sortObjects = false/);
 });
 
 test("renderer avoids blown-out additive blobs and excessive trail churn", () => {
@@ -120,10 +121,24 @@ test("renderer avoids blown-out additive blobs and excessive trail churn", () =>
   const effects = read("lib/fireworks/Effects.ts");
 
   assert.match(engine, /Math\.sqrt\(Math\.max\(0, p\.size\)\)/);
-  assert.match(engine, /peak = 0\.055/);
+  assert.match(engine, /BRIGHTNESS_BOOST = 1\.18/);
+  assert.match(engine, /peak = 0\.075/);
   assert.match(engine, /fadeIn = p\.mass <= 0\.003/);
+  assert.match(engine, /tickPhysics\(next - cursor\)/);
+  assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
   assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.35/);
   assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 9/);
   assert.match(effects, /rng\.next\(\) > Math\.min\(1, STAR_TRAIL_PARTICLES_PER_SECOND \* dt\)/);
   assert.match(effects, /const count = 60 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
+});
+
+test("world uses a stable textured floor and instanced launch hardware", () => {
+  const world = read("lib/fireworks/World.ts");
+
+  assert.match(world, /createGroundTexture/);
+  assert.match(world, /new THREE\.CanvasTexture/);
+  assert.match(world, /LinearMipmapLinearFilter/);
+  assert.match(world, /new THREE\.InstancedMesh/);
+  assert.match(world, /CylinderGeometry\(8, 8, 40, 16\)/);
+  assert.doesNotMatch(world, /GridHelper|LineSegments/);
 });

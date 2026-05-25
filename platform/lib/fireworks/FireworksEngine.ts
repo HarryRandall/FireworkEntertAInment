@@ -35,6 +35,7 @@ const PARTICLE_CAPACITY = 100_000;
 const FIXED_DT = 1 / 60;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 16;
+const BRIGHTNESS_BOOST = 1.18;
 
 export class FireworksEngine {
   private scene: THREE.Scene;
@@ -202,7 +203,7 @@ export class FireworksEngine {
       for (const cue of due) {
         this.fireCue(cue, audible);
       }
-      this.tick(next - cursor);
+      this.tickPhysics(next - cursor);
       cursor = next;
       // Snapshot at coarse intervals while not in real-time playback.
       // Skip frames with mid-flight shells: their detonation callbacks
@@ -217,9 +218,10 @@ export class FireworksEngine {
       }
     }
     this.elapsed = target;
+    this.syncGeometry();
   }
 
-  private tick(dt: number): void {
+  private tickPhysics(dt: number): void {
     this.time += dt;
     const ps = this.pool.particles;
     const live = this.pool.aliveIndices;
@@ -229,7 +231,6 @@ export class FireworksEngine {
       if (p.alive) p.update(dt, this.time);
     }
     this.pool.compactAliveMax();
-    this.syncGeometry();
     this.lights.update();
   }
 
@@ -250,9 +251,9 @@ export class FireworksEngine {
       positions[pi + 2] = p.z;
       sizes[drawCount] = renderParticleSize(p);
       const alpha = renderParticleAlpha(p);
-      colors[pi] = p.color.r * alpha;
-      colors[pi + 1] = p.color.g * alpha;
-      colors[pi + 2] = p.color.b * alpha;
+      colors[pi] = Math.min(1, p.color.r * alpha * BRIGHTNESS_BOOST);
+      colors[pi + 1] = Math.min(1, p.color.g * alpha * BRIGHTNESS_BOOST);
+      colors[pi + 2] = Math.min(1, p.color.b * alpha * BRIGHTNESS_BOOST);
       drawCount++;
     }
     this.geometry.setDrawRange(0, drawCount);
@@ -409,10 +410,10 @@ function renderParticleAlpha(p: Particle): number {
   const fadeIn = p.mass <= 0.003 ? clamp(ageRatio * 18, 0, 1) : 1;
   const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
   let peak = 0.24;
-  if (isFlash) peak = 0.055;
+  if (isFlash) peak = 0.075;
   else if (p.mass >= 0.1) peak = 0.2;
-  else if (p.mass <= 0.0015) peak = 0.42;
-  else if (p.mass <= 0.003) peak = 0.11;
+  else if (p.mass <= 0.0015) peak = 0.52;
+  else if (p.mass <= 0.003) peak = 0.14;
 
   const fade = Math.pow(lifeRatio, isFlash ? 2.2 : 1.45);
   return clamp(peak * fadeIn * fade, 0, 0.55);

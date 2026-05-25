@@ -18,7 +18,7 @@ type Props = {
   interactive?: boolean;
 };
 
-const MAX_DEVICE_PIXEL_RATIO = 1.5;
+const MAX_DEVICE_PIXEL_RATIO = 1.25;
 
 export function FireworkReplayCanvas({
   cues,
@@ -72,6 +72,7 @@ export function FireworkReplayCanvas({
     );
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.sortObjects = false;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 

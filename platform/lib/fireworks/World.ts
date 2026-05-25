@@ -2,11 +2,14 @@ import * as THREE from "three";
 import type { LaunchPosition } from "@/lib/fireworks/design";
 
 const MORTAR_TEXTURE_URL = "/textures/mortar.png";
+const GROUND_SIZE = 8000;
+const GRID_TEXTURE_SIZE = 1024;
 
 export class World {
   group: THREE.Group;
   private mortarPositions: LaunchPosition[] = [];
-  private texture: THREE.Texture | null = null;
+  private mortarTexture: THREE.Texture | null = null;
+  private groundTexture: THREE.Texture | null = null;
   private materials: THREE.Material[] = [];
   private geometries: THREE.BufferGeometry[] = [];
 
@@ -19,58 +22,74 @@ export class World {
   private build(positions: LaunchPosition[]): void {
     this.mortarPositions = positions.slice(0, 3);
 
-    // Ground slab — large flat dark plane (no buildings).
-    const groundGeo = new THREE.BoxGeometry(8000, 8000, 5);
-    const groundMat = new THREE.MeshPhongMaterial({ color: 0x0a0d12 });
+    this.groundTexture = createGroundTexture();
+    const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 1, 1);
+    const groundMat = new THREE.MeshBasicMaterial({
+      map: this.groundTexture,
+      depthWrite: true,
+      toneMapped: false,
+    });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -2.5;
+    ground.position.y = -0.05;
     this.group.add(ground);
     this.geometries.push(groundGeo);
     this.materials.push(groundMat);
 
-    // Subtle reference grid on the ground so the scene reads as a real
-    // surface rather than a void. GridHelper is a single LineSegments
-    // draw call — effectively free.
-    const grid = new THREE.GridHelper(6000, 60, 0x6a7a9a, 0x394560);
-    grid.position.y = 0.6;
-    (grid.material as THREE.Material).transparent = true;
-    (grid.material as THREE.Material).opacity = 0.8;
-    (grid.material as THREE.Material).depthWrite = false;
-    this.group.add(grid);
-    this.materials.push(grid.material as THREE.Material);
-    this.geometries.push(grid.geometry);
+    this.mortarTexture = new THREE.TextureLoader().load(MORTAR_TEXTURE_URL);
+    this.mortarTexture.wrapS = THREE.RepeatWrapping;
+    this.mortarTexture.wrapT = THREE.RepeatWrapping;
 
-    // Load mortar texture (cylinder body).
-    this.texture = new THREE.TextureLoader().load(MORTAR_TEXTURE_URL);
-    this.texture.wrapS = THREE.RepeatWrapping;
-    this.texture.wrapT = THREE.RepeatWrapping;
-
-    for (const pos of this.mortarPositions) {
-      this.addMortar(pos);
-    }
+    this.addMortars();
   }
 
-  private addMortar(pos: LaunchPosition): void {
-    const cannonGeo = new THREE.CylinderGeometry(8, 8, 40, 32);
-    const cannonMat = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
-      map: this.texture ?? undefined,
-    });
-    const cannon = new THREE.Mesh(cannonGeo, cannonMat);
-    cannon.position.set(pos.x, pos.y + 15, pos.z);
-    this.group.add(cannon);
-    this.geometries.push(cannonGeo);
-    this.materials.push(cannonMat);
+  private addMortars(): void {
+    if (this.mortarPositions.length === 0) return;
 
-    const baseGeo = new THREE.BoxGeometry(30, 30, 2);
-    const baseMat = new THREE.MeshPhongMaterial({ color: 0x000000 });
-    const base = new THREE.Mesh(baseGeo, baseMat);
-    base.rotation.x = -Math.PI / 2;
-    base.position.set(pos.x, pos.y + 1, pos.z);
-    this.group.add(base);
-    this.geometries.push(baseGeo);
-    this.materials.push(baseMat);
+    const mortarGeo = new THREE.CylinderGeometry(8, 8, 40, 16);
+    const mortarMat = new THREE.MeshBasicMaterial({
+      color: 0xd4d8df,
+      map: this.mortarTexture ?? undefined,
+      toneMapped: false,
+    });
+    const mortars = new THREE.InstancedMesh(
+      mortarGeo,
+      mortarMat,
+      this.mortarPositions.length,
+    );
+    mortars.frustumCulled = false;
+
+    const baseGeo = new THREE.BoxGeometry(30, 2, 30);
+    const baseMat = new THREE.MeshBasicMaterial({
+      color: 0x151922,
+      toneMapped: false,
+    });
+    const bases = new THREE.InstancedMesh(
+      baseGeo,
+      baseMat,
+      this.mortarPositions.length,
+    );
+    bases.frustumCulled = false;
+
+    const transform = new THREE.Object3D();
+    for (let i = 0; i < this.mortarPositions.length; i++) {
+      const pos = this.mortarPositions[i];
+      transform.position.set(pos.x, pos.y + 15, pos.z);
+      transform.rotation.set(0, 0, 0);
+      transform.scale.setScalar(1);
+      transform.updateMatrix();
+      mortars.setMatrixAt(i, transform.matrix);
+
+      transform.position.set(pos.x, pos.y + 1, pos.z);
+      transform.updateMatrix();
+      bases.setMatrixAt(i, transform.matrix);
+    }
+    mortars.instanceMatrix.needsUpdate = true;
+    bases.instanceMatrix.needsUpdate = true;
+
+    this.group.add(mortars, bases);
+    this.geometries.push(mortarGeo, baseGeo);
+    this.materials.push(mortarMat, baseMat);
   }
 
   rebuild(positions: LaunchPosition[]): void {
@@ -79,6 +98,10 @@ export class World {
     }
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
+    this.mortarTexture?.dispose();
+    this.groundTexture?.dispose();
+    this.mortarTexture = null;
+    this.groundTexture = null;
     this.geometries.length = 0;
     this.materials.length = 0;
     this.build(positions);
@@ -92,7 +115,65 @@ export class World {
   dispose(): void {
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
-    this.texture?.dispose();
+    this.mortarTexture?.dispose();
+    this.groundTexture?.dispose();
     this.group.parent?.remove(this.group);
   }
+}
+
+function createGroundTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = GRID_TEXTURE_SIZE;
+  canvas.height = GRID_TEXTURE_SIZE;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Unable to create firework ground texture");
+
+  ctx.fillStyle = "#070a10";
+  ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
+
+  drawGridLayer(ctx, 64, "rgba(73, 86, 116, 0.32)", 1);
+  drawGridLayer(ctx, 256, "rgba(118, 134, 176, 0.42)", 2);
+
+  const gradient = ctx.createRadialGradient(
+    GRID_TEXTURE_SIZE / 2,
+    GRID_TEXTURE_SIZE / 2,
+    0,
+    GRID_TEXTURE_SIZE / 2,
+    GRID_TEXTURE_SIZE / 2,
+    GRID_TEXTURE_SIZE / 2,
+  );
+  gradient.addColorStop(0, "rgba(34, 40, 56, 0.34)");
+  gradient.addColorStop(0.36, "rgba(12, 16, 25, 0.08)");
+  gradient.addColorStop(1, "rgba(0, 0, 0, 0.55)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+function drawGridLayer(
+  ctx: CanvasRenderingContext2D,
+  step: number,
+  color: string,
+  width: number,
+): void {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  for (let i = 0; i <= GRID_TEXTURE_SIZE; i += step) {
+    const p = i + 0.5;
+    ctx.moveTo(p, 0);
+    ctx.lineTo(p, GRID_TEXTURE_SIZE);
+    ctx.moveTo(0, p);
+    ctx.lineTo(GRID_TEXTURE_SIZE, p);
+  }
+  ctx.stroke();
 }
