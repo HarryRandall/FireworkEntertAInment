@@ -124,7 +124,8 @@ export function FireworkReplayCanvas({
     // snap-to-axis views keep the burst centred.
     viewHelper.center = controls.target;
     viewHelper.setLabels('X', 'Y', 'Z');
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
 
     function onPointerUp(event: PointerEvent) {
       if (!controls.enabled) return;
@@ -134,7 +135,7 @@ export function FireworkReplayCanvas({
 
     let renderedElapsed = Number.NaN;
     let lastEngineUpdate = 0;
-    function loop() {
+    function loop(timestamp?: number) {
       const eng = engineRef.current;
       const cam = cameraRef.current;
       const rend = rendererRef.current;
@@ -154,7 +155,8 @@ export function FireworkReplayCanvas({
         renderedElapsed = targetElapsed;
         lastEngineUpdate = now;
       }
-      const dt = clock.getDelta();
+      timer.update(timestamp);
+      const dt = timer.getDelta();
       if (showViewHelperRef.current && viewHelper.animating) {
         viewHelper.update(dt);
         forceRenderRef.current = true;
@@ -189,6 +191,7 @@ export function FireworkReplayCanvas({
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      timer.dispose();
       viewHelper.dispose();
       controls.dispose();
       engine.dispose();

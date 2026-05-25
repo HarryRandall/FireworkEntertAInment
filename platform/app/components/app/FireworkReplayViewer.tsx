@@ -105,6 +105,10 @@ function EmptyPreview() {
   );
 }
 
+function isTubeBusyError(result: CueActionResult): boolean {
+  return !result.ok && /^Tube \d+ is busy from /.test(result.error);
+}
+
 export function FireworkReplayViewer({
   showId,
   showSlug,
@@ -350,7 +354,7 @@ export function FireworkReplayViewer({
         });
       }
       const result = await addPreviewCueAction(formData);
-      setActionResult(result);
+      setActionResult(isTubeBusyError(result) ? null : result);
     });
   }
 
@@ -393,6 +397,10 @@ export function FireworkReplayViewer({
         firework: product,
       });
       const result = await addPreviewCueAction(formData);
+      if (isTubeBusyError(result)) {
+        setActionResult(null);
+        return;
+      }
       setActionResult(result);
       if (!result.ok) toast.error(result.error);
     });
@@ -492,7 +500,7 @@ export function FireworkReplayViewer({
                   value={elapsed}
                   onChange={(event) => {
                     setIsPlaying(false);
-                    seekTo(Number(event.target.value));
+                    seekTo(Number(event.target.value), false);
                   }}
                   className="accent-tertiary h-2 min-w-0 flex-1"
                   aria-label="Preview timeline"
@@ -727,7 +735,7 @@ export function FireworkReplayViewer({
                             key={baseCueId}
                             onClick={() => {
                               setIsPlaying(false);
-                              seekTo(cue.timeSeconds);
+                              seekTo(cue.timeSeconds, false);
                             }}
                             aria-current={isActive ? 'true' : undefined}
                             className={tableRowClasses(
@@ -869,8 +877,7 @@ export function FireworkReplayViewer({
               onSubmit={(event) => {
                 event.preventDefault();
                 const prompt = refinePrompt.trim();
-                if (!prompt) return;
-                openCueDialog('ai', prompt);
+                openCueDialog('ai', prompt || undefined);
               }}
               className="flex flex-col gap-3 xl:min-h-0 xl:flex-1"
             >
@@ -883,7 +890,7 @@ export function FireworkReplayViewer({
                 className="min-h-32 xl:[field-sizing:fixed] xl:min-h-0 xl:flex-1 xl:resize-none"
               />
               <div className="flex justify-end">
-                <Button type="submit" size="sm" disabled={!refinePrompt.trim() || isPending}>
+                <Button type="submit" size="sm" disabled={isPending}>
                   <Sparkles size={14} strokeWidth={2} />
                   Apply refinement
                 </Button>
