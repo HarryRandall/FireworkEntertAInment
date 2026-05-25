@@ -1,3 +1,11 @@
+/**
+ * Deterministic seeded RNG used by the renderer.
+ *
+ * Cue rendering must be reproducible (same show + same seed = same visuals)
+ * so we never use `Math.random()` directly inside effects. Seeds come from
+ * {@link hashStringToSeed} of either the cue id or a manual override.
+ */
+
 export type SeededRng = {
   next: () => number;
   range: (min: number, max: number) => number;
@@ -5,7 +13,7 @@ export type SeededRng = {
   int: (min: number, max: number) => number;
 };
 
-export type RandomSource = Pick<SeededRng, "next">;
+export type RandomSource = Pick<SeededRng, 'next'>;
 
 export function hashStringToSeed(input: string): number {
   let hash = 2166136261;
@@ -17,11 +25,7 @@ export function hashStringToSeed(input: string): number {
 }
 
 export function mixSeed(...values: Array<number | string | undefined | null>): number {
-  return hashStringToSeed(
-    values
-      .map((value) => (value == null ? "" : String(value)))
-      .join(":"),
-  );
+  return hashStringToSeed(values.map((value) => (value == null ? '' : String(value))).join(':'));
 }
 
 export function createSeededRng(seed: number): SeededRng {

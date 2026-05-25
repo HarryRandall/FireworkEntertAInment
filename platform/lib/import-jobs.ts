@@ -1,3 +1,17 @@
+/**
+ * Shared schemas, constants, and helpers for the supplier "import job" flow.
+ *
+ * Import jobs let suppliers submit firework videos / glossaries / stock CSVs
+ * for AI-assisted normalisation into the catalogue. This module hosts:
+ *
+ * - Storage bucket names and limits (e.g. {@link IMPORT_VIDEO_BUCKET})
+ * - The OpenRouter model dropdown options used in the admin UI
+ * - Zod schemas for validating spec drafts ({@link ImportedFireworkSpecSchema})
+ * - Pure helpers for projecting `import_outputs` rows into a UI-ready shape
+ *
+ * Imported by both server actions (`app/actions/admin/*`) and server modules
+ * (`lib/admin/imports.server.ts`).
+ */
 import { z } from 'zod';
 import type { ReplayCue } from '@/lib/show-domain';
 import {

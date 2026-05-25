@@ -1,7 +1,14 @@
-import * as THREE from "three";
-import type { LaunchPosition } from "@/lib/fireworks/design";
+/**
+ * Static scene geometry: ground plane, mortar tubes, ambient props.
+ *
+ * Owns its own `THREE.Group` so the engine can attach/detach the world
+ * without touching the global scene. Mortar positions come from the show's
+ * launch positions so the visible tubes always match the cue tube indices.
+ */
+import * as THREE from 'three';
+import type { LaunchPosition } from '@/lib/fireworks/design';
 
-const MORTAR_TEXTURE_URL = "/textures/mortar.png";
+const MORTAR_TEXTURE_URL = '/textures/mortar.png';
 
 export class World {
   group: THREE.Group;

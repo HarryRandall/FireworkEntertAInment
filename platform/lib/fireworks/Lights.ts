@@ -1,4 +1,11 @@
-import * as THREE from "three";
+/**
+ * Pooled point lights that flash with each shell burst.
+ *
+ * A small ring of lights is recycled — when a burst fires we grab an idle
+ * light, position it at the burst, and fade it out over ~0.5s. Cheap enough
+ * to keep on every cue without GPU thrash.
+ */
+import * as THREE from 'three';
 
 class FlashLight {
   light: THREE.PointLight;
@@ -9,7 +16,11 @@ class FlashLight {
     scene.add(this.light);
   }
 
-  set(pos: THREE.Vector3 | { x: number; y: number; z: number }, color: THREE.Color, intensity: number): void {
+  set(
+    pos: THREE.Vector3 | { x: number; y: number; z: number },
+    color: THREE.Color,
+    intensity: number,
+  ): void {
     this.light.position.set(pos.x, pos.y, pos.z);
     this.light.intensity = intensity;
     this.light.color.copy(color);
@@ -47,11 +58,7 @@ export class Lights {
     this.hemi.color.setRGB(r, g, b);
   }
 
-  newLight(
-    pos: { x: number; y: number; z: number },
-    color: THREE.Color,
-    intensity: number,
-  ): void {
+  newLight(pos: { x: number; y: number; z: number }, color: THREE.Color, intensity: number): void {
     const slot = this.pool.find((l) => !l.alive) ?? this.pool[0];
     slot.set(pos, color, intensity);
   }

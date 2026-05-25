@@ -1,5 +1,11 @@
-// Domain types for ShowCrafter shows. Pure types only — no in-memory data.
-// Persistence helpers live in `lib/shows.server.ts` (server-only).
+/**
+ * Domain types for ShowCrafter shows.
+ *
+ * Pure types and small pure helpers (formatters, slug generators) only — no
+ * I/O, no in-memory state. Persistence lives in `lib/shows.server.ts` and
+ * the upcoming `lib/shows/*` modules; this file is the contract those
+ * modules speak to the rest of the app.
+ */
 
 import type { FireworkSpec } from '@/lib/fireworks/spec';
 import type { LaunchPosition } from '@/lib/fireworks/design';
