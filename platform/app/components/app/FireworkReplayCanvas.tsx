@@ -1,8 +1,10 @@
 "use client";
 
-import { type MutableRefObject, useEffect, useMemo, useRef } from "react";
+import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { Hand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { ViewHelper } from "three/examples/jsm/helpers/ViewHelper.js";
 import type { ReplayCue } from "@/lib/show-domain";
 import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
 import {
@@ -41,6 +43,7 @@ export function FireworkReplayCanvas({
   const rafRef = useRef<number | null>(null);
   const internalElapsedRef = useRef(elapsed);
   const forceRenderRef = useRef(true);
+  const [panMode, setPanMode] = useState(false);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
@@ -102,6 +105,23 @@ export function FireworkReplayCanvas({
     engine.setMuted(muted);
     engineRef.current = engine;
 
+    const viewHelper = new ViewHelper(camera, renderer.domElement);
+    // Top-right corner. `top` takes precedence over `bottom` in the source, so
+    // setting top non-null is enough to lift the default bottom-right anchor.
+    viewHelper.location.top = 12;
+    viewHelper.location.right = 12;
+    // Orbit around the firework focal point rather than world origin so the
+    // snap-to-axis views keep the burst centred.
+    viewHelper.center = controls.target;
+    viewHelper.setLabels("X", "Y", "Z");
+    const clock = new THREE.Clock();
+
+    function onPointerUp(event: PointerEvent) {
+      if (!controls.enabled) return;
+      if (viewHelper.handleClick(event)) forceRenderRef.current = true;
+    }
+    renderer.domElement.addEventListener("pointerup", onPointerUp);
+
     let renderedElapsed = Number.NaN;
     let lastEngineUpdate = 0;
     function loop() {
@@ -126,10 +146,19 @@ export function FireworkReplayCanvas({
         renderedElapsed = targetElapsed;
         lastEngineUpdate = now;
       }
+      const dt = clock.getDelta();
+      if (viewHelper.animating) {
+        viewHelper.update(dt);
+        forceRenderRef.current = true;
+      }
       const controlsChanged = controls.enabled ? controls.update() : false;
       if (timelineChanged || controlsChanged || forceRenderRef.current) {
         forceRenderRef.current = false;
         rend.render(sc, cam);
+        // Gizmo overlays the main pass; it manages its own viewport region.
+        rend.autoClear = false;
+        viewHelper.render(rend);
+        rend.autoClear = true;
       }
       rafRef.current = requestAnimationFrame(loop);
     }
@@ -148,7 +177,9 @@ export function FireworkReplayCanvas({
 
     return () => {
       ro.disconnect();
+      renderer.domElement.removeEventListener("pointerup", onPointerUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      viewHelper.dispose();
       controls.dispose();
       engine.dispose();
       renderer.dispose();
@@ -184,10 +215,93 @@ export function FireworkReplayCanvas({
     if (controlsRef.current) controlsRef.current.enabled = interactive;
   }, [interactive]);
 
+  useEffect(() => {
+    const ctrl = controlsRef.current;
+    if (!ctrl) return;
+    ctrl.mouseButtons = {
+      LEFT: panMode ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: panMode ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN,
+    };
+  }, [panMode]);
+
+  function adjustZoom(factor: number) {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    const offset = cam.position.clone().sub(ctrl.target).multiplyScalar(factor);
+    const dist = offset.length();
+    if (dist < ctrl.minDistance) offset.setLength(ctrl.minDistance);
+    else if (dist > ctrl.maxDistance) offset.setLength(ctrl.maxDistance);
+    cam.position.copy(ctrl.target).add(offset);
+    ctrl.update();
+    forceRenderRef.current = true;
+  }
+
+  function resetView() {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    cam.position.set(0, 180, 1800);
+    ctrl.target.set(0, 200, 0);
+    ctrl.update();
+    forceRenderRef.current = true;
+  }
+
   return (
-    <div
-      ref={containerRef}
-      className="absolute inset-0 h-full w-full bg-black"
-    />
+    <>
+      <div
+        ref={containerRef}
+        className="absolute inset-0 h-full w-full bg-black"
+      />
+      {interactive ? (
+        <div className="absolute right-3 top-40 z-10 flex flex-col gap-1.5">
+          <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
+            <ZoomIn size={16} strokeWidth={2} />
+          </CanvasIconButton>
+          <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
+            <ZoomOut size={16} strokeWidth={2} />
+          </CanvasIconButton>
+          <CanvasIconButton
+            onClick={() => setPanMode((on) => !on)}
+            label={panMode ? "Orbit mode" : "Pan mode"}
+            active={panMode}
+          >
+            <Hand size={16} strokeWidth={2} />
+          </CanvasIconButton>
+          <CanvasIconButton onClick={resetView} label="Reset view">
+            <RotateCcw size={16} strokeWidth={2} />
+          </CanvasIconButton>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function CanvasIconButton({
+  onClick,
+  label,
+  active = false,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition-all focus:outline-none focus-visible:outline-none active:scale-[0.95] ${
+        active
+          ? "border-primary/40 bg-primary-container/85 text-on-primary-container"
+          : "border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
