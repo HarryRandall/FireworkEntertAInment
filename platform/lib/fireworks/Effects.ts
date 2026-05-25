@@ -35,11 +35,24 @@ function clampStarGravity(gravity: number): number {
 }
 
 function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
-  return {
-    r: 0.3 + rng.next() * 0.7,
-    g: 0.3 + rng.next() * 0.7,
-    b: 0.3 + rng.next() * 0.7,
-  };
+  // HSV with high saturation gives vivid hues; the prior per-channel jitter
+  // averaged toward washed-out pastels that didn't read as a colour.
+  const h = rng.next() * 6;
+  const i = Math.floor(h);
+  const f = h - i;
+  const v = 1;
+  const s = 0.85;
+  const p = v * (1 - s);
+  const q = v * (1 - s * f);
+  const t = v * (1 - s * (1 - f));
+  switch (i % 6) {
+    case 0: return { r: v, g: t, b: p };
+    case 1: return { r: q, g: v, b: p };
+    case 2: return { r: p, g: v, b: t };
+    case 3: return { r: p, g: q, b: v };
+    case 4: return { r: t, g: p, b: v };
+    default: return { r: v, g: p, b: q };
+  }
 }
 
 function resolveColor(

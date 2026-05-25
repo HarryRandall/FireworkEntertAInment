@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { type MutableRefObject, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { ReplayCue } from "@/lib/show-domain";
@@ -13,6 +13,10 @@ import {
 type Props = {
   cues: ReplayCue[];
   elapsed: number;
+  /** Optional 60Hz playhead ref. When provided, the engine reads from it
+   * instead of the throttled `elapsed` prop — letting parents update React
+   * state at a lower rate while keeping playback smooth. */
+  playbackRef?: MutableRefObject<number>;
   launchPositions?: LaunchPosition[];
   muted?: boolean;
   interactive?: boolean;
@@ -23,6 +27,7 @@ const MAX_DEVICE_PIXEL_RATIO = 1.25;
 export function FireworkReplayCanvas({
   cues,
   elapsed,
+  playbackRef,
   launchPositions = DEFAULT_LAUNCH_POSITIONS,
   muted = false,
   interactive = true,
@@ -34,7 +39,7 @@ export function FireworkReplayCanvas({
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rafRef = useRef<number | null>(null);
-  const elapsedRef = useRef(elapsed);
+  const internalElapsedRef = useRef(elapsed);
   const forceRenderRef = useRef(true);
 
   const positionsKey = useMemo(
@@ -43,8 +48,8 @@ export function FireworkReplayCanvas({
   );
 
   useEffect(() => {
-    elapsedRef.current = elapsed;
-  }, [elapsed]);
+    if (!playbackRef) internalElapsedRef.current = elapsed;
+  }, [elapsed, playbackRef]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -104,7 +109,9 @@ export function FireworkReplayCanvas({
       const rend = rendererRef.current;
       const sc = sceneRef.current;
       if (!eng || !cam || !rend || !sc) return;
-      const targetElapsed = elapsedRef.current;
+      const targetElapsed = playbackRef
+        ? playbackRef.current
+        : internalElapsedRef.current;
       const timelineChanged =
         Number.isNaN(renderedElapsed) ||
         Math.abs(targetElapsed - renderedElapsed) > 0.0001;

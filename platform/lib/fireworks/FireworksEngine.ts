@@ -35,6 +35,7 @@ const PARTICLE_CAPACITY = 100_000;
 const FIXED_DT = 1 / 60;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 16;
+const MAX_SNAPSHOTS = 120;
 const BRIGHTNESS_BOOST = 1.18;
 
 export class FireworksEngine {
@@ -205,15 +206,14 @@ export class FireworksEngine {
       }
       this.tickPhysics(next - cursor);
       cursor = next;
-      // Snapshot at coarse intervals while not in real-time playback.
       // Skip frames with mid-flight shells: their detonation callbacks
       // would be lost on restore and leave dangling ascending particles.
       if (
-        !audible &&
         cursor >= this.nextSnapshotAt &&
         !this.poolHasMidFlightShells()
       ) {
         this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
+        if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
       }
     }
@@ -250,7 +250,13 @@ export class FireworksEngine {
       positions[pi + 1] = p.y;
       positions[pi + 2] = p.z;
       sizes[drawCount] = renderParticleSize(p);
-      const alpha = renderParticleAlpha(p);
+      // Stars (the dominant visible particles) shimmer like burning magnesium
+      // — a static colour reads as inert without per-particle modulation.
+      const twinkle =
+        p.mass <= 0.0015
+          ? 0.75 + 0.25 * Math.sin(p.life * 12 + p.i * 0.5)
+          : 1;
+      const alpha = renderParticleAlpha(p) * twinkle;
       colors[pi] = Math.min(1, p.color.r * alpha * BRIGHTNESS_BOOST);
       colors[pi + 1] = Math.min(1, p.color.g * alpha * BRIGHTNESS_BOOST);
       colors[pi + 2] = Math.min(1, p.color.b * alpha * BRIGHTNESS_BOOST);
@@ -398,7 +404,7 @@ function renderParticleSize(p: Particle): number {
   const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
   if (isFlash) return clamp(base * 1.0, 0.8, 13);
   if (p.mass >= 0.1) return clamp(base * 1.4, 1.2, 24);
-  if (p.mass <= 0.0015) return clamp(base * 1.35, 1.0, 26);
+  if (p.mass <= 0.0015) return clamp(base * 1.5, 1.0, 32);
   if (p.mass <= 0.003) return clamp(base * 1.05, 0.8, 14);
   return clamp(base * 1.15, 0.9, 17);
 }
@@ -412,11 +418,11 @@ function renderParticleAlpha(p: Particle): number {
   let peak = 0.24;
   if (isFlash) peak = 0.075;
   else if (p.mass >= 0.1) peak = 0.2;
-  else if (p.mass <= 0.0015) peak = 0.52;
+  else if (p.mass <= 0.0015) peak = 0.7;
   else if (p.mass <= 0.003) peak = 0.14;
 
-  const fade = Math.pow(lifeRatio, isFlash ? 2.2 : 1.45);
-  return clamp(peak * fadeIn * fade, 0, 0.55);
+  const fade = Math.pow(lifeRatio, isFlash ? 2.2 : 1.25);
+  return clamp(peak * fadeIn * fade, 0, 0.72);
 }
 
 function clamp(value: number, min: number, max: number): number {
