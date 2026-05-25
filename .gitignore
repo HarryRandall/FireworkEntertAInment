@@ -23,6 +23,9 @@ platform/supabase/.temp/
 *.swo
 *~
 
+# Local agent memory
+memory/
+
 # OS
 .DS_Store
 Thumbs.db

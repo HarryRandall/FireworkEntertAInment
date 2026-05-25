@@ -43,7 +43,12 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={show.slug} />
         <div className="flex items-center gap-2">
-          <Button href="/shows/new" prefetch variant="secondary" size="sm">
+          <Button
+            href={`/shows/${show.slug}/preview?cueDialog=ai`}
+            prefetch={false}
+            variant="secondary"
+            size="sm"
+          >
             Refine
           </Button>
           <Button href={`/api/shows/${show.slug}/export`} prefetch={false} size="sm">
