@@ -8,6 +8,7 @@
  * overlaps on the same launch position.
  */
 import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from 'react';
 import {
   ChevronLeft,
@@ -150,6 +151,8 @@ export function FireworkReplayViewer({
   const lastUIElapsedRef = useRef(elapsed);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Keep the audio element in sync with playhead and play/pause state.
   useEffect(() => {
@@ -183,6 +186,13 @@ export function FireworkReplayViewer({
       lastUIElapsedRef.current = elapsed;
     }
   }, [elapsed, isPlaying]);
+
+  useEffect(() => {
+    if (searchParams.get('cueDialog') !== 'ai') return;
+    setCueDialogTab('ai');
+    setShowAddForm(true);
+    router.replace(`/shows/${showSlug}/preview`, { scroll: false });
+  }, [router, searchParams, showSlug]);
 
   useEffect(() => {
     if (playbackControlsTimer.current) clearTimeout(playbackControlsTimer.current);
