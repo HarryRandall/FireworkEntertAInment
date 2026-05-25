@@ -1,38 +1,38 @@
 # Local Analyser Runner
 
-The analyser runs automatically after a show is created with uploaded audio.
-There is no user-facing "run analysis" action.
+The analyser runs automatically after the browser uploads a music file in the
+new-show wizard. It is separate from show creation and there is no user-facing
+"run analysis" action.
 
 ## Runtime
 
-- The Next.js server action in `app/(app)/shows/new/actions.ts` creates the show.
-- If the show has audio, it schedules `runShowAnalysisForShow` with `after`.
-- `runShowAnalysisForShow` runs on the server, downloads the Supabase Storage
+- The browser uploads audio directly to the private `audio` storage bucket.
+- `startMusicAnalysisAction` creates a `music_analyses` row and schedules
+  `runMusicAnalysisForUpload` with `after`.
+- `runMusicAnalysisForUpload` runs on the server, downloads the Supabase Storage
   audio object, writes it to a temporary directory, and spawns Python.
 - The Python entry point is `platform/analyser/showcrafter.py`.
 - The preferred interpreter is `platform/analyser/.venv/bin/python`; if that is
   missing, the runner falls back to `python3`.
 - Temporary audio and the scratch Markdown report are deleted after the run.
 
-This does not run in the browser. The client only refreshes the show page while
-the server-side job is queued or running.
+The analysis does not run in the browser. The client may continue through the
+wizard while the server-side job is queued or running.
 
 ## Persistence
 
-The database stores a single AI-ready Markdown context in
-`show_analyses.markdown`. The context includes the show brief, song summary,
-style direction, musical sections, primary anchors, build-ups, and timing
-samples.
+The database stores rich structured output in `music_analyses.analysis_json`
+and a readable Markdown context in `music_analyses.markdown`. The JSON is the
+source for cue generation; the Markdown exists for inspection/debugging.
 
-`analysis_json` and `llm_payload` are deliberately left `null`. The Python
-script prints its structured result to stdout with `--no-json-file`, so no JSON
-or LLM payload files are written by the server runner.
+The Python script prints its structured result to stdout with `--no-json-file`,
+so no JSON or LLM payload files are written to disk by the server runner.
 
 ## Manual Route
 
-`POST /api/analyse` remains as a thin authenticated wrapper around the same
-server runner for development and repair use. The product flow does not expose
-it as a button.
+`POST /api/analyse` remains as a thin authenticated wrapper around the legacy
+show-scoped runner for development and repair use. The product flow uses
+upload-scoped `music_analyses` instead and does not expose the API as a button.
 
 ```http
 POST /api/analyse
@@ -61,7 +61,7 @@ The response contains:
 ## Production Notes
 
 - Supabase environment variables must be configured in the server environment.
-- The `show_analyses` migrations must be applied.
+- The `music_analyses` / show-generation migrations must be applied.
 - The Python dependencies from `platform/analyser/requirements.txt` must be
   available wherever the Next.js server runs.
 - Production hosting must allow spawning Python, temporary filesystem writes,

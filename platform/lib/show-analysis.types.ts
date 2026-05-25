@@ -1,4 +1,4 @@
-export type AnalysisStatus = "running" | "completed" | "failed";
+export type AnalysisStatus = 'running' | 'completed' | 'failed';
 
 export type AnalyserEnergyPoint = {
   time: number;
@@ -11,7 +11,7 @@ export type AnalyserSection = {
   duration: number;
   avg_energy: number;
   peak_energy: number;
-  intensity: "low" | "medium" | "high";
+  intensity: 'low' | 'medium' | 'high';
   cluster_id: number;
   label: string;
 };
@@ -20,7 +20,7 @@ export type AnalyserKeyMoment = {
   time: number;
   energy: number;
   prominence: number;
-  type: "build" | "climax";
+  type: 'build' | 'climax';
 };
 
 export type AnalyserBuildup = {
@@ -66,7 +66,7 @@ export type AnalyserShowPersonality = {
     secondary?: string;
     accent?: string;
   };
-  density_level?: "low" | "medium" | "high" | string;
+  density_level?: 'low' | 'medium' | 'high' | string;
 };
 
 export type AnalyserFinaleWindow = {
@@ -75,7 +75,7 @@ export type AnalyserFinaleWindow = {
 };
 
 export type AnalyserAnchorWindow = {
-  type: "climax" | "buildup" | string;
+  type: 'climax' | 'buildup' | string;
   anchor_time: number;
   start: number;
   end: number;
@@ -109,6 +109,8 @@ export type AnalyserResult = {
   firework_cues?: AnalyserFireworkCue[];
 };
 
+export type CueGenerationStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+
 export type ShowAnalysisSnapshot = {
   id: string;
   showId: string;
@@ -122,4 +124,7 @@ export type ShowAnalysisSnapshot = {
   createdAt: string;
   completedAt: string | null;
   contextMarkdown: string | null;
+  cueGenerationStatus: CueGenerationStatus;
+  cueGenerationError: string | null;
+  cueCount: number | null;
 };

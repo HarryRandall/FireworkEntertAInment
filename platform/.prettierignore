@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+dist
+coverage
+package-lock.json
+lib/database.types.ts
+public
+supabase/.temp
+*.min.js
+*.min.css
