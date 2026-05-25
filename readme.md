@@ -26,7 +26,7 @@ The tool is provided to consumers by fireworks retailers, either in-store (as a 
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18.18+
+- [Node.js](https://nodejs.org/) 20.9+
 - npm
 
 ### Installation
@@ -68,6 +68,14 @@ Run the full local gate with:
 cd platform
 npm run check
 ```
+
+### CI
+
+GitHub Actions runs the same platform gate on every pushed commit and pull
+request:
+
+- `npm run check` from `platform/`
+- Python analyser unit tests from `platform/analyser/`
 
 ## Deployment
 
