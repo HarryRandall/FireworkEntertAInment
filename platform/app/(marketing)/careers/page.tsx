@@ -1,16 +1,18 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight, MapPin, Briefcase } from "lucide-react";
-import { Container } from "@/app/components/ui/Container";
-import { Card } from "@/app/components/ui/Card";
-import { Badge, Eyebrow } from "@/app/components/ui/Badge";
-import { PageHeader } from "@/app/components/marketing/PageHeader";
-import { CTABand } from "@/app/components/marketing/CTABand";
+/** Marketing "Careers" page. */
+
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ArrowRight, MapPin, Briefcase } from 'lucide-react';
+import { Container } from '@/app/components/ui/Container';
+import { Card } from '@/app/components/ui/Card';
+import { Badge, Eyebrow } from '@/app/components/ui/Badge';
+import { PageHeader } from '@/app/components/marketing/PageHeader';
+import { CTABand } from '@/app/components/marketing/CTABand';
 
 export const metadata: Metadata = {
-  title: "Careers · ShowCrafter",
+  title: 'Careers · ShowCrafter',
   description:
-    "Help us put a fireworks-show designer in every backyard. Join a small, ambitious team rebuilding consumer pyro from the ground up.",
+    'Help us put a fireworks-show designer in every backyard. Join a small, ambitious team rebuilding consumer pyro from the ground up.',
 };
 
 type Role = {
@@ -23,47 +25,59 @@ type Role = {
 
 const ROLES: Role[] = [
   {
-    title: "Senior Audio ML Engineer",
-    team: "Engineering",
-    location: "Brisbane / Remote AU",
-    type: "Full-time",
-    href: "#",
+    title: 'Senior Audio ML Engineer',
+    team: 'Engineering',
+    location: 'Brisbane / Remote AU',
+    type: 'Full-time',
+    href: '#',
   },
   {
-    title: "Founding Product Designer",
-    team: "Design",
-    location: "Brisbane",
-    type: "Full-time",
-    href: "#",
+    title: 'Founding Product Designer',
+    team: 'Design',
+    location: 'Brisbane',
+    type: 'Full-time',
+    href: '#',
   },
   {
-    title: "Pyrotechnics Safety Lead",
-    team: "Operations",
-    location: "Brisbane",
-    type: "Full-time",
-    href: "#",
+    title: 'Pyrotechnics Safety Lead',
+    team: 'Operations',
+    location: 'Brisbane',
+    type: 'Full-time',
+    href: '#',
   },
   {
-    title: "Vendor Partnerships Manager",
-    team: "Go-to-market",
-    location: "Sydney / Melbourne",
-    type: "Full-time",
-    href: "#",
+    title: 'Vendor Partnerships Manager',
+    team: 'Go-to-market',
+    location: 'Sydney / Melbourne',
+    type: 'Full-time',
+    href: '#',
   },
   {
-    title: "Community & Content (Pyromaster)",
-    team: "Marketing",
-    location: "Remote AU/NZ",
-    type: "Contract",
-    href: "#",
+    title: 'Community & Content (Pyromaster)',
+    team: 'Marketing',
+    location: 'Remote AU/NZ',
+    type: 'Contract',
+    href: '#',
   },
 ];
 
 const PERKS = [
-  { title: "Equity for everyone", body: "Every full-time hire gets meaningful equity. We win together or not at all." },
-  { title: "Real fireworks budget", body: "Yes, we buy fireworks for testing. Yes, we let you fire some of them. Safely." },
-  { title: "Hybrid by default", body: "Two days in our Brisbane studio, the rest wherever you do your best work." },
-  { title: "Learning stipend", body: "$2,000/year for books, courses, conferences — anything that makes you better." },
+  {
+    title: 'Equity for everyone',
+    body: 'Every full-time hire gets meaningful equity. We win together or not at all.',
+  },
+  {
+    title: 'Real fireworks budget',
+    body: 'Yes, we buy fireworks for testing. Yes, we let you fire some of them. Safely.',
+  },
+  {
+    title: 'Hybrid by default',
+    body: 'Two days in our Brisbane studio, the rest wherever you do your best work.',
+  },
+  {
+    title: 'Learning stipend',
+    body: '$2,000/year for books, courses, conferences — anything that makes you better.',
+  },
 ];
 
 export default function CareersPage() {
@@ -80,17 +94,13 @@ export default function CareersPage() {
         <Container>
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <Eyebrow>Open roles</Eyebrow>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-on-surface md:text-5xl">
+            <h2 className="text-on-surface mt-3 text-3xl font-bold tracking-tight md:text-5xl">
               Currently hiring.
             </h2>
           </div>
           <div className="mx-auto max-w-4xl space-y-3">
             {ROLES.map((role) => (
-              <Link
-                key={role.title}
-                href={role.href}
-                className="block"
-              >
+              <Link key={role.title} href={role.href} className="block">
                 <Card
                   radius="lg"
                   hoverable
@@ -98,10 +108,10 @@ export default function CareersPage() {
                 >
                   <div className="flex-grow">
                     <Badge tone="neutral">{role.team}</Badge>
-                    <h3 className="mt-3 text-lg font-bold tracking-tight text-on-surface">
+                    <h3 className="text-on-surface mt-3 text-lg font-bold tracking-tight">
                       {role.title}
                     </h3>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs uppercase tracking-widest text-on-surface-variant">
+                    <div className="text-on-surface-variant mt-2 flex flex-wrap items-center gap-4 text-xs tracking-widest uppercase">
                       <span className="inline-flex items-center gap-1.5">
                         <MapPin size={12} strokeWidth={1.75} />
                         {role.location}
@@ -112,7 +122,7 @@ export default function CareersPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-2 text-sm font-bold text-primary">
+                  <span className="text-primary inline-flex items-center gap-2 text-sm font-bold">
                     View role
                     <ArrowRight size={16} strokeWidth={1.75} />
                   </span>
@@ -123,23 +133,19 @@ export default function CareersPage() {
         </Container>
       </section>
 
-      <section className="border-t border-outline-variant/15 bg-surface-container-lowest py-24">
+      <section className="border-outline-variant/15 bg-surface-container-lowest border-t py-24">
         <Container>
           <div className="mx-auto mb-12 max-w-2xl text-center">
             <Eyebrow>Why ShowCrafter</Eyebrow>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-on-surface md:text-5xl">
+            <h2 className="text-on-surface mt-3 text-3xl font-bold tracking-tight md:text-5xl">
               Perks &amp; principles.
             </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {PERKS.map((perk) => (
               <Card key={perk.title} radius="lg" className="p-6">
-                <h3 className="text-base font-bold tracking-tight text-on-surface">
-                  {perk.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-                  {perk.body}
-                </p>
+                <h3 className="text-on-surface text-base font-bold tracking-tight">{perk.title}</h3>
+                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">{perk.body}</p>
               </Card>
             ))}
           </div>

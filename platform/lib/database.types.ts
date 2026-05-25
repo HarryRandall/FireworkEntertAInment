@@ -471,12 +471,75 @@ export type Database = {
           },
         ]
       }
+      music_analyses: {
+        Row: {
+          analysis_json: Json | null
+          audio_path: string
+          completed_at: string | null
+          content_type: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          markdown: string | null
+          original_filename: string | null
+          personality: string
+          runner_version: string | null
+          runtime_ms: number | null
+          schema_version: string
+          size_bytes: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_json?: Json | null
+          audio_path: string
+          completed_at?: string | null
+          content_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          markdown?: string | null
+          original_filename?: string | null
+          personality?: string
+          runner_version?: string | null
+          runtime_ms?: number | null
+          schema_version?: string
+          size_bytes?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_json?: Json | null
+          audio_path?: string
+          completed_at?: string | null
+          content_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          markdown?: string | null
+          original_filename?: string | null
+          personality?: string
+          runner_version?: string | null
+          runtime_ms?: number | null
+          schema_version?: string
+          size_bytes?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       show_analyses: {
         Row: {
           analysis_json: Json | null
           audio_path: string
           completed_at: string | null
           created_at: string
+          cue_count: number | null
+          cue_generation_error: string | null
+          cue_generation_status: string
           error_message: string | null
           id: string
           llm_payload: Json | null
@@ -495,6 +558,9 @@ export type Database = {
           audio_path: string
           completed_at?: string | null
           created_at?: string
+          cue_count?: number | null
+          cue_generation_error?: string | null
+          cue_generation_status?: string
           error_message?: string | null
           id?: string
           llm_payload?: Json | null
@@ -513,6 +579,9 @@ export type Database = {
           audio_path?: string
           completed_at?: string | null
           created_at?: string
+          cue_count?: number | null
+          cue_generation_error?: string | null
+          cue_generation_status?: string
           error_message?: string | null
           id?: string
           llm_payload?: Json | null
@@ -668,9 +737,15 @@ export type Database = {
           description: string | null
           duration_seconds: number | null
           effects_count: number
+          generated_cue_count: number | null
+          generation_completed_at: string | null
+          generation_error: string | null
+          generation_started_at: string | null
+          generation_status: string
           id: string
           launch_positions_json: Json
           location: string | null
+          music_analysis_id: string | null
           mood_tags: string[]
           safety_meters: number | null
           slug: string
@@ -691,9 +766,15 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effects_count?: number
+          generated_cue_count?: number | null
+          generation_completed_at?: string | null
+          generation_error?: string | null
+          generation_started_at?: string | null
+          generation_status?: string
           id?: string
           launch_positions_json?: Json
           location?: string | null
+          music_analysis_id?: string | null
           mood_tags?: string[]
           safety_meters?: number | null
           slug: string
@@ -714,9 +795,15 @@ export type Database = {
           description?: string | null
           duration_seconds?: number | null
           effects_count?: number
+          generated_cue_count?: number | null
+          generation_completed_at?: string | null
+          generation_error?: string | null
+          generation_started_at?: string | null
+          generation_status?: string
           id?: string
           launch_positions_json?: Json
           location?: string | null
+          music_analysis_id?: string | null
           mood_tags?: string[]
           safety_meters?: number | null
           slug?: string
@@ -729,7 +816,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shows_music_analysis_id_fkey"
+            columns: ["music_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "music_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       supplier_inventory_items: {
         Row: {

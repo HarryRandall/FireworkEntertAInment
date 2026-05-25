@@ -1,13 +1,18 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { PlayCircle, Sparkles } from "lucide-react";
-import { Container } from "@/app/components/ui/Container";
-import { Button } from "@/app/components/ui/Button";
+/**
+ * Hero — full-bleed hero section on the public landing page. Lazy-
+ * loads HeroCanvas (`ssr: false`) for the WebGL background and falls
+ * back to a static gradient when reduced motion is preferred.
+ */
+import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { PlayCircle, Sparkles } from 'lucide-react';
+import { Container } from '@/app/components/ui/Container';
+import { Button } from '@/app/components/ui/Button';
 
-const HeroCanvas = dynamic(() => import("./HeroCanvas"), {
+const HeroCanvas = dynamic(() => import('./HeroCanvas'), {
   ssr: false,
   loading: () => null,
 });
@@ -62,20 +67,20 @@ export function Hero({
         };
 
   return (
-    <section className="relative isolate overflow-hidden bg-background pb-20 pt-28 lg:pb-28 lg:pt-36">
+    <section className="bg-background relative isolate overflow-hidden pt-28 pb-20 lg:pt-36 lg:pb-28">
       {/* WebGL canvas — full-bleed behind the copy. */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {showCanvas ? <HeroCanvas /> : null}
         {/* Vignette + base gradient — paints before R3F mounts and softens edges. */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_75%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
-        <div className="hero-glow absolute left-1/2 top-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="from-background absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t to-transparent" />
+        <div className="hero-glow absolute top-1/2 left-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2" />
       </div>
 
       <Container className="relative z-10 flex flex-col items-center text-center">
         <motion.div
           {...fadeUp(0)}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-outline-variant/30 bg-surface-container/40 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-primary backdrop-blur-md"
+          className="border-outline-variant/30 bg-surface-container/40 text-primary mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold tracking-[0.18em] uppercase backdrop-blur-md"
         >
           <Sparkles size={14} strokeWidth={2} />
           AI choreography · powered by ICON Pyrotechnics
@@ -83,23 +88,23 @@ export function Hero({
 
         <motion.h1
           {...fadeUp(0.05)}
-          className="max-w-5xl text-5xl font-extrabold leading-[1.02] tracking-tight text-on-surface md:text-7xl lg:text-[88px]"
+          className="text-on-surface max-w-5xl text-5xl leading-[1.02] font-extrabold tracking-tight md:text-7xl lg:text-[88px]"
         >
-          {title}{" "}
+          {title}{' '}
           <span className="relative inline-block">
-            <span className="bg-gradient-to-br from-primary-fixed via-primary to-primary-container bg-clip-text text-transparent">
+            <span className="from-primary-fixed via-primary to-primary-container bg-gradient-to-br bg-clip-text text-transparent">
               {highlight}
             </span>
             <span
               aria-hidden
-              className="absolute inset-x-0 -bottom-2 h-3 -z-10 rounded-full bg-primary/30 blur-2xl"
+              className="bg-primary/30 absolute inset-x-0 -bottom-2 -z-10 h-3 rounded-full blur-2xl"
             />
           </span>
         </motion.h1>
 
         <motion.p
           {...fadeUp(0.15)}
-          className="mt-8 max-w-2xl text-lg leading-relaxed text-on-surface-variant md:text-xl"
+          className="text-on-surface-variant mt-8 max-w-2xl text-lg leading-relaxed md:text-xl"
         >
           {subtitle}
         </motion.p>

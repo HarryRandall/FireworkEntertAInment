@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
-import { Lock, Sparkles } from "lucide-react";
-import { Input } from "@/app/components/ui/Input";
-import { Button } from "@/app/components/ui/Button";
-import { createClient } from "@/utils/supabase/client";
-import { FormError } from "../components/FormError";
+/** Reset-password page; completes the Supabase password recovery flow. */
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Lock, Sparkles } from 'lucide-react';
+import { Input } from '@/app/components/ui/Input';
+import { Button } from '@/app/components/ui/Button';
+import { createClient } from '@/utils/supabase/client';
+import { FormError } from '../components/FormError';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -33,11 +35,11 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError('Password must be at least 6 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError('Passwords do not match.');
       return;
     }
     setLoading(true);
@@ -47,7 +49,7 @@ export default function ResetPasswordPage() {
       setLoading(false);
       return;
     }
-    router.push("/dashboard");
+    router.push('/dashboard');
     router.refresh();
   };
 
@@ -75,14 +77,20 @@ export default function ResetPasswordPage() {
       ) : (
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+            >
               New password
             </label>
             <Input
               id="password"
               type="password"
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(null); }}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
               placeholder="At least 6 characters"
               iconLeft={<Lock size={16} />}
               autoComplete="new-password"
@@ -90,14 +98,20 @@ export default function ResetPasswordPage() {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+            >
               Confirm new password
             </label>
             <Input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
-              onChange={(e) => { setConfirmPassword(e.target.value); setError(null); }}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError(null);
+              }}
               placeholder="Repeat your password"
               iconLeft={<Lock size={16} />}
               autoComplete="new-password"
@@ -105,7 +119,7 @@ export default function ResetPasswordPage() {
           </div>
           {error && <FormError message={error} />}
           <Button type="submit" className="w-full" loading={loading} disabled={hasSession === null}>
-            {loading ? "Saving…" : "Update password"}
+            {loading ? 'Saving…' : 'Update password'}
           </Button>
         </form>
       )}

@@ -1,15 +1,14 @@
-"use client";
+'use client';
 
-import { useActionState, useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import {
-  deleteAccountAction,
-  type DeleteAccountState,
-} from "@/app/actions/account";
-import { Button } from "@/app/components/ui/Button";
-import { Input } from "@/app/components/ui/Input";
-import { Field, FieldHint, FieldLabel } from "@/app/components/ui/Field";
-import { InlineAlert } from "@/app/components/ui/Feedback";
+/** Client section that confirms and triggers the `deleteAccountAction` server action. */
+
+import { useActionState, useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { deleteAccountAction, type DeleteAccountState } from '@/app/actions/account';
+import { Button } from '@/app/components/ui/Button';
+import { Input } from '@/app/components/ui/Input';
+import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
+import { InlineAlert } from '@/app/components/ui/Feedback';
 import {
   Dialog,
   DialogContent,
@@ -17,42 +16,34 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
-const initialState: DeleteAccountState = { status: "idle" };
-const CONFIRM_PHRASE = "delete my account";
+const initialState: DeleteAccountState = { status: 'idle' };
+const CONFIRM_PHRASE = 'delete my account';
 
 export function DeleteAccountSection() {
   const [open, setOpen] = useState(false);
-  const [confirmation, setConfirmation] = useState("");
-  const [state, formAction, pending] = useActionState(
-    deleteAccountAction,
-    initialState,
-  );
+  const [confirmation, setConfirmation] = useState('');
+  const [state, formAction, pending] = useActionState(deleteAccountAction, initialState);
 
   const canSubmit = confirmation.trim().toLowerCase() === CONFIRM_PHRASE;
 
   useEffect(() => {
     if (!open) {
-      setConfirmation("");
+      setConfirmation('');
     }
   }, [open]);
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5 sm:p-6">
+      <div className="border-outline-variant/45 bg-surface-container-low flex items-center justify-between gap-4 rounded-xl border p-5 sm:p-6">
         <div>
-          <h2 className="text-base font-bold text-on-surface">Delete account</h2>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            Permanently remove your account, profile, and any shows you own.
-            This cannot be undone.
+          <h2 className="text-on-surface text-base font-bold">Delete account</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">
+            Permanently remove your account, profile, and any shows you own. This cannot be undone.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="destructive"
-          onClick={() => setOpen(true)}
-        >
+        <Button type="button" variant="destructive" onClick={() => setOpen(true)}>
           <Trash2 size={16} strokeWidth={1.85} />
           Delete account
         </Button>
@@ -63,8 +54,8 @@ export function DeleteAccountSection() {
           <DialogHeader>
             <DialogTitle>Delete account?</DialogTitle>
             <DialogDescription>
-              This permanently removes your account, profile, and any shows you
-              own. This cannot be undone.
+              This permanently removes your account, profile, and any shows you own. This cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -91,12 +82,10 @@ export function DeleteAccountSection() {
                 autoComplete="off"
                 required
               />
-              <FieldHint>
-                We&apos;ll sign you out and remove your access immediately.
-              </FieldHint>
+              <FieldHint>We&apos;ll sign you out and remove your access immediately.</FieldHint>
             </Field>
 
-            {state.status === "error" && state.message ? (
+            {state.status === 'error' && state.message ? (
               <InlineAlert tone="danger" title="Account not deleted">
                 {state.message}
               </InlineAlert>
@@ -111,12 +100,7 @@ export function DeleteAccountSection() {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="destructive"
-                loading={pending}
-                disabled={!canSubmit}
-              >
+              <Button type="submit" variant="destructive" loading={pending} disabled={!canSubmit}>
                 <Trash2 size={16} strokeWidth={1.85} />
                 Permanently delete
               </Button>

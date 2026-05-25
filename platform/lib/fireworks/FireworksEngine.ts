@@ -1,21 +1,33 @@
-import * as THREE from "three";
-import type { ReplayCue } from "@/lib/show-domain";
+/**
+ * Top-level Three.js fireworks engine.
+ *
+ * Owns the scene, particle pool, sound handler, lighting, and the cue
+ * scheduler. Mounted by {@link FireworkReplayViewer} on the client; never
+ * imported on the server (uses `window`, `THREE`, and `<canvas>`).
+ *
+ * Lifecycle: call `start(cues)` to bind a list of replay cues to the
+ * timeline, then drive `step(currentTime)` from `requestAnimationFrame` or
+ * an external clock. `dispose()` must be called on unmount to free GPU
+ * resources.
+ */
+import * as THREE from 'three';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
   type LaunchPosition,
   safeParseFireworkDesign,
   scaleDesignForCaliber,
-} from "@/lib/fireworks/design";
-import { ParticlePool } from "@/lib/fireworks/ParticlePool";
-import { SoundHandler } from "@/lib/fireworks/SoundHandler";
-import { Lights } from "@/lib/fireworks/Lights";
-import { World } from "@/lib/fireworks/World";
-import { Effects } from "@/lib/fireworks/Effects";
-import { Scheduler } from "@/lib/fireworks/Scheduler";
-import { FRAGMENT_SHADER, VERTEX_SHADER } from "@/lib/fireworks/shaders";
-import { createSeededRng, mixSeed } from "@/lib/fireworks/random";
-import type { Particle } from "@/lib/fireworks/Particle";
+} from '@/lib/fireworks/design';
+import { ParticlePool } from '@/lib/fireworks/ParticlePool';
+import { SoundHandler } from '@/lib/fireworks/SoundHandler';
+import { Lights } from '@/lib/fireworks/Lights';
+import { World } from '@/lib/fireworks/World';
+import { Effects } from '@/lib/fireworks/Effects';
+import { Scheduler } from '@/lib/fireworks/Scheduler';
+import { FRAGMENT_SHADER, VERTEX_SHADER } from '@/lib/fireworks/shaders';
+import { createSeededRng, mixSeed } from '@/lib/fireworks/random';
+import type { Particle } from '@/lib/fireworks/Particle';
 
 type PoolSnapshot = {
   indices: Uint32Array;
@@ -94,19 +106,16 @@ export class FireworksEngine {
     this.sizes = new Float32Array(PARTICLE_CAPACITY);
 
     this.geometry = new THREE.BufferGeometry();
-    this.positionAttribute = new THREE.BufferAttribute(
-      this.positions,
-      3,
-    ).setUsage(THREE.DynamicDrawUsage);
+    this.positionAttribute = new THREE.BufferAttribute(this.positions, 3).setUsage(
+      THREE.DynamicDrawUsage,
+    );
     this.colorAttribute = new THREE.BufferAttribute(this.colors, 3).setUsage(
       THREE.DynamicDrawUsage,
     );
-    this.sizeAttribute = new THREE.BufferAttribute(this.sizes, 1).setUsage(
-      THREE.DynamicDrawUsage,
-    );
-    this.geometry.setAttribute("position", this.positionAttribute);
-    this.geometry.setAttribute("color", this.colorAttribute);
-    this.geometry.setAttribute("size", this.sizeAttribute);
+    this.sizeAttribute = new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage);
+    this.geometry.setAttribute('position', this.positionAttribute);
+    this.geometry.setAttribute('color', this.colorAttribute);
+    this.geometry.setAttribute('size', this.sizeAttribute);
     this.geometry.setDrawRange(0, 0);
 
     this.points = new THREE.Points(this.geometry, this.material);
@@ -159,7 +168,10 @@ export class FireworksEngine {
   }
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
-    const design = scaleDesignForCaliber(safeParseFireworkDesign(cue.firework.rawSpec), cue.firework.caliber);
+    const design = scaleDesignForCaliber(
+      safeParseFireworkDesign(cue.firework.rawSpec),
+      cue.firework.caliber,
+    );
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const pos = this.world.getLaunchPosition(idx);
     const seed = mixSeed(
@@ -212,10 +224,7 @@ export class FireworksEngine {
       cursor = next;
       // Skip frames with mid-flight shells: their detonation callbacks
       // would be lost on restore and leave dangling ascending particles.
-      if (
-        cursor >= this.nextSnapshotAt &&
-        !this.poolHasMidFlightShells()
-      ) {
+      if (cursor >= this.nextSnapshotAt && !this.poolHasMidFlightShells()) {
         this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
         if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
@@ -257,9 +266,7 @@ export class FireworksEngine {
       // Subtle shimmer — enough to read as "alive" without strobing. Higher
       // amplitudes and faster frequencies caused per-particle flicker that
       // looked like noise rather than burning chemistry.
-      const twinkle = isStar
-        ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5)
-        : 1;
+      const twinkle = isStar ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
       sizes[drawCount] = renderParticleSize(p);
       const alpha = renderParticleAlpha(p) * twinkle;
       // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
@@ -396,7 +403,7 @@ export class FireworksEngine {
   fireDesign(design: FireworkDesign, launchIndex = 0): void {
     const pos = this.world.getLaunchPosition(launchIndex);
     this.effects.fire(design, pos, {
-      rng: createSeededRng(mixSeed("manual", this.elapsed, launchIndex)),
+      rng: createSeededRng(mixSeed('manual', this.elapsed, launchIndex)),
       audible: true,
     });
   }

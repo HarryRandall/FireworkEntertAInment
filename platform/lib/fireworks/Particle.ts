@@ -1,4 +1,12 @@
-import * as THREE from "three";
+/**
+ * Single particle used by the fireworks renderer.
+ *
+ * Particles are plain mutable structs — the {@link ParticlePool} owns
+ * allocation and recycling, while {@link Effects} applies the per-frame
+ * `update` callback. Keeping the struct small (no per-particle Three.js
+ * objects) is what lets us push thousands of particles per shell.
+ */
+import * as THREE from 'three';
 
 type Callback = (p: Particle, dt: number, time: number) => void;
 

@@ -1,17 +1,28 @@
-export type RoleKey = "admin" | "supplier" | "user";
+/**
+ * Shared admin / RBAC domain types.
+ *
+ * Pure type definitions used by both server modules under `lib/admin/*` and
+ * client components in `app/(admin)/**`. Anything that crosses the
+ * server/client boundary (props for an admin page, return shape from a
+ * server action) should reference types from this file rather than reaching
+ * into Supabase row types directly.
+ */
+
+/** The three top-level personas the platform recognises. */
+export type RoleKey = 'admin' | 'supplier' | 'user';
 
 export type PermissionKey =
-  | "shows.create"
-  | "admin.view"
-  | "admin.manage_users"
-  | "admin.manage_suppliers"
-  | "admin.manage_catalogue"
-  | "admin.manage_imports"
-  | "supplier.view"
-  | "supplier.manage_stock";
+  | 'shows.create'
+  | 'admin.view'
+  | 'admin.manage_users'
+  | 'admin.manage_suppliers'
+  | 'admin.manage_catalogue'
+  | 'admin.manage_imports'
+  | 'supplier.view'
+  | 'supplier.manage_stock';
 
-export type ProfileStatus = "active" | "suspended";
-export type ThemePreference = "dark" | "light" | "system";
+export type ProfileStatus = 'active' | 'suspended';
+export type ThemePreference = 'dark' | 'light' | 'system';
 
 export type CurrentProfile = {
   id: string;

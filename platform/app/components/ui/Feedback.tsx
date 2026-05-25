@@ -1,16 +1,17 @@
-import type { ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton as ShadcnSkeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+/** Feedback primitives — InlineAlert / EmptyState / Skeleton / ProgressIndicator — use for status surfaces and loading states. */
+import type { ReactNode } from 'react';
+import { AlertTriangle, CheckCircle2, Info, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton as ShadcnSkeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-type AlertTone = "info" | "success" | "warning" | "danger";
+type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 
 const alertIconClasses: Record<AlertTone, string> = {
-  info: "text-[color:var(--color-status-info)]",
-  success: "text-[color:var(--color-status-success)]",
-  warning: "text-[color:var(--color-status-warning)]",
-  danger: "text-[color:var(--color-status-danger)]",
+  info: 'text-[color:var(--color-status-info)]',
+  success: 'text-[color:var(--color-status-success)]',
+  warning: 'text-[color:var(--color-status-warning)]',
+  danger: 'text-[color:var(--color-status-danger)]',
 };
 
 const alertIcons: Record<AlertTone, typeof Info> = {
@@ -20,8 +21,9 @@ const alertIcons: Record<AlertTone, typeof Info> = {
   danger: AlertTriangle,
 };
 
+/** Inline alert banner with info/success/warning/danger tones. */
 export function InlineAlert({
-  tone = "info",
+  tone = 'info',
   title,
   children,
   className,
@@ -35,12 +37,12 @@ export function InlineAlert({
   return (
     <div
       className={cn(
-        "flex gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 text-sm",
+        'flex gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 text-sm',
         className,
       )}
-      role={tone === "danger" ? "alert" : "status"}
+      role={tone === 'danger' ? 'alert' : 'status'}
     >
-      <Icon className={cn("mt-0.5 shrink-0", alertIconClasses[tone])} size={18} />
+      <Icon className={cn('mt-0.5 shrink-0', alertIconClasses[tone])} size={18} />
       <div>
         <p className="font-medium text-[color:var(--color-content-emphasis)]">{title}</p>
         {children ? (
@@ -53,6 +55,7 @@ export function InlineAlert({
   );
 }
 
+/** Empty-state block with icon, title, body, and optional CTA. */
 export function EmptyState({
   title,
   children,
@@ -69,15 +72,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-4 rounded-xl border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-muted)] p-10 text-center",
+        'flex flex-col items-center gap-4 rounded-xl border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-muted)] p-10 text-center',
         className,
       )}
     >
-      {icon ? (
-        <span className="text-[color:var(--color-content-muted)]">{icon}</span>
-      ) : null}
+      {icon ? <span className="text-[color:var(--color-content-muted)]">{icon}</span> : null}
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">{title}</h2>
+        <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">
+          {title}
+        </h2>
         {children ? (
           <p className="max-w-md text-sm leading-relaxed text-[color:var(--color-content-subtle)]">
             {children}
@@ -89,21 +92,15 @@ export function EmptyState({
   );
 }
 
+/** Thin wrapper around the shadcn Skeleton — use for loading placeholders. */
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <ShadcnSkeleton
-      className={cn("rounded-md bg-[color:var(--color-bg-subtle)]", className)}
-    />
+    <ShadcnSkeleton className={cn('rounded-md bg-[color:var(--color-bg-subtle)]', className)} />
   );
 }
 
-export function ProgressIndicator({
-  label,
-  value,
-}: {
-  label: string;
-  value?: number;
-}) {
+/** Labeled progress bar — use for determinate progress (upload, import jobs). */
+export function ProgressIndicator({ label, value }: { label: string; value?: number }) {
   return (
     <div className="space-y-2" role="status" aria-label={label}>
       <div className="flex items-center gap-2 text-xs text-[color:var(--color-content-subtle)]">

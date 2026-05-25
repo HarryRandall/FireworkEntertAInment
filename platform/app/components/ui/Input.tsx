@@ -1,15 +1,17 @@
-import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
-import { SelectField, type SelectOption } from "@/app/components/ui/SelectField";
+/** Text Input / Textarea / native Select primitives — use these for all plain form fields. */
+import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 
 const controlBase =
-  "h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none";
+  'h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none';
 
-type InputProps = ComponentPropsWithoutRef<"input"> & {
+type InputProps = ComponentPropsWithoutRef<'input'> & {
   iconLeft?: ReactNode;
   invalid?: boolean;
 };
 
+/** Styled `<input>` with optional left icon + invalid state. */
 export function Input({ className, iconLeft, invalid = false, ...rest }: InputProps) {
   return (
     <div className="relative">
@@ -20,13 +22,13 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
       ) : null}
       <input
         {...rest}
-        aria-invalid={invalid || rest["aria-invalid"] || undefined}
+        aria-invalid={invalid || rest['aria-invalid'] || undefined}
         className={cn(
           controlBase,
           invalid
-            ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]"
-            : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]",
-          iconLeft ? "pl-10 pr-3" : "px-3",
+            ? 'border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]'
+            : 'border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]',
+          iconLeft ? 'pr-3 pl-10' : 'px-3',
           className,
         )}
       />
@@ -34,26 +36,28 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   );
 }
 
-type TextareaProps = ComponentPropsWithoutRef<"textarea"> & { invalid?: boolean };
+type TextareaProps = ComponentPropsWithoutRef<'textarea'> & { invalid?: boolean };
 
+/** Styled `<textarea>` matching the Input visual. */
 export function Textarea({ className, invalid = false, ...rest }: TextareaProps) {
   return (
     <textarea
       {...rest}
-      aria-invalid={invalid || rest["aria-invalid"] || undefined}
+      aria-invalid={invalid || rest['aria-invalid'] || undefined}
       className={cn(
-        "w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] placeholder:text-[color:var(--color-content-muted)] transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-60",
+        'w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
         invalid
-          ? "border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]"
-          : "border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]",
+          ? 'border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]'
+          : 'border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]',
         className,
       )}
     />
   );
 }
 
-type SelectProps = ComponentPropsWithoutRef<"select">;
+type SelectProps = ComponentPropsWithoutRef<'select'>;
 
+/** Native `<select>` primitive — prefer SelectField for richer dropdowns. */
 export function Select({
   className,
   children,
@@ -62,7 +66,7 @@ export function Select({
   defaultValue,
   required,
   disabled,
-  "aria-label": ariaLabel,
+  'aria-label': ariaLabel,
 }: SelectProps) {
   const options: SelectOption[] = Children.toArray(children)
     .filter(isValidElement)
@@ -73,8 +77,8 @@ export function Select({
         disabled?: boolean;
       };
       return {
-        value: String(childProps.value ?? ""),
-        label: String(childProps.children ?? ""),
+        value: String(childProps.value ?? ''),
+        label: String(childProps.children ?? ''),
         disabled: Boolean(childProps.disabled),
       };
     });
@@ -82,13 +86,13 @@ export function Select({
   return (
     <SelectField
       name={name}
-      value={typeof value === "string" ? value : undefined}
+      value={typeof value === 'string' ? value : undefined}
       defaultValue={defaultValue != null ? String(defaultValue) : undefined}
       required={required}
       disabled={disabled}
       ariaLabel={ariaLabel}
       options={options}
-      className={cn("w-full", className)}
+      className={cn('w-full', className)}
     />
   );
 }

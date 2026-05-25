@@ -1,33 +1,22 @@
-import type { ComponentPropsWithoutRef } from "react";
-import { cn } from "@/lib/utils";
+/** Container — page-width wrapper with default/wide/fluid max-widths — use for top-level page padding. */
+import type { ComponentPropsWithoutRef } from 'react';
+import { cn } from '@/lib/utils';
 
-type Width = "default" | "wide" | "fluid";
+type Width = 'default' | 'wide' | 'fluid';
 
 const widthClasses: Record<Width, string> = {
-  default: "max-w-[1200px]",
-  wide: "max-w-[1400px]",
-  fluid: "max-w-[1600px]",
+  default: 'max-w-[1200px]',
+  wide: 'max-w-[1400px]',
+  fluid: 'max-w-[1600px]',
 };
 
-type ContainerProps = ComponentPropsWithoutRef<"div"> & {
+type ContainerProps = ComponentPropsWithoutRef<'div'> & {
   width?: Width;
 };
 
-export function Container({
-  width = "default",
-  className,
-  children,
-  ...rest
-}: ContainerProps) {
+export function Container({ width = 'default', className, children, ...rest }: ContainerProps) {
   return (
-    <div
-      className={cn(
-        widthClasses[width],
-        "mx-auto w-full px-6 lg:px-12",
-        className,
-      )}
-      {...rest}
-    >
+    <div className={cn(widthClasses[width], 'mx-auto w-full px-6 lg:px-12', className)} {...rest}>
       {children}
     </div>
   );

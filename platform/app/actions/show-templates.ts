@@ -1,15 +1,21 @@
-"use server";
+'use server';
 
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/utils/supabase/server";
-import { slugifyTitle } from "@/lib/show-domain";
-import { syncShowDerivedFieldsForUser } from "@/lib/shows.server";
-import { getShowTemplateBySlug } from "@/lib/admin.server";
+/**
+ * Server action for cloning a curated show template into a new
+ * user-owned show, copying preview cues and derived fields.
+ */
 
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { createClient } from '@/utils/supabase/server';
+import { slugifyTitle } from '@/lib/show-domain';
+import { syncShowDerivedFieldsForUser } from '@/lib/shows.server';
+import { getShowTemplateBySlug } from '@/lib/admin.server';
+
+/** Clone a curated show template into a new user-owned show, copying preview cues, and redirect to it. */
 export async function cloneShowTemplateAction(formData: FormData): Promise<void> {
-  const slug = String(formData.get("slug") ?? "");
+  const slug = String(formData.get('slug') ?? '');
   if (!slug) return;
 
   const supabase = createClient(await cookies());
@@ -24,7 +30,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   const baseSlug = slugifyTitle(template.title);
   const showSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
   const { data: show, error: showError } = await supabase
-    .from("shows")
+    .from('shows')
     .insert({
       user_id: user.id,
       slug: showSlug,
@@ -36,13 +42,13 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       effects_count: template.effectsCount,
       time_of_day: template.timeOfDay,
       mood_tags: template.moodTags,
-      status: "draft",
+      status: 'draft',
     })
-    .select("id, slug")
+    .select('id, slug')
     .single();
 
   if (showError || !show) {
-    console.error("[cloneShowTemplateAction] show insert failed:", showError);
+    console.error('[cloneShowTemplateAction] show insert failed:', showError);
     return;
   }
 
@@ -57,11 +63,11 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       effect_specs: { slug: string } | null;
     };
     const { data: shots } = await supabase
-      .from("product_shots")
-      .select("product_id, shot_index, effect_specs ( slug )")
-      .eq("shot_index", 1);
+      .from('product_shots')
+      .select('product_id, shot_index, effect_specs ( slug )')
+      .eq('shot_index', 1);
     const productByEffectSlug = new Map<string, string>();
-    for (const shot of ((shots ?? []) as ProductShotRow[])) {
+    for (const shot of (shots ?? []) as ProductShotRow[]) {
       const slug = shot.effect_specs?.slug;
       if (!slug || productByEffectSlug.has(slug)) continue;
       productByEffectSlug.set(slug, shot.product_id);
@@ -80,9 +86,9 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       })
       .filter((row): row is NonNullable<typeof row> => row != null);
     if (cueRows.length > 0) {
-      const { error: cuesError } = await supabase.from("show_cues").insert(cueRows);
+      const { error: cuesError } = await supabase.from('show_cues').insert(cueRows);
       if (cuesError) {
-        console.error("[cloneShowTemplateAction] cue insert failed:", cuesError);
+        console.error('[cloneShowTemplateAction] cue insert failed:', cuesError);
       }
     }
   }
@@ -91,6 +97,6 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     showId: show.id,
     showSlug: show.slug,
   });
-  revalidatePath("/dashboard");
+  revalidatePath('/dashboard');
   redirect(`/shows/${show.slug}`);
 }

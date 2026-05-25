@@ -1,45 +1,52 @@
-import { z } from "zod";
+/**
+ * Catalogue-facing {@link FireworkSpec} schema.
+ *
+ * This is the *human-meaningful* description of a firework (colour name,
+ * shell type, glitter kind, caliber-friendly fields) that suppliers and the
+ * import flow speak. The renderer-facing `FireworkDesign` (in `./design.ts`)
+ * is derived from this at render time.
+ */
+import { z } from 'zod';
 
+/** Named display colours and their hex values. */
 export const FIREWORK_COLORS = {
-  Red: "#ff0043",
-  Green: "#14fc56",
-  Blue: "#1e7fff",
-  Purple: "#e60aff",
-  Gold: "#ffbf36",
-  White: "#ffffff",
+  Red: '#ff0043',
+  Green: '#14fc56',
+  Blue: '#1e7fff',
+  Purple: '#e60aff',
+  Gold: '#ffbf36',
+  White: '#ffffff',
 } as const;
 
 export type FireworkColor = (typeof FIREWORK_COLORS)[keyof typeof FIREWORK_COLORS];
 
-export const FIREWORK_COLOR_VALUES: readonly FireworkColor[] = Object.values(
-  FIREWORK_COLORS,
-);
+export const FIREWORK_COLOR_VALUES: readonly FireworkColor[] = Object.values(FIREWORK_COLORS);
 
 export const SHELL_TYPES = [
-  "crysanthemum",
-  "ghost",
-  "strobe",
-  "palm",
-  "ring",
-  "crossette",
-  "floral",
-  "fallingLeaves",
-  "willow",
-  "crackle",
-  "horsetail",
-  "comet",
+  'crysanthemum',
+  'ghost',
+  'strobe',
+  'palm',
+  'ring',
+  'crossette',
+  'floral',
+  'fallingLeaves',
+  'willow',
+  'crackle',
+  'horsetail',
+  'comet',
 ] as const;
 
 export type ShellType = (typeof SHELL_TYPES)[number];
 
 export const GLITTER_KINDS = [
-  "none",
-  "light",
-  "medium",
-  "heavy",
-  "thick",
-  "streamer",
-  "willow",
+  'none',
+  'light',
+  'medium',
+  'heavy',
+  'thick',
+  'streamer',
+  'willow',
 ] as const;
 
 export type GlitterKind = (typeof GLITTER_KINDS)[number];
@@ -48,12 +55,12 @@ const HexColorSchema = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/)
   .transform((value) => value.toLowerCase())
-  .describe("Hex firework colour.");
+  .describe('Hex firework colour.');
 
 const ColorChoiceSchema = z.union([
   HexColorSchema,
   z.tuple([HexColorSchema, HexColorSchema]),
-  z.literal("random"),
+  z.literal('random'),
 ]);
 
 const FireworkShotSchema = z.object({
@@ -105,7 +112,7 @@ export const FireworkSpecSchema = z.object({
   glitter: z.enum(GLITTER_KINDS).optional(),
   glitterColor: HexColorSchema.optional(),
   tailColor: HexColorSchema.optional(),
-  trailEffect: z.enum(["none", "silver", "gold", "streamer", "crackle"]).optional(),
+  trailEffect: z.enum(['none', 'silver', 'gold', 'streamer', 'crackle']).optional(),
   liftTimeSeconds: z.coerce.number().min(0.2).max(4).optional(),
   launch: LaunchSpecSchema.optional(),
   shots: z.array(FireworkShotSchema).max(500).optional(),
@@ -128,13 +135,13 @@ export type Vec3 = { x: number; y: number; z: number };
 export type Rotation = { pan: number; tilt: number; roll: number };
 
 export const DEFAULT_FIREWORK_SPEC: FireworkSpec = {
-  shellType: "crysanthemum",
+  shellType: 'crysanthemum',
   spreadSize: 4.6,
   starLifeMs: 1400,
   starLifeVariation: 0.125,
   starDensity: 1,
   color: FIREWORK_COLORS.Gold,
-  glitter: "light",
+  glitter: 'light',
   glitterColor: FIREWORK_COLORS.Gold,
 };
 
@@ -144,31 +151,21 @@ export function safeParseFireworkSpec(input: unknown): FireworkSpec {
   return DEFAULT_FIREWORK_SPEC;
 }
 
-
 export function hexToRgb(hex: FireworkColor | string): [number, number, number] {
-  const value = hex.replace("#", "");
+  const value = hex.replace('#', '');
   const int = Number.parseInt(value, 16);
   if (Number.isNaN(int)) return [1, 1, 1];
-  return [
-    ((int >> 16) & 0xff) / 255,
-    ((int >> 8) & 0xff) / 255,
-    (int & 0xff) / 255,
-  ];
+  return [((int >> 16) & 0xff) / 255, ((int >> 8) & 0xff) / 255, (int & 0xff) / 255];
 }
 
-export function pickPrimaryColor(
-  spec: FireworkSpec,
-  rng: () => number,
-): string {
+export function pickPrimaryColor(spec: FireworkSpec, rng: () => number): string {
   if (spec.outerColor) return spec.outerColor;
   if (spec.colorPalette?.length) {
     return spec.colorPalette[Math.floor(rng() * spec.colorPalette.length)] ?? spec.colorPalette[0];
   }
   const c = spec.color;
-  if (c === "random") {
-    const palette = FIREWORK_COLOR_VALUES.filter(
-      (color) => color !== FIREWORK_COLORS.White,
-    );
+  if (c === 'random') {
+    const palette = FIREWORK_COLOR_VALUES.filter((color) => color !== FIREWORK_COLORS.White);
     return palette[Math.floor(rng() * palette.length)] ?? FIREWORK_COLORS.Gold;
   }
   if (Array.isArray(c)) return c[Math.floor(rng() * 2)] ?? c[0];

@@ -1,38 +1,40 @@
-"use client";
+'use client';
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { UploadCloud } from "lucide-react";
+/** Client upload form that kicks off a new supplier video import job. */
+
+import { useActionState, useEffect, useRef, useState } from 'react';
+import { UploadCloud } from 'lucide-react';
 import {
   finalizeVideoImportJobAction,
   type ImportUploadActionState,
-} from "@/app/actions/platform-admin";
-import { Button } from "@/app/components/ui/Button";
-import { Input, Select } from "@/app/components/ui/Input";
+} from '@/app/actions/platform-admin';
+import { Button } from '@/app/components/ui/Button';
+import { Input, Select } from '@/app/components/ui/Input';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
-} from "@/lib/import-jobs";
-import { formatDuration } from "@/lib/show-domain";
-import { createClient as createSupabaseBrowserClient } from "@/utils/supabase/client";
+} from '@/lib/import-jobs';
+import { formatDuration } from '@/lib/show-domain';
+import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
 
 function sanitizeStorageName(name: string): string {
   return (
     name
       .toLowerCase()
-      .replace(/[^a-z0-9._-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 80) || "firework-video"
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80) || 'firework-video'
   );
 }
 
 function inferContentType(file: File): string {
-  if (file.type && file.type.startsWith("video/")) return file.type;
-  if (/\.mov$/i.test(file.name)) return "video/quicktime";
-  if (/\.webm$/i.test(file.name)) return "video/webm";
-  if (/\.mkv$/i.test(file.name)) return "video/x-matroska";
-  return "video/mp4";
+  if (file.type && file.type.startsWith('video/')) return file.type;
+  if (/\.mov$/i.test(file.name)) return 'video/quicktime';
+  if (/\.webm$/i.test(file.name)) return 'video/webm';
+  if (/\.mkv$/i.test(file.name)) return 'video/x-matroska';
+  return 'video/mp4';
 }
 
 export function VideoImportUploadForm() {
@@ -68,7 +70,7 @@ export function VideoImportUploadForm() {
   useEffect(() => {
     if (uploaded && !finalizing && !hasFinalizedRef.current) {
       hasFinalizedRef.current = true;
-      if (fileRef.current) fileRef.current.value = "";
+      if (fileRef.current) fileRef.current.value = '';
       formRef.current?.requestSubmit();
     }
   }, [uploaded, finalizing]);
@@ -80,13 +82,13 @@ export function VideoImportUploadForm() {
     setUploaded(null);
     if (!file) return;
     const looksLikeVideoByName = /\.(mp4|m4v|mov|webm|mkv)$/i.test(file.name);
-    if (!file.type.startsWith("video/") && !looksLikeVideoByName) {
-      setError("Choose a video file.");
+    if (!file.type.startsWith('video/') && !looksLikeVideoByName) {
+      setError('Choose a video file.');
       return;
     }
-    const video = document.createElement("video");
+    const video = document.createElement('video');
     const objectUrl = URL.createObjectURL(file);
-    video.preload = "metadata";
+    video.preload = 'metadata';
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(objectUrl);
       const seconds = video.duration;
@@ -96,9 +98,7 @@ export function VideoImportUploadForm() {
           setError(`Video must be ${MAX_IMPORT_VIDEO_SECONDS} seconds or less.`);
         }
       } else {
-        setNotice(
-          "Browser could not read duration; the worker will probe it server-side.",
-        );
+        setNotice('Browser could not read duration; the worker will probe it server-side.');
       }
     };
     video.onerror = () => {
@@ -121,7 +121,7 @@ export function VideoImportUploadForm() {
     const formEl = event.currentTarget;
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setError("Choose a video file before uploading.");
+      setError('Choose a video file before uploading.');
       return;
     }
 
@@ -134,7 +134,7 @@ export function VideoImportUploadForm() {
         error: userError,
       } = await supabase.auth.getUser();
       if (userError || !user) {
-        throw new Error("You are not signed in. Refresh and sign back in.");
+        throw new Error('You are not signed in. Refresh and sign back in.');
       }
       const contentType = inferContentType(file);
       const storagePath = `${user.id}/${crypto.randomUUID()}-${sanitizeStorageName(file.name)}`;
@@ -144,9 +144,7 @@ export function VideoImportUploadForm() {
       // it resolves. (XHR-based progress would require a custom signed PUT.)
       setUploadProgress(1);
       const tick = window.setInterval(() => {
-        setUploadProgress((prev) =>
-          prev == null ? 1 : Math.min(95, prev + 2),
-        );
+        setUploadProgress((prev) => (prev == null ? 1 : Math.min(95, prev + 2)));
       }, 250);
 
       const { error: uploadError } = await supabase.storage
@@ -157,7 +155,7 @@ export function VideoImportUploadForm() {
         });
       window.clearInterval(tick);
       if (uploadError) {
-        throw new Error(uploadError.message || "Upload failed.");
+        throw new Error(uploadError.message || 'Upload failed.');
       }
 
       setUploadProgress(100);
@@ -172,7 +170,7 @@ export function VideoImportUploadForm() {
       // the server action with metadata only.
       void formEl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : 'Upload failed.');
       setUploading(false);
       setUploadProgress(null);
     }
@@ -201,59 +199,40 @@ export function VideoImportUploadForm() {
           accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
           required={!uploaded}
           onChange={(event) => inspectVideo(event.currentTarget.files?.[0])}
-          className="block h-11 w-full rounded-lg border border-outline/55 bg-surface px-3 py-2 text-sm text-on-surface file:mr-3 file:rounded-md file:border-0 file:bg-primary-container file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-on-primary-container"
+          className="border-outline/55 bg-surface text-on-surface file:bg-primary-container file:text-on-primary-container block h-11 w-full rounded-lg border px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:px-3 file:py-1.5 file:text-xs file:font-bold"
         />
-        <p className="text-[11px] leading-snug text-on-surface-variant">
+        <p className="text-on-surface-variant text-[11px] leading-snug">
           For reliable in-browser playback, upload H.264 (AVC) video with AAC audio in MP4 —
-          MOV/HEVC from phones often decode as audio-only or a black image on desktop Linux/Chromium.
+          MOV/HEVC from phones often decode as audio-only or a black image on desktop
+          Linux/Chromium.
         </p>
         <input
           type="hidden"
           name="reportedDurationSeconds"
-          value={duration == null ? "" : duration}
+          value={duration == null ? '' : duration}
           readOnly
         />
-        <input
-          type="hidden"
-          name="storagePath"
-          value={uploaded?.storagePath ?? ""}
-          readOnly
-        />
-        <input
-          type="hidden"
-          name="originalName"
-          value={uploaded?.originalName ?? ""}
-          readOnly
-        />
-        <input
-          type="hidden"
-          name="sizeBytes"
-          value={uploaded?.sizeBytes ?? ""}
-          readOnly
-        />
-        <input
-          type="hidden"
-          name="contentType"
-          value={uploaded?.contentType ?? ""}
-          readOnly
-        />
+        <input type="hidden" name="storagePath" value={uploaded?.storagePath ?? ''} readOnly />
+        <input type="hidden" name="originalName" value={uploaded?.originalName ?? ''} readOnly />
+        <input type="hidden" name="sizeBytes" value={uploaded?.sizeBytes ?? ''} readOnly />
+        <input type="hidden" name="contentType" value={uploaded?.contentType ?? ''} readOnly />
         {error ? (
-          <p className="text-xs font-semibold text-error">{error}</p>
+          <p className="text-error text-xs font-semibold">{error}</p>
         ) : duration != null ? (
-          <p className="text-xs text-on-surface-variant">
+          <p className="text-on-surface-variant text-xs">
             Detected duration {formatDuration(duration)}.
           </p>
         ) : notice ? (
-          <p className="text-xs text-on-surface-variant">{notice}</p>
+          <p className="text-on-surface-variant text-xs">{notice}</p>
         ) : null}
         {uploadProgress != null ? (
           <div
-            className="mt-1 flex items-center gap-2 text-[11px] text-on-surface-variant"
+            className="text-on-surface-variant mt-1 flex items-center gap-2 text-[11px]"
             data-testid="upload-progress"
           >
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-outline-variant/30">
+            <div className="bg-outline-variant/30 h-1.5 flex-1 overflow-hidden rounded-full">
               <div
-                className="h-full bg-primary transition-[width] duration-200"
+                className="bg-primary h-full transition-[width] duration-200"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -261,8 +240,8 @@ export function VideoImportUploadForm() {
               {uploadProgress < 100
                 ? `Uploading ${uploadProgress}%`
                 : finalizing
-                  ? "Finalizing…"
-                  : "Uploaded"}
+                  ? 'Finalizing…'
+                  : 'Uploaded'}
             </span>
           </div>
         ) : null}
@@ -278,9 +257,7 @@ export function VideoImportUploadForm() {
         Upload
       </Button>
       {state.error ? (
-        <p className="text-sm font-semibold text-error lg:col-span-4">
-          {state.error}
-        </p>
+        <p className="text-error text-sm font-semibold lg:col-span-4">{state.error}</p>
       ) : null}
     </form>
   );

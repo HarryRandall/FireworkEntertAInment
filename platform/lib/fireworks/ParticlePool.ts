@@ -1,4 +1,12 @@
-import { Particle } from "@/lib/fireworks/Particle";
+/**
+ * Object-pool of {@link Particle}s shared by all firework effects.
+ *
+ * Allocating thousands of particles per burst at 60fps would crush the GC,
+ * so we pre-allocate a fixed-size pool and reuse slots. `acquire()` finds
+ * the next free particle; particles that go out of life return to the pool
+ * automatically on update.
+ */
+import { Particle } from '@/lib/fireworks/Particle';
 
 export type ParticleProps = {
   x: number;
@@ -24,8 +32,8 @@ export type ParticleProps = {
   effect?: (p: Particle, dt: number, t: number) => void;
 };
 
-const NEVER: NonNullable<ParticleProps["condition"]> = () => false;
-const NOOP: NonNullable<ParticleProps["effect"]> = () => {};
+const NEVER: NonNullable<ParticleProps['condition']> = () => false;
+const NOOP: NonNullable<ParticleProps['effect']> = () => {};
 
 export class ParticlePool {
   particles: Particle[] = [];
@@ -115,7 +123,7 @@ export class ParticlePool {
     if (prop.r !== undefined) p.color.r = prop.r;
     if (prop.g !== undefined) p.color.g = prop.g;
     if (prop.b !== undefined) p.color.b = prop.b;
-    p.condition = (prop.condition ?? NEVER) as Particle["condition"];
+    p.condition = (prop.condition ?? NEVER) as Particle['condition'];
     p.action = prop.action ?? NOOP;
     p.effect = prop.effect ?? NOOP;
 

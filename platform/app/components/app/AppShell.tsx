@@ -1,8 +1,13 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+/**
+ * AppShell — top-level chrome (sidebar + mobile sheet) for the
+ * authenticated `/app` route group. Adapts navigation based on the
+ * current pathname and the signed-in profile's roles.
+ */
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   Gauge,
@@ -17,8 +22,8 @@ import {
   CreditCard,
   UserRound,
   X,
-} from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
   SheetClose,
@@ -26,10 +31,10 @@ import {
   SheetDescription,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
-import { ThemePreferenceSync } from "@/app/components/theme/ThemePreferenceSync";
-import type { CurrentProfile, PermissionKey } from "@/lib/admin.types";
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
+import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
 
 type AppNavLink = {
   href: string;
@@ -39,56 +44,52 @@ type AppNavLink = {
 };
 
 const APP_LINKS: AppNavLink[] = [
-  { href: "/dashboard", label: "Dashboard", icon: Gauge },
-  { href: "/shows/new", label: "New show", icon: PlusCircle },
-  { href: "/library", label: "Library", icon: Star },
-  { href: "/admin", label: "Admin", icon: Shield, permission: "admin.view" },
+  { href: '/dashboard', label: 'Dashboard', icon: Gauge },
+  { href: '/shows/new', label: 'New show', icon: PlusCircle },
+  { href: '/library', label: 'Library', icon: Star },
+  { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
 const SETTINGS_LINKS = [
-  { href: "/settings/profile", label: "Personal details", icon: UserRound },
-  { href: "/settings/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings/billing", label: "Billing", icon: CreditCard },
-  { href: "/settings/security", label: "Security", icon: ShieldCheck },
+  { href: '/settings/profile', label: 'Personal details', icon: UserRound },
+  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/settings/billing', label: 'Billing', icon: CreditCard },
+  { href: '/settings/security', label: 'Security', icon: ShieldCheck },
 ] as const;
 
 type AppShellProps = {
   children: ReactNode;
-  containerWidth?: "default" | "wide" | "fluid";
+  containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
 };
 
 const navBase =
   "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']";
 const navActive =
-  "bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]";
+  'bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]';
 const navInactive =
-  "text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]";
+  'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]';
 
-export function AppShell({
-  children,
-  profile,
-}: AppShellProps) {
+export function AppShell({ children, profile }: AppShellProps) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const effectivePath = pendingHref ?? pathname;
-  const inSettings = effectivePath?.startsWith("/settings");
+  const inSettings = effectivePath?.startsWith('/settings');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
     (link) => !link.permission || permissions.has(link.permission),
   );
 
-  const displayName = profile?.fullName || profile?.email || "Account";
-  const secondaryLine =
-    profile?.fullName && profile?.email ? profile.email : "";
+  const displayName = profile?.fullName || profile?.email || 'Account';
+  const secondaryLine = profile?.fullName && profile?.email ? profile.email : '';
   const initials =
     displayName
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join("") || "SC";
+      .join('') || 'SC';
 
   const closeDrawer = () => setDrawerOpen(false);
 
@@ -101,15 +102,20 @@ export function AppShell({
     visibleLinks.map((link) => {
       const Icon = link.icon;
       const active =
-        effectivePath === link.href ||
-        (link.href !== "/" && effectivePath?.startsWith(link.href));
+        effectivePath === link.href || (link.href !== '/' && effectivePath?.startsWith(link.href));
       return (
         <Link
           key={link.href}
           href={link.href}
           prefetch
           onClick={(event) => {
-            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+            if (
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.altKey &&
+              event.button === 0
+            ) {
               setPendingHref(link.href);
             }
             onClick?.();
@@ -125,14 +131,20 @@ export function AppShell({
   const renderSettingsLinks = (onClick?: () => void) =>
     SETTINGS_LINKS.map((link) => {
       const Icon = link.icon;
-      const active = effectivePath === link.href || effectivePath?.startsWith(link.href + "/");
+      const active = effectivePath === link.href || effectivePath?.startsWith(link.href + '/');
       return (
         <Link
           key={link.href}
           href={link.href}
           prefetch
           onClick={(event) => {
-            if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+            if (
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.shiftKey &&
+              !event.altKey &&
+              event.button === 0
+            ) {
               setPendingHref(link.href);
             }
             onClick?.();
@@ -199,13 +211,9 @@ export function AppShell({
     ? renderSettingsLinks(closeDrawer)
     : renderNavLinks(closeDrawer);
   const mobileDescription = inSettings
-    ? "Jump between personal details, notifications, billing, and security."
-    : "Jump between dashboard, new show, library, and admin sections.";
-  const profileFooter = inSettings ? null : (
-    <div className="mt-auto pt-3">
-      {profileCard}
-    </div>
-  );
+    ? 'Jump between personal details, notifications, billing, and security.'
+    : 'Jump between dashboard, new show, library, and admin sections.';
+  const profileFooter = inSettings ? null : <div className="mt-auto pt-3">{profileCard}</div>;
 
   return (
     <div className="min-h-screen bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)] lg:p-2">
@@ -244,9 +252,7 @@ export function AppShell({
                 className="w-[min(86vw,300px)] border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 lg:hidden"
               >
                 <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-                <SheetDescription className="sr-only">
-                  {mobileDescription}
-                </SheetDescription>
+                <SheetDescription className="sr-only">{mobileDescription}</SheetDescription>
                 <div className="mb-6 flex items-center justify-between">
                   {brand}
                   <SheetClose asChild>
@@ -261,9 +267,7 @@ export function AppShell({
                 </div>
 
                 <ScrollArea className="min-h-0 flex-1">
-                  <nav className="flex flex-col gap-0.5">
-                    {mobileNavContent}
-                  </nav>
+                  <nav className="flex flex-col gap-0.5">{mobileNavContent}</nav>
                   {inSettings ? (
                     <div className="mt-4 border-t border-[color:var(--color-border-subtle)] pt-3">
                       {settingsBackLink(closeDrawer)}

@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
-import { ComingSoon } from "@/app/components/marketing/ComingSoon";
+/** Marketing "Cookies policy" page. */
+
+import type { Metadata } from 'next';
+import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
-  title: "Cookies · ShowCrafter",
-  description: "Our cookie policy is being finalised.",
+  title: 'Cookies · ShowCrafter',
+  description: 'Our cookie policy is being finalised.',
 };
 
 export default function CookiesPage() {

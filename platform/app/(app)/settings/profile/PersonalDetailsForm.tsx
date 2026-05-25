@@ -1,14 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition } from "react";
-import { useTheme } from "next-themes";
-import { Check, Laptop, LockKeyhole, Mail, Moon, Phone, Sun, User } from "lucide-react";
-import { updateProfileAction } from "@/app/actions/platform-admin";
-import { Field, FieldHint, FieldLabel } from "@/app/components/ui/Field";
-import { Input } from "@/app/components/ui/Input";
-import { toast } from "@/app/components/ui/toast";
-import { cn } from "@/lib/utils";
-import type { ThemePreference } from "@/lib/admin.types";
+/** Client form for editing the signed-in user's display name and other profile fields. */
+
+import { useEffect, useState, useTransition } from 'react';
+import { useTheme } from 'next-themes';
+import { Check, Laptop, LockKeyhole, Mail, Moon, Phone, Sun, User } from 'lucide-react';
+import { updateProfileAction } from '@/app/actions/platform-admin';
+import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
+import { Input } from '@/app/components/ui/Input';
+import { toast } from '@/app/components/ui/toast';
+import { cn } from '@/lib/utils';
+import type { ThemePreference } from '@/lib/admin.types';
 
 type Props = {
   initialFullName: string;
@@ -23,17 +25,12 @@ const THEME_OPTIONS: {
   description: string;
   icon: typeof Moon;
 }[] = [
-  { value: "dark", label: "Dark", description: "Layered black workspace", icon: Moon },
-  { value: "light", label: "Light", description: "Bright production view", icon: Sun },
-  { value: "system", label: "System", description: "Match this device", icon: Laptop },
+  { value: 'dark', label: 'Dark', description: 'Layered black workspace', icon: Moon },
+  { value: 'light', label: 'Light', description: 'Bright production view', icon: Sun },
+  { value: 'system', label: 'System', description: 'Match this device', icon: Laptop },
 ];
 
-export function PersonalDetailsForm({
-  initialFullName,
-  initialPhone,
-  email,
-  initialTheme,
-}: Props) {
+export function PersonalDetailsForm({ initialFullName, initialPhone, email, initialTheme }: Props) {
   const { setTheme, theme } = useTheme();
   const [fullName, setFullName] = useState(initialFullName);
   const [phone, setPhone] = useState(initialPhone);
@@ -45,7 +42,7 @@ export function PersonalDetailsForm({
 
   useEffect(() => {
     setMounted(true);
-    if (theme === "dark" || theme === "light" || theme === "system") {
+    if (theme === 'dark' || theme === 'light' || theme === 'system') {
       setSelectedTheme(theme);
     }
   }, [theme]);
@@ -68,14 +65,14 @@ export function PersonalDetailsForm({
     const next = fullName.trim();
     if (next === savedFullName.trim()) return;
     setSavedFullName(next);
-    persist({ fullName: next }, "Name updated");
+    persist({ fullName: next }, 'Name updated');
   };
 
   const commitPhone = () => {
     const next = phone.trim();
     if (next === savedPhone.trim()) return;
     setSavedPhone(next);
-    persist({ phone: next }, "Phone updated");
+    persist({ phone: next }, 'Phone updated');
   };
 
   const chooseTheme = (value: ThemePreference) => {
@@ -86,7 +83,7 @@ export function PersonalDetailsForm({
   };
 
   return (
-    <div className="space-y-6 rounded-xl border border-outline-variant/45 bg-surface-container-low p-5 shadow-[var(--shadow-card)] sm:p-6">
+    <div className="border-outline-variant/45 bg-surface-container-low space-y-6 rounded-xl border p-5 shadow-[var(--shadow-card)] sm:p-6">
       <Field>
         <FieldLabel htmlFor="fullName">Full name</FieldLabel>
         <Input
@@ -96,7 +93,7 @@ export function PersonalDetailsForm({
           onChange={(e) => setFullName(e.target.value)}
           onBlur={commitFullName}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === 'Enter') {
               e.preventDefault();
               e.currentTarget.blur();
             }
@@ -115,7 +112,7 @@ export function PersonalDetailsForm({
           onChange={(e) => setPhone(e.target.value)}
           onBlur={commitPhone}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === 'Enter') {
               e.preventDefault();
               e.currentTarget.blur();
             }
@@ -127,18 +124,16 @@ export function PersonalDetailsForm({
 
       <Field>
         <FieldLabel>Email</FieldLabel>
-        <div className="flex h-11 items-center gap-3 rounded-xl border border-outline/55 bg-surface px-4 text-sm text-on-surface-variant">
+        <div className="border-outline/55 bg-surface text-on-surface-variant flex h-11 items-center gap-3 rounded-xl border px-4 text-sm">
           <Mail size={17} className="text-on-surface-variant" />
-          <span className="truncate">{email || "No email"}</span>
-          <LockKeyhole size={14} className="ml-auto text-on-surface-variant" />
+          <span className="truncate">{email || 'No email'}</span>
+          <LockKeyhole size={14} className="text-on-surface-variant ml-auto" />
         </div>
-        <FieldHint className="text-xs">
-          Email changes go through the security tab.
-        </FieldHint>
+        <FieldHint className="text-xs">Email changes go through the security tab.</FieldHint>
       </Field>
 
       <fieldset className="space-y-3">
-        <legend className="text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
+        <legend className="text-on-surface-variant text-[11px] font-bold tracking-[0.18em] uppercase">
           Interface theme
         </legend>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -153,23 +148,19 @@ export function PersonalDetailsForm({
                 aria-checked={active}
                 onClick={() => chooseTheme(option.value)}
                 className={cn(
-                  "focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none",
+                  'focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none',
                   active
-                    ? "border-primary/50 bg-surface-container-high text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_18%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_68%,transparent)]"
-                    : "border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low",
+                    ? 'border-primary/50 bg-surface-container-high text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_18%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_68%,transparent)]'
+                    : 'border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low',
                 )}
               >
                 <span className="flex w-full items-center justify-between gap-3">
-                  <Icon size={18} className={active ? "text-on-surface" : ""} />
+                  <Icon size={18} className={active ? 'text-on-surface' : ''} />
                   {active ? <Check size={16} className="text-primary" /> : null}
                 </span>
                 <span>
-                  <span className="block text-sm font-bold text-on-surface">
-                    {option.label}
-                  </span>
-                  <span className="mt-1 block text-xs leading-relaxed">
-                    {option.description}
-                  </span>
+                  <span className="text-on-surface block text-sm font-bold">{option.label}</span>
+                  <span className="mt-1 block text-xs leading-relaxed">{option.description}</span>
                 </span>
               </button>
             );

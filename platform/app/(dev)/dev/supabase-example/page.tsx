@@ -1,5 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+/** Developer scratch page demonstrating Supabase client usage. */
+
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 
 // Tiny dev smoke test: confirms the typed Supabase client can fetch from a
 // real table (`shows`) that's gated by RLS. Anonymous viewers will see an
@@ -9,9 +11,9 @@ export default async function Page() {
   const supabase = createClient(cookieStore);
 
   const { data: shows, error } = await supabase
-    .from("shows")
-    .select("id, slug, title, updated_at")
-    .order("updated_at", { ascending: false })
+    .from('shows')
+    .select('id, slug, title, updated_at')
+    .order('updated_at', { ascending: false })
     .limit(10);
 
   return (

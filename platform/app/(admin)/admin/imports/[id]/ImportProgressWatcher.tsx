@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+/** Client poller that watches an import job's status endpoint and refreshes the page when it advances. */
+
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type StatusPayload = {
   status: string;
@@ -21,7 +23,7 @@ type ImportProgressWatcherProps = {
   activeIntervalMs?: number;
 };
 
-const TERMINAL_STATUSES = new Set(["complete", "failed", "needs_review"]);
+const TERMINAL_STATUSES = new Set(['complete', 'failed', 'needs_review']);
 
 export function ImportProgressWatcher({
   jobId,
@@ -36,7 +38,7 @@ export function ImportProgressWatcher({
   const [progress, setProgress] = useState(initialProgress);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const lastSignatureRef = useRef(
-    `${initialStatus}|${initialProgress}|${initialOutputCount}|${initialUpdatedAt ?? ""}`,
+    `${initialStatus}|${initialProgress}|${initialOutputCount}|${initialUpdatedAt ?? ''}`,
   );
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function ImportProgressWatcher({
     async function poll() {
       try {
         const res = await fetch(`/api/admin/imports/${jobId}/status`, {
-          cache: "no-store",
+          cache: 'no-store',
         });
         if (!res.ok) return;
         const payload: StatusPayload = await res.json();
@@ -55,7 +57,7 @@ export function ImportProgressWatcher({
         setProgress(payload.processingProgress);
         setErrorMessage(payload.errorMessage);
 
-        const signature = `${payload.status}|${payload.processingProgress}|${payload.outputCount}|${payload.updatedAt ?? ""}`;
+        const signature = `${payload.status}|${payload.processingProgress}|${payload.outputCount}|${payload.updatedAt ?? ''}`;
         if (signature !== lastSignatureRef.current) {
           lastSignatureRef.current = signature;
           // Server components on the page (preview, outputs list, etc.) need
@@ -83,36 +85,32 @@ export function ImportProgressWatcher({
 
   return (
     <div
-      className="flex flex-col gap-2 rounded-xl border border-outline-variant/35 bg-surface-container-low p-4"
+      className="border-outline-variant/35 bg-surface-container-low flex flex-col gap-2 rounded-xl border p-4"
       data-testid="import-progress-watcher"
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+        <div className="text-on-surface-variant text-xs font-bold tracking-widest uppercase">
           Live status
         </div>
-        <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+        <div className="text-on-surface-variant flex items-center gap-2 text-xs">
           {isActive ? (
             <span
-              className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary"
+              className="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"
               aria-hidden="true"
             />
           ) : null}
-          <span data-testid="import-progress-status">
-            {status.replace("_", " ")}
-          </span>
+          <span data-testid="import-progress-status">{status.replace('_', ' ')}</span>
           <span aria-hidden="true">·</span>
           <span data-testid="import-progress-percent">{progress}%</span>
         </div>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-outline-variant/30">
+      <div className="bg-outline-variant/30 h-2 w-full overflow-hidden rounded-full">
         <div
-          className="h-full bg-primary transition-[width] duration-500"
+          className="bg-primary h-full transition-[width] duration-500"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
-      {errorMessage ? (
-        <p className="text-xs font-semibold text-error">{errorMessage}</p>
-      ) : null}
+      {errorMessage ? <p className="text-error text-xs font-semibold">{errorMessage}</p> : null}
     </div>
   );
 }

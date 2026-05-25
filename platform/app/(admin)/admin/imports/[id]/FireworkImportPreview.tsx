@@ -1,14 +1,13 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
-import { Button } from "@/app/components/ui/Button";
-import {
-  importedSpecToReplayCues,
-  type ImportedFireworkSpec,
-} from "@/lib/import-jobs";
-import { formatDuration } from "@/lib/show-domain";
+/** Client preview of frames and products extracted by an import job. */
+
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pause, Play, RotateCcw } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button';
+import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
+import { formatDuration } from '@/lib/show-domain';
 
 type FireworkImportPreviewProps = {
   videoUrl: string | null;
@@ -25,10 +24,7 @@ function ReplayCanvasSkeleton() {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () =>
-    import("@/app/components/app/FireworkReplayCanvas").then(
-      (mod) => mod.FireworkReplayCanvas,
-    ),
+  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,
@@ -44,9 +40,7 @@ export function FireworkImportPreview({
   const cues = useMemo(() => (spec ? importedSpecToReplayCues(spec) : []), [spec]);
 
   const canControlPlayback = Boolean(videoUrl || spec);
-  const [videoMetaDuration, setVideoMetaDuration] = useState<number | null>(
-    null,
-  );
+  const [videoMetaDuration, setVideoMetaDuration] = useState<number | null>(null);
   const [videoDecodeError, setVideoDecodeError] = useState<string | null>(null);
   const timelineDuration = Math.max(
     1,
@@ -129,10 +123,7 @@ export function FireworkImportPreview({
         return;
       }
 
-      const next = Math.min(
-        timelineDuration,
-        startElapsed + (now - begunAt) / 1000,
-      );
+      const next = Math.min(timelineDuration, startElapsed + (now - begunAt) / 1000);
       setElapsed(next);
       if (next >= timelineDuration) {
         setPlaying(false);
@@ -195,7 +186,7 @@ export function FireworkImportPreview({
           return;
         }
         setVideoDecodeError(
-          "Playback has sound but no picture: this file’s video track is not decodable here (often HEVC/H.265, e.g. from iPhones). Export as H.264 (AVC) + AAC in an MP4 and upload again.",
+          'Playback has sound but no picture: this file’s video track is not decodable here (often HEVC/H.265, e.g. from iPhones). Export as H.264 (AVC) + AAC in an MP4 and upload again.',
         );
       }, 550);
     });
@@ -239,7 +230,7 @@ export function FireworkImportPreview({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-outline-variant/35 bg-black">
+        <div className="border-outline-variant/35 relative aspect-video w-full overflow-hidden rounded-xl border bg-black">
           {videoUrl ? (
             <>
               <video
@@ -268,13 +259,11 @@ export function FireworkImportPreview({
                 onTimeUpdate={(event) => {
                   if (videoSyncFromUiRef.current) return;
                   const v = event.currentTarget;
-                  setElapsed(
-                    Math.min(v.currentTime, timelineDurationRef.current),
-                  );
+                  setElapsed(Math.min(v.currentTime, timelineDurationRef.current));
                 }}
                 onError={() =>
                   setVideoDecodeError(
-                    "This browser could not load the uploaded file. Prefer H.264 in an MP4 container, or verify storage signing (SUPABASE_SERVICE_ROLE_KEY on the Next server).",
+                    'This browser could not load the uploaded file. Prefer H.264 in an MP4 container, or verify storage signing (SUPABASE_SERVICE_ROLE_KEY on the Next server).',
                   )
                 }
                 onEnded={() => {
@@ -286,11 +275,7 @@ export function FireworkImportPreview({
               >
                 <source
                   src={videoUrl}
-                  type={
-                    videoMimeType && videoMimeType.length > 0
-                      ? videoMimeType
-                      : "video/mp4"
-                  }
+                  type={videoMimeType && videoMimeType.length > 0 ? videoMimeType : 'video/mp4'}
                 />
               </video>
               {/* Transparent layer: eats pointer/double-click so the picture never toggles playback; emits no audio. */}
@@ -311,23 +296,23 @@ export function FireworkImportPreview({
                 }}
               />
               {videoDecodeError ? (
-                <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 text-center text-xs leading-relaxed text-on-error">
+                <div className="text-on-error pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 text-center text-xs leading-relaxed">
                   {videoDecodeError}
                 </div>
               ) : null}
             </>
           ) : (
-            <div className="flex h-full min-h-[200px] items-center justify-center p-6 text-center text-sm text-on-surface-variant">
+            <div className="text-on-surface-variant flex h-full min-h-[200px] items-center justify-center p-6 text-center text-sm">
               No source video is available for this import.
             </div>
           )}
         </div>
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-outline-variant/35 bg-surface-container-lowest">
+        <div className="border-outline-variant/35 bg-surface-container-lowest relative aspect-video w-full overflow-hidden rounded-xl border">
           <div className="absolute inset-0 min-h-[200px]">
             {spec ? (
               <LazyFireworkReplayCanvas cues={cues} elapsed={elapsed} interactive />
             ) : (
-              <div className="flex h-full items-center justify-center p-6 text-center text-sm text-on-surface-variant">
+              <div className="text-on-surface-variant flex h-full items-center justify-center p-6 text-center text-sm">
                 The generated 3D reconstruction will appear after processing.
               </div>
             )}
@@ -335,14 +320,14 @@ export function FireworkImportPreview({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-outline-variant/25 bg-surface-container-low p-4 md:flex-row md:items-center">
+      <div className="border-outline-variant/25 bg-surface-container-low flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center">
         <div className="flex items-center gap-2">
           <Button
             type="button"
             size="icon"
             disabled={!canControlPlayback}
             onClick={togglePlayback}
-            aria-label={playing ? "Pause comparison preview" : "Play comparison preview"}
+            aria-label={playing ? 'Pause comparison preview' : 'Play comparison preview'}
           >
             {playing ? <Pause size={16} /> : <Play size={16} />}
           </Button>
@@ -358,7 +343,7 @@ export function FireworkImportPreview({
           </Button>
         </div>
         <div className="flex flex-1 items-center gap-3">
-          <span className="min-w-12 font-mono text-xs text-tertiary tabular-nums">
+          <span className="text-tertiary min-w-12 font-mono text-xs tabular-nums">
             {formatDuration(elapsed)}
           </span>
           <input
@@ -378,10 +363,10 @@ export function FireworkImportPreview({
               videoRef.current?.pause();
               seek(Number(event.target.value));
             }}
-            className="h-2 flex-1 accent-tertiary disabled:opacity-40"
+            className="accent-tertiary h-2 flex-1 disabled:opacity-40"
             aria-label="Synced source and generated preview timeline"
           />
-          <span className="min-w-12 text-right font-mono text-xs text-tertiary tabular-nums">
+          <span className="text-tertiary min-w-12 text-right font-mono text-xs tabular-nums">
             {formatDuration(timelineDuration)}
           </span>
         </div>

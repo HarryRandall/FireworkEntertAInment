@@ -1,6 +1,8 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+/** DataTable primitives — class helpers + a Shell wrapper for consistent table styling across admin/app routes. */
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
+/** Bordered, rounded container for tables. Wrap any `<table>` in this for consistent chrome. */
 export function DataTableShell({
   caption,
   children,
@@ -13,7 +15,7 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]",
+        'overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]',
         className,
       )}
     >
@@ -27,34 +29,33 @@ export function DataTableShell({
   );
 }
 
+/** Base classes for the `<table>` element. */
 export function tableClasses(className?: string) {
-  return cn("w-full min-w-[760px] text-left text-sm", className);
+  return cn('w-full min-w-[760px] text-left text-sm', className);
 }
 
+/** Classes for `<thead>`. */
 export function tableHeadClasses(className?: string) {
   return cn(
-    "sticky top-0 z-10 bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]",
+    'sticky top-0 z-10 bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]',
     className,
   );
 }
 
+/** Classes for `<th>` cells. */
 export function tableHeaderCellClasses(className?: string) {
-  return cn(
-    "px-4 py-2.5 text-xs font-medium uppercase tracking-wide",
-    className,
-  );
+  return cn('px-4 py-2.5 text-xs font-medium uppercase tracking-wide', className);
 }
 
+/** Classes for `<tr>` rows. */
 export function tableRowClasses(className?: string) {
   return cn(
-    "border-t border-[color:var(--color-border-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)]",
+    'border-t border-[color:var(--color-border-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)]',
     className,
   );
 }
 
+/** Classes for `<td>` cells. */
 export function tableCellClasses(className?: string) {
-  return cn(
-    "px-4 py-3 align-middle text-sm text-[color:var(--color-content-default)]",
-    className,
-  );
+  return cn('px-4 py-3 align-middle text-sm text-[color:var(--color-content-default)]', className);
 }

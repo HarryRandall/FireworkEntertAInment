@@ -1,5 +1,19 @@
-import { z } from "zod";
-import type { ReplayCue } from "@/lib/show-domain";
+/**
+ * Shared schemas, constants, and helpers for the supplier "import job" flow.
+ *
+ * Import jobs let suppliers submit firework videos / glossaries / stock CSVs
+ * for AI-assisted normalisation into the catalogue. This module hosts:
+ *
+ * - Storage bucket names and limits (e.g. {@link IMPORT_VIDEO_BUCKET})
+ * - The OpenRouter model dropdown options used in the admin UI
+ * - Zod schemas for validating spec drafts ({@link ImportedFireworkSpecSchema})
+ * - Pure helpers for projecting `import_outputs` rows into a UI-ready shape
+ *
+ * Imported by both server actions (`app/actions/admin/*`) and server modules
+ * (`lib/admin/imports.server.ts`).
+ */
+import { z } from 'zod';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,
@@ -8,21 +22,21 @@ import {
   type FireworkSpec,
   type GlitterKind,
   type ShellType,
-} from "@/lib/fireworks/spec";
+} from '@/lib/fireworks/spec';
 
-export const IMPORT_VIDEO_BUCKET = "import-videos";
+export const IMPORT_VIDEO_BUCKET = 'import-videos';
 export const MAX_IMPORT_VIDEO_SECONDS = 60;
 
 export const OPENROUTER_MODEL_OPTIONS = [
   {
-    value: "openai/gpt-4.1",
-    label: "OpenAI GPT-4.1",
-    description: "Best default for detailed firework video reconstruction.",
+    value: 'openai/gpt-4.1',
+    label: 'OpenAI GPT-4.1',
+    description: 'Best default for detailed firework video reconstruction.',
   },
   {
-    value: "openai/gpt-4.1-mini",
-    label: "GPT-4.1 Mini",
-    description: "Lower-cost OpenAI fallback for faster review passes.",
+    value: 'openai/gpt-4.1-mini',
+    label: 'GPT-4.1 Mini',
+    description: 'Lower-cost OpenAI fallback for faster review passes.',
   },
 ] as const;
 
@@ -47,7 +61,7 @@ export const ImportedFireworkSpecSchema = z.preprocess(
 export type ImportedFireworkSpec = z.infer<typeof ImportedFireworkSpecSchema>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function finiteNumber(value: unknown): number | null {
@@ -56,7 +70,7 @@ function finiteNumber(value: unknown): number | null {
 }
 
 function textValue(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+  if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
 }
@@ -66,7 +80,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function hexColor(value: unknown): string | null {
-  if (typeof value !== "string") return null;
+  if (typeof value !== 'string') return null;
   return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : null;
 }
 
@@ -111,41 +125,37 @@ function firstNonWhiteColor(colors: string[]): string | null {
 }
 
 function coerceShellType(value: unknown, fallback: unknown): ShellType {
-  const normalized = String(value ?? fallback ?? "")
+  const normalized = String(value ?? fallback ?? '')
     .trim()
     .toLowerCase()
-    .replace(/[_\s-]+/g, "");
+    .replace(/[_\s-]+/g, '');
   const aliases: Record<string, ShellType> = {
-    chrysanthemum: "crysanthemum",
-    crysanthemum: "crysanthemum",
-    peony: "crysanthemum",
-    ghost: "ghost",
-    strobe: "strobe",
-    palm: "palm",
-    ring: "ring",
-    crossette: "crossette",
-    floral: "floral",
-    flower: "floral",
-    fallingleaves: "fallingLeaves",
-    willow: "willow",
-    crackle: "crackle",
-    horsetail: "horsetail",
-    comet: "comet",
-    mine: "comet",
-    singleshot: "comet",
-    rocket: "comet",
+    chrysanthemum: 'crysanthemum',
+    crysanthemum: 'crysanthemum',
+    peony: 'crysanthemum',
+    ghost: 'ghost',
+    strobe: 'strobe',
+    palm: 'palm',
+    ring: 'ring',
+    crossette: 'crossette',
+    floral: 'floral',
+    flower: 'floral',
+    fallingleaves: 'fallingLeaves',
+    willow: 'willow',
+    crackle: 'crackle',
+    horsetail: 'horsetail',
+    comet: 'comet',
+    mine: 'comet',
+    singleshot: 'comet',
+    rocket: 'comet',
   };
   const aliased = aliases[normalized];
   if (aliased) return aliased;
-  return SHELL_TYPES.includes(value as ShellType)
-    ? (value as ShellType)
-    : "crysanthemum";
+  return SHELL_TYPES.includes(value as ShellType) ? (value as ShellType) : 'crysanthemum';
 }
 
 function coerceGlitter(value: unknown, fallback: GlitterKind): GlitterKind {
-  return GLITTER_KINDS.includes(value as GlitterKind)
-    ? (value as GlitterKind)
-    : fallback;
+  return GLITTER_KINDS.includes(value as GlitterKind) ? (value as GlitterKind) : fallback;
 }
 
 function positionFromShot(value: unknown): { x?: number; y?: number; z?: number } | undefined {
@@ -160,14 +170,14 @@ function positionFromShot(value: unknown): { x?: number; y?: number; z?: number 
 function shotsFromEffectSpec(
   effectSpec: Record<string, unknown>,
   fallbackPalette: string[],
-): FireworkSpec["shots"] {
+): FireworkSpec['shots'] {
   const directShots = Array.isArray(effectSpec.shots) ? effectSpec.shots : null;
   const shotSequence = isRecord(effectSpec.shotSequence) ? effectSpec.shotSequence : {};
   const sequenceShots = Array.isArray(shotSequence.shots) ? shotSequence.shots : null;
   const sourceShots = directShots ?? sequenceShots;
   if (!sourceShots?.length) return undefined;
 
-  const shots: NonNullable<FireworkSpec["shots"]> = [];
+  const shots: NonNullable<FireworkSpec['shots']> = [];
   sourceShots.forEach((entry, index) => {
     if (!isRecord(entry)) return;
     const shotPalette = uniqueHexColors(
@@ -203,7 +213,7 @@ function shotsFromEffectSpec(
 function trailEffectFromLaunch(
   launch: Record<string, unknown>,
   shell: Record<string, unknown>,
-): FireworkSpec["trailEffect"] {
+): FireworkSpec['trailEffect'] {
   const text = [
     launch.trailEffect,
     launch.tailType,
@@ -212,20 +222,19 @@ function trailEffectFromLaunch(
     shell.glitter,
   ]
     .filter(Boolean)
-    .join(" ")
+    .join(' ')
     .toLowerCase();
-  if (text.includes("crackle")) return "crackle";
-  if (text.includes("silver")) return "silver";
-  if (text.includes("gold")) return "gold";
-  if (text.includes("streamer") || text.includes("tail") || text.includes("comet")) return "streamer";
+  if (text.includes('crackle')) return 'crackle';
+  if (text.includes('silver')) return 'silver';
+  if (text.includes('gold')) return 'gold';
+  if (text.includes('streamer') || text.includes('tail') || text.includes('comet'))
+    return 'streamer';
   return undefined;
 }
 
 function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): FireworkSpec {
   const shell = isRecord(effectSpec.shell) ? effectSpec.shell : {};
-  const renderProfile = isRecord(effectSpec.renderProfile)
-    ? effectSpec.renderProfile
-    : {};
+  const renderProfile = isRecord(effectSpec.renderProfile) ? effectSpec.renderProfile : {};
   const launch = isRecord(effectSpec.launch) ? effectSpec.launch : {};
   const palette = uniqueHexColors(
     shell.colorPalette,
@@ -249,10 +258,7 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
     palette.find((color) => color !== primaryColor && color !== innerColor) ??
     null;
   const glitterColor =
-    hexColor(shell.glitterColor) ??
-    hexColor(launch.tracerColor) ??
-    secondaryColor ??
-    primaryColor;
+    hexColor(shell.glitterColor) ?? hexColor(launch.tracerColor) ?? secondaryColor ?? primaryColor;
   const tailColor =
     hexColor(shell.tailColor) ??
     hexColor(launch.tailColor) ??
@@ -262,11 +268,11 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
   const starLifeMs =
     finiteNumber(shell.starLifeMs) ??
     finiteNumber(renderProfile.starLifeMs) ??
-    (shellType === "willow" || shellType === "fallingLeaves"
+    (shellType === 'willow' || shellType === 'fallingLeaves'
       ? 3000
-      : shellType === "comet"
+      : shellType === 'comet'
         ? 2600
-        : shellType === "strobe"
+        : shellType === 'strobe'
           ? 1900
           : 1500);
   const inferredPistilColor =
@@ -297,7 +303,7 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
         : clamp(finiteNumber(shell.transitionTimeMs) ?? 0, 50, 8000),
     glitter: coerceGlitter(
       shell.glitter,
-      shellType === "willow" ? "willow" : shellType === "comet" ? "streamer" : "light",
+      shellType === 'willow' ? 'willow' : shellType === 'comet' ? 'streamer' : 'light',
     ),
     glitterColor,
     tailColor,
@@ -312,13 +318,10 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
           ? undefined
           : clamp(finiteNumber(launch.liftTimeSeconds) ?? 0, 0.2, 4),
       heightMeters:
-        finiteNumber(launch.heightMeters) == null &&
-        finiteNumber(effectSpec.heightMeters) == null
+        finiteNumber(launch.heightMeters) == null && finiteNumber(effectSpec.heightMeters) == null
           ? undefined
           : clamp(
-              finiteNumber(launch.heightMeters) ??
-                finiteNumber(effectSpec.heightMeters) ??
-                0,
+              finiteNumber(launch.heightMeters) ?? finiteNumber(effectSpec.heightMeters) ?? 0,
               0,
               220,
             ),
@@ -344,15 +347,15 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
     shots,
     pistil: Boolean(shell.pistil || inferredPistilColor),
     pistilColor: inferredPistilColor ?? undefined,
-    streamers: Boolean(shell.streamers || shellType === "ghost"),
-    strobe: Boolean(shell.strobe || shellType === "strobe"),
+    streamers: Boolean(shell.streamers || shellType === 'ghost'),
+    strobe: Boolean(shell.strobe || shellType === 'strobe'),
     strobeColor: hexColor(shell.strobeColor) ?? undefined,
-    ring: Boolean(shell.ring || shellType === "ring"),
-    horsetail: Boolean(shell.horsetail || shellType === "horsetail"),
-    crossette: Boolean(shell.crossette || shellType === "crossette"),
-    crackle: Boolean(shell.crackle || shellType === "crackle"),
-    floral: Boolean(shell.floral || shellType === "floral"),
-    fallingLeaves: Boolean(shell.fallingLeaves || shellType === "fallingLeaves"),
+    ring: Boolean(shell.ring || shellType === 'ring'),
+    horsetail: Boolean(shell.horsetail || shellType === 'horsetail'),
+    crossette: Boolean(shell.crossette || shellType === 'crossette'),
+    crackle: Boolean(shell.crackle || shellType === 'crackle'),
+    floral: Boolean(shell.floral || shellType === 'floral'),
+    fallingLeaves: Boolean(shell.fallingLeaves || shellType === 'fallingLeaves'),
   };
 }
 
@@ -371,12 +374,10 @@ function normalizeImportedFireworkLaunchInput(value: unknown): unknown {
     liftTimeSeconds:
       liftTimeSeconds == null ? value.liftTimeSeconds : clamp(liftTimeSeconds, 0.2, 4),
     heightMeters: heightMeters == null ? value.heightMeters : clamp(heightMeters, 0, 220),
-    sparkFrequency:
-      sparkFrequency == null ? value.sparkFrequency : clamp(sparkFrequency, 0, 1000),
+    sparkFrequency: sparkFrequency == null ? value.sparkFrequency : clamp(sparkFrequency, 0, 1000),
     sparkLifeMs: sparkLifeMs == null ? value.sparkLifeMs : clamp(sparkLifeMs, 50, 4000),
     sparkSpeed: sparkSpeed == null ? value.sparkSpeed : clamp(sparkSpeed, 0, 5),
-    randomWobble:
-      randomWobble == null ? value.randomWobble : clamp(randomWobble, 0, 2),
+    randomWobble: randomWobble == null ? value.randomWobble : clamp(randomWobble, 0, 2),
   };
 }
 
@@ -397,7 +398,7 @@ function normalizeImportedFireworkSpecInput(value: unknown): unknown {
     return value;
   }
 
-  if ("spec" in value) {
+  if ('spec' in value) {
     return {
       ...value,
       spec: normalizeImportedFireworkSpecSpec(value.spec),
@@ -428,25 +429,21 @@ function normalizeImportedFireworkSpecInput(value: unknown): unknown {
   };
 }
 
-export function parseImportedFireworkSpec(
-  value: unknown,
-): ImportedFireworkSpec | null {
+export function parseImportedFireworkSpec(value: unknown): ImportedFireworkSpec | null {
   const parsed = ImportedFireworkSpecSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   console.error(
-    "[imports] parseImportedFireworkSpec failed",
+    '[imports] parseImportedFireworkSpec failed',
     parsed.error.issues.slice(0, 3).map((issue) => ({
-      path: issue.path.join("."),
+      path: issue.path.join('.'),
       message: issue.message,
     })),
   );
   return null;
 }
 
-export function importedSpecToReplayCues(
-  imported: ImportedFireworkSpec,
-): ReplayCue[] {
-  const id = "imported-spec";
+export function importedSpecToReplayCues(imported: ImportedFireworkSpec): ReplayCue[] {
+  const id = 'imported-spec';
   const spec: FireworkSpec = imported.spec;
   return [
     {
@@ -466,6 +463,7 @@ export function importedSpecToReplayCues(
         durationSeconds: imported.durationSeconds,
         heightMeters: imported.heightMeters ?? null,
         caliber: imported.caliber ?? null,
+        shotCount: 1,
         spec,
         rawSpec: spec,
       },
@@ -478,16 +476,14 @@ export function latestImportedSpecFromOutputs(
 ): ImportedFireworkSpec | null {
   for (const output of [...outputs].reverse()) {
     if (
-      output.outputType !== "draft_spec" &&
-      output.outputType !== "generated_spec" &&
-      output.outputType !== "refinement"
+      output.outputType !== 'draft_spec' &&
+      output.outputType !== 'generated_spec' &&
+      output.outputType !== 'refinement'
     ) {
       continue;
     }
     const candidate =
-      typeof output.payload === "object" &&
-      output.payload !== null &&
-      "spec" in output.payload
+      typeof output.payload === 'object' && output.payload !== null && 'spec' in output.payload
         ? (output.payload as { spec?: unknown }).spec
         : output.payload;
     const parsed = parseImportedFireworkSpec(candidate);

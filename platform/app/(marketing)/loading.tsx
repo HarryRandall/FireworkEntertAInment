@@ -1,4 +1,6 @@
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton shared by marketing routes. */
+
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function MarketingLoading() {
   return (

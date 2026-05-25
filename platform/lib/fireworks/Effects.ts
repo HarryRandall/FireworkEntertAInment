@@ -1,10 +1,18 @@
-import * as THREE from "three";
-import type { Particle } from "@/lib/fireworks/Particle";
-import type { ParticlePool } from "@/lib/fireworks/ParticlePool";
-import type { SoundHandler } from "@/lib/fireworks/SoundHandler";
-import type { Lights } from "@/lib/fireworks/Lights";
-import type { FireworkDesign } from "@/lib/fireworks/design";
-import type { RandomSource } from "@/lib/fireworks/random";
+/**
+ * Per-shell visual + audio effect implementations.
+ *
+ * Each `fire*()` method takes a {@link FireworkDesign} and a launch position,
+ * spawns the right particle pattern via the shared {@link ParticlePool}, and
+ * triggers the matching {@link SoundHandler} sample. New shell types should
+ * be added here so the engine doesn't grow a giant switch statement.
+ */
+import * as THREE from 'three';
+import type { Particle } from '@/lib/fireworks/Particle';
+import type { ParticlePool } from '@/lib/fireworks/ParticlePool';
+import type { SoundHandler } from '@/lib/fireworks/SoundHandler';
+import type { Lights } from '@/lib/fireworks/Lights';
+import type { FireworkDesign } from '@/lib/fireworks/design';
+import type { RandomSource } from '@/lib/fireworks/random';
 
 type Pos = { x: number; y: number; z: number };
 type FireOptions = {
@@ -12,7 +20,7 @@ type FireOptions = {
   audible: boolean;
 };
 
-const PATTERN_SEED: Record<FireworkDesign["pattern"], 1 | 2 | 3> = {
+const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
   fibonacci: 1,
   wave: 2,
   strobe: 3,
@@ -46,20 +54,26 @@ function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
   const q = v * (1 - s * f);
   const t = v * (1 - s * (1 - f));
   switch (i % 6) {
-    case 0: return { r: v, g: t, b: p };
-    case 1: return { r: q, g: v, b: p };
-    case 2: return { r: p, g: v, b: t };
-    case 3: return { r: p, g: q, b: v };
-    case 4: return { r: t, g: p, b: v };
-    default: return { r: v, g: p, b: q };
+    case 0:
+      return { r: v, g: t, b: p };
+    case 1:
+      return { r: q, g: v, b: p };
+    case 2:
+      return { r: p, g: v, b: t };
+    case 3:
+      return { r: p, g: q, b: v };
+    case 4:
+      return { r: t, g: p, b: v };
+    default:
+      return { r: v, g: p, b: q };
   }
 }
 
 function resolveColor(
-  color: FireworkDesign["color"],
+  color: FireworkDesign['color'],
   rng: RandomSource,
 ): { r: number; g: number; b: number } {
-  return color === "random" ? randomColor(rng) : color;
+  return color === 'random' ? randomColor(rng) : color;
 }
 
 function flairColor(
@@ -67,8 +81,8 @@ function flairColor(
   color: THREE.Color,
   rng: RandomSource,
 ): { r: number; g: number; b: number } {
-  if (design.burst.flairColorMode === "random") return randomColor(rng);
-  if (design.burst.flairColorMode === "mixed" && rng.next() > 0.55) {
+  if (design.burst.flairColorMode === 'random') return randomColor(rng);
+  if (design.burst.flairColorMode === 'mixed' && rng.next() > 0.55) {
     return randomColor(rng);
   }
   return color;
@@ -90,11 +104,7 @@ export class Effects {
 
     const size = design.size;
     if (options.audible && design.mortar.sound) this.sh.playRandomMortar(1.0, rng);
-    this.lights.newLight(
-      { x: position.x, y: 30, z: position.z },
-      new THREE.Color(0.7, 0.3, 0),
-      10,
-    );
+    this.lights.newLight({ x: position.x, y: 30, z: position.z }, new THREE.Color(0.7, 0.3, 0), 10);
     this.spawnMortarSmoke(position, design.mortar.smokeParticles, rng);
 
     this.pp.new({
@@ -116,8 +126,7 @@ export class Effects {
       decay: 10 + rng.next() * 20,
       effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, color, rng),
       condition: (p) => p.vy <= 0,
-      action: (p, dt, t) =>
-        this.detonate(p, dt, t, design, color, seed, rng, options.audible),
+      action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, options.audible),
     });
   }
 
@@ -210,7 +219,7 @@ export class Effects {
   ): void {
     const boom = design.sound.boom;
     if (audible) {
-      if (boom === "heavy" || (boom === "auto" && design.size > 200)) {
+      if (boom === 'heavy' || (boom === 'auto' && design.size > 200)) {
         this.sh.playRandomHeavyBoom(1.0, rng);
       } else {
         this.sh.playRandomLightBoom(1.0, rng);
@@ -284,8 +293,7 @@ export class Effects {
         l: rng.next(),
         life: rangeRand(lifeRange, rng),
         decay: 20 + rng.next() * 80,
-        effect: (p, dt, t) =>
-          this.flairEffect(p, dt, t, seed, color, design, rng, audible),
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, seed, color, design, rng, audible),
       });
     }
   }
@@ -345,7 +353,7 @@ export class Effects {
         break;
       case 3:
         particle.size = rng.next() > 0.5 ? 150 : 10;
-        if (design.burst.flairColorMode !== "random" && rng.next() > 0.5) {
+        if (design.burst.flairColorMode !== 'random' && rng.next() > 0.5) {
           r = color.r;
           g = color.g;
           b = color.b;
@@ -397,17 +405,17 @@ export class Effects {
   ): void {
     if (audible && rng.next() < 0.2) {
       switch (design.crackle.sound) {
-        case "lightBoom":
+        case 'lightBoom':
           this.sh.playRandomLightBoom(0.1, rng);
           break;
-        case "heavyBoom":
+        case 'heavyBoom':
           this.sh.playRandomHeavyBoom(0.1, rng);
           break;
         default:
           this.sh.playRandomCrackle(0.1, rng);
       }
     }
-    const colored = design.crackle.sound === "heavyBoom";
+    const colored = design.crackle.sound === 'heavyBoom';
     const r = colored ? Math.min(1, color.r * 2) : Math.max(color.r, 0.75);
     const g = colored ? Math.min(1, color.g * 2) : Math.max(color.g, 0.68);
     const b = colored ? color.b : Math.max(color.b, 0.45);

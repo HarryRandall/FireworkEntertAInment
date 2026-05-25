@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
-import { RowActionsMenu, toast } from "@/app/components/ui";
+/** Per-row catalogue product admin actions menu. */
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Trash2 } from 'lucide-react';
+import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +15,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { deleteProduct } from "@/app/actions/admin-catalogue";
-import { ProductFormDialog } from "./ProductFormDialog";
-import type { ProductInputType } from "@/app/actions/admin-catalogue";
+} from '@/components/ui/alert-dialog';
+import { deleteProduct } from '@/app/actions/admin-catalogue';
+import { ProductFormDialog } from './ProductFormDialog';
+import type { ProductInputType } from '@/app/actions/admin-catalogue';
 
 type Props = {
   product: { id: string } & ProductInputType;
@@ -32,7 +34,7 @@ export function ProductRowActions({ product }: Props) {
     startTransition(async () => {
       const result = await deleteProduct({ id: product.id });
       if (result.ok) {
-        toast.success("Product deleted");
+        toast.success('Product deleted');
         router.refresh();
       } else toast.error(result.error);
       setConfirmOpen(false);
@@ -43,9 +45,9 @@ export function ProductRowActions({ product }: Props) {
     <>
       <RowActionsMenu
         items={[
-          { label: "Edit", icon: <Pencil size={14} />, onSelect: () => setEditOpen(true) },
+          { label: 'Edit', icon: <Pencil size={14} />, onSelect: () => setEditOpen(true) },
           {
-            label: "Delete",
+            label: 'Delete',
             icon: <Trash2 size={14} />,
             destructive: true,
             onSelect: () => setConfirmOpen(true),

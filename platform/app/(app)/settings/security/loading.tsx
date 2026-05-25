@@ -1,5 +1,7 @@
-import { Card } from "@/app/components/ui/Card";
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for the `/settings/security` route. */
+
+import { Card } from '@/app/components/ui/Card';
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function SecuritySettingsLoading() {
   return (
@@ -35,7 +37,7 @@ export default function SecuritySettingsLoading() {
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-4 w-72 max-w-full" />
         </div>
-        <ul className="divide-y divide-outline-variant/45 rounded-xl border border-outline-variant/45 bg-surface-container-low">
+        <ul className="divide-outline-variant/45 border-outline-variant/45 bg-surface-container-low divide-y rounded-xl border">
           {Array.from({ length: 3 }).map((_, index) => (
             <li key={index} className="flex items-center gap-4 px-5 py-4">
               <Skeleton className="h-9 w-9 rounded-lg" />

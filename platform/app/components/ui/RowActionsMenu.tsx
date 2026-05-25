@@ -1,15 +1,16 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { MoreHorizontal } from "lucide-react";
+/** Trailing row-actions dropdown (3-dots) used in DataTable rows. */
+import type { ReactNode } from 'react';
+import { MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 export type RowAction = {
   label: string;
@@ -24,7 +25,7 @@ type RowActionsMenuProps = {
   label?: string;
 };
 
-export function RowActionsMenu({ items, label = "Actions" }: RowActionsMenuProps) {
+export function RowActionsMenu({ items, label = 'Actions' }: RowActionsMenuProps) {
   const safeItems = items.filter(Boolean);
   const firstDestructiveIndex = safeItems.findIndex((i) => i.destructive);
 
@@ -51,11 +52,11 @@ export function RowActionsMenu({ items, label = "Actions" }: RowActionsMenuProps
                 if (!item.disabled) item.onSelect();
               }}
               disabled={item.disabled}
-              variant={item.destructive ? "destructive" : "default"}
+              variant={item.destructive ? 'destructive' : 'default'}
               className={cn(
-                "gap-2",
+                'gap-2',
                 item.destructive &&
-                  "text-[color:var(--color-status-danger)] focus:bg-[color:var(--color-status-danger-subtle)] focus:text-[color:var(--color-status-danger)] data-[highlighted]:text-[color:var(--color-status-danger)]",
+                  'text-[color:var(--color-status-danger)] focus:bg-[color:var(--color-status-danger-subtle)] focus:text-[color:var(--color-status-danger)] data-[highlighted]:text-[color:var(--color-status-danger)]',
               )}
             >
               {item.icon ? <span className="flex h-4 w-4 items-center">{item.icon}</span> : null}

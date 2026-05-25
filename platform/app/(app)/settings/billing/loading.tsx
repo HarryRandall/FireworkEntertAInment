@@ -1,5 +1,7 @@
-import { Card } from "@/app/components/ui/Card";
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for the `/settings/billing` route. */
+
+import { Card } from '@/app/components/ui/Card';
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function BillingSettingsLoading() {
   return (

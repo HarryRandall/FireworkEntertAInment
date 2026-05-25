@@ -1,10 +1,17 @@
-// Domain types for ShowCrafter shows. Pure types only — no in-memory data.
-// Persistence helpers live in `lib/shows.server.ts` (server-only).
+/**
+ * Domain types for ShowCrafter shows.
+ *
+ * Pure types and small pure helpers (formatters, slug generators) only — no
+ * I/O, no in-memory state. Persistence lives in `lib/shows.server.ts` and
+ * the upcoming `lib/shows/*` modules; this file is the contract those
+ * modules speak to the rest of the app.
+ */
 
-import type { FireworkSpec } from "@/lib/fireworks/spec";
-import type { LaunchPosition } from "@/lib/fireworks/design";
+import type { FireworkSpec } from '@/lib/fireworks/spec';
+import type { LaunchPosition } from '@/lib/fireworks/design';
 
-export type ShowStatus = "draft" | "complete";
+export type ShowStatus = 'draft' | 'complete';
+export type ShowGenerationStatus = 'idle' | 'running' | 'completed' | 'failed';
 
 export type Show = {
   id: string;
@@ -24,6 +31,12 @@ export type Show = {
   description: string | null;
   moodTags: string[];
   audioPath: string | null;
+  musicAnalysisId: string | null;
+  generationStatus: ShowGenerationStatus;
+  generationError: string | null;
+  generatedCueCount: number | null;
+  generationStartedAt: string | null;
+  generationCompletedAt: string | null;
   launchPositions: LaunchPosition[];
   updatedAt: string;
 };
@@ -47,6 +60,7 @@ export type FireworkSpecification = {
   durationSeconds: number | null;
   heightMeters: number | null;
   caliber: string | null;
+  shotCount: number | null;
   spec: FireworkSpec;
   rawSpec: unknown;
 };
@@ -70,16 +84,16 @@ export type ShoppingListItem = {
  * Falls back to a placeholder when the duration is unknown.
  */
 export function formatDuration(seconds: number | null | undefined): string {
-  if (seconds == null || Number.isNaN(seconds)) return "—";
+  if (seconds == null || Number.isNaN(seconds)) return '—';
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60)
     .toString()
-    .padStart(2, "0");
+    .padStart(2, '0');
   return `${m}:${s}`;
 }
 
 export function formatBudget(cents: number | null | undefined): string {
-  if (cents == null) return "—";
+  if (cents == null) return '—';
   return `$${(cents / 100).toLocaleString()}`;
 }
 
@@ -93,21 +107,21 @@ export function formatTotal(cents: number): string {
 export function formatRelativeDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
   });
 }
 
 export function formatStableDateTime(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return '—';
   const year = d.getUTCFullYear();
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  const hours = String(d.getUTCHours()).padStart(2, "0");
-  const minutes = String(d.getUTCMinutes()).padStart(2, "0");
-  const seconds = String(d.getUTCSeconds()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hours = String(d.getUTCHours()).padStart(2, '0');
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(d.getUTCSeconds()).padStart(2, '0');
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`;
 }
 
@@ -118,10 +132,10 @@ export function formatStableDateTime(iso: string): string {
 export function slugifyTitle(title: string): string {
   const base = title
     .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .slice(0, 64);
   if (base) return base;
   return `show-${Math.random().toString(36).slice(2, 8)}`;

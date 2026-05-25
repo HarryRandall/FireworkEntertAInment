@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { ThemeProvider } from "./components/theme/ThemeProvider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
+/** Root Next.js layout; injects fonts, the theme provider, and global styles for every route. */
+
+import type { Metadata } from 'next';
+import './globals.css';
+import { ThemeProvider } from './components/theme/ThemeProvider';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
-  title: "ShowCrafter — AI Fireworks Choreography",
+  title: 'ShowCrafter — AI Fireworks Choreography',
   description:
-    "Pick a song, set a budget, and let AI choreograph a fireworks show using real products from your local store.",
+    'Pick a song, set a budget, and let AI choreograph a fireworks show using real products from your local store.',
 };
 
 export default function RootLayout({

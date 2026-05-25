@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
-import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
-import { Hand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { ViewHelper } from "three/examples/jsm/helpers/ViewHelper.js";
-import type { ReplayCue } from "@/lib/show-domain";
-import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
-import {
-  DEFAULT_LAUNCH_POSITIONS,
-  type LaunchPosition,
-} from "@/lib/fireworks/design";
+/**
+ * FireworkReplayCanvas — Three.js canvas that simulates firework cues
+ * for a given `elapsed` time. Used inside FireworkReplayViewer and
+ * TemplateReplayPreview. Owns its own renderer/engine lifecycle and
+ * is intentionally `dynamic`-imported by parents to avoid SSR.
+ */
+import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { Hand, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import type { ReplayCue } from '@/lib/show-domain';
+import { FireworksEngine } from '@/lib/fireworks/FireworksEngine';
+import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@/lib/fireworks/design';
 
 type Props = {
   cues: ReplayCue[];
@@ -46,7 +49,7 @@ export function FireworkReplayCanvas({
   const [panMode, setPanMode] = useState(false);
 
   const positionsKey = useMemo(
-    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
+    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
     [launchPositions],
   );
 
@@ -73,11 +76,9 @@ export function FireworkReplayCanvas({
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: false,
-      powerPreference: "high-performance",
+      powerPreference: 'high-performance',
     });
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO),
-    );
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO));
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.sortObjects = false;
@@ -113,14 +114,14 @@ export function FireworkReplayCanvas({
     // Orbit around the firework focal point rather than world origin so the
     // snap-to-axis views keep the burst centred.
     viewHelper.center = controls.target;
-    viewHelper.setLabels("X", "Y", "Z");
+    viewHelper.setLabels('X', 'Y', 'Z');
     const clock = new THREE.Clock();
 
     function onPointerUp(event: PointerEvent) {
       if (!controls.enabled) return;
       if (viewHelper.handleClick(event)) forceRenderRef.current = true;
     }
-    renderer.domElement.addEventListener("pointerup", onPointerUp);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
 
     let renderedElapsed = Number.NaN;
     let lastEngineUpdate = 0;
@@ -130,9 +131,7 @@ export function FireworkReplayCanvas({
       const rend = rendererRef.current;
       const sc = sceneRef.current;
       if (!eng || !cam || !rend || !sc) return;
-      const targetElapsed = playbackRef
-        ? playbackRef.current
-        : internalElapsedRef.current;
+      const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
       const delta = Math.abs(targetElapsed - renderedElapsed);
       const timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
       // Small deltas (normal playback) flow through every frame. Large deltas
@@ -177,7 +176,7 @@ export function FireworkReplayCanvas({
 
     return () => {
       ro.disconnect();
-      renderer.domElement.removeEventListener("pointerup", onPointerUp);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       viewHelper.dispose();
       controls.dispose();
@@ -250,12 +249,9 @@ export function FireworkReplayCanvas({
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className="absolute inset-0 h-full w-full bg-black"
-      />
+      <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />
       {interactive ? (
-        <div className="absolute right-3 top-40 z-10 flex flex-col gap-1.5">
+        <div className="absolute top-40 right-3 z-10 flex flex-col gap-1.5">
           <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
             <ZoomIn size={16} strokeWidth={2} />
           </CanvasIconButton>
@@ -264,7 +260,7 @@ export function FireworkReplayCanvas({
           </CanvasIconButton>
           <CanvasIconButton
             onClick={() => setPanMode((on) => !on)}
-            label={panMode ? "Orbit mode" : "Pan mode"}
+            label={panMode ? 'Orbit mode' : 'Pan mode'}
             active={panMode}
           >
             <Hand size={16} strokeWidth={2} />
@@ -297,8 +293,8 @@ function CanvasIconButton({
       title={label}
       className={`focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition-all focus:outline-none focus-visible:outline-none active:scale-[0.95] ${
         active
-          ? "border-primary/40 bg-primary-container/85 text-on-primary-container"
-          : "border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90"
+          ? 'border-primary/40 bg-primary-container/85 text-on-primary-container'
+          : 'border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90'
       }`}
     >
       {children}

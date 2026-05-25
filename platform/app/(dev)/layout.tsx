@@ -1,26 +1,25 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-import { TerminalSquare } from "lucide-react";
-import { Container } from "@/app/components/ui/Container";
+/** Layout for the `(dev)` route group (developer-only Supabase examples). */
+
+import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { TerminalSquare } from 'lucide-react';
+import { Container } from '@/app/components/ui/Container';
 
 export default function DevLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-background text-on-surface">
-      <div className="border-b border-outline-variant/20 bg-surface-container-low">
+    <div className="bg-background text-on-surface flex min-h-screen flex-col">
+      <div className="border-outline-variant/20 bg-surface-container-low border-b">
         <Container className="flex flex-wrap items-center justify-between gap-3 py-3">
-          <div className="flex items-center gap-2 text-on-surface-variant">
+          <div className="text-on-surface-variant flex items-center gap-2">
             <TerminalSquare size={16} strokeWidth={1.75} className="text-primary" />
-            <span className="text-xs font-bold uppercase tracking-widest text-primary">
+            <span className="text-primary text-xs font-bold tracking-widest uppercase">
               Dev tools
             </span>
-            <span className="text-xs text-on-surface-variant/70">
+            <span className="text-on-surface-variant/70 text-xs">
               Internal QA surfaces — not for end-user navigation.
             </span>
           </div>
-          <Link
-            href="/"
-            className="text-xs font-medium text-primary hover:underline"
-          >
+          <Link href="/" className="text-primary text-xs font-medium hover:underline">
             ← Back to site
           </Link>
         </Container>

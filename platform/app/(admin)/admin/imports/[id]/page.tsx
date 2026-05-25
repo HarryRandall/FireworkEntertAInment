@@ -1,26 +1,28 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { ArrowLeft, CheckCircle2, RefreshCcw, WandSparkles } from "lucide-react";
+/** Admin import job detail page with the firework preview and live progress watcher. */
+
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { ArrowLeft, CheckCircle2, RefreshCcw, WandSparkles } from 'lucide-react';
 import {
   approveImportJobAction,
   queueImportJobAction,
   requestImportRefinementAction,
   updateImportDraftSpecAction,
-} from "@/app/actions/platform-admin";
-import { AppPageHeader } from "@/app/components/app/AppPageHeader";
-import { Badge } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
-import { Card } from "@/app/components/ui/Card";
-import { Input, Select, Textarea } from "@/app/components/ui/Input";
+} from '@/app/actions/platform-admin';
+import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { Badge } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
+import { Card } from '@/app/components/ui/Card';
+import { Input, Select, Textarea } from '@/app/components/ui/Input';
 import {
   DEFAULT_OPENROUTER_MODEL,
   latestImportedSpecFromOutputs,
   OPENROUTER_MODEL_OPTIONS,
-} from "@/lib/import-jobs";
-import { getImportJobDetail } from "@/lib/admin.server";
-import { formatDuration } from "@/lib/show-domain";
-import { FireworkImportPreview } from "./FireworkImportPreview";
-import { ImportProgressWatcher } from "./ImportProgressWatcher";
+} from '@/lib/import-jobs';
+import { getImportJobDetail } from '@/lib/admin.server';
+import { formatDuration } from '@/lib/show-domain';
+import { FireworkImportPreview } from './FireworkImportPreview';
+import { ImportProgressWatcher } from './ImportProgressWatcher';
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -30,41 +32,39 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   if (!job) notFound();
 
   const spec = latestImportedSpecFromOutputs(job.outputs);
-  const defaultDuration =
-    spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
+  const defaultDuration = spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
   const defaultSpecJson = spec
     ? JSON.stringify(spec.spec, null, 2)
     : '{\n  "shellType": "crysanthemum",\n  "spreadSize": 4.6,\n  "starLifeMs": 1400,\n  "color": "#ffbf36",\n  "glitter": "light"\n}';
   const selectedModel = job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
-  const canApprove = Boolean(spec) && job.status !== "complete";
-  const isWaitingForWorker =
-    (job.status === "queued" || job.status === "processing") && !spec;
+  const canApprove = Boolean(spec) && job.status !== 'complete';
+  const isWaitingForWorker = (job.status === 'queued' || job.status === 'processing') && !spec;
 
   return (
     <div className="space-y-6">
       <AppPageHeader
         title={job.sourceName}
-        description={(
+        description={
           <>
             {job.mediaAsset?.durationSeconds
               ? `Source video duration ${formatDuration(job.mediaAsset.durationSeconds)}.`
-              : "The worker will verify the source duration before analysis."}{" "}
+              : 'The worker will verify the source duration before analysis.'}{' '}
             Model: {selectedModel}.
           </>
-        )}
+        }
       />
 
       <div className="flex flex-col gap-4">
         <Link
           href="/admin/imports"
-          className="inline-flex items-center gap-2 text-sm font-bold text-primary"
+          className="text-primary inline-flex items-center gap-2 text-sm font-bold"
         >
           <ArrowLeft size={16} />
           Back to imports
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge tone={job.status === "complete" ? "success" : "neutral"}>
-            {job.status.replace("_", " ")}
+          <Badge tone={job.status === 'complete' ? 'success' : 'neutral'}>
+            {job.status.replace('_', ' ')}
           </Badge>
           <Badge tone="neutral">{job.processingProgress}%</Badge>
         </div>
@@ -79,20 +79,17 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
       {isWaitingForWorker ? (
         <Card elevation="low" radius="md" className="border-primary/35 p-5">
-          <h2 className="text-lg font-bold text-on-surface">
+          <h2 className="text-on-surface text-lg font-bold">
             Waiting for the reconstruction worker
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-            The upload worked and the import is queued. Start the worker in a
-            second terminal with <span className="font-mono text-on-surface">npm run worker:firework-import</span>.
-            It needs <span className="font-mono text-on-surface">SUPABASE_SERVICE_ROLE_KEY</span>
-            {" "}
-            in the worker environment so OpenRouter jobs can finish, and the same variable on your
-            <span className="font-mono text-on-surface"> Next</span> server so private import videos receive a valid signed playback URL.
-            Also set{" "}
-            <span className="font-mono text-on-surface">OPENROUTER_API_KEY</span>
-            {" "}
-            for the worker.
+          <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+            The upload worked and the import is queued. Start the worker in a second terminal with{' '}
+            <span className="text-on-surface font-mono">npm run worker:firework-import</span>. It
+            needs <span className="text-on-surface font-mono">SUPABASE_SERVICE_ROLE_KEY</span> in
+            the worker environment so OpenRouter jobs can finish, and the same variable on your
+            <span className="text-on-surface font-mono"> Next</span> server so private import videos
+            receive a valid signed playback URL. Also set{' '}
+            <span className="text-on-surface font-mono">OPENROUTER_API_KEY</span> for the worker.
           </p>
         </Card>
       ) : null}
@@ -100,10 +97,8 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
       <Card elevation="high" radius="md" className="space-y-5 p-5">
         <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
           <div>
-            <h2 className="text-xl font-bold text-on-surface">
-              Reconstruction review
-            </h2>
-            <p className="mt-1 text-sm text-on-surface-variant">
+            <h2 className="text-on-surface text-xl font-bold">Reconstruction review</h2>
+            <p className="text-on-surface-variant mt-1 text-sm">
               Compare the source footage with the generated 3D particle demo.
             </p>
           </div>
@@ -133,12 +128,10 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card elevation="low" radius="md" className="space-y-5 p-5">
           <div>
-            <h2 className="text-xl font-bold text-on-surface">
-              Natural-language refinement
-            </h2>
-            <p className="mt-1 text-sm text-on-surface-variant">
-              Refinement requests are queued for the worker so it can reanalyse
-              the original video context with the latest draft.
+            <h2 className="text-on-surface text-xl font-bold">Natural-language refinement</h2>
+            <p className="text-on-surface-variant mt-1 text-sm">
+              Refinement requests are queued for the worker so it can reanalyse the original video
+              context with the latest draft.
             </p>
           </div>
           <form action={requestImportRefinementAction} className="space-y-3">
@@ -165,12 +158,9 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
         <Card elevation="low" radius="md" className="space-y-5 p-5">
           <div>
-            <h2 className="text-xl font-bold text-on-surface">
-              Approve to catalogue
-            </h2>
-            <p className="mt-1 text-sm text-on-surface-variant">
-              Approval publishes both a catalogue product and a reusable 3D
-              firework specification.
+            <h2 className="text-on-surface text-xl font-bold">Approve to catalogue</h2>
+            <p className="text-on-surface-variant mt-1 text-sm">
+              Approval publishes both a catalogue product and a reusable 3D firework specification.
             </p>
           </div>
           <form action={approveImportJobAction} className="space-y-3">
@@ -194,37 +184,27 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
       <Card elevation="high" radius="md" className="space-y-5 p-5">
         <div>
-          <h2 className="text-xl font-bold text-on-surface">
-            Manual adjustments
-          </h2>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            These controls save a new draft spec immediately for preview and
-            approval.
+          <h2 className="text-on-surface text-xl font-bold">Manual adjustments</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">
+            These controls save a new draft spec immediately for preview and approval.
           </p>
         </div>
-        <form
-          action={updateImportDraftSpecAction}
-          className="grid grid-cols-1 gap-3"
-        >
+        <form action={updateImportDraftSpecAction} className="grid grid-cols-1 gap-3">
           <input type="hidden" name="id" value={job.id} />
           <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
               Name
             </span>
             <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
               Description
             </span>
-            <Textarea
-              name="description"
-              rows={3}
-              defaultValue={spec?.description ?? ""}
-            />
+            <Textarea name="description" rows={3} defaultValue={spec?.description ?? ''} />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
               Duration (seconds)
             </span>
             <Input
@@ -236,7 +216,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
               FireworkSpec JSON
             </span>
             <Textarea
@@ -256,24 +236,24 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
       </Card>
 
       <Card elevation="low" radius="md" className="p-5">
-        <h2 className="text-xl font-bold text-on-surface">Import outputs</h2>
+        <h2 className="text-on-surface text-xl font-bold">Import outputs</h2>
         <div className="mt-4 space-y-2">
           {job.outputs.length > 0 ? (
             job.outputs.map((output) => (
               <div
                 key={output.id}
-                className="flex flex-col gap-1 rounded-lg border border-outline-variant/20 bg-surface-container-highest/40 p-3 md:flex-row md:items-center md:justify-between"
+                className="border-outline-variant/20 bg-surface-container-highest/40 flex flex-col gap-1 rounded-lg border p-3 md:flex-row md:items-center md:justify-between"
               >
-                <div className="font-semibold text-on-surface">
-                  {output.outputType.replace("_", " ")}
+                <div className="text-on-surface font-semibold">
+                  {output.outputType.replace('_', ' ')}
                 </div>
-                <div className="font-mono text-xs text-on-surface-variant">
+                <div className="text-on-surface-variant font-mono text-xs">
                   {new Date(output.createdAt).toLocaleString()}
                 </div>
               </div>
             ))
           ) : (
-            <p className="text-sm text-on-surface-variant">
+            <p className="text-on-surface-variant text-sm">
               No worker outputs have been stored yet.
             </p>
           )}

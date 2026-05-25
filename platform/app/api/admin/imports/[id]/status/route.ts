@@ -1,45 +1,44 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { requirePermission } from "@/lib/admin.server";
+/** Admin-only GET endpoint returning live status for an import job; polled by `ImportProgressWatcher`. Requires the `admin.manage_imports` RBAC permission. */
 
-export const dynamic = "force-dynamic";
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
+import { requirePermission } from '@/lib/admin.server';
+
+export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  if (!(await requirePermission("admin.manage_imports"))) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!(await requirePermission('admin.manage_imports'))) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
 
   const supabase = createClient(await cookies());
   const [{ data: job, error: jobError }, { count: outputCount, error: outputError }] =
     await Promise.all([
       supabase
-        .from("import_jobs")
+        .from('import_jobs')
         .select(
-          "id, status, processing_progress, error_message, started_at, completed_at, updated_at",
+          'id, status, processing_progress, error_message, started_at, completed_at, updated_at',
         )
-        .eq("id", id)
+        .eq('id', id)
         .maybeSingle(),
       supabase
-        .from("import_outputs")
-        .select("*", { count: "exact", head: true })
-        .eq("import_job_id", id),
+        .from('import_outputs')
+        .select('*', { count: 'exact', head: true })
+        .eq('import_job_id', id),
     ]);
 
   if (jobError) {
-    return NextResponse.json(
-      { error: jobError.message || "lookup failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: jobError.message || 'lookup failed' }, { status: 500 });
   }
   if (!job) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
   if (outputError) {
-    console.error("[imports/status] output count failed:", outputError);
+    console.error('[imports/status] output count failed:', outputError);
   }
 
   return NextResponse.json({

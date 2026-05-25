@@ -1,16 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { setUserRoleAction } from "@/app/actions/admin-users";
-import { toast } from "@/app/components/ui/toast";
+/** RBAC role picker on the admin user detail page. */
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { setUserRoleAction } from '@/app/actions/admin-users';
+import { toast } from '@/app/components/ui/toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 type Role = { id: string; key: string; name: string };
 
@@ -32,7 +34,7 @@ export function UserRoleSelect({ userId, roles, initialRoleId }: Props) {
     startTransition(async () => {
       const result = await setUserRoleAction({ userId, roleId: next });
       if (result.ok) {
-        toast.success("Role updated");
+        toast.success('Role updated');
         router.refresh();
       } else {
         setRoleId(previous);

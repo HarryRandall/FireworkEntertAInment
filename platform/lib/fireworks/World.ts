@@ -1,7 +1,14 @@
-import * as THREE from "three";
-import type { LaunchPosition } from "@/lib/fireworks/design";
+/**
+ * Static scene geometry: ground plane, mortar tubes, ambient props.
+ *
+ * Owns its own `THREE.Group` so the engine can attach/detach the world
+ * without touching the global scene. Mortar positions come from the show's
+ * launch positions so the visible tubes always match the cue tube indices.
+ */
+import * as THREE from 'three';
+import type { LaunchPosition } from '@/lib/fireworks/design';
 
-const MORTAR_TEXTURE_URL = "/textures/mortar.png";
+const MORTAR_TEXTURE_URL = '/textures/mortar.png';
 const GROUND_SIZE = 8000;
 const GRID_TEXTURE_SIZE = 1024;
 
@@ -52,11 +59,7 @@ export class World {
       map: this.mortarTexture ?? undefined,
       toneMapped: false,
     });
-    const mortars = new THREE.InstancedMesh(
-      mortarGeo,
-      mortarMat,
-      this.mortarPositions.length,
-    );
+    const mortars = new THREE.InstancedMesh(mortarGeo, mortarMat, this.mortarPositions.length);
     mortars.frustumCulled = false;
 
     const baseGeo = new THREE.BoxGeometry(30, 2, 30);
@@ -64,11 +67,7 @@ export class World {
       color: 0x151922,
       toneMapped: false,
     });
-    const bases = new THREE.InstancedMesh(
-      baseGeo,
-      baseMat,
-      this.mortarPositions.length,
-    );
+    const bases = new THREE.InstancedMesh(baseGeo, baseMat, this.mortarPositions.length);
     bases.frustumCulled = false;
 
     const transform = new THREE.Object3D();
@@ -122,17 +121,17 @@ export class World {
 }
 
 function createGroundTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = GRID_TEXTURE_SIZE;
   canvas.height = GRID_TEXTURE_SIZE;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Unable to create firework ground texture");
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Unable to create firework ground texture');
 
-  ctx.fillStyle = "#070a10";
+  ctx.fillStyle = '#070a10';
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
 
-  drawGridLayer(ctx, 64, "rgba(73, 86, 116, 0.32)", 1);
-  drawGridLayer(ctx, 256, "rgba(118, 134, 176, 0.42)", 2);
+  drawGridLayer(ctx, 64, 'rgba(73, 86, 116, 0.32)', 1);
+  drawGridLayer(ctx, 256, 'rgba(118, 134, 176, 0.42)', 2);
 
   const gradient = ctx.createRadialGradient(
     GRID_TEXTURE_SIZE / 2,
@@ -142,9 +141,9 @@ function createGroundTexture(): THREE.CanvasTexture {
     GRID_TEXTURE_SIZE / 2,
     GRID_TEXTURE_SIZE / 2,
   );
-  gradient.addColorStop(0, "rgba(34, 40, 56, 0.34)");
-  gradient.addColorStop(0.36, "rgba(12, 16, 25, 0.08)");
-  gradient.addColorStop(1, "rgba(0, 0, 0, 0.55)");
+  gradient.addColorStop(0, 'rgba(34, 40, 56, 0.34)');
+  gradient.addColorStop(0.36, 'rgba(12, 16, 25, 0.08)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
 

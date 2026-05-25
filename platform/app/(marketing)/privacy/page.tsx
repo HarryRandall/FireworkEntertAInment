@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
-import { ComingSoon } from "@/app/components/marketing/ComingSoon";
+/** Marketing "Privacy" page. */
+
+import type { Metadata } from 'next';
+import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
-  title: "Privacy · ShowCrafter",
-  description: "Our privacy policy is being finalised.",
+  title: 'Privacy · ShowCrafter',
+  description: 'Our privacy policy is being finalised.',
 };
 
 export default function PrivacyPage() {

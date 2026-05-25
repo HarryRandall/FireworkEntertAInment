@@ -1,11 +1,13 @@
-import Link from "next/link";
-import { Suspense } from "react";
-import { UserRound } from "lucide-react";
-import { AppPageHeader } from "@/app/components/app/AppPageHeader";
-import { TableSkeleton } from "@/app/components/app/RouteSkeletons";
-import { Badge } from "@/app/components/ui/Badge";
-import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TABLE_PAGE_SIZE, TablePagination } from "@/app/components/ui/TablePagination";
+/** Admin user list page with search, filters, and inline row actions. */
+
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { UserRound } from 'lucide-react';
+import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Badge } from '@/app/components/ui/Badge';
+import { FilterBar } from '@/app/components/ui/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import {
   DataTableShell,
   tableCellClasses,
@@ -13,28 +15,28 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from "@/app/components/ui/DataTable";
-import { listAdminUsers } from "@/lib/admin.server";
-import type { ProfileStatus, RoleKey } from "@/lib/admin.types";
-import { UserRowActions } from "./UserRowActions";
+} from '@/app/components/ui/DataTable';
+import { listAdminUsers } from '@/lib/admin.server';
+import type { ProfileStatus, RoleKey } from '@/lib/admin.types';
+import { UserRowActions } from './UserRowActions';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string }>;
 };
-type UsersSearchParams = Awaited<PageProps["searchParams"]>;
+type UsersSearchParams = Awaited<PageProps['searchParams']>;
 
-const rowLinkClasses = "block px-5 py-4";
+const rowLinkClasses = 'block px-5 py-4';
 
 function roleTone(role: RoleKey) {
-  if (role === "admin") return "violet" as const;
-  if (role === "supplier") return "sky" as const;
-  return "neutral" as const;
+  if (role === 'admin') return 'violet' as const;
+  if (role === 'supplier') return 'sky' as const;
+  return 'neutral' as const;
 }
 
 function statusTone(status: ProfileStatus) {
-  if (status === "active") return "success" as const;
-  if (status === "suspended") return "danger" as const;
-  return "amber-soft" as const;
+  if (status === 'active') return 'success' as const;
+  if (status === 'suspended') return 'danger' as const;
+  return 'amber-soft' as const;
 }
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
@@ -42,31 +44,28 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <AppPageHeader
-        title="Users"
-        description="Search, filter, and manage platform users."
-      />
+      <AppPageHeader title="Users" description="Search, filter, and manage platform users." />
 
       <FilterBar
         searchPlaceholder="Search name, email, phone…"
         filters={[
           {
-            key: "role",
-            label: "Role",
-            type: "select",
+            key: 'role',
+            label: 'Role',
+            type: 'select',
             options: [
-              { value: "admin", label: "Admin" },
-              { value: "supplier", label: "Supplier" },
-              { value: "user", label: "User" },
+              { value: 'admin', label: 'Admin' },
+              { value: 'supplier', label: 'Supplier' },
+              { value: 'user', label: 'User' },
             ],
           },
           {
-            key: "status",
-            label: "Status",
-            type: "select",
+            key: 'status',
+            label: 'Status',
+            type: 'select',
             options: [
-              { value: "active", label: "Active" },
-              { value: "suspended", label: "Suspended" },
+              { value: 'active', label: 'Active' },
+              { value: 'suspended', label: 'Suspended' },
             ],
           },
         ]}
@@ -86,15 +85,15 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 }
 
 async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
-  const query = (params.q ?? "").trim().toLowerCase();
+  const query = (params.q ?? '').trim().toLowerCase();
   const roleFilter = params.role;
   const statusFilter = params.status;
-  const requestedPage = Number(params.page ?? "1");
+  const requestedPage = Number(params.page ?? '1');
   const users = await listAdminUsers();
   const filtered = users.filter((user) => {
-    const text = [user.fullName, user.email, user.phone, user.roles.join(" ")]
+    const text = [user.fullName, user.email, user.phone, user.roles.join(' ')]
       .filter(Boolean)
-      .join(" ")
+      .join(' ')
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
     const matchesRole = !roleFilter || user.roles.some((r) => r === roleFilter);
@@ -114,50 +113,62 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>User</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Role</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Status</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Updated</th>
-              <th className={tableHeaderCellClasses("px-5 py-3 text-right")}>Actions</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>User</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Role</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Status</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Updated</th>
+              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map((user) => {
               const href = `/admin/users/${user.id}`;
-              const primaryRole = user.roles[0] ?? "user";
+              const primaryRole = user.roles[0] ?? 'user';
               return (
-                <tr key={user.id} className={tableRowClasses("group")}>
-                  <td className={tableCellClasses("p-0")}>
-                    <Link href={href} prefetch className={`${rowLinkClasses} flex items-center gap-3`}>
+                <tr key={user.id} className={tableRowClasses('group')}>
+                  <td className={tableCellClasses('p-0')}>
+                    <Link
+                      href={href}
+                      prefetch
+                      className={`${rowLinkClasses} flex items-center gap-3`}
+                    >
                       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)]">
                         <UserRound size={16} />
                       </span>
                       <span>
                         <span className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
-                          {user.fullName || "Unnamed user"}
+                          {user.fullName || 'Unnamed user'}
                         </span>
                         <span className="mt-0.5 block text-xs text-[color:var(--color-content-subtle)]">
-                          {user.email || "No email"}
+                          {user.email || 'No email'}
                         </span>
                       </span>
                     </Link>
                   </td>
-                  <td className={tableCellClasses("p-0")}>
+                  <td className={tableCellClasses('p-0')}>
                     <Link href={href} prefetch className={rowLinkClasses}>
-                      <Badge solid tone={roleTone(primaryRole)}>{primaryRole}</Badge>
+                      <Badge solid tone={roleTone(primaryRole)}>
+                        {primaryRole}
+                      </Badge>
                     </Link>
                   </td>
-                  <td className={tableCellClasses("p-0")}>
+                  <td className={tableCellClasses('p-0')}>
                     <Link href={href} prefetch className={rowLinkClasses}>
-                      <Badge solid tone={statusTone(user.status)}>{user.status}</Badge>
+                      <Badge solid tone={statusTone(user.status)}>
+                        {user.status}
+                      </Badge>
                     </Link>
                   </td>
-                  <td className={tableCellClasses("p-0 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums")}>
+                  <td
+                    className={tableCellClasses(
+                      'p-0 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    )}
+                  >
                     <Link href={href} prefetch className={rowLinkClasses}>
                       {new Date(user.updatedAt).toLocaleDateString()}
                     </Link>
                   </td>
-                  <td className={tableCellClasses("px-5 py-4 text-right")}>
+                  <td className={tableCellClasses('px-5 py-4 text-right')}>
                     <UserRowActions userId={user.id} email={user.email} status={user.status} />
                   </td>
                 </tr>
@@ -167,11 +178,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
         </table>
       </DataTableShell>
 
-      <TablePagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        searchParams={params}
-      />
+      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

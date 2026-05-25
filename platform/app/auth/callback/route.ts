@@ -1,17 +1,19 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+/** Supabase OAuth callback handler that exchanges the auth `code` for a session cookie and redirects the user. */
+
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 
 function getSafeNextPath(nextPath: string | null) {
-  return nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+  return nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
     ? nextPath
-    : "/dashboard";
+    : '/dashboard';
 }
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next");
+  const code = searchParams.get('code');
+  const next = searchParams.get('next');
 
   if (code) {
     const cookieStore = await cookies();

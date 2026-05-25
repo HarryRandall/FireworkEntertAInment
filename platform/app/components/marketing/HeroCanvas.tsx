@@ -1,9 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
-import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
+/**
+ * HeroCanvas — react-three-fiber background used by the marketing
+ * Hero on the public `/` landing route. Manages a small pool of
+ * particle bursts; defaults are tuned so MAX_BURSTS never overlap
+ * past BURST_LIFETIME (capped for cheap GPU work).
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+import { staticShowCrafterPalette } from '@/app/components/ui/tokens';
 
 const PALETTE = [
   new THREE.Color(staticShowCrafterPalette.primary),
@@ -48,7 +54,7 @@ function makeBurst(now: number): Burst {
   const livePositions = new Float32Array(PARTICLES_PER_BURST * 3);
   const geom = new THREE.BufferGeometry();
   const posAttr = new THREE.BufferAttribute(livePositions, 3);
-  geom.setAttribute("position", posAttr);
+  geom.setAttribute('position', posAttr);
   return {
     origin: new THREE.Vector3(
       (Math.random() - 0.5) * 6,
@@ -80,8 +86,7 @@ function FireworkBurst({ burst, onExpire }: { burst: Burst; onExpire: () => void
       const sp = burst.speeds[i];
       const drag = Math.exp(-t * 0.9);
       live[i * 3 + 0] = burst.origin.x + dx * sp * t * drag;
-      live[i * 3 + 1] =
-        burst.origin.y + dy * sp * t * drag + 0.5 * GRAVITY * t * t;
+      live[i * 3 + 1] = burst.origin.y + dy * sp * t * drag + 0.5 * GRAVITY * t * t;
       live[i * 3 + 2] = burst.origin.z + dz * sp * t * drag;
     }
     burst.posAttr.needsUpdate = true;
@@ -117,13 +122,13 @@ function Starfield() {
       pos[i * 3 + 1] = (Math.random() - 0.5) * 16;
       pos[i * 3 + 2] = -Math.random() * 14 - 4;
     }
-    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return g;
   }, []);
   const matRef = useRef<THREE.PointsMaterial>(null);
   useFrame(() => {
     if (matRef.current) {
-      matRef.current.opacity = 0.45 + 0.15 * Math.sin(performance.now() / 1000 * 0.6);
+      matRef.current.opacity = 0.45 + 0.15 * Math.sin((performance.now() / 1000) * 0.6);
     }
   });
   return (
@@ -149,8 +154,8 @@ function PointerCamera() {
       target.current.x = (e.clientX / window.innerWidth - 0.5) * 0.8;
       target.current.y = (e.clientY / window.innerHeight - 0.5) * 0.5;
     }
-    window.addEventListener("pointermove", onMove);
-    return () => window.removeEventListener("pointermove", onMove);
+    window.addEventListener('pointermove', onMove);
+    return () => window.removeEventListener('pointermove', onMove);
   }, []);
   useFrame(() => {
     camera.position.x += (target.current.x - camera.position.x) * 0.04;
@@ -178,9 +183,7 @@ function BurstManager() {
         <FireworkBurst
           key={b.startTime}
           burst={b}
-          onExpire={() =>
-            setBursts((prev) => prev.filter((x) => x.startTime !== b.startTime))
-          }
+          onExpire={() => setBursts((prev) => prev.filter((x) => x.startTime !== b.startTime))}
         />
       ))}
     </>
@@ -191,7 +194,7 @@ export default function HeroCanvas() {
   return (
     <div className="absolute inset-0">
       <Canvas
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         camera={{ position: [0, 0, 8], fov: 55 }}
         dpr={[1, 1.75]}
       >

@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { KeyRound, LogIn, Trash2 } from "lucide-react";
-import { RowActionsMenu, toast } from "@/app/components/ui";
+/** Header action buttons (suspend, delete, etc.) on the admin user detail page. */
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { KeyRound, LogIn, Trash2 } from 'lucide-react';
+import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,8 +15,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { deleteUserAction } from "@/app/actions/admin-users";
+} from '@/components/ui/alert-dialog';
+import { deleteUserAction } from '@/app/actions/admin-users';
 
 type Props = { userId: string };
 
@@ -27,8 +29,8 @@ export function UserHeaderActions({ userId }: Props) {
     startTransition(async () => {
       const result = await deleteUserAction({ userId });
       if (result.ok) {
-        toast.success("User deleted");
-        router.push("/admin/users");
+        toast.success('User deleted');
+        router.push('/admin/users');
       } else {
         toast.error(result.error);
       }
@@ -41,17 +43,17 @@ export function UserHeaderActions({ userId }: Props) {
       <RowActionsMenu
         items={[
           {
-            label: "Reset password",
+            label: 'Reset password',
             icon: <KeyRound size={14} />,
-            onSelect: () => toast.info("Password reset link sent (placeholder)"),
+            onSelect: () => toast.info('Password reset link sent (placeholder)'),
           },
           {
-            label: "Impersonate",
+            label: 'Impersonate',
             icon: <LogIn size={14} />,
-            onSelect: () => toast.info("Impersonation is not yet available"),
+            onSelect: () => toast.info('Impersonation is not yet available'),
           },
           {
-            label: "Delete user",
+            label: 'Delete user',
             icon: <Trash2 size={14} />,
             destructive: true,
             onSelect: () => setConfirmOpen(true),

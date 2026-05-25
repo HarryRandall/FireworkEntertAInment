@@ -1,17 +1,21 @@
-import * as THREE from "three";
-import type { RandomSource } from "@/lib/fireworks/random";
+/**
+ * Plays the per-shell sound effects (mortar lift, boom, crackle).
+ *
+ * Each {@link SoundKey} maps to a small bank of audio files; we round-robin
+ * (seeded) through them so repeated bursts don't sound identical. Audio
+ * decoding happens lazily — the first call to `play()` for a key warms its
+ * AudioBuffers.
+ */
+import * as THREE from 'three';
+import type { RandomSource } from '@/lib/fireworks/random';
 
-const BASE = "/sounds/fireworks";
+const BASE = '/sounds/fireworks';
 
-type SoundKey = "mortar" | "lightBoom" | "heavyBoom" | "crackle";
+type SoundKey = 'mortar' | 'lightBoom' | 'heavyBoom' | 'crackle';
 
 const FILES: Record<SoundKey, string[]> = {
   mortar: [`${BASE}/up1.mp3`, `${BASE}/up2.mp3`, `${BASE}/up3.mp3`],
-  lightBoom: [
-    `${BASE}/light_boom1.mp3`,
-    `${BASE}/light_boom2.mp3`,
-    `${BASE}/light_boom3.mp3`,
-  ],
+  lightBoom: [`${BASE}/light_boom1.mp3`, `${BASE}/light_boom2.mp3`, `${BASE}/light_boom3.mp3`],
   heavyBoom: [`${BASE}/heavy_boom1.mp3`, `${BASE}/heavy_boom2.mp3`],
   crackle: [`${BASE}/crackle1.mp3`, `${BASE}/crackle2.mp3`],
 };
@@ -61,19 +65,19 @@ export class SoundHandler {
   }
 
   playRandomMortar(volume = 1, rng?: RandomSource): void {
-    this.playRandom("mortar", volume, rng);
+    this.playRandom('mortar', volume, rng);
   }
 
   playRandomLightBoom(volume = 1, rng?: RandomSource): void {
-    this.playRandom("lightBoom", volume, rng);
+    this.playRandom('lightBoom', volume, rng);
   }
 
   playRandomHeavyBoom(volume = 1, rng?: RandomSource): void {
-    this.playRandom("heavyBoom", volume, rng);
+    this.playRandom('heavyBoom', volume, rng);
   }
 
   playRandomCrackle(volume = 0.1, rng?: RandomSource): void {
-    this.playRandom("crackle", volume, rng);
+    this.playRandom('crackle', volume, rng);
   }
 
   private playRandom(key: SoundKey, volume: number, rng?: RandomSource): void {
