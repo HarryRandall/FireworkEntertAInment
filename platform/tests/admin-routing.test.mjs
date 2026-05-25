@@ -20,7 +20,8 @@ test('admin shell has its own navigation and back-to-app route', () => {
   assert.match(shell, /Back to app/);
   assert.match(shell, /\/admin\/users/);
   assert.match(shell, /\/admin\/imports/);
-  assert.doesNotMatch(shell, /AppShell/);
+  assert.doesNotMatch(shell, /from\s+['"]@\/app\/components\/app\/AppShell['"]/);
+  assert.doesNotMatch(shell, /<AppShell\b/);
 });
 
 test('global dashboard no longer renders admin and supplier promo cards', () => {

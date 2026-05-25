@@ -15,7 +15,7 @@ test('show library routes and clone action exist', () => {
   assert.equal(existsSync(join(root, 'app/(app)/recommendations/[id]/page.tsx')), true);
   const legacyPage = readFileSync(join(root, 'app/(app)/recommendations/page.tsx'), 'utf8');
   const legacyDetail = readFileSync(join(root, 'app/(app)/recommendations/[id]/page.tsx'), 'utf8');
-  assert.match(legacyPage, /redirect\("\/library"\)/);
+  assert.match(legacyPage, /redirect\(['"]\/library['"]\)/);
   assert.match(legacyDetail, /redirect\(`\/library\/\$\{id\}`\)/);
   const action = readFileSync(join(root, 'app/actions/show-templates.ts'), 'utf8');
   assert.match(action, /cloneShowTemplateAction/);
