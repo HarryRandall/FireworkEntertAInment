@@ -1,3 +1,5 @@
+/** Authenticated dashboard landing page summarising the user's recent shows and surfacing quick actions. */
+
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { PlusCircle, Music4, Sparkles, Zap, type LucideIcon } from 'lucide-react';

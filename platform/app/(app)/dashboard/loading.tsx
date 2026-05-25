@@ -1,4 +1,6 @@
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for the `/dashboard` route. */
+
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function DashboardLoading() {
   return (

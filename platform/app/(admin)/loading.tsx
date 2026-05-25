@@ -1,4 +1,6 @@
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for admin routes. */
+
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function AdminLoading() {
   return (

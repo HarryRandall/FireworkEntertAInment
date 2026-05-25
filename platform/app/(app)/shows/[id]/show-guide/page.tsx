@@ -1,9 +1,11 @@
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { ShowGuideList } from "@/app/components/app/ShowGuideList";
-import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
-import { getShowBySlug, listCuesForShow } from "@/lib/shows.server";
-import type { Show } from "@/lib/show-domain";
+/** Show-guide tab listing each cue with launch instructions for the operator. */
+
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import { ShowGuideList } from '@/app/components/app/ShowGuideList';
+import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { getShowBySlug, listCuesForShow } from '@/lib/shows.server';
+import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };
 

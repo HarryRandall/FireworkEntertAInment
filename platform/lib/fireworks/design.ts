@@ -1,6 +1,15 @@
-import { z } from "zod";
+/**
+ * "Design" schema for individual firework cues used by the 3D renderer.
+ *
+ * A {@link FireworkDesign} is the lower-level draw description (pattern,
+ * particle count, colour, etc.) that the {@link FireworksEngine} consumes.
+ * The higher-level catalogue {@link FireworkSpec} (in `./spec.ts`) is
+ * translated to this design shape at render time.
+ */
+import { z } from 'zod';
 
-export const FIREWORK_PATTERNS = ["fibonacci", "wave", "strobe"] as const;
+/** Valid burst patterns the renderer knows how to draw. */
+export const FIREWORK_PATTERNS = ['fibonacci', 'wave', 'strobe'] as const;
 export type FireworkPattern = (typeof FIREWORK_PATTERNS)[number];
 
 const ColorSchema = z.union([
@@ -9,46 +18,44 @@ const ColorSchema = z.union([
     g: z.coerce.number().min(0).max(1),
     b: z.coerce.number().min(0).max(1),
   }),
-  z.literal("random"),
+  z.literal('random'),
 ]);
 
 const RangeSchema = z.tuple([z.coerce.number(), z.coerce.number()]);
 
 export const FireworkDesignSchema = z.object({
   size: z.coerce.number().min(20).max(370).default(120),
-  color: ColorSchema.default("random"),
+  color: ColorSchema.default('random'),
   liftVelocity: z.coerce.number().min(4).max(40).optional(),
   shellLife: z.coerce.number().min(2).max(60).default(20),
-  pattern: z.enum(FIREWORK_PATTERNS).default("fibonacci"),
+  pattern: z.enum(FIREWORK_PATTERNS).default('fibonacci'),
   burst: z
     .object({
       speed: RangeSchema.default([2, 4]),
       gravity: RangeSchema.default([-0.24, -0.02]),
       life: RangeSchema.default([0.5, 6.5]),
       flairSizeStrobe: RangeSchema.optional(),
-      flairColorMode: z.enum(["bombColor", "random", "mixed"]).default("mixed"),
+      flairColorMode: z.enum(['bombColor', 'random', 'mixed']).default('mixed'),
     })
     .default({
       speed: [2, 4],
       gravity: [-0.24, -0.02],
       life: [0.5, 6.5],
-      flairColorMode: "mixed",
+      flairColorMode: 'mixed',
     }),
-  flair: z
-    .object({ enabled: z.boolean().default(true) })
-    .default({ enabled: true }),
+  flair: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
   crackle: z
     .object({
       enabled: z.boolean().default(true),
       probability: z.coerce.number().min(0).max(1).default(0.05),
-      sound: z.enum(["crackle", "lightBoom", "heavyBoom"]).default("crackle"),
+      sound: z.enum(['crackle', 'lightBoom', 'heavyBoom']).default('crackle'),
     })
-    .default({ enabled: true, probability: 0.05, sound: "crackle" }),
+    .default({ enabled: true, probability: 0.05, sound: 'crackle' }),
   sound: z
     .object({
-      boom: z.enum(["auto", "light", "heavy"]).default("auto"),
+      boom: z.enum(['auto', 'light', 'heavy']).default('auto'),
     })
-    .default({ boom: "auto" }),
+    .default({ boom: 'auto' }),
   mortar: z
     .object({
       smokeParticles: z.coerce.number().int().min(0).max(500).default(100),
@@ -76,7 +83,10 @@ function parseCaliberMm(caliber: string): number | null {
   return null;
 }
 
-export function scaleDesignForCaliber(design: FireworkDesign, caliber: string | null): FireworkDesign {
+export function scaleDesignForCaliber(
+  design: FireworkDesign,
+  caliber: string | null,
+): FireworkDesign {
   if (!caliber) return design;
   const mm = parseCaliberMm(caliber);
   if (!mm) return design;
@@ -104,7 +114,7 @@ export function parseLaunchPositions(input: unknown): LaunchPosition[] {
   const positions = input
     .slice(0, 3)
     .map((entry): LaunchPosition | null => {
-      if (typeof entry !== "object" || entry === null) return null;
+      if (typeof entry !== 'object' || entry === null) return null;
       const r = entry as Record<string, unknown>;
       const x = Number(r.x);
       const y = Number(r.y);

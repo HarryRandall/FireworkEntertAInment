@@ -1,10 +1,7 @@
-import type { ReactNode } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+/** InfoTooltip — small `(i)` icon with hover/focus tooltip — use for inline help next to form fields and labels. */
+import type { ReactNode } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type InfoTooltipProps = {
   text: ReactNode;
@@ -20,7 +17,7 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
           suppressHydrationWarning
           aria-label="More information"
           className={cn(
-            "inline-flex h-4 w-4 items-center justify-center rounded-full border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-subtle)] transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]",
+            'inline-flex h-4 w-4 items-center justify-center rounded-full border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-subtle)] transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]',
             className,
           )}
         >

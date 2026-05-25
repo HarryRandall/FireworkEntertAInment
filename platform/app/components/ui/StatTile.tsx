@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+/** StatTile — label + value + optional unit tile used in dashboards and headers. */
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 type StatTileProps = {
   label: string;
@@ -13,7 +14,7 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
   return (
     <div
       className={cn(
-        "rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3",
+        'rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3',
         className,
       )}
     >
@@ -21,7 +22,7 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
         <span>{label}</span>
         {labelAddon}
       </div>
-      <div className="text-2xl font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
+      <div className="text-2xl font-semibold text-[color:var(--color-content-emphasis)] tabular-nums">
         {value}
         {unit ? (
           <span className="ml-1 text-sm font-normal text-[color:var(--color-content-subtle)]">

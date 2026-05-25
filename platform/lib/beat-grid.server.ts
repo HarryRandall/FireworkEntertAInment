@@ -1,3 +1,13 @@
+/**
+ * Beat-aligned cue slot grid generation (server-only).
+ *
+ * Given an analyser result (beats, sections, key moments) we produce a fixed
+ * number of {@link CueSlot}s spread across three launch tubes. The grid is
+ * deterministic given the same analyser input so re-running cue generation
+ * never reshuffles slot timing.
+ *
+ * Consumed by the cue-generation pipeline (`lib/cue-generation.server.ts`).
+ */
 import 'server-only';
 
 import type { AnalyserResult } from '@/lib/show-analysis.types';

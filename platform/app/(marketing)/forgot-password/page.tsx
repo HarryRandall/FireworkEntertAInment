@@ -1,15 +1,17 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { Mail, CheckCircle, Sparkles } from "lucide-react";
-import { Input } from "@/app/components/ui/Input";
-import { Button } from "@/app/components/ui/Button";
-import { createClient } from "@/utils/supabase/client";
-import { FormError } from "../components/FormError";
+/** Forgot-password page; sends a Supabase password recovery email. */
+
+import Link from 'next/link';
+import { useState, type FormEvent } from 'react';
+import { Mail, CheckCircle, Sparkles } from 'lucide-react';
+import { Input } from '@/app/components/ui/Input';
+import { Button } from '@/app/components/ui/Button';
+import { createClient } from '@/utils/supabase/client';
+import { FormError } from '../components/FormError';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -20,7 +22,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address.");
+      setError('Please enter a valid email address.');
       return;
     }
     setLoading(true);
@@ -48,13 +50,18 @@ export default function ForgotPasswordPage() {
               Check your inbox
             </h1>
             <p className="text-sm text-[color:var(--color-content-subtle)]">
-              If an account exists for{" "}
-              <span className="font-medium text-[color:var(--color-content-emphasis)]">{email}</span>,
-              we&apos;ve sent a password reset link. The link expires in 1 hour.
+              If an account exists for{' '}
+              <span className="font-medium text-[color:var(--color-content-emphasis)]">
+                {email}
+              </span>
+              , we&apos;ve sent a password reset link. The link expires in 1 hour.
             </p>
           </div>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
-            <Link href="/login" className="font-medium text-[color:var(--color-content-emphasis)] hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+            >
               Back to sign in
             </Link>
           </p>
@@ -66,19 +73,26 @@ export default function ForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="text-sm text-[color:var(--color-content-subtle)]">
-              Enter the email associated with your ShowCrafter account and we&apos;ll send you a reset link.
+              Enter the email associated with your ShowCrafter account and we&apos;ll send you a
+              reset link.
             </p>
           </div>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+              >
                 Email address
               </label>
               <Input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
                 placeholder="you@example.com"
                 iconLeft={<Mail size={16} />}
                 autoComplete="email"
@@ -87,12 +101,15 @@ export default function ForgotPasswordPage() {
             </div>
             {error && <FormError message={error} />}
             <Button type="submit" className="w-full" loading={loading}>
-              {loading ? "Sending…" : "Send reset link"}
+              {loading ? 'Sending…' : 'Send reset link'}
             </Button>
           </form>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
-            Remembered it?{" "}
-            <Link href="/login" className="font-medium text-[color:var(--color-content-emphasis)] hover:underline">
+            Remembered it?{' '}
+            <Link
+              href="/login"
+              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+            >
               Sign in
             </Link>
           </p>

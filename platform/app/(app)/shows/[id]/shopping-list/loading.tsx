@@ -1,4 +1,6 @@
-import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
+/** Loading skeleton for the shopping-list tab. */
+
+import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
 
 export default function ShoppingListLoading() {
   return (

@@ -1,21 +1,45 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { staticShowCrafterPalette } from "@/app/components/ui/tokens";
+/** Decorative animated firework artwork rendered on marketing pages. */
+
+import { useEffect, useRef, useState } from 'react';
+import { staticShowCrafterPalette } from '@/app/components/ui/tokens';
 
 /* ── Firework burst primitive ─────────────────────────────────── */
 
 function FireworkBurst({
-  cx, cy, r = 60, color, spokes = 12, delay = "0s",
+  cx,
+  cy,
+  r = 60,
+  color,
+  spokes = 12,
+  delay = '0s',
 }: {
-  cx: number; cy: number; r?: number; color: string; spokes?: number; delay?: string;
+  cx: number;
+  cy: number;
+  r?: number;
+  color: string;
+  spokes?: number;
+  delay?: string;
 }) {
   const angles = Array.from({ length: spokes }, (_, i) => (i * 360) / spokes);
   return (
     <g transform={`translate(${cx},${cy})`}>
       <circle r={6} fill={color} opacity={0.95}>
-        <animate attributeName="r" values="4;10;4" dur="2.4s" begin={delay} repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.95;0.35;0.95" dur="2.4s" begin={delay} repeatCount="indefinite" />
+        <animate
+          attributeName="r"
+          values="4;10;4"
+          dur="2.4s"
+          begin={delay}
+          repeatCount="indefinite"
+        />
+        <animate
+          attributeName="opacity"
+          values="0.95;0.35;0.95"
+          dur="2.4s"
+          begin={delay}
+          repeatCount="indefinite"
+        />
       </circle>
       {angles.map((a) => {
         const rad = (a * Math.PI) / 180;
@@ -26,23 +50,56 @@ function FireworkBurst({
         return (
           <g key={a}>
             <line x1={0} y1={0} x2={x2} y2={y2} stroke={color} strokeWidth={1.5} opacity={0.85}>
-              <animate attributeName="opacity" values="0.85;0.25;0.85" dur="2.4s" begin={delay} repeatCount="indefinite" />
+              <animate
+                attributeName="opacity"
+                values="0.85;0.25;0.85"
+                dur="2.4s"
+                begin={delay}
+                repeatCount="indefinite"
+              />
             </line>
             <circle cx={xm} cy={ym} r={2} fill={color} opacity={0.95}>
-              <animate attributeName="opacity" values="0.95;0.1;0.95" dur="2.4s" begin={delay} repeatCount="indefinite" />
+              <animate
+                attributeName="opacity"
+                values="0.95;0.1;0.95"
+                dur="2.4s"
+                begin={delay}
+                repeatCount="indefinite"
+              />
             </circle>
           </g>
         );
       })}
-      {angles.filter((_, i) => i % 3 === 0).map((a) => {
-        const rad = (a * Math.PI) / 180;
-        return (
-          <circle key={a} cx={Math.cos(rad) * r} cy={Math.sin(rad) * r} r={3} fill={color} opacity={0.9}>
-            <animate attributeName="opacity" values="0.9;0.1;0.9" dur="2.4s" begin={delay} repeatCount="indefinite" />
-            <animate attributeName="r" values="3;1.2;3" dur="2.4s" begin={delay} repeatCount="indefinite" />
-          </circle>
-        );
-      })}
+      {angles
+        .filter((_, i) => i % 3 === 0)
+        .map((a) => {
+          const rad = (a * Math.PI) / 180;
+          return (
+            <circle
+              key={a}
+              cx={Math.cos(rad) * r}
+              cy={Math.sin(rad) * r}
+              r={3}
+              fill={color}
+              opacity={0.9}
+            >
+              <animate
+                attributeName="opacity"
+                values="0.9;0.1;0.9"
+                dur="2.4s"
+                begin={delay}
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="r"
+                values="3;1.2;3"
+                dur="2.4s"
+                begin={delay}
+                repeatCount="indefinite"
+              />
+            </circle>
+          );
+        })}
     </g>
   );
 }
@@ -74,38 +131,139 @@ export function FireworkArt() {
         <ellipse cx="100" cy="390" rx="75" ry="75" fill="url(#glow-sky)" />
 
         {/* trails — more opaque for light mode */}
-        <line x1="210" y1="560" x2="210" y2="250" stroke={staticShowCrafterPalette.primary} strokeWidth="2" opacity="0.65" strokeDasharray="6 8">
-          <animate attributeName="opacity" values="0.65;0.2;0.65" dur="3s" repeatCount="indefinite" />
+        <line
+          x1="210"
+          y1="560"
+          x2="210"
+          y2="250"
+          stroke={staticShowCrafterPalette.primary}
+          strokeWidth="2"
+          opacity="0.65"
+          strokeDasharray="6 8"
+        >
+          <animate
+            attributeName="opacity"
+            values="0.65;0.2;0.65"
+            dur="3s"
+            repeatCount="indefinite"
+          />
         </line>
-        <line x1="330" y1="560" x2="330" y2="150" stroke={staticShowCrafterPalette.tertiary} strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
-          <animate attributeName="opacity" values="0.55;0.15;0.55" dur="3.5s" repeatCount="indefinite" />
+        <line
+          x1="330"
+          y1="560"
+          x2="330"
+          y2="150"
+          stroke={staticShowCrafterPalette.tertiary}
+          strokeWidth="1.5"
+          opacity="0.55"
+          strokeDasharray="4 8"
+        >
+          <animate
+            attributeName="opacity"
+            values="0.55;0.15;0.55"
+            dur="3.5s"
+            repeatCount="indefinite"
+          />
         </line>
-        <line x1="100" y1="560" x2="100" y2="390" stroke={staticShowCrafterPalette.magenta} strokeWidth="1.5" opacity="0.55" strokeDasharray="4 8">
-          <animate attributeName="opacity" values="0.55;0.15;0.55" dur="2.8s" repeatCount="indefinite" />
+        <line
+          x1="100"
+          y1="560"
+          x2="100"
+          y2="390"
+          stroke={staticShowCrafterPalette.magenta}
+          strokeWidth="1.5"
+          opacity="0.55"
+          strokeDasharray="4 8"
+        >
+          <animate
+            attributeName="opacity"
+            values="0.55;0.15;0.55"
+            dur="2.8s"
+            repeatCount="indefinite"
+          />
         </line>
 
         {/* bursts — using richer colours */}
-        <FireworkBurst cx={210} cy={240} r={90} color={staticShowCrafterPalette.primary} spokes={16} delay="0s" />
-        <FireworkBurst cx={330} cy={140} r={60} color={staticShowCrafterPalette.tertiary} spokes={12} delay="0.6s" />
-        <FireworkBurst cx={100} cy={390} r={48} color={staticShowCrafterPalette.magenta} spokes={10} delay="1.2s" />
-        <FireworkBurst cx={340} cy={360} r={28} color={staticShowCrafterPalette.highlight} spokes={8} delay="0.9s" />
-        <FireworkBurst cx={60} cy={170} r={22} color={staticShowCrafterPalette.secondary} spokes={8} delay="1.6s" />
+        <FireworkBurst
+          cx={210}
+          cy={240}
+          r={90}
+          color={staticShowCrafterPalette.primary}
+          spokes={16}
+          delay="0s"
+        />
+        <FireworkBurst
+          cx={330}
+          cy={140}
+          r={60}
+          color={staticShowCrafterPalette.tertiary}
+          spokes={12}
+          delay="0.6s"
+        />
+        <FireworkBurst
+          cx={100}
+          cy={390}
+          r={48}
+          color={staticShowCrafterPalette.magenta}
+          spokes={10}
+          delay="1.2s"
+        />
+        <FireworkBurst
+          cx={340}
+          cy={360}
+          r={28}
+          color={staticShowCrafterPalette.highlight}
+          spokes={8}
+          delay="0.9s"
+        />
+        <FireworkBurst
+          cx={60}
+          cy={170}
+          r={22}
+          color={staticShowCrafterPalette.secondary}
+          spokes={8}
+          delay="1.6s"
+        />
 
         {/* scattered sparkles */}
-        {([[170, 140], [260, 310], [380, 260], [50, 300], [290, 480], [140, 490]] as [number, number][]).map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={2.5} fill={staticShowCrafterPalette.primary} opacity={0.7}>
-            <animate attributeName="opacity" values="0.7;0;0.7" dur={`${1.5 + i * 0.4}s`} repeatCount="indefinite" />
+        {(
+          [
+            [170, 140],
+            [260, 310],
+            [380, 260],
+            [50, 300],
+            [290, 480],
+            [140, 490],
+          ] as [number, number][]
+        ).map(([x, y], i) => (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={2.5}
+            fill={staticShowCrafterPalette.primary}
+            opacity={0.7}
+          >
+            <animate
+              attributeName="opacity"
+              values="0.7;0;0.7"
+              dur={`${1.5 + i * 0.4}s`}
+              repeatCount="indefinite"
+            />
           </circle>
         ))}
       </svg>
 
       <div className="space-y-3 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/60">ShowCrafter</p>
-        <h2 className="text-3xl font-bold leading-tight tracking-tight text-on-surface">
-          Design your<br />
+        <p className="text-primary/60 text-xs font-semibold tracking-[0.25em] uppercase">
+          ShowCrafter
+        </p>
+        <h2 className="text-on-surface text-3xl leading-tight font-bold tracking-tight">
+          Design your
+          <br />
           <span className="text-primary">perfect show</span>
         </h2>
-        <p className="text-sm text-on-surface-variant leading-relaxed max-w-[220px] mx-auto">
+        <p className="text-on-surface-variant mx-auto max-w-[220px] text-sm leading-relaxed">
           Professional pyromusical choreography for everyone.
         </p>
       </div>
@@ -137,8 +295,8 @@ export function PageGrid() {
         y: ((e.clientY - rect.top) / rect.height) * 100,
       });
     };
-    window.addEventListener("mousemove", handler);
-    return () => window.removeEventListener("mousemove", handler);
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
   }, []);
 
   return (
@@ -147,7 +305,7 @@ export function PageGrid() {
       <svg
         className="absolute inset-0 h-full w-full opacity-[0.10]"
         style={{
-          maskImage: "radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%)",
+          maskImage: 'radial-gradient(ellipse 85% 85% at 50% 50%, black 30%, transparent 100%)',
         }}
         xmlns="http://www.w3.org/2000/svg"
       >

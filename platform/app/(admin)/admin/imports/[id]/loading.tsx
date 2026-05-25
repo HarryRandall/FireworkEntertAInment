@@ -1,5 +1,7 @@
-import { ReplayPanelSkeleton, ListSkeleton } from "@/app/components/app/RouteSkeletons";
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for the admin import detail route. */
+
+import { ReplayPanelSkeleton, ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function AdminImportDetailLoading() {
   return (

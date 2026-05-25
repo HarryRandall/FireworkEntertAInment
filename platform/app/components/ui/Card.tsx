@@ -1,25 +1,26 @@
-import type { ComponentPropsWithoutRef } from "react";
-import { cn } from "@/lib/utils";
+/** Card — surface container with radius + border + hover variants — use for grouped content panels across the app. */
+import type { ComponentPropsWithoutRef } from 'react';
+import { cn } from '@/lib/utils';
 
-type Radius = "md" | "lg" | "xl";
+type Radius = 'md' | 'lg' | 'xl';
 
 const radiusClasses: Record<Radius, string> = {
-  md: "rounded-lg",
-  lg: "rounded-xl",
-  xl: "rounded-2xl",
+  md: 'rounded-lg',
+  lg: 'rounded-xl',
+  xl: 'rounded-2xl',
 };
 
-type CardProps = ComponentPropsWithoutRef<"div"> & {
+type CardProps = ComponentPropsWithoutRef<'div'> & {
   radius?: Radius;
   bordered?: boolean;
   hoverable?: boolean;
   shadow?: boolean;
   /** @deprecated kept for backwards compatibility — no longer affects styling */
-  elevation?: "low" | "high";
+  elevation?: 'low' | 'high';
 };
 
 export function Card({
-  radius = "lg",
+  radius = 'lg',
   bordered = true,
   hoverable = false,
   shadow = false,
@@ -33,10 +34,10 @@ export function Card({
     <div
       className={cn(
         radiusClasses[radius],
-        "bg-[color:var(--color-bg-default)]",
-        bordered && "border border-[color:var(--color-border-default)]",
-        shadow && "shadow-[var(--shadow-card)]",
-        hoverable && "transition-colors hover:bg-[color:var(--color-bg-muted)]",
+        'bg-[color:var(--color-bg-default)]',
+        bordered && 'border border-[color:var(--color-border-default)]',
+        shadow && 'shadow-[var(--shadow-card)]',
+        hoverable && 'transition-colors hover:bg-[color:var(--color-bg-muted)]',
         className,
       )}
       {...rest}

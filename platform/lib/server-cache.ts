@@ -1,6 +1,17 @@
-import "server-only";
+/**
+ * Optional Upstash Redis JSON cache (server-only).
+ *
+ * The cache is best-effort: if Upstash credentials are missing, malformed, or
+ * still set to placeholders, every helper degrades to a no-op rather than
+ * throwing. This means feature code can safely call {@link getCachedJson} /
+ * {@link setCachedJson} without branching on configuration.
+ *
+ * Cache keys are namespaced by callers (e.g. `platform:v1:admin:users`) so
+ * the prefix scheme lives with each consumer rather than here.
+ */
+import 'server-only';
 
-import { Redis } from "@upstash/redis";
+import { Redis } from '@upstash/redis';
 
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -11,34 +22,28 @@ type JsonObject = { [key: string]: JsonValue };
  * instantiate a client or every get/set pays DNS/connect timeouts (~seconds).
  */
 function resolveUpstashRestConfig(): { url: string; token: string } | null {
-  const rawUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "";
-  const rawToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "";
+  const rawUrl = process.env.UPSTASH_REDIS_REST_URL?.trim() ?? '';
+  const rawToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? '';
   if (!rawUrl || !rawToken) return null;
 
-  if (rawToken === "your-upstash-token") return null;
+  if (rawToken === 'your-upstash-token') return null;
 
-  let hostname = "";
+  let hostname = '';
   try {
     const parsed = new URL(rawUrl);
-    if (parsed.protocol !== "https:") return null;
+    if (parsed.protocol !== 'https:') return null;
     hostname = parsed.hostname.toLowerCase();
   } catch {
     return null;
   }
 
-  if (
-    hostname === "your-cache.upstash.io" ||
-    !hostname.endsWith(".upstash.io")
-  )
-    return null;
+  if (hostname === 'your-cache.upstash.io' || !hostname.endsWith('.upstash.io')) return null;
 
   return { url: rawUrl, token: rawToken };
 }
 
 const redisConfig = resolveUpstashRestConfig();
-const redis = redisConfig
-  ? new Redis({ url: redisConfig.url, token: redisConfig.token })
-  : null;
+const redis = redisConfig ? new Redis({ url: redisConfig.url, token: redisConfig.token }) : null;
 
 const CACHE_TTL_SECONDS = 60;
 const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
@@ -67,7 +72,7 @@ export async function getCachedJson<T>(key: string): Promise<T | null> {
     const value = await client.get<T>(key);
     return value ?? null;
   } catch (error) {
-    console.error("[server-cache] get failed:", error);
+    console.error('[server-cache] get failed:', error);
     return null;
   }
 }
@@ -89,7 +94,7 @@ export async function setCachedJson<T>(
   try {
     await client.set(key, value, { ex: ttlSeconds });
   } catch (error) {
-    console.error("[server-cache] set failed:", error);
+    console.error('[server-cache] set failed:', error);
   }
 }
 
@@ -101,6 +106,6 @@ export async function deleteCachedKeys(keys: string[]): Promise<void> {
   try {
     await Promise.all(keys.map((key) => client.del(key)));
   } catch (error) {
-    console.error("[server-cache] delete failed:", error);
+    console.error('[server-cache] delete failed:', error);
   }
 }

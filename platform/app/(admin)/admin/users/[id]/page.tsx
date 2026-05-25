@@ -1,49 +1,46 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { ArrowLeft, UserRound } from "lucide-react";
-import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
-import { Badge } from "@/app/components/ui/Badge";
-import { Card } from "@/app/components/ui/Card";
-import { StatTile } from "@/app/components/ui/StatTile";
-import {
-  getAdminUserById,
-  getUserActivity,
-  listPermissions,
-  listRoles,
-} from "@/lib/admin.server";
-import type { AdminUser, ProfileStatus, RoleKey } from "@/lib/admin.types";
-import { UserActivityChart } from "./UserActivityChart";
-import { UserHeaderActions } from "./UserHeaderActions";
-import { UserRoleSelect } from "./UserRoleSelect";
-import { PermissionOverrideRow } from "./PermissionOverrideRow";
+/** Admin user detail page showing role, RBAC permission overrides, and recent activity. */
+
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import { ArrowLeft, UserRound } from 'lucide-react';
+import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Badge } from '@/app/components/ui/Badge';
+import { Card } from '@/app/components/ui/Card';
+import { StatTile } from '@/app/components/ui/StatTile';
+import { getAdminUserById, getUserActivity, listPermissions, listRoles } from '@/lib/admin.server';
+import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
+import { UserActivityChart } from './UserActivityChart';
+import { UserHeaderActions } from './UserHeaderActions';
+import { UserRoleSelect } from './UserRoleSelect';
+import { PermissionOverrideRow } from './PermissionOverrideRow';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 function roleTone(role: RoleKey) {
-  if (role === "admin") return "violet" as const;
-  if (role === "supplier") return "sky" as const;
-  return "neutral" as const;
+  if (role === 'admin') return 'violet' as const;
+  if (role === 'supplier') return 'sky' as const;
+  return 'neutral' as const;
 }
 
 function statusTone(status: ProfileStatus) {
-  if (status === "active") return "success" as const;
-  if (status === "suspended") return "danger" as const;
-  return "amber-soft" as const;
+  if (status === 'active') return 'success' as const;
+  if (status === 'suspended') return 'danger' as const;
+  return 'amber-soft' as const;
 }
 
 function initialsFor(name: string | null, email: string | null) {
-  const source = (name ?? email ?? "U").trim();
+  const source = (name ?? email ?? 'U').trim();
   return source
     .split(/\s+/)
-    .map((part) => part[0] ?? "")
-    .join("")
+    .map((part) => part[0] ?? '')
+    .join('')
     .slice(0, 2)
     .toUpperCase();
 }
 
 function formatDate(value: string | null) {
-  if (!value) return "—";
+  if (!value) return '—';
   return new Date(value).toLocaleString();
 }
 
@@ -52,7 +49,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   const user = await getAdminUserById(id);
   if (!user) notFound();
 
-  const primaryRole = user.roles[0] ?? "user";
+  const primaryRole = user.roles[0] ?? 'user';
 
   return (
     <div className="space-y-8">
@@ -76,13 +73,17 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold text-[color:var(--color-content-emphasis)]">
-                {user.fullName || "Unnamed user"}
+                {user.fullName || 'Unnamed user'}
               </h1>
-              <Badge solid tone={statusTone(user.status)}>{user.status}</Badge>
-              <Badge solid tone={roleTone(primaryRole)}>{primaryRole}</Badge>
+              <Badge solid tone={statusTone(user.status)}>
+                {user.status}
+              </Badge>
+              <Badge solid tone={roleTone(primaryRole)}>
+                {primaryRole}
+              </Badge>
             </div>
             <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
-              {user.email || "No email on file"}
+              {user.email || 'No email on file'}
               {user.phone ? <span className="ml-3">{user.phone}</span> : null}
             </p>
           </div>
@@ -116,15 +117,15 @@ async function AdminUserActivity({ userId }: { userId: string }) {
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile
           label="Account age"
-          value={activity?.stats.accountAgeDays ?? "—"}
-          unit={activity?.stats.accountAgeDays != null ? "days" : undefined}
+          value={activity?.stats.accountAgeDays ?? '—'}
+          unit={activity?.stats.accountAgeDays != null ? 'days' : undefined}
         />
         <StatTile
           label="Last sign-in"
           value={
             activity?.stats.lastSignInAt
               ? new Date(activity.stats.lastSignInAt).toLocaleDateString()
-              : "—"
+              : '—'
           }
         />
         <StatTile label="Shows created" value={activity?.stats.totalShows ?? 0} />
@@ -136,7 +137,9 @@ async function AdminUserActivity({ userId }: { userId: string }) {
           <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
             Activity (last 30 days)
           </h2>
-          <span className="text-xs text-[color:var(--color-content-subtle)]">Shows created per day</span>
+          <span className="text-xs text-[color:var(--color-content-subtle)]">
+            Shows created per day
+          </span>
         </div>
         <UserActivityChart data={activity?.shows30d ?? []} />
       </Card>
@@ -146,7 +149,7 @@ async function AdminUserActivity({ userId }: { userId: string }) {
 
 async function AdminUserRoleCard({ user }: { user: AdminUser }) {
   const roles = await listRoles();
-  const primaryRole = user.roles[0] ?? "user";
+  const primaryRole = user.roles[0] ?? 'user';
   const primaryRoleRow = roles.find((r) => r.key === primaryRole) ?? roles[0];
   return (
     <Card elevation="low" radius="lg" className="p-5">
@@ -168,7 +171,7 @@ async function AdminUserRoleCard({ user }: { user: AdminUser }) {
 async function AdminUserPermissionsCard({ user }: { user: AdminUser }) {
   const permissions = await listPermissions();
   const overrideByPermissionId = new Map(
-    user.permissionOverrides.map((o) => [o.permissionId, o.enabled ? "grant" : "deny"] as const),
+    user.permissionOverrides.map((o) => [o.permissionId, o.enabled ? 'grant' : 'deny'] as const),
   );
   return (
     <Card elevation="low" radius="lg" className="p-5">
@@ -184,10 +187,10 @@ async function AdminUserPermissionsCard({ user }: { user: AdminUser }) {
       </div>
       <div className="divide-y divide-[color:var(--color-border-subtle)]">
         {permissions.map((permission) => {
-          const mode = (overrideByPermissionId.get(permission.id) ?? "clear") as
-            | "grant"
-            | "deny"
-            | "clear";
+          const mode = (overrideByPermissionId.get(permission.id) ?? 'clear') as
+            | 'grant'
+            | 'deny'
+            | 'clear';
           return (
             <PermissionOverrideRow
               key={permission.id}

@@ -1,3 +1,11 @@
+/**
+ * GLSL shader strings for the fireworks particle material.
+ *
+ * Kept inline as template strings so they can be shipped to the browser
+ * without an extra build step. `gl_PointSize` is computed from particle
+ * size and view-space depth so distant bursts shrink naturally.
+ */
+
 export const VERTEX_SHADER = /* glsl */ `
 attribute float size;
 varying vec3 vColor;

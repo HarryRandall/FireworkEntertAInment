@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState, type FormEvent } from "react";
-import { Mail, Lock, ArrowLeft, Sparkles } from "lucide-react";
-import { Input } from "@/app/components/ui/Input";
-import { Button } from "@/app/components/ui/Button";
-import { createClient } from "@/utils/supabase/client";
-import { FormError } from "../components/FormError";
+/** Login page (Supabase email/password sign-in). */
 
-type Step = "email" | "password";
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState, type FormEvent } from 'react';
+import { Mail, Lock, ArrowLeft, Sparkles } from 'lucide-react';
+import { Input } from '@/app/components/ui/Input';
+import { Button } from '@/app/components/ui/Button';
+import { createClient } from '@/utils/supabase/client';
+import { FormError } from '../components/FormError';
+
+type Step = 'email' | 'password';
 
 function getSafeNextPath(nextPath: string) {
-  return nextPath.startsWith("/") && !nextPath.startsWith("//")
-    ? nextPath
-    : "/dashboard";
+  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard';
 }
 
 export default function LoginPage() {
@@ -27,11 +27,11 @@ export default function LoginPage() {
 
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/dashboard";
+  const nextPath = searchParams.get('next') || '/dashboard';
 
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<Step>('email');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,17 +41,17 @@ function LoginPageInner() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address.");
+      setError('Please enter a valid email address.');
       return;
     }
-    setStep("password");
+    setStep('password');
   };
 
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (!password) {
-      setError("Please enter your password.");
+      setError('Please enter your password.');
       return;
     }
     setLoading(true);
@@ -69,24 +69,30 @@ function LoginPageInner() {
     <AuthShell>
       <div className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          {step === "email" ? "Welcome back" : "Enter your password"}
+          {step === 'email' ? 'Welcome back' : 'Enter your password'}
         </h1>
         <p className="text-sm text-[color:var(--color-content-subtle)]">
-          {step === "email" ? "Sign in to your ShowCrafter account" : email}
+          {step === 'email' ? 'Sign in to your ShowCrafter account' : email}
         </p>
       </div>
 
-      {step === "email" ? (
+      {step === 'email' ? (
         <form onSubmit={handleEmailContinue} noValidate className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+            >
               Email address
             </label>
             <Input
               id="email"
               type="email"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(null); }}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+              }}
               placeholder="you@example.com"
               iconLeft={<Mail size={16} />}
               autoComplete="email"
@@ -102,7 +108,10 @@ function LoginPageInner() {
         <div className="space-y-4">
           <button
             type="button"
-            onClick={() => { setStep("email"); setError(null); }}
+            onClick={() => {
+              setStep('email');
+              setError(null);
+            }}
             className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
           >
             <ArrowLeft size={14} />
@@ -112,7 +121,10 @@ function LoginPageInner() {
           <form onSubmit={handleSignIn} noValidate className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+                >
                   Password
                 </label>
                 <Link
@@ -126,7 +138,10 @@ function LoginPageInner() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(null); }}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
                 placeholder="••••••••"
                 iconLeft={<Lock size={16} />}
                 autoComplete="current-password"
@@ -135,14 +150,14 @@ function LoginPageInner() {
             </div>
             {error && <FormError message={error} />}
             <Button type="submit" className="w-full" loading={loading}>
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         </div>
       )}
 
       <p className="text-sm text-[color:var(--color-content-subtle)]">
-        No account?{" "}
+        No account?{' '}
         <Link
           href="/signup"
           className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"

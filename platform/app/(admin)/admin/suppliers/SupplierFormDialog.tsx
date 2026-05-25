@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+/** Client dialog form for creating or editing a supplier profile. */
+
+import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import {
   Dialog,
   DialogClose,
@@ -12,23 +14,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/app/components/ui/Button";
-import { Input, Select } from "@/app/components/ui/Input";
-import { toast } from "@/app/components/ui/toast";
+} from '@/components/ui/dialog';
+import { Button } from '@/app/components/ui/Button';
+import { Input, Select } from '@/app/components/ui/Input';
+import { toast } from '@/app/components/ui/toast';
 import {
   createSupplier,
   updateSupplier,
   type SupplierInputType,
-} from "@/app/actions/admin-suppliers";
+} from '@/app/actions/admin-suppliers';
 
 type SupplierValues = SupplierInputType & { id?: string };
 
 const STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "suspended", label: "Suspended" },
-  { value: "archived", label: "Archived" },
+  { value: 'draft', label: 'Draft' },
+  { value: 'active', label: 'Active' },
+  { value: 'suspended', label: 'Suspended' },
+  { value: 'archived', label: 'Archived' },
 ];
 
 type Props = {
@@ -38,7 +40,12 @@ type Props = {
   onOpenChange?: (open: boolean) => void;
 };
 
-export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onOpenChange }: Props) {
+export function SupplierFormDialog({
+  initial,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: Props) {
   const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -47,21 +54,21 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
     if (controlledOpen === undefined) setInternalOpen(v);
   };
 
-  const [name, setName] = useState(initial?.name ?? "");
-  const [contactEmail, setContactEmail] = useState(initial?.contactEmail ?? "");
-  const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [websiteUrl, setWebsiteUrl] = useState(initial?.websiteUrl ?? "");
-  const [status, setStatus] = useState<SupplierInputType["status"]>(initial?.status ?? "draft");
+  const [name, setName] = useState(initial?.name ?? '');
+  const [contactEmail, setContactEmail] = useState(initial?.contactEmail ?? '');
+  const [phone, setPhone] = useState(initial?.phone ?? '');
+  const [websiteUrl, setWebsiteUrl] = useState(initial?.websiteUrl ?? '');
+  const [status, setStatus] = useState<SupplierInputType['status']>(initial?.status ?? 'draft');
   const [isPending, startTransition] = useTransition();
   const isEdit = Boolean(initial?.id);
 
   useEffect(() => {
     if (open) {
-      setName(initial?.name ?? "");
-      setContactEmail(initial?.contactEmail ?? "");
-      setPhone(initial?.phone ?? "");
-      setWebsiteUrl(initial?.websiteUrl ?? "");
-      setStatus(initial?.status ?? "draft");
+      setName(initial?.name ?? '');
+      setContactEmail(initial?.contactEmail ?? '');
+      setPhone(initial?.phone ?? '');
+      setWebsiteUrl(initial?.websiteUrl ?? '');
+      setStatus(initial?.status ?? 'draft');
     }
   }, [open, initial]);
 
@@ -72,7 +79,7 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
         ? await updateSupplier({ id: initial!.id!, ...values })
         : await createSupplier(values);
       if (result.ok) {
-        toast.success(isEdit ? "Supplier updated" : "Supplier created");
+        toast.success(isEdit ? 'Supplier updated' : 'Supplier created');
         setOpen(false);
         router.refresh();
       } else {
@@ -94,9 +101,9 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
       ) : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit supplier" : "New supplier"}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit supplier' : 'New supplier'}</DialogTitle>
           <DialogDescription>
-            {isEdit ? "Update this supplier record." : "Add a new supplier to the catalogue."}
+            {isEdit ? 'Update this supplier record.' : 'Add a new supplier to the catalogue.'}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -107,7 +114,12 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
           }}
         >
           <Field label="Name">
-            <Input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Supplier name" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="Supplier name"
+            />
           </Field>
           <Field label="Contact email">
             <Input
@@ -125,7 +137,7 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
               <Select
                 name="status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as SupplierInputType["status"])}
+                onChange={(e) => setStatus(e.target.value as SupplierInputType['status'])}
               >
                 {STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -136,7 +148,11 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
             </Field>
           </div>
           <Field label="Website">
-            <Input value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://…" />
+            <Input
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://…"
+            />
           </Field>
 
           <DialogFooter>
@@ -146,7 +162,7 @@ export function SupplierFormDialog({ initial, trigger, open: controlledOpen, onO
               </Button>
             </DialogClose>
             <Button type="submit" loading={isPending}>
-              {isEdit ? "Save changes" : "Create supplier"}
+              {isEdit ? 'Save changes' : 'Create supplier'}
             </Button>
           </DialogFooter>
         </form>

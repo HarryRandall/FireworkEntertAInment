@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
-import { useId, useState, type ReactNode } from "react";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+/** Switch primitive with optional label/description/icon — use for boolean preferences. */
+import { useId, useState, type ReactNode } from 'react';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 type ToggleProps = {
   name?: string;
@@ -26,7 +27,7 @@ export function Toggle({
   icon,
 }: ToggleProps) {
   const [internal, setInternal] = useState(defaultChecked);
-  const isControlled = typeof checked === "boolean";
+  const isControlled = typeof checked === 'boolean';
   const value = isControlled ? checked : internal;
   const id = useId();
 
@@ -41,14 +42,12 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        "group flex cursor-pointer items-start gap-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 transition-colors hover:bg-[color:var(--color-bg-muted)]",
-        disabled && "cursor-not-allowed opacity-60",
+        'group flex cursor-pointer items-start gap-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 transition-colors hover:bg-[color:var(--color-bg-muted)]',
+        disabled && 'cursor-not-allowed opacity-60',
       )}
     >
       {icon ? (
-        <span className="mt-0.5 shrink-0 text-[color:var(--color-content-subtle)]">
-          {icon}
-        </span>
+        <span className="mt-0.5 shrink-0 text-[color:var(--color-content-subtle)]">{icon}</span>
       ) : null}
       <span className="min-w-0 flex-1">
         {label ? (

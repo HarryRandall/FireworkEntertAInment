@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+/** Client dialog form for creating or editing a catalogue product. */
+
+import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import {
   Dialog,
   DialogClose,
@@ -12,15 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/app/components/ui/Button";
-import { Input } from "@/app/components/ui/Input";
-import { toast } from "@/app/components/ui/toast";
-import {
-  createProduct,
-  updateProduct,
-  type ProductInputType,
-} from "@/app/actions/admin-catalogue";
+} from '@/components/ui/dialog';
+import { Button } from '@/app/components/ui/Button';
+import { Input } from '@/app/components/ui/Input';
+import { toast } from '@/app/components/ui/toast';
+import { createProduct, updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
 
 type Values = ProductInputType & { id?: string };
 
@@ -40,23 +38,23 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
     if (controlledOpen === undefined) setInternalOpen(v);
   };
 
-  const [partNumber, setPartNumber] = useState(initial?.partNumber ?? "");
-  const [name, setName] = useState(initial?.name ?? "");
-  const [manufacturer, setManufacturer] = useState(initial?.manufacturer ?? "");
-  const [fireworkType, setFireworkType] = useState(initial?.fireworkType ?? "");
+  const [partNumber, setPartNumber] = useState(initial?.partNumber ?? '');
+  const [name, setName] = useState(initial?.name ?? '');
+  const [manufacturer, setManufacturer] = useState(initial?.manufacturer ?? '');
+  const [fireworkType, setFireworkType] = useState(initial?.fireworkType ?? '');
   const [duration, setDuration] = useState(
-    initial?.durationSeconds != null ? String(initial.durationSeconds) : "",
+    initial?.durationSeconds != null ? String(initial.durationSeconds) : '',
   );
   const [isPending, startTransition] = useTransition();
   const isEdit = Boolean(initial?.id);
 
   useEffect(() => {
     if (open) {
-      setPartNumber(initial?.partNumber ?? "");
-      setName(initial?.name ?? "");
-      setManufacturer(initial?.manufacturer ?? "");
-      setFireworkType(initial?.fireworkType ?? "");
-      setDuration(initial?.durationSeconds != null ? String(initial.durationSeconds) : "");
+      setPartNumber(initial?.partNumber ?? '');
+      setName(initial?.name ?? '');
+      setManufacturer(initial?.manufacturer ?? '');
+      setFireworkType(initial?.fireworkType ?? '');
+      setDuration(initial?.durationSeconds != null ? String(initial.durationSeconds) : '');
     }
   }, [open, initial]);
 
@@ -67,13 +65,13 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
         name,
         manufacturer,
         fireworkType,
-        durationSeconds: duration === "" ? null : Number(duration),
+        durationSeconds: duration === '' ? null : Number(duration),
       };
       const result = isEdit
         ? await updateProduct({ id: initial!.id!, ...values })
         : await createProduct(values);
       if (result.ok) {
-        toast.success(isEdit ? "Product updated" : "Product created");
+        toast.success(isEdit ? 'Product updated' : 'Product created');
         setOpen(false);
         router.refresh();
       } else {
@@ -95,7 +93,7 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
       ) : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit product" : "New product"}</DialogTitle>
+          <DialogTitle>{isEdit ? 'Edit product' : 'New product'}</DialogTitle>
           <DialogDescription>Catalogue product visible to show-builders.</DialogDescription>
         </DialogHeader>
         <form
@@ -125,10 +123,10 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Manufacturer">
-              <Input value={manufacturer ?? ""} onChange={(e) => setManufacturer(e.target.value)} />
+              <Input value={manufacturer ?? ''} onChange={(e) => setManufacturer(e.target.value)} />
             </Field>
             <Field label="Type">
-              <Input value={fireworkType ?? ""} onChange={(e) => setFireworkType(e.target.value)} />
+              <Input value={fireworkType ?? ''} onChange={(e) => setFireworkType(e.target.value)} />
             </Field>
           </div>
 
@@ -139,7 +137,7 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
               </Button>
             </DialogClose>
             <Button type="submit" loading={isPending}>
-              {isEdit ? "Save changes" : "Create product"}
+              {isEdit ? 'Save changes' : 'Create product'}
             </Button>
           </DialogFooter>
         </form>

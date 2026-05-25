@@ -1,3 +1,5 @@
+/** 3D preview tab for a show, rendering the firework replay canvas. */
+
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { FireworkReplayViewer } from '@/app/components/app/FireworkReplayViewer';

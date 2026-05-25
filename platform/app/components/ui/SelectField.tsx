@@ -1,14 +1,15 @@
-"use client";
+'use client';
 
-import { useMemo, useState, type ReactNode } from "react";
+/** SelectField — styled wrapper around the shadcn Select primitive — use for all dropdowns inside forms. */
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export type SelectOption = {
   value: string;
@@ -37,15 +38,15 @@ export function SelectField({
   defaultValue,
   onChange,
   options,
-  placeholder = "Select...",
+  placeholder = 'Select...',
   required,
   disabled,
   className,
   ariaLabel,
   iconLeft,
 }: SelectFieldProps) {
-  const isControlled = typeof value === "string";
-  const [internal, setInternal] = useState(defaultValue ?? "");
+  const isControlled = typeof value === 'string';
+  const [internal, setInternal] = useState(defaultValue ?? '');
   const current = isControlled ? value! : internal;
 
   const selected = useMemo(
@@ -61,29 +62,21 @@ export function SelectField({
   return (
     <>
       {name ? (
-        <input
-          type="hidden"
-          name={name}
-          value={current}
-          required={required}
-          disabled={disabled}
-        />
+        <input type="hidden" name={name} value={current} required={required} disabled={disabled} />
       ) : null}
       <Select value={current} onValueChange={handleChange} disabled={disabled}>
         <SelectTrigger
           aria-label={ariaLabel}
           className={cn(
-            "h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:outline-none focus:border-[color:var(--color-content-emphasis)]",
-            disabled && "cursor-not-allowed opacity-60",
+            'h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:border-[color:var(--color-content-emphasis)] focus:outline-none',
+            disabled && 'cursor-not-allowed opacity-60',
             className,
           )}
         >
           {iconLeft ? (
             <span className="text-[color:var(--color-content-subtle)]">{iconLeft}</span>
           ) : null}
-          <SelectValue placeholder={placeholder}>
-            {selected?.label}
-          </SelectValue>
+          <SelectValue placeholder={placeholder}>{selected?.label}</SelectValue>
         </SelectTrigger>
         <SelectContent
           align="start"

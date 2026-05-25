@@ -1,3 +1,5 @@
+/** Layout wrapping the new-show wizard route (`/shows/new`). */
+
 // Lift the serverless function budget for this route so the background music
 // analysis started by startMusicAnalysisAction's `after()` callback has time to
 // finish on Vercel. Requires Fluid Compute / Pro plan in production; harmless

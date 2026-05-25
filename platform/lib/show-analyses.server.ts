@@ -1,3 +1,15 @@
+/**
+ * Read-side server helpers for the music/show analysis snapshots.
+ *
+ * The analyser is a Python (librosa) job that produces beat/section/key-moment
+ * data for an uploaded track. Two related rows hold the result:
+ *
+ * - `music_analyses` — analyser output keyed by audio file (newer schema).
+ * - `show_analyses` — legacy per-show row, still read for old shows.
+ *
+ * This module exposes a unified {@link ShowAnalysisSnapshot} so callers
+ * don't have to know which table their analysis lives in.
+ */
 import 'server-only';
 
 import { cookies } from 'next/headers';

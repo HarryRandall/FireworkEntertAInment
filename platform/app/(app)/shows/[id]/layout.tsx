@@ -1,3 +1,5 @@
+/** Show detail layout; loads the show by slug and renders the per-show tab navigation. */
+
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Music4, User, Timer, Wallet } from 'lucide-react';

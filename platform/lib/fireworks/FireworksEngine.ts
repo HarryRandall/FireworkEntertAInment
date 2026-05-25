@@ -1,20 +1,32 @@
-import * as THREE from "three";
-import type { ReplayCue } from "@/lib/show-domain";
+/**
+ * Top-level Three.js fireworks engine.
+ *
+ * Owns the scene, particle pool, sound handler, lighting, and the cue
+ * scheduler. Mounted by {@link FireworkReplayViewer} on the client; never
+ * imported on the server (uses `window`, `THREE`, and `<canvas>`).
+ *
+ * Lifecycle: call `start(cues)` to bind a list of replay cues to the
+ * timeline, then drive `step(currentTime)` from `requestAnimationFrame` or
+ * an external clock. `dispose()` must be called on unmount to free GPU
+ * resources.
+ */
+import * as THREE from 'three';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
   type LaunchPosition,
   safeParseFireworkDesign,
   scaleDesignForCaliber,
-} from "@/lib/fireworks/design";
-import { ParticlePool } from "@/lib/fireworks/ParticlePool";
-import { SoundHandler } from "@/lib/fireworks/SoundHandler";
-import { Lights } from "@/lib/fireworks/Lights";
-import { World } from "@/lib/fireworks/World";
-import { Effects } from "@/lib/fireworks/Effects";
-import { Scheduler } from "@/lib/fireworks/Scheduler";
-import { FRAGMENT_SHADER, VERTEX_SHADER } from "@/lib/fireworks/shaders";
-import { createSeededRng, mixSeed } from "@/lib/fireworks/random";
+} from '@/lib/fireworks/design';
+import { ParticlePool } from '@/lib/fireworks/ParticlePool';
+import { SoundHandler } from '@/lib/fireworks/SoundHandler';
+import { Lights } from '@/lib/fireworks/Lights';
+import { World } from '@/lib/fireworks/World';
+import { Effects } from '@/lib/fireworks/Effects';
+import { Scheduler } from '@/lib/fireworks/Scheduler';
+import { FRAGMENT_SHADER, VERTEX_SHADER } from '@/lib/fireworks/shaders';
+import { createSeededRng, mixSeed } from '@/lib/fireworks/random';
 
 type PoolSnapshot = {
   indices: Uint32Array;
@@ -31,7 +43,7 @@ export type FireworksEngineStats = {
 };
 
 const PARTICLE_CAPACITY = 100_000;
-const SPARK_TEXTURE_URL = "/textures/spark1.png";
+const SPARK_TEXTURE_URL = '/textures/spark1.png';
 const FIXED_DT = 1 / 60;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 15;
@@ -89,15 +101,15 @@ export class FireworksEngine {
 
     this.geometry = new THREE.BufferGeometry();
     this.geometry.setAttribute(
-      "position",
+      'position',
       new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage),
     );
     this.geometry.setAttribute(
-      "color",
+      'color',
       new THREE.BufferAttribute(this.colors, 3).setUsage(THREE.DynamicDrawUsage),
     );
     this.geometry.setAttribute(
-      "size",
+      'size',
       new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage),
     );
     this.geometry.setDrawRange(0, 0);
@@ -152,7 +164,10 @@ export class FireworksEngine {
   }
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
-    const design = scaleDesignForCaliber(safeParseFireworkDesign(cue.firework.rawSpec), cue.firework.caliber);
+    const design = scaleDesignForCaliber(
+      safeParseFireworkDesign(cue.firework.rawSpec),
+      cue.firework.caliber,
+    );
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const pos = this.world.getLaunchPosition(idx);
     const seed = mixSeed(
@@ -205,11 +220,7 @@ export class FireworksEngine {
       // Snapshot at coarse intervals while not in real-time playback.
       // Skip frames with mid-flight shells: their detonation callbacks
       // would be lost on restore and leave dangling ascending particles.
-      if (
-        !audible &&
-        cursor >= this.nextSnapshotAt &&
-        !this.poolHasMidFlightShells()
-      ) {
+      if (!audible && cursor >= this.nextSnapshotAt && !this.poolHasMidFlightShells()) {
         this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
       }
@@ -355,7 +366,7 @@ export class FireworksEngine {
   fireDesign(design: FireworkDesign, launchIndex = 0): void {
     const pos = this.world.getLaunchPosition(launchIndex);
     this.effects.fire(design, pos, {
-      rng: createSeededRng(mixSeed("manual", this.elapsed, launchIndex)),
+      rng: createSeededRng(mixSeed('manual', this.elapsed, launchIndex)),
       audible: true,
     });
   }

@@ -1,90 +1,62 @@
+/**
+ * The "create new show" wizard page.
+ *
+ * Three-step form:
+ *   0. Constraints — budget, duration, location, time of day.
+ *   1. Sound — title + audio upload (uploads + kicks off music analysis).
+ *   2. Brief — free-text prompt + mood tag chips.
+ *
+ * Critical invariants enforced by the wizard tests in
+ * `tests/new-show-wizard.test.mjs`:
+ *   - The form's `onSubmit` only advances the wizard; it must never call
+ *     `createShowAction`.
+ *   - The create-show server action is invoked once, and only inside
+ *     {@link triggerGenerate}, so accidental Enter-presses can't create a draft.
+ *   - The audio file is uploaded directly to Supabase Storage and only the
+ *     path + `musicAnalysisId` are submitted via the action.
+ *
+ * Step UI primitives, pickers, helper formatters, and constants are extracted
+ * into `./_components/`, `./constants.ts`, and `./utils.ts` to keep this file
+ * focused on orchestration.
+ */
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CloudUpload,
-  MapPin,
-  Moon,
-  Music4,
-  Pencil,
-  Sparkles,
-  Sun,
-  Sunset,
-  Trash2,
-  Wallet,
-} from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
+import { ArrowLeft, ArrowRight, Check, MapPin, Music4, Sparkles } from 'lucide-react';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { ChoiceChip } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
-import { cn } from '@/lib/utils';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
 import { createShowAction } from './actions';
-
-const BUDGET_PRESETS = [250, 500, 1000, 2500, 5000] as const;
-const DURATION_PRESETS = [1, 2, 3, 5, 10] as const;
-const TIME_OF_DAY = [
-  { value: 'Daytime', icon: Sun },
-  { value: 'Dusk', icon: Sunset },
-  { value: 'Night', icon: Moon },
-] as const;
-type TimeOfDay = (typeof TIME_OF_DAY)[number]['value'];
-const MOOD_TAGS = [
-  'Patriotic',
-  'Romantic',
-  'High energy',
-  'Elegant',
-  'Minimalist',
-  'Grand finale focused',
-];
-const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
-const AUDIO_BUCKET = 'audio';
-const STEPS = [
-  {
-    key: 'constraints',
-    label: 'Constraints',
-    title: 'Set the show constraints',
-    description: "Tell us the budget, length, and where it'll happen.",
-  },
-  {
-    key: 'sound',
-    label: 'Sound',
-    title: 'Add a track and title',
-    description: 'Pick the music you want the show choreographed to.',
-  },
-  {
-    key: 'brief',
-    label: 'Brief',
-    title: 'Describe the show',
-    description: 'A short brief helps us draft something close to your vision.',
-  },
-] as const;
-
-type FieldError = 'location' | 'title' | null;
-type AudioUploadState = 'idle' | 'uploading' | 'ready' | 'error';
-type UploadedAudio = {
-  audioPath: string;
-  musicAnalysisId: string;
-  originalName: string;
-  sizeBytes: number;
-  contentType: string;
-};
+import { AudioUpload } from './_components/AudioUpload';
+import { BudgetPicker } from './_components/BudgetPicker';
+import { DurationPicker } from './_components/DurationPicker';
+import { Field, FieldError } from './_components/Field';
+import { ProgressTrack } from './_components/ProgressTrack';
+import { StepPanel } from './_components/StepPanel';
+import {
+  AUDIO_BUCKET,
+  DURATION_PRESETS,
+  MAX_AUDIO_BYTES,
+  MOOD_TAGS,
+  STEPS,
+  TIME_OF_DAY,
+} from './constants';
+import type {
+  AudioUploadState,
+  FieldError as FieldErrorKey,
+  TimeOfDay,
+  UploadedAudio,
+} from './types';
+import { inferAudioContentType, sanitizeStorageName } from './utils';
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
+
+  // === Step 0: constraints =================================================
   const [budget, setBudget] = useState(2500);
   const [budgetMode, setBudgetMode] = useState<'preset' | 'custom'>('preset');
   const [customBudget, setCustomBudget] = useState('');
@@ -92,27 +64,38 @@ export default function NewShowPage() {
   const [durationPreset, setDurationPreset] = useState<(typeof DURATION_PRESETS)[number]>(3);
   const [customDuration, setCustomDuration] = useState('');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('Night');
-  const [stepIndex, setStepIndex] = useState(0);
-  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
+  const [location, setLocation] = useState('');
+
+  // === Step 1: sound =======================================================
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [audioUploadState, setAudioUploadState] = useState<AudioUploadState>('idle');
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
-  const [location, setLocation] = useState('');
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [fieldError, setFieldError] = useState<FieldError>(null);
-  const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Promise of the in-flight upload so `triggerGenerate` can await it if the
+  // user clicks Generate before the upload finishes.
   const uploadPromiseRef = useRef<Promise<UploadedAudio> | null>(null);
+  // Monotonic token: lets late upload responses ignore themselves if the user
+  // has already attached a different file.
   const uploadTokenRef = useRef(0);
+
+  // === Step 2: brief =======================================================
+  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
+  const [description, setDescription] = useState('');
+
+  // === Wizard nav ==========================================================
+  const [stepIndex, setStepIndex] = useState(0);
+  const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
+  const [isPending, startTransition] = useTransition();
 
   const durationValue =
     durationMode === 'custom'
       ? `${customDuration.trim()} minute${customDuration.trim() === '1' ? '' : 's'}`
       : `${durationPreset} minute${durationPreset === 1 ? '' : 's'}`;
 
+  /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {
     if (stepIndex === 0) {
       const budgetOk = budgetMode === 'preset' || !!customBudget.trim();
@@ -123,6 +106,8 @@ export default function NewShowPage() {
     return true;
   }, [stepIndex, budgetMode, customBudget, durationMode, customDuration, location, title]);
 
+  // Resolve the audio file's duration locally so we can show "M:SS" in the
+  // attached-track pill. The `<audio>` element is throwaway and never plays.
   useEffect(() => {
     if (!audioFile) {
       setAudioDuration(null);
@@ -186,6 +171,13 @@ export default function NewShowPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  /**
+   * Direct-to-storage audio upload + music analysis kickoff.
+   *
+   * The upload is gated on the current `token` — if the user picks a new
+   * file mid-flight, the in-flight promise's resolved values are dropped on
+   * the floor so we don't show a stale "ready" state.
+   */
   const uploadAudioAndStartAnalysis = async (file: File, token: number): Promise<UploadedAudio> => {
     setAudioUploadState('uploading');
     const supabase = createSupabaseBrowserClient();
@@ -241,6 +233,8 @@ export default function NewShowPage() {
       };
     }
     if (!analysisResult.ok) {
+      // Best-effort: roll back the upload if the analysis row couldn't be
+      // created so we don't leave orphaned files in storage.
       await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
       if (uploadTokenRef.current === token) {
         setAudioUploadState('error');
@@ -264,9 +258,11 @@ export default function NewShowPage() {
     return uploaded;
   };
 
-  // The form's submit handler is intent-only: it advances the wizard on
-  // Enter and never creates a show. Generation runs ONLY when the user
-  // explicitly clicks the "Generate show" button (see triggerGenerate).
+  /**
+   * The form's submit handler is intent-only: it advances the wizard on
+   * Enter and never creates a show. Generation runs ONLY when the user
+   * explicitly clicks the "Generate show" button (see triggerGenerate).
+   */
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFieldError(null);
@@ -275,6 +271,8 @@ export default function NewShowPage() {
     }
   };
 
+  /** Click handler for the Generate button. Guards required fields, awaits
+   * any pending upload, then submits the show via the server action. */
   const triggerGenerate = () => {
     setFieldError(null);
     if (!title.trim()) {
@@ -322,6 +320,11 @@ export default function NewShowPage() {
     });
   };
 
+  /**
+   * Move the wizard to `nextIndex`. Going backward is always allowed; going
+   * forward requires the current step to be valid (otherwise we set
+   * `fieldError` and toast).
+   */
   const goToStep = (nextIndex: number) => {
     if (nextIndex <= stepIndex) {
       setFieldError(null);
@@ -531,387 +534,4 @@ export default function NewShowPage() {
       </div>
     </form>
   );
-}
-
-function ProgressTrack({
-  steps,
-  current,
-  onSelect,
-}: {
-  steps: readonly { key: string; label: string }[];
-  current: number;
-  onSelect: (index: number) => void;
-}) {
-  return (
-    <ol className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-      {steps.map((step, index) => {
-        const isActive = index === current;
-        const isComplete = index < current;
-        const isClickable = index <= current;
-        return (
-          <li key={step.key}>
-            <button
-              type="button"
-              onClick={() => onSelect(index)}
-              disabled={!isClickable}
-              className={cn(
-                'inline-flex items-center gap-2 rounded-md py-1 text-sm transition-colors',
-                isActive
-                  ? 'text-[color:var(--color-content-emphasis)]'
-                  : isComplete
-                    ? 'text-[color:var(--color-content-default)] hover:text-[color:var(--color-content-emphasis)]'
-                    : 'cursor-not-allowed text-[color:var(--color-content-muted)]',
-              )}
-              aria-current={isActive ? 'step' : undefined}
-            >
-              <span
-                className={cn(
-                  'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium',
-                  isComplete &&
-                    'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]',
-                  isActive &&
-                    'border-[color:var(--color-content-emphasis)] text-[color:var(--color-content-emphasis)]',
-                  !isActive &&
-                    !isComplete &&
-                    'border-[color:var(--color-border-default)] text-[color:var(--color-content-muted)]',
-                )}
-              >
-                {isComplete ? <Check size={12} strokeWidth={2.5} /> : index + 1}
-              </span>
-              <span className="font-medium">{step.label}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function BudgetPicker({
-  budget,
-  mode,
-  customValue,
-  onBudgetChange,
-  onModeChange,
-  onCustomValueChange,
-}: {
-  budget: number;
-  mode: 'preset' | 'custom';
-  customValue: string;
-  onBudgetChange: (n: number) => void;
-  onModeChange: (mode: 'preset' | 'custom') => void;
-  onCustomValueChange: (value: string) => void;
-}) {
-  const isPreset =
-    mode === 'preset' && BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
-  return (
-    <Field
-      label="Budget"
-      required
-      icon={<Wallet size={13} strokeWidth={1.75} />}
-      trailing={
-        <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)] tabular-nums">
-          ${budget.toLocaleString()}
-        </span>
-      }
-    >
-      <div className="flex flex-wrap gap-2">
-        {BUDGET_PRESETS.map((preset) => (
-          <ChoiceChip
-            key={preset}
-            selected={isPreset && budget === preset}
-            onClick={() => {
-              onModeChange('preset');
-              onBudgetChange(preset);
-            }}
-          >
-            ${preset.toLocaleString()}
-            {preset === 5000 ? '+' : ''}
-          </ChoiceChip>
-        ))}
-        <ChoiceChip
-          selected={mode === 'custom'}
-          onClick={() => {
-            onModeChange('custom');
-            onCustomValueChange(customValue || String(budget));
-          }}
-        >
-          Custom
-        </ChoiceChip>
-      </div>
-      {mode === 'custom' ? (
-        <Input
-          type="number"
-          min={50}
-          max={5000}
-          step={50}
-          inputMode="numeric"
-          value={customValue}
-          placeholder="Custom budget"
-          className="mt-3"
-          onChange={(e) => {
-            const value = e.target.value;
-            onCustomValueChange(value);
-            if (value === '') return;
-            const n = Number(value);
-            if (Number.isFinite(n) && n >= 50) onBudgetChange(n);
-          }}
-        />
-      ) : null}
-    </Field>
-  );
-}
-
-function DurationPicker({
-  mode,
-  preset,
-  customValue,
-  onModeChange,
-  onPresetChange,
-  onCustomValueChange,
-}: {
-  mode: 'preset' | 'custom';
-  preset: (typeof DURATION_PRESETS)[number];
-  customValue: string;
-  onModeChange: (mode: 'preset' | 'custom') => void;
-  onPresetChange: (minutes: (typeof DURATION_PRESETS)[number]) => void;
-  onCustomValueChange: (value: string) => void;
-}) {
-  return (
-    <Field label="Duration" required>
-      <div className="flex flex-wrap gap-2">
-        {DURATION_PRESETS.map((minutes) => (
-          <ChoiceChip
-            key={minutes}
-            selected={mode === 'preset' && preset === minutes}
-            onClick={() => {
-              onModeChange('preset');
-              onPresetChange(minutes);
-            }}
-          >
-            {minutes} min
-          </ChoiceChip>
-        ))}
-        <ChoiceChip
-          selected={mode === 'custom'}
-          onClick={() => {
-            onModeChange('custom');
-            onCustomValueChange(customValue || String(preset));
-          }}
-        >
-          Custom
-        </ChoiceChip>
-      </div>
-      {mode === 'custom' ? (
-        <Input
-          type="number"
-          min={1}
-          max={60}
-          step={1}
-          inputMode="numeric"
-          value={customValue}
-          placeholder="Custom duration in minutes"
-          className="mt-3"
-          onChange={(e) => onCustomValueChange(e.target.value)}
-        />
-      ) : null}
-    </Field>
-  );
-}
-
-function AudioUpload({
-  file,
-  duration,
-  uploadState,
-  error,
-  inputRef,
-  onFile,
-  onClear,
-}: {
-  file: File | null;
-  duration: number | null;
-  uploadState: AudioUploadState;
-  error: string | null;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  onFile: (file: File | null) => void;
-  onClear: () => void;
-}) {
-  if (file) {
-    const statusText =
-      uploadState === 'uploading'
-        ? 'Uploading track'
-        : uploadState === 'error'
-          ? (error ?? 'Upload failed')
-          : 'Track ready';
-    return (
-      <div
-        className={cn(
-          'flex items-center gap-3 rounded-lg border p-4',
-          uploadState === 'error'
-            ? 'border-[color:var(--color-status-danger)]/40 bg-[color-mix(in_srgb,var(--color-status-danger)_8%,transparent)]'
-            : 'border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)]',
-        )}
-      >
-        <span
-          className={cn(
-            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-default)]',
-            uploadState === 'error'
-              ? 'text-[color:var(--color-status-danger)]'
-              : 'text-[color:var(--color-status-success)]',
-          )}
-        >
-          <Music4 size={18} strokeWidth={1.75} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Check
-              size={14}
-              strokeWidth={2.5}
-              className={cn(
-                'shrink-0',
-                uploadState === 'error'
-                  ? 'text-[color:var(--color-status-danger)]'
-                  : 'text-[color:var(--color-status-success)]',
-              )}
-            />
-            <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
-              {file.name}
-            </span>
-          </div>
-          <div className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-            {formatBytes(file.size)}
-            {duration ? ` · ${formatDuration(duration)}` : ''}
-            {` · ${statusText}`}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button type="button" variant="ghost" size="sm" onClick={() => inputRef.current?.click()}>
-            <Pencil size={13} />
-            Replace
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Remove track"
-            onClick={onClear}
-            className="h-8 w-8"
-          >
-            <Trash2 size={14} />
-          </Button>
-        </div>
-        <input
-          ref={inputRef}
-          className="hidden"
-          type="file"
-          accept="audio/*"
-          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/40 p-6 text-center transition-colors hover:border-[color:var(--color-content-emphasis)]/45 hover:bg-[color:var(--color-bg-subtle)]">
-      <CloudUpload
-        size={28}
-        strokeWidth={1.5}
-        className="mb-3 text-[color:var(--color-content-subtle)]"
-      />
-      <span className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-        Drop track or click to browse
-      </span>
-      <span className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
-        MP3, WAV, AAC, or M4A · up to 50MB
-      </span>
-      <input
-        ref={inputRef}
-        className="absolute inset-0 cursor-pointer opacity-0"
-        type="file"
-        accept="audio/*"
-        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-      />
-    </label>
-  );
-}
-
-function StepPanel({ active, children }: { active: boolean; children: ReactNode }) {
-  return <section className={cn(!active && 'hidden')}>{children}</section>;
-}
-
-function Field({
-  label,
-  required,
-  helper,
-  icon,
-  trailing,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  helper?: string;
-  icon?: ReactNode;
-  trailing?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <label className="inline-flex items-center gap-1.5 text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            {icon}
-            {label}
-            {required ? (
-              <span aria-label="required" className="text-[color:var(--color-status-danger)]">
-                *
-              </span>
-            ) : null}
-          </label>
-          {helper ? (
-            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">{helper}</p>
-          ) : null}
-        </div>
-        {trailing}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function FieldError({ children }: { children: ReactNode }) {
-  return <p className="text-xs text-[color:var(--color-status-danger)]">{children}</p>;
-}
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDuration(seconds: number) {
-  const total = Math.round(seconds);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function sanitizeStorageName(name: string) {
-  return name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80) || 'audio';
-}
-
-function inferAudioContentType(file: File) {
-  if (file.type) return file.type;
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-  switch (ext) {
-    case 'wav':
-      return 'audio/wav';
-    case 'm4a':
-    case 'mp4':
-      return 'audio/mp4';
-    case 'aac':
-      return 'audio/aac';
-    case 'mp3':
-    default:
-      return 'audio/mpeg';
-  }
 }

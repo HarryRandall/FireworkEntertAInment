@@ -1,17 +1,19 @@
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { runShowAnalysisForShow } from "@/lib/show-analysis-runner.server";
-import { createClient } from "@/utils/supabase/server";
+/** POST handler that proxies an uploaded audio file to the Python `analyser` and persists the resulting features. */
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { runShowAnalysisForShow } from '@/lib/show-analysis-runner.server';
+import { createClient } from '@/utils/supabase/server';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const AnalyseRequestSchema = z.object({
   showId: z.string().uuid(),
   personality: z
-    .enum(["balanced", "bold", "cinematic", "elegant", "intimate", "playful"])
-    .default("balanced"),
+    .enum(['balanced', 'bold', 'cinematic', 'elegant', 'intimate', 'playful'])
+    .default('balanced'),
 });
 
 function jsonError(message: string, status: number) {
@@ -21,7 +23,7 @@ function jsonError(message: string, status: number) {
 export async function POST(request: Request) {
   const parsed = AnalyseRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return jsonError("Invalid analyse request.", 400);
+    return jsonError('Invalid analyse request.', 400);
   }
 
   const supabase = createClient(await cookies());
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    return jsonError("You must be signed in to analyse a show.", 401);
+    return jsonError('You must be signed in to analyse a show.', 401);
   }
 
   const result = await runShowAnalysisForShow({

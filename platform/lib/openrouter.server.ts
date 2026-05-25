@@ -1,3 +1,13 @@
+/**
+ * Lazily-instantiated OpenRouter client (server-only).
+ *
+ * OpenRouter is OpenAI-compatible, so we reuse the official `openai` SDK with
+ * a custom `baseURL` and the OpenRouter ranking headers. The client is
+ * cached at module scope to avoid re-allocating per request.
+ *
+ * Throws on first use if `OPENROUTER_API_KEY` is missing — surface the error
+ * to the caller rather than silently returning a broken client.
+ */
 import 'server-only';
 
 import OpenAI from 'openai';

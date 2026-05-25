@@ -1,5 +1,11 @@
 'use server';
 
+/**
+ * Server actions for the show preview cue editor: add and remove
+ * cues on a show. Adds reject overlapping cues on the same launch
+ * position based on each product's airtime (see `cue-overlap`).
+ */
+
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
@@ -34,6 +40,7 @@ const DeleteCueSchema = z.object({
   showSlug: z.string().min(1),
 });
 
+/** Add a new cue to a show after checking it does not overlap an existing cue on the same launch position. */
 export async function addPreviewCueAction(formData: FormData): Promise<CueActionResult> {
   const parsed = AddCueSchema.safeParse({
     showId: formData.get('showId'),
@@ -132,6 +139,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   return { ok: true, message: 'Cue added.' };
 }
 
+/** Delete a cue by id from a show and re-sync the show's derived fields. */
 export async function deletePreviewCueAction(formData: FormData): Promise<CueActionResult> {
   const parsed = DeleteCueSchema.safeParse({
     cueId: formData.get('cueId'),

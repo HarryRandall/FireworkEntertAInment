@@ -1,25 +1,31 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
-import type { ShowTemplate, ShowTemplateCue } from "@/lib/admin.types";
-import type { FireworkSpecification, ReplayCue } from "@/lib/show-domain";
-import { formatDuration } from "@/lib/show-domain";
+/**
+ * TemplateReplayPreview — small 3D replay preview used on template
+ * cards in the library route and on the template detail page. In
+ * "card" mode only the first ~10 seconds simulate to keep the initial
+ * seek cheap when many cards are visible.
+ */
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Pause, Play, RotateCcw } from 'lucide-react';
+import type { ShowTemplate, ShowTemplateCue } from '@/lib/admin.types';
+import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
+import { formatDuration } from '@/lib/show-domain';
 
 type TemplateReplayPreviewProps = {
   template: ShowTemplate;
   specifications: FireworkSpecification[];
-  mode?: "card" | "detail";
+  mode?: 'card' | 'detail';
   isCardHovered?: boolean;
 };
 
 const FIREWORK_SLUG_ALIASES: Record<string, string> = {
-  chrysanthemum: "gold-chrysanthemum",
-  comet: "comet-gold",
-  finale_barrage: "white-strobe",
-  peony: "gold-chrysanthemum",
-  willow: "willow-gold",
+  chrysanthemum: 'gold-chrysanthemum',
+  comet: 'comet-gold',
+  finale_barrage: 'white-strobe',
+  peony: 'gold-chrysanthemum',
+  willow: 'willow-gold',
 };
 
 // Card previews only simulate this window — keeps initial seek fast.
@@ -32,10 +38,7 @@ function ReplayCanvasSkeleton() {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () =>
-    import("@/app/components/app/FireworkReplayCanvas").then(
-      (mod) => mod.FireworkReplayCanvas,
-    ),
+  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,
@@ -52,8 +55,7 @@ function posterTimeFor(slug: string, cues: ShowTemplateCue[]): number {
 
 function hoverStartTimeFor(cues: ShowTemplateCue[]): number {
   const firstCueTime = cues.reduce<number | null>(
-    (earliest, cue) =>
-      earliest == null ? cue.timeSeconds : Math.min(earliest, cue.timeSeconds),
+    (earliest, cue) => (earliest == null ? cue.timeSeconds : Math.min(earliest, cue.timeSeconds)),
     null,
   );
   return Math.max(0, (firstCueTime ?? 0) - 0.75);
@@ -66,7 +68,7 @@ function toReplayCue(
 ): ReplayCue | null {
   const firework =
     specBySlug.get(cue.fireworkSlug) ??
-    specBySlug.get(FIREWORK_SLUG_ALIASES[cue.fireworkSlug] ?? "");
+    specBySlug.get(FIREWORK_SLUG_ALIASES[cue.fireworkSlug] ?? '');
   if (!firework) return null;
   return {
     id: `${cue.fireworkSlug}-${cue.timeSeconds}-${index}`,
@@ -82,10 +84,10 @@ function toReplayCue(
 export function TemplateReplayPreview({
   template,
   specifications,
-  mode = "card",
+  mode = 'card',
   isCardHovered = false,
 }: TemplateReplayPreviewProps) {
-  const isDetail = mode === "detail";
+  const isDetail = mode === 'detail';
 
   // In card mode, only simulate the first CARD_PREVIEW_SECONDS of the show.
   // This keeps poster seeks and hover playback near-instant regardless of
@@ -98,11 +100,12 @@ export function TemplateReplayPreview({
     [isDetail, template.previewCues],
   );
 
-  const duration = isDetail
-    ? Math.max(template.durationSeconds ?? 30, 30)
-    : CARD_PREVIEW_SECONDS;
+  const duration = isDetail ? Math.max(template.durationSeconds ?? 30, 30) : CARD_PREVIEW_SECONDS;
 
-  const posterTime = useMemo(() => posterTimeFor(template.slug, visibleCues), [template.slug, visibleCues]);
+  const posterTime = useMemo(
+    () => posterTimeFor(template.slug, visibleCues),
+    [template.slug, visibleCues],
+  );
   const hoverStartTime = useMemo(() => hoverStartTimeFor(visibleCues), [visibleCues]);
   const [elapsed, setElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -131,7 +134,7 @@ export function TemplateReplayPreview({
   useEffect(() => {
     if (isDetail || isVisible) return;
     const element = containerRef.current;
-    if (!element || typeof IntersectionObserver === "undefined") {
+    if (!element || typeof IntersectionObserver === 'undefined') {
       setIsVisible(true);
       return;
     }
@@ -142,7 +145,7 @@ export function TemplateReplayPreview({
           observer.disconnect();
         }
       },
-      { rootMargin: "160px" },
+      { rootMargin: '160px' },
     );
     observer.observe(element);
     return () => observer.disconnect();
@@ -165,8 +168,8 @@ export function TemplateReplayPreview({
     if (!isDetail || cues.length === 0 || detailAutoplayRef.current) return;
     detailAutoplayRef.current = true;
     if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
       setElapsed(hoverStartTimeRef.current);
       setIsPlaying(false);
@@ -180,14 +183,11 @@ export function TemplateReplayPreview({
     if (!active || cues.length === 0) return;
     let frame = 0;
     startedAt.current = performance.now();
-    playheadStart.current =
-      elapsedRef.current >= duration ? 0 : elapsedRef.current;
+    playheadStart.current = elapsedRef.current >= duration ? 0 : elapsedRef.current;
 
     function tick(now: number) {
       if (startedAt.current == null) return;
-      const next =
-        playheadStart.current +
-        ((now - startedAt.current) / 1000) * playbackRate;
+      const next = playheadStart.current + ((now - startedAt.current) / 1000) * playbackRate;
       if (next >= duration) {
         if (isDetail) {
           setElapsed(duration);
@@ -224,16 +224,12 @@ export function TemplateReplayPreview({
       ref={containerRef}
       className={
         isDetail
-          ? "overflow-hidden rounded-xl border border-outline-variant/15 bg-surface-container-low"
-          : "relative h-52 overflow-hidden"
+          ? 'border-outline-variant/15 bg-surface-container-low overflow-hidden rounded-xl border'
+          : 'relative h-52 overflow-hidden'
       }
-      style={
-        isDetail
-          ? undefined
-          : { backgroundImage: "var(--preview-card-bg)" }
-      }
+      style={isDetail ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
     >
-      <div className={isDetail ? "relative h-[min(58vh,560px)] min-h-[380px]" : "relative h-full"}>
+      <div className={isDetail ? 'relative h-[min(58vh,560px)] min-h-[380px]' : 'relative h-full'}>
         {shouldMountCanvas ? (
           <LazyFireworkReplayCanvas
             cues={cues}
@@ -248,18 +244,18 @@ export function TemplateReplayPreview({
       {!isDetail ? (
         <div
           className="pointer-events-none absolute inset-x-0 bottom-0 h-20"
-          style={{ backgroundImage: "var(--preview-card-fade)" }}
+          style={{ backgroundImage: 'var(--preview-card-fade)' }}
         />
       ) : (
-        <div className="border-t border-outline-variant/15 bg-surface-container-low/90 p-4">
+        <div className="border-outline-variant/15 bg-surface-container-low/90 border-t p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={togglePlayback}
                 disabled={cues.length === 0}
-                aria-label={isPlaying ? "Pause template preview" : "Play template preview"}
-                className="focus-glow-action flex h-11 w-11 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[var(--shadow-cta)] transition-all focus:outline-none focus-visible:outline-none hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-on-surface-variant/40 disabled:shadow-none"
+                aria-label={isPlaying ? 'Pause template preview' : 'Play template preview'}
+                className="focus-glow-action bg-primary-container text-on-primary-container disabled:bg-surface-container-high disabled:text-on-surface-variant/40 flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--shadow-cta)] transition-all hover:brightness-110 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {isPlaying ? <Pause size={17} /> : <Play size={17} />}
               </button>
@@ -267,7 +263,7 @@ export function TemplateReplayPreview({
                 type="button"
                 onClick={restart}
                 aria-label="Restart template preview"
-                className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-outline/20 text-primary transition-all focus:outline-none focus-visible:outline-none hover:bg-surface-container-highest/50 active:scale-[0.98]"
+                className="focus-glow-action border-outline/20 text-primary hover:bg-surface-container-highest/50 flex h-10 w-10 items-center justify-center rounded-full border transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
               >
                 <RotateCcw size={15} />
               </button>
@@ -283,10 +279,10 @@ export function TemplateReplayPreview({
                   setIsPlaying(false);
                   setElapsed(Number(event.target.value));
                 }}
-                className="h-2 w-full accent-tertiary"
+                className="accent-tertiary h-2 w-full"
                 aria-label="Template preview timeline"
               />
-              <div className="mt-2 flex justify-between font-mono text-[11px] text-tertiary/80 tabular-nums">
+              <div className="text-tertiary/80 mt-2 flex justify-between font-mono text-[11px] tabular-nums">
                 <span>{formatDuration(elapsed)}</span>
                 <span>{formatDuration(duration)}</span>
               </div>

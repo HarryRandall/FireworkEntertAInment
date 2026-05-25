@@ -1,32 +1,34 @@
-import { Bell, Mail, Radio } from "lucide-react";
-import { Card } from "@/app/components/ui/Card";
-import { Toggle } from "@/app/components/ui/Toggle";
+/** Notifications preferences page under `/settings`. */
+
+import { Bell, Mail, Radio } from 'lucide-react';
+import { Card } from '@/app/components/ui/Card';
+import { Toggle } from '@/app/components/ui/Toggle';
 
 const OPTIONS = [
   {
-    name: "showUpdates",
+    name: 'showUpdates',
     icon: Mail,
-    title: "Show updates",
-    body: "Email me when generated shows, exports, or imports finish processing.",
+    title: 'Show updates',
+    body: 'Email me when generated shows, exports, or imports finish processing.',
   },
   {
-    name: "supplierAvailability",
+    name: 'supplierAvailability',
     icon: Radio,
-    title: "Supplier availability",
-    body: "Notify me when recommended fireworks become available from suppliers.",
+    title: 'Supplier availability',
+    body: 'Notify me when recommended fireworks become available from suppliers.',
   },
   {
-    name: "productAnnouncements",
+    name: 'productAnnouncements',
     icon: Bell,
-    title: "Product announcements",
-    body: "Send occasional updates about new catalogue and viewer capabilities.",
+    title: 'Product announcements',
+    body: 'Send occasional updates about new catalogue and viewer capabilities.',
   },
 ];
 
 export default function NotificationSettingsPage() {
   return (
     <Card elevation="low" radius="md" className="p-6">
-      <h2 className="text-2xl font-bold text-on-surface">Notifications</h2>
+      <h2 className="text-on-surface text-2xl font-bold">Notifications</h2>
       <div className="mt-6 space-y-3">
         {OPTIONS.map((option) => {
           const Icon = option.icon;

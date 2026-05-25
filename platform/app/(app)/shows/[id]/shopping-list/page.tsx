@@ -1,12 +1,11 @@
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { ShoppingListTable } from "@/app/components/app/ShoppingListTable";
-import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
-import {
-  getShowBySlug,
-  listShoppingItemsForShow,
-} from "@/lib/shows.server";
-import type { Show } from "@/lib/show-domain";
+/** Shopping-list tab listing the products needed to run the show. */
+
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import { ShoppingListTable } from '@/app/components/app/ShoppingListTable';
+import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { getShowBySlug, listShoppingItemsForShow } from '@/lib/shows.server';
+import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };
 

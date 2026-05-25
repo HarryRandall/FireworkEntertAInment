@@ -1,3 +1,12 @@
+/**
+ * Shared types for music analysis results.
+ *
+ * These mirror the JSON shape produced by `platform/analyser/run.py` plus a
+ * thin "snapshot" wrapper used by server reads. Pure types — safe to import
+ * from both server and client code.
+ */
+
+/** Lifecycle state of an analyser run. */
 export type AnalysisStatus = 'running' | 'completed' | 'failed';
 
 export type AnalyserEnergyPoint = {

@@ -1,5 +1,7 @@
-import { ListSkeleton } from "@/app/components/app/RouteSkeletons";
-import { Skeleton } from "@/app/components/ui/Feedback";
+/** Loading skeleton for the show detail route. */
+
+import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function ShowLoading() {
   return (

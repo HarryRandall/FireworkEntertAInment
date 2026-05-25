@@ -1,22 +1,20 @@
-"use client";
+'use client';
 
-import { Check, ChevronDown, ListFilter } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/app/components/ui/Button";
+/** Client-side filter/sort controls rendered in the library page header. */
+
+import { Check, ChevronDown, ListFilter } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/app/components/ui/Button';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-type SortKey = "popular" | "recent" | "featured" | "shortest" | "budget";
+type SortKey = 'popular' | 'recent' | 'featured' | 'shortest' | 'budget';
 
 type LibraryControlsProps = {
   sort: SortKey;
@@ -31,8 +29,8 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
 
   const setSort = (next: SortKey) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (next !== "popular") params.set("sort", next);
-    else params.delete("sort");
+    if (next !== 'popular') params.set('sort', next);
+    else params.delete('sort');
 
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
@@ -50,8 +48,11 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
           >
             <ListFilter size={15} className="shrink-0 text-[color:var(--color-content-subtle)]" />
             <span className="shrink-0 text-[color:var(--color-content-subtle)]">Sort:</span>
-            <span className="min-w-0 truncate">{selectedSort?.label ?? "Most popular"}</span>
-            <ChevronDown size={15} className="ml-1 shrink-0 text-[color:var(--color-content-subtle)]" />
+            <span className="min-w-0 truncate">{selectedSort?.label ?? 'Most popular'}</span>
+            <ChevronDown
+              size={15}
+              className="ml-1 shrink-0 text-[color:var(--color-content-subtle)]"
+            />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-52 p-1">

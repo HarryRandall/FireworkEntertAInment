@@ -1,3 +1,11 @@
+/**
+ * Cue-overlap helpers used by the cue builder.
+ *
+ * A cue occupies a tube (launch position) for the product's full airtime.
+ * We refuse overlapping cues on the same tube so the catalogue's safety
+ * delay is preserved. This module hides the catalogue lookup so callers can
+ * just ask "how long is this product on the tube?".
+ */
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';

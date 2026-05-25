@@ -1,3 +1,15 @@
+/**
+ * Runs the Python librosa analyser as a child process (server-only).
+ *
+ * Pipeline:
+ *   1. Download the uploaded audio from Supabase Storage to a temp dir.
+ *   2. Spawn `python platform/analyser/run.py` against that temp file.
+ *   3. Parse the analyser JSON, persist a `music_analyses` row, and clean up.
+ *
+ * Failures are recorded on the analysis row (`status = 'failed'`,
+ * `error_message`) so the UI can surface them; this function never throws
+ * past the caller boundary for "expected" analyser failures.
+ */
 import 'server-only';
 
 import { spawn } from 'child_process';

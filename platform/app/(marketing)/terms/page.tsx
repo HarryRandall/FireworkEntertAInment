@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
-import { ComingSoon } from "@/app/components/marketing/ComingSoon";
+/** Marketing "Terms" page. */
+
+import type { Metadata } from 'next';
+import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
-  title: "Terms · ShowCrafter",
-  description: "Our terms of service are being finalised.",
+  title: 'Terms · ShowCrafter',
+  description: 'Our terms of service are being finalised.',
 };
 
 export default function TermsPage() {

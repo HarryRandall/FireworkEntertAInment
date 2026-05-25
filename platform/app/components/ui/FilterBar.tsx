@@ -1,17 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ListFilter, Search, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Badge } from "./Badge";
-import { Button } from "./Button";
-import { Input } from "./Input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+/** FilterBar — search + filter chips bound to URL searchParams — use atop any paginated list route. */
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, ListFilter, Search, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Badge } from './Badge';
+import { Button } from './Button';
+import { Input } from './Input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
   CommandEmpty,
@@ -19,7 +16,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 
 export type FilterOption = { value: string; label: string };
 
@@ -27,13 +24,13 @@ export type FilterConfig =
   | {
       key: string;
       label: string;
-      type: "select";
+      type: 'select';
       options: FilterOption[];
     }
   | {
       key: string;
       label: string;
-      type: "range";
+      type: 'range';
       minPlaceholder?: string;
       maxPlaceholder?: string;
       unit?: string;
@@ -47,8 +44,8 @@ type FilterBarProps = {
 };
 
 export function FilterBar({
-  searchKey = "q",
-  searchPlaceholder = "Search…",
+  searchKey = 'q',
+  searchPlaceholder = 'Search…',
   filters = [],
   className,
 }: FilterBarProps) {
@@ -57,11 +54,11 @@ export function FilterBar({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const initialSearch = searchParams.get(searchKey) ?? "";
+  const initialSearch = searchParams.get(searchKey) ?? '';
   const [searchValue, setSearchValue] = useState(initialSearch);
 
   useEffect(() => {
-    setSearchValue(searchParams.get(searchKey) ?? "");
+    setSearchValue(searchParams.get(searchKey) ?? '');
   }, [searchKey, searchParams]);
 
   const updateParams = useCallback(
@@ -91,19 +88,21 @@ export function FilterBar({
   const activeFilters = useMemo(() => {
     const out: { config: FilterConfig; chip: string }[] = [];
     for (const filter of filters) {
-      if (filter.type === "select") {
+      if (filter.type === 'select') {
         const val = searchParams.get(filter.key);
         if (val) {
           const opt = filter.options.find((o) => o.value === val);
           if (opt) out.push({ config: filter, chip: `${filter.label}: ${opt.label}` });
         }
-      } else if (filter.type === "range") {
+      } else if (filter.type === 'range') {
         const min = searchParams.get(`${filter.key}_min`);
         const max = searchParams.get(`${filter.key}_max`);
         if (min || max) {
-          const unit = filter.unit ?? "";
-          const parts = [min ? `≥${min}${unit}` : null, max ? `≤${max}${unit}` : null].filter(Boolean);
-          out.push({ config: filter, chip: `${filter.label}: ${parts.join(" ")}` });
+          const unit = filter.unit ?? '';
+          const parts = [min ? `≥${min}${unit}` : null, max ? `≤${max}${unit}` : null].filter(
+            Boolean,
+          );
+          out.push({ config: filter, chip: `${filter.label}: ${parts.join(' ')}` });
         }
       }
     }
@@ -116,7 +115,7 @@ export function FilterBar({
     updateParams((p) => {
       p.delete(searchKey);
       for (const f of filters) {
-        if (f.type === "select") p.delete(f.key);
+        if (f.type === 'select') p.delete(f.key);
         else {
           p.delete(`${f.key}_min`);
           p.delete(`${f.key}_max`);
@@ -127,7 +126,7 @@ export function FilterBar({
 
   const clearFilter = (config: FilterConfig) => {
     updateParams((p) => {
-      if (config.type === "select") p.delete(config.key);
+      if (config.type === 'select') p.delete(config.key);
       else {
         p.delete(`${config.key}_min`);
         p.delete(`${config.key}_max`);
@@ -136,7 +135,7 @@ export function FilterBar({
   };
 
   return (
-    <div className={cn("flex flex-col gap-3", className)} data-pending={isPending || undefined}>
+    <div className={cn('flex flex-col gap-3', className)} data-pending={isPending || undefined}>
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Input
@@ -156,7 +155,8 @@ export function FilterBar({
         ) : null}
       </div>
 
-      {(activeFilters.length > 0 || hasAnyActive) && activeFilters.length + (searchParams.get(searchKey) ? 0 : 0) > 0 ? (
+      {(activeFilters.length > 0 || hasAnyActive) &&
+      activeFilters.length + (searchParams.get(searchKey) ? 0 : 0) > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
           {activeFilters.map(({ config, chip }) => (
             <button
@@ -229,12 +229,9 @@ function FilterPopover({
               </CommandGroup>
             </CommandList>
           </Command>
-        ) : activeFilter.type === "select" ? (
+        ) : activeFilter.type === 'select' ? (
           <Command>
-            <FilterPopoverBackButton
-              label="All filters"
-              onClick={() => setActiveFilter(null)}
-            />
+            <FilterPopoverBackButton label="All filters" onClick={() => setActiveFilter(null)} />
             <CommandInput placeholder={`Filter by ${activeFilter.label.toLowerCase()}…`} />
             <CommandList>
               <CommandEmpty>No options.</CommandEmpty>
@@ -254,10 +251,10 @@ function FilterPopover({
                     >
                       <span
                         className={cn(
-                          "mr-2 h-2 w-2 rounded-full",
+                          'mr-2 h-2 w-2 rounded-full',
                           selected
-                            ? "bg-[color:var(--color-content-emphasis)]"
-                            : "bg-transparent ring-1 ring-[color:var(--color-border-default)]",
+                            ? 'bg-[color:var(--color-content-emphasis)]'
+                            : 'bg-transparent ring-1 ring-[color:var(--color-border-default)]',
                         )}
                       />
                       {opt.label}
@@ -281,13 +278,7 @@ function FilterPopover({
   );
 }
 
-function FilterPopoverBackButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
+function FilterPopoverBackButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -307,14 +298,14 @@ function RangeFilterPanel({
   onBack,
   onClose,
 }: {
-  filter: Extract<FilterConfig, { type: "range" }>;
+  filter: Extract<FilterConfig, { type: 'range' }>;
   searchParams: URLSearchParams;
   updateParams: (m: (p: URLSearchParams) => void) => void;
   onBack: () => void;
   onClose: () => void;
 }) {
-  const [min, setMin] = useState(searchParams.get(`${filter.key}_min`) ?? "");
-  const [max, setMax] = useState(searchParams.get(`${filter.key}_max`) ?? "");
+  const [min, setMin] = useState(searchParams.get(`${filter.key}_min`) ?? '');
+  const [max, setMax] = useState(searchParams.get(`${filter.key}_max`) ?? '');
 
   return (
     <form
@@ -331,14 +322,16 @@ function RangeFilterPanel({
       }}
     >
       <FilterPopoverBackButton label="All filters" onClick={onBack} />
-      <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">{filter.label}</div>
+      <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+        {filter.label}
+      </div>
       <div className="flex items-center gap-2">
         <Input
           type="number"
           inputMode="decimal"
           value={min}
           onChange={(e) => setMin(e.target.value)}
-          placeholder={filter.minPlaceholder ?? "Min"}
+          placeholder={filter.minPlaceholder ?? 'Min'}
           aria-label={`${filter.label} minimum`}
         />
         <span className="text-xs text-[color:var(--color-content-subtle)]">to</span>
@@ -347,7 +340,7 @@ function RangeFilterPanel({
           inputMode="decimal"
           value={max}
           onChange={(e) => setMax(e.target.value)}
-          placeholder={filter.maxPlaceholder ?? "Max"}
+          placeholder={filter.maxPlaceholder ?? 'Max'}
           aria-label={`${filter.label} maximum`}
         />
       </div>

@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { setUserPermissionOverrideAction } from "@/app/actions/admin-users";
-import { toast } from "@/app/components/ui/toast";
+/** Row UI for toggling a single RBAC permission override on a user. */
 
-type Mode = "clear" | "grant" | "deny";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { setUserPermissionOverrideAction } from '@/app/actions/admin-users';
+import { toast } from '@/app/components/ui/toast';
+
+type Mode = 'clear' | 'grant' | 'deny';
 
 type Props = {
   userId: string;
@@ -15,9 +17,9 @@ type Props = {
 };
 
 const MODES: { value: Mode; label: string }[] = [
-  { value: "clear", label: "Inherit" },
-  { value: "grant", label: "Allow" },
-  { value: "deny", label: "Deny" },
+  { value: 'clear', label: 'Inherit' },
+  { value: 'grant', label: 'Allow' },
+  { value: 'deny', label: 'Deny' },
 ];
 
 export function PermissionOverrideRow({ userId, permission, initialMode }: Props) {
@@ -36,7 +38,9 @@ export function PermissionOverrideRow({ userId, permission, initialMode }: Props
         mode: next,
       });
       if (result.ok) {
-        toast.success(`${permission.name}: ${next === "clear" ? "inherited" : next === "grant" ? "allowed" : "denied"}`);
+        toast.success(
+          `${permission.name}: ${next === 'clear' ? 'inherited' : next === 'grant' ? 'allowed' : 'denied'}`,
+        );
         router.refresh();
       } else {
         setMode(previous);
@@ -71,14 +75,14 @@ export function PermissionOverrideRow({ userId, permission, initialMode }: Props
               disabled={isPending}
               onClick={() => onChange(m.value)}
               className={cn(
-                "h-7 rounded px-3 text-xs font-medium transition-colors",
+                'h-7 rounded px-3 text-xs font-medium transition-colors',
                 selected
-                  ? m.value === "grant"
-                    ? "bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]"
-                    : m.value === "deny"
-                      ? "bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]"
-                      : "bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]"
-                  : "text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]",
+                  ? m.value === 'grant'
+                    ? 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
+                    : m.value === 'deny'
+                      ? 'bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]'
+                      : 'bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]'
+                  : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
               )}
             >
               {m.label}

@@ -1,4 +1,11 @@
-import type { ReplayCue } from "@/lib/show-domain";
+/**
+ * Tiny cue scheduler that fires {@link ReplayCue}s as playback time passes.
+ *
+ * Cues are sorted by `timeSeconds` once on `setCues`; `tick(now)` then walks
+ * forward and dispatches any cue whose time is `<= now` and not yet fired.
+ * Designed to be cheap enough to call once per animation frame.
+ */
+import type { ReplayCue } from '@/lib/show-domain';
 
 export type ScheduledCue = {
   cue: ReplayCue;

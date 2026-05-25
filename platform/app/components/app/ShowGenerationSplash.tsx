@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * ShowGenerationSplash — full-bleed splash shown on the show detail
+ * route while the choreography agent generates cues. Polls the server
+ * every 2.5s via router.refresh so it disappears once cues are ready.
+ */
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';

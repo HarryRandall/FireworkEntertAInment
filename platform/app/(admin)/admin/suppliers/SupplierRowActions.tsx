@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
-import { RowActionsMenu, toast } from "@/app/components/ui";
+/** Per-row supplier admin actions menu (edit, delete). */
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Trash2 } from 'lucide-react';
+import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +15,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { deleteSupplier } from "@/app/actions/admin-suppliers";
-import { SupplierFormDialog } from "./SupplierFormDialog";
-import type { SupplierInputType } from "@/app/actions/admin-suppliers";
+} from '@/components/ui/alert-dialog';
+import { deleteSupplier } from '@/app/actions/admin-suppliers';
+import { SupplierFormDialog } from './SupplierFormDialog';
+import type { SupplierInputType } from '@/app/actions/admin-suppliers';
 
 type Props = {
   supplier: { id: string } & SupplierInputType;
@@ -32,7 +34,7 @@ export function SupplierRowActions({ supplier }: Props) {
     startTransition(async () => {
       const result = await deleteSupplier({ id: supplier.id });
       if (result.ok) {
-        toast.success("Supplier deleted");
+        toast.success('Supplier deleted');
         router.refresh();
       } else toast.error(result.error);
       setConfirmOpen(false);
@@ -44,12 +46,12 @@ export function SupplierRowActions({ supplier }: Props) {
       <RowActionsMenu
         items={[
           {
-            label: "Edit",
+            label: 'Edit',
             icon: <Pencil size={14} />,
             onSelect: () => setEditOpen(true),
           },
           {
-            label: "Delete",
+            label: 'Delete',
             icon: <Trash2 size={14} />,
             destructive: true,
             onSelect: () => setConfirmOpen(true),
