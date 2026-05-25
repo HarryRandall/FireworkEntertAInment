@@ -18,7 +18,7 @@ export function ShowTabs({ id }: Props) {
   ];
 
   return (
-    <nav className="border-outline-variant/10 flex flex-wrap items-center gap-x-8 gap-y-2 border-b">
+    <nav className="flex flex-wrap items-center gap-x-8 gap-y-2">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (

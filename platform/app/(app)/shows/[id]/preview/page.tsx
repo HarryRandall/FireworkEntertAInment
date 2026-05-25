@@ -39,6 +39,7 @@ async function ShowPreviewReplay({ show }: { show: Show }) {
       showSlug={show.slug}
       showName={show.title}
       durationSeconds={show.durationSeconds}
+      totalCents={show.totalCents}
       cues={cues}
       specifications={specifications}
       launchPositions={show.launchPositions}

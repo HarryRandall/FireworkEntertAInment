@@ -8,29 +8,60 @@
  * overlaps on the same launch position.
  */
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import {
   addPreviewCueAction,
   deletePreviewCueAction,
   type CueActionResult,
 } from '@/app/actions/preview-cues';
-import { Badge, Eyebrow } from '@/app/components/ui/Badge';
+import { Eyebrow } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import {
+  DataTableShell,
+  tableCellClasses,
+  tableClasses,
+  tableHeadClasses,
+  tableHeaderCellClasses,
+  tableRowClasses,
+} from '@/app/components/ui/DataTable';
 import { Input } from '@/app/components/ui/Input';
 import { NumberInput } from '@/app/components/ui/NumberInput';
+import { RowActionsMenu } from '@/app/components/ui/RowActionsMenu';
 import { SelectField } from '@/app/components/ui/SelectField';
-import { StatTile } from '@/app/components/ui/StatTile';
+import { toast } from '@/app/components/ui/toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
-import { formatDuration } from '@/lib/show-domain';
+import { formatDuration, formatTotal } from '@/lib/show-domain';
 import type { LaunchPosition } from '@/lib/fireworks/design';
+import { cn } from '@/lib/utils';
 
 type FireworkReplayViewerProps = {
   showId: string;
   showSlug: string;
   showName: string;
   durationSeconds: number | null;
+  totalCents?: number | null;
   cues: ReplayCue[];
   specifications: FireworkSpecification[];
   launchPositions: LaunchPosition[];
@@ -76,13 +107,19 @@ export function FireworkReplayViewer({
   showSlug,
   showName,
   durationSeconds,
+  totalCents = null,
   cues,
   specifications,
   launchPositions,
   audioUrl = null,
 }: FireworkReplayViewerProps) {
+  const [optimisticCues, addOptimisticCue] = useOptimistic(
+    cues,
+    (current: ReplayCue[], pending: ReplayCue) =>
+      [...current, pending].sort((a, b) => a.timeSeconds - b.timeSeconds),
+  );
   const inferredDuration =
-    cues.length > 0 ? Math.max(...cues.map((cue) => cue.timeSeconds)) + 5 : 30;
+    optimisticCues.length > 0 ? Math.max(...optimisticCues.map((cue) => cue.timeSeconds)) + 5 : 30;
   const duration = Math.max(durationSeconds ?? inferredDuration, inferredDuration);
   const [elapsed, setElapsed] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -91,6 +128,12 @@ export function FireworkReplayViewer({
     specifications[0]?.id,
   );
   const [isPending, startTransition] = useTransition();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [insertBeforeTime, setInsertBeforeTime] = useState<number | null>(null);
+  const [refinePrompt, setRefinePrompt] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [cuePage, setCuePage] = useState(0);
+  const CUES_PER_PAGE = 5;
   const formRef = useRef<HTMLFormElement>(null);
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
@@ -168,7 +211,10 @@ export function FireworkReplayViewer({
     return () => cancelAnimationFrame(frame);
   }, [duration, isPlaying]);
 
-  const sortedCues = useMemo(() => [...cues].sort((a, b) => a.timeSeconds - b.timeSeconds), [cues]);
+  const sortedCues = useMemo(
+    () => [...optimisticCues].sort((a, b) => a.timeSeconds - b.timeSeconds),
+    [optimisticCues],
+  );
 
   // Collapse expanded shots back to one row per show_cue for the builder list.
   // Multi-shot IDs are "{baseCueId}-shot-N"; single-shot IDs are just the UUID.
@@ -185,16 +231,31 @@ export function FireworkReplayViewer({
     return Array.from(seen.values());
   }, [sortedCues]);
 
+  const pageCount = Math.max(1, Math.ceil(builderCues.length / CUES_PER_PAGE));
+  const safePage = Math.min(cuePage, pageCount - 1);
+  const visibleBuilderCues = useMemo(
+    () => builderCues.slice(safePage * CUES_PER_PAGE, safePage * CUES_PER_PAGE + CUES_PER_PAGE),
+    [builderCues, safePage],
+  );
+
   const activeCue = useMemo(() => {
     return [...sortedCues].reverse().find((cue) => cue.timeSeconds <= elapsed + 0.35);
   }, [sortedCues, elapsed]);
 
-  const upcomingCues = useMemo(
-    () => sortedCues.filter((cue) => cue.timeSeconds >= elapsed).slice(0, 5),
-    [sortedCues, elapsed],
+  const activeBaseCueId = activeCue?.id.replace(/-shot-\d+$/, '');
+  const activeBuilderIndex = useMemo(
+    () =>
+      activeBaseCueId ? builderCues.findIndex((row) => row.baseCueId === activeBaseCueId) : -1,
+    [builderCues, activeBaseCueId],
   );
 
-  const hasReplayCues = cues.length > 0;
+  useEffect(() => {
+    if (activeBuilderIndex < 0) return;
+    const targetPage = Math.floor(activeBuilderIndex / CUES_PER_PAGE);
+    setCuePage((current) => (current === targetPage ? current : targetPage));
+  }, [activeBuilderIndex]);
+
+  const hasReplayCues = optimisticCues.length > 0;
 
   function togglePlayback() {
     if (!hasReplayCues) return;
@@ -208,10 +269,74 @@ export function FireworkReplayViewer({
   }
 
   function addCue(formData: FormData) {
+    const productId = String(formData.get('productId') ?? '');
+    const product = specifications.find((s) => s.id === productId);
+    const description = String(formData.get('description') ?? '');
+    const timeSeconds = Number(formData.get('timeSeconds') ?? 0);
+    const launchPositionIndex = Number(formData.get('launchPositionIndex') ?? 0);
+
+    formRef.current?.reset();
+    setShowAddForm(false);
+    setInsertBeforeTime(null);
+
     startTransition(async () => {
+      if (product) {
+        addOptimisticCue({
+          id: `optimistic-${Date.now()}`,
+          position: optimisticCues.length,
+          timeSeconds,
+          description,
+          productId,
+          launchPositionIndex,
+          firework: product,
+        });
+      }
       const result = await addPreviewCueAction(formData);
       setActionResult(result);
-      if (result.ok) formRef.current?.reset();
+    });
+  }
+
+  function applyRefinement(rawPrompt: string) {
+    const prompt = rawPrompt.trim();
+    if (!prompt) return;
+
+    const parsed = parsePromptToCue(prompt, specifications, duration, elapsed);
+    if (!parsed) {
+      toast.error('Could not parse that prompt yet', {
+        description:
+          'Try something like "add green firework at the start" or "red strobe at 1:20".',
+      });
+      return;
+    }
+
+    const { product, timeSeconds, launchPositionIndex, description } = parsed;
+    const formData = new FormData();
+    formData.set('showId', showId);
+    formData.set('showSlug', showSlug);
+    formData.set('productId', product.id);
+    formData.set('timeSeconds', String(timeSeconds));
+    formData.set('launchPositionIndex', String(launchPositionIndex));
+    formData.set('description', description);
+
+    setRefinePrompt('');
+    setAiPrompt('');
+    setShowAddForm(false);
+    setInsertBeforeTime(null);
+    toast.success(`Adding ${product.name} at ${formatDuration(timeSeconds)}`);
+
+    startTransition(async () => {
+      addOptimisticCue({
+        id: `optimistic-${Date.now()}`,
+        position: optimisticCues.length,
+        timeSeconds,
+        description,
+        productId: product.id,
+        launchPositionIndex,
+        firework: product,
+      });
+      const result = await addPreviewCueAction(formData);
+      setActionResult(result);
+      if (!result.ok) toast.error(result.error);
     });
   }
 
@@ -233,9 +358,6 @@ export function FireworkReplayViewer({
       >
         <div className="relative h-[min(72vh,680px)] min-h-[520px]">
           <div className="absolute top-6 left-6 z-10 space-y-2">
-            <Badge tone={isPlaying ? 'live' : 'neutral'}>
-              {isPlaying ? 'Live replay' : 'Interactive preview'}
-            </Badge>
             <h2 className="text-on-surface max-w-xl text-3xl font-extrabold tracking-tight md:text-4xl">
               {showName}
             </h2>
@@ -313,175 +435,557 @@ export function FireworkReplayViewer({
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card elevation="high" radius="md" className="space-y-5 p-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-start">
+        <Card elevation="high" radius="md" className="space-y-5 p-6 xl:col-span-2">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
               <Eyebrow tone="muted">Cue builder</Eyebrow>
-              <h3 className="text-on-surface mt-2 text-2xl font-bold">Add or remove fireworks</h3>
+              <h3 className="text-on-surface mt-2 text-2xl font-bold">Cues</h3>
             </div>
-            {actionResult ? (
-              <p
-                className={
-                  actionResult.ok
-                    ? 'text-primary text-sm font-semibold'
-                    : 'text-error text-sm font-semibold'
-                }
-              >
-                {actionResult.ok ? actionResult.message : actionResult.error}
-              </p>
-            ) : null}
+            <div className="flex items-center gap-3">
+              {actionResult ? (
+                <p
+                  className={
+                    actionResult.ok
+                      ? 'text-primary text-sm font-semibold'
+                      : 'text-error text-sm font-semibold'
+                  }
+                >
+                  {actionResult.ok ? actionResult.message : actionResult.error}
+                </p>
+              ) : null}
+              <Button type="button" onClick={() => setShowAddForm(true)} size="sm">
+                <Plus size={16} strokeWidth={2} />
+                Add firework
+              </Button>
+            </div>
           </div>
 
-          <form
-            ref={formRef}
-            action={addCue}
-            className="border-outline-variant/15 bg-surface-container-low grid grid-cols-1 gap-3 rounded-xl border p-4 md:grid-cols-[1fr_120px_140px_1.4fr_auto] md:items-end"
+          <Dialog
+            open={showAddForm}
+            onOpenChange={(open) => {
+              setShowAddForm(open);
+              if (!open) setInsertBeforeTime(null);
+            }}
           >
-            <input type="hidden" name="showId" value={showId} />
-            <input type="hidden" name="showSlug" value={showSlug} />
-            <label className="space-y-2">
-              <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                Firework
-              </span>
-              <SelectField
-                name="productId"
-                required
-                placeholder="Select firework"
-                defaultValue={specifications[0]?.id}
-                options={specifications.map((spec) => ({
-                  value: spec.id,
-                  label: spec.name,
-                }))}
-                onChange={(value) => setSelectedProductId(value)}
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                Mortar
-              </span>
-              <SelectField
-                name="launchPositionIndex"
-                defaultValue="1"
-                options={LAUNCH_POSITION_OPTIONS}
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                Time
-              </span>
-              <NumberInput
-                name="timeSeconds"
-                min={0}
-                max={duration}
-                step={0.5}
-                defaultValue={Math.min(duration, Math.round(elapsed + 3))}
-                required
-                ariaLabel="Cue time in seconds"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                Label
-              </span>
-              <Input
-                key={selectedProductId}
-                name="description"
-                defaultValue={specifications.find((s) => s.id === selectedProductId)?.name ?? ''}
-                required
-              />
-            </label>
-            <Button type="submit" disabled={isPending || specifications.length === 0}>
-              <Plus size={16} strokeWidth={2} />
-              Add
-            </Button>
-          </form>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add firework cue</DialogTitle>
+                <DialogDescription>
+                  Insert a new firework into <span className="font-semibold">{showName}</span> at
+                  the chosen time and mortar. The current playhead is at{' '}
+                  <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>; the
+                  show runs{' '}
+                  <span className="font-mono tabular-nums">{formatDuration(duration)}</span>.
+                </DialogDescription>
+              </DialogHeader>
+              <Tabs defaultValue="manual">
+                <TabsList className="mb-4">
+                  <TabsTrigger value="manual">Pick firework</TabsTrigger>
+                  <TabsTrigger value="ai">
+                    <Sparkles size={12} strokeWidth={2} />
+                    Describe with AI
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="manual">
+                  <form
+                    ref={formRef}
+                    action={addCue}
+                    className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                  >
+                    <input type="hidden" name="showId" value={showId} />
+                    <input type="hidden" name="showSlug" value={showSlug} />
+                    <label className="space-y-2 sm:col-span-2">
+                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        Firework
+                      </span>
+                      <SelectField
+                        name="productId"
+                        required
+                        placeholder="Select firework"
+                        defaultValue={specifications[0]?.id}
+                        options={specifications.map((spec) => ({
+                          value: spec.id,
+                          label: spec.name,
+                        }))}
+                        onChange={(value) => setSelectedProductId(value)}
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        Mortar
+                      </span>
+                      <SelectField
+                        name="launchPositionIndex"
+                        defaultValue="1"
+                        options={LAUNCH_POSITION_OPTIONS}
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        Time (seconds)
+                      </span>
+                      <NumberInput
+                        key={`time-${insertBeforeTime ?? 'default'}-${showAddForm}`}
+                        name="timeSeconds"
+                        min={0}
+                        max={duration}
+                        step={0.5}
+                        defaultValue={
+                          insertBeforeTime !== null
+                            ? Math.max(0, Number((insertBeforeTime - 0.5).toFixed(1)))
+                            : Math.min(duration, Math.round(elapsed + 3))
+                        }
+                        required
+                        ariaLabel="Cue time in seconds"
+                      />
+                    </label>
+                    <label className="space-y-2 sm:col-span-2">
+                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        Label
+                      </span>
+                      <Input
+                        key={selectedProductId}
+                        name="description"
+                        defaultValue={
+                          specifications.find((s) => s.id === selectedProductId)?.name ?? ''
+                        }
+                        required
+                      />
+                    </label>
+                    <DialogFooter className="sm:col-span-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowAddForm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isPending || specifications.length === 0}
+                      >
+                        <Plus size={16} strokeWidth={2} />
+                        Add cue
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </TabsContent>
+                <TabsContent value="ai">
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      applyRefinement(aiPrompt);
+                    }}
+                    className="space-y-4"
+                  >
+                    <label className="block space-y-2">
+                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        Describe what you want
+                      </span>
+                      <Textarea
+                        value={aiPrompt}
+                        onChange={(event) => setAiPrompt(event.target.value)}
+                        placeholder={
+                          insertBeforeTime !== null
+                            ? `e.g. "Something gold and crackling just before ${formatDuration(
+                                insertBeforeTime,
+                              )}"`
+                            : 'e.g. "A red strobe burst at the chorus around 1:20"'
+                        }
+                        rows={4}
+                        required
+                      />
+                    </label>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowAddForm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" size="sm" disabled={!aiPrompt.trim()}>
+                        <Sparkles size={16} strokeWidth={2} />
+                        Generate cue
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </DialogContent>
+          </Dialog>
 
           <div className="space-y-3">
             {builderCues.length > 0 ? (
-              builderCues.map(({ cue, baseCueId, shotCount }) => (
-                <div
-                  key={baseCueId}
-                  className="border-outline-variant/10 bg-surface-container-highest/60 flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
-                        {formatDuration(cue.timeSeconds)}
-                      </span>
-                      <span className="text-on-surface font-semibold">
-                        {cue.description || cue.firework.name}
-                      </span>
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        {LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
-                          `Mortar ${cue.launchPositionIndex + 1}`}
-                      </span>
-                      {shotCount > 1 && (
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                          {shotCount} shots
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => deleteCue(baseCueId)}
-                    disabled={isPending}
-                    className="focus-glow-action border-outline/20 text-on-surface-variant hover:bg-surface-container-high hover:text-error inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold transition-all focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 size={15} strokeWidth={2} />
-                    Remove
-                  </button>
-                </div>
-              ))
+              <DataTableShell>
+                <table className={tableClasses('min-w-0 table-fixed')}>
+                  <colgroup>
+                    <col className="w-[88px]" />
+                    <col />
+                    <col className="w-[110px]" />
+                    <col className="w-[56px]" />
+                  </colgroup>
+                  <thead className={tableHeadClasses()}>
+                    <tr>
+                      <th className={tableHeaderCellClasses()}>Time</th>
+                      <th className={tableHeaderCellClasses()}>Firework</th>
+                      <th className={tableHeaderCellClasses()}>Mortar</th>
+                      <th className={tableHeaderCellClasses('text-right')}>
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: CUES_PER_PAGE }).map((_, rowIndex) => {
+                      const row = visibleBuilderCues[rowIndex];
+                      if (!row) {
+                        return (
+                          <tr
+                            key={`empty-${rowIndex}`}
+                            className={tableRowClasses('hover:bg-transparent')}
+                            aria-hidden="true"
+                          >
+                            <td className={tableCellClasses('h-14')} colSpan={4}>
+                              &nbsp;
+                            </td>
+                          </tr>
+                        );
+                      }
+                      const { cue, baseCueId, shotCount } = row;
+                      const fullMortarLabel =
+                        LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
+                        `Mortar ${cue.launchPositionIndex + 1}`;
+                      const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
+                      const isActive = baseCueId === activeBaseCueId;
+                      return (
+                        <tr
+                          key={baseCueId}
+                          onClick={() => {
+                            setIsPlaying(false);
+                            setElapsed(cue.timeSeconds);
+                          }}
+                          aria-current={isActive ? 'true' : undefined}
+                          className={tableRowClasses(
+                            cn(
+                              'cursor-pointer',
+                              isActive &&
+                                'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
+                            ),
+                          )}
+                        >
+                          <td className={tableCellClasses('h-14')}>
+                            <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
+                              {formatDuration(cue.timeSeconds)}
+                            </span>
+                          </td>
+                          <td className={tableCellClasses('h-14')}>
+                            <TruncatedCell text={cue.description || cue.firework.name} />
+                            {shotCount > 1 && (
+                              <div className="text-on-surface-variant mt-0.5 text-[10px] font-bold tracking-widest uppercase">
+                                {shotCount} shots
+                              </div>
+                            )}
+                          </td>
+                          <td className={tableCellClasses('h-14')}>
+                            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                              {mortarLabel}
+                            </span>
+                          </td>
+                          <td
+                            className={tableCellClasses('h-14 text-right')}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <RowActionsMenu
+                              label="Cue actions"
+                              items={[
+                                {
+                                  label: 'Play from here',
+                                  icon: <Play size={14} strokeWidth={2} />,
+                                  onSelect: () => {
+                                    setElapsed(cue.timeSeconds);
+                                    setIsPlaying(true);
+                                  },
+                                },
+                                {
+                                  label: 'Insert firework above',
+                                  icon: <Plus size={14} strokeWidth={2} />,
+                                  onSelect: () => {
+                                    setInsertBeforeTime(cue.timeSeconds);
+                                    setShowAddForm(true);
+                                  },
+                                },
+                                {
+                                  label: 'Delete cue',
+                                  icon: <Trash2 size={14} strokeWidth={2} />,
+                                  destructive: true,
+                                  disabled: isPending,
+                                  onSelect: () => deleteCue(baseCueId),
+                                },
+                              ]}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </DataTableShell>
             ) : (
               <p className="border-outline-variant/15 bg-surface-container-low text-on-surface-variant rounded-xl border p-4 text-sm">
                 No cues yet. Add your first firework above to make the preview playable.
               </p>
             )}
+
+            {pageCount > 1 && (
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <span className="text-on-surface-variant text-[11px] font-semibold tracking-widest uppercase tabular-nums">
+                  Page {safePage + 1} of {pageCount} · {builderCues.length} cues
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCuePage((p) => Math.max(0, p - 1))}
+                    disabled={safePage === 0}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={14} strokeWidth={2} />
+                    Prev
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCuePage((p) => Math.min(pageCount - 1, p + 1))}
+                    disabled={safePage >= pageCount - 1}
+                    aria-label="Next page"
+                  >
+                    Next
+                    <ChevronRight size={14} strokeWidth={2} />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 
-        <aside className="space-y-6">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <StatTile label="Total effects" value={cues.length} />
-            <StatTile label="Duration" value={formatDuration(duration)} />
-            <StatTile label="Active cue" value={activeCue ? activeCue.firework.name : '—'} />
+        <div className="space-y-4 xl:sticky xl:top-6">
+          <div className="grid grid-cols-3 gap-2">
+            <StatChip label="Fireworks" value={String(builderCues.length)} />
+            <StatChip label="Length" value={formatDuration(duration)} />
+            <StatChip
+              label="Total cost"
+              value={totalCents != null ? formatTotal(totalCents) : '—'}
+            />
           </div>
-
-          <Card elevation="low" radius="md" className="space-y-4 p-5">
-            <Eyebrow tone="muted">Upcoming cues</Eyebrow>
-            {upcomingCues.length > 0 ? (
-              <ol className="space-y-2">
-                {upcomingCues.map((cue) => (
-                  <li
-                    key={cue.id}
-                    className="bg-surface-container-highest/60 flex items-start justify-between gap-3 rounded-lg p-3"
-                  >
-                    <div>
-                      <p className="text-on-surface text-sm font-semibold">
-                        {cue.description || cue.firework.name}
-                      </p>
-                      {cue.description && (
-                        <p className="text-on-surface-variant mt-1 line-clamp-2 text-xs">
-                          {cue.firework.name}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-tertiary font-mono text-xs tabular-nums">
-                      {formatDuration(cue.timeSeconds)}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="text-on-surface-variant text-sm leading-relaxed">
-                No upcoming typed cues at this playhead position.
-              </p>
-            )}
+          <Card elevation="high" radius="md" className="space-y-4 p-5">
+            <div className="flex items-start gap-3">
+              <div className="bg-surface-container-highest text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                <Sparkles size={16} strokeWidth={2} />
+              </div>
+              <div>
+                <Eyebrow tone="muted">Refine with prompt</Eyebrow>
+                <h3 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h3>
+                <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
+                  Say what you want next — &ldquo;add green firework at the start&rdquo;,
+                  &ldquo;something gold at 1:20&rdquo; — and we&apos;ll drop a matching cue in.
+                </p>
+              </div>
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                applyRefinement(refinePrompt);
+              }}
+              className="space-y-3"
+            >
+              <Textarea
+                value={refinePrompt}
+                onChange={(event) => setRefinePrompt(event.target.value)}
+                placeholder="e.g. add green firework at the very start"
+                rows={3}
+                aria-label="Refinement prompt"
+              />
+              <div className="flex justify-end">
+                <Button type="submit" size="sm" disabled={!refinePrompt.trim() || isPending}>
+                  <Sparkles size={14} strokeWidth={2} />
+                  Apply refinement
+                </Button>
+              </div>
+            </form>
           </Card>
-        </aside>
+        </div>
       </div>
     </div>
   );
+}
+
+function TruncatedCell({ text }: { text: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setIsOverflowing(el.scrollWidth > el.clientWidth + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
+
+  const content = (
+    <div ref={ref} className="text-on-surface truncate font-semibold">
+      {text}
+    </div>
+  );
+
+  if (!isOverflowing) return content;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={6}
+        className="max-w-sm rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-3 py-2 text-xs leading-snug text-[color:var(--color-content-default)] shadow-[var(--shadow-modal)]"
+      >
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function StatChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 py-2">
+      <div className="text-on-surface-variant truncate text-[10px] font-bold tracking-widest uppercase">
+        {label}
+      </div>
+      <div className="text-on-surface mt-0.5 truncate text-base font-semibold tabular-nums">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function parsePromptToCue(
+  prompt: string,
+  specifications: FireworkSpecification[],
+  duration: number,
+  elapsed: number,
+): {
+  product: FireworkSpecification;
+  timeSeconds: number;
+  launchPositionIndex: number;
+  description: string;
+} | null {
+  if (specifications.length === 0) return null;
+  const lower = prompt.toLowerCase();
+
+  let timeSeconds: number | null = null;
+  if (/\b(very start|the start|beginning|intro|opening)\b/.test(lower)) {
+    timeSeconds = 0.5;
+  } else if (/\b(very end|the end|finale|outro|ending)\b/.test(lower)) {
+    timeSeconds = Math.max(0, duration - 1);
+  }
+  if (timeSeconds === null) {
+    const mmss = lower.match(/\b(\d{1,2}):(\d{2})\b/);
+    if (mmss) timeSeconds = Number(mmss[1]) * 60 + Number(mmss[2]);
+  }
+  if (timeSeconds === null) {
+    const secs = lower.match(/\b(?:at|around|near)\s+(\d{1,3})(?:\s*(?:s|sec|seconds))?\b/);
+    if (secs) timeSeconds = Number(secs[1]);
+    else {
+      const bare = lower.match(/\b(\d{1,3})\s*(?:s|sec|seconds)\b/);
+      if (bare) timeSeconds = Number(bare[1]);
+    }
+  }
+  if (timeSeconds === null) timeSeconds = Math.min(duration, Math.round(elapsed + 1));
+  timeSeconds = Math.max(0, Math.min(duration, timeSeconds));
+
+  let launchPositionIndex = 1;
+  if (/\b(left|mortar\s*1)\b/.test(lower)) launchPositionIndex = 0;
+  else if (/\b(right|mortar\s*3)\b/.test(lower)) launchPositionIndex = 2;
+  else if (/\b(centre|center|middle|mortar\s*2)\b/.test(lower)) launchPositionIndex = 1;
+
+  const stopWords = new Set([
+    'add',
+    'a',
+    'an',
+    'the',
+    'at',
+    'in',
+    'on',
+    'with',
+    'and',
+    'or',
+    'firework',
+    'fireworks',
+    'cue',
+    'effect',
+    'around',
+    'near',
+    'very',
+    'start',
+    'beginning',
+    'intro',
+    'opening',
+    'end',
+    'finale',
+    'outro',
+    'ending',
+    'middle',
+    'centre',
+    'center',
+    'left',
+    'right',
+    'mortar',
+    'please',
+    'show',
+    'something',
+    'some',
+    'me',
+    'i',
+    'want',
+    'need',
+    'put',
+    'insert',
+    'use',
+    'of',
+    'for',
+    'to',
+    'from',
+  ]);
+  const tokens = lower
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((t) => t && !stopWords.has(t) && !/^\d+$/.test(t));
+
+  let bestProduct: FireworkSpecification | null = null;
+  let bestScore = 0;
+  for (const product of specifications) {
+    const name = product.name.toLowerCase();
+    let score = 0;
+    for (const token of tokens) {
+      if (name.includes(token)) score += token.length;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestProduct = product;
+    }
+  }
+
+  if (!bestProduct) return null;
+  return {
+    product: bestProduct,
+    timeSeconds,
+    launchPositionIndex,
+    description: prompt.length > 180 ? prompt.slice(0, 177) + '...' : prompt,
+  };
 }
