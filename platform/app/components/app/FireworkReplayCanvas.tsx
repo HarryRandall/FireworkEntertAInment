@@ -18,6 +18,8 @@ type Props = {
   interactive?: boolean;
 };
 
+const MAX_DEVICE_PIXEL_RATIO = 1.5;
+
 export function FireworkReplayCanvas({
   cues,
   elapsed,
@@ -33,6 +35,7 @@ export function FireworkReplayCanvas({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rafRef = useRef<number | null>(null);
   const elapsedRef = useRef(elapsed);
+  const forceRenderRef = useRef(true);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
@@ -60,11 +63,13 @@ export function FireworkReplayCanvas({
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: false,
       alpha: false,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO),
+    );
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
@@ -91,15 +96,26 @@ export function FireworkReplayCanvas({
     engine.setMuted(muted);
     engineRef.current = engine;
 
+    let renderedElapsed = Number.NaN;
     function loop() {
       const eng = engineRef.current;
       const cam = cameraRef.current;
       const rend = rendererRef.current;
       const sc = sceneRef.current;
       if (!eng || !cam || !rend || !sc) return;
-      eng.setElapsed(elapsedRef.current);
-      controls.update();
-      rend.render(sc, cam);
+      const targetElapsed = elapsedRef.current;
+      const timelineChanged =
+        Number.isNaN(renderedElapsed) ||
+        Math.abs(targetElapsed - renderedElapsed) > 0.0001;
+      if (timelineChanged) {
+        eng.setElapsed(targetElapsed);
+        renderedElapsed = targetElapsed;
+      }
+      const controlsChanged = controls.enabled ? controls.update() : false;
+      if (timelineChanged || controlsChanged || forceRenderRef.current) {
+        forceRenderRef.current = false;
+        rend.render(sc, cam);
+      }
       rafRef.current = requestAnimationFrame(loop);
     }
     rafRef.current = requestAnimationFrame(loop);
@@ -110,6 +126,7 @@ export function FireworkReplayCanvas({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      forceRenderRef.current = true;
     }
     const ro = new ResizeObserver(onResize);
     ro.observe(container);
@@ -133,10 +150,12 @@ export function FireworkReplayCanvas({
 
   useEffect(() => {
     engineRef.current?.setCues(cues);
+    forceRenderRef.current = true;
   }, [cues]);
 
   useEffect(() => {
     engineRef.current?.setLaunchPositions(launchPositions);
+    forceRenderRef.current = true;
     // positionsKey is the dependency surrogate so we don't re-fire on
     // referentially-different but value-equal arrays.
     // eslint-disable-next-line react-hooks/exhaustive-deps

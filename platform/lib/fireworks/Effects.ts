@@ -22,6 +22,8 @@ const TRAIL_DRAG = 3.0;
 const FLASH_DRAG = 4.0;
 const MIN_STAR_GRAVITY = -0.24;
 const TRAIL_GRAVITY = -0.03;
+const SHELL_TRAIL_DENSITY = 0.35;
+const STAR_TRAIL_PARTICLES_PER_SECOND = 9;
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
@@ -160,14 +162,15 @@ export class Effects {
         vz = 2 - rng.next() * 4;
         break;
     }
-    for (let i = 0; i < max; i++) {
+    const count = Math.floor(max * SHELL_TRAIL_DENSITY);
+    for (let i = 0; i < count; i++) {
       this.pp.new({
         x: particle.x,
         y: particle.y,
         z: particle.z,
         mass: 0.002,
         gravity: -0.2,
-        size: 20 + rng.next() * 40,
+        size: 12 + rng.next() * 24,
         vx,
         vz,
         r: color.r,
@@ -176,7 +179,7 @@ export class Effects {
         h: 1.0,
         s: 0.5,
         l: 0.0,
-        life: rng.next() * 3,
+        life: 0.15 + rng.next() * 0.7,
         decay: 50,
       });
     }
@@ -267,7 +270,7 @@ export class Effects {
         s: rng.next(),
         l: rng.next(),
         life: rangeRand(lifeRange, rng),
-        decay: rng.next() * 100,
+        decay: 20 + rng.next() * 80,
         effect: (p, dt, t) =>
           this.flairEffect(p, dt, t, seed, color, design, rng, audible),
       });
@@ -275,20 +278,20 @@ export class Effects {
   }
 
   private explodeBurst(particle: Particle, rng: RandomSource): void {
-    const count = 100 + Math.floor(rng.next() * 200);
+    const count = 60 + Math.floor(rng.next() * 120);
     for (let i = 0; i < count; i++) {
       this.pp.new({
         x: particle.x,
         y: particle.y,
         z: particle.z,
-        size: rng.next() * 80,
+        size: rng.next() * 45,
         mass: 0.5,
         gravity: TRAIL_GRAVITY,
         drag: FLASH_DRAG,
         vy: 1 - rng.next() * 2,
         vx: 1 - rng.next() * 2,
         vz: 1 - rng.next() * 2,
-        life: 0.1 + rng.next(),
+        life: 0.08 + rng.next() * 0.45,
         decay: rng.next() * 50,
       });
     }
@@ -349,6 +352,7 @@ export class Effects {
     }
 
     if (!design.flair.enabled) return;
+    if (rng.next() > Math.min(1, STAR_TRAIL_PARTICLES_PER_SECOND * dt)) return;
 
     this.pp.new({
       x: particle.x,
@@ -357,14 +361,14 @@ export class Effects {
       mass: 0.002,
       gravity: TRAIL_GRAVITY,
       drag: TRAIL_DRAG,
-      size: 20 + rng.next() * 40,
+      size: 12 + rng.next() * 24,
       r,
       g,
       b,
       h: 1.0,
       s: 0.5,
       l: 0.0,
-      life: rng.next() * 3,
+      life: 0.25 + rng.next() * 0.85,
       decay: 50,
     });
   }
@@ -394,13 +398,13 @@ export class Effects {
     const r = colored ? Math.min(1, color.r * 2) : Math.max(color.r, 0.75);
     const g = colored ? Math.min(1, color.g * 2) : Math.max(color.g, 0.68);
     const b = colored ? color.b : Math.max(color.b, 0.45);
-    const count = 10 + Math.floor(rng.next() * 150);
+    const count = 8 + Math.floor(rng.next() * 80);
     for (let i = 0; i < count; i++) {
       this.pp.new({
         x: particle.x,
         y: particle.y,
         z: particle.z,
-        size: rng.next() * 80,
+        size: rng.next() * 45,
         mass: 0.02,
         gravity: -0.2,
         r,
@@ -412,7 +416,7 @@ export class Effects {
         vy: 1 - rng.next() * 2,
         vx: 1 - rng.next() * 2,
         vz: 1 - rng.next() * 2,
-        life: 0.1 + rng.next() * 2,
+        life: 0.1 + rng.next() * 1.2,
         decay: rng.next() * 50,
       });
     }
