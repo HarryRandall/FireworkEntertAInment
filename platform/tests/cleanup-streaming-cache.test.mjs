@@ -156,8 +156,8 @@ test('admin mutations harden self actions roles supplier URLs and product durati
 
   assert.match(users, /You cannot suspend your own account/);
   assert.match(users, /You cannot delete your own account/);
-  assert.match(users, /\.from\("roles"\)[\s\S]*\.eq\("id", parsed\.data\.roleId\)/);
-  assert.match(suppliers, /url\.protocol === "http:" \|\| url\.protocol === "https:"/);
+  assert.match(users, /\.from\(['"]roles['"]\)[\s\S]*\.eq\(['"]id['"], parsed\.data\.roleId\)/);
+  assert.match(suppliers, /url\.protocol === ['"]http:['"] \|\| url\.protocol === ['"]https:['"]/);
   assert.match(catalogue, /MAX_PRODUCT_DURATION_SECONDS = 60 \* 60/);
   assert.match(catalogue, /clampProductDurationSeconds/);
 });

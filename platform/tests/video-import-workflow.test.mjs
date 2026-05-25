@@ -94,7 +94,7 @@ test('upload form bypasses Vercel Server Action body cap with direct-to-storage 
   assert.match(form, /name="storagePath"/);
   // Clear the file input before requestSubmit so the bytes don't get
   // re-included in the Server Action POST and trip Vercel's 4.5 MB cap.
-  assert.match(form, /fileRef\.current\.value = ""/);
+  assert.match(form, /fileRef\.current\.value = ['"]{2}/);
   // Browser couldn't-decode-metadata stays a non-blocking notice.
   assert.match(form, /setNotice\(/);
   assert.match(form, /worker will probe/i);
@@ -126,11 +126,11 @@ test('import detail page polls for live progress without manual refresh', () => 
     'utf8',
   );
   assert.match(detailPage, /ImportProgressWatcher/);
-  assert.match(watcher, /"use client"/);
+  assert.match(watcher, /['"]use client['"]/);
   assert.match(watcher, /\/api\/admin\/imports\/\$\{jobId\}\/status/);
   assert.match(watcher, /router\.refresh\(\)/);
   assert.match(watcher, /TERMINAL_STATUSES/);
-  assert.match(statusRoute, /requirePermission\("admin\.manage_imports"\)/);
+  assert.match(statusRoute, /requirePermission\(['"]admin\.manage_imports['"]\)/);
   assert.match(statusRoute, /processing_progress/);
   assert.match(statusRoute, /import_outputs/);
 });
