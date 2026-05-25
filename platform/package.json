@@ -9,9 +9,15 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "worker:firework-import": "../workers/firework-import-worker/run-worker.sh",
-    "test": "node --test tests/**/*.test.mjs"
+    "test": "node --test tests/**/*.test.mjs",
+    "prepare": "cd .. && husky platform/.husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,json,css,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -28,6 +34,7 @@
     "lucide-react": "^1.14.0",
     "next": "^16.2.1",
     "next-themes": "^0.4.6",
+    "openai": "^6.39.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-day-picker": "^9.14.0",
@@ -48,6 +55,10 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.5",
+    "prettier": "3.8.3",
+    "prettier-plugin-tailwindcss": "0.8.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3"
   }
