@@ -12,21 +12,21 @@ The tool is provided to consumers by fireworks retailers, either in-store (as a 
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | [Next.js](https://nextjs.org/) (App Router) |
-| Language | TypeScript |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) v4 |
-| Backend / Storage | [Supabase](https://supabase.com/) |
-| Hosting | [Vercel](https://vercel.com/) |
-| Audio Analysis | Python (librosa), deployed on [Modal](https://modal.com/) |
-| Choreography | LLM-based agent (API) |
+| Layer             | Technology                                  |
+| ----------------- | ------------------------------------------- |
+| Framework         | [Next.js](https://nextjs.org/) (App Router) |
+| Language          | TypeScript                                  |
+| Styling           | [Tailwind CSS](https://tailwindcss.com/) v4 |
+| Backend / Storage | [Supabase](https://supabase.com/)           |
+| Hosting           | [Vercel](https://vercel.com/)               |
+| Audio Analysis    | Python (librosa)                            |
+| Choreography      | LLM-based agent (API)                       |
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18.18+
+- [Node.js](https://nodejs.org/) 20.9+
 - npm
 
 ### Installation
@@ -106,14 +106,24 @@ cd platform
 npm run check
 ```
 
+### CI
+
+GitHub Actions runs the platform checks on every pushed commit and pull request:
+
+- `npm run lint` from `platform/`
+- `npm run typecheck` from `platform/`
+- `npm test` from `platform/`
+- `npm run build` from `platform/`
+- Python analyser unit tests from `platform/analyser/`
+
 ## Deployment
 
 The project is hosted on Vercel with the following branching strategy:
 
-| Branch | Environment | URL |
-|--------|------------|-----|
-| `main` | Production | Primary Vercel domain |
-| `development` (and PRs) | Preview | Auto-generated preview URL per push |
+| Branch                  | Environment | URL                                 |
+| ----------------------- | ----------- | ----------------------------------- |
+| `main`                  | Production  | Primary Vercel domain               |
+| `development` (and PRs) | Preview     | Auto-generated preview URL per push |
 
 All deployment URLs are publicly accessible — team members do not need Vercel accounts to view them.
 
