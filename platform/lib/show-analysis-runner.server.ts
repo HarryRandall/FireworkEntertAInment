@@ -1,10 +1,11 @@
 /**
- * Runs the Python librosa analyser as a child process (server-only).
+ * Calls the hosted Modal song analyser (server-only).
  *
  * Pipeline:
- *   1. Download the uploaded audio from Supabase Storage to a temp dir.
- *   2. Spawn `python platform/analyser/run.py` against that temp file.
- *   3. Parse the analyser JSON, persist a `music_analyses` row, and clean up.
+ *   1. Mint a short-lived Supabase Storage signed URL for the audio.
+ *   2. POST that URL + personality to the Modal endpoint with a bearer secret.
+ *   3. Parse the analyser JSON, persist a `music_analyses` / `show_analyses`
+ *      row, and let the caller render markdown.
  *
  * Failures are recorded on the analysis row (`status = 'failed'`,
  * `error_message`) so the UI can surface them; this function never throws
@@ -12,10 +13,6 @@
  */
 import 'server-only';
 
-import { spawn } from 'child_process';
-import { access, mkdtemp, rm, writeFile } from 'fs/promises';
-import os from 'os';
-import path from 'path';
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -23,15 +20,10 @@ import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 
 const ANALYSER_SCHEMA_VERSION = '1.2.0';
-const ANALYSER_RUNNER_VERSION = 'local-librosa-1';
+const ANALYSER_RUNNER_VERSION = 'modal-librosa-1';
+const SIGNED_URL_TTL_SECONDS = 600;
 
 type AppSupabaseClient = SupabaseClient<Database>;
-
-type ProcessResult = {
-  code: number | null;
-  stdout: string;
-  stderr: string;
-};
 
 type ShowForAnalysis = {
   id: string;
@@ -69,58 +61,6 @@ class AnalyseError extends Error {
 function truncate(value: string, length = 1800): string {
   if (value.length <= length) return value;
   return `${value.slice(0, length)}...`;
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function resolvePythonExecutable(analyserDir: string): Promise<string> {
-  const venvPython = path.join(analyserDir, '.venv', 'bin', 'python');
-  return (await pathExists(venvPython)) ? venvPython : 'python3';
-}
-
-function audioExtension(audioPath: string): string {
-  const ext = path.extname(audioPath).replace(/[^a-zA-Z0-9.]/g, '');
-  return ext || '.mp3';
-}
-
-function runProcess(
-  command: string,
-  args: string[],
-  options: { cwd: string },
-): Promise<ProcessResult> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      cwd: options.cwd,
-      env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.on('error', reject);
-    child.on('close', (code) => resolve({ code, stdout, stderr }));
-  });
-}
-
-function parseAnalyserJson(stdout: string): AnalyserResult {
-  const jsonStart = stdout.indexOf('{');
-  if (jsonStart < 0) {
-    throw new AnalyseError('The analyser did not return JSON output.', 422);
-  }
-  return JSON.parse(stdout.slice(jsonStart)) as AnalyserResult;
 }
 
 function formatSeconds(seconds: number): string {
@@ -226,61 +166,60 @@ function buildAiContextMarkdown(params: {
   return lines.join('\n');
 }
 
-async function runLocalAnalyser(params: {
+async function runHostedAnalyser(params: {
   supabase: AppSupabaseClient;
   audioPath: string;
   personality: string;
 }): Promise<AnalyserResult> {
-  let tempDir: string | null = null;
+  const analyserUrl = process.env.ANALYSER_URL;
+  const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
+  if (!analyserUrl || !analyserSecret) {
+    throw new AnalyseError(
+      'Song analyser is not configured: set ANALYSER_URL and ANALYSER_SHARED_SECRET.',
+      500,
+    );
+  }
+
+  const { data: signed, error: signError } = await params.supabase.storage
+    .from('audio')
+    .createSignedUrl(params.audioPath, SIGNED_URL_TTL_SECONDS);
+  if (signError || !signed?.signedUrl) {
+    throw new AnalyseError(
+      signError?.message || 'Could not create a signed URL for the audio file.',
+      400,
+    );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(analyserUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${analyserSecret}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        audio_url: signed.signedUrl,
+        personality: params.personality,
+      }),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AnalyseError(`Could not reach the song analyser: ${message}`, 502);
+  }
+
+  const bodyText = await response.text();
+  if (!response.ok) {
+    throw new AnalyseError(
+      truncate(bodyText || `Analyser returned HTTP ${response.status}.`),
+      response.status === 401 ? 500 : 422,
+    );
+  }
 
   try {
-    const analyserDir = path.join(process.cwd(), 'analyser');
-    const analyserScript = path.join(analyserDir, 'showcrafter.py');
-    if (!(await pathExists(analyserScript))) {
-      throw new AnalyseError('ShowCrafter analyser script was not found on this server.', 500);
-    }
-
-    const { data: audioBlob, error: downloadError } = await params.supabase.storage
-      .from('audio')
-      .download(params.audioPath);
-    if (downloadError || !audioBlob) {
-      throw new AnalyseError(downloadError?.message || 'Could not download the audio.', 400);
-    }
-
-    tempDir = await mkdtemp(path.join(os.tmpdir(), 'showcrafter-'));
-    const inputPath = path.join(tempDir, `audio${audioExtension(params.audioPath)}`);
-    const scratchMarkdownPath = path.join(tempDir, 'scratch.md');
-
-    await writeFile(inputPath, Buffer.from(await audioBlob.arrayBuffer()));
-
-    const python = await resolvePythonExecutable(analyserDir);
-    const result = await runProcess(
-      python,
-      [
-        analyserScript,
-        inputPath,
-        '--markdown-out',
-        scratchMarkdownPath,
-        '--no-json-file',
-        '--json',
-        '--personality',
-        params.personality,
-      ],
-      { cwd: analyserDir },
-    );
-
-    if (result.code !== 0) {
-      throw new AnalyseError(
-        truncate(result.stderr || result.stdout || 'The analyser failed.'),
-        422,
-      );
-    }
-
-    return parseAnalyserJson(result.stdout);
-  } finally {
-    if (tempDir) {
-      await rm(tempDir, { recursive: true, force: true });
-    }
+    return JSON.parse(bodyText) as AnalyserResult;
+  } catch {
+    throw new AnalyseError('The analyser did not return JSON output.', 422);
   }
 }
 
@@ -357,7 +296,7 @@ export async function runMusicAnalysisForUpload(params: {
     .eq('id', typedRow.id);
 
   try {
-    const analysis = await runLocalAnalyser({
+    const analysis = await runHostedAnalyser({
       supabase: params.supabase,
       audioPath: typedRow.audio_path,
       personality,
@@ -442,7 +381,7 @@ export async function runShowAnalysisForShow(params: {
   }
 
   try {
-    const analysis = await runLocalAnalyser({
+    const analysis = await runHostedAnalyser({
       supabase: params.supabase,
       audioPath: typedShow.audio_path,
       personality,

@@ -14,7 +14,7 @@ AI tool for designing real consumer firework shows, in partnership with ICON Pyr
 - **Styling**: Tailwind CSS v4
 - **Backend/Storage**: Supabase
 - **Hosting**: Vercel (main = production, other branches = preview deployments)
-- **Audio Analysis**: Python (librosa) — see `platform/analyser/`
+- **Audio Analysis**: Python (librosa) hosted on Modal — see [`platform/analyser/`](platform/analyser/) (CLI: `showcrafter.py`, deploy: `modal_app.py`)
 - **Choreography**: LLM-based agent (API)
 
 ## Development
@@ -36,6 +36,8 @@ npm run lint                 # run linter
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | browser + server | Anon / publishable key (RLS-safe) |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | optional | browser + server | Newer name for the same anon key — either is accepted |
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | optional | server | Server-only fallbacks for non-`NEXT_PUBLIC_*` deployments |
+| `ANALYSER_URL` | yes | server | URL of the hosted Modal song analyser (printed by `modal deploy`) |
+| `ANALYSER_SHARED_SECRET` | yes | server | Bearer token shared with the Modal `showcrafter` secret used to authenticate analyser calls |
 
 `platform/.env.local` is gitignored — never commit secrets. In Vercel, configure these under Project Settings → Environment Variables.
 
