@@ -7,7 +7,7 @@
  * is intentionally `dynamic`-imported by parents to avoid SSR.
  */
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { Hand, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Axis3d, Hand, RotateCcw, Settings, ZoomIn, ZoomOut } from 'lucide-react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
@@ -25,6 +25,7 @@ type Props = {
   launchPositions?: LaunchPosition[];
   muted?: boolean;
   interactive?: boolean;
+  controlsVisible?: boolean;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
@@ -36,6 +37,7 @@ export function FireworkReplayCanvas({
   launchPositions = DEFAULT_LAUNCH_POSITIONS,
   muted = false,
   interactive = true,
+  controlsVisible = true,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
@@ -46,12 +48,20 @@ export function FireworkReplayCanvas({
   const rafRef = useRef<number | null>(null);
   const internalElapsedRef = useRef(elapsed);
   const forceRenderRef = useRef(true);
+  const showViewHelperRef = useRef(false);
   const [panMode, setPanMode] = useState(false);
+  const [showCameraControls, setShowCameraControls] = useState(false);
+  const [showViewHelper, setShowViewHelper] = useState(false);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
     [launchPositions],
   );
+
+  useEffect(() => {
+    showViewHelperRef.current = showViewHelper;
+    forceRenderRef.current = true;
+  }, [showViewHelper]);
 
   useEffect(() => {
     if (!playbackRef) internalElapsedRef.current = elapsed;
@@ -107,9 +117,8 @@ export function FireworkReplayCanvas({
     engineRef.current = engine;
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
-    // Top-right corner. `top` takes precedence over `bottom` in the source, so
-    // setting top non-null is enough to lift the default bottom-right anchor.
-    viewHelper.location.top = 12;
+    // Keep the axis helper below the camera settings button when enabled.
+    viewHelper.location.top = 64;
     viewHelper.location.right = 12;
     // Orbit around the firework focal point rather than world origin so the
     // snap-to-axis views keep the burst centred.
@@ -119,7 +128,7 @@ export function FireworkReplayCanvas({
 
     function onPointerUp(event: PointerEvent) {
       if (!controls.enabled) return;
-      if (viewHelper.handleClick(event)) forceRenderRef.current = true;
+      if (showViewHelperRef.current && viewHelper.handleClick(event)) forceRenderRef.current = true;
     }
     renderer.domElement.addEventListener('pointerup', onPointerUp);
 
@@ -146,7 +155,7 @@ export function FireworkReplayCanvas({
         lastEngineUpdate = now;
       }
       const dt = clock.getDelta();
-      if (viewHelper.animating) {
+      if (showViewHelperRef.current && viewHelper.animating) {
         viewHelper.update(dt);
         forceRenderRef.current = true;
       }
@@ -154,10 +163,12 @@ export function FireworkReplayCanvas({
       if (timelineChanged || controlsChanged || forceRenderRef.current) {
         forceRenderRef.current = false;
         rend.render(sc, cam);
-        // Gizmo overlays the main pass; it manages its own viewport region.
-        rend.autoClear = false;
-        viewHelper.render(rend);
-        rend.autoClear = true;
+        if (showViewHelperRef.current) {
+          // Gizmo overlays the main pass; it manages its own viewport region.
+          rend.autoClear = false;
+          viewHelper.render(rend);
+          rend.autoClear = true;
+        }
       }
       rafRef.current = requestAnimationFrame(loop);
     }
@@ -251,23 +262,46 @@ export function FireworkReplayCanvas({
     <>
       <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />
       {interactive ? (
-        <div className="absolute top-40 right-3 z-10 flex flex-col gap-1.5">
-          <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
-            <ZoomIn size={16} strokeWidth={2} />
-          </CanvasIconButton>
-          <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
-            <ZoomOut size={16} strokeWidth={2} />
-          </CanvasIconButton>
+        <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-1.5">
           <CanvasIconButton
-            onClick={() => setPanMode((on) => !on)}
-            label={panMode ? 'Orbit mode' : 'Pan mode'}
-            active={panMode}
+            onClick={() => setShowCameraControls((open) => !open)}
+            label={showCameraControls ? 'Hide camera controls' : 'Show camera controls'}
+            active={showCameraControls}
+            className={
+              showCameraControls || controlsVisible
+                ? 'opacity-100'
+                : 'pointer-events-none opacity-0'
+            }
           >
-            <Hand size={16} strokeWidth={2} />
+            <Settings size={16} strokeWidth={2} />
           </CanvasIconButton>
-          <CanvasIconButton onClick={resetView} label="Reset view">
-            <RotateCcw size={16} strokeWidth={2} />
-          </CanvasIconButton>
+          {showCameraControls ? (
+            <div className="flex flex-col gap-1.5">
+              <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
+                <ZoomIn size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
+                <ZoomOut size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton
+                onClick={() => setPanMode((on) => !on)}
+                label={panMode ? 'Orbit mode' : 'Pan mode'}
+                active={panMode}
+              >
+                <Hand size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton onClick={resetView} label="Reset view">
+                <RotateCcw size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton
+                onClick={() => setShowViewHelper((on) => !on)}
+                label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
+                active={showViewHelper}
+              >
+                <Axis3d size={16} strokeWidth={2} />
+              </CanvasIconButton>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </>
@@ -278,11 +312,13 @@ function CanvasIconButton({
   onClick,
   label,
   active = false,
+  className = '',
   children,
 }: {
   onClick: () => void;
   label: string;
   active?: boolean;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -295,7 +331,7 @@ function CanvasIconButton({
         active
           ? 'border-primary/40 bg-primary-container/85 text-on-primary-container'
           : 'border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90'
-      }`}
+      } ${className}`}
     >
       {children}
     </button>
