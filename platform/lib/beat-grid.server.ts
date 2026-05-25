@@ -32,8 +32,9 @@ export type CueSlot = {
   nearClimax: boolean;
 };
 
-const TARGET_SLOTS = 160;
-const MIN_INTENSITY = 0.15;
+const TARGET_SLOTS = 240;
+const MAX_TARGET_SLOTS = TARGET_SLOTS + 80;
+const MIN_INTENSITY = 0.1;
 
 function vibeFor(label: string): SlotVibe {
   const l = label.toLowerCase();
@@ -52,17 +53,17 @@ function vibeBoost(vibe: SlotVibe): number {
   switch (vibe) {
     case 'chorus':
     case 'drop':
-      return 0.28;
+      return 0.36;
     case 'pre-chorus':
     case 'buildup':
-      return 0.15;
+      return 0.24;
     case 'bridge':
       return 0.05;
     case 'verse':
       return 0;
     case 'intro':
     case 'outro':
-      return -0.12;
+      return -0.06;
   }
 }
 
@@ -136,21 +137,35 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
   const live = scored.filter((b) => b.intensity > MIN_INTENSITY);
   if (live.length === 0) return [];
 
-  // 4. Sample to TARGET_SLOTS, but keep coverage across the whole song by
-  //    bucketing into windows and taking the strongest beats in each window.
+  // 4. Sample quieter sections, but keep every chorus/drop/climax beat.
   const WINDOW_COUNT = 12;
-  const windowSize = songDuration / WINDOW_COUNT;
-  const buckets: Scored[][] = Array.from({ length: WINDOW_COUNT }, () => []);
-  for (const b of live) {
-    const idx = Math.min(WINDOW_COUNT - 1, Math.floor(b.time / windowSize));
-    buckets[idx].push(b);
+  const targetSampledBeats = Math.min(Math.ceil(beats.length * 1.2), MAX_TARGET_SLOTS);
+  const fullCoverage = live.filter(isFullCoverageBeat);
+  const sampled: Scored[] = [...fullCoverage];
+  const remainingTarget = Math.max(0, targetSampledBeats - sampled.length);
+
+  if (remainingTarget > 0) {
+    const sampledBeatKeys = new Set(fullCoverage.map(beatKey));
+    const sampledCandidates = live.filter((b) => !sampledBeatKeys.has(beatKey(b)));
+    const nonEmptyBuckets = Math.max(1, Math.min(WINDOW_COUNT, sampledCandidates.length));
+    const perWindow = Math.max(1, Math.ceil(remainingTarget / nonEmptyBuckets));
+    const sampledRemainder: Scored[] = [];
+
+    // Keep coverage across the whole song by bucketing into windows and taking
+    // the strongest non-chorus beats in each window.
+    const windowSize = songDuration / WINDOW_COUNT;
+    const buckets: Scored[][] = Array.from({ length: WINDOW_COUNT }, () => []);
+    for (const b of sampledCandidates) {
+      const idx = Math.min(WINDOW_COUNT - 1, Math.floor(b.time / windowSize));
+      buckets[idx].push(b);
+    }
+    for (const bucket of buckets) {
+      bucket.sort((a, b) => b.intensity - a.intensity);
+      sampledRemainder.push(...bucket.slice(0, perWindow));
+    }
+    sampled.push(...sampledRemainder);
   }
-  const perWindow = Math.max(2, Math.ceil(TARGET_SLOTS / WINDOW_COUNT));
-  const sampled: Scored[] = [];
-  for (const bucket of buckets) {
-    bucket.sort((a, b) => b.intensity - a.intensity);
-    sampled.push(...bucket.slice(0, perWindow));
-  }
+
   sampled.sort((a, b) => a.time - b.time);
 
   // 5. Expand into per-tube slots based on intensity. Stagger tubes across
@@ -160,7 +175,12 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
   let idx = 0;
   let rotor: 0 | 1 | 2 = 0;
   for (const b of sampled) {
-    const tubeCount = b.intensity >= 0.78 || b.nearClimax ? 3 : b.intensity >= 0.55 ? 2 : 1;
+    const tubeCount =
+      b.intensity >= 0.62 || b.nearClimax || b.vibe === 'chorus' || b.vibe === 'drop'
+        ? 3
+        : b.intensity >= 0.4 || b.vibe === 'pre-chorus' || b.vibe === 'buildup'
+          ? 2
+          : 1;
     const tubes: Array<0 | 1 | 2> = [];
     for (let i = 0; i < tubeCount; i++) {
       tubes.push(((rotor + i) % 3) as 0 | 1 | 2);
@@ -179,6 +199,17 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
     }
   }
   return slots;
+}
+
+function isFullCoverageBeat(beat: { sectionLabel: string; vibe: SlotVibe; nearClimax: boolean }) {
+  const label = beat.sectionLabel.toLowerCase();
+  return (
+    beat.vibe === 'chorus' || beat.vibe === 'drop' || beat.nearClimax || label.includes('climax')
+  );
+}
+
+function beatKey(beat: { time: number; sectionLabel: string; vibe: SlotVibe }): string {
+  return `${beat.time}:${beat.sectionLabel}:${beat.vibe}`;
 }
 
 function clamp01(value: number): number {
