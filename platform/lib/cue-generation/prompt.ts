@@ -21,31 +21,59 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
       durationSeconds,
     };
   }
+  const beatTimes = analysis.beat_times ?? [];
+  const sections = analysis.sections.map((section) => ({
+    ...section,
+    beatCount: beatTimes.filter((beat) => beat >= section.start && beat < section.end).length,
+    targetFillRatio: targetFillRatioFor(section.intensity),
+    densityHint: densityHintFor(section.label, section.intensity),
+  }));
+
   return {
     durationSeconds: analysis.duration_seconds || durationSeconds,
     tempoBpm: analysis.tempo_bpm,
     musicProfile: analysis.music_profile,
     showPersonality: analysis.show_personality,
-    sections: analysis.sections,
+    sections,
     climaxes: analysis.key_moments?.filter((m) => m.type === 'climax'),
     buildups: analysis.buildups,
   };
 }
 
+function targetFillRatioFor(intensity: string): number {
+  if (intensity === 'high') return 1;
+  if (intensity === 'medium') return 0.8;
+  return 0.55;
+}
+
+function densityHintFor(
+  label: string,
+  intensity: string,
+): 'saturate' | 'ramp' | 'breathe' | 'tasteful' {
+  const l = label.toLowerCase();
+  if (l.includes('pre-chorus') || l.includes('build') || l.includes('rise')) return 'ramp';
+  if (l.includes('chorus') || l.includes('drop') || l.includes('climax') || l.includes('finale')) {
+    return 'saturate';
+  }
+  if (l.includes('intro') || intensity === 'low') return 'breathe';
+  return 'tasteful';
+}
+
 /**
- * Project the firework catalogue down to single-shot products (multi-shot
- * cakes occupy a tube for many seconds and can't be safely placed by the
- * generator yet) and flatten effect flags for the LLM to consume.
+ * Project the firework catalogue down to the compact product shape the LLM
+ * needs, including multi-shot metadata so it can choose sustained barrages.
  */
 export function projectCatalogue(products: Awaited<ReturnType<typeof listFireworkProducts>>) {
-  const singleShot = products.filter((p) => p.shotCount === 1);
-  return singleShot.map((product) => {
+  return products.map((product) => {
     const spec = product.spec ?? null;
+    const shotCount = product.shotCount ?? 1;
     return {
       id: product.id,
       name: product.name,
       description: product.description,
       durationSeconds: product.durationSeconds,
+      shotCount,
+      isMultiShot: shotCount > 1,
       heightMeters: product.heightMeters,
       caliber: product.caliber,
       shellType: spec?.shellType ?? null,
@@ -87,16 +115,15 @@ export function projectSlotsForLLM(slots: CueSlot[]) {
  */
 export function buildSystemPrompt(): string {
   return [
-    'You are a senior pyrotechnic show designer choreographing a song with single-shot fireworks.',
+    'You are a senior pyrotechnic show designer choreographing an exciting, beat-synced fireworks show.',
     "The user has written a 'userPrompt' describing the show they want — treat it as the single most important creative direction. Honour it over every other heuristic.",
     '',
     'Inputs you receive:',
     "  - userPrompt: the user's verbatim creative brief. Always re-read it before assigning cues.",
     '  - brief: title, mood tags, budget, time of day, location, requested duration.',
-    '  - analysisSummary: full song structure — duration, tempo, sections (start/end/label/energy), climaxes, buildups, music_profile, show_personality.',
-    "  - beatGrid: every analysed beat with { t (sec), section, vibe, intensity, climax }. This is your high-resolution timing reference — use it to feel the song's pacing.",
-    '  - catalogue: every available SINGLE-SHOT product with id, name, description, durationSeconds, caliber, heightMeters, shellType, color, colorPalette, and effect flags (glitter, trailEffect, crackle, strobe, ring, crossette, horsetail).',
-    '  - slots: a dense beat grid sampled from the actual analysed beats. Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), climax, section }. Slots are the ONLY times you can fire on. Their intensity e and vibe v are your high-resolution pacing reference — use them to feel the song.',
+    '  - analysisSummary: song structure — duration, tempo, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, music_profile, show_personality.',
+    '  - catalogue: every available product with id, name, description, durationSeconds, shotCount, isMultiShot, caliber, heightMeters, shellType, color, colorPalette, and effect flags (glitter, trailEffect, crackle, strobe, ring, crossette, horsetail).',
+    '  - slots: a dense beat grid sampled from the actual analysed beats. Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), climax, section }. Slots are the ONLY times you can fire on.',
     '',
     'Output: assign at most one product per slot. Return { cues: [{ slotIndex, productId, description }], rationale }.',
     '',
@@ -107,23 +134,33 @@ export function buildSystemPrompt(): string {
     '  - One cue per slotIndex, no duplicates.',
     '',
     'Pacing rules (this is the biggest quality lever — get it right):',
-    "  - The show must FEEL like the song. Cue density and product size should track each slot's intensity e, not just be uniformly dense.",
-    '  - First 10–15% of the song (intro / first verse): VERY sparse. Maybe one cue every 4–8 seconds. Small caliber, single colour, elegant. This is the breath before the build.',
-    '  - Buildups: ramp deliberately. Earlier buildup beats should still feel restrained; only the final 2–3 seconds before a climax should hit full intensity. The audience should feel tension rising.',
-    '  - Choruses / drops / climaxes: dense, fast, biggest catalogue items. Stack multiple tubes on the same beat where slots allow. Use crackle/strobe/multi-colour combos here.',
-    "  - Verses after a chorus: pull back to ~50% density. Don't keep the climax energy flat across the whole song or the finale loses meaning.",
-    "  - Outro / finale: either a big sustained finale wall (if the song ends loud) or a graceful tapering set of single shells (if it ends soft). Match the song's actual ending energy from the slot intensities.",
-    '  - Target overall fill: 70–90% of slots. A masterful show LEAVES SPACE — better to skip a slot than to spam.',
+    "  - The show must FEEL like the song. Cue density and product size should track each slot's intensity e and section densityHint.",
+    '  - Target overall fill: 90–100% of slots. Never fall below 85% in chorus, drop, climax, or finale sections.',
+    '  - Intro / first verse: breathe, but do not go mute. Aim for about 50% fill with single-tube, small-caliber, mostly single-shot pops on downbeats.',
+    '  - Buildups / pre-chorus: ramp from about 60% fill at the start to 100% in the last second before the climax. Stack effects to communicate rising tension.',
+    '  - Chorus / drop / climax: saturate. Every slot fires. Use multi-shot cakes on at least one tube to lay a continuous bed, and put single-shot pops on the other tubes on every beat.',
+    '  - Post-chorus verses: keep the energy alive at about 65–75% fill so the show does not crater after a hook.',
+    '  - Outro / finale: every tube, every slot, finishers plus multi-shot cakes if the song ends loud; taper only when the ending is clearly soft.',
+    '',
+    'Product timing rules:',
+    '  - Single-shot products = pops on the beat. Use these to hit beats, climaxes, and accent moments.',
+    '  - Multi-shot products = sustained barrages. Place them at section boundaries: start of chorus, peak of buildup, and start of finale.',
+    "  - Multi-shots block their tube for the product's full airtime, so plan the other two tubes around them instead of trying to reuse that tube immediately.",
+    '',
+    'Variety rules:',
+    '  - Rotate effects aggressively in chorus/drop sections: crackle, strobe, ring, crossette, willow, glitter, color changes.',
+    '  - Two adjacent beats in a chorus/drop should not use the same product.',
+    '  - Within any 8-second window during chorus/drop, use at least 4 distinct products when the catalogue allows.',
+    '  - Across the whole show, use at least 60% of the catalogue at least once when catalogue size allows.',
     '',
     'Creative direction:',
     "  - The userPrompt overrides defaults. If they say 'mostly green', favour green; if they say 'patriotic', red/white/blue with gold finishers; if they say 'minimalist', drop the fill ratio toward 65%.",
     "  - Match each cue's product to its slot vibe AND to the userPrompt palette.",
-    "  - Rotate through the catalogue — don't repeat the same product back-to-back unless it's a deliberate motif (e.g. matching the chorus hook).",
     "  - description: ≤ 180 chars, one sentence, says WHAT fires and WHY this beat (e.g. 'Twin gold willows on the snare hit before the drop').",
-    '  - rationale: 2–4 sentences explaining the overall structure you chose and how it serves the userPrompt.',
+    '  - rationale: 1–2 sentences explaining chorus saturation, multi-shot placement, and how the structure serves the userPrompt.',
     '',
     'Output schema (return EXACTLY this JSON shape, no prose, no markdown fences):',
     '  { "cues": [{ "slotIndex": <int>, "productId": "<uuid>", "description": "<string ≤180 chars>" }, ...], "rationale": "<string>" }',
-    'Constraints: cues.length 1–240. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
+    'Constraints: cues.length 1–640. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
   ].join('\n');
 }

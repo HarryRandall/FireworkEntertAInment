@@ -87,7 +87,7 @@ export async function generateCuesForShow(params: {
     const products = await listFireworkProducts();
     catalogue = projectCatalogue(products);
     if (catalogue.length === 0) {
-      throw new Error('Product catalogue contains no single-shot fireworks.');
+      throw new Error('Product catalogue contains no firework products.');
     }
 
     const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
@@ -131,8 +131,9 @@ export async function generateCuesForShow(params: {
     slots: projectSlotsForLLM(slots),
     targets: {
       slotCount: slots.length,
-      minFillRatio: 0.7,
-      maxFillRatio: 0.9,
+      minFillRatio: 0.9,
+      maxFillRatio: 1,
+      chorusFillRatio: 1,
       songDurationSeconds: songDuration,
     },
   };
@@ -144,7 +145,7 @@ export async function generateCuesForShow(params: {
     const client = getOpenRouterClient();
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0.7,
+      temperature: 0.8,
       // `json_object` is the widely-supported structured-output mode on
       // OpenRouter (Anthropic + most providers). `json_schema` is OpenAI-only.
       response_format: { type: 'json_object' },

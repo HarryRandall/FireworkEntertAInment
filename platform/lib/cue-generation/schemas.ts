@@ -15,7 +15,7 @@ export const AssignmentSchema = z.object({
 
 /** Top-level response shape we expect back from the LLM. */
 export const GenerationResponseSchema = z.object({
-  cues: z.array(AssignmentSchema).min(1).max(240),
+  cues: z.array(AssignmentSchema).min(1).max(640),
   rationale: z.string().optional(),
 });
 
