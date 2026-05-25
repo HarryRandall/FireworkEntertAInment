@@ -71,10 +71,12 @@ npm run check
 
 ### CI
 
-GitHub Actions runs the same platform gate on every pushed commit and pull
-request:
+GitHub Actions runs the platform checks on every pushed commit and pull request:
 
-- `npm run check` from `platform/`
+- `npm run lint` from `platform/`
+- `npm run typecheck` from `platform/`
+- `npm test` from `platform/`
+- `npm run build` from `platform/`
 - Python analyser unit tests from `platform/analyser/`
 
 ## Deployment

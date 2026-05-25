@@ -46,8 +46,17 @@ jobs:
       - name: Install platform dependencies
         run: npm ci
 
-      - name: Run platform lint, typecheck, tests, and build
-        run: npm run check
+      - name: Run platform lint
+        run: npm run lint
+
+      - name: Run platform typecheck
+        run: npm run typecheck
+
+      - name: Run platform tests
+        run: npm test
+
+      - name: Build platform
+        run: npm run build
 
   analyser:
     name: Python analyser tests
