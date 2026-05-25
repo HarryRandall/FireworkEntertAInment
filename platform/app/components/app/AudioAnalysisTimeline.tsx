@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * AudioAnalysisTimeline — client card that surfaces audio analysis status
+ * for a show. Rendered inside the authenticated app shell on the show
+ * detail route. Auto-refreshes via router.refresh while analysis is
+ * running so the server-rendered snapshot transitions to "ready".
+ */
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/app/components/ui/Card';

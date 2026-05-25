@@ -1,14 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef } from "react";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import type { ReplayCue } from "@/lib/show-domain";
-import { FireworksEngine } from "@/lib/fireworks/FireworksEngine";
-import {
-  DEFAULT_LAUNCH_POSITIONS,
-  type LaunchPosition,
-} from "@/lib/fireworks/design";
+/**
+ * FireworkReplayCanvas — Three.js canvas that simulates firework cues
+ * for a given `elapsed` time. Used inside FireworkReplayViewer and
+ * TemplateReplayPreview. Owns its own renderer/engine lifecycle and
+ * is intentionally `dynamic`-imported by parents to avoid SSR.
+ */
+import { useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import type { ReplayCue } from '@/lib/show-domain';
+import { FireworksEngine } from '@/lib/fireworks/FireworksEngine';
+import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@/lib/fireworks/design';
 
 type Props = {
   cues: ReplayCue[];
@@ -35,7 +38,7 @@ export function FireworkReplayCanvas({
   const elapsedRef = useRef(elapsed);
 
   const positionsKey = useMemo(
-    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join("|"),
+    () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
     [launchPositions],
   );
 
@@ -62,7 +65,7 @@ export function FireworkReplayCanvas({
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
-      powerPreference: "high-performance",
+      powerPreference: 'high-performance',
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height);
@@ -150,10 +153,5 @@ export function FireworkReplayCanvas({
     if (controlsRef.current) controlsRef.current.enabled = interactive;
   }, [interactive]);
 
-  return (
-    <div
-      ref={containerRef}
-      className="absolute inset-0 h-full w-full bg-black"
-    />
-  );
+  return <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />;
 }

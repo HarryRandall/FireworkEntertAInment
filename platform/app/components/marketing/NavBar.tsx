@@ -1,14 +1,19 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles } from "lucide-react";
-import { Container } from "@/app/components/ui/Container";
-import { Button } from "@/app/components/ui/Button";
-import { ThemeToggle } from "@/app/components/theme/ThemeToggle";
-import { cn } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/client";
+/**
+ * MarketingNavBar — top navigation rendered across public marketing
+ * routes. Resolves the signed-in state on the client via Supabase so
+ * the "Dashboard" CTA can swap in for unauthenticated visitors.
+ */
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Menu, X, Sparkles } from 'lucide-react';
+import { Container } from '@/app/components/ui/Container';
+import { Button } from '@/app/components/ui/Button';
+import { ThemeToggle } from '@/app/components/theme/ThemeToggle';
+import { cn } from '@/lib/utils';
+import { createClient } from '@/utils/supabase/client';
 
 type NavLink = { href: string; label: string };
 
@@ -25,13 +30,13 @@ type MarketingNavBarProps = {
 
 export function MarketingNavBar({
   links = [],
-  ctaHref = "/signup",
-  ctaLabel = "Sign up free",
-  secondaryHref = "/login",
-  secondaryLabel = "Log in",
+  ctaHref = '/signup',
+  ctaLabel = 'Sign up free',
+  secondaryHref = '/login',
+  secondaryLabel = 'Log in',
   isAuthenticated = false,
-  dashboardHref = "/dashboard",
-  dashboardLabel = "Dashboard",
+  dashboardHref = '/dashboard',
+  dashboardLabel = 'Dashboard',
 }: MarketingNavBarProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -41,8 +46,8 @@ export function MarketingNavBar({
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -77,22 +82,22 @@ export function MarketingNavBar({
   return (
     <nav
       className={cn(
-        "fixed top-0 z-50 w-full transition-all duration-300",
+        'fixed top-0 z-50 w-full transition-all duration-300',
         scrolled
-          ? "border-b border-outline-variant/15 bg-surface/70 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent",
+          ? 'border-outline-variant/15 bg-surface/70 border-b backdrop-blur-xl'
+          : 'border-b border-transparent bg-transparent',
       )}
     >
       <Container className="flex h-16 items-center justify-between">
         <Link
-          href={authenticated ? dashboardHref : "/"}
-          className="group flex items-center gap-2 text-xl font-semibold tracking-tighter text-on-surface"
+          href={authenticated ? dashboardHref : '/'}
+          className="group text-on-surface flex items-center gap-2 text-xl font-semibold tracking-tighter"
         >
-          <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary transition-transform duration-300 group-hover:rotate-12">
+          <span className="bg-primary/15 text-primary relative inline-flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:rotate-12">
             <Sparkles size={14} strokeWidth={2} />
             <span
               aria-hidden
-              className="absolute inset-0 -z-10 rounded-full bg-primary/40 blur-md"
+              className="bg-primary/40 absolute inset-0 -z-10 rounded-full blur-md"
             />
           </span>
           <span>
@@ -110,13 +115,13 @@ export function MarketingNavBar({
                 key={link.href}
                 href={link.href}
                 onPointerEnter={() => setHovered(link.href)}
-                className="relative rounded-full px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:text-on-surface"
+                className="text-on-surface-variant hover:text-on-surface relative rounded-full px-4 py-2 text-sm font-medium transition-colors"
               >
                 {hovered === link.href && (
                   <motion.span
                     layoutId="nav-pill"
-                    className="absolute inset-0 -z-10 rounded-full bg-surface-container-highest/60"
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    className="bg-surface-container-highest/60 absolute inset-0 -z-10 rounded-full"
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                   />
                 )}
                 {link.label}
@@ -134,7 +139,7 @@ export function MarketingNavBar({
             <>
               <Link
                 href={secondaryHref}
-                className="text-sm font-medium text-on-surface-variant transition-colors hover:text-primary"
+                className="text-on-surface-variant hover:text-primary text-sm font-medium transition-colors"
               >
                 {secondaryLabel}
               </Link>
@@ -149,10 +154,10 @@ export function MarketingNavBar({
         <div className="flex items-center gap-2 md:hidden">
           <button
             type="button"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container/60 text-on-surface-variant hover:text-primary"
+            className="border-outline-variant/30 bg-surface-container/60 text-on-surface-variant hover:text-primary inline-flex h-11 w-11 items-center justify-center rounded-full border"
           >
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -164,17 +169,17 @@ export function MarketingNavBar({
         {open && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="overflow-hidden border-t border-outline-variant/15 bg-surface md:hidden"
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="border-outline-variant/15 bg-surface overflow-hidden border-t md:hidden"
           >
             <Container className="flex flex-col gap-1 py-4">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-highest/50 hover:text-primary"
+                  className="text-on-surface-variant hover:bg-surface-container-highest/50 hover:text-primary rounded-lg px-3 py-3 text-base font-medium"
                   onClick={() => setOpen(false)}
                 >
                   {link.label}
@@ -182,8 +187,8 @@ export function MarketingNavBar({
               ))}
               <div
                 className={cn(
-                  "flex flex-col gap-3",
-                  hasLinks && "mt-3 border-t border-outline-variant/10 pt-4",
+                  'flex flex-col gap-3',
+                  hasLinks && 'border-outline-variant/10 mt-3 border-t pt-4',
                 )}
               >
                 {authenticated ? (
@@ -199,7 +204,7 @@ export function MarketingNavBar({
                   <>
                     <Link
                       href={secondaryHref}
-                      className="rounded-lg px-3 py-3 text-base font-medium text-on-surface-variant hover:bg-surface-container-highest/50"
+                      className="text-on-surface-variant hover:bg-surface-container-highest/50 rounded-lg px-3 py-3 text-base font-medium"
                       onClick={() => setOpen(false)}
                     >
                       {secondaryLabel}

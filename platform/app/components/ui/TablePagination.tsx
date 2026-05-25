@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "./Button";
+/** Pagination control for DataTable — use on any server-paginated list with `searchParams`. */
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from './Button';
 
 export const TABLE_PAGE_SIZE = 8;
 
@@ -22,7 +23,7 @@ function pageHref(searchParams: SearchParams, page: number, pageKey: string) {
   if (page > 1) params.set(pageKey, String(page));
 
   const query = params.toString();
-  return query ? `?${query}` : "?";
+  return query ? `?${query}` : '?';
 }
 
 function paginationRange(currentPage: number, totalPages: number) {
@@ -36,7 +37,7 @@ export function TablePagination({
   currentPage,
   totalPages,
   searchParams,
-  pageKey = "page",
+  pageKey = 'page',
 }: TablePaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -56,7 +57,7 @@ export function TablePagination({
           variant="secondary"
           size="sm"
           aria-disabled={currentPage === 1}
-          className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+          className={currentPage === 1 ? 'pointer-events-none opacity-50' : undefined}
         >
           <ChevronLeft size={14} />
           Previous
@@ -73,9 +74,9 @@ export function TablePagination({
               ) : null}
               <Button
                 href={pageHref(searchParams, page, pageKey)}
-                variant={page === currentPage ? "primary" : "ghost"}
+                variant={page === currentPage ? 'primary' : 'ghost'}
                 size="sm"
-                aria-current={page === currentPage ? "page" : undefined}
+                aria-current={page === currentPage ? 'page' : undefined}
                 className="min-w-8 px-2"
               >
                 {page}
@@ -89,7 +90,7 @@ export function TablePagination({
           variant="secondary"
           size="sm"
           aria-disabled={currentPage === totalPages}
-          className={currentPage === totalPages ? "pointer-events-none opacity-50" : undefined}
+          className={currentPage === totalPages ? 'pointer-events-none opacity-50' : undefined}
         >
           Next
           <ChevronRight size={14} />

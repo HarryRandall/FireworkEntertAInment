@@ -1,5 +1,12 @@
 'use client';
 
+/**
+ * FireworkReplayViewer — interactive replay + cue editor used on the
+ * authenticated show detail route. Wraps the 3D canvas with audio sync
+ * controls and server actions for adding / deleting preview cues.
+ * Cue mutations go through preview-cues server actions which reject
+ * overlaps on the same launch position.
+ */
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Pause, Play, Plus, RotateCcw, Sparkles, Trash2 } from 'lucide-react';

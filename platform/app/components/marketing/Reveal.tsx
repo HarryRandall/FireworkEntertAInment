@@ -1,7 +1,11 @@
-"use client";
+'use client';
 
-import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+/**
+ * Reveal — viewport-entry reveal wrapper used across marketing pages.
+ * Respects `prefers-reduced-motion` and only fires once per element.
+ */
+import { motion, useReducedMotion } from 'framer-motion';
+import type { ReactNode } from 'react';
 
 type RevealProps = {
   children: ReactNode;
