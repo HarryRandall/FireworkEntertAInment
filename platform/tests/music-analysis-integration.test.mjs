@@ -18,25 +18,27 @@ test('audio analysis runner stores rich local song analysis JSON', () => {
   assert.match(runner, /llm_payload: null/);
   assert.match(runner, /markdown: contextMarkdown/);
   assert.match(runner, /# AI Song Context/);
-  assert.match(runner, /"--no-json-file"/);
-  assert.match(runner, /"--json"/);
+  assert.match(runner, /['"]--no-json-file['"]/);
+  assert.match(runner, /['"]--json['"]/);
   assert.doesNotMatch(route, /compact_payload/);
   assert.doesNotMatch(route, /analysis_storage_path/);
-  assert.doesNotMatch(runner, /"--llm-out"/);
-  assert.doesNotMatch(runner, /payload_type: "numeric_song_analysis"/);
+  assert.doesNotMatch(runner, /['"]--llm-out['"]/);
+  assert.doesNotMatch(runner, /payload_type: ['"]numeric_song_analysis['"]/);
   assert.doesNotMatch(runner, /firework_cue_samples/);
   assert.doesNotMatch(runner, /firework_cue_summary/);
 });
 
-test('music upload starts analysis before final show creation', () => {
+test('show creation attaches analysed music and starts cue generation', () => {
   const action = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
 
-  assert.match(action, /startMusicAnalysisAction/);
-  assert.match(action, /after\(async \(\) =>/);
-  assert.match(action, /runMusicAnalysisForUpload/);
+  assert.match(action, /musicAnalysisId: z\.string\(\)\.uuid\(\)\.optional\(\)/);
+  assert.match(action, /\.from\('music_analyses'\)/);
   assert.match(action, /music_analysis_id: musicAnalysisId/);
-  assert.doesNotMatch(action, /generateCuesForShow/);
+  assert.match(action, /generation_status: 'running'/);
+  assert.match(action, /after\(async \(\) =>/);
+  assert.match(action, /generateCuesForShow/);
   assert.equal(action.includes('redirect(`/shows/${slug}/preview`)'), false);
+  assert.match(action, /redirect\(`\/shows\/\$\{show\.slug\}\/generating`\)/);
 });
 
 test('music analyses migration creates upload-scoped analysis rows', () => {
@@ -82,21 +84,20 @@ test('show analyses repair migration relaxes legacy not-null columns', () => {
 });
 
 test('show timeline exposes stored context and manual show generation', () => {
-  const page = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
+  const page = readFileSync(join(root, 'app/(app)/shows/[id]/timeline/page.tsx'), 'utf8');
+  const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
   const timeline = readFileSync(join(root, 'app/components/app/AudioAnalysisTimeline.tsx'), 'utf8');
-  const panelPath = join(root, 'app/components/app/ShowGenerationPanel.tsx');
-  const actionPath = join(root, 'app/actions/show-generation.ts');
-  const plannerPath = join(root, 'lib/music-cue-planner.ts');
-  assert.equal(existsSync(panelPath), false);
-  assert.equal(existsSync(actionPath), false);
-  assert.equal(existsSync(plannerPath), false);
+  const splashPath = join(root, 'app/components/app/ShowGenerationSplash.tsx');
+  const generatorPath = join(root, 'lib/cue-generation.server.ts');
+  assert.equal(existsSync(splashPath), true);
+  assert.equal(existsSync(generatorPath), true);
 
+  assert.match(indexPage, /redirect\(`\/shows\/\$\{id\}\/preview`\)/);
   assert.match(page, /Stored song context/);
-  assert.match(page, /GenerateShowPanel/);
   assert.match(page, /latestAnalysis\?\.contextMarkdown/);
   assert.match(timeline, /Song context/);
   assert.match(timeline, /window\.setInterval\(\(\) => router\.refresh\(\), 5000\)/);
   assert.doesNotMatch(timeline, /Run analysis/);
   assert.doesNotMatch(timeline, /Re-run/);
-  assert.doesNotMatch(page, /latestAnalysis\?\.llmPayload/);
+  assert.doesNotMatch(page, /GenerateShowPanel/);
 });

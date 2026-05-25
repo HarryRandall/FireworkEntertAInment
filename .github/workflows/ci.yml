@@ -31,6 +31,7 @@ jobs:
       SUPABASE_URL: https://example.supabase.co
       SUPABASE_ANON_KEY: ci-placeholder-anon-key
       SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      OPENROUTER_API_KEY: ci-placeholder-openrouter-key
 
     steps:
       - name: Check out repository
