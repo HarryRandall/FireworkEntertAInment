@@ -1,13 +1,14 @@
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { FireworkReplayViewer } from "@/app/components/app/FireworkReplayViewer";
-import { ReplayPanelSkeleton } from "@/app/components/app/RouteSkeletons";
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import { FireworkReplayViewer } from '@/app/components/app/FireworkReplayViewer';
+import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
 import {
+  getAudioSignedUrl,
   getShowBySlug,
   listFireworkProducts,
   listReplayCuesForShow,
-} from "@/lib/shows.server";
-import type { Show } from "@/lib/show-domain";
+} from '@/lib/shows.server';
+import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -24,9 +25,10 @@ export default async function ShowPreviewPage({ params }: PageProps) {
 }
 
 async function ShowPreviewReplay({ show }: { show: Show }) {
-  const [cues, specifications] = await Promise.all([
+  const [cues, specifications, audioUrl] = await Promise.all([
     listReplayCuesForShow(show.id),
     listFireworkProducts(),
+    getAudioSignedUrl(show.audioPath),
   ]);
 
   return (
@@ -38,6 +40,7 @@ async function ShowPreviewReplay({ show }: { show: Show }) {
       cues={cues}
       specifications={specifications}
       launchPositions={show.launchPositions}
+      audioUrl={audioUrl}
     />
   );
 }

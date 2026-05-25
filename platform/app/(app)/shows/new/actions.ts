@@ -1,33 +1,21 @@
-"use server";
+'use server';
 
-import { cookies } from "next/headers";
-import { after } from "next/server";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { createClient } from "@/utils/supabase/server";
-import { runShowAnalysisForShow } from "@/lib/show-analysis-runner.server";
-import { slugifyTitle } from "@/lib/show-domain";
-import { invalidateShowsCacheForUser } from "@/lib/shows.server";
-
-const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
-const ALLOWED_AUDIO_TYPES = new Set([
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/wave",
-  "audio/aac",
-  "audio/mp4",
-  "audio/x-m4a",
-]);
+import { cookies } from 'next/headers';
+import { after } from 'next/server';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { createClient } from '@/utils/supabase/server';
+import { slugifyTitle } from '@/lib/show-domain';
+import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
+import { generateCuesForShow } from '@/lib/cue-generation.server';
 
 const DURATION_TO_SECONDS: Record<string, number> = {
-  "1 minute": 60,
-  "2 minutes": 120,
-  "3 minutes": 180,
-  "5 minutes": 300,
-  "10 minutes": 600,
+  '1 minute': 60,
+  '2 minutes': 120,
+  '3 minutes': 180,
+  '5 minutes': 300,
+  '10 minutes': 600,
 };
 
 function parseDurationSeconds(duration: string) {
@@ -42,23 +30,25 @@ function parseDurationSeconds(duration: string) {
 }
 
 const NewShowSchema = z.object({
-  title: z.string().trim().min(1, "Title is required").max(120),
+  title: z.string().trim().min(1, 'Title is required').max(120),
   vibe: z.string().trim().max(280).optional(),
   budget: z.coerce.number().int().min(50).max(5000),
   duration: z.string().min(1),
-  timeOfDay: z.enum(["Daytime", "Dusk", "Night"]),
+  timeOfDay: z.enum(['Daytime', 'Dusk', 'Night']),
   location: z.string().trim().max(120).optional(),
   description: z.string().trim().max(2000).optional(),
   moodTags: z.array(z.string().min(1).max(40)).max(20),
+  audioPath: z.string().trim().max(300).optional(),
+  musicAnalysisId: z.string().uuid().optional(),
 });
 
-export type NewShowResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type NewShowResult = { ok: true } | { ok: false; error: string };
 
-export async function createShowAction(
-  formData: FormData,
-): Promise<NewShowResult> {
+function isUserAudioPath(path: string, userId: string): boolean {
+  return path.startsWith(`${userId}/`) && !path.includes('..');
+}
+
+export async function createShowAction(formData: FormData): Promise<NewShowResult> {
   const supabase = createClient(await cookies());
 
   const {
@@ -66,58 +56,49 @@ export async function createShowAction(
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    return { ok: false, error: "You must be signed in to create a show." };
+    return { ok: false, error: 'You must be signed in to create a show.' };
   }
 
   const parsed = NewShowSchema.safeParse({
-    title: formData.get("title") ?? "",
-    vibe: formData.get("vibe") ?? "",
-    budget: formData.get("budget"),
-    duration: formData.get("duration") ?? "",
-    timeOfDay: formData.get("timeOfDay") ?? "",
-    location: formData.get("location") ?? "",
-    description: formData.get("description") ?? "",
-    moodTags: formData.getAll("moodTags").map(String),
+    title: formData.get('title') ?? '',
+    vibe: formData.get('vibe') ?? '',
+    budget: formData.get('budget'),
+    duration: formData.get('duration') ?? '',
+    timeOfDay: formData.get('timeOfDay') ?? '',
+    location: formData.get('location') ?? '',
+    description: formData.get('description') ?? '',
+    moodTags: formData.getAll('moodTags').map(String),
+    audioPath: formData.get('audioPath') ?? undefined,
+    musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
   });
 
   if (!parsed.success) {
     const first = parsed.error.issues[0];
     return {
       ok: false,
-      error: first?.message ?? "Please fill out all required fields.",
+      error: first?.message ?? 'Please fill out all required fields.',
     };
   }
 
-  const audioFile = formData.get("audio");
-  let audioPath: string | null = null;
+  let audioPath = parsed.data.audioPath || null;
+  const musicAnalysisId = parsed.data.musicAnalysisId || null;
 
-  if (audioFile && audioFile instanceof File && audioFile.size > 0) {
-    if (audioFile.size > MAX_AUDIO_BYTES) {
-      return { ok: false, error: "Audio file must be 50MB or smaller." };
+  if (musicAnalysisId) {
+    const { data: analysis, error: analysisError } = await supabase
+      .from('music_analyses')
+      .select('id, audio_path')
+      .eq('id', musicAnalysisId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (analysisError || !analysis) {
+      console.error('[createShowAction] music analysis lookup failed:', analysisError);
+      return { ok: false, error: 'Could not attach the uploaded music.' };
     }
-    if (audioFile.type && !ALLOWED_AUDIO_TYPES.has(audioFile.type)) {
-      return {
-        ok: false,
-        error: "Unsupported audio format. Use MP3, WAV, AAC, or M4A.",
-      };
+    audioPath = analysis.audio_path;
+  } else if (audioPath) {
+    if (!isUserAudioPath(audioPath, user.id)) {
+      return { ok: false, error: 'Uploaded audio path is invalid.' };
     }
-
-    const safeName = audioFile.name
-      .replace(/[^a-zA-Z0-9._-]+/g, "-")
-      .slice(0, 80) || "audio";
-    const objectKey = `${user.id}/${crypto.randomUUID()}-${safeName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("audio")
-      .upload(objectKey, audioFile, {
-        contentType: audioFile.type || "audio/mpeg",
-        upsert: false,
-      });
-    if (uploadError) {
-      console.error("[createShowAction] audio upload failed:", uploadError);
-      return { ok: false, error: "Could not upload audio file. Try again." };
-    }
-    audioPath = objectKey;
   }
 
   const baseSlug = slugifyTitle(parsed.data.title);
@@ -127,17 +108,17 @@ export async function createShowAction(
   let slug = baseSlug;
   for (let attempt = 0; attempt < 4; attempt++) {
     const { data: existing } = await supabase
-      .from("shows")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("slug", slug)
+      .from('shows')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('slug', slug)
       .maybeSingle();
     if (!existing) break;
     slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
   const { data: show, error: insertError } = await supabase
-    .from("shows")
+    .from('shows')
     .insert({
       user_id: user.id,
       slug,
@@ -149,33 +130,40 @@ export async function createShowAction(
       location: parsed.data.location || null,
       mood_tags: parsed.data.moodTags,
       audio_path: audioPath,
-      status: "draft",
+      music_analysis_id: musicAnalysisId,
+      status: 'draft',
+      generation_status: 'running',
+      generation_started_at: new Date().toISOString(),
     })
-    .select("id, slug")
+    .select('id, slug')
     .single();
 
   if (insertError || !show) {
-    console.error("[createShowAction] insert failed:", insertError);
-    if (audioPath) {
-      await supabase.storage.from("audio").remove([audioPath]);
-    }
-    return { ok: false, error: "Could not save your show. Please try again." };
+    console.error('[createShowAction] insert failed:', insertError);
+    return { ok: false, error: 'Could not save your show. Please try again.' };
   }
 
   await invalidateShowsCacheForUser(user.id);
-  revalidatePath("/dashboard");
-  if (audioPath) {
-    after(async () => {
-      const result = await runShowAnalysisForShow({
-        supabase,
-        userId: user.id,
-        showId: show.id,
-        personality: "balanced",
-      });
-      if (!result.ok) {
-        console.error("[createShowAction] background analysis failed:", result.error);
-      }
+  await invalidateShowCacheForUser(user.id, {
+    showId: show.id,
+    showSlug: show.slug,
+  });
+  revalidatePath('/dashboard');
+  revalidatePath(`/shows/${show.slug}`);
+  revalidatePath(`/shows/${show.slug}/generating`);
+  revalidatePath(`/shows/${show.slug}/preview`);
+
+  after(async () => {
+    const result = await generateCuesForShow({
+      supabase,
+      userId: user.id,
+      showId: show.id,
+      musicAnalysisId,
     });
-  }
-  redirect(`/shows/${slug}`);
+    if (!result.ok) {
+      console.error('[createShowAction] background generation failed:', result.error);
+    }
+  });
+
+  redirect(`/shows/${show.slug}/generating`);
 }

@@ -1,71 +1,68 @@
-import "server-only";
+import 'server-only';
 
-import { cookies } from "next/headers";
-import { cache } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/utils/supabase/server";
-import { getCurrentUserId } from "@/lib/current-user.server";
-import {
-  deleteCachedKeys,
-  getCachedJson,
-  setCachedJson,
-} from "@/lib/server-cache";
+import { cookies } from 'next/headers';
+import { cache } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/server';
+import { getCurrentUserId } from '@/lib/current-user.server';
+import { deleteCachedKeys, getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type {
   FireworkSpecification,
   ReplayCue,
   Show,
   ShowCue,
   ShoppingListItem,
+  ShowGenerationStatus,
   ShowStatus,
-} from "@/lib/show-domain";
-import { safeParseFireworkSpec } from "@/lib/fireworks/spec";
-import { parseLaunchPositions } from "@/lib/fireworks/design";
-import type { Database } from "@/lib/database.types";
+} from '@/lib/show-domain';
+import { safeParseFireworkSpec } from '@/lib/fireworks/spec';
+import { parseLaunchPositions } from '@/lib/fireworks/design';
+import type { Database } from '@/lib/database.types';
 
-type ShowRow = Database["public"]["Tables"]["shows"]["Row"];
-type ShowCueRow = Database["public"]["Tables"]["show_cues"]["Row"];
-type EffectSpecRow = Database["public"]["Tables"]["effect_specs"]["Row"];
+type ShowRow = Database['public']['Tables']['shows']['Row'];
+type ShowCueRow = Database['public']['Tables']['show_cues']['Row'];
+type EffectSpecRow = Database['public']['Tables']['effect_specs']['Row'];
 type ShowProjection = Pick<
   ShowRow,
-  | "id"
-  | "slug"
-  | "title"
-  | "song"
-  | "artist"
-  | "status"
-  | "duration_seconds"
-  | "budget_cents"
-  | "total_cents"
-  | "effects_count"
-  | "sync_percent"
-  | "safety_meters"
-  | "time_of_day"
-  | "location"
-  | "description"
-  | "mood_tags"
-  | "audio_path"
-  | "launch_positions_json"
-  | "updated_at"
+  | 'id'
+  | 'slug'
+  | 'title'
+  | 'song'
+  | 'artist'
+  | 'status'
+  | 'duration_seconds'
+  | 'budget_cents'
+  | 'total_cents'
+  | 'effects_count'
+  | 'sync_percent'
+  | 'safety_meters'
+  | 'time_of_day'
+  | 'location'
+  | 'description'
+  | 'mood_tags'
+  | 'audio_path'
+  | 'music_analysis_id'
+  | 'generation_status'
+  | 'generation_error'
+  | 'generated_cue_count'
+  | 'generation_started_at'
+  | 'generation_completed_at'
+  | 'launch_positions_json'
+  | 'updated_at'
 >;
 type ShowCueProjection = Pick<
   ShowCueRow,
-  | "id"
-  | "position"
-  | "time_seconds"
-  | "description"
-  | "product_id"
-  | "seed_override"
-  | "launch_position_index"
+  | 'id'
+  | 'position'
+  | 'time_seconds'
+  | 'description'
+  | 'product_id'
+  | 'seed_override'
+  | 'launch_position_index'
 >;
 type EffectSpecProjection = Pick<
   EffectSpecRow,
-  | "id"
-  | "slug"
-  | "name"
-  | "description"
-  | "duration_seconds"
-  | "height_meters"
-  | "spec_json"
+  'id' | 'slug' | 'name' | 'description' | 'duration_seconds' | 'height_meters' | 'spec_json'
 >;
 type ReplayCueRow = ShowCueProjection;
 type ShoppingListComputation = {
@@ -73,17 +70,16 @@ type ShoppingListComputation = {
   effectsCount: number;
 };
 
-const CACHE_PREFIX = "shows:v5";
+const CACHE_PREFIX = 'shows:v6';
 const SHOWS_TTL_SECONDS = 60;
 const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 const SHOW_SELECT =
-  "id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, launch_positions_json, updated_at";
+  'id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, music_analysis_id, generation_status, generation_error, generated_cue_count, generation_started_at, generation_completed_at, launch_positions_json, updated_at';
 const SHOW_CUE_SELECT =
-  "id, position, time_seconds, description, product_id, seed_override, launch_position_index";
+  'id, position, time_seconds, description, product_id, seed_override, launch_position_index';
 const EFFECT_SPEC_SELECT =
-  "id, slug, name, description, duration_seconds, height_meters, spec_json";
-const SHOW_CUES_WITH_PRODUCT_SELECT =
-  "product_id, products(id, name, part_number, manufacturer)";
+  'id, slug, name, description, duration_seconds, height_meters, spec_json';
+const SHOW_CUES_WITH_PRODUCT_SELECT = 'product_id, products(id, name, part_number, manufacturer)';
 
 function mapShow(row: ShowProjection): Show {
   return {
@@ -92,19 +88,24 @@ function mapShow(row: ShowProjection): Show {
     title: row.title,
     song: row.song,
     artist: row.artist,
-    status: (row.status as ShowStatus) ?? "draft",
+    status: (row.status as ShowStatus) ?? 'draft',
     durationSeconds: row.duration_seconds,
     budgetCents: row.budget_cents,
     totalCents: row.total_cents,
     effectsCount: row.effects_count,
-    syncPercent:
-      row.sync_percent == null ? null : Number(row.sync_percent),
+    syncPercent: row.sync_percent == null ? null : Number(row.sync_percent),
     safetyMeters: row.safety_meters,
     timeOfDay: row.time_of_day,
     location: row.location,
     description: row.description,
     moodTags: row.mood_tags ?? [],
     audioPath: row.audio_path,
+    musicAnalysisId: row.music_analysis_id,
+    generationStatus: (row.generation_status as ShowGenerationStatus) ?? 'idle',
+    generationError: row.generation_error,
+    generatedCueCount: row.generated_cue_count,
+    generationStartedAt: row.generation_started_at,
+    generationCompletedAt: row.generation_completed_at,
     launchPositions: parseLaunchPositions(row.launch_positions_json),
     updatedAt: row.updated_at,
   };
@@ -139,6 +140,7 @@ function mapEffectSpecification(
     durationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
     caliber,
+    shotCount: null,
     spec: safeParseFireworkSpec(row.spec_json),
     rawSpec: row.spec_json,
   };
@@ -148,7 +150,6 @@ function mapReplayCueBase(row: ReplayCueRow): ShowCue | null {
   if (row.time_seconds == null) return null;
   return mapCue(row);
 }
-
 
 const getServerClient = cache(async () => {
   return createClient(await cookies());
@@ -206,18 +207,15 @@ export async function syncShowDerivedFieldsForUser(
   const computed = await computeShoppingListForShow(supabase, params.showId);
   if (!computed) return;
 
-  const totalCents = computed.items.reduce(
-    (sum, item) => sum + item.qty * item.priceCents,
-    0,
-  );
+  const totalCents = computed.items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
   await supabase
-    .from("shows")
+    .from('shows')
     .update({
       total_cents: totalCents,
       effects_count: computed.effectsCount,
     })
-    .eq("id", params.showId)
-    .eq("user_id", userId);
+    .eq('id', params.showId)
+    .eq('user_id', userId);
   await invalidateShowCacheForUser(userId, params);
 }
 
@@ -231,12 +229,12 @@ export async function listShowsForCurrentUser(): Promise<Show[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("shows")
+    .from('shows')
     .select(SHOW_SELECT)
-    .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
   if (error) {
-    console.error("[shows.server] listShowsForCurrentUser failed:", error);
+    console.error('[shows.server] listShowsForCurrentUser failed:', error);
     return [];
   }
   const mapped = (data ?? []).map(mapShow);
@@ -254,13 +252,13 @@ export const getShowBySlug = cache(async (slug: string): Promise<Show | null> =>
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("shows")
+    .from('shows')
     .select(SHOW_SELECT)
-    .eq("user_id", userId)
-    .eq("slug", slug)
+    .eq('user_id', userId)
+    .eq('slug', slug)
     .maybeSingle();
   if (error) {
-    console.error("[shows.server] getShowBySlug failed:", error);
+    console.error('[shows.server] getShowBySlug failed:', error);
     return null;
   }
   const mapped = data ? mapShow(data) : null;
@@ -280,12 +278,12 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("show_cues")
+    .from('show_cues')
     .select(SHOW_CUE_SELECT)
-    .eq("show_id", showId)
-    .order("position", { ascending: true });
+    .eq('show_id', showId)
+    .order('position', { ascending: true });
   if (error) {
-    console.error("[shows.server] listCuesForShow failed:", error);
+    console.error('[shows.server] listCuesForShow failed:', error);
     return [];
   }
   const mapped = (data ?? []).map(mapCue);
@@ -300,14 +298,16 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("effect_specs")
+    .from('effect_specs')
     .select(EFFECT_SPEC_SELECT)
-    .order("name", { ascending: true });
+    .order('name', { ascending: true });
   if (error) {
-    console.error("[shows.server] listFireworkSpecifications failed:", error);
+    console.error('[shows.server] listFireworkSpecifications failed:', error);
     return [];
   }
-  const mapped = ((data ?? []) as EffectSpecProjection[]).map((row, i) => mapEffectSpecification(row, i));
+  const mapped = ((data ?? []) as EffectSpecProjection[]).map((row, i) =>
+    mapEffectSpecification(row, i),
+  );
   await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
   return mapped;
 }
@@ -317,10 +317,7 @@ export function getFireworkProductsCacheKey(): string {
 }
 
 export async function invalidateFireworkCatalogueCaches(): Promise<void> {
-  await deleteCachedKeys([
-    getFireworkSpecificationsCacheKey(),
-    getFireworkProductsCacheKey(),
-  ]);
+  await deleteCachedKeys([getFireworkSpecificationsCacheKey(), getFireworkProductsCacheKey()]);
 }
 
 /**
@@ -339,7 +336,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("products")
+    .from('products')
     .select(
       `id, name, part_number, description, duration_seconds,
        product_shots (
@@ -348,9 +345,9 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
          effect_specs (${EFFECT_SPEC_SELECT})
        )`,
     )
-    .order("name", { ascending: true });
+    .order('name', { ascending: true });
   if (error) {
-    console.error("[shows.server] listFireworkProducts failed:", error);
+    console.error('[shows.server] listFireworkProducts failed:', error);
     return [];
   }
 
@@ -369,9 +366,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
 
   const mapped: FireworkSpecification[] = [];
   for (const row of (data ?? []) as ProductRow[]) {
-    const shots = [...(row.product_shots ?? [])].sort(
-      (a, b) => a.shot_index - b.shot_index,
-    );
+    const shots = [...(row.product_shots ?? [])].sort((a, b) => a.shot_index - b.shot_index);
     const primary = shots.find((s) => s.effect_specs != null);
     if (!primary?.effect_specs) continue;
     const effectSpec = primary.effect_specs;
@@ -382,6 +377,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
       name: row.name,
       description: row.description ?? effectSpec.description,
       durationSeconds: row.duration_seconds ?? effectSpec.duration_seconds,
+      shotCount: shots.length,
     });
   }
 
@@ -389,9 +385,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
   return mapped;
 }
 
-export async function listReplayCuesForShow(
-  showId: string,
-): Promise<ReplayCue[]> {
+export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
 
@@ -401,14 +395,14 @@ export async function listReplayCuesForShow(
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from("show_cues")
+    .from('show_cues')
     .select(SHOW_CUE_SELECT)
-    .eq("show_id", showId)
-    .not("time_seconds", "is", null)
-    .order("time_seconds", { ascending: true })
-    .order("position", { ascending: true });
+    .eq('show_id', showId)
+    .not('time_seconds', 'is', null)
+    .order('time_seconds', { ascending: true })
+    .order('position', { ascending: true });
   if (error) {
-    console.error("[shows.server] listReplayCuesForShow failed:", error);
+    console.error('[shows.server] listReplayCuesForShow failed:', error);
     return [];
   }
 
@@ -433,15 +427,15 @@ export async function listReplayCuesForShow(
 
   if (productIds.length > 0) {
     const { data: shots, error: shotsErr } = await supabase
-      .from("product_shots")
+      .from('product_shots')
       .select(
         `product_id, shot_index, time_offset_seconds, caliber, effect_specs (${EFFECT_SPEC_SELECT})`,
       )
-      .in("product_id", productIds)
-      .order("shot_index", { ascending: true });
+      .in('product_id', productIds)
+      .order('shot_index', { ascending: true });
 
     if (shotsErr) {
-      console.error("[shows.server] product_shots load failed:", shotsErr);
+      console.error('[shows.server] product_shots load failed:', shotsErr);
     } else {
       for (const shot of (shots ?? []) as ShotRow[]) {
         if (!shot.effect_specs) continue;
@@ -478,9 +472,7 @@ export async function listReplayCuesForShow(
   return expanded;
 }
 
-export async function listShoppingItemsForShow(
-  showId: string,
-): Promise<ShoppingListItem[]> {
+export async function listShoppingItemsForShow(showId: string): Promise<ShoppingListItem[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
 
@@ -501,25 +493,38 @@ async function computeShoppingListForShow(
   showId: string,
 ): Promise<ShoppingListComputation | null> {
   const { data: cueRows, error: cueError } = await supabase
-    .from("show_cues")
+    .from('show_cues')
     .select(SHOW_CUES_WITH_PRODUCT_SELECT)
-    .eq("show_id", showId);
+    .eq('show_id', showId);
   if (cueError) {
-    console.error("[shows.server] listShoppingItemsForShow cues failed:", cueError);
+    console.error('[shows.server] listShoppingItemsForShow cues failed:', cueError);
     return null;
   }
   const effectsCount = cueRows?.length ?? 0;
 
   // Aggregate qty per product
-  const byProduct = new Map<string, { name: string; partNumber: string; manufacturer: string | null; qty: number }>();
+  const byProduct = new Map<
+    string,
+    { name: string; partNumber: string; manufacturer: string | null; qty: number }
+  >();
   for (const row of cueRows ?? []) {
-    const p = row.products as { id: string; name: string; part_number: string; manufacturer: string | null } | null;
+    const p = row.products as {
+      id: string;
+      name: string;
+      part_number: string;
+      manufacturer: string | null;
+    } | null;
     if (!p) continue;
     const existing = byProduct.get(p.id);
     if (existing) {
       existing.qty += 1;
     } else {
-      byProduct.set(p.id, { name: p.name, partNumber: p.part_number, manufacturer: p.manufacturer, qty: 1 });
+      byProduct.set(p.id, {
+        name: p.name,
+        partNumber: p.part_number,
+        manufacturer: p.manufacturer,
+        qty: 1,
+      });
     }
   }
 
@@ -530,11 +535,11 @@ async function computeShoppingListForShow(
   // Fetch cheapest available price per product from supplier inventory
   const productIds = Array.from(byProduct.keys());
   const { data: inventoryRows } = await supabase
-    .from("supplier_inventory_items")
-    .select("product_id, price_cents")
-    .in("product_id", productIds)
-    .eq("available", true)
-    .not("price_cents", "is", null);
+    .from('supplier_inventory_items')
+    .select('product_id, price_cents')
+    .in('product_id', productIds)
+    .eq('available', true)
+    .not('price_cents', 'is', null);
 
   const cheapestPrice = new Map<string, number>();
   for (const inv of inventoryRows ?? []) {
@@ -570,10 +575,10 @@ export async function getAudioSignedUrl(
   if (!audioPath) return null;
   const supabase = await getServerClient();
   const { data, error } = await supabase.storage
-    .from("audio")
+    .from('audio')
     .createSignedUrl(audioPath, expiresInSeconds);
   if (error) {
-    console.error("[shows.server] getAudioSignedUrl failed:", error);
+    console.error('[shows.server] getAudioSignedUrl failed:', error);
     return null;
   }
   return data?.signedUrl ?? null;

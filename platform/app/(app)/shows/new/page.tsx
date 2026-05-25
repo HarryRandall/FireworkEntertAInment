@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useEffect,
@@ -8,7 +8,7 @@ import {
   useTransition,
   type FormEvent,
   type ReactNode,
-} from "react";
+} from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -23,84 +23,100 @@ import {
   Sunset,
   Trash2,
   Wallet,
-} from "lucide-react";
-import { AppPageHeader } from "@/app/components/app/AppPageHeader";
-import { ChoiceChip } from "@/app/components/ui/Badge";
-import { Button } from "@/app/components/ui/Button";
-import { Card } from "@/app/components/ui/Card";
-import { Input, Textarea } from "@/app/components/ui/Input";
-import { toast } from "@/app/components/ui/toast";
-import { cn } from "@/lib/utils";
-import { createShowAction } from "./actions";
+} from 'lucide-react';
+import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { ChoiceChip } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
+import { Card } from '@/app/components/ui/Card';
+import { Input, Textarea } from '@/app/components/ui/Input';
+import { toast } from '@/app/components/ui/toast';
+import { cn } from '@/lib/utils';
+import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
+import { createShowAction } from './actions';
 
 const BUDGET_PRESETS = [250, 500, 1000, 2500, 5000] as const;
 const DURATION_PRESETS = [1, 2, 3, 5, 10] as const;
 const TIME_OF_DAY = [
-  { value: "Daytime", icon: Sun },
-  { value: "Dusk", icon: Sunset },
-  { value: "Night", icon: Moon },
+  { value: 'Daytime', icon: Sun },
+  { value: 'Dusk', icon: Sunset },
+  { value: 'Night', icon: Moon },
 ] as const;
-type TimeOfDay = (typeof TIME_OF_DAY)[number]["value"];
+type TimeOfDay = (typeof TIME_OF_DAY)[number]['value'];
 const MOOD_TAGS = [
-  "Patriotic",
-  "Romantic",
-  "High energy",
-  "Elegant",
-  "Minimalist",
-  "Grand finale focused",
+  'Patriotic',
+  'Romantic',
+  'High energy',
+  'Elegant',
+  'Minimalist',
+  'Grand finale focused',
 ];
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+const AUDIO_BUCKET = 'audio';
 const STEPS = [
   {
-    key: "constraints",
-    label: "Constraints",
-    title: "Set the show constraints",
+    key: 'constraints',
+    label: 'Constraints',
+    title: 'Set the show constraints',
     description: "Tell us the budget, length, and where it'll happen.",
   },
   {
-    key: "sound",
-    label: "Sound",
-    title: "Add a track and title",
-    description: "Pick the music you want the show choreographed to.",
+    key: 'sound',
+    label: 'Sound',
+    title: 'Add a track and title',
+    description: 'Pick the music you want the show choreographed to.',
   },
   {
-    key: "brief",
-    label: "Brief",
-    title: "Describe the show",
-    description: "A short brief helps us draft something close to your vision.",
+    key: 'brief',
+    label: 'Brief',
+    title: 'Describe the show',
+    description: 'A short brief helps us draft something close to your vision.',
   },
 ] as const;
 
-type FieldError = "location" | "title" | null;
+type FieldError = 'location' | 'title' | null;
+type AudioUploadState = 'idle' | 'uploading' | 'ready' | 'error';
+type UploadedAudio = {
+  audioPath: string;
+  musicAnalysisId: string;
+  originalName: string;
+  sizeBytes: number;
+  contentType: string;
+};
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const [budget, setBudget] = useState(2500);
-  const [budgetMode, setBudgetMode] = useState<"preset" | "custom">("preset");
-  const [customBudget, setCustomBudget] = useState("");
-  const [durationMode, setDurationMode] = useState<"preset" | "custom">("preset");
+  const [budgetMode, setBudgetMode] = useState<'preset' | 'custom'>('preset');
+  const [customBudget, setCustomBudget] = useState('');
+  const [durationMode, setDurationMode] = useState<'preset' | 'custom'>('preset');
   const [durationPreset, setDurationPreset] = useState<(typeof DURATION_PRESETS)[number]>(3);
-  const [customDuration, setCustomDuration] = useState("");
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("Night");
+  const [customDuration, setCustomDuration] = useState('');
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('Night');
   const [stepIndex, setStepIndex] = useState(0);
-  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(["High energy"]));
+  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
-  const [location, setLocation] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [audioUploadState, setAudioUploadState] = useState<AudioUploadState>('idle');
+  const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
+  const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
+  const [location, setLocation] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [fieldError, setFieldError] = useState<FieldError>(null);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadPromiseRef = useRef<Promise<UploadedAudio> | null>(null);
+  const uploadTokenRef = useRef(0);
 
-  const durationValue = durationMode === "custom"
-    ? `${customDuration.trim()} minute${customDuration.trim() === "1" ? "" : "s"}`
-    : `${durationPreset} minute${durationPreset === 1 ? "" : "s"}`;
+  const durationValue =
+    durationMode === 'custom'
+      ? `${customDuration.trim()} minute${customDuration.trim() === '1' ? '' : 's'}`
+      : `${durationPreset} minute${durationPreset === 1 ? '' : 's'}`;
 
   const stepValid = useMemo(() => {
     if (stepIndex === 0) {
-      const budgetOk = budgetMode === "preset" || !!customBudget.trim();
-      const durationOk = durationMode === "preset" || !!customDuration.trim();
+      const budgetOk = budgetMode === 'preset' || !!customBudget.trim();
+      const durationOk = durationMode === 'preset' || !!customDuration.trim();
       return budgetOk && durationOk && location.trim().length > 0;
     }
     if (stepIndex === 1) return title.trim().length > 0;
@@ -115,9 +131,9 @@ export default function NewShowPage() {
     const url = URL.createObjectURL(audioFile);
     const audio = new Audio(url);
     const onLoaded = () => setAudioDuration(audio.duration || null);
-    audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener('loadedmetadata', onLoaded);
     return () => {
-      audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener('loadedmetadata', onLoaded);
       URL.revokeObjectURL(url);
     };
   }, [audioFile]);
@@ -134,53 +150,173 @@ export default function NewShowPage() {
   const onFilePicked = (file: File | null) => {
     if (!file) {
       setAudioFile(null);
+      setUploadedAudio(null);
+      setAudioUploadState('idle');
+      setAudioUploadError(null);
       return;
     }
     if (file.size > MAX_AUDIO_BYTES) {
-      toast.error("File too large", { description: "Audio must be 50MB or smaller." });
+      toast.error('File too large', { description: 'Audio must be 50MB or smaller.' });
       return;
     }
-    if (file.type && !file.type.startsWith("audio/")) {
-      toast.error("Unsupported file", { description: "Please pick an audio file." });
+    if (file.type && !file.type.startsWith('audio/')) {
+      toast.error('Unsupported file', { description: 'Please pick an audio file.' });
       return;
     }
     setAudioFile(file);
-    toast.success("Track attached", { description: file.name });
+    setUploadedAudio(null);
+    setAudioUploadError(null);
+    const token = uploadTokenRef.current + 1;
+    uploadTokenRef.current = token;
+    const uploadPromise = uploadAudioAndStartAnalysis(file, token);
+    uploadPromiseRef.current = uploadPromise;
+    void uploadPromise.catch(() => {
+      // The visible error state is set inside uploadAudioAndStartAnalysis.
+    });
+    toast.success('Track attached', { description: file.name });
   };
 
   const clearAudio = () => {
+    uploadTokenRef.current += 1;
     setAudioFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setUploadedAudio(null);
+    setAudioUploadState('idle');
+    setAudioUploadError(null);
+    uploadPromiseRef.current = null;
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const uploadAudioAndStartAnalysis = async (file: File, token: number): Promise<UploadedAudio> => {
+    setAudioUploadState('uploading');
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      const message = 'You are not signed in. Refresh and sign back in.';
+      if (uploadTokenRef.current === token) {
+        setAudioUploadState('error');
+        setAudioUploadError(message);
+      }
+      throw new Error(message);
+    }
+
+    const contentType = inferAudioContentType(file);
+    const audioPath = `${user.id}/${crypto.randomUUID()}-${sanitizeStorageName(file.name)}`;
+    const { error: uploadError } = await supabase.storage
+      .from(AUDIO_BUCKET)
+      .upload(audioPath, file, {
+        contentType,
+        upsert: false,
+      });
+    if (uploadError) {
+      if (uploadTokenRef.current === token) {
+        setAudioUploadState('error');
+        setAudioUploadError(uploadError.message || 'Upload failed.');
+      }
+      throw new Error(uploadError.message || 'Upload failed.');
+    }
+
+    let analysisResult: { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+    try {
+      const response = await fetch('/api/music-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioPath,
+          originalFilename: file.name,
+          contentType,
+          sizeBytes: file.size,
+        }),
+      });
+      const json = (await response.json()) as
+        | { ok: true; musicAnalysisId: string }
+        | { ok: false; error: string };
+      analysisResult = json;
+    } catch (error) {
+      analysisResult = {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Could not start music analysis.',
+      };
+    }
+    if (!analysisResult.ok) {
+      await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
+      if (uploadTokenRef.current === token) {
+        setAudioUploadState('error');
+        setAudioUploadError(analysisResult.error);
+      }
+      throw new Error(analysisResult.error);
+    }
+
+    const uploaded = {
+      audioPath,
+      musicAnalysisId: analysisResult.musicAnalysisId,
+      originalName: file.name,
+      sizeBytes: file.size,
+      contentType,
+    };
+    if (uploadTokenRef.current === token) {
+      setUploadedAudio(uploaded);
+      setAudioUploadState('ready');
+      setAudioUploadError(null);
+    }
+    return uploaded;
+  };
+
+  // The form's submit handler is intent-only: it advances the wizard on
+  // Enter and never creates a show. Generation runs ONLY when the user
+  // explicitly clicks the "Generate show" button (see triggerGenerate).
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFieldError(null);
-    // Native form submits, including Enter in an input, should move through the
-    // wizard until the final step instead of creating a draft early.
     if (stepIndex < STEPS.length - 1) {
       goToStep(stepIndex + 1);
-      return;
     }
-    if (!title.trim()) {
-      setFieldError("title");
-      setStepIndex(1);
-      toast.error("Show title is required.");
-      return;
-    }
-    const data = new FormData();
-    data.set("budget", String(budget));
-    data.set("duration", durationValue);
-    data.set("timeOfDay", timeOfDay);
-    data.set("location", location.trim());
-    data.set("title", title.trim());
-    data.set("description", description);
-    const vibeInput = formRef.current?.elements.namedItem("vibe");
-    if (vibeInput instanceof HTMLInputElement) data.set("vibe", vibeInput.value);
-    activeMoods.forEach((mood) => data.append("moodTags", mood));
-    if (audioFile) data.set("audio", audioFile);
+  };
 
+  const triggerGenerate = () => {
+    setFieldError(null);
+    if (!title.trim()) {
+      setFieldError('title');
+      setStepIndex(1);
+      toast.error('Show title is required.');
+      return;
+    }
     startTransition(async () => {
+      let finalUploadedAudio = uploadedAudio;
+      if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
+        try {
+          finalUploadedAudio = await uploadPromiseRef.current;
+        } catch (error) {
+          toast.error('Could not upload track', {
+            description: error instanceof Error ? error.message : 'Try replacing the audio file.',
+          });
+          return;
+        }
+      }
+      if (audioFile && audioUploadState === 'error') {
+        toast.error('Could not upload track', {
+          description: audioUploadError ?? 'Try replacing the audio file.',
+        });
+        return;
+      }
+
+      const data = new FormData();
+      data.set('budget', String(budget));
+      data.set('duration', durationValue);
+      data.set('timeOfDay', timeOfDay);
+      data.set('location', location.trim());
+      data.set('title', title.trim());
+      data.set('description', description);
+      const vibeInput = formRef.current?.elements.namedItem('vibe');
+      if (vibeInput instanceof HTMLInputElement) data.set('vibe', vibeInput.value);
+      activeMoods.forEach((mood) => data.append('moodTags', mood));
+      if (finalUploadedAudio) {
+        data.set('audioPath', finalUploadedAudio.audioPath);
+        data.set('musicAnalysisId', finalUploadedAudio.musicAnalysisId);
+      }
+
       const result = await createShowAction(data);
       if (result && !result.ok) toast.error(result.error);
     });
@@ -194,13 +330,13 @@ export default function NewShowPage() {
     }
     if (!stepValid) {
       if (stepIndex === 0 && !location.trim()) {
-        setFieldError("location");
-        toast.error("Event location is required.");
+        setFieldError('location');
+        toast.error('Event location is required.');
       } else if (stepIndex === 1 && !title.trim()) {
-        setFieldError("title");
-        toast.error("Show title is required.");
+        setFieldError('title');
+        toast.error('Show title is required.');
       } else {
-        toast.error("Complete the required fields to continue.");
+        toast.error('Complete the required fields to continue.');
       }
       return;
     }
@@ -211,15 +347,10 @@ export default function NewShowPage() {
   const activeStep = STEPS[stepIndex];
 
   return (
-    <form
-      ref={formRef}
-      noValidate
-      onSubmit={handleSubmit}
-      className="space-y-6"
-    >
+    <form ref={formRef} noValidate onSubmit={handleSubmit} className="space-y-6">
       <AppPageHeader
         title="Create a new show"
-        description="Three quick steps and we'll draft a show you can refine."
+        description="Three quick steps to save the brief, music, and constraints."
       />
 
       <div className="mx-auto max-w-3xl">
@@ -261,15 +392,15 @@ export default function NewShowPage() {
                   <Input
                     name="location"
                     value={location}
-                    invalid={fieldError === "location"}
+                    invalid={fieldError === 'location'}
                     placeholder="Park, venue, or suburb"
                     iconLeft={<MapPin size={16} strokeWidth={1.75} />}
                     onChange={(e) => {
                       setLocation(e.target.value);
-                      if (fieldError === "location") setFieldError(null);
+                      if (fieldError === 'location') setFieldError(null);
                     }}
                   />
-                  {fieldError === "location" ? (
+                  {fieldError === 'location' ? (
                     <FieldError>Event location is required.</FieldError>
                   ) : null}
                 </Field>
@@ -297,31 +428,34 @@ export default function NewShowPage() {
                   <Input
                     name="title"
                     value={title}
-                    invalid={fieldError === "title"}
+                    invalid={fieldError === 'title'}
                     placeholder="e.g. New Year's Eve at Bondi"
                     iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
                     className="h-11"
                     onChange={(e) => {
                       setTitle(e.target.value);
-                      if (fieldError === "title") setFieldError(null);
+                      if (fieldError === 'title') setFieldError(null);
                     }}
                   />
-                  {fieldError === "title" ? (
-                    <FieldError>Show title is required.</FieldError>
-                  ) : null}
+                  {fieldError === 'title' ? <FieldError>Show title is required.</FieldError> : null}
                 </Field>
 
                 <Field label="Audio track" helper="Optional — drives the choreography if added.">
                   <AudioUpload
                     file={audioFile}
                     duration={audioDuration}
+                    uploadState={audioUploadState}
+                    error={audioUploadError}
                     inputRef={fileInputRef}
                     onFile={onFilePicked}
                     onClear={clearAudio}
                   />
                 </Field>
 
-                <Field label="Track vibe" helper="Optional — a word or two about the energy or style.">
+                <Field
+                  label="Track vibe"
+                  helper="Optional — a word or two about the energy or style."
+                >
                   <Input
                     name="vibe"
                     placeholder="e.g. cinematic build into a euphoric drop"
@@ -334,15 +468,15 @@ export default function NewShowPage() {
             <StepPanel active={stepIndex === 2}>
               <div className="space-y-6">
                 <Field
-                  label="Creative brief"
-                  helper="The richer your brief, the better the draft. 2-4 sentences works well."
+                  label="Custom prompt for the AI"
+                  helper="This is sent verbatim to the choreography model. Be specific about colours, pacing, key moments, and the finale."
                 >
                   <Textarea
                     name="description"
                     rows={8}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe the sequence, colours, key moments, crowd reaction, and desired finale."
+                    placeholder="e.g. Slow elegant opening with single white shells, gradual build through the first chorus, dense red/gold climax on the final drop, finish with a crackling palm finale."
                   />
                   <div className="mt-1 text-right text-xs text-[color:var(--color-content-muted)]">
                     {description.length} chars
@@ -354,11 +488,7 @@ export default function NewShowPage() {
                     {MOOD_TAGS.map((mood) => {
                       const active = activeMoods.has(mood);
                       return (
-                        <ChoiceChip
-                          key={mood}
-                          selected={active}
-                          onClick={() => toggleMood(mood)}
-                        >
+                        <ChoiceChip key={mood} selected={active} onClick={() => toggleMood(mood)}>
                           {active ? <Check size={12} strokeWidth={2.5} /> : null}
                           {mood}
                         </ChoiceChip>
@@ -381,21 +511,18 @@ export default function NewShowPage() {
               Back
             </Button>
             {stepIndex < STEPS.length - 1 ? (
-              <Button
-                type="button"
-                onClick={() => goToStep(stepIndex + 1)}
-                disabled={!stepValid}
-              >
+              <Button type="button" onClick={() => goToStep(stepIndex + 1)} disabled={!stepValid}>
                 Continue
                 <ArrowRight size={16} />
               </Button>
             ) : (
               <Button
-                type="submit"
+                type="button"
+                onClick={triggerGenerate}
                 loading={isPending}
                 disabled={!title.trim()}
               >
-                Generate draft
+                Generate show
                 <Sparkles size={16} strokeWidth={2} />
               </Button>
             )}
@@ -428,24 +555,25 @@ function ProgressTrack({
               onClick={() => onSelect(index)}
               disabled={!isClickable}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md py-1 text-sm transition-colors",
+                'inline-flex items-center gap-2 rounded-md py-1 text-sm transition-colors',
                 isActive
-                  ? "text-[color:var(--color-content-emphasis)]"
+                  ? 'text-[color:var(--color-content-emphasis)]'
                   : isComplete
-                    ? "text-[color:var(--color-content-default)] hover:text-[color:var(--color-content-emphasis)]"
-                    : "cursor-not-allowed text-[color:var(--color-content-muted)]",
+                    ? 'text-[color:var(--color-content-default)] hover:text-[color:var(--color-content-emphasis)]'
+                    : 'cursor-not-allowed text-[color:var(--color-content-muted)]',
               )}
-              aria-current={isActive ? "step" : undefined}
+              aria-current={isActive ? 'step' : undefined}
             >
               <span
                 className={cn(
-                  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium",
+                  'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium',
                   isComplete &&
-                    "border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]",
+                    'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]',
                   isActive &&
-                    "border-[color:var(--color-content-emphasis)] text-[color:var(--color-content-emphasis)]",
-                  !isActive && !isComplete &&
-                    "border-[color:var(--color-border-default)] text-[color:var(--color-content-muted)]",
+                    'border-[color:var(--color-content-emphasis)] text-[color:var(--color-content-emphasis)]',
+                  !isActive &&
+                    !isComplete &&
+                    'border-[color:var(--color-border-default)] text-[color:var(--color-content-muted)]',
                 )}
               >
                 {isComplete ? <Check size={12} strokeWidth={2.5} /> : index + 1}
@@ -468,21 +596,21 @@ function BudgetPicker({
   onCustomValueChange,
 }: {
   budget: number;
-  mode: "preset" | "custom";
+  mode: 'preset' | 'custom';
   customValue: string;
   onBudgetChange: (n: number) => void;
-  onModeChange: (mode: "preset" | "custom") => void;
+  onModeChange: (mode: 'preset' | 'custom') => void;
   onCustomValueChange: (value: string) => void;
 }) {
   const isPreset =
-    mode === "preset" && BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
+    mode === 'preset' && BUDGET_PRESETS.includes(budget as (typeof BUDGET_PRESETS)[number]);
   return (
     <Field
       label="Budget"
       required
       icon={<Wallet size={13} strokeWidth={1.75} />}
       trailing={
-        <span className="text-sm font-semibold tabular-nums text-[color:var(--color-content-emphasis)]">
+        <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)] tabular-nums">
           ${budget.toLocaleString()}
         </span>
       }
@@ -493,25 +621,25 @@ function BudgetPicker({
             key={preset}
             selected={isPreset && budget === preset}
             onClick={() => {
-              onModeChange("preset");
+              onModeChange('preset');
               onBudgetChange(preset);
             }}
           >
             ${preset.toLocaleString()}
-            {preset === 5000 ? "+" : ""}
+            {preset === 5000 ? '+' : ''}
           </ChoiceChip>
         ))}
         <ChoiceChip
-          selected={mode === "custom"}
+          selected={mode === 'custom'}
           onClick={() => {
-            onModeChange("custom");
+            onModeChange('custom');
             onCustomValueChange(customValue || String(budget));
           }}
         >
           Custom
         </ChoiceChip>
       </div>
-      {mode === "custom" ? (
+      {mode === 'custom' ? (
         <Input
           type="number"
           min={50}
@@ -524,7 +652,7 @@ function BudgetPicker({
           onChange={(e) => {
             const value = e.target.value;
             onCustomValueChange(value);
-            if (value === "") return;
+            if (value === '') return;
             const n = Number(value);
             if (Number.isFinite(n) && n >= 50) onBudgetChange(n);
           }}
@@ -542,10 +670,10 @@ function DurationPicker({
   onPresetChange,
   onCustomValueChange,
 }: {
-  mode: "preset" | "custom";
+  mode: 'preset' | 'custom';
   preset: (typeof DURATION_PRESETS)[number];
   customValue: string;
-  onModeChange: (mode: "preset" | "custom") => void;
+  onModeChange: (mode: 'preset' | 'custom') => void;
   onPresetChange: (minutes: (typeof DURATION_PRESETS)[number]) => void;
   onCustomValueChange: (value: string) => void;
 }) {
@@ -555,9 +683,9 @@ function DurationPicker({
         {DURATION_PRESETS.map((minutes) => (
           <ChoiceChip
             key={minutes}
-            selected={mode === "preset" && preset === minutes}
+            selected={mode === 'preset' && preset === minutes}
             onClick={() => {
-              onModeChange("preset");
+              onModeChange('preset');
               onPresetChange(minutes);
             }}
           >
@@ -565,16 +693,16 @@ function DurationPicker({
           </ChoiceChip>
         ))}
         <ChoiceChip
-          selected={mode === "custom"}
+          selected={mode === 'custom'}
           onClick={() => {
-            onModeChange("custom");
+            onModeChange('custom');
             onCustomValueChange(customValue || String(preset));
           }}
         >
           Custom
         </ChoiceChip>
       </div>
-      {mode === "custom" ? (
+      {mode === 'custom' ? (
         <Input
           type="number"
           min={1}
@@ -594,41 +722,70 @@ function DurationPicker({
 function AudioUpload({
   file,
   duration,
+  uploadState,
+  error,
   inputRef,
   onFile,
   onClear,
 }: {
   file: File | null;
   duration: number | null;
+  uploadState: AudioUploadState;
+  error: string | null;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onFile: (file: File | null) => void;
   onClear: () => void;
 }) {
   if (file) {
+    const statusText =
+      uploadState === 'uploading'
+        ? 'Uploading track'
+        : uploadState === 'error'
+          ? (error ?? 'Upload failed')
+          : 'Track ready';
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)] p-4">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-default)] text-[color:var(--color-status-success)]">
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg border p-4',
+          uploadState === 'error'
+            ? 'border-[color:var(--color-status-danger)]/40 bg-[color-mix(in_srgb,var(--color-status-danger)_8%,transparent)]'
+            : 'border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)]',
+        )}
+      >
+        <span
+          className={cn(
+            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-default)]',
+            uploadState === 'error'
+              ? 'text-[color:var(--color-status-danger)]'
+              : 'text-[color:var(--color-status-success)]',
+          )}
+        >
           <Music4 size={18} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Check size={14} strokeWidth={2.5} className="shrink-0 text-[color:var(--color-status-success)]" />
+            <Check
+              size={14}
+              strokeWidth={2.5}
+              className={cn(
+                'shrink-0',
+                uploadState === 'error'
+                  ? 'text-[color:var(--color-status-danger)]'
+                  : 'text-[color:var(--color-status-success)]',
+              )}
+            />
             <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
               {file.name}
             </span>
           </div>
           <div className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
             {formatBytes(file.size)}
-            {duration ? ` · ${formatDuration(duration)}` : ""}
+            {duration ? ` · ${formatDuration(duration)}` : ''}
+            {` · ${statusText}`}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => inputRef.current?.click()}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={() => inputRef.current?.click()}>
             <Pencil size={13} />
             Replace
           </Button>
@@ -656,7 +813,11 @@ function AudioUpload({
 
   return (
     <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/40 p-6 text-center transition-colors hover:border-[color:var(--color-content-emphasis)]/45 hover:bg-[color:var(--color-bg-subtle)]">
-      <CloudUpload size={28} strokeWidth={1.5} className="mb-3 text-[color:var(--color-content-subtle)]" />
+      <CloudUpload
+        size={28}
+        strokeWidth={1.5}
+        className="mb-3 text-[color:var(--color-content-subtle)]"
+      />
       <span className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
         Drop track or click to browse
       </span>
@@ -675,7 +836,7 @@ function AudioUpload({
 }
 
 function StepPanel({ active, children }: { active: boolean; children: ReactNode }) {
-  return <section className={cn(!active && "hidden")}>{children}</section>;
+  return <section className={cn(!active && 'hidden')}>{children}</section>;
 }
 
 function Field({
@@ -701,18 +862,13 @@ function Field({
             {icon}
             {label}
             {required ? (
-              <span
-                aria-label="required"
-                className="text-[color:var(--color-status-danger)]"
-              >
+              <span aria-label="required" className="text-[color:var(--color-status-danger)]">
                 *
               </span>
             ) : null}
           </label>
           {helper ? (
-            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-              {helper}
-            </p>
+            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">{helper}</p>
           ) : null}
         </div>
         {trailing}
@@ -723,9 +879,7 @@ function Field({
 }
 
 function FieldError({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-xs text-[color:var(--color-status-danger)]">{children}</p>
-  );
+  return <p className="text-xs text-[color:var(--color-status-danger)]">{children}</p>;
 }
 
 function formatBytes(bytes: number) {
@@ -738,5 +892,26 @@ function formatDuration(seconds: number) {
   const total = Math.round(seconds);
   const m = Math.floor(total / 60);
   const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function sanitizeStorageName(name: string) {
+  return name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80) || 'audio';
+}
+
+function inferAudioContentType(file: File) {
+  if (file.type) return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  switch (ext) {
+    case 'wav':
+      return 'audio/wav';
+    case 'm4a':
+    case 'mp4':
+      return 'audio/mp4';
+    case 'aac':
+      return 'audio/aac';
+    case 'mp3':
+    default:
+      return 'audio/mpeg';
+  }
 }
