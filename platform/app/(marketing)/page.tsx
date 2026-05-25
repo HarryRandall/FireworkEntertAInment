@@ -1,7 +1,9 @@
-import { Hero } from "@/app/components/marketing/Hero";
-import { CTABand } from "@/app/components/marketing/CTABand";
-import { InteractiveSteps } from "@/app/components/marketing/InteractiveSteps";
-import { VendorNetwork } from "@/app/components/marketing/VendorNetwork";
+/** Marketing homepage. */
+
+import { Hero } from '@/app/components/marketing/Hero';
+import { CTABand } from '@/app/components/marketing/CTABand';
+import { InteractiveSteps } from '@/app/components/marketing/InteractiveSteps';
+import { VendorNetwork } from '@/app/components/marketing/VendorNetwork';
 
 export default function MarketingHome() {
   return (

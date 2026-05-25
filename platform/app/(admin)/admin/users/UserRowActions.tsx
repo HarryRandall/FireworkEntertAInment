@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Copy, Eye, PauseCircle, PlayCircle, Trash2 } from "lucide-react";
-import { RowActionsMenu, toast } from "@/app/components/ui";
+/** Per-row admin actions menu (set status, delete, etc.) on the user list. */
+
+import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { Copy, Eye, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
+import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,13 +15,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { deleteUserAction, setUserStatusAction } from "@/app/actions/admin-users";
+} from '@/components/ui/alert-dialog';
+import { deleteUserAction, setUserStatusAction } from '@/app/actions/admin-users';
 
 type Props = {
   userId: string;
   email: string | null;
-  status: "active" | "suspended";
+  status: 'active' | 'suspended';
 };
 
 export function UserRowActions({ userId, email, status }: Props) {
@@ -27,27 +29,27 @@ export function UserRowActions({ userId, email, status }: Props) {
   const [, startTransition] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const isActive = status === "active";
+  const isActive = status === 'active';
 
   const copyEmail = async () => {
     if (!email) {
-      toast.error("No email on file");
+      toast.error('No email on file');
       return;
     }
     try {
       await navigator.clipboard.writeText(email);
-      toast.success("Email copied");
+      toast.success('Email copied');
     } catch {
-      toast.error("Could not copy email");
+      toast.error('Could not copy email');
     }
   };
 
   const toggleStatus = () => {
     startTransition(async () => {
-      const next = isActive ? "suspended" : "active";
+      const next = isActive ? 'suspended' : 'active';
       const result = await setUserStatusAction({ userId, status: next });
       if (result.ok) {
-        toast.success(`User ${next === "active" ? "activated" : "suspended"}`);
+        toast.success(`User ${next === 'active' ? 'activated' : 'suspended'}`);
         router.refresh();
       } else {
         toast.error(result.error);
@@ -59,7 +61,7 @@ export function UserRowActions({ userId, email, status }: Props) {
     startTransition(async () => {
       const result = await deleteUserAction({ userId });
       if (result.ok) {
-        toast.success("User deleted");
+        toast.success('User deleted');
         router.refresh();
       } else {
         toast.error(result.error);
@@ -73,22 +75,22 @@ export function UserRowActions({ userId, email, status }: Props) {
       <RowActionsMenu
         items={[
           {
-            label: "View",
+            label: 'View',
             icon: <Eye size={14} />,
             onSelect: () => router.push(`/admin/users/${userId}`),
           },
           {
-            label: "Copy email",
+            label: 'Copy email',
             icon: <Copy size={14} />,
             onSelect: copyEmail,
           },
           {
-            label: isActive ? "Suspend" : "Activate",
+            label: isActive ? 'Suspend' : 'Activate',
             icon: isActive ? <PauseCircle size={14} /> : <PlayCircle size={14} />,
             onSelect: toggleStatus,
           },
           {
-            label: "Delete",
+            label: 'Delete',
             icon: <Trash2 size={14} />,
             destructive: true,
             onSelect: () => setConfirmOpen(true),

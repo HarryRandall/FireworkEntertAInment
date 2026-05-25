@@ -1,9 +1,11 @@
-import { Suspense } from "react";
-import { AppPageHeader } from "@/app/components/app/AppPageHeader";
-import { FilterSkeleton, TableSkeleton } from "@/app/components/app/RouteSkeletons";
-import { Badge } from "@/app/components/ui/Badge";
-import { FilterBar } from "@/app/components/ui/FilterBar";
-import { TABLE_PAGE_SIZE, TablePagination } from "@/app/components/ui/TablePagination";
+/** Admin catalogue page listing every firework product available across suppliers. */
+
+import { Suspense } from 'react';
+import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Badge } from '@/app/components/ui/Badge';
+import { FilterBar } from '@/app/components/ui/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import {
   DataTableShell,
   tableCellClasses,
@@ -11,11 +13,11 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from "@/app/components/ui/DataTable";
-import { formatDuration } from "@/lib/show-domain";
-import { listCatalogueProducts } from "@/lib/admin.server";
-import { ProductFormDialog } from "./ProductFormDialog";
-import { ProductRowActions } from "./ProductRowActions";
+} from '@/app/components/ui/DataTable';
+import { formatDuration } from '@/lib/show-domain';
+import { listCatalogueProducts } from '@/lib/admin.server';
+import { ProductFormDialog } from './ProductFormDialog';
+import { ProductRowActions } from './ProductRowActions';
 
 type PageProps = {
   searchParams: Promise<{
@@ -27,8 +29,7 @@ type PageProps = {
     page?: string;
   }>;
 };
-type CatalogueSearchParams = Awaited<PageProps["searchParams"]>;
-
+type CatalogueSearchParams = Awaited<PageProps['searchParams']>;
 
 export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -57,12 +58,12 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
 }
 
 async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
-  const query = (params.q ?? "").trim().toLowerCase();
+  const query = (params.q ?? '').trim().toLowerCase();
   const manufacturerFilter = params.manufacturer;
   const typeFilter = params.type;
   const minDuration = params.duration_min ? Number(params.duration_min) : null;
   const maxDuration = params.duration_max ? Number(params.duration_max) : null;
-  const requestedPage = Number(params.page ?? "1");
+  const requestedPage = Number(params.page ?? '1');
 
   const products = await listCatalogueProducts();
 
@@ -81,7 +82,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
   const filtered = products.filter((p) => {
     const text = [p.partNumber, p.name, p.manufacturer, p.fireworkType]
       .filter(Boolean)
-      .join(" ")
+      .join(' ')
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
     const matchesManufacturer = !manufacturerFilter || p.manufacturer === manufacturerFilter;
@@ -104,46 +105,52 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
         searchPlaceholder="Search part #, name, manufacturer…"
         filters={[
           {
-            key: "manufacturer",
-            label: "Manufacturer",
-            type: "select",
+            key: 'manufacturer',
+            label: 'Manufacturer',
+            type: 'select',
             options: manufacturerOptions,
           },
           {
-            key: "type",
-            label: "Type",
-            type: "select",
+            key: 'type',
+            label: 'Type',
+            type: 'select',
             options: typeOptions,
           },
           {
-            key: "duration",
-            label: "Duration",
-            type: "range",
-            unit: "s",
+            key: 'duration',
+            label: 'Duration',
+            type: 'range',
+            unit: 's',
           },
         ]}
       />
 
       <DataTableShell>
-        <table className={tableClasses("min-w-[960px]")}>
+        <table className={tableClasses('min-w-[960px]')}>
           <thead className={tableHeadClasses()}>
             <tr>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Part</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Product</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Manufacturer</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Type</th>
-              <th className={tableHeaderCellClasses("px-5 py-3")}>Duration</th>
-              <th className={tableHeaderCellClasses("px-5 py-3 text-right")}>Actions</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Part</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Product</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Manufacturer</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Type</th>
+              <th className={tableHeaderCellClasses('px-5 py-3')}>Duration</th>
+              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map((product) => (
               <tr key={product.id} className={tableRowClasses()}>
-                <td className={tableCellClasses("px-5 py-4 font-mono text-xs tabular-nums text-[color:var(--color-content-subtle)]")}>
+                <td
+                  className={tableCellClasses(
+                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                  )}
+                >
                   {product.partNumber}
                 </td>
-                <td className={tableCellClasses("px-5 py-4")}>
-                  <div className="font-medium text-[color:var(--color-content-emphasis)]">{product.name}</div>
+                <td className={tableCellClasses('px-5 py-4')}>
+                  <div className="font-medium text-[color:var(--color-content-emphasis)]">
+                    {product.name}
+                  </div>
                   {product.fireworkType ? (
                     <div className="mt-1">
                       <Badge solid tone="neutral">
@@ -152,16 +159,24 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                     </div>
                   ) : null}
                 </td>
-                <td className={tableCellClasses("px-5 py-4 text-[color:var(--color-content-subtle)]")}>
-                  {product.manufacturer || "—"}
+                <td
+                  className={tableCellClasses('px-5 py-4 text-[color:var(--color-content-subtle)]')}
+                >
+                  {product.manufacturer || '—'}
                 </td>
-                <td className={tableCellClasses("px-5 py-4 text-[color:var(--color-content-subtle)]")}>
-                  {product.fireworkType || "—"}
+                <td
+                  className={tableCellClasses('px-5 py-4 text-[color:var(--color-content-subtle)]')}
+                >
+                  {product.fireworkType || '—'}
                 </td>
-                <td className={tableCellClasses("px-5 py-4 font-mono text-xs tabular-nums text-[color:var(--color-content-subtle)]")}>
+                <td
+                  className={tableCellClasses(
+                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                  )}
+                >
                   {formatDuration(product.durationSeconds)}
                 </td>
-                <td className={tableCellClasses("px-5 py-4 text-right")}>
+                <td className={tableCellClasses('px-5 py-4 text-right')}>
                   <ProductRowActions
                     product={{
                       id: product.id,
@@ -179,11 +194,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
         </table>
       </DataTableShell>
 
-      <TablePagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        searchParams={params}
-      />
+      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

@@ -1,3 +1,5 @@
+/** Static-analysis "grep the source" test guarding the fireworks renderer fidelity invariants (do not modify test bodies). */
+
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';

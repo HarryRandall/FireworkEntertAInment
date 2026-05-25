@@ -1,6 +1,8 @@
-import { createServerClient } from "@supabase/ssr";
-import { type NextRequest, NextResponse } from "next/server";
-import { getSupabaseServerEnv } from "@/utils/supabase/env";
+/** Supabase client used inside Next.js middleware to refresh the user's auth session on each request. */
+
+import { createServerClient } from '@supabase/ssr';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getSupabaseServerEnv } from '@/utils/supabase/env';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -11,9 +13,9 @@ export async function updateSession(request: NextRequest) {
 
   const env = getSupabaseServerEnv();
   if (!env) {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === 'development') {
       console.warn(
-        "[supabase/middleware] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see .env.example). Session refresh skipped.",
+        '[supabase/middleware] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see .env.example). Session refresh skipped.',
       );
     }
     return supabaseResponse;
@@ -25,9 +27,7 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value),
-        );
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({
           request,
         });

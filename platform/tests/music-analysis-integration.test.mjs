@@ -1,3 +1,5 @@
+/** Static-analysis "grep the source" test guarding the music-analysis (analyser) integration invariants (do not modify test bodies). */
+
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';

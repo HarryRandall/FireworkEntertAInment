@@ -1,5 +1,7 @@
 'use client';
 
+/** Client tab navigation linking the preview, timeline, show-guide and shopping-list sub-routes for a show. */
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';

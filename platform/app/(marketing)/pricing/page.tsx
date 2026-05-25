@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
-import { Check, Sparkles } from "lucide-react";
-import { Container } from "@/app/components/ui/Container";
-import { Card } from "@/app/components/ui/Card";
-import { Button } from "@/app/components/ui/Button";
-import { Eyebrow } from "@/app/components/ui/Badge";
-import { PageHeader } from "@/app/components/marketing/PageHeader";
+/** Marketing "Pricing" page. */
+
+import type { Metadata } from 'next';
+import { Check, Sparkles } from 'lucide-react';
+import { Container } from '@/app/components/ui/Container';
+import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/app/components/ui/Button';
+import { Eyebrow } from '@/app/components/ui/Badge';
+import { PageHeader } from '@/app/components/marketing/PageHeader';
 
 export const metadata: Metadata = {
-  title: "Pricing · ShowCrafter",
+  title: 'Pricing · ShowCrafter',
   description:
-    "ShowCrafter is free to design. You only pay for the fireworks you actually fire — no subscription, no markup.",
+    'ShowCrafter is free to design. You only pay for the fireworks you actually fire — no subscription, no markup.',
 };
 
 type Plan = {
@@ -24,47 +26,47 @@ type Plan = {
 
 const PLANS: Plan[] = [
   {
-    name: "Spark",
-    price: "$0",
-    cadence: "free forever",
-    description: "Everything you need to design and preview a backyard show.",
-    cta: { href: "/signup", label: "Start free" },
+    name: 'Spark',
+    price: '$0',
+    cadence: 'free forever',
+    description: 'Everything you need to design and preview a backyard show.',
+    cta: { href: '/signup', label: 'Start free' },
     features: [
-      "Up to 3 active shows",
-      "Songs up to 4 minutes",
-      "Live 3D preview",
-      "ICON Pyrotechnics catalogue",
-      "Printable show guide",
+      'Up to 3 active shows',
+      'Songs up to 4 minutes',
+      'Live 3D preview',
+      'ICON Pyrotechnics catalogue',
+      'Printable show guide',
     ],
   },
   {
-    name: "Pyromaster",
-    price: "$19",
-    cadence: "per month",
-    description: "For enthusiasts running multiple shows a season.",
+    name: 'Pyromaster',
+    price: '$19',
+    cadence: 'per month',
+    description: 'For enthusiasts running multiple shows a season.',
     highlighted: true,
-    cta: { href: "/signup", label: "Start 14-day trial" },
+    cta: { href: '/signup', label: 'Start 14-day trial' },
     features: [
-      "Unlimited shows",
-      "Songs up to 12 minutes",
-      "Multi-segment finales",
-      "Audio click-track export",
-      "Custom safety zones",
-      "Priority email support",
+      'Unlimited shows',
+      'Songs up to 12 minutes',
+      'Multi-segment finales',
+      'Audio click-track export',
+      'Custom safety zones',
+      'Priority email support',
     ],
   },
   {
-    name: "Vendor",
-    price: "Custom",
-    cadence: "talk to us",
-    description: "For pyrotechnics retailers and licensed display operators.",
-    cta: { href: "/contact", label: "Contact sales" },
+    name: 'Vendor',
+    price: 'Custom',
+    cadence: 'talk to us',
+    description: 'For pyrotechnics retailers and licensed display operators.',
+    cta: { href: '/contact', label: 'Contact sales' },
     features: [
-      "Everything in Pyromaster",
-      "White-label show designer",
-      "Live inventory integration",
-      "Customer show analytics",
-      "Dedicated success manager",
+      'Everything in Pyromaster',
+      'White-label show designer',
+      'Live inventory integration',
+      'Customer show analytics',
+      'Dedicated success manager',
     ],
   },
 ];
@@ -86,37 +88,31 @@ export default function PricingPage() {
               <Card
                 key={plan.name}
                 radius="lg"
-                elevation={plan.highlighted ? "high" : "low"}
+                elevation={plan.highlighted ? 'high' : 'low'}
                 className={`relative flex flex-col p-8 ${
-                  plan.highlighted
-                    ? "border-primary/40 ring-1 ring-primary/30"
-                    : ""
+                  plan.highlighted ? 'border-primary/40 ring-primary/30 ring-1' : ''
                 }`}
               >
                 {plan.highlighted ? (
-                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-primary-container px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container shadow-[var(--shadow-cta)]">
+                  <span className="bg-primary-container text-on-primary-container absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase shadow-[var(--shadow-cta)]">
                     <Sparkles size={12} strokeWidth={2} />
                     Most popular
                   </span>
                 ) : null}
-                <Eyebrow tone={plan.highlighted ? "primary" : "muted"}>
-                  {plan.name}
-                </Eyebrow>
+                <Eyebrow tone={plan.highlighted ? 'primary' : 'muted'}>{plan.name}</Eyebrow>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-extrabold tabular-nums tracking-tight text-on-surface">
+                  <span className="text-on-surface text-5xl font-extrabold tracking-tight tabular-nums">
                     {plan.price}
                   </span>
-                  <span className="text-sm text-on-surface-variant">
-                    {plan.cadence}
-                  </span>
+                  <span className="text-on-surface-variant text-sm">{plan.cadence}</span>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
                   {plan.description}
                 </p>
                 <ul className="mt-8 flex-grow space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-sm text-on-surface">
-                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    <li key={feature} className="text-on-surface flex items-start gap-3 text-sm">
+                      <span className="bg-primary/15 text-primary mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
                         <Check size={12} strokeWidth={2.5} />
                       </span>
                       {feature}
@@ -127,7 +123,7 @@ export default function PricingPage() {
                   <Button
                     href={plan.cta.href}
                     size="md"
-                    variant={plan.highlighted ? "primary" : "secondary"}
+                    variant={plan.highlighted ? 'primary' : 'secondary'}
                     className="w-full"
                   >
                     {plan.cta.label}
@@ -137,13 +133,12 @@ export default function PricingPage() {
             ))}
           </div>
 
-          <div className="mx-auto mt-20 max-w-2xl rounded-2xl border border-outline-variant/15 bg-surface-container-low p-8 text-center">
+          <div className="border-outline-variant/15 bg-surface-container-low mx-auto mt-20 max-w-2xl rounded-2xl border p-8 text-center">
             <Eyebrow>The fine print</Eyebrow>
-            <p className="mt-3 text-base leading-relaxed text-on-surface-variant">
-              ShowCrafter never marks up fireworks. You always pay the ICON
-              Pyrotechnics retail price, and you can pick up your order at any
-              authorised stockist. We make money from the optional Pyromaster
-              subscription, not from your pyro budget.
+            <p className="text-on-surface-variant mt-3 text-base leading-relaxed">
+              ShowCrafter never marks up fireworks. You always pay the ICON Pyrotechnics retail
+              price, and you can pick up your order at any authorised stockist. We make money from
+              the optional Pyromaster subscription, not from your pyro budget.
             </p>
           </div>
         </Container>

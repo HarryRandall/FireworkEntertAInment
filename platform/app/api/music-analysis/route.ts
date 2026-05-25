@@ -1,3 +1,5 @@
+/** Music-analysis API endpoint exposing analyser status/results for a track. */
+
 import { cookies } from 'next/headers';
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';

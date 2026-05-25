@@ -1,20 +1,18 @@
-import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
-import { AdminShell } from "@/app/components/admin/AdminShell";
-import { requirePermission } from "@/lib/admin.server";
-import { measureServerTask } from "@/lib/perf.server";
+/** Admin route-group layout; enforces RBAC and renders the `AdminShell` chrome. */
 
-export const dynamic = "force-dynamic";
+import type { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
+import { AdminShell } from '@/app/components/admin/AdminShell';
+import { requirePermission } from '@/lib/admin.server';
+import { measureServerTask } from '@/lib/perf.server';
 
-export default async function AdminRouteGroupLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const profile = await measureServerTask("admin-layout:requirePermission", () =>
-    requirePermission("admin.view"),
+export const dynamic = 'force-dynamic';
+
+export default async function AdminRouteGroupLayout({ children }: { children: ReactNode }) {
+  const profile = await measureServerTask('admin-layout:requirePermission', () =>
+    requirePermission('admin.view'),
   );
-  if (!profile) redirect("/dashboard");
+  if (!profile) redirect('/dashboard');
 
   return <AdminShell profile={profile}>{children}</AdminShell>;
 }

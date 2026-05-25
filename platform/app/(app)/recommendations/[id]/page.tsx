@@ -1,4 +1,6 @@
-import { redirect } from "next/navigation";
+/** Legacy `/recommendations/[id]` route - redirects to the matching library template. */
+
+import { redirect } from 'next/navigation';
 
 type PageProps = { params: Promise<{ id: string }> };
 

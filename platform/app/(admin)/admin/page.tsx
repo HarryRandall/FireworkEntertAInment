@@ -1,15 +1,17 @@
-import { Suspense } from "react";
-import { AppPageHeader } from "@/app/components/app/AppPageHeader";
-import { AdminOverviewSkeleton } from "@/app/components/app/RouteSkeletons";
-import { InfoTooltip } from "@/app/components/ui/InfoTooltip";
-import { Card } from "@/app/components/ui/Card";
-import { StatTile } from "@/app/components/ui/StatTile";
+/** Admin dashboard index summarising platform-wide stats. */
+
+import { Suspense } from 'react';
+import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { AdminOverviewSkeleton } from '@/app/components/app/RouteSkeletons';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
+import { Card } from '@/app/components/ui/Card';
+import { StatTile } from '@/app/components/ui/StatTile';
 import {
   listAdminUsers,
   listCatalogueProducts,
   listImportJobs,
   listSuppliers,
-} from "@/lib/admin.server";
+} from '@/lib/admin.server';
 
 export default function AdminOverviewPage() {
   return (
@@ -51,21 +53,23 @@ async function AdminOverviewData() {
         <ActivityCard
           title="Platform mix"
           rows={[
-            { label: "Users", value: users.length },
-            { label: "Suppliers", value: suppliers.length },
-            { label: "Catalogue", value: catalogue.length },
+            { label: 'Users', value: users.length },
+            { label: 'Suppliers', value: suppliers.length },
+            { label: 'Catalogue', value: catalogue.length },
           ]}
         />
         <ActivityCard
           title="Import pipeline"
           rows={[
-            { label: "Draft", value: imports.filter((job) => job.status === "draft").length },
-            { label: "Needs review", value: imports.filter((job) => job.status === "needs_review").length },
-            { label: "Complete", value: imports.filter((job) => job.status === "complete").length },
+            { label: 'Draft', value: imports.filter((job) => job.status === 'draft').length },
+            {
+              label: 'Needs review',
+              value: imports.filter((job) => job.status === 'needs_review').length,
+            },
+            { label: 'Complete', value: imports.filter((job) => job.status === 'complete').length },
           ]}
         />
       </div>
-
     </>
   );
 }
@@ -80,17 +84,17 @@ function ActivityCard({
   const max = Math.max(...rows.map((row) => row.value), 1);
   return (
     <Card elevation="low" radius="md" className="p-5">
-      <h2 className="text-lg font-bold text-on-surface">{title}</h2>
+      <h2 className="text-on-surface text-lg font-bold">{title}</h2>
       <div className="mt-4 space-y-3">
         {rows.map((row) => (
           <div key={row.label} className="space-y-1.5">
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="font-semibold text-on-surface-variant">{row.label}</span>
-              <span className="font-bold tabular-nums text-on-surface">{row.value}</span>
+              <span className="text-on-surface-variant font-semibold">{row.label}</span>
+              <span className="text-on-surface font-bold tabular-nums">{row.value}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
+            <div className="bg-surface-container-highest h-2 overflow-hidden rounded-full">
               <div
-                className="h-full rounded-full bg-primary"
+                className="bg-primary h-full rounded-full"
                 style={{ width: `${Math.max((row.value / max) * 100, row.value > 0 ? 8 : 0)}%` }}
               />
             </div>

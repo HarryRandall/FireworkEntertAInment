@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Area, AreaChart, Tooltip, XAxis, YAxis } from "recharts";
+/** Activity chart visualising the user's recent events on the admin user detail page. */
+
+import { useEffect, useRef, useState } from 'react';
+import { Area, AreaChart, Tooltip, XAxis, YAxis } from 'recharts';
 
 type Datum = { date: string; count: number };
 
@@ -37,7 +39,7 @@ export function UserActivityChart({ data }: { data: Datum[] }) {
   }
 
   return (
-    <div ref={containerRef} className="h-44 min-w-0 w-full">
+    <div ref={containerRef} className="h-44 w-full min-w-0">
       {size.width > 0 && size.height > 0 ? (
         <AreaChart
           data={data}
@@ -69,12 +71,12 @@ export function UserActivityChart({ data }: { data: Datum[] }) {
           />
           <Tooltip
             contentStyle={{
-              background: "var(--color-bg-default)",
-              border: "1px solid var(--color-border-subtle)",
+              background: 'var(--color-bg-default)',
+              border: '1px solid var(--color-border-subtle)',
               borderRadius: 6,
               fontSize: 12,
             }}
-            labelStyle={{ color: "var(--color-content-subtle)" }}
+            labelStyle={{ color: 'var(--color-content-subtle)' }}
           />
           <Area
             type="monotone"

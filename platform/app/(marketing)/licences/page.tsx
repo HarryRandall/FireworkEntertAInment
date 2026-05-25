@@ -1,9 +1,11 @@
-import type { Metadata } from "next";
-import { ComingSoon } from "@/app/components/marketing/ComingSoon";
+/** Marketing "Licences" page. */
+
+import type { Metadata } from 'next';
+import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
-  title: "Licences · ShowCrafter",
-  description: "Open-source licences and attributions.",
+  title: 'Licences · ShowCrafter',
+  description: 'Open-source licences and attributions.',
 };
 
 export default function LicencesPage() {

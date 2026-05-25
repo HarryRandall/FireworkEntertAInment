@@ -1,3 +1,5 @@
+/** Interstitial route rendered while the cue-generation pipeline runs for a newly-created show. */
+
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';

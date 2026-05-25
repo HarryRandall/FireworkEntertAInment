@@ -1,3 +1,5 @@
+/** Timeline tab visualising analysed audio aligned with the show's cues. */
+
 import { notFound } from 'next/navigation';
 import { AudioAnalysisTimeline } from '@/app/components/app/AudioAnalysisTimeline';
 import { Card } from '@/app/components/ui/Card';
