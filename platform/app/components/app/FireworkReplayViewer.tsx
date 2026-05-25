@@ -68,6 +68,8 @@ type FireworkReplayViewerProps = {
   audioUrl?: string | null;
 };
 
+type CueDialogTab = 'manual' | 'ai';
+
 const LAUNCH_POSITION_OPTIONS = [
   { value: '0', label: 'Mortar 1 (left)' },
   { value: '1', label: 'Mortar 2 (centre)' },
@@ -131,6 +133,7 @@ export function FireworkReplayViewer({
   );
   const [isPending, startTransition] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [cueDialogTab, setCueDialogTab] = useState<CueDialogTab>('manual');
   const [insertBeforeTime, setInsertBeforeTime] = useState<number | null>(null);
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
@@ -291,13 +294,36 @@ export function FireworkReplayViewer({
 
   function togglePlayback() {
     if (!hasReplayCues) return;
-    if (elapsed >= duration) setElapsed(0);
+    if (elapsed >= duration) seekTo(0, false);
     setIsPlaying((playing) => !playing);
   }
 
   function restart() {
     setIsPlaying(false);
-    setElapsed(0);
+    seekTo(0, false);
+  }
+
+  function seekTo(timeSeconds: number, continuePlaying = isPlaying) {
+    const next = Math.max(0, Math.min(duration, timeSeconds));
+    elapsedRef.current = next;
+    lastUIElapsedRef.current = next;
+    playheadStart.current = next;
+    startedAt.current = continuePlaying ? performance.now() : null;
+    if (audioRef.current && Math.abs(audioRef.current.currentTime - next) > 0.1) {
+      audioRef.current.currentTime = next;
+    }
+    setElapsed(next);
+  }
+
+  function playFrom(timeSeconds: number) {
+    seekTo(timeSeconds, true);
+    setIsPlaying(true);
+  }
+
+  function openCueDialog(tab: CueDialogTab, prompt?: string) {
+    setCueDialogTab(tab);
+    if (prompt !== undefined) setAiPrompt(prompt);
+    setShowAddForm(true);
   }
 
   function addCue(formData: FormData) {
@@ -466,7 +492,7 @@ export function FireworkReplayViewer({
                   value={elapsed}
                   onChange={(event) => {
                     setIsPlaying(false);
-                    setElapsed(Number(event.target.value));
+                    seekTo(Number(event.target.value));
                   }}
                   className="accent-tertiary h-2 min-w-0 flex-1"
                   aria-label="Preview timeline"
@@ -499,7 +525,7 @@ export function FireworkReplayViewer({
                   {actionResult.ok ? actionResult.message : actionResult.error}
                 </p>
               ) : null}
-              <Button type="button" onClick={() => setShowAddForm(true)} size="sm">
+              <Button type="button" onClick={() => openCueDialog('manual')} size="sm">
                 <Plus size={16} strokeWidth={2} />
                 Add firework
               </Button>
@@ -524,8 +550,11 @@ export function FireworkReplayViewer({
                   <span className="font-mono tabular-nums">{formatDuration(duration)}</span>.
                 </DialogDescription>
               </DialogHeader>
-              <Tabs defaultValue="manual">
-                <TabsList className="mb-4">
+              <Tabs
+                value={cueDialogTab}
+                onValueChange={(value) => setCueDialogTab(value === 'ai' ? 'ai' : 'manual')}
+              >
+                <TabsList className="mb-4 w-full">
                   <TabsTrigger value="manual">Pick firework</TabsTrigger>
                   <TabsTrigger value="ai">
                     <Sparkles size={12} strokeWidth={2} />
@@ -536,7 +565,7 @@ export function FireworkReplayViewer({
                   <form
                     ref={formRef}
                     action={addCue}
-                    className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+                    className="grid min-h-[18rem] grid-cols-1 gap-4 sm:grid-cols-2"
                   >
                     <input type="hidden" name="showId" value={showId} />
                     <input type="hidden" name="showSlug" value={showSlug} />
@@ -624,7 +653,7 @@ export function FireworkReplayViewer({
                       event.preventDefault();
                       applyRefinement(aiPrompt);
                     }}
-                    className="space-y-4"
+                    className="flex min-h-[18rem] flex-col gap-4"
                   >
                     <label className="block space-y-2">
                       <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
@@ -644,7 +673,7 @@ export function FireworkReplayViewer({
                         required
                       />
                     </label>
-                    <DialogFooter>
+                    <DialogFooter className="mt-auto">
                       <Button
                         type="button"
                         variant="secondary"
@@ -698,7 +727,7 @@ export function FireworkReplayViewer({
                             key={baseCueId}
                             onClick={() => {
                               setIsPlaying(false);
-                              setElapsed(cue.timeSeconds);
+                              seekTo(cue.timeSeconds);
                             }}
                             aria-current={isActive ? 'true' : undefined}
                             className={tableRowClasses(
@@ -737,17 +766,14 @@ export function FireworkReplayViewer({
                                   {
                                     label: 'Play from here',
                                     icon: <Play size={14} strokeWidth={2} />,
-                                    onSelect: () => {
-                                      setElapsed(cue.timeSeconds);
-                                      setIsPlaying(true);
-                                    },
+                                    onSelect: () => playFrom(cue.timeSeconds),
                                   },
                                   {
                                     label: 'Insert firework above',
                                     icon: <Plus size={14} strokeWidth={2} />,
                                     onSelect: () => {
                                       setInsertBeforeTime(cue.timeSeconds);
-                                      setShowAddForm(true);
+                                      openCueDialog('manual');
                                     },
                                   },
                                   {
@@ -842,7 +868,9 @@ export function FireworkReplayViewer({
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                applyRefinement(refinePrompt);
+                const prompt = refinePrompt.trim();
+                if (!prompt) return;
+                openCueDialog('ai', prompt);
               }}
               className="flex flex-col gap-3 xl:min-h-0 xl:flex-1"
             >
