@@ -26,6 +26,7 @@ export class Particle {
   color = new THREE.Color();
   decay = 0;
   life = 0;
+  maxLife = 0;
   gravity = -9.82;
   drag = 0;
 
@@ -112,6 +113,7 @@ export class Particle {
     this.vy = 0;
     this.vz = 0;
     this.life = 0;
+    this.maxLife = 0;
     this.condition = NOOP;
     this.action = NOOP;
     this.effect = NOOP;

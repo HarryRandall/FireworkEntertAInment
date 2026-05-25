@@ -95,6 +95,7 @@ export function FireworkReplayViewer({
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
   const elapsedRef = useRef(elapsed);
+  const lastUIElapsedRef = useRef(elapsed);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Keep the audio element in sync with playhead and play/pause state.
@@ -121,20 +122,41 @@ export function FireworkReplayViewer({
     }
   }, [elapsed, isPlaying]);
 
+  // While playing, the RAF loop owns elapsedRef and writes it at 60Hz; mirroring
+  // 15Hz React state back on top would create a backward jitter on the engine.
   useEffect(() => {
-    elapsedRef.current = elapsed;
-  }, [elapsed]);
+    if (!isPlaying) {
+      elapsedRef.current = elapsed;
+      lastUIElapsedRef.current = elapsed;
+    }
+  }, [elapsed, isPlaying]);
 
   useEffect(() => {
     if (!isPlaying) return;
     let frame = 0;
     startedAt.current = performance.now();
     playheadStart.current = elapsedRef.current;
+    lastUIElapsedRef.current = elapsedRef.current;
 
     function tick(now: number) {
       if (startedAt.current == null) return;
-      const next = Math.min(duration, playheadStart.current + (now - startedAt.current) / 1000);
-      setElapsed(next);
+      const dtFromStart = (now - startedAt.current) / 1000;
+      // Browsers throttle/pause RAF on hidden tabs but performance.now() keeps
+      // ticking — without this re-anchor we'd leap the playhead by however long
+      // the tab was backgrounded and force the engine into a full replay.
+      if (dtFromStart > 0.5) {
+        startedAt.current = now;
+        playheadStart.current = elapsedRef.current;
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      const next = Math.min(duration, playheadStart.current + dtFromStart);
+      // 60Hz drive for the engine (via ref); ~15Hz React state for the UI.
+      elapsedRef.current = next;
+      if (next >= duration || next - lastUIElapsedRef.current >= 0.067) {
+        lastUIElapsedRef.current = next;
+        setElapsed(next);
+      }
       if (next >= duration) {
         setIsPlaying(false);
         return;
@@ -225,6 +247,7 @@ export function FireworkReplayViewer({
           <LazyFireworkReplayCanvas
             cues={sortedCues}
             elapsed={elapsed}
+            playbackRef={elapsedRef}
             launchPositions={launchPositions}
             muted={!isPlaying}
           />

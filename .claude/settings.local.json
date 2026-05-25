@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(node --test tests/fireworks-renderer-fidelity.test.mjs)",
+      "Bash(npm run *)"
+    ]
+  }
+}

@@ -27,10 +27,11 @@ import { Effects } from '@/lib/fireworks/Effects';
 import { Scheduler } from '@/lib/fireworks/Scheduler';
 import { FRAGMENT_SHADER, VERTEX_SHADER } from '@/lib/fireworks/shaders';
 import { createSeededRng, mixSeed } from '@/lib/fireworks/random';
+import type { Particle } from '@/lib/fireworks/Particle';
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -43,10 +44,14 @@ export type FireworksEngineStats = {
 };
 
 const PARTICLE_CAPACITY = 100_000;
-const SPARK_TEXTURE_URL = '/textures/spark1.png';
 const FIXED_DT = 1 / 60;
+// Coarser step for silent rebuilds (scrub/seek). Final state looks the same to
+// the eye; cuts physics work ~3x vs 60Hz stepping.
+const SCRUB_DT = 1 / 20;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 15;
+const SNAPSHOT_STRIDE = 16;
+const MAX_SNAPSHOTS = 120;
+const BRIGHTNESS_BOOST = 1.18;
 
 export class FireworksEngine {
   private scene: THREE.Scene;
@@ -61,11 +66,13 @@ export class FireworksEngine {
   private geometry: THREE.BufferGeometry;
   private material: THREE.ShaderMaterial;
   private points: THREE.Points;
-  private texture: THREE.Texture;
 
   private positions: Float32Array;
   private colors: Float32Array;
   private sizes: Float32Array;
+  private positionAttribute: THREE.BufferAttribute;
+  private colorAttribute: THREE.BufferAttribute;
+  private sizeAttribute: THREE.BufferAttribute;
 
   private elapsed = 0;
   private time = 0;
@@ -84,13 +91,12 @@ export class FireworksEngine {
     this.effects = new Effects(this.pool, this.sound, this.lights);
     this.scheduler = new Scheduler();
 
-    this.texture = new THREE.TextureLoader().load(SPARK_TEXTURE_URL);
     this.material = new THREE.ShaderMaterial({
-      uniforms: { pointTexture: { value: this.texture } },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
       blending: THREE.AdditiveBlending,
       depthTest: false,
+      depthWrite: false,
       transparent: true,
       vertexColors: true,
     });
@@ -100,18 +106,16 @@ export class FireworksEngine {
     this.sizes = new Float32Array(PARTICLE_CAPACITY);
 
     this.geometry = new THREE.BufferGeometry();
-    this.geometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage),
+    this.positionAttribute = new THREE.BufferAttribute(this.positions, 3).setUsage(
+      THREE.DynamicDrawUsage,
     );
-    this.geometry.setAttribute(
-      'color',
-      new THREE.BufferAttribute(this.colors, 3).setUsage(THREE.DynamicDrawUsage),
+    this.colorAttribute = new THREE.BufferAttribute(this.colors, 3).setUsage(
+      THREE.DynamicDrawUsage,
     );
-    this.geometry.setAttribute(
-      'size',
-      new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage),
-    );
+    this.sizeAttribute = new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage);
+    this.geometry.setAttribute('position', this.positionAttribute);
+    this.geometry.setAttribute('color', this.colorAttribute);
+    this.geometry.setAttribute('size', this.sizeAttribute);
     this.geometry.setDrawRange(0, 0);
 
     this.points = new THREE.Points(this.geometry, this.material);
@@ -208,71 +212,100 @@ export class FireworksEngine {
   }
 
   private advanceTo(target: number, audible: boolean): void {
+    const dt = audible ? FIXED_DT : SCRUB_DT;
     let cursor = this.elapsed;
     while (cursor + 0.0001 < target) {
-      const next = Math.min(target, cursor + FIXED_DT);
+      const next = Math.min(target, cursor + dt);
       const due = this.scheduler.pop(cursor, next);
       for (const cue of due) {
         this.fireCue(cue, audible);
       }
-      this.tick(next - cursor);
+      this.tickPhysics(next - cursor);
       cursor = next;
-      // Snapshot at coarse intervals while not in real-time playback.
       // Skip frames with mid-flight shells: their detonation callbacks
       // would be lost on restore and leave dangling ascending particles.
-      if (!audible && cursor >= this.nextSnapshotAt && !this.poolHasMidFlightShells()) {
+      if (cursor >= this.nextSnapshotAt && !this.poolHasMidFlightShells()) {
         this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
+        if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
       }
     }
     this.elapsed = target;
+    this.syncGeometry();
   }
 
-  private tick(dt: number): void {
+  private tickPhysics(dt: number): void {
     this.time += dt;
     const ps = this.pool.particles;
-    const cap = this.pool.aliveMax + 1;
-    for (let i = 0; i < cap; i++) {
-      const p = ps[i];
+    const live = this.pool.aliveIndices;
+    const count = this.pool.aliveCount;
+    for (let slot = 0; slot < count; slot++) {
+      const p = ps[live[slot]];
       if (p.alive) p.update(dt, this.time);
     }
     this.pool.compactAliveMax();
-    this.syncGeometry();
     this.lights.update();
   }
 
   private syncGeometry(): void {
     const ps = this.pool.particles;
+    const live = this.pool.aliveIndices;
     const positions = this.positions;
     const colors = this.colors;
     const sizes = this.sizes;
-    const cap = this.pool.aliveMax + 1;
-    for (let i = 0; i < cap; i++) {
-      const p = ps[i];
-      const pi = i * 3;
-      if (p.alive) {
-        positions[pi] = p.x;
-        positions[pi + 1] = p.y;
-        positions[pi + 2] = p.z;
-        sizes[i] = p.size;
-        colors[pi] = p.color.r;
-        colors[pi + 1] = p.color.g;
-        colors[pi + 2] = p.color.b;
-      } else {
-        sizes[i] = 0;
-      }
+    const count = this.pool.aliveCount;
+    let drawCount = 0;
+    for (let slot = 0; slot < count; slot++) {
+      const p = ps[live[slot]];
+      if (!p.alive) continue;
+      const pi = drawCount * 3;
+      positions[pi] = p.x;
+      positions[pi + 1] = p.y;
+      positions[pi + 2] = p.z;
+      const isStar = p.mass <= 0.0015;
+      // Subtle shimmer — enough to read as "alive" without strobing. Higher
+      // amplitudes and faster frequencies caused per-particle flicker that
+      // looked like noise rather than burning chemistry.
+      const twinkle = isStar ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
+      sizes[drawCount] = renderParticleSize(p);
+      const alpha = renderParticleAlpha(p) * twinkle;
+      // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
+      // then settle into their pure burst colour as they cool — matches the
+      // way burning magnesium chemistry actually looks.
+      const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
+      const heat = isStar ? Math.max(0, lifeRatio - 0.7) : 0;
+      const cool = 1 - heat;
+      const heatAdd = heat * alpha * BRIGHTNESS_BOOST;
+      colors[pi] = Math.min(1, p.color.r * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
+      colors[pi + 1] = Math.min(1, p.color.g * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
+      colors[pi + 2] = Math.min(1, p.color.b * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
+      drawCount++;
     }
-    this.geometry.setDrawRange(0, cap);
-    (this.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
-    (this.geometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
-    (this.geometry.attributes.size as THREE.BufferAttribute).needsUpdate = true;
+    this.geometry.setDrawRange(0, drawCount);
+    if (drawCount > 0) {
+      const positionCount = drawCount * 3;
+      this.positionAttribute.clearUpdateRanges();
+      this.positionAttribute.addUpdateRange(0, positionCount);
+      this.positionAttribute.needsUpdate = true;
+
+      this.colorAttribute.clearUpdateRanges();
+      this.colorAttribute.addUpdateRange(0, positionCount);
+      this.colorAttribute.needsUpdate = true;
+
+      this.sizeAttribute.clearUpdateRanges();
+      this.sizeAttribute.addUpdateRange(0, drawCount);
+      this.sizeAttribute.needsUpdate = true;
+    }
   }
 
   private captureSnapshot(): PoolSnapshot {
     const ps = this.pool.particles;
-    const cap = this.pool.aliveMax + 1;
+    const live = this.pool.aliveIndices;
+    const liveCount = this.pool.aliveCount;
     let count = 0;
-    for (let i = 0; i < cap; i++) if (ps[i].alive) count++;
+    for (let slot = 0; slot < liveCount; slot++) {
+      if (ps[live[slot]].alive) count++;
+    }
     const state: PoolSnapshot = {
       indices: new Uint32Array(count),
       data: new Float32Array(count * SNAPSHOT_STRIDE),
@@ -280,7 +313,8 @@ export class FireworksEngine {
       aliveMax: this.pool.aliveMax,
     };
     let w = 0;
-    for (let i = 0; i < cap; i++) {
+    for (let slot = 0; slot < liveCount; slot++) {
+      const i = live[slot];
       const p = ps[i];
       if (!p.alive) continue;
       state.indices[w] = i;
@@ -300,6 +334,7 @@ export class FireworksEngine {
       state.data[o + 12] = p.decay;
       state.data[o + 13] = p.gravity;
       state.data[o + 14] = p.drag;
+      state.data[o + 15] = p.maxLife;
       w++;
     }
     return state;
@@ -314,7 +349,6 @@ export class FireworksEngine {
       const i = state.indices[w];
       const p = ps[i];
       const o = w * SNAPSHOT_STRIDE;
-      p.alive = true;
       p.x = state.data[o];
       p.y = state.data[o + 1];
       p.z = state.data[o + 2];
@@ -328,8 +362,10 @@ export class FireworksEngine {
       p.decay = state.data[o + 12];
       p.gravity = state.data[o + 13];
       p.drag = state.data[o + 14];
+      p.maxLife = state.data[o + 15] || p.life;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
+      this.pool.restore(i, p);
     }
     this.pool.current = state.current;
     this.pool.aliveMax = state.aliveMax;
@@ -338,9 +374,10 @@ export class FireworksEngine {
   /** Shells use mass=0.5 (vs 0.001-0.02 for flair/smoke); detect by mass. */
   private poolHasMidFlightShells(): boolean {
     const ps = this.pool.particles;
-    const cap = this.pool.aliveMax + 1;
-    for (let i = 0; i < cap; i++) {
-      const p = ps[i];
+    const live = this.pool.aliveIndices;
+    const count = this.pool.aliveCount;
+    for (let slot = 0; slot < count; slot++) {
+      const p = ps[live[slot]];
       if (p.alive && p.mass >= 0.1) return true;
     }
     return false;
@@ -375,9 +412,38 @@ export class FireworksEngine {
     this.scene.remove(this.points);
     this.geometry.dispose();
     this.material.dispose();
-    this.texture.dispose();
     this.lights.dispose();
     this.world.dispose();
     if (this.camera) this.camera.remove(this.sound.listener);
   }
+}
+
+function renderParticleSize(p: Particle): number {
+  const base = Math.sqrt(Math.max(0, p.size));
+  const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
+  if (isFlash) return clamp(base * 1.0, 0.8, 13);
+  if (p.mass >= 0.1) return clamp(base * 1.4, 1.2, 24);
+  if (p.mass <= 0.0015) return clamp(base * 1.5, 1.0, 32);
+  if (p.mass <= 0.003) return clamp(base * 1.05, 0.8, 14);
+  return clamp(base * 1.15, 0.9, 17);
+}
+
+function renderParticleAlpha(p: Particle): number {
+  const maxLife = Math.max(p.maxLife, p.life, 0.001);
+  const lifeRatio = clamp(p.life / maxLife, 0, 1);
+  const ageRatio = 1 - lifeRatio;
+  const fadeIn = p.mass <= 0.003 ? clamp(ageRatio * 18, 0, 1) : 1;
+  const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
+  let peak = 0.24;
+  if (isFlash) peak = 0.075;
+  else if (p.mass >= 0.1) peak = 0.2;
+  else if (p.mass <= 0.0015) peak = 0.7;
+  else if (p.mass <= 0.003) peak = 0.14;
+
+  const fade = Math.pow(lifeRatio, isFlash ? 2.2 : 1.25);
+  return clamp(peak * fadeIn * fade, 0, 0.72);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

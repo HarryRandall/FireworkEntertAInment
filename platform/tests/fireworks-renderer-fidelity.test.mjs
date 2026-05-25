@@ -80,9 +80,68 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(effects, /drag: STAR_DRAG/);
   assert.match(effects, /gravity: TRAIL_GRAVITY/);
   assert.match(particle, /drag = 0/);
+  assert.match(particle, /maxLife = 0/);
   assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
   assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
-  assert.match(engine, /SNAPSHOT_STRIDE = 15/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 16/);
   assert.match(engine, /state\.data\[o \+ 14\] = p\.drag/);
+  assert.match(engine, /state\.data\[o \+ 15\] = p\.maxLife/);
   assert.match(engine, /p\.drag = state\.data\[o \+ 14\]/);
+  assert.match(engine, /p\.maxLife = state\.data\[o \+ 15\] \|\| p\.life/);
+});
+
+test('renderer draws only compact live square particles', () => {
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const pool = read('lib/fireworks/ParticlePool.ts');
+  const shaders = read('lib/fireworks/shaders.ts');
+  const canvas = read('app/components/app/FireworkReplayCanvas.tsx');
+
+  assert.match(pool, /aliveIndices: Uint32Array/);
+  assert.match(pool, /activeSlots/);
+  assert.match(pool, /return this\.activeCount/);
+  assert.match(pool, /p\.reset\(\);[\s\S]*return p;/);
+  assert.match(pool, /p\.color\.setRGB\(1, 1, 1\)/);
+  assert.match(engine, /const live = this\.pool\.aliveIndices/);
+  assert.match(engine, /let drawCount = 0/);
+  assert.match(engine, /renderParticleSize\(p\)/);
+  assert.match(engine, /renderParticleAlpha\(p\)/);
+  assert.match(engine, /p\.color\.r \* alpha/);
+  assert.match(engine, /this\.geometry\.setDrawRange\(0, drawCount\)/);
+  assert.match(engine, /addUpdateRange\(0, positionCount\)/);
+  assert.doesNotMatch(engine, /TextureLoader|SPARK_TEXTURE_URL/);
+  assert.doesNotMatch(engine, /alphaAttribute|setAttribute\("alpha"/);
+  assert.doesNotMatch(shaders, /texture2D|sampler2D|pointTexture/);
+  assert.doesNotMatch(shaders, /attribute float alpha|vAlpha/);
+  assert.match(shaders, /gl_FragColor = vec4\(vColor, 1\.0\)/);
+  assert.match(shaders, /gl_PointSize = clamp/);
+  assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
+  assert.match(canvas, /antialias: false/);
+  assert.match(canvas, /renderer\.sortObjects = false/);
+});
+
+test('renderer avoids blown-out additive blobs and excessive trail churn', () => {
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+
+  assert.match(engine, /Math\.sqrt\(Math\.max\(0, p\.size\)\)/);
+  assert.match(engine, /BRIGHTNESS_BOOST = 1\.18/);
+  assert.match(engine, /peak = 0\.075/);
+  assert.match(engine, /fadeIn = p\.mass <= 0\.003/);
+  assert.match(engine, /tickPhysics\(next - cursor\)/);
+  assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
+  assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.35/);
+  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 9/);
+  assert.match(effects, /rng\.next\(\) > Math\.min\(1, STAR_TRAIL_PARTICLES_PER_SECOND \* dt\)/);
+  assert.match(effects, /const count = 60 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
+});
+
+test('world uses a stable textured floor and instanced launch hardware', () => {
+  const world = read('lib/fireworks/World.ts');
+
+  assert.match(world, /createGroundTexture/);
+  assert.match(world, /new THREE\.CanvasTexture/);
+  assert.match(world, /LinearMipmapLinearFilter/);
+  assert.match(world, /new THREE\.InstancedMesh/);
+  assert.match(world, /CylinderGeometry\(8, 8, 40, 16\)/);
+  assert.doesNotMatch(world, /GridHelper|LineSegments/);
 });
