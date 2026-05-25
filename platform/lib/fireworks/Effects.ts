@@ -297,7 +297,7 @@ export class Effects {
         x: particle.x,
         y: particle.y,
         z: particle.z,
-        size: rng.next() * 45,
+        size: 15 + rng.next() * 55,
         mass: 0.5,
         gravity: TRAIL_GRAVITY,
         drag: FLASH_DRAG,

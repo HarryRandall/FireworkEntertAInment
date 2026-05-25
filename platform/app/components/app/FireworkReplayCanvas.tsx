@@ -103,6 +103,7 @@ export function FireworkReplayCanvas({
     engineRef.current = engine;
 
     let renderedElapsed = Number.NaN;
+    let lastEngineUpdate = 0;
     function loop() {
       const eng = engineRef.current;
       const cam = cameraRef.current;
@@ -112,12 +113,18 @@ export function FireworkReplayCanvas({
       const targetElapsed = playbackRef
         ? playbackRef.current
         : internalElapsedRef.current;
-      const timelineChanged =
-        Number.isNaN(renderedElapsed) ||
-        Math.abs(targetElapsed - renderedElapsed) > 0.0001;
-      if (timelineChanged) {
+      const delta = Math.abs(targetElapsed - renderedElapsed);
+      const timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
+      // Small deltas (normal playback) flow through every frame. Large deltas
+      // are scrubs — coalesce them to ~16Hz so rapid drag events collapse to
+      // one seek instead of one per drag tick.
+      const now = performance.now();
+      const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
+      const engineMayUpdate = !isLargeJump || now - lastEngineUpdate >= 60;
+      if (timelineChanged && engineMayUpdate) {
         eng.setElapsed(targetElapsed);
         renderedElapsed = targetElapsed;
+        lastEngineUpdate = now;
       }
       const controlsChanged = controls.enabled ? controls.update() : false;
       if (timelineChanged || controlsChanged || forceRenderRef.current) {

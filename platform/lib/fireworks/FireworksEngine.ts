@@ -33,6 +33,9 @@ export type FireworksEngineStats = {
 
 const PARTICLE_CAPACITY = 100_000;
 const FIXED_DT = 1 / 60;
+// Coarser step for silent rebuilds (scrub/seek). Final state looks the same to
+// the eye; cuts physics work ~3x vs 60Hz stepping.
+const SCRUB_DT = 1 / 20;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 16;
 const MAX_SNAPSHOTS = 120;
@@ -197,9 +200,10 @@ export class FireworksEngine {
   }
 
   private advanceTo(target: number, audible: boolean): void {
+    const dt = audible ? FIXED_DT : SCRUB_DT;
     let cursor = this.elapsed;
     while (cursor + 0.0001 < target) {
-      const next = Math.min(target, cursor + FIXED_DT);
+      const next = Math.min(target, cursor + dt);
       const due = this.scheduler.pop(cursor, next);
       for (const cue of due) {
         this.fireCue(cue, audible);
@@ -249,17 +253,25 @@ export class FireworksEngine {
       positions[pi] = p.x;
       positions[pi + 1] = p.y;
       positions[pi + 2] = p.z;
+      const isStar = p.mass <= 0.0015;
+      // Subtle shimmer — enough to read as "alive" without strobing. Higher
+      // amplitudes and faster frequencies caused per-particle flicker that
+      // looked like noise rather than burning chemistry.
+      const twinkle = isStar
+        ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5)
+        : 1;
       sizes[drawCount] = renderParticleSize(p);
-      // Stars (the dominant visible particles) shimmer like burning magnesium
-      // — a static colour reads as inert without per-particle modulation.
-      const twinkle =
-        p.mass <= 0.0015
-          ? 0.75 + 0.25 * Math.sin(p.life * 12 + p.i * 0.5)
-          : 1;
       const alpha = renderParticleAlpha(p) * twinkle;
-      colors[pi] = Math.min(1, p.color.r * alpha * BRIGHTNESS_BOOST);
-      colors[pi + 1] = Math.min(1, p.color.g * alpha * BRIGHTNESS_BOOST);
-      colors[pi + 2] = Math.min(1, p.color.b * alpha * BRIGHTNESS_BOOST);
+      // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
+      // then settle into their pure burst colour as they cool — matches the
+      // way burning magnesium chemistry actually looks.
+      const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
+      const heat = isStar ? Math.max(0, lifeRatio - 0.7) : 0;
+      const cool = 1 - heat;
+      const heatAdd = heat * alpha * BRIGHTNESS_BOOST;
+      colors[pi] = Math.min(1, p.color.r * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
+      colors[pi + 1] = Math.min(1, p.color.g * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
+      colors[pi + 2] = Math.min(1, p.color.b * alpha * BRIGHTNESS_BOOST * cool + heatAdd);
       drawCount++;
     }
     this.geometry.setDrawRange(0, drawCount);
