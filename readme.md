@@ -19,7 +19,7 @@ The tool is provided to consumers by fireworks retailers, either in-store (as a 
 | Styling | [Tailwind CSS](https://tailwindcss.com/) v4 |
 | Backend / Storage | [Supabase](https://supabase.com/) |
 | Hosting | [Vercel](https://vercel.com/) |
-| Audio Analysis | Python (librosa) |
+| Audio Analysis | Python (librosa), deployed on [Modal](https://modal.com/) |
 | Choreography | LLM-based agent (API) |
 
 ## Getting Started
@@ -33,6 +33,7 @@ The tool is provided to consumers by fireworks retailers, either in-store (as a 
 
 ```bash
 cd platform
+cp .env.example .env.local   # then fill in Supabase + analyser values
 npm install
 ```
 
@@ -42,6 +43,42 @@ npm install
 cd platform
 npm run dev
 ```
+
+### Audio analyser (Modal)
+
+The librosa song analyser is too heavy for Vercel's serverless runtime (the
+`librosa + numpy + scipy + scikit-learn` stack exceeds the 250 MB function
+size limit and a full analysis can outrun the function timeout), so we host
+it on [Modal](https://modal.com/) and the Next.js server calls it over HTTP.
+
+One-time setup (per developer / per environment):
+
+```bash
+brew install pipx
+pipx ensurepath && exec zsh
+pipx install modal
+pipx inject modal fastapi          # fastapi is needed locally for `modal deploy`
+
+modal token new                    # browser-based login
+
+SECRET=$(openssl rand -hex 32)
+echo "$SECRET"                     # save this — also goes into .env.local / Vercel
+modal secret create showcrafter ANALYSER_SHARED_SECRET="$SECRET"
+
+cd platform/analyser
+modal deploy modal_app.py          # prints the public URL
+```
+
+Set the printed URL as `ANALYSER_URL` and the same secret as
+`ANALYSER_SHARED_SECRET` in both `platform/.env.local` and in
+Vercel → Project Settings → Environment Variables (Production + Preview + Development).
+
+To redeploy after editing `platform/analyser/showcrafter.py` or
+`modal_app.py`, just re-run `modal deploy modal_app.py`. Logs live at
+`modal app logs showcrafter-analyser`.
+
+The local CLI (`python showcrafter.py song.mp3 ...`) still works for
+offline debugging — Modal only fronts the HTTP path.
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
