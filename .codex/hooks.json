@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // empty'); case \"$FILE\" in *.js|*.jsx|*.ts|*.tsx|*.mjs|*.cjs|*.json|*.css|*.md|*.yml|*.yaml) ROOT=$(git -C \"$(dirname \"$FILE\")\" rev-parse --show-toplevel 2>/dev/null) && [ -d \"$ROOT/platform\" ] && (cd \"$ROOT/platform\" && npx --no-install prettier --write --ignore-unknown \"$FILE\" >/dev/null 2>&1) ;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
