@@ -130,6 +130,7 @@ export function FireworkReplayViewer({
     optimisticCues.length > 0 ? Math.max(...optimisticCues.map((cue) => cue.timeSeconds)) + 5 : 30;
   const duration = Math.max(durationSeconds ?? inferredDuration, inferredDuration);
   const [elapsed, setElapsed] = useState(0);
+  const [displayElapsed, setDisplayElapsed] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackControlsActive, setPlaybackControlsActive] = useState(true);
   const [actionResult, setActionResult] = useState<CueActionResult | null>(null);
@@ -184,6 +185,7 @@ export function FireworkReplayViewer({
     if (!isPlaying) {
       elapsedRef.current = elapsed;
       lastUIElapsedRef.current = elapsed;
+      setDisplayElapsed(elapsed);
     }
   }, [elapsed, isPlaying]);
 
@@ -228,8 +230,9 @@ export function FireworkReplayViewer({
         return;
       }
       const next = Math.min(duration, playheadStart.current + dtFromStart);
-      // 60Hz drive for the engine (via ref); ~15Hz React state for the UI.
+      // 60Hz drive for the engine and timeline, with heavier cue/table state throttled.
       elapsedRef.current = next;
+      setDisplayElapsed(next);
       if (next >= duration || next - lastUIElapsedRef.current >= 0.067) {
         lastUIElapsedRef.current = next;
         setElapsed(next);
@@ -308,8 +311,19 @@ export function FireworkReplayViewer({
 
   function togglePlayback() {
     if (!hasReplayCues) return;
-    if (elapsed >= duration) seekTo(0, false);
-    setIsPlaying((playing) => !playing);
+    if (isPlaying) {
+      const pauseAt = Math.max(0, Math.min(duration, elapsedRef.current));
+      startedAt.current = null;
+      playheadStart.current = pauseAt;
+      lastUIElapsedRef.current = pauseAt;
+      elapsedRef.current = pauseAt;
+      setDisplayElapsed(pauseAt);
+      setElapsed(pauseAt);
+      setIsPlaying(false);
+      return;
+    }
+    if (elapsedRef.current >= duration) seekTo(0, false);
+    setIsPlaying(true);
   }
 
   function restart() {
@@ -321,6 +335,7 @@ export function FireworkReplayViewer({
     const next = Math.max(0, Math.min(duration, timeSeconds));
     elapsedRef.current = next;
     lastUIElapsedRef.current = next;
+    setDisplayElapsed(next);
     playheadStart.current = next;
     startedAt.current = continuePlaying ? performance.now() : null;
     if (audioRef.current && Math.abs(audioRef.current.currentTime - next) > 0.1) {
@@ -500,14 +515,14 @@ export function FireworkReplayViewer({
 
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="text-tertiary/80 min-w-[2.75rem] font-mono text-[11px] tabular-nums">
-                  {formatDuration(elapsed)}
+                  {formatDuration(displayElapsed)}
                 </span>
                 <input
                   type="range"
                   min={0}
                   max={duration}
                   step={0.05}
-                  value={elapsed}
+                  value={displayElapsed}
                   onChange={(event) => {
                     setIsPlaying(false);
                     seekTo(Number(event.target.value), false);

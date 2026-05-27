@@ -75,7 +75,7 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   const particle = read('lib/fireworks/Particle.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
 
-  assert.match(effects, /const STAR_DRAG = 2\.4/);
+  assert.match(effects, /const STAR_DRAG = 2\.15/);
   assert.match(effects, /clampStarGravity\(rangeRand\(design\.burst\.gravity, rng\)\)/);
   assert.match(effects, /drag: STAR_DRAG/);
   assert.match(effects, /gravity: TRAIL_GRAVITY/);
@@ -112,27 +112,35 @@ test('renderer draws only compact live square particles', () => {
   assert.doesNotMatch(engine, /alphaAttribute|setAttribute\("alpha"/);
   assert.doesNotMatch(shaders, /texture2D|sampler2D|pointTexture/);
   assert.doesNotMatch(shaders, /attribute float alpha|vAlpha/);
-  assert.match(shaders, /gl_FragColor = vec4\(vColor, 1\.0\)/);
+  assert.match(shaders, /squareDistance = max\(abs\(centered\.x\), abs\(centered\.y\)\)/);
+  assert.match(shaders, /softHalo/);
+  assert.match(shaders, /gl_FragColor = vec4\(sparkColor \* intensity, alpha\)/);
   assert.match(shaders, /gl_PointSize = clamp/);
   assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
+  assert.match(canvas, /EffectComposer/);
+  assert.match(canvas, /UnrealBloomPass/);
   assert.match(canvas, /antialias: false/);
   assert.match(canvas, /renderer\.sortObjects = false/);
 });
 
-test('renderer avoids blown-out additive blobs and excessive trail churn', () => {
+test('renderer keeps glow bounded while adding realistic spark density', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const effects = read('lib/fireworks/Effects.ts');
 
   assert.match(engine, /Math\.sqrt\(Math\.max\(0, p\.size\)\)/);
-  assert.match(engine, /BRIGHTNESS_BOOST = 1\.18/);
-  assert.match(engine, /peak = 0\.075/);
+  assert.match(engine, /BRIGHTNESS_BOOST = 1\.55/);
+  assert.match(engine, /MAX_COLOR_INTENSITY = 1\.75/);
+  assert.match(engine, /peak = 0\.14/);
   assert.match(engine, /fadeIn = p\.mass <= 0\.003/);
+  assert.match(engine, /isSmoke/);
+  assert.match(engine, /clamp\(peak \* fadeIn \* fade, 0, 0\.82\)/);
   assert.match(engine, /tickPhysics\(next - cursor\)/);
   assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
-  assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.35/);
-  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 9/);
-  assert.match(effects, /rng\.next\(\) > Math\.min\(1, STAR_TRAIL_PARTICLES_PER_SECOND \* dt\)/);
-  assert.match(effects, /const count = 60 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
+  assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.68/);
+  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 11/);
+  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND \* \(audible \? 1 : 0\.42\)/);
+  assert.match(effects, /fullQuality \? 90 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
+  assert.match(effects, /mass: 0\.006/);
 });
 
 test('world uses a stable textured floor and instanced launch hardware', () => {

@@ -8,14 +8,12 @@
 import * as THREE from 'three';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 
-const MORTAR_TEXTURE_URL = '/textures/mortar.png';
 const GROUND_SIZE = 8000;
 const GRID_TEXTURE_SIZE = 1024;
 
 export class World {
   group: THREE.Group;
   private mortarPositions: LaunchPosition[] = [];
-  private mortarTexture: THREE.Texture | null = null;
   private groundTexture: THREE.Texture | null = null;
   private materials: THREE.Material[] = [];
   private geometries: THREE.BufferGeometry[] = [];
@@ -43,10 +41,6 @@ export class World {
     this.geometries.push(groundGeo);
     this.materials.push(groundMat);
 
-    this.mortarTexture = new THREE.TextureLoader().load(MORTAR_TEXTURE_URL);
-    this.mortarTexture.wrapS = THREE.RepeatWrapping;
-    this.mortarTexture.wrapT = THREE.RepeatWrapping;
-
     this.addMortars();
   }
 
@@ -54,41 +48,28 @@ export class World {
     if (this.mortarPositions.length === 0) return;
 
     const mortarGeo = new THREE.CylinderGeometry(8, 8, 40, 16);
-    const mortarMat = new THREE.MeshBasicMaterial({
-      color: 0xd4d8df,
-      map: this.mortarTexture ?? undefined,
-      toneMapped: false,
+    const mortarMat = new THREE.MeshStandardMaterial({
+      color: 0x3b4352,
+      roughness: 0.82,
+      metalness: 0.12,
     });
     const mortars = new THREE.InstancedMesh(mortarGeo, mortarMat, this.mortarPositions.length);
     mortars.frustumCulled = false;
 
-    const baseGeo = new THREE.BoxGeometry(30, 2, 30);
-    const baseMat = new THREE.MeshBasicMaterial({
-      color: 0x151922,
-      toneMapped: false,
-    });
-    const bases = new THREE.InstancedMesh(baseGeo, baseMat, this.mortarPositions.length);
-    bases.frustumCulled = false;
-
     const transform = new THREE.Object3D();
     for (let i = 0; i < this.mortarPositions.length; i++) {
       const pos = this.mortarPositions[i];
-      transform.position.set(pos.x, pos.y + 15, pos.z);
+      transform.position.set(pos.x, pos.y + 20, pos.z);
       transform.rotation.set(0, 0, 0);
       transform.scale.setScalar(1);
       transform.updateMatrix();
       mortars.setMatrixAt(i, transform.matrix);
-
-      transform.position.set(pos.x, pos.y + 1, pos.z);
-      transform.updateMatrix();
-      bases.setMatrixAt(i, transform.matrix);
     }
     mortars.instanceMatrix.needsUpdate = true;
-    bases.instanceMatrix.needsUpdate = true;
 
-    this.group.add(mortars, bases);
-    this.geometries.push(mortarGeo, baseGeo);
-    this.materials.push(mortarMat, baseMat);
+    this.group.add(mortars);
+    this.geometries.push(mortarGeo);
+    this.materials.push(mortarMat);
   }
 
   rebuild(positions: LaunchPosition[]): void {
@@ -97,9 +78,7 @@ export class World {
     }
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
-    this.mortarTexture?.dispose();
     this.groundTexture?.dispose();
-    this.mortarTexture = null;
     this.groundTexture = null;
     this.geometries.length = 0;
     this.materials.length = 0;
@@ -114,7 +93,6 @@ export class World {
   dispose(): void {
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
-    this.mortarTexture?.dispose();
     this.groundTexture?.dispose();
     this.group.parent?.remove(this.group);
   }
@@ -127,11 +105,11 @@ function createGroundTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Unable to create firework ground texture');
 
-  ctx.fillStyle = '#070a10';
+  ctx.fillStyle = '#03050a';
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
 
-  drawGridLayer(ctx, 64, 'rgba(73, 86, 116, 0.32)', 1);
-  drawGridLayer(ctx, 256, 'rgba(118, 134, 176, 0.42)', 2);
+  drawGridLayer(ctx, 64, 'rgba(80, 98, 138, 0.4)', 1);
+  drawGridLayer(ctx, 256, 'rgba(132, 154, 206, 0.54)', 2);
 
   const gradient = ctx.createRadialGradient(
     GRID_TEXTURE_SIZE / 2,
@@ -141,9 +119,9 @@ function createGroundTexture(): THREE.CanvasTexture {
     GRID_TEXTURE_SIZE / 2,
     GRID_TEXTURE_SIZE / 2,
   );
-  gradient.addColorStop(0, 'rgba(34, 40, 56, 0.34)');
-  gradient.addColorStop(0.36, 'rgba(12, 16, 25, 0.08)');
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+  gradient.addColorStop(0, 'rgba(42, 52, 76, 0.4)');
+  gradient.addColorStop(0.36, 'rgba(8, 12, 22, 0.08)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.62)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
 
