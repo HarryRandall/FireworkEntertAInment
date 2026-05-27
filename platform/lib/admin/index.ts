@@ -34,4 +34,6 @@ export {
 export { listSuppliers } from './suppliers.server';
 export { getImportJobDetail, listImportJobs } from './imports.server';
 export { listCatalogueProducts } from './catalogue.server';
+export { getAdminEffectById, listAdminEffects } from './effects.server';
+export { listAdminFireworks } from './fireworks.server';
 export { getShowTemplateBySlug, listShowTemplates } from './templates.server';

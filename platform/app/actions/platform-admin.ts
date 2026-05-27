@@ -34,6 +34,8 @@ import { createClient } from '@/utils/supabase/server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import {
   invalidateAdminCatalogueCache,
+  invalidateAdminEffectsCache,
+  invalidateAdminFireworksCache,
   invalidateAdminImportsCache,
   requirePermission,
 } from '@/lib/admin.server';
@@ -780,9 +782,14 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   if (jobError) console.error('[approveImportJobAction] job update failed:', jobError);
   await invalidateAdminImportsCache();
   await invalidateAdminCatalogueCache();
+  await invalidateAdminEffectsCache(effect.id);
+  await invalidateAdminFireworksCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/imports');
   revalidatePath('/admin/catalogue');
+  revalidatePath('/admin/effects');
+  revalidatePath(`/admin/effects/${effect.id}`);
+  revalidatePath('/admin/fireworks');
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 

@@ -2,7 +2,7 @@
 
 /**
  * AdminShell — top-level chrome (sidebar + mobile sheet) for the
- * `/admin` route group. Mirrors AppShell but exposes admin-only
+ * `/admin` route group. Mirrors the authenticated app chrome but exposes admin-only
  * destinations and is gated upstream by RBAC checks in server
  * components / middleware.
  */
@@ -15,6 +15,7 @@ import {
   FileInput,
   LayoutDashboard,
   Menu,
+  Rocket,
   Settings,
   Sparkles,
   Store,
@@ -39,6 +40,8 @@ const ADMIN_LINKS = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/suppliers', label: 'Suppliers', icon: Store },
   { href: '/admin/catalogue', label: 'Catalogue', icon: Database },
+  { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },
+  { href: '/admin/effects', label: 'Effects', icon: Sparkles },
   { href: '/admin/imports', label: 'Imports', icon: FileInput },
 ];
 
