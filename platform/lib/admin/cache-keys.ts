@@ -38,6 +38,21 @@ export function getAdminCatalogueCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:catalogue`;
 }
 
+/** Cache key for the reusable effect-spec list. */
+export function getAdminEffectsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:effects`;
+}
+
+/** Cache key for one effect-spec detail view. */
+export function getAdminEffectCacheKey(effectId: string): string {
+  return `${ADMIN_CACHE_PREFIX}:effects:${effectId}`;
+}
+
+/** Cache key for product-level fireworks joined to their effect shots. */
+export function getAdminFireworksCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:fireworks`;
+}
+
 /** Cache key for the import job list. */
 export function getAdminImportsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:imports`;
@@ -71,6 +86,18 @@ export async function invalidateAdminSuppliersCache(): Promise<void> {
 /** Invalidate the cached catalogue product list. */
 export async function invalidateAdminCatalogueCache(): Promise<void> {
   await deleteCachedKeys([getAdminCatalogueCacheKey()]);
+}
+
+/** Invalidate effect-spec list/detail reads. */
+export async function invalidateAdminEffectsCache(effectId?: string): Promise<void> {
+  const keys = [getAdminEffectsCacheKey()];
+  if (effectId) keys.push(getAdminEffectCacheKey(effectId));
+  await deleteCachedKeys(keys);
+}
+
+/** Invalidate product-level firework reads. */
+export async function invalidateAdminFireworksCache(): Promise<void> {
+  await deleteCachedKeys([getAdminFireworksCacheKey()]);
 }
 
 /** Invalidate the cached import jobs list. */

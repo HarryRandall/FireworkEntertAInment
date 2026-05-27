@@ -10,7 +10,12 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
-import { invalidateAdminCatalogueCache, requirePermission } from '@/lib/admin.server';
+import {
+  invalidateAdminCatalogueCache,
+  invalidateAdminEffectsCache,
+  invalidateAdminFireworksCache,
+  requirePermission,
+} from '@/lib/admin.server';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -59,8 +64,12 @@ export async function createProduct(input: ProductInputType): Promise<Result> {
   });
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
+  await invalidateAdminEffectsCache();
+  await invalidateAdminFireworksCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/catalogue');
+  revalidatePath('/admin/effects');
+  revalidatePath('/admin/fireworks');
   return { ok: true };
 }
 
@@ -86,8 +95,12 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
     .eq('id', parsed.data.id);
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
+  await invalidateAdminEffectsCache();
+  await invalidateAdminFireworksCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/catalogue');
+  revalidatePath('/admin/effects');
+  revalidatePath('/admin/fireworks');
   return { ok: true };
 }
 
@@ -103,7 +116,11 @@ export async function deleteProduct(input: z.infer<typeof DeleteProduct>): Promi
   const { error } = await supabase.from('products').delete().eq('id', parsed.data.id);
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
+  await invalidateAdminEffectsCache();
+  await invalidateAdminFireworksCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/catalogue');
+  revalidatePath('/admin/effects');
+  revalidatePath('/admin/fireworks');
   return { ok: true };
 }

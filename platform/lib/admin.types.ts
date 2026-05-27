@@ -1,3 +1,5 @@
+import type { Json } from '@/lib/database.types';
+
 /**
  * Shared admin / RBAC domain types.
  *
@@ -131,6 +133,73 @@ export type CatalogueProductSummary = {
   fireworkType: string | null;
   fireworkSpecificationId: string | null;
   durationSeconds: number | null;
+  updatedAt: string;
+};
+
+export type AdminEffectPreview = {
+  colors: string[];
+  label: string;
+  pattern: string | null;
+};
+
+export type AdminLinkedProduct = {
+  id: string;
+  partNumber: string;
+  name: string;
+  manufacturer: string | null;
+  fireworkType: string | null;
+  durationSeconds: number | null;
+  shots: {
+    id: string;
+    shotIndex: number;
+    timeOffsetSeconds: number;
+    panDegrees: number;
+    caliber: string | null;
+  }[];
+};
+
+export type AdminEffectSummary = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  type: string;
+  source: string;
+  confidence: number;
+  durationSeconds: number;
+  heightMeters: number | null;
+  shotCount: number;
+  productCount: number;
+  preview: AdminEffectPreview;
+  updatedAt: string;
+};
+
+export type AdminEffectDetail = AdminEffectSummary & {
+  specJson: Json;
+  linkedProducts: AdminLinkedProduct[];
+};
+
+export type AdminFireworkSummary = {
+  id: string;
+  partNumber: string;
+  name: string;
+  manufacturer: string | null;
+  fireworkType: string | null;
+  description: string | null;
+  durationSeconds: number | null;
+  shotCount: number;
+  calibers: string[];
+  effectNames: string[];
+  effectTypes: string[];
+  preview: AdminEffectPreview;
+  effects: {
+    id: string;
+    slug: string;
+    name: string;
+    type: string;
+    durationSeconds: number;
+    heightMeters: number | null;
+  }[];
   updatedAt: string;
 };
 

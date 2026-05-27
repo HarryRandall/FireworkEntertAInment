@@ -8,6 +8,8 @@ import { Card } from '@/app/components/ui/Card';
 import { StatTile } from '@/app/components/ui/StatTile';
 import {
   listAdminUsers,
+  listAdminEffects,
+  listAdminFireworks,
   listCatalogueProducts,
   listImportJobs,
   listSuppliers,
@@ -29,16 +31,18 @@ export default function AdminOverviewPage() {
 }
 
 async function AdminOverviewData() {
-  const [users, suppliers, imports, catalogue] = await Promise.all([
+  const [users, suppliers, imports, catalogue, fireworks, effects] = await Promise.all([
     listAdminUsers(),
     listSuppliers(),
     listImportJobs(),
     listCatalogueProducts(),
+    listAdminFireworks(),
+    listAdminEffects(),
   ]);
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatTile
           label="Users"
           labelAddon={<InfoTooltip text="This is the total users we have." />}
@@ -47,6 +51,8 @@ async function AdminOverviewData() {
         <StatTile label="Suppliers" value={suppliers.length} />
         <StatTile label="Imports" value={imports.length} />
         <StatTile label="Catalogue products" value={catalogue.length} />
+        <StatTile label="Fireworks" value={fireworks.length} />
+        <StatTile label="Effects" value={effects.length} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -56,6 +62,8 @@ async function AdminOverviewData() {
             { label: 'Users', value: users.length },
             { label: 'Suppliers', value: suppliers.length },
             { label: 'Catalogue', value: catalogue.length },
+            { label: 'Fireworks', value: fireworks.length },
+            { label: 'Effects', value: effects.length },
           ]}
         />
         <ActivityCard
