@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Hero — full-bleed hero section on the public landing page. Lazy-
+ * Hero - full-bleed hero section on the public landing page. Lazy-
  * loads HeroCanvas (`ssr: false`) for the WebGL background and falls
  * back to a static gradient when reduced motion is preferred.
  */
@@ -68,13 +68,14 @@ export function Hero({
 
   return (
     <section className="bg-background relative isolate overflow-hidden pt-28 pb-20 lg:pt-36 lg:pb-28">
-      {/* WebGL canvas — full-bleed behind the copy. */}
+      {/* WebGL canvas - full-bleed behind the copy. */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         {showCanvas ? <HeroCanvas /> : null}
-        {/* Vignette + base gradient — paints before R3F mounts and softens edges. */}
+        {/* Vignette + base gradient - paints before R3F mounts and softens edges. */}
+        <div className="hero-rainbow-wash absolute top-[44%] left-1/2 h-[34rem] w-[min(82rem,112vw)] -translate-x-1/2 -translate-y-1/2" />
+        <div aria-hidden className="noise-overlay" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_75%)]" />
         <div className="from-background absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t to-transparent" />
-        <div className="hero-glow absolute top-1/2 left-1/2 h-[720px] w-[720px] -translate-x-1/2 -translate-y-1/2" />
       </div>
 
       <Container className="relative z-10 flex flex-col items-center text-center">
@@ -90,16 +91,7 @@ export function Hero({
           {...fadeUp(0.05)}
           className="text-on-surface max-w-5xl text-5xl leading-[1.02] font-extrabold tracking-tight md:text-7xl lg:text-[88px]"
         >
-          {title}{' '}
-          <span className="relative inline-block">
-            <span className="from-primary-fixed via-primary to-primary-container bg-gradient-to-br bg-clip-text text-transparent">
-              {highlight}
-            </span>
-            <span
-              aria-hidden
-              className="bg-primary/30 absolute inset-x-0 -bottom-2 -z-10 h-3 rounded-full blur-2xl"
-            />
-          </span>
+          {title} <span>{highlight}</span>
         </motion.h1>
 
         <motion.p

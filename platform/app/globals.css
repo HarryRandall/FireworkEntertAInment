@@ -1,51 +1,67 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 /*
  ---break---
  */
 @custom-variant dark (&:is(.dark *));
 
 /*
- * ShowCrafter design tokens — minimal, dub.co-inspired.
+ * ShowCrafter design tokens - minimal, dub.co-inspired.
  *
  * Light theme: white / near-white surfaces, thin neutral borders, near-black text.
  * Dark theme: hand-tuned near-black surfaces (not a flat invert) with crisp contrast.
- * Accent: warm ember (amber-500 / orange-400), used sparingly.
+ * Accent: neutral by default, with sparse static rainbow washes reserved for
+ * background atmosphere and tiny highlights.
  */
 @theme {
   /* Type */
-  --font-sans: "Inter", "ui-sans-serif", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Inter", "ui-sans-serif", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-headline: "Inter", "ui-sans-serif", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "ui-monospace", "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-sans: 'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-headline:
+    'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:
+    'ui-monospace', 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
 
   /* ---------- Semantic tokens (light defaults) ---------- */
   /* Surfaces */
   --color-bg-default: #ffffff;
-  --color-bg-muted: #fafafa;       /* neutral-50 */
-  --color-bg-subtle: #f5f5f5;      /* neutral-100 */
-  --color-bg-emphasis: #e5e5e5;    /* neutral-200 */
-  --color-bg-inverted: #171717;    /* neutral-900 */
+  --color-bg-muted: #fafafa; /* neutral-50 */
+  --color-bg-subtle: #f5f5f5; /* neutral-100 */
+  --color-bg-emphasis: #e5e5e5; /* neutral-200 */
+  --color-bg-inverted: #171717; /* neutral-900 */
 
   /* Borders */
-  --color-border-subtle: #e5e5e5;     /* neutral-200 */
-  --color-border-default: #d4d4d4;    /* neutral-300 */
-  --color-border-emphasis: #a3a3a3;   /* neutral-400 */
+  --color-border-subtle: #e5e5e5; /* neutral-200 */
+  --color-border-default: #d4d4d4; /* neutral-300 */
+  --color-border-emphasis: #a3a3a3; /* neutral-400 */
 
   /* Content (text/icons) */
-  --color-content-emphasis: #171717;  /* neutral-900 */
-  --color-content-default: #404040;   /* neutral-700 */
-  --color-content-subtle: #737373;    /* neutral-500 */
-  --color-content-muted: #a3a3a3;     /* neutral-400 */
+  --color-content-emphasis: #171717; /* neutral-900 */
+  --color-content-default: #404040; /* neutral-700 */
+  --color-content-subtle: #737373; /* neutral-500 */
+  --color-content-muted: #a3a3a3; /* neutral-400 */
   --color-content-inverted: #ffffff;
 
-  /* Accent — warm ember */
-  --color-accent: #f59e0b;          /* amber-500 */
-  --color-accent-hover: #d97706;    /* amber-600 */
-  --color-accent-subtle: #fffbeb;   /* amber-50 */
-  --color-accent-emphasis: #b45309; /* amber-700 */
+  /* Accent - neutral system colour. Use rainbow utilities for soft highlights. */
+  --color-accent: #525252; /* neutral-600 */
+  --color-accent-hover: #404040; /* neutral-700 */
+  --color-accent-subtle: #f5f5f5; /* neutral-100 */
+  --color-accent-emphasis: #262626; /* neutral-800 */
   --color-on-accent: #ffffff;
+
+  /* Sparse Dub-style rainbow wash for marketing backdrops. */
+  --rainbow-hero-wash: conic-gradient(
+    from -81deg,
+    #3a8bfd -72deg,
+    #855afc 33deg,
+    #f00 70deg,
+    #eab308 136deg,
+    #5cff80 214deg,
+    #00fff9 259deg,
+    #3a8bfd 288deg,
+    #855afc 393deg
+  );
 
   /* Semantic status */
   --color-status-success: #16a34a;
@@ -58,7 +74,7 @@
   --color-status-info-subtle: #eff6ff;
 
   /* ---------- Legacy aliases (mapped to semantic tokens) ---------- */
-  /* Existing components reference these — kept so the sweep can happen incrementally. */
+  /* Existing components reference these - kept so the sweep can happen incrementally. */
   --color-background: var(--color-bg-default);
   --color-surface: var(--color-bg-default);
   --color-surface-dim: var(--color-bg-muted);
@@ -123,7 +139,7 @@
   --radius-card-lg: 16px;
   --radius-hero: 16px;
 
-  /* Shadows — soft, dub-style */
+  /* Shadows - soft, dub-style */
   --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
   --shadow-cta: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
@@ -135,12 +151,12 @@
 }
 
 /* ---------- Dark theme overrides ---------- */
-[data-theme="dark"],
+[data-theme='dark'],
 .dark {
-  /* Surfaces — inner content panel slightly lighter than the page so it lifts */
-  --color-bg-default: #111111;    /* inner content card */
-  --color-bg-muted: #0a0a0a;      /* page background (darker, recessed) */
-  --color-bg-subtle: #1a1a1a;     /* hover / subtle fill on the inner card */
+  /* Surfaces - inner content panel slightly lighter than the page so it lifts */
+  --color-bg-default: #111111; /* inner content card */
+  --color-bg-muted: #0a0a0a; /* page background (darker, recessed) */
+  --color-bg-subtle: #1a1a1a; /* hover / subtle fill on the inner card */
   --color-bg-emphasis: #262626;
   --color-bg-inverted: #fafafa;
 
@@ -151,16 +167,16 @@
 
   /* Content */
   --color-content-emphasis: #fafafa;
-  --color-content-default: #d4d4d4;   /* neutral-300 */
-  --color-content-subtle: #a3a3a3;    /* neutral-400 */
-  --color-content-muted: #737373;     /* neutral-500 */
+  --color-content-default: #d4d4d4; /* neutral-300 */
+  --color-content-subtle: #a3a3a3; /* neutral-400 */
+  --color-content-muted: #737373; /* neutral-500 */
   --color-content-inverted: #0a0a0a;
 
-  /* Accent — brighter in dark mode */
-  --color-accent: #fb923c;           /* orange-400 */
-  --color-accent-hover: #f97316;     /* orange-500 */
-  --color-accent-subtle: #2a1505;    /* deep ember */
-  --color-accent-emphasis: #fdba74;  /* orange-300 */
+  /* Accent - neutral system colour. */
+  --color-accent: #d4d4d4; /* neutral-300 */
+  --color-accent-hover: #f5f5f5; /* neutral-100 */
+  --color-accent-subtle: #262626; /* neutral-800 */
+  --color-accent-emphasis: #fafafa; /* neutral-50 */
   --color-on-accent: #0a0a0a;
 
   --color-status-success: #4ade80;
@@ -186,7 +202,7 @@ html {
   background-color: var(--color-bg-default);
   color-scheme: light;
 }
-[data-theme="dark"],
+[data-theme='dark'],
 .dark {
   color-scheme: dark;
 }
@@ -214,7 +230,47 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
+  font-feature-settings: 'tnum';
+}
+
+.brand-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-content-emphasis);
+  color: var(--color-content-inverted);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-content-emphasis) 10%, transparent);
+}
+
+.hero-rainbow-wash {
+  background-image: var(--rainbow-hero-wash);
+  border-radius: 9999px;
+  filter: blur(76px) saturate(135%);
+  opacity: 0.18;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 42%, transparent 74%);
+  mask-image: radial-gradient(ellipse at center, black 0%, black 42%, transparent 74%);
+}
+
+.cta-rainbow-wash {
+  background-image: var(--rainbow-hero-wash);
+  border-radius: 9999px;
+  filter: blur(82px) saturate(130%);
+  opacity: 0.2;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
+  mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
+}
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--color-content-emphasis) 18%, transparent) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 3px 3px;
+  opacity: 0.14;
+  mix-blend-mode: soft-light;
 }
 
 /* Lightweight route progress (kept, restyled minimal) */
@@ -296,8 +352,8 @@ body {
  */
 :root,
 .dark,
-[data-theme="dark"],
-[data-theme="light"] {
+[data-theme='dark'],
+[data-theme='light'] {
   --background: var(--color-bg-default);
   --foreground: var(--color-content-emphasis);
   --card: var(--color-bg-default);
@@ -346,7 +402,7 @@ body {
   }
 }
 
-/* Toast (sonner) — minimal: neutral surface, accent-tinted status icon */
+/* Toast (sonner) - minimal: neutral surface, accent-tinted status icon */
 
 .cn-toast {
   display: flex;
@@ -417,26 +473,26 @@ body {
   color: var(--color-content-subtle);
 }
 
-.cn-toast[data-type="success"],
-[data-sonner-toast][data-type="success"].cn-toast {
+.cn-toast[data-type='success'],
+[data-sonner-toast][data-type='success'].cn-toast {
   border-color: color-mix(in srgb, var(--color-status-success) 40%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
 }
 
-.cn-toast[data-type="error"],
-[data-sonner-toast][data-type="error"].cn-toast {
+.cn-toast[data-type='error'],
+[data-sonner-toast][data-type='error'].cn-toast {
   border-color: color-mix(in srgb, var(--color-status-danger) 40%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
 }
 
-.cn-toast[data-type="warning"],
-[data-sonner-toast][data-type="warning"].cn-toast {
+.cn-toast[data-type='warning'],
+[data-sonner-toast][data-type='warning'].cn-toast {
   border-color: color-mix(in srgb, var(--color-status-warning) 40%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
 }
 
-.cn-toast[data-type="info"],
-[data-sonner-toast][data-type="info"].cn-toast {
+.cn-toast[data-type='info'],
+[data-sonner-toast][data-type='info'].cn-toast {
   border-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
 }

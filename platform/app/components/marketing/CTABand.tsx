@@ -1,11 +1,11 @@
 /**
- * CTABand — full-width call-to-action band rendered near the bottom
- * of marketing pages. Renders a single primary CTA — pair with the
+ * CTABand - full-width call-to-action band rendered near the bottom
+ * of marketing pages. Renders a single primary CTA, paired with the
  * site Footer for end-of-page conversion sections.
  */
 import { ArrowRight } from 'lucide-react';
-import { Container } from '@/app/components/ui/Container';
 import { Button } from '@/app/components/ui/Button';
+import { Container } from '@/app/components/ui/Container';
 
 type CTABandProps = {
   title: string;
@@ -19,10 +19,13 @@ export function CTABand({ title, description, primaryHref, primaryLabel }: CTABa
     <section className="py-24">
       <Container>
         <div className="border-outline-variant/20 bg-surface-container-high relative isolate overflow-hidden rounded-3xl border p-12 text-center md:p-24">
-          {/* Layered gradient + glow — replaces the dark Google bg image. */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,color-mix(in_srgb,var(--color-primary)_25%,transparent),transparent_55%),radial-gradient(circle_at_75%_80%,color-mix(in_srgb,var(--color-tertiary)_18%,transparent),transparent_60%)]"
+          />
+          <div
+            aria-hidden
+            className="cta-rainbow-wash pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[34rem] w-[min(62rem,120%)] -translate-x-1/2 -translate-y-1/2"
           />
           <div aria-hidden className="noise-overlay -z-10" />
           <div

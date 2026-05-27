@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AdminShell — top-level chrome (sidebar + mobile sheet) for the
+ * AdminShell - top-level chrome (sidebar + mobile sheet) for the
  * `/admin` route group. Mirrors the authenticated app chrome but exposes admin-only
  * destinations and is gated upstream by RBAC checks in server
  * components / middleware.
@@ -84,11 +84,11 @@ export function AdminShell({
       prefetch
       className="flex items-center gap-2 px-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
     >
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
+      <span className="brand-logo-mark h-7 w-7 rounded-md">
         <Sparkles size={14} strokeWidth={2.2} />
       </span>
       <span className="flex flex-col leading-tight">
-        ShowCrafter
+        <span>ShowCrafter</span>
         <span className="text-[10px] font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase">
           Admin
         </span>
