@@ -25,13 +25,15 @@ const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
   wave: 2,
   strobe: 3,
 };
-const STAR_DRAG = 2.4;
-const TRAIL_DRAG = 3.0;
+const STAR_DRAG = 2.15;
+const TRAIL_DRAG = 2.55;
 const FLASH_DRAG = 4.0;
 const MIN_STAR_GRAVITY = -0.24;
 const TRAIL_GRAVITY = -0.03;
-const SHELL_TRAIL_DENSITY = 0.35;
-const STAR_TRAIL_PARTICLES_PER_SECOND = 9;
+const SHELL_TRAIL_DENSITY = 0.68;
+const STAR_TRAIL_PARTICLES_PER_SECOND = 11;
+const LIFT_SPARK_COLOR = new THREE.Color(1, 0.76, 0.38);
+const HOT_SPARK_COLOR = new THREE.Color(1, 0.92, 0.72);
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
@@ -88,6 +90,18 @@ function flairColor(
   return color;
 }
 
+function mixColor(
+  from: THREE.Color,
+  to: THREE.Color,
+  amount: number,
+): { r: number; g: number; b: number } {
+  return {
+    r: from.r + (to.r - from.r) * amount,
+    g: from.g + (to.g - from.g) * amount,
+    b: from.b + (to.b - from.b) * amount,
+  };
+}
+
 export class Effects {
   constructor(
     private pp: ParticlePool,
@@ -101,6 +115,8 @@ export class Effects {
     const color = new THREE.Color(0, 0, 0);
     const rgb = resolveColor(design.color, rng);
     color.setRGB(rgb.r, rgb.g, rgb.b);
+    const lift = mixColor(color, LIFT_SPARK_COLOR, 0.72);
+    const liftColor = new THREE.Color(lift.r, lift.g, lift.b);
 
     const size = design.size;
     if (options.audible && design.mortar.sound) this.sh.playRandomMortar(1.0, rng);
@@ -119,12 +135,12 @@ export class Effects {
       h: 0.9,
       s: 0.5,
       l: 0.5,
-      r: color.r,
-      g: color.g,
-      b: color.b,
+      r: liftColor.r,
+      g: liftColor.g,
+      b: liftColor.b,
       life: design.shellLife,
       decay: 10 + rng.next() * 20,
-      effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, color, rng),
+      effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, liftColor, rng),
       condition: (p) => p.vy <= 0,
       action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, options.audible),
     });
@@ -136,15 +152,15 @@ export class Effects {
         x: pos.x + 10 - rng.next() * 20,
         y: pos.y + 30 + rng.next() * 5,
         z: pos.z + 10 - rng.next() * 20,
-        mass: 0.002,
+        mass: 0.006,
         gravity: rng.next(),
         size: 20 + rng.next() * 100,
         h: 0.5,
         s: 0.5,
         l: 0.5,
-        r: 0.2,
-        g: 0.2,
-        b: 0.2,
+        r: 0.15 + rng.next() * 0.05,
+        g: 0.15 + rng.next() * 0.05,
+        b: 0.16 + rng.next() * 0.05,
         life: rng.next() * 5,
         decay: 20 + rng.next() * 20,
         effect: (p, _dt, time) => {
@@ -168,41 +184,46 @@ export class Effects {
     let vz = 0;
     switch (seed) {
       case 1:
-        max = rng.next() * 30;
+        max = 8 + rng.next() * 28;
         break;
       case 2:
         // Tiny lateral wobble — was a strong spiral. Don't translate the
         // shell; just let the trail particles (below) inherit a small drift.
         particle.vx += (rng.next() - 0.5) * 0.05;
         particle.vz += (rng.next() - 0.5) * 0.05;
-        max = rng.next() * 20;
+        max = 6 + rng.next() * 22;
         break;
       case 3:
         particle.size = rng.next() > 0.5 ? 150 : 10;
-        max = rng.next() * 10;
+        max = 5 + rng.next() * 14;
         vx = 2 - rng.next() * 4;
         vz = 2 - rng.next() * 4;
         break;
     }
-    const count = Math.floor(max * SHELL_TRAIL_DENSITY);
+    const count = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY));
     for (let i = 0; i < count; i++) {
+      const spread = 0.32 + rng.next() * 0.72;
+      const smokeTrail = particle.y < 220 || (particle.y < 360 && rng.next() < 0.82);
+      const smokeSpread = particle.y < 220 ? 28 : 16;
       this.pp.new({
-        x: particle.x,
-        y: particle.y,
-        z: particle.z,
-        mass: 0.002,
-        gravity: -0.2,
-        size: 12 + rng.next() * 24,
-        vx,
-        vz,
-        r: color.r,
-        g: color.g,
-        b: color.b,
+        x: particle.x + (rng.next() - 0.5) * (smokeTrail ? smokeSpread : 6),
+        y: particle.y + (rng.next() - 0.5) * (smokeTrail ? 14 : 6),
+        z: particle.z + (rng.next() - 0.5) * (smokeTrail ? smokeSpread : 6),
+        mass: smokeTrail ? 0.006 : 0.002,
+        gravity: smokeTrail ? 0.04 + rng.next() * 0.1 : -0.09,
+        drag: smokeTrail ? 1.75 : TRAIL_DRAG,
+        size: smokeTrail ? 46 + rng.next() * 74 : 14 + rng.next() * 34,
+        vx: vx + (rng.next() - 0.5) * spread,
+        vy: smokeTrail ? 0.04 + rng.next() * 0.18 : -0.15 + rng.next() * 0.3,
+        vz: vz + (rng.next() - 0.5) * spread,
+        r: smokeTrail ? 0.12 + rng.next() * 0.05 : color.r,
+        g: smokeTrail ? 0.12 + rng.next() * 0.05 : color.g,
+        b: smokeTrail ? 0.13 + rng.next() * 0.05 : color.b,
         h: 1.0,
         s: 0.5,
         l: 0.0,
-        life: 0.15 + rng.next() * 0.7,
-        decay: 50,
+        life: smokeTrail ? 1.0 + rng.next() * 2.3 : 0.18 + rng.next() * 0.72,
+        decay: smokeTrail ? 12 + rng.next() * 18 : 38 + rng.next() * 34,
       });
     }
   }
@@ -227,7 +248,7 @@ export class Effects {
     }
 
     this.lights.setHemi(design.size / 100, color.r, color.g, color.b);
-    this.explodeBurst(particle, rng);
+    this.explodeBurst(particle, rng, audible);
 
     const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
     const speed = rangeRand(design.burst.speed, rng);
@@ -298,22 +319,28 @@ export class Effects {
     }
   }
 
-  private explodeBurst(particle: Particle, rng: RandomSource): void {
-    const count = 60 + Math.floor(rng.next() * 120);
+  private explodeBurst(particle: Particle, rng: RandomSource, fullQuality: boolean): void {
+    const count = fullQuality
+      ? 90 + Math.floor(rng.next() * 120)
+      : 42 + Math.floor(rng.next() * 54);
     for (let i = 0; i < count; i++) {
+      const flashMix = rng.next() * 0.35;
       this.pp.new({
-        x: particle.x,
-        y: particle.y,
-        z: particle.z,
-        size: 15 + rng.next() * 55,
+        x: particle.x + (rng.next() - 0.5) * 10,
+        y: particle.y + (rng.next() - 0.5) * 10,
+        z: particle.z + (rng.next() - 0.5) * 10,
+        size: 18 + rng.next() * 44,
         mass: 0.5,
         gravity: TRAIL_GRAVITY,
         drag: FLASH_DRAG,
         vy: 1 - rng.next() * 2,
         vx: 1 - rng.next() * 2,
         vz: 1 - rng.next() * 2,
-        life: 0.08 + rng.next() * 0.45,
-        decay: rng.next() * 50,
+        r: HOT_SPARK_COLOR.r + (LIFT_SPARK_COLOR.r - HOT_SPARK_COLOR.r) * flashMix,
+        g: HOT_SPARK_COLOR.g + (LIFT_SPARK_COLOR.g - HOT_SPARK_COLOR.g) * flashMix,
+        b: HOT_SPARK_COLOR.b + (LIFT_SPARK_COLOR.b - HOT_SPARK_COLOR.b) * flashMix,
+        life: 0.09 + rng.next() * 0.36,
+        decay: 28 + rng.next() * 46,
       });
     }
   }
@@ -328,10 +355,6 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
   ): void {
-    const trail = flairColor(design, color, rng);
-    let r = trail.r;
-    let g = trail.g;
-    let b = trail.b;
     const strobe = design.burst.flairSizeStrobe;
     switch (seed) {
       case 1:
@@ -353,11 +376,6 @@ export class Effects {
         break;
       case 3:
         particle.size = rng.next() > 0.5 ? 150 : 10;
-        if (design.burst.flairColorMode !== 'random' && rng.next() > 0.5) {
-          r = color.r;
-          g = color.g;
-          b = color.b;
-        }
         break;
     }
 
@@ -373,8 +391,16 @@ export class Effects {
     }
 
     if (!design.flair.enabled) return;
-    if (rng.next() > Math.min(1, STAR_TRAIL_PARTICLES_PER_SECOND * dt)) return;
+    const trailRate = STAR_TRAIL_PARTICLES_PER_SECOND * (audible ? 1 : 0.42);
+    if (rng.next() > Math.min(1, trailRate * dt)) return;
 
+    const trail = flairColor(design, color, rng);
+    const r = trail.r;
+    const g = trail.g;
+    const b = trail.b;
+    const tailR = Math.min(1, r * 0.44 + 0.7);
+    const tailG = Math.min(1, g * 0.36 + 0.56);
+    const tailB = Math.min(1, b * 0.24 + 0.32);
     this.pp.new({
       x: particle.x,
       y: particle.y,
@@ -382,15 +408,15 @@ export class Effects {
       mass: 0.002,
       gravity: TRAIL_GRAVITY,
       drag: TRAIL_DRAG,
-      size: 12 + rng.next() * 24,
-      r,
-      g,
-      b,
+      size: 13 + rng.next() * 26,
+      r: tailR,
+      g: tailG,
+      b: tailB,
       h: 1.0,
       s: 0.5,
       l: 0.0,
-      life: 0.25 + rng.next() * 0.85,
-      decay: 50,
+      life: 0.32 + rng.next() * 0.9,
+      decay: 32 + rng.next() * 42,
     });
   }
 

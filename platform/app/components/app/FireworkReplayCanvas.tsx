@@ -11,6 +11,9 @@ import { Axis3d, Hand, RotateCcw, Settings, ZoomIn, ZoomOut } from 'lucide-react
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { ReplayCue } from '@/lib/show-domain';
 import { FireworksEngine } from '@/lib/fireworks/FireworksEngine';
 import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@/lib/fireworks/design';
@@ -29,6 +32,11 @@ type Props = {
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(950, 1250, 2500);
+const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 850, 0);
+const BLOOM_STRENGTH = 0.38;
+const BLOOM_RADIUS = 0.18;
+const BLOOM_THRESHOLD = 0.52;
 
 export function FireworkReplayCanvas({
   cues,
@@ -43,11 +51,13 @@ export function FireworkReplayCanvas({
   const engineRef = useRef<FireworksEngine | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const composerRef = useRef<EffectComposer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rafRef = useRef<number | null>(null);
   const internalElapsedRef = useRef(elapsed);
   const forceRenderRef = useRef(true);
+  const interactionRenderUntilRef = useRef(0);
   const showViewHelperRef = useRef(false);
   const [panMode, setPanMode] = useState(false);
   const [showCameraControls, setShowCameraControls] = useState(false);
@@ -67,6 +77,11 @@ export function FireworkReplayCanvas({
     if (!playbackRef) internalElapsedRef.current = elapsed;
   }, [elapsed, playbackRef]);
 
+  function renderFor(milliseconds: number) {
+    interactionRenderUntilRef.current = performance.now() + milliseconds;
+    forceRenderRef.current = true;
+  }
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -76,11 +91,11 @@ export function FireworkReplayCanvas({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x05070d);
-    scene.fog = new THREE.FogExp2(0x05070d, 0.00022);
+    scene.fog = new THREE.FogExp2(0x05070d, 0.00016);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100000);
-    camera.position.set(0, 180, 1800);
+    const camera = new THREE.PerspectiveCamera(58, width / height, 0.1, 100000);
+    camera.position.copy(DEFAULT_CAMERA_POSITION);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -88,15 +103,32 @@ export function FireworkReplayCanvas({
       alpha: false,
       powerPreference: 'high-performance',
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO));
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.95;
     renderer.sortObjects = false;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
+    const renderPass = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(width, height),
+      BLOOM_STRENGTH,
+      BLOOM_RADIUS,
+      BLOOM_THRESHOLD,
+    );
+    const composer = new EffectComposer(renderer);
+    composer.setPixelRatio(pixelRatio);
+    composer.setSize(width, height);
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+    composerRef.current = composer;
+
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 200, 0);
+    controls.target.copy(DEFAULT_CAMERA_TARGET);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     // Vertical pan lets the viewer drop to ground level or rise up.
@@ -110,11 +142,24 @@ export function FireworkReplayCanvas({
     controls.enabled = interactive;
     controls.update();
     controlsRef.current = controls;
+    function onControlsStart() {
+      renderFor(900);
+    }
+    function onControlsChange() {
+      renderFor(360);
+    }
+    function onControlsEnd() {
+      renderFor(240);
+    }
+    controls.addEventListener('start', onControlsStart);
+    controls.addEventListener('change', onControlsChange);
+    controls.addEventListener('end', onControlsEnd);
 
     const engine = new FireworksEngine(scene, launchPositions);
     engine.attachListenerToCamera(camera);
     engine.setMuted(muted);
     engineRef.current = engine;
+    composer.render(0);
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
     // Keep the axis helper below the camera settings button when enabled.
@@ -139,8 +184,9 @@ export function FireworkReplayCanvas({
       const eng = engineRef.current;
       const cam = cameraRef.current;
       const rend = rendererRef.current;
+      const comp = composerRef.current;
       const sc = sceneRef.current;
-      if (!eng || !cam || !rend || !sc) return;
+      if (!eng || !cam || !rend || !comp || !sc) return;
       const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
       const delta = Math.abs(targetElapsed - renderedElapsed);
       const timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
@@ -162,9 +208,10 @@ export function FireworkReplayCanvas({
         forceRenderRef.current = true;
       }
       const controlsChanged = controls.enabled ? controls.update() : false;
-      if (timelineChanged || controlsChanged || forceRenderRef.current) {
+      const interactionActive = now < interactionRenderUntilRef.current;
+      if (timelineChanged || controlsChanged || forceRenderRef.current || interactionActive) {
         forceRenderRef.current = false;
-        rend.render(sc, cam);
+        comp.render(dt);
         if (showViewHelperRef.current) {
           // Gizmo overlays the main pass; it manages its own viewport region.
           rend.autoClear = false;
@@ -182,6 +229,7 @@ export function FireworkReplayCanvas({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      composer.setSize(w, h);
       forceRenderRef.current = true;
     }
     const ro = new ResizeObserver(onResize);
@@ -191,14 +239,19 @@ export function FireworkReplayCanvas({
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      controls.removeEventListener('start', onControlsStart);
+      controls.removeEventListener('change', onControlsChange);
+      controls.removeEventListener('end', onControlsEnd);
       timer.dispose();
       viewHelper.dispose();
       controls.dispose();
       engine.dispose();
+      composer.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       engineRef.current = null;
       controlsRef.current = null;
+      composerRef.current = null;
       cameraRef.current = null;
       rendererRef.current = null;
       sceneRef.current = null;
@@ -248,17 +301,17 @@ export function FireworkReplayCanvas({
     else if (dist > ctrl.maxDistance) offset.setLength(ctrl.maxDistance);
     cam.position.copy(ctrl.target).add(offset);
     ctrl.update();
-    forceRenderRef.current = true;
+    renderFor(360);
   }
 
   function resetView() {
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
     if (!cam || !ctrl) return;
-    cam.position.set(0, 180, 1800);
-    ctrl.target.set(0, 200, 0);
+    cam.position.copy(DEFAULT_CAMERA_POSITION);
+    ctrl.target.copy(DEFAULT_CAMERA_TARGET);
     ctrl.update();
-    forceRenderRef.current = true;
+    renderFor(360);
   }
 
   return (
