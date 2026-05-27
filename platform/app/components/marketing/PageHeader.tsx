@@ -1,5 +1,5 @@
 /**
- * PageHeader — shared hero header for marketing pages (e.g. /pricing,
+ * PageHeader - shared hero header for marketing pages (e.g. /pricing,
  * /about). Accepts `eyebrow`, `title`, optional `highlight` span, and
  * `subtitle`. Rendered above page content inside the marketing layout.
  */

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * MarketingNavBar — top navigation rendered across public marketing
+ * MarketingNavBar - top navigation rendered across public marketing
  * routes. Resolves the signed-in state on the client via Supabase so
  * the "Dashboard" CTA can swap in for unauthenticated visitors.
  */
@@ -91,17 +91,13 @@ export function MarketingNavBar({
       <Container className="flex h-16 items-center justify-between">
         <Link
           href={authenticated ? dashboardHref : '/'}
-          className="group text-on-surface flex items-center gap-2 text-xl font-semibold tracking-tighter"
+          className="text-on-surface flex items-center gap-2 text-xl font-semibold tracking-tighter"
         >
-          <span className="bg-primary/15 text-primary relative inline-flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300 group-hover:rotate-12">
+          <span className="brand-logo-mark h-7 w-7 rounded-full">
             <Sparkles size={14} strokeWidth={2} />
-            <span
-              aria-hidden
-              className="bg-primary/40 absolute inset-0 -z-10 rounded-full blur-md"
-            />
           </span>
           <span>
-            Show<span className="text-primary">Crafter</span>
+            Show<span>Crafter</span>
           </span>
         </Link>
 

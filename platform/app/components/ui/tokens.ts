@@ -1,4 +1,4 @@
-/** Design-token constants — CSS variable references + the static palette used by Three.js / non-CSS surfaces. */
+/** Design-token constants - CSS variable references + the static palette used by Three.js / non-CSS surfaces. */
 export const cssTokens = {
   color: {
     bgDefault: 'var(--color-bg-default)',
@@ -65,5 +65,5 @@ export const staticShowCrafterPalette = {
   contentEmphasis: '#171717',
   contentDefault: '#404040',
   contentSubtle: '#737373',
-  accent: '#f59e0b',
+  accent: '#525252',
 } as const;
