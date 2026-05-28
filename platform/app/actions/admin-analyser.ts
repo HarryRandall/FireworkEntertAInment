@@ -8,6 +8,7 @@ import { requirePermission } from '@/lib/admin.server';
 import {
   disableAnalyserWarmth,
   enableAnalyserWarmth,
+  pingAnalyserWarmth,
   refreshAnalyserWarmth,
   type AnalyserWarmthState,
 } from '@/lib/analyser-warmth.server';
@@ -38,4 +39,29 @@ export async function setAnalyserWarmthAction(
 
   revalidatePath('/admin');
   return { ok: true, state };
+}
+
+export async function refreshAnalyserWarmthAction(): Promise<
+  | { ok: true; state: AnalyserWarmthState }
+  | { ok: false; error: string; state?: AnalyserWarmthState }
+> {
+  const admin = await requirePermission('admin.manage_imports');
+  if (!admin) {
+    return { ok: false, error: 'You do not have permission to manage the analyser.' };
+  }
+
+  const result = await refreshAnalyserWarmth();
+  revalidatePath('/admin');
+
+  if (!result.ok) return { ok: false, error: result.error, state: result.state };
+  return { ok: true, state: result.state };
+}
+
+export async function pingAnalyserWarmthAction(): Promise<
+  { ok: true; warmedAt: string } | { ok: false; error: string; warmedAt?: string }
+> {
+  const admin = await requirePermission('admin.manage_imports');
+  if (!admin) return { ok: false, error: 'You do not have permission to manage the analyser.' };
+
+  return pingAnalyserWarmth();
 }

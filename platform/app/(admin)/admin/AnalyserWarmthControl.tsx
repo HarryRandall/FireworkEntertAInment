@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Clock3, Gauge, Zap } from 'lucide-react';
-import { setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
+import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -11,6 +11,7 @@ import { toast } from '@/app/components/ui/toast';
 import type { AnalyserWarmthState } from '@/lib/analyser-warmth.server';
 
 const minuteFormatter = new Intl.RelativeTimeFormat('en-AU', { numeric: 'auto' });
+const BROWSER_WARMUP_INTERVAL_MS = 45 * 1000;
 
 function getRemainingMinutes(warmUntil: string | null, now: number): number {
   if (!warmUntil) return 0;
@@ -41,6 +42,7 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   const [state, setState] = useState(initialState);
   const [now, setNow] = useState(() => Date.now());
   const [isPending, startTransition] = useTransition();
+  const pulseInFlightRef = useRef(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -72,6 +74,48 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
       toast.success(enabled ? 'Warm analyser enabled for 30 minutes' : 'Warm analyser disabled');
     });
   };
+
+  useEffect(() => {
+    if (!active || !canManage) return;
+    let cancelled = false;
+
+    const pulseWarmth = async () => {
+      if (pulseInFlightRef.current) return;
+      pulseInFlightRef.current = true;
+
+      try {
+        const result = await pingAnalyserWarmthAction();
+        if (cancelled) return;
+        const warmedAt = result.warmedAt ?? new Date().toISOString();
+        setState((current) => ({
+          ...current,
+          lastWarmupAt: warmedAt,
+          lastWarmupOk: result.ok,
+          lastWarmupError: result.ok ? null : result.error,
+        }));
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : String(error);
+        setState((current) => ({
+          ...current,
+          lastWarmupAt: new Date().toISOString(),
+          lastWarmupOk: false,
+          lastWarmupError: message,
+        }));
+      } finally {
+        pulseInFlightRef.current = false;
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      void pulseWarmth();
+    }, BROWSER_WARMUP_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [active, canManage]);
 
   return (
     <Card radius="md" className="p-5">

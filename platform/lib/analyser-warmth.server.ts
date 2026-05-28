@@ -2,8 +2,8 @@
  * Short-lived analyser warm-up controls.
  *
  * The warm window is stored in the shared cache when Upstash is configured.
- * Without Upstash it still works for local development, but Vercel cron
- * invocations may not see the same in-memory state.
+ * Without Upstash it still works while the same server process is alive, but
+ * separate serverless invocations may not share the same in-memory state.
  */
 import 'server-only';
 
@@ -12,7 +12,7 @@ import { deleteCachedKeys, getCachedJson, hasRedisCache, setCachedJson } from '@
 const ANALYSER_WARMTH_CACHE_KEY = 'platform:v1:analyser:warmth';
 const WARM_WINDOW_MS = 30 * 60 * 1000;
 const CACHE_BUFFER_SECONDS = 90;
-const WARMUP_MIN_INTERVAL_MS = 45 * 1000;
+const WARMUP_MIN_INTERVAL_MS = 30 * 1000;
 const WARMUP_TIMEOUT_MS = 25 * 1000;
 
 type StoredAnalyserWarmthState = {
@@ -39,6 +39,10 @@ export type AnalyserWarmthRefreshResult =
   | { ok: true; active: true; skipped: 'recent'; state: AnalyserWarmthState }
   | { ok: true; active: true; warmed: true; state: AnalyserWarmthState }
   | { ok: false; active: true; error: string; state: AnalyserWarmthState };
+
+export type AnalyserWarmthPingResult =
+  | { ok: true; warmedAt: string }
+  | { ok: false; warmedAt: string; error: string };
 
 function cacheMode(): 'shared' | 'memory' {
   return hasRedisCache() ? 'shared' : 'memory';
@@ -161,6 +165,24 @@ async function pingHostedAnalyserWarmup(): Promise<{ ok: true } | { ok: false; e
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function pingAnalyserWarmth(): Promise<AnalyserWarmthPingResult> {
+  const result = await pingHostedAnalyserWarmup();
+  const warmedAt = new Date().toISOString();
+  const latest = await readStoredState();
+
+  if (latest) {
+    await writeStoredState({
+      ...latest,
+      lastWarmupAt: warmedAt,
+      lastWarmupOk: result.ok,
+      lastWarmupError: result.ok ? null : result.error,
+    });
+  }
+
+  if (!result.ok) return { ok: false, warmedAt, error: result.error };
+  return { ok: true, warmedAt };
 }
 
 export async function refreshAnalyserWarmth({
