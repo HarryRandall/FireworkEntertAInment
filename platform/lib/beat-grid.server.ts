@@ -32,8 +32,8 @@ export type CueSlot = {
   nearClimax: boolean;
 };
 
-const TARGET_SLOTS = 240;
-const MAX_TARGET_SLOTS = TARGET_SLOTS + 80;
+const TARGET_SLOTS = 160;
+const MAX_TARGET_SLOTS = 220;
 const MIN_INTENSITY = 0.1;
 
 function vibeFor(label: string): SlotVibe {
@@ -139,17 +139,14 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
 
   // 4. Sample quieter sections, but keep every chorus/drop/climax beat.
   const WINDOW_COUNT = 12;
-  const targetSampledBeats = Math.min(Math.ceil(beats.length * 1.2), MAX_TARGET_SLOTS);
   const fullCoverage = live.filter(isFullCoverageBeat);
   const sampled: Scored[] = [...fullCoverage];
-  const remainingTarget = Math.max(0, targetSampledBeats - sampled.length);
+  let sampledSlotCount = fullCoverage.reduce((total, beat) => total + tubeCountForBeat(beat), 0);
+  const remainingTarget = Math.max(0, TARGET_SLOTS - sampledSlotCount);
 
   if (remainingTarget > 0) {
     const sampledBeatKeys = new Set(fullCoverage.map(beatKey));
     const sampledCandidates = live.filter((b) => !sampledBeatKeys.has(beatKey(b)));
-    const nonEmptyBuckets = Math.max(1, Math.min(WINDOW_COUNT, sampledCandidates.length));
-    const perWindow = Math.max(1, Math.ceil(remainingTarget / nonEmptyBuckets));
-    const sampledRemainder: Scored[] = [];
 
     // Keep coverage across the whole song by bucketing into windows and taking
     // the strongest non-chorus beats in each window.
@@ -161,9 +158,22 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
     }
     for (const bucket of buckets) {
       bucket.sort((a, b) => b.intensity - a.intensity);
-      sampledRemainder.push(...bucket.slice(0, perWindow));
     }
-    sampled.push(...sampledRemainder);
+
+    let madeProgress = true;
+    while (sampledSlotCount < TARGET_SLOTS && madeProgress) {
+      madeProgress = false;
+      for (const bucket of buckets) {
+        const candidate = bucket.shift();
+        if (!candidate) continue;
+        const candidateSlotCount = tubeCountForBeat(candidate);
+        if (sampledSlotCount + candidateSlotCount > MAX_TARGET_SLOTS) continue;
+        sampled.push(candidate);
+        sampledSlotCount += candidateSlotCount;
+        madeProgress = true;
+        if (sampledSlotCount >= TARGET_SLOTS) break;
+      }
+    }
   }
 
   sampled.sort((a, b) => a.time - b.time);
@@ -175,12 +185,7 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
   let idx = 0;
   let rotor: 0 | 1 | 2 = 0;
   for (const b of sampled) {
-    const tubeCount =
-      b.intensity >= 0.62 || b.nearClimax || b.vibe === 'chorus' || b.vibe === 'drop'
-        ? 3
-        : b.intensity >= 0.4 || b.vibe === 'pre-chorus' || b.vibe === 'buildup'
-          ? 2
-          : 1;
+    const tubeCount = tubeCountForBeat(b);
     const tubes: Array<0 | 1 | 2> = [];
     for (let i = 0; i < tubeCount; i++) {
       tubes.push(((rotor + i) % 3) as 0 | 1 | 2);
@@ -206,6 +211,16 @@ function isFullCoverageBeat(beat: { sectionLabel: string; vibe: SlotVibe; nearCl
   return (
     beat.vibe === 'chorus' || beat.vibe === 'drop' || beat.nearClimax || label.includes('climax')
   );
+}
+
+function tubeCountForBeat(beat: { intensity: number; nearClimax: boolean; vibe: SlotVibe }) {
+  if (beat.intensity >= 0.62 || beat.nearClimax || beat.vibe === 'chorus' || beat.vibe === 'drop') {
+    return 3;
+  }
+  if (beat.intensity >= 0.4 || beat.vibe === 'pre-chorus' || beat.vibe === 'buildup') {
+    return 2;
+  }
+  return 1;
 }
 
 function beatKey(beat: { time: number; sectionLabel: string; vibe: SlotVibe }): string {

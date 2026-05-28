@@ -54,6 +54,24 @@ export type AnalyserFireworkCue = {
   genre_hint?: string;
 };
 
+export type AnalyserTimingBreakdown = {
+  download_ms: number;
+  decode_ms: number;
+  beat_ms: number;
+  energy_ms: number;
+  onset_ms: number;
+  section_ms: number;
+  profile_ms: number;
+  validation_ms: number;
+  total_ms: number;
+};
+
+export type AnalyserAnalysisMeta = {
+  mode: 'fast' | string;
+  runner_version: string;
+  timings_ms: AnalyserTimingBreakdown;
+};
+
 export type AnalyserMusicProfile = {
   genre_hint?: string;
   key_signature?: {
@@ -104,6 +122,7 @@ export type AnalyserDerivedFeatures = {
 export type AnalyserResult = {
   schema_version: string;
   file: string;
+  analysis_meta?: AnalyserAnalysisMeta;
   duration_seconds: number;
   tempo_bpm: number;
   total_beats: number;

@@ -256,13 +256,19 @@ export function FireworkReplayViewer({
   // Collapse expanded shots back to one row per show_cue for the builder list.
   // Multi-shot IDs are "{baseCueId}-shot-N"; single-shot IDs are just the UUID.
   const builderCues = useMemo(() => {
-    const seen = new Map<string, { cue: ReplayCue; baseCueId: string; shotCount: number }>();
+    const seen = new Map<
+      string,
+      { cue: ReplayCue; baseCueId: string; shotCount: number; endTimeSeconds: number }
+    >();
     for (const cue of sortedCues) {
       const baseCueId = cue.id.replace(/-shot-\d+$/, '');
+      const shotEnd = cue.timeSeconds + Math.max(cue.firework.durationSeconds ?? 0.5, 0.5);
       if (!seen.has(baseCueId)) {
-        seen.set(baseCueId, { cue, baseCueId, shotCount: 1 });
+        seen.set(baseCueId, { cue, baseCueId, shotCount: 1, endTimeSeconds: shotEnd });
       } else {
-        seen.get(baseCueId)!.shotCount += 1;
+        const row = seen.get(baseCueId)!;
+        row.shotCount += 1;
+        row.endTimeSeconds = Math.max(row.endTimeSeconds, shotEnd);
       }
     }
     return Array.from(seen.values());
@@ -281,6 +287,17 @@ export function FireworkReplayViewer({
   }, [sortedCues, elapsed]);
 
   const activeBaseCueId = activeCue?.id.replace(/-shot-\d+$/, '');
+  const activeBaseCueIds = useMemo(() => {
+    const active = new Set<string>();
+    if (activeBaseCueId) active.add(activeBaseCueId);
+    for (const row of builderCues) {
+      if (row.shotCount <= 1) continue;
+      if (elapsed + 0.05 >= row.cue.timeSeconds && elapsed <= row.endTimeSeconds + 0.35) {
+        active.add(row.baseCueId);
+      }
+    }
+    return active;
+  }, [activeBaseCueId, builderCues, elapsed]);
   const activeBuilderIndex = useMemo(
     () =>
       activeBaseCueId ? builderCues.findIndex((row) => row.baseCueId === activeBaseCueId) : -1,
@@ -754,7 +771,7 @@ export function FireworkReplayViewer({
                           LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
                           `Mortar ${cue.launchPositionIndex + 1}`;
                         const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
-                        const isActive = baseCueId === activeBaseCueId;
+                        const isActive = activeBaseCueIds.has(baseCueId);
                         return (
                           <tr
                             key={baseCueId}

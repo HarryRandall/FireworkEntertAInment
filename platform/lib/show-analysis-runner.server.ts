@@ -19,8 +19,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 
-const ANALYSER_SCHEMA_VERSION = '1.2.0';
-const ANALYSER_RUNNER_VERSION = 'modal-librosa-1';
+const ANALYSER_SCHEMA_VERSION = '1.3.0';
+const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
 
 type AppSupabaseClient = SupabaseClient<Database>;
@@ -170,6 +170,7 @@ async function runHostedAnalyser(params: {
   supabase: AppSupabaseClient;
   audioPath: string;
   personality: string;
+  analysisId?: string;
 }): Promise<AnalyserResult> {
   const analyserUrl = process.env.ANALYSER_URL;
   const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
@@ -199,6 +200,7 @@ async function runHostedAnalyser(params: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        analysis_id: params.analysisId,
         audio_url: signed.signedUrl,
         personality: params.personality,
       }),
@@ -300,6 +302,7 @@ export async function runMusicAnalysisForUpload(params: {
       supabase: params.supabase,
       audioPath: typedRow.audio_path,
       personality,
+      analysisId: typedRow.id,
     });
     const contextMarkdown = buildAiContextMarkdown({
       personality,
@@ -385,6 +388,7 @@ export async function runShowAnalysisForShow(params: {
       supabase: params.supabase,
       audioPath: typedShow.audio_path,
       personality,
+      analysisId,
     });
     const contextMarkdown = buildAiContextMarkdown({
       show: typedShow,
