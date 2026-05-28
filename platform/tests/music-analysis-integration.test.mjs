@@ -50,7 +50,7 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   assert.match(adminPage, /AnalyserWarmthControl/);
   assert.match(warmControl, /Keep warm for 30 minutes/);
   assert.match(warmControl, /Extend 30 minutes/);
-  assert.match(warmControl, /refreshAnalyserWarmthAction/);
+  assert.match(warmControl, /pingAnalyserWarmthAction/);
   assert.match(warmControl, /BROWSER_WARMUP_INTERVAL_MS = 45 \* 1000/);
   assert.match(warmLib, /WARM_WINDOW_MS = 30 \* 60 \* 1000/);
   assert.match(warmLib, /JSON\.stringify\(\{ warmup: true \}\)/);

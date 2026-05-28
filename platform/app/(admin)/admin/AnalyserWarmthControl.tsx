@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Clock3, Gauge, Zap } from 'lucide-react';
-import { refreshAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
+import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -84,9 +84,24 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
       pulseInFlightRef.current = true;
 
       try {
-        const result = await refreshAnalyserWarmthAction();
+        const result = await pingAnalyserWarmthAction();
         if (cancelled) return;
-        if (result.state) setState(result.state);
+        const warmedAt = result.warmedAt ?? new Date().toISOString();
+        setState((current) => ({
+          ...current,
+          lastWarmupAt: warmedAt,
+          lastWarmupOk: result.ok,
+          lastWarmupError: result.ok ? null : result.error,
+        }));
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : String(error);
+        setState((current) => ({
+          ...current,
+          lastWarmupAt: new Date().toISOString(),
+          lastWarmupOk: false,
+          lastWarmupError: message,
+        }));
       } finally {
         pulseInFlightRef.current = false;
       }

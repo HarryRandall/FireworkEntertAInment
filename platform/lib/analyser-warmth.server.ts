@@ -40,6 +40,10 @@ export type AnalyserWarmthRefreshResult =
   | { ok: true; active: true; warmed: true; state: AnalyserWarmthState }
   | { ok: false; active: true; error: string; state: AnalyserWarmthState };
 
+export type AnalyserWarmthPingResult =
+  | { ok: true; warmedAt: string }
+  | { ok: false; warmedAt: string; error: string };
+
 function cacheMode(): 'shared' | 'memory' {
   return hasRedisCache() ? 'shared' : 'memory';
 }
@@ -161,6 +165,24 @@ async function pingHostedAnalyserWarmup(): Promise<{ ok: true } | { ok: false; e
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function pingAnalyserWarmth(): Promise<AnalyserWarmthPingResult> {
+  const result = await pingHostedAnalyserWarmup();
+  const warmedAt = new Date().toISOString();
+  const latest = await readStoredState();
+
+  if (latest) {
+    await writeStoredState({
+      ...latest,
+      lastWarmupAt: warmedAt,
+      lastWarmupOk: result.ok,
+      lastWarmupError: result.ok ? null : result.error,
+    });
+  }
+
+  if (!result.ok) return { ok: false, warmedAt, error: result.error };
+  return { ok: true, warmedAt };
 }
 
 export async function refreshAnalyserWarmth({
