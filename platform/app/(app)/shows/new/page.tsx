@@ -24,6 +24,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, MapPin, Music4, Sparkles } from 'lucide-react';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { ShowGenerationSplash } from '@/app/components/app/ShowGenerationSplash';
 import { ChoiceChip } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -73,6 +74,7 @@ export default function NewShowPage() {
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
   const [title, setTitle] = useState('');
+  const titleRef = useRef('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Promise of the in-flight upload so `triggerGenerate` can await it if the
   // user clicks Generate before the upload finishes.
@@ -80,6 +82,7 @@ export default function NewShowPage() {
   // Monotonic token: lets late upload responses ignore themselves if the user
   // has already attached a different file.
   const uploadTokenRef = useRef(0);
+  const autoBriefUploadIdRef = useRef<string | null>(null);
 
   // === Step 2: brief =======================================================
   const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
@@ -88,7 +91,8 @@ export default function NewShowPage() {
   // === Wizard nav ==========================================================
   const [stepIndex, setStepIndex] = useState(0);
   const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [, startTransition] = useTransition();
 
   const durationValue =
     durationMode === 'custom'
@@ -123,6 +127,27 @@ export default function NewShowPage() {
     };
   }, [audioFile]);
 
+  useEffect(() => {
+    if (
+      stepIndex === 1 &&
+      uploadedAudio &&
+      audioUploadState === 'ready' &&
+      title.trim() &&
+      autoBriefUploadIdRef.current !== uploadedAudio.musicAnalysisId
+    ) {
+      autoBriefUploadIdRef.current = uploadedAudio.musicAnalysisId;
+      setFieldError(null);
+      setStepIndex(2);
+    }
+  }, [audioUploadState, stepIndex, title, uploadedAudio]);
+
+  const focusTitleRequirement = () => {
+    window.requestAnimationFrame(() => {
+      const titleInput = formRef.current?.elements.namedItem('title');
+      if (titleInput instanceof HTMLInputElement) titleInput.focus();
+    });
+  };
+
   const toggleMood = (mood: string) => {
     setActiveMoods((prev) => {
       const next = new Set(prev);
@@ -134,10 +159,13 @@ export default function NewShowPage() {
 
   const onFilePicked = (file: File | null) => {
     if (!file) {
+      uploadTokenRef.current += 1;
       setAudioFile(null);
       setUploadedAudio(null);
       setAudioUploadState('idle');
       setAudioUploadError(null);
+      uploadPromiseRef.current = null;
+      autoBriefUploadIdRef.current = null;
       return;
     }
     if (file.size > MAX_AUDIO_BYTES) {
@@ -168,6 +196,7 @@ export default function NewShowPage() {
     setAudioUploadState('idle');
     setAudioUploadError(null);
     uploadPromiseRef.current = null;
+    autoBriefUploadIdRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -254,6 +283,11 @@ export default function NewShowPage() {
       setUploadedAudio(uploaded);
       setAudioUploadState('ready');
       setAudioUploadError(null);
+      if (!titleRef.current.trim()) {
+        setFieldError('title');
+        setStepIndex(1);
+        focusTitleRequirement();
+      }
     }
     return uploaded;
   };
@@ -278,15 +312,18 @@ export default function NewShowPage() {
     if (!title.trim()) {
       setFieldError('title');
       setStepIndex(1);
+      focusTitleRequirement();
       toast.error('Show title is required.');
       return;
     }
+    setIsLaunching(true);
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
       if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
         try {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
+          setIsLaunching(false);
           toast.error('Could not upload track', {
             description: error instanceof Error ? error.message : 'Try replacing the audio file.',
           });
@@ -294,6 +331,7 @@ export default function NewShowPage() {
         }
       }
       if (audioFile && audioUploadState === 'error') {
+        setIsLaunching(false);
         toast.error('Could not upload track', {
           description: audioUploadError ?? 'Try replacing the audio file.',
         });
@@ -316,7 +354,10 @@ export default function NewShowPage() {
       }
 
       const result = await createShowAction(data);
-      if (result && !result.ok) toast.error(result.error);
+      if (result && !result.ok) {
+        setIsLaunching(false);
+        toast.error(result.error);
+      }
     });
   };
 
@@ -348,6 +389,10 @@ export default function NewShowPage() {
   };
 
   const activeStep = STEPS[stepIndex];
+
+  if (isLaunching) {
+    return <ShowGenerationSplash showTitle={title.trim() || 'your show'} />;
+  }
 
   return (
     <form ref={formRef} noValidate onSubmit={handleSubmit} className="space-y-6">
@@ -436,7 +481,9 @@ export default function NewShowPage() {
                     iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
                     className="h-11"
                     onChange={(e) => {
-                      setTitle(e.target.value);
+                      const nextTitle = e.target.value;
+                      titleRef.current = nextTitle;
+                      setTitle(nextTitle);
                       if (fieldError === 'title') setFieldError(null);
                     }}
                   />
@@ -522,8 +569,7 @@ export default function NewShowPage() {
               <Button
                 type="button"
                 onClick={triggerGenerate}
-                loading={isPending}
-                disabled={!title.trim()}
+                disabled={!title.trim() || isLaunching}
               >
                 Generate show
                 <Sparkles size={16} strokeWidth={2} />

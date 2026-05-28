@@ -1,6 +1,10 @@
 ---
 name: showcrafter-design-system
-description: REQUIRED for any UI work in the ShowCrafter Next.js app. Use when editing app/**, creating pages, components, or styling. Triggers: design, palette, hero, button, card, navbar, page, redesign, theme, tokens, Tailwind, ShowCrafter brand, fireworks UI, dark theme.
+description: >-
+  REQUIRED for any UI work in the ShowCrafter Next.js app. Use when editing
+  app/**, creating pages, components, or styling. Triggers: design, palette,
+  hero, button, card, navbar, page, redesign, theme, tokens, Tailwind,
+  ShowCrafter brand, fireworks UI, dark theme.
 ---
 
 # ShowCrafter Design System

@@ -30,6 +30,30 @@ test('new show wizard uploads audio before final submit', () => {
   assert.doesNotMatch(page, /data\.set\('audio', audioFile\)/);
 });
 
+test('new show wizard moves ready uploaded music into the AI brief step', () => {
+  assert.match(page, /setUploadedAudio\(uploaded\)/);
+  assert.match(page, /uploadedAudio &&\s+audioUploadState === 'ready' &&\s+title\.trim\(\)/s);
+  assert.match(page, /setStepIndex\(2\)/);
+  assert.match(page, /setFieldError\('title'\)/);
+  assert.match(page, /focusTitleRequirement\(\)/);
+});
+
+test('new show wizard shows the generation splash immediately on launch', () => {
+  assert.match(page, /import \{ ShowGenerationSplash \}/);
+  assert.match(page, /const \[isLaunching, setIsLaunching\] = useState\(false\)/);
+  assert.match(
+    page,
+    /if \(isLaunching\) \{\s+return <ShowGenerationSplash showTitle=\{title\.trim\(\) \|\| 'your show'\} \/>;\s+\}/s,
+  );
+
+  const launchIdx = page.indexOf('setIsLaunching(true)');
+  const transitionIdx = page.indexOf('startTransition(async () =>');
+  assert.notEqual(launchIdx, -1, 'Generate should enter launching state immediately');
+  assert.notEqual(transitionIdx, -1, 'Generate should still run the server action transition');
+  assert.ok(launchIdx < transitionIdx, 'splash state should be set before async generation work');
+  assert.doesNotMatch(page, /loading=\{isPending\}/);
+});
+
 test('new show wizard keeps navigation controls out of submit flow', () => {
   assert.match(page, /type="button"\s+variant="secondary"/);
   assert.match(page, /type="button"\s+onClick=\{\(\) => goToStep\(stepIndex \+ 1\)\}/);

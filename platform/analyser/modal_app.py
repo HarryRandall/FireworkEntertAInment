@@ -15,6 +15,7 @@ The printed URL becomes the Next.js `ANALYSER_URL` env var.
 
 import os
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 from typing import Annotated
@@ -30,32 +31,91 @@ image = (
     .add_local_python_source("showcrafter")
 )
 
-app = modal.App(
-    "showcrafter-analyser",
+app = modal.App("showcrafter-analyser")
+
+
+@app.cls(
     image=image,
     secrets=[modal.Secret.from_name("showcrafter")],
+    timeout=600,
+    cpu=2.0,
+    memory=4096,
+    min_containers=1,
+    buffer_containers=1,
+    scaledown_window=1200,
+    enable_memory_snapshot=True,
 )
+class SongAnalyser:
+    @modal.enter(snap=True)
+    def warm(self):
+        import librosa
+        import numpy as np
+        import scipy.linalg
+        import sklearn.cluster
+        from showcrafter import analyse_song
 
+        self.analyse_song = analyse_song
 
-@app.function(timeout=600, cpu=2.0, memory=4096)
-@modal.fastapi_endpoint(method="POST")
-def analyse(
-    payload: dict,
-    authorization: Annotated[str, Header()] = "",
-):
-    from showcrafter import analyse_song
+        sr = 22050
+        hop_length = 512
+        y = np.zeros(sr * 2, dtype=np.float32)
+        onset_env = librosa.onset.onset_strength(
+            y=y,
+            sr=sr,
+            hop_length=hop_length,
+            aggregate=np.median,
+        )
+        librosa.beat.beat_track(onset_envelope=onset_env, sr=sr, hop_length=hop_length)
+        librosa.feature.rms(y=y, hop_length=hop_length)
+        librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr, hop_length=hop_length)
+        librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)
+        librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop_length)
+        librosa.stft(y, n_fft=2048, hop_length=hop_length)
+        np.abs(librosa.cqt(y=y, sr=sr, bins_per_octave=36, n_bins=84))
+        scipy.linalg.eigh(np.eye(3))
+        sklearn.cluster.KMeans(n_clusters=2, n_init=1, random_state=0).fit_predict(
+            np.array([[0.0], [1.0], [0.5]])
+        )
 
-    expected = os.environ.get("ANALYSER_SHARED_SECRET", "")
-    if not expected or authorization != f"Bearer {expected}":
-        raise HTTPException(status_code=401, detail="unauthorized")
+    @modal.fastapi_endpoint(method="POST")
+    def analyse(
+        self,
+        payload: dict,
+        authorization: Annotated[str, Header()] = "",
+    ):
+        expected = os.environ.get("ANALYSER_SHARED_SECRET", "")
+        if not expected or authorization != f"Bearer {expected}":
+            raise HTTPException(status_code=401, detail="unauthorized")
 
-    audio_url = payload.get("audio_url")
-    if not audio_url:
-        raise HTTPException(status_code=400, detail="missing audio_url")
+        audio_url = payload.get("audio_url")
+        if not audio_url:
+            raise HTTPException(status_code=400, detail="missing audio_url")
+        if not isinstance(audio_url, str):
+            raise HTTPException(status_code=400, detail="invalid audio_url")
 
-    personality = payload.get("personality", "balanced")
+        analysis_id = payload.get("analysis_id")
+        if analysis_id is not None and not isinstance(analysis_id, str):
+            raise HTTPException(status_code=400, detail="invalid analysis_id")
 
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "audio"
-        urllib.request.urlretrieve(audio_url, path)
-        return analyse_song(str(path), personality)
+        personality = payload.get("personality", "balanced")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "audio"
+            download_start = time.perf_counter()
+            urllib.request.urlretrieve(audio_url, path)
+            download_ms = round((time.perf_counter() - download_start) * 1000.0, 3)
+            result = self.analyse_song(
+                str(path),
+                personality,
+                runner_version="modal-librosa-2",
+                initial_timings_ms={"download_ms": download_ms},
+            )
+            if analysis_id:
+                timings = result["analysis_meta"]["timings_ms"]
+                print(
+                    "[showcrafter-analyser] "
+                    f"analysis_id={analysis_id} "
+                    f"download_ms={timings['download_ms']} "
+                    f"total_ms={timings['total_ms']}"
+                )
+            return result

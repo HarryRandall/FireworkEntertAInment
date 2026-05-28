@@ -78,8 +78,8 @@ export async function POST(request: Request) {
       size_bytes: parsed.data.sizeBytes ?? null,
       personality: 'balanced',
       status: 'running',
-      runner_version: 'local-librosa-1',
-      schema_version: '1.2.0',
+      runner_version: 'modal-librosa-2',
+      schema_version: '1.3.0',
     })
     .select('id')
     .single();

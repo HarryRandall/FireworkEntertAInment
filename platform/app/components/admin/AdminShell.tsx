@@ -77,7 +77,7 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsedPreference);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarTransitionReady, setSidebarTransitionReady] = useState(false);
   const displayName = profile.fullName || profile.email || 'Admin';
   const secondaryLine = profile.fullName && profile.email ? profile.email : 'Platform admin';
@@ -97,6 +97,7 @@ export function AdminShell({
   }, [pathname]);
 
   useEffect(() => {
+    setSidebarCollapsed(readSidebarCollapsedPreference());
     const frame = window.requestAnimationFrame(() => setSidebarTransitionReady(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);

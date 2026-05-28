@@ -5,6 +5,7 @@ Output: a Markdown file of timestamped musical events ready to feed into an LLM.
 """
 
 import argparse
+import time
 from typing import Annotated, Any, Literal
 import librosa
 import numpy as np
@@ -21,14 +22,29 @@ from scipy.signal import find_peaks, savgol_filter
 # Bumped when the output contract changes. Downstream harnesses can read
 # `schema_version` from the result / LLM payload to gate compatibility.
 #
-# 1.2.0 — added Pydantic validation for analysis + LLM payloads; compact
+# 1.3.0 - added analyser timing metadata and fast-path runtime markers.
+# 1.2.0 - added Pydantic validation for analysis + LLM payloads; compact
 #         LLM payload now summarises/samples heuristic cues instead of
 #         duplicating the full `firework_cues` list.
-# 1.1.0 — added `key_moments[].prominence`; `key_moments[].type` is now
+# 1.1.0 - added `key_moments[].prominence`; `key_moments[].type` is now
 #         decided by relative prominence ranking (top quartile = climax)
 #         instead of an absolute energy threshold.
-# 1.0.0 — initial versioned contract.
-SCHEMA_VERSION = "1.2.0"
+# 1.0.0 - initial versioned contract.
+SCHEMA_VERSION = "1.3.0"
+ANALYSER_MODE = "fast"
+ANALYSER_RUNNER_VERSION = "local-librosa-2"
+
+TIMING_FIELDS = (
+    "download_ms",
+    "decode_ms",
+    "beat_ms",
+    "energy_ms",
+    "onset_ms",
+    "section_ms",
+    "profile_ms",
+    "validation_ms",
+    "total_ms",
+)
 
 # Anchor windows around climaxes and build-up peaks (seconds before/after).
 ANCHOR_PRE_SEC = 3.0
@@ -128,7 +144,7 @@ PERSONALITY_PRESETS = {
     },
 }
 
-SchemaVersion = Literal["1.2.0"]
+SchemaVersion = Literal["1.3.0"]
 Score = Annotated[float, Field(ge=0.0, le=1.0)]
 NonNegativeFloat = Annotated[float, Field(ge=0.0)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
@@ -302,9 +318,28 @@ class FireworkCueModel(SchemaModel):
         return self
 
 
+class AnalysisTimingsModel(SchemaModel):
+    download_ms: NonNegativeFloat
+    decode_ms: NonNegativeFloat
+    beat_ms: NonNegativeFloat
+    energy_ms: NonNegativeFloat
+    onset_ms: NonNegativeFloat
+    section_ms: NonNegativeFloat
+    profile_ms: NonNegativeFloat
+    validation_ms: NonNegativeFloat
+    total_ms: NonNegativeFloat
+
+
+class AnalysisMetaModel(SchemaModel):
+    mode: Literal["fast"]
+    runner_version: str
+    timings_ms: AnalysisTimingsModel
+
+
 class AnalysisResultModel(SchemaModel):
     schema_version: SchemaVersion
     file: str
+    analysis_meta: AnalysisMetaModel
     duration_seconds: NonNegativeFloat
     tempo_bpm: NonNegativeFloat
     total_beats: NonNegativeInt
@@ -437,6 +472,18 @@ class LLMPayloadModel(SchemaModel):
     cue_reference: CueReferenceModel
     user_constraints: dict[str, Any]
     inventory: list[Any]
+
+
+def elapsed_ms(start: float) -> float:
+    return round((time.perf_counter() - start) * 1000.0, 3)
+
+
+def normalise_timings(timings: dict[str, float] | None = None) -> dict[str, float]:
+    values = {field: 0.0 for field in TIMING_FIELDS}
+    for key, value in (timings or {}).items():
+        if key in values:
+            values[key] = max(0.0, float(value))
+    return {key: round(value, 3) for key, value in values.items()}
 
 
 def validate_schema(model_cls: type[BaseModel], payload: dict, label: str) -> dict:
@@ -577,10 +624,12 @@ def analyse_music_personality(
     sections: list,
     key_moments: list,
     buildups: list,
+    chroma: np.ndarray | None = None,
 ) -> dict:
     spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
     spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop_length)[0]
-    chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
+    if chroma is None:
+        chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
 
     stft = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_length))
     freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
@@ -828,25 +877,53 @@ def select_climax_indices(
     return set(selected[:target])
 
 
-def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
+def analyse_song(
+    file_path: str,
+    personality_preset: str = "balanced",
+    *,
+    analysis_mode: str = ANALYSER_MODE,
+    runner_version: str = ANALYSER_RUNNER_VERSION,
+    initial_timings_ms: dict[str, float] | None = None,
+) -> dict:
     """
     Analyse a song and return structured data for firework choreography.
     Uses Laplacian spectral clustering for accurate structural segmentation.
     """
+    total_start = time.perf_counter()
+    timings = normalise_timings(initial_timings_ms)
+    mode = analysis_mode if analysis_mode == ANALYSER_MODE else ANALYSER_MODE
+
     # Load audio (mono, 22050Hz is fine for analysis)
+    decode_start = time.perf_counter()
     y, sr = librosa.load(file_path, sr=22050, mono=True)
     duration = librosa.get_duration(y=y, sr=sr)
+    timings["decode_ms"] += elapsed_ms(decode_start)
+    hop_length = 512
 
     # ──────────────────────────────────────────────
     # 1. TEMPO & BEATS
     # ──────────────────────────────────────────────
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, trim=False)
+    beat_start = time.perf_counter()
+    onset_env = librosa.onset.onset_strength(
+        y=y,
+        sr=sr,
+        hop_length=hop_length,
+        aggregate=np.median,
+    )
+    tempo, beat_frames = librosa.beat.beat_track(
+        onset_envelope=onset_env,
+        sr=sr,
+        hop_length=hop_length,
+        trim=False,
+    )
     beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
+    tempo_value = float(np.atleast_1d(tempo)[0])
+    timings["beat_ms"] += elapsed_ms(beat_start)
 
     # ──────────────────────────────────────────────
     # 2. ENERGY CURVE (RMS, normalised 0-1)
     # ──────────────────────────────────────────────
-    hop_length = 512
+    energy_start = time.perf_counter()
     rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
     if rms.size:
         # Percentile clip to reduce outlier-driven normalization.
@@ -863,19 +940,28 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
         {"time": round(float(rms_times[i]), 2), "energy": round(float(energy_curve[i]), 3)}
         for i in range(0, len(rms), step)
     ]
+    timings["energy_ms"] += elapsed_ms(energy_start)
 
     # ──────────────────────────────────────────────
     # 3. ONSET DETECTION
     # ──────────────────────────────────────────────
-    onset_frames = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length)
+    onset_start = time.perf_counter()
+    onset_frames = librosa.onset.onset_detect(
+        onset_envelope=onset_env,
+        sr=sr,
+        hop_length=hop_length,
+    )
     onset_times = librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length).tolist()
+    timings["onset_ms"] += elapsed_ms(onset_start)
 
     # ──────────────────────────────────────────────
     # 4. STRUCTURAL SEGMENTATION (Laplacian spectral clustering)
     #    Based on McFee & Ellis 2014 — beat-synchronised CQT + MFCC
     #    with recurrence + path similarity for clean boundaries.
     # ──────────────────────────────────────────────
-    sections = laplacian_segment(y, sr, beat_frames, energy_curve, hop_length, duration)
+    section_start = time.perf_counter()
+    sections, cqt_mag = laplacian_segment(y, sr, beat_frames, energy_curve, hop_length, duration)
+    timings["section_ms"] += elapsed_ms(section_start)
 
     # ──────────────────────────────────────────────
     # 5. KEY MOMENTS (energy peaks — climaxes and drops)
@@ -925,20 +1011,30 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     # ──────────────────────────────────────────────
     # 7. MUSIC PERSONALITY ANALYSIS
     # ──────────────────────────────────────────────
+    profile_start = time.perf_counter()
+    chroma = None
+    if cqt_mag is not None:
+        try:
+            chroma = librosa.feature.chroma_cqt(C=cqt_mag, sr=sr, bins_per_octave=36)
+        except ValueError:
+            chroma = None
+
     music_profile = analyse_music_personality(
         y,
         sr,
         hop_length,
         duration,
-        float(np.atleast_1d(tempo)[0]),
+        tempo_value,
         beat_times,
         onset_times,
         rms_normalised,
         sections,
         key_moments,
         buildups,
+        chroma=chroma,
     )
     show_personality = build_show_personality(music_profile, personality_preset)
+    timings["profile_ms"] += elapsed_ms(profile_start)
 
     # ──────────────────────────────────────────────
     # 8. FIREWORK CUES
@@ -962,8 +1058,13 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
     result = {
         "schema_version": SCHEMA_VERSION,
         "file": file_path,
+        "analysis_meta": {
+            "mode": mode,
+            "runner_version": runner_version,
+            "timings_ms": normalise_timings(timings),
+        },
         "duration_seconds": round(duration, 2),
-        "tempo_bpm": round(float(np.atleast_1d(tempo)[0]), 1),
+        "tempo_bpm": round(tempo_value, 1),
         "total_beats": len(beat_times),
         "beat_times": [round(t, 3) for t in beat_times],
         "onset_times": [round(t, 3) for t in onset_times],
@@ -975,6 +1076,12 @@ def analyse_song(file_path: str, personality_preset: str = "balanced") -> dict:
         "show_personality": show_personality,
         "firework_cues": firework_cues,
     }
+
+    validation_start = time.perf_counter()
+    validate_analysis_result(result)
+    timings["validation_ms"] += elapsed_ms(validation_start)
+    timings["total_ms"] = elapsed_ms(total_start) + timings["download_ms"]
+    result["analysis_meta"]["timings_ms"] = normalise_timings(timings)
     return validate_analysis_result(result)
 
 
@@ -989,10 +1096,15 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
     N_OCTAVES = 7
 
     # 1. CQT for harmonic content (key for structural similarity)
-    C = librosa.amplitude_to_db(
-        np.abs(librosa.cqt(y=y, sr=sr, bins_per_octave=BINS_PER_OCTAVE,
-                           n_bins=N_OCTAVES * BINS_PER_OCTAVE)),
-        ref=np.max)
+    cqt_mag = np.abs(
+        librosa.cqt(
+            y=y,
+            sr=sr,
+            bins_per_octave=BINS_PER_OCTAVE,
+            n_bins=N_OCTAVES * BINS_PER_OCTAVE,
+        )
+    )
+    C = librosa.amplitude_to_db(cqt_mag, ref=np.max)
 
     # 2. Beat-synchronise features (removes frame-level noise — critical)
     Csync = librosa.util.sync(C, beat_frames, aggregate=np.median)
@@ -1032,7 +1144,7 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
 
     # 10. Cluster into k segment types
     X = evecs[:, :k] / (Cnorm[:, k - 1:k] + 1e-10)
-    KM = sklearn.cluster.KMeans(n_clusters=k, n_init=50, random_state=0)
+    KM = sklearn.cluster.KMeans(n_clusters=k, n_init=10, random_state=0)
     seg_ids = KM.fit_predict(X)
 
     # 11. Extract boundaries (where cluster label changes)
@@ -1156,7 +1268,7 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
     # Label sections using cluster IDs + energy heuristics
     label_sections_from_clusters(sections)
 
-    return sections
+    return sections, cqt_mag
 
 
 def estimate_k(evals, min_k=3, max_k=8):

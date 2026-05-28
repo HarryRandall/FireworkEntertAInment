@@ -25,6 +25,7 @@ platform/supabase/.temp/
 
 # Local agent memory
 memory/
+.codex/
 
 # OS
 .DS_Store

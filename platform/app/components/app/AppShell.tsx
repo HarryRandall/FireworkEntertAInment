@@ -92,7 +92,7 @@ export function AppShell({ children, profile }: AppShellProps) {
   const effectivePath = pendingHref ?? pathname;
   const inSettings = effectivePath?.startsWith('/settings');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsedPreference);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarTransitionReady, setSidebarTransitionReady] = useState(false);
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
@@ -117,6 +117,7 @@ export function AppShell({ children, profile }: AppShellProps) {
   }, [pathname]);
 
   useEffect(() => {
+    setSidebarCollapsed(readSidebarCollapsedPreference());
     const frame = window.requestAnimationFrame(() => setSidebarTransitionReady(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);

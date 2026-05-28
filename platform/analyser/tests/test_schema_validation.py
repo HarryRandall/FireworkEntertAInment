@@ -53,6 +53,21 @@ def make_analysis_payload():
     return {
         "schema_version": SCHEMA_VERSION,
         "file": "fixture.mp3",
+        "analysis_meta": {
+            "mode": "fast",
+            "runner_version": "test-librosa",
+            "timings_ms": {
+                "download_ms": 0.0,
+                "decode_ms": 1.0,
+                "beat_ms": 2.0,
+                "energy_ms": 3.0,
+                "onset_ms": 4.0,
+                "section_ms": 5.0,
+                "profile_ms": 6.0,
+                "validation_ms": 7.0,
+                "total_ms": 28.0,
+            },
+        },
         "duration_seconds": 12.0,
         "tempo_bpm": 120.0,
         "total_beats": 4,
@@ -129,17 +144,19 @@ def make_analysis_payload():
 
 
 class SchemaValidationTests(unittest.TestCase):
-    def test_valid_analysis_payload_passes_schema_v12(self):
+    def test_valid_analysis_payload_passes_schema_v13(self):
         validated = validate_analysis_result(make_analysis_payload())
 
-        self.assertEqual(validated["schema_version"], "1.2.0")
+        self.assertEqual(validated["schema_version"], "1.3.0")
+        self.assertEqual(validated["analysis_meta"]["mode"], "fast")
+        self.assertGreaterEqual(validated["analysis_meta"]["timings_ms"]["total_ms"], 0.0)
         self.assertEqual(validated["firework_cues"][0]["effect"], "barrage")
 
     def test_out_of_range_energy_fails_loudly(self):
         payload = make_analysis_payload()
         payload["key_moments"][0]["energy"] = 1.1
 
-        with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.2.0"):
+        with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.3.0"):
             validate_analysis_result(payload)
 
     def test_llm_payload_summarises_baseline_cues(self):

@@ -12,7 +12,7 @@ import 'server-only';
 
 import OpenAI from 'openai';
 
-export const DEFAULT_CUE_MODEL = process.env.OPENROUTER_CUE_MODEL ?? 'anthropic/claude-sonnet-4.5';
+export const DEFAULT_CUE_MODEL = process.env.OPENROUTER_CUE_MODEL ?? 'openai/gpt-4.1-mini';
 
 let cached: OpenAI | null = null;
 

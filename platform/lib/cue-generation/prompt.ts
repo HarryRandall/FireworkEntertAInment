@@ -67,29 +67,42 @@ export function projectCatalogue(products: Awaited<ReturnType<typeof listFirewor
   return products.map((product) => {
     const spec = product.spec ?? null;
     const shotCount = product.shotCount ?? 1;
+    const description = compactText(product.description, 140);
+    const effects = {
+      ...(spec?.glitter && spec.glitter !== 'none' ? { glitter: spec.glitter } : {}),
+      ...(spec?.trailEffect && spec.trailEffect !== 'none'
+        ? { trailEffect: spec.trailEffect }
+        : {}),
+      ...(spec?.crackle ? { crackle: true } : {}),
+      ...(spec?.strobe ? { strobe: true } : {}),
+      ...(spec?.ring ? { ring: true } : {}),
+      ...(spec?.crossette ? { crossette: true } : {}),
+      ...(spec?.horsetail ? { horsetail: true } : {}),
+      ...(spec?.floral ? { floral: true } : {}),
+      ...(spec?.fallingLeaves ? { fallingLeaves: true } : {}),
+    };
     return {
       id: product.id,
       name: product.name,
-      description: product.description,
-      durationSeconds: product.durationSeconds,
+      ...(description ? { description } : {}),
+      ...(product.durationSeconds != null ? { durationSeconds: product.durationSeconds } : {}),
       shotCount,
       isMultiShot: shotCount > 1,
-      heightMeters: product.heightMeters,
-      caliber: product.caliber,
-      shellType: spec?.shellType ?? null,
-      color: spec?.color ?? null,
-      colorPalette: spec?.colorPalette ?? null,
-      effects: {
-        glitter: spec?.glitter ?? null,
-        trailEffect: spec?.trailEffect ?? null,
-        crackle: spec?.crackle ?? false,
-        strobe: spec?.strobe ?? false,
-        ring: spec?.ring ?? false,
-        crossette: spec?.crossette ?? false,
-        horsetail: spec?.horsetail ?? false,
-      },
+      ...(product.heightMeters != null ? { heightMeters: product.heightMeters } : {}),
+      ...(product.caliber ? { caliber: product.caliber } : {}),
+      ...(spec?.shellType ? { shellType: spec.shellType } : {}),
+      ...(spec?.color ? { color: spec.color } : {}),
+      ...(spec?.colorPalette?.length ? { colorPalette: spec.colorPalette } : {}),
+      ...(Object.keys(effects).length ? { effects } : {}),
     };
   });
+}
+
+function compactText(value: string | null | undefined, maxLength: number): string | null {
+  const text = value?.replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
 /**
@@ -122,7 +135,7 @@ export function buildSystemPrompt(): string {
     "  - userPrompt: the user's verbatim creative brief. Always re-read it before assigning cues.",
     '  - brief: title, mood tags, budget, time of day, location, requested duration.',
     '  - analysisSummary: song structure — duration, tempo, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, music_profile, show_personality.',
-    '  - catalogue: every available product with id, name, description, durationSeconds, shotCount, isMultiShot, caliber, heightMeters, shellType, color, colorPalette, and effect flags (glitter, trailEffect, crackle, strobe, ring, crossette, horsetail).',
+    '  - catalogue: every available product with id, name, compact description, durationSeconds, shotCount, isMultiShot, caliber, heightMeters, shellType, color, colorPalette, and any active effect flags.',
     '  - slots: a dense beat grid sampled from the actual analysed beats. Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), climax, section }. Slots are the ONLY times you can fire on.',
     '',
     'Output: assign at most one product per slot. Return { cues: [{ slotIndex, productId, description }], rationale }.',
@@ -161,6 +174,6 @@ export function buildSystemPrompt(): string {
     '',
     'Output schema (return EXACTLY this JSON shape, no prose, no markdown fences):',
     '  { "cues": [{ "slotIndex": <int>, "productId": "<uuid>", "description": "<string ≤180 chars>" }, ...], "rationale": "<string>" }',
-    'Constraints: cues.length 1–640. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
+    'Constraints: cues.length 1–360. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
   ].join('\n');
 }
