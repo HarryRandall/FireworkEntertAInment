@@ -105,7 +105,19 @@ async function EffectsData({ params }: { params: EffectsSearchParams }) {
         ]}
       />
 
-      <DataTableShell>
+      <DataTableShell
+        viewport
+        footer={
+          totalPages > 1 ? (
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              searchParams={params}
+              className="mt-0"
+            />
+          ) : null
+        }
+      >
         <table className={tableClasses('min-w-[1120px]')}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -127,7 +139,7 @@ async function EffectsData({ params }: { params: EffectsSearchParams }) {
                   <EffectPreviewIcon preview={effect.preview} />
                 </td>
                 <td className={tableCellClasses('px-5 py-4')}>
-                  <div className="font-medium text-[color:var(--color-content-emphasis)]">
+                  <div className="max-w-xs truncate font-medium text-[color:var(--color-content-emphasis)]">
                     {effect.name}
                   </div>
                   <div className="mt-1 max-w-md truncate text-xs text-[color:var(--color-content-subtle)]">
@@ -144,28 +156,28 @@ async function EffectsData({ params }: { params: EffectsSearchParams }) {
                 </td>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {formatDuration(effect.durationSeconds)}
                 </td>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {effect.heightMeters == null ? '—' : `${effect.heightMeters}m`}
                 </td>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {effect.productCount}
                 </td>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {formatStableDateTime(effect.updatedAt)}
@@ -184,8 +196,6 @@ async function EffectsData({ params }: { params: EffectsSearchParams }) {
           </tbody>
         </table>
       </DataTableShell>
-
-      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

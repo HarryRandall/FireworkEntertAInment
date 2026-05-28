@@ -1,5 +1,6 @@
 /** Pagination control for DataTable — use on any server-paginated list with `searchParams`. */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from './Button';
 
 export const TABLE_PAGE_SIZE = 8;
@@ -11,6 +12,7 @@ type TablePaginationProps = {
   totalPages: number;
   searchParams: SearchParams;
   pageKey?: string;
+  className?: string;
 };
 
 function pageHref(searchParams: SearchParams, page: number, pageKey: string) {
@@ -38,6 +40,7 @@ export function TablePagination({
   totalPages,
   searchParams,
   pageKey = 'page',
+  className,
 }: TablePaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -46,7 +49,10 @@ export function TablePagination({
   return (
     <nav
       aria-label="Table pagination"
-      className="mt-auto flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      className={cn(
+        'mt-auto flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+        className,
+      )}
     >
       <span className="text-sm text-[color:var(--color-content-subtle)]">
         Page {currentPage} of {totalPages}
