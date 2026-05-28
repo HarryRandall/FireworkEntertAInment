@@ -101,7 +101,19 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
 
   return (
     <>
-      <DataTableShell>
+      <DataTableShell
+        viewport
+        footer={
+          totalPages > 1 ? (
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              searchParams={params}
+              className="mt-0"
+            />
+          ) : null
+        }
+      >
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -127,28 +139,28 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
                 <tr key={s.id} className={tableRowClasses()}>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-medium text-[color:var(--color-content-emphasis)]',
+                      'px-5 py-4 font-medium whitespace-nowrap text-[color:var(--color-content-emphasis)]',
                     )}
                   >
                     {s.name}
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 text-[color:var(--color-content-subtle)]',
+                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
                     )}
                   >
                     {s.contactEmail || '—'}
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
                   >
                     {s.phone || '—'}
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 text-[color:var(--color-content-subtle)]',
+                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
                     )}
                   >
                     {s.websiteUrl ? (
@@ -178,8 +190,6 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
           </tbody>
         </table>
       </DataTableShell>
-
-      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

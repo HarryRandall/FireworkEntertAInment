@@ -125,7 +125,19 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
         ]}
       />
 
-      <DataTableShell>
+      <DataTableShell
+        viewport
+        footer={
+          totalPages > 1 ? (
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              searchParams={params}
+              className="mt-0"
+            />
+          ) : null
+        }
+      >
         <table className={tableClasses('min-w-[960px]')}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -142,13 +154,13 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
               <tr key={product.id} className={tableRowClasses()}>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {product.partNumber}
                 </td>
                 <td className={tableCellClasses('px-5 py-4')}>
-                  <div className="font-medium text-[color:var(--color-content-emphasis)]">
+                  <div className="max-w-md truncate font-medium text-[color:var(--color-content-emphasis)]">
                     {product.name}
                   </div>
                   {product.fireworkType ? (
@@ -171,7 +183,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                 </td>
                 <td
                   className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                   )}
                 >
                   {formatDuration(product.durationSeconds)}
@@ -193,8 +205,6 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
           </tbody>
         </table>
       </DataTableShell>
-
-      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

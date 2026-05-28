@@ -7,24 +7,36 @@ export function DataTableShell({
   caption,
   children,
   className,
+  footer,
+  viewport = false,
 }: {
   caption?: ReactNode;
   children: ReactNode;
   className?: string;
+  footer?: ReactNode;
+  viewport?: boolean;
 }) {
   return (
     <div
       className={cn(
         'overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]',
+        viewport && 'min-h-0 md:flex md:flex-1 md:flex-col',
         className,
       )}
     >
       {caption ? (
-        <div className="border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-sm font-medium text-[color:var(--color-content-default)]">
+        <div className="shrink-0 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-sm font-medium text-[color:var(--color-content-default)]">
           {caption}
         </div>
       ) : null}
-      <div className="overflow-x-auto">{children}</div>
+      <div className={cn('overflow-x-auto', viewport && 'md:min-h-0 md:flex-1 md:overflow-auto')}>
+        {children}
+      </div>
+      {footer ? (
+        <div className="shrink-0 border-t border-[color:var(--color-border-subtle)] px-4 py-4 sm:px-5">
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

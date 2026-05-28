@@ -120,7 +120,19 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
         ]}
       />
 
-      <DataTableShell>
+      <DataTableShell
+        viewport
+        footer={
+          totalPages > 1 ? (
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              searchParams={params}
+              className="mt-0"
+            />
+          ) : null
+        }
+      >
         <table className={tableClasses('min-w-[1120px]')}>
           <thead className={tableHeadClasses()}>
             <tr>
@@ -135,89 +147,105 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
             </tr>
           </thead>
           <tbody>
-            {paginated.map((firework) => (
-              <tr key={firework.id} className={tableRowClasses()}>
-                <td className={tableCellClasses('px-5 py-4')}>
-                  <EffectPreviewIcon preview={firework.preview} />
-                </td>
-                <td className={tableCellClasses('px-5 py-4')}>
-                  <div className="font-medium text-[color:var(--color-content-emphasis)]">
-                    {firework.name}
-                  </div>
-                  <div className="mt-1 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums">
-                    {firework.partNumber}
-                  </div>
-                </td>
-                <td
-                  className={tableCellClasses('px-5 py-4 text-[color:var(--color-content-subtle)]')}
-                >
-                  {firework.manufacturer ?? '—'}
-                </td>
-                <td className={tableCellClasses('px-5 py-4')}>
-                  {firework.fireworkType ? (
-                    <Badge tone="neutral" solid>
-                      {firework.fireworkType}
-                    </Badge>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-                <td className={tableCellClasses('px-5 py-4')}>
-                  <div className="flex max-w-lg flex-wrap gap-2">
-                    {firework.effects.length > 0 ? (
-                      firework.effects.slice(0, 4).map((effect) => (
-                        <Link
-                          key={effect.id}
-                          href={`/admin/effects/${effect.id}`}
-                          className="focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
-                        >
-                          <Badge tone="accent" solid>
-                            {effect.name}
-                          </Badge>
-                        </Link>
-                      ))
-                    ) : (
-                      <span className="text-[color:var(--color-content-subtle)]">—</span>
+            {paginated.map((firework) => {
+              const visibleEffectCount = firework.effects.length > 4 ? 3 : 4;
+              const visibleEffects = firework.effects.slice(0, visibleEffectCount);
+              const hiddenEffectCount = firework.effects.length - visibleEffects.length;
+
+              return (
+                <tr key={firework.id} className={tableRowClasses()}>
+                  <td className={tableCellClasses('px-5 py-4')}>
+                    <EffectPreviewIcon preview={firework.preview} />
+                  </td>
+                  <td className={tableCellClasses('px-5 py-4')}>
+                    <div className="line-clamp-2 max-w-xs font-medium text-[color:var(--color-content-emphasis)]">
+                      {firework.name}
+                    </div>
+                    <div className="mt-1 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums">
+                      {firework.partNumber}
+                    </div>
+                  </td>
+                  <td
+                    className={tableCellClasses(
+                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
                     )}
-                    {firework.effects.length > 4 ? (
-                      <Badge tone="neutral">+{firework.effects.length - 4}</Badge>
-                    ) : null}
-                  </div>
-                </td>
-                <td className={tableCellClasses('px-5 py-4')}>
-                  <div className="flex flex-wrap gap-2">
-                    {firework.calibers.length > 0 ? (
-                      firework.calibers.map((caliber) => (
-                        <Badge key={caliber} tone="neutral">
-                          {caliber}
+                  >
+                    {firework.manufacturer ?? '—'}
+                  </td>
+                  <td className={tableCellClasses('px-5 py-4')}>
+                    {firework.fireworkType ? (
+                      <Badge tone="neutral" solid className="whitespace-nowrap">
+                        {firework.fireworkType}
+                      </Badge>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className={tableCellClasses('px-5 py-4')}>
+                    <div className="grid max-w-sm grid-cols-2 gap-2">
+                      {visibleEffects.length > 0 ? (
+                        visibleEffects.map((effect) => (
+                          <Link
+                            key={effect.id}
+                            href={`/admin/effects/${effect.id}`}
+                            className="min-w-0 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+                          >
+                            <Badge
+                              tone="accent"
+                              solid
+                              className="w-full truncate whitespace-nowrap"
+                            >
+                              {effect.name}
+                            </Badge>
+                          </Link>
+                        ))
+                      ) : (
+                        <span className="text-[color:var(--color-content-subtle)]">—</span>
+                      )}
+                      {hiddenEffectCount > 0 ? (
+                        <Badge tone="neutral" className="w-full whitespace-nowrap">
+                          +{hiddenEffectCount}
                         </Badge>
-                      ))
-                    ) : (
-                      <span className="text-[color:var(--color-content-subtle)]">—</span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className={tableCellClasses('px-5 py-4')}>
+                    <div className="flex max-w-40 flex-nowrap gap-2 overflow-hidden">
+                      {firework.calibers.length > 0 ? (
+                        firework.calibers.map((caliber) => (
+                          <Badge
+                            key={caliber}
+                            tone="neutral"
+                            className="shrink-0 whitespace-nowrap"
+                          >
+                            {caliber}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-[color:var(--color-content-subtle)]">—</span>
+                      )}
+                    </div>
+                  </td>
+                  <td
+                    className={tableCellClasses(
+                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
-                  </div>
-                </td>
-                <td
-                  className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                  )}
-                >
-                  {firework.shotCount}
-                </td>
-                <td
-                  className={tableCellClasses(
-                    'px-5 py-4 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                  )}
-                >
-                  {formatDuration(firework.durationSeconds)}
-                </td>
-              </tr>
-            ))}
+                  >
+                    {firework.shotCount}
+                  </td>
+                  <td
+                    className={tableCellClasses(
+                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
+                    )}
+                  >
+                    {formatDuration(firework.durationSeconds)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </DataTableShell>
-
-      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }
