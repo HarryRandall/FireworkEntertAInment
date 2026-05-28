@@ -33,6 +33,28 @@ test('audio analysis runner stores rich local song analysis JSON', () => {
   assert.doesNotMatch(runner, /firework_cue_summary/);
 });
 
+test('analyser warm-up is opt-in from the admin dashboard', () => {
+  const modalApp = readFileSync(join(root, 'analyser/modal_app.py'), 'utf8');
+  const adminPage = readFileSync(join(root, 'app/(admin)/admin/page.tsx'), 'utf8');
+  const warmControl = readFileSync(
+    join(root, 'app/(admin)/admin/AnalyserWarmthControl.tsx'),
+    'utf8',
+  );
+  const warmLib = readFileSync(join(root, 'lib/analyser-warmth.server.ts'), 'utf8');
+  const warmRoute = readFileSync(join(root, 'app/api/admin/analyser/warm/route.ts'), 'utf8');
+
+  assert.match(modalApp, /payload\.get\("warmup"\) is True/);
+  assert.doesNotMatch(modalApp, /min_containers=1/);
+  assert.doesNotMatch(modalApp, /buffer_containers=1/);
+  assert.doesNotMatch(modalApp, /scaledown_window=/);
+  assert.match(adminPage, /AnalyserWarmthControl/);
+  assert.match(warmControl, /Keep warm for 30 minutes/);
+  assert.match(warmControl, /Extend 30 minutes/);
+  assert.match(warmLib, /WARM_WINDOW_MS = 30 \* 60 \* 1000/);
+  assert.match(warmLib, /JSON\.stringify\(\{ warmup: true \}\)/);
+  assert.match(warmRoute, /refreshAnalyserWarmth/);
+});
+
 test('show creation attaches analysed music and starts cue generation', () => {
   const action = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
 

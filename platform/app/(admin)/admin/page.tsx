@@ -6,7 +6,9 @@ import { AdminOverviewSkeleton } from '@/app/components/app/RouteSkeletons';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Card } from '@/app/components/ui/Card';
 import { StatTile } from '@/app/components/ui/StatTile';
+import { AnalyserWarmthControl } from './AnalyserWarmthControl';
 import {
+  getCurrentProfile,
   listAdminUsers,
   listAdminEffects,
   listAdminFireworks,
@@ -14,6 +16,7 @@ import {
   listImportJobs,
   listSuppliers,
 } from '@/lib/admin.server';
+import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 
 export default function AdminOverviewPage() {
   return (
@@ -31,17 +34,23 @@ export default function AdminOverviewPage() {
 }
 
 async function AdminOverviewData() {
-  const [users, suppliers, imports, catalogue, fireworks, effects] = await Promise.all([
-    listAdminUsers(),
-    listSuppliers(),
-    listImportJobs(),
-    listCatalogueProducts(),
-    listAdminFireworks(),
-    listAdminEffects(),
-  ]);
+  const [users, suppliers, imports, catalogue, fireworks, effects, warmthState, profile] =
+    await Promise.all([
+      listAdminUsers(),
+      listSuppliers(),
+      listImportJobs(),
+      listCatalogueProducts(),
+      listAdminFireworks(),
+      listAdminEffects(),
+      getAnalyserWarmthState(),
+      getCurrentProfile(),
+    ]);
+  const canManageAnalyser = profile?.permissions.includes('admin.manage_imports') ?? false;
 
   return (
     <>
+      <AnalyserWarmthControl initialState={warmthState} canManage={canManageAnalyser} />
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatTile
           label="Users"
