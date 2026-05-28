@@ -2,8 +2,8 @@
  * Short-lived analyser warm-up controls.
  *
  * The warm window is stored in the shared cache when Upstash is configured.
- * Without Upstash it still works for local development, but Vercel cron
- * invocations may not see the same in-memory state.
+ * Without Upstash it still works while the same server process is alive, but
+ * separate serverless invocations may not share the same in-memory state.
  */
 import 'server-only';
 
@@ -12,7 +12,7 @@ import { deleteCachedKeys, getCachedJson, hasRedisCache, setCachedJson } from '@
 const ANALYSER_WARMTH_CACHE_KEY = 'platform:v1:analyser:warmth';
 const WARM_WINDOW_MS = 30 * 60 * 1000;
 const CACHE_BUFFER_SECONDS = 90;
-const WARMUP_MIN_INTERVAL_MS = 45 * 1000;
+const WARMUP_MIN_INTERVAL_MS = 30 * 1000;
 const WARMUP_TIMEOUT_MS = 25 * 1000;
 
 type StoredAnalyserWarmthState = {

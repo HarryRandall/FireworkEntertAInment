@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/admin/analyser/warm",
-      "schedule": "* * * * *"
-    }
-  ]
-}

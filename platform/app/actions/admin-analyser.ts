@@ -39,3 +39,19 @@ export async function setAnalyserWarmthAction(
   revalidatePath('/admin');
   return { ok: true, state };
 }
+
+export async function refreshAnalyserWarmthAction(): Promise<
+  | { ok: true; state: AnalyserWarmthState }
+  | { ok: false; error: string; state?: AnalyserWarmthState }
+> {
+  const admin = await requirePermission('admin.manage_imports');
+  if (!admin) {
+    return { ok: false, error: 'You do not have permission to manage the analyser.' };
+  }
+
+  const result = await refreshAnalyserWarmth();
+  revalidatePath('/admin');
+
+  if (!result.ok) return { ok: false, error: result.error, state: result.state };
+  return { ok: true, state: result.state };
+}

@@ -50,9 +50,12 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   assert.match(adminPage, /AnalyserWarmthControl/);
   assert.match(warmControl, /Keep warm for 30 minutes/);
   assert.match(warmControl, /Extend 30 minutes/);
+  assert.match(warmControl, /refreshAnalyserWarmthAction/);
+  assert.match(warmControl, /BROWSER_WARMUP_INTERVAL_MS = 45 \* 1000/);
   assert.match(warmLib, /WARM_WINDOW_MS = 30 \* 60 \* 1000/);
   assert.match(warmLib, /JSON\.stringify\(\{ warmup: true \}\)/);
   assert.match(warmRoute, /refreshAnalyserWarmth/);
+  assert.equal(existsSync(join(root, 'vercel.json')), false);
 });
 
 test('show creation attaches analysed music and starts cue generation', () => {
