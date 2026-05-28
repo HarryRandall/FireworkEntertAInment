@@ -23,6 +23,7 @@ export class Particle {
   mass = 1;
   alive = false;
   size = 0;
+  shape = 0;
   color = new THREE.Color();
   decay = 0;
   life = 0;
@@ -106,6 +107,7 @@ export class Particle {
     this.z = 0;
     this.mass = 1;
     this.size = 0;
+    this.shape = 0;
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;

@@ -10,6 +10,7 @@ import 'server-only';
 
 import { cache } from 'react';
 import { getCurrentUserId } from '@/lib/current-user.server';
+import type { LaunchPosition } from '@/lib/fireworks/design';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type {
   FireworkSpecification,
@@ -27,18 +28,43 @@ import {
   getShowReplayCuesCacheKey,
   getUserShowsCacheKey,
 } from './cache-keys';
-import { mapCue, mapEffectSpecification, mapReplayCueBase, mapShow } from './mappers';
+import {
+  mapCue,
+  mapEffectSpecification,
+  mapFireworkVariantSpecification,
+  mapReplayCueBase,
+  mapShow,
+} from './mappers';
 import { computeShoppingListForShow } from './shopping.server';
 import { getServerClient } from './supabase';
 import {
   EFFECT_SPEC_SELECT,
+  FIREWORK_VARIANT_SELECT,
   FIREWORK_SPECS_TTL_SECONDS,
   SHOWS_TTL_SECONDS,
   SHOW_CUE_SELECT,
   SHOW_SELECT,
   type EffectSpecProjection,
+  type FireworkVariantProjection,
   type ReplayCueRow,
 } from './types';
+
+function firstVariant(
+  variant: FireworkVariantProjection | FireworkVariantProjection[] | null | undefined,
+): FireworkVariantProjection | null {
+  if (!variant) return null;
+  return Array.isArray(variant) ? (variant[0] ?? null) : variant;
+}
+
+function parseShotPositionOverride(input: unknown): LaunchPosition | null {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return null;
+  const record = input as Record<string, unknown>;
+  const x = Number(record.x);
+  const y = Number(record.y);
+  const z = Number(record.z);
+  if (![x, y, z].every(Number.isFinite)) return null;
+  return { x, y, z };
+}
 
 /** Returns every show owned by the current user, sorted by `updated_at` desc. */
 export async function listShowsForCurrentUser(): Promise<Show[]> {
@@ -159,6 +185,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
        product_shots (
          shot_index,
          caliber,
+         firework_variants (${FIREWORK_VARIANT_SELECT}),
          effect_specs (${EFFECT_SPEC_SELECT})
        )`,
     )
@@ -177,6 +204,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
     product_shots: Array<{
       shot_index: number;
       caliber: string | null;
+      firework_variants: FireworkVariantProjection | FireworkVariantProjection[] | null;
       effect_specs: EffectSpecProjection | null;
     }>;
   };
@@ -184,16 +212,27 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
   const mapped: FireworkSpecification[] = [];
   for (const row of (data ?? []) as ProductRow[]) {
     const shots = [...(row.product_shots ?? [])].sort((a, b) => a.shot_index - b.shot_index);
-    const primary = shots.find((s) => s.effect_specs != null);
-    if (!primary?.effect_specs) continue;
-    const effectSpec = primary.effect_specs;
+    const primary = shots.find((s) => s.firework_variants != null || s.effect_specs != null);
+    if (!primary) continue;
+    const variant = firstVariant(primary.firework_variants);
+    const base = variant
+      ? mapFireworkVariantSpecification(
+          variant,
+          mapped.length,
+          primary.caliber ?? null,
+          primary.effect_specs?.spec_json ?? null,
+        )
+      : primary.effect_specs
+        ? mapEffectSpecification(primary.effect_specs, mapped.length, primary.caliber ?? null)
+        : null;
+    if (!base) continue;
     mapped.push({
-      ...mapEffectSpecification(effectSpec, mapped.length, primary.caliber ?? null),
+      ...base,
       id: row.id,
       slug: row.part_number,
       name: row.name,
-      description: row.description ?? effectSpec.description,
-      durationSeconds: row.duration_seconds ?? effectSpec.duration_seconds,
+      description: row.description ?? base.description,
+      durationSeconds: row.duration_seconds ?? base.durationSeconds,
       shotCount: shots.length,
     });
   }
@@ -243,18 +282,28 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     product_id: string;
     shot_index: number;
     time_offset_seconds: number;
+    pan_degrees: number | null;
+    tilt_degrees: number | null;
+    position_override_json: unknown;
     caliber: string | null;
+    firework_variants: FireworkVariantProjection | FireworkVariantProjection[] | null;
     effect_specs: EffectSpecProjection | null;
   };
 
-  type ShotSpec = { timeOffsetSeconds: number; firework: FireworkSpecification };
+  type ShotSpec = {
+    timeOffsetSeconds: number;
+    panDegrees: number | null;
+    tiltDegrees: number | null;
+    positionOverride: LaunchPosition | null;
+    firework: FireworkSpecification;
+  };
   const shotsByProduct = new Map<string, ShotSpec[]>();
 
   if (productIds.length > 0) {
     const { data: shots, error: shotsErr } = await supabase
       .from('product_shots')
       .select(
-        `product_id, shot_index, time_offset_seconds, caliber, effect_specs (${EFFECT_SPEC_SELECT})`,
+        `product_id, shot_index, time_offset_seconds, pan_degrees, tilt_degrees, position_override_json, caliber, firework_variants (${FIREWORK_VARIANT_SELECT}), effect_specs (${EFFECT_SPEC_SELECT})`,
       )
       .in('product_id', productIds)
       .order('shot_index', { ascending: true });
@@ -263,11 +312,22 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
       console.error('[shows.server] product_shots load failed:', shotsErr);
     } else {
       for (const shot of (shots ?? []) as ShotRow[]) {
-        if (!shot.effect_specs) continue;
+        const variant = firstVariant(shot.firework_variants);
+        if (!variant && !shot.effect_specs) continue;
         const arr = shotsByProduct.get(shot.product_id) ?? [];
         arr.push({
           timeOffsetSeconds: Number(shot.time_offset_seconds),
-          firework: mapEffectSpecification(shot.effect_specs, arr.length, shot.caliber ?? null),
+          panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
+          tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
+          positionOverride: parseShotPositionOverride(shot.position_override_json),
+          firework: variant
+            ? mapFireworkVariantSpecification(
+                variant,
+                arr.length,
+                shot.caliber ?? null,
+                shot.effect_specs?.spec_json ?? null,
+              )
+            : mapEffectSpecification(shot.effect_specs!, arr.length, shot.caliber ?? null),
         });
         shotsByProduct.set(shot.product_id, arr);
       }
@@ -289,6 +349,9 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
         id: shots.length === 1 ? baseCue.id : `${baseCue.id}-shot-${i}`,
         timeSeconds: startSeconds + shots[i].timeOffsetSeconds,
         firework: shots[i].firework,
+        shotPanDegrees: shots[i].panDegrees,
+        shotTiltDegrees: shots[i].tiltDegrees,
+        shotPositionOverride: shots[i].positionOverride,
       });
     }
   }

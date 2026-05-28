@@ -23,7 +23,10 @@ export type FireworkColor = (typeof FIREWORK_COLORS)[keyof typeof FIREWORK_COLOR
 export const FIREWORK_COLOR_VALUES: readonly FireworkColor[] = Object.values(FIREWORK_COLORS);
 
 export const SHELL_TYPES = [
+  'peony',
   'crysanthemum',
+  'chrysanthemum',
+  'brocade',
   'ghost',
   'strobe',
   'palm',
@@ -35,6 +38,13 @@ export const SHELL_TYPES = [
   'crackle',
   'horsetail',
   'comet',
+  'tail',
+  'mine',
+  'pearls',
+  'pistil',
+  'silverFish',
+  'waterfall',
+  'whirl',
 ] as const;
 
 export type ShellType = (typeof SHELL_TYPES)[number];

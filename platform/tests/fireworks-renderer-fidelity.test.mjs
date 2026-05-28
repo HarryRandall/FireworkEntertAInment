@@ -8,18 +8,24 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-test('firework replay uses raw spec_json and cache-busts old shapes', () => {
+test('firework replay compiles variants, raw spec_json, and cache-busts old shapes', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const showMappers = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
   const showDomain = read('lib/show-domain.ts');
   const importJobs = read('lib/import-jobs.ts');
 
-  assert.match(engine, /safeParseFireworkDesign\(cue\.firework\.rawSpec\)/);
+  assert.match(
+    engine,
+    /cue\.firework\.renderDesign \?\? compileFireworkDesign\(\{ legacySpec: cue\.firework\.rawSpec \}\)/,
+  );
   assert.match(showMappers, /rawSpec: row\.spec_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v6'/);
+  assert.match(showMappers, /mapFireworkVariantSpecification/);
+  assert.match(showMappers, /baseModel: effect\?\.model_json/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v7'/);
   assert.match(showDomain, /rawSpec: unknown/);
-  assert.match(importJobs, /rawSpec: spec/);
+  assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
+  assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);
 });
 
 test('firework replay is deterministic and silent when rebuilding after scrub', () => {
@@ -64,10 +70,63 @@ test('QA seed creates pattern, colour, and replay test shows for every user', ()
 
 test('burst patterns distribute over the full sphere', () => {
   const effects = read('lib/fireworks/Effects.ts');
-  // Fibonacci pattern previously wrapped vy in Math.abs, leaving only the
-  // upper hemisphere visible. The fix unwraps it; lock that in.
+  // Fibonacci bursts must stay a full sphere rather than folding the lower
+  // hemisphere upward.
   assert.doesNotMatch(effects, /vy = Math\.abs\(i \* offset/);
-  assert.match(effects, /vy = i \* offset - 1 \+ offset \/ 2;[\s\S]*case 2:/);
+  assert.match(effects, /function fibonacciDirection/);
+  assert.match(effects, /const y = index \* offset - 1 \+ offset \/ 2/);
+});
+
+test('renderer preserves named firework geometry and trail profiles', () => {
+  const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+  const migration = read(
+    'supabase/migrations/20260528233000_renderer_effect_geometry_expansion.sql',
+  );
+
+  for (const key of [
+    'crown',
+    'weeping',
+    'radial_arms',
+    'ring',
+    'split_cross',
+    'single_tail',
+    'upward_fan',
+    'pearls',
+    'fish',
+    'waterfall',
+    'whirl',
+  ]) {
+    assert.match(design, new RegExp(`'${key}'`));
+    assert.match(effects, new RegExp(`'${key}'`));
+  }
+  assert.match(design, /extractBaseDefaults/);
+  assert.match(design, /trailProfileToSettings/);
+  assert.match(effects, /spawnPistil/);
+  assert.match(effects, /splitCrossette/);
+  assert.match(effects, /fireMine/);
+  assert.match(effects, /spawnFishSwarm/);
+  assert.match(effects, /spawnWaterfall/);
+  assert.match(effects, /spawnWhirl/);
+  for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
+    assert.match(migration, new RegExp(`'${slug}'`));
+  }
+});
+
+test('replay carries product-shot fan angles into launch physics', () => {
+  const queries = read('lib/shows/queries.server.ts');
+  const domain = read('lib/show-domain.ts');
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+
+  assert.match(queries, /pan_degrees, tilt_degrees, position_override_json/);
+  assert.match(queries, /shotPanDegrees: shots\[i\]\.panDegrees/);
+  assert.match(queries, /shotTiltDegrees: shots\[i\]\.tiltDegrees/);
+  assert.match(domain, /shotPanDegrees\?: number \| null/);
+  assert.match(engine, /panDegrees: cue\.shotPanDegrees \?\? 0/);
+  assert.match(engine, /shotPositionOverride/);
+  assert.match(effects, /const panRadians/);
+  assert.match(effects, /lateralVelocity/);
 });
 
 test('burst physics hang like firework stars instead of free-falling', () => {
@@ -76,24 +135,31 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
 
   assert.match(effects, /const STAR_DRAG = 2\.15/);
+  assert.match(effects, /const MIN_STAR_GRAVITY = -1\.85/);
+  assert.match(effects, /const MAX_STAR_GRAVITY = 0\.28/);
   assert.match(effects, /clampStarGravity\(rangeRand\(design\.burst\.gravity, rng\)\)/);
-  assert.match(effects, /drag: STAR_DRAG/);
+  assert.match(effects, /starDrag\(design\)/);
   assert.match(effects, /gravity: TRAIL_GRAVITY/);
   assert.match(particle, /drag = 0/);
   assert.match(particle, /maxLife = 0/);
   assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
   assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
-  assert.match(engine, /SNAPSHOT_STRIDE = 16/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 17/);
   assert.match(engine, /state\.data\[o \+ 14\] = p\.drag/);
   assert.match(engine, /state\.data\[o \+ 15\] = p\.maxLife/);
+  assert.match(engine, /state\.data\[o \+ 16\] = p\.shape/);
   assert.match(engine, /p\.drag = state\.data\[o \+ 14\]/);
   assert.match(engine, /p\.maxLife = state\.data\[o \+ 15\] \|\| p\.life/);
+  assert.match(engine, /p\.shape = state\.data\[o \+ 16\] \|\| 0/);
 });
 
-test('renderer draws only compact live square particles', () => {
+test('renderer draws compact mixed round and streak particles', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
+  const design = read('lib/fireworks/design.ts');
+  const particle = read('lib/fireworks/Particle.ts');
   const pool = read('lib/fireworks/ParticlePool.ts');
   const shaders = read('lib/fireworks/shaders.ts');
+  const effects = read('lib/fireworks/Effects.ts');
   const canvas = read('app/components/app/FireworkReplayCanvas.tsx');
 
   assert.match(pool, /aliveIndices: Uint32Array/);
@@ -101,10 +167,16 @@ test('renderer draws only compact live square particles', () => {
   assert.match(pool, /return this\.activeCount/);
   assert.match(pool, /p\.reset\(\);[\s\S]*return p;/);
   assert.match(pool, /p\.color\.setRGB\(1, 1, 1\)/);
+  assert.match(particle, /shape = 0/);
+  assert.match(pool, /shape\?: number/);
+  assert.match(pool, /p\.shape = prop\.shape \?\? 0/);
   assert.match(engine, /const live = this\.pool\.aliveIndices/);
   assert.match(engine, /let drawCount = 0/);
   assert.match(engine, /renderParticleSize\(p\)/);
   assert.match(engine, /renderParticleAlpha\(p\)/);
+  assert.match(engine, /shapeAttribute/);
+  assert.match(engine, /this\.geometry\.setAttribute\('shape', this\.shapeAttribute\)/);
+  assert.match(engine, /shapes\[drawCount\] = p\.shape/);
   assert.match(engine, /p\.color\.r \* alpha/);
   assert.match(engine, /this\.geometry\.setDrawRange\(0, drawCount\)/);
   assert.match(engine, /addUpdateRange\(0, positionCount\)/);
@@ -112,7 +184,21 @@ test('renderer draws only compact live square particles', () => {
   assert.doesNotMatch(engine, /alphaAttribute|setAttribute\("alpha"/);
   assert.doesNotMatch(shaders, /texture2D|sampler2D|pointTexture/);
   assert.doesNotMatch(shaders, /attribute float alpha|vAlpha/);
-  assert.match(shaders, /squareDistance = max\(abs\(centered\.x\), abs\(centered\.y\)\)/);
+  assert.match(shaders, /attribute float shape/);
+  assert.match(shaders, /varying float vShape/);
+  assert.match(shaders, /float roundDistance = length\(centered\)/);
+  assert.match(shaders, /float squareDistance = max\(squareX, squareY\)/);
+  assert.match(shaders, /if \(isSquare < 0\.5 && roundDistance > 0\.58\) discard/);
+  assert.match(shaders, /float squareBody/);
+  assert.match(design, /streakSize: z\.coerce\.number\(\)\.min\(0\.4\)\.max\(4\)\.default\(1\)/);
+  assert.match(design, /streakLength: z\.coerce\.number\(\)\.min\(0\.4\)\.max\(4\)\.default\(1\)/);
+  assert.match(design, /streakLife: z\.coerce\.number\(\)\.min\(0\.2\)\.max\(4\)\.default\(1\)/);
+  assert.match(effects, /design\.trail\.streakSize/);
+  assert.match(effects, /design\.trail\.streakLength/);
+  assert.match(effects, /design\.trail\.streakLife/);
+  assert.match(effects, /design\.geometry !== 'pearls' && !brocade/);
+  assert.match(effects, /if \(brocade && ageRatio < 0\.18\) return/);
+  assert.doesNotMatch(shaders, /rectStretch|rectYLimit/);
   assert.match(shaders, /softHalo/);
   assert.match(shaders, /gl_FragColor = vec4\(sparkColor \* intensity, alpha\)/);
   assert.match(shaders, /gl_PointSize = clamp/);
@@ -138,8 +224,9 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
   assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.68/);
   assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 11/);
-  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND \* \(audible \? 1 : 0\.42\)/);
-  assert.match(effects, /fullQuality \? 90 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
+  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND \* design\.trail\.density/);
+  assert.match(effects, /design\.trailProfile === 'none'/);
+  assert.match(effects, /fullQuality\s*\?\s*90 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
   assert.match(effects, /mass: 0\.006/);
 });
 

@@ -18,6 +18,8 @@ type Pos = { x: number; y: number; z: number };
 type FireOptions = {
   rng: RandomSource;
   audible: boolean;
+  panDegrees?: number;
+  tiltDegrees?: number;
 };
 
 const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
@@ -25,23 +27,37 @@ const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
   wave: 2,
   strobe: 3,
 };
+
+function seedFromDesign(design: FireworkDesign): 1 | 2 | 3 {
+  return PATTERN_SEED[design.pattern];
+}
 const STAR_DRAG = 2.15;
 const TRAIL_DRAG = 2.55;
 const FLASH_DRAG = 4.0;
-const MIN_STAR_GRAVITY = -0.24;
+const MIN_STAR_GRAVITY = -1.85;
+const MAX_STAR_GRAVITY = 0.28;
 const TRAIL_GRAVITY = -0.03;
 const SHELL_TRAIL_DENSITY = 0.68;
 const STAR_TRAIL_PARTICLES_PER_SECOND = 11;
 const LIFT_SPARK_COLOR = new THREE.Color(1, 0.76, 0.38);
 const HOT_SPARK_COLOR = new THREE.Color(1, 0.92, 0.72);
+const SILVER_SPARK_COLOR = new THREE.Color(0.86, 0.94, 1);
+const BROCADE_WHITE_GOLD = new THREE.Color(1, 0.96, 0.82);
+const BROCADE_AMBER_SMOKE = new THREE.Color(0.18, 0.08, 0.025);
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
-  return a + rng.next() * (b - a);
+  const min = Math.min(a, b);
+  const max = Math.max(a, b);
+  return min + rng.next() * (max - min);
 }
 
 function clampStarGravity(gravity: number): number {
-  return Math.max(gravity, MIN_STAR_GRAVITY);
+  return Math.min(MAX_STAR_GRAVITY, Math.max(gravity, MIN_STAR_GRAVITY));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
@@ -78,6 +94,15 @@ function resolveColor(
   return color === 'random' ? randomColor(rng) : color;
 }
 
+function resolveOptionalColor(
+  color: FireworkDesign['secondaryColor'],
+  rng: RandomSource,
+): THREE.Color | null {
+  if (!color) return null;
+  const rgb = resolveColor(color, rng);
+  return new THREE.Color(rgb.r, rgb.g, rgb.b);
+}
+
 function flairColor(
   design: FireworkDesign,
   color: THREE.Color,
@@ -102,6 +127,41 @@ function mixColor(
   };
 }
 
+function applyColorMix(from: THREE.Color, to: THREE.Color, amount: number): THREE.Color {
+  const mixed = mixColor(from, to, clamp(amount, 0, 1));
+  return new THREE.Color(mixed.r, mixed.g, mixed.b);
+}
+
+function isBrocadeCrown(design: FireworkDesign): boolean {
+  return design.geometry === 'crown' && design.trailProfile === 'glitter';
+}
+
+function fibonacciDirection(index: number, count: number): THREE.Vector3 {
+  const offset = 2 / count;
+  const inc = Math.PI * (3.0 - Math.sqrt(5.0));
+  const y = index * offset - 1 + offset / 2;
+  const r = Math.sqrt(Math.max(0, 1 - y * y));
+  const phi = ((index + 1.0) % count) * inc;
+  return new THREE.Vector3(Math.cos(phi) * r, y, Math.sin(phi) * r);
+}
+
+function starSizeFor(design: FireworkDesign, rng: RandomSource): number {
+  const base = design.size;
+  if (isBrocadeCrown(design)) return base * (0.16 + rng.next() * 0.1);
+  switch (design.geometry) {
+    case 'pearls':
+      return base * (1.05 + rng.next() * 0.35);
+    case 'radial_arms':
+      return base * (0.72 + rng.next() * 0.35);
+    case 'waterfall':
+      return base * (0.48 + rng.next() * 0.28);
+    case 'fish':
+      return base * (0.24 + rng.next() * 0.2);
+    default:
+      return base * (0.74 + rng.next() * 0.38);
+  }
+}
+
 export class Effects {
   constructor(
     private pp: ParticlePool,
@@ -119,9 +179,20 @@ export class Effects {
     const liftColor = new THREE.Color(lift.r, lift.g, lift.b);
 
     const size = design.size;
+    if (design.geometry === 'upward_fan') {
+      this.fireMine(design, position, color, rng, options.audible);
+      return;
+    }
+
     if (options.audible && design.mortar.sound) this.sh.playRandomMortar(1.0, rng);
     this.lights.newLight({ x: position.x, y: 30, z: position.z }, new THREE.Color(0.7, 0.3, 0), 10);
     this.spawnMortarSmoke(position, design.mortar.smokeParticles, rng);
+
+    const liftVelocity = design.liftVelocity ?? 11 + Math.min(size / 40, 6);
+    const panRadians = ((options.panDegrees ?? 0) * Math.PI) / 180;
+    const tiltRadians = ((options.tiltDegrees ?? 0) * Math.PI) / 180;
+    const lateralVelocity = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
+    const forwardVelocity = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
 
     this.pp.new({
       x: position.x,
@@ -129,9 +200,9 @@ export class Effects {
       z: position.z,
       size,
       mass: 0.5,
-      vy: design.liftVelocity ?? 11 + Math.min(size / 40, 6),
-      vx: 0,
-      vz: 0,
+      vy: liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96),
+      vx: lateralVelocity,
+      vz: forwardVelocity,
       h: 0.9,
       s: 0.5,
       l: 0.5,
@@ -140,10 +211,52 @@ export class Effects {
       b: liftColor.b,
       life: design.shellLife,
       decay: 10 + rng.next() * 20,
-      effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, liftColor, rng),
+      effect: (p, dt, t) => this.shellEffect(p, dt, t, seed, liftColor, design, rng),
       condition: (p) => p.vy <= 0,
       action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, options.audible),
     });
+  }
+
+  private fireMine(
+    design: FireworkDesign,
+    position: Pos,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    if (audible && design.mortar.sound) this.sh.playRandomMortar(0.7, rng);
+    this.lights.newLight({ x: position.x, y: 35, z: position.z }, color, 12);
+    this.spawnMortarSmoke(position, Math.round(design.mortar.smokeParticles * 0.65), rng);
+    const count = Math.max(36, Math.round(design.size * 0.9));
+    const speed = rangeRand(design.burst.speed, rng);
+    const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
+    for (let i = 0; i < count; i++) {
+      const spread = (rng.next() - 0.5) * Math.PI * 0.92;
+      const fan = 0.45 + rng.next() * 0.8;
+      const starColor = this.starColor(design, color, i, rng);
+      this.pp.new({
+        x: position.x + (rng.next() - 0.5) * 34,
+        y: position.y + 24 + rng.next() * 22,
+        z: position.z + (rng.next() - 0.5) * 34,
+        size: starSizeFor(design, rng),
+        mass: 0.001,
+        gravity: grav,
+        drag: STAR_DRAG * 0.72,
+        vx: Math.sin(spread) * speed * fan,
+        vy: speed * (1.2 + rng.next() * 0.85),
+        vz: (rng.next() - 0.5) * speed * 0.45,
+        r: starColor.r,
+        g: starColor.g,
+        b: starColor.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: rangeRand(design.burst.life, rng) * 0.72,
+        decay: 24 + rng.next() * 62,
+        effect: (p, dt, t) =>
+          this.flairEffect(p, dt, t, seedFromDesign(design), starColor, design, rng, audible),
+      });
+    }
   }
 
   private spawnMortarSmoke(pos: Pos, count: number, rng: RandomSource): void {
@@ -177,6 +290,7 @@ export class Effects {
     time: number,
     seed: 1 | 2 | 3,
     color: THREE.Color,
+    design: FireworkDesign,
     rng: RandomSource,
   ): void {
     let max = 1;
@@ -200,30 +314,74 @@ export class Effects {
         vz = 2 - rng.next() * 4;
         break;
     }
-    const count = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY));
+    const liftTrailMultiplier = isBrocadeCrown(design)
+      ? 2.35
+      : design.geometry === 'single_tail' || design.trailProfile === 'thick_tail'
+        ? 2.25
+        : design.geometry === 'radial_arms'
+          ? 1.45
+          : design.trailProfile === 'none'
+            ? 0.45
+            : 1;
+    const count = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY * liftTrailMultiplier));
     for (let i = 0; i < count; i++) {
+      const brocadeLift = isBrocadeCrown(design);
+      const liftStreakSize = brocadeLift ? clamp(design.trail.streakSize, 0.4, 4) : 1;
+      const liftStreakLife = brocadeLift ? clamp(design.trail.streakLife, 0.2, 4) : 1;
       const spread = 0.32 + rng.next() * 0.72;
-      const smokeTrail = particle.y < 220 || (particle.y < 360 && rng.next() < 0.82);
+      const liftSpread = brocadeLift ? 0.035 + rng.next() * 0.08 : spread;
+      const smokeTrail =
+        !brocadeLift && (particle.y < 220 || (particle.y < 360 && rng.next() < 0.82));
       const smokeSpread = particle.y < 220 ? 28 : 16;
+      const hotTrail =
+        !smokeTrail &&
+        (design.geometry === 'single_tail' ||
+          design.trailProfile === 'thick_tail' ||
+          design.trailProfile === 'glitter');
+      const sparkColor = brocadeLift
+        ? applyColorMix(color, BROCADE_WHITE_GOLD, 0.72 + rng.next() * 0.2)
+        : hotTrail
+          ? applyColorMix(color, HOT_SPARK_COLOR, 0.45)
+          : color;
       this.pp.new({
-        x: particle.x + (rng.next() - 0.5) * (smokeTrail ? smokeSpread : 6),
-        y: particle.y + (rng.next() - 0.5) * (smokeTrail ? 14 : 6),
-        z: particle.z + (rng.next() - 0.5) * (smokeTrail ? smokeSpread : 6),
+        x: particle.x + (rng.next() - 0.5) * (brocadeLift ? 2.2 : smokeTrail ? smokeSpread : 6),
+        y: particle.y + (rng.next() - 0.5) * (brocadeLift ? 2.8 : smokeTrail ? 14 : 6),
+        z: particle.z + (rng.next() - 0.5) * (brocadeLift ? 2.2 : smokeTrail ? smokeSpread : 6),
         mass: smokeTrail ? 0.006 : 0.002,
-        gravity: smokeTrail ? 0.04 + rng.next() * 0.1 : -0.09,
-        drag: smokeTrail ? 1.75 : TRAIL_DRAG,
-        size: smokeTrail ? 46 + rng.next() * 74 : 14 + rng.next() * 34,
-        vx: vx + (rng.next() - 0.5) * spread,
-        vy: smokeTrail ? 0.04 + rng.next() * 0.18 : -0.15 + rng.next() * 0.3,
-        vz: vz + (rng.next() - 0.5) * spread,
-        r: smokeTrail ? 0.12 + rng.next() * 0.05 : color.r,
-        g: smokeTrail ? 0.12 + rng.next() * 0.05 : color.g,
-        b: smokeTrail ? 0.13 + rng.next() * 0.05 : color.b,
+        gravity: smokeTrail ? 0.04 + rng.next() * 0.1 : brocadeLift ? TRAIL_GRAVITY * 0.3 : -0.09,
+        drag: smokeTrail ? 1.75 : brocadeLift ? TRAIL_DRAG * 1.05 : TRAIL_DRAG,
+        size: smokeTrail
+          ? 46 + rng.next() * 74
+          : (brocadeLift ? 8 + rng.next() * 14 : 14 + rng.next() * 34) *
+            design.trail.thickness *
+            liftStreakSize,
+        shape: brocadeLift && !smokeTrail ? 1 : 0,
+        vx: brocadeLift
+          ? particle.vx * 0.015 + (rng.next() - 0.5) * liftSpread
+          : vx + (rng.next() - 0.5) * spread,
+        vy: smokeTrail
+          ? 0.04 + rng.next() * 0.18
+          : brocadeLift
+            ? -0.04 + rng.next() * 0.08
+            : -0.15 + rng.next() * 0.3,
+        vz: brocadeLift
+          ? particle.vz * 0.015 + (rng.next() - 0.5) * liftSpread
+          : vz + (rng.next() - 0.5) * spread,
+        r: smokeTrail ? 0.12 + rng.next() * 0.05 : sparkColor.r,
+        g: smokeTrail ? 0.12 + rng.next() * 0.05 : sparkColor.g,
+        b: smokeTrail ? 0.13 + rng.next() * 0.05 : sparkColor.b,
         h: 1.0,
         s: 0.5,
         l: 0.0,
-        life: smokeTrail ? 1.0 + rng.next() * 2.3 : 0.18 + rng.next() * 0.72,
-        decay: smokeTrail ? 12 + rng.next() * 18 : 38 + rng.next() * 34,
+        life: smokeTrail
+          ? 1.0 + rng.next() * 2.3
+          : (brocadeLift ? (0.14 + rng.next() * 0.24) * liftStreakLife : 0.18 + rng.next() * 0.72) *
+            design.trail.length,
+        decay: smokeTrail
+          ? 12 + rng.next() * 18
+          : brocadeLift
+            ? 34 + rng.next() * 30
+            : 38 + rng.next() * 34,
       });
     }
   }
@@ -247,74 +405,505 @@ export class Effects {
       }
     }
 
+    const brocade = isBrocadeCrown(design);
     this.lights.setHemi(design.size / 100, color.r, color.g, color.b);
-    this.explodeBurst(particle, rng, audible);
+    if (brocade) this.spawnBrocadeHalo(particle, color, rng);
+    if (design.geometry === 'single_tail') {
+      this.cometFinish(particle, design, color, rng, audible);
+      return;
+    }
+    if (design.geometry === 'fish') {
+      this.spawnFishSwarm(particle, design, color, rng, audible);
+      return;
+    }
+    if (design.geometry === 'waterfall') {
+      this.spawnWaterfall(particle, design, color, rng, audible);
+      return;
+    }
+    if (design.geometry === 'whirl') {
+      this.spawnWhirl(particle, design, color, rng, audible);
+      return;
+    }
+
+    if (design.geometry !== 'pearls' && !brocade) this.explodeBurst(particle, rng, audible);
 
     const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
     const speed = rangeRand(design.burst.speed, rng);
     const lifeRange = design.burst.life;
-    const offset = 2 / design.size;
-    const inc = Math.PI * (3.0 - Math.sqrt(5.0));
+    const count = this.burstParticleCount(design);
 
-    for (let i = 0; i < design.size; i++) {
-      let vx: number;
-      let vy: number;
-      let vz: number;
-      switch (seed) {
-        case 1: {
-          // Full Fibonacci sphere — the original Math.abs() folded the
-          // lower hemisphere upward, leaving bursts looking like domes.
-          vy = i * offset - 1 + offset / 2;
-          const r = Math.sqrt(Math.max(0, 1 - vy * vy));
-          const phi = ((i + 1.0) % design.size) * inc;
-          vx = Math.cos(phi) * r * speed;
-          vz = Math.sin(phi) * r * speed;
-          vy *= speed;
-          break;
-        }
-        case 2: {
-          // Distribute over the full sphere (was upper-hemisphere only,
-          // which left wave bursts looking like a dome with no bottom).
-          vy = (i * offset - 1 + offset / 2) * speed;
-          const r = Math.sqrt(Math.max(0, 1 - (vy / speed) * (vy / speed)));
-          const phi = ((i + 1.0) % design.size) * inc;
-          // Slight wave warble on top of even spread.
-          const warble = 0.7 + rng.next() * 0.6;
-          vx = Math.cos(phi) * r * speed * warble;
-          vz = Math.sin(phi) * r * speed * warble;
-          break;
-        }
-        default: {
-          vy = i * offset - 1 + offset / 2;
-          const r = Math.sqrt(1 - vy * vy);
-          const phi = ((i + 1.0) % design.size) * inc;
-          vx = Math.cos(phi) * r * speed;
-          vz = Math.sin(phi) * r * speed;
-          vy *= speed;
-          break;
-        }
-      }
-
+    for (let i = 0; i < count; i++) {
+      const velocity = this.burstVelocity(design, i, count, speed, seed, rng);
+      const starColor = this.starColor(design, color, i, rng);
+      const life = this.starLife(design, rangeRand(lifeRange, rng), rng);
+      const splitDelay = life * design.split.delayRatio;
       this.pp.new({
         x: particle.x,
         y: particle.y,
         z: particle.z,
-        size: design.size,
+        size: starSizeFor(design, rng),
         mass: 0.001,
-        gravity: grav,
-        drag: STAR_DRAG,
-        vx,
-        vy,
-        vz,
+        gravity: this.starGravity(design, grav, rng),
+        drag: this.starDrag(design),
+        vx: velocity.x,
+        vy: velocity.y,
+        vz: velocity.z,
+        r: starColor.r,
+        g: starColor.g,
+        b: starColor.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life,
+        decay: this.starDecay(design, rng),
+        condition:
+          design.split.enabled || design.geometry === 'split_cross'
+            ? (p) => p.maxLife - p.life >= splitDelay
+            : undefined,
+        action:
+          design.split.enabled || design.geometry === 'split_cross'
+            ? (p, dt, t) => this.splitCrossette(p, dt, t, design, starColor, rng, audible)
+            : undefined,
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, seed, starColor, design, rng, audible),
+      });
+    }
+
+    if (design.pistil.enabled || design.geometry === 'pistil') {
+      this.spawnPistil(particle, design, color, seed, rng, audible);
+    }
+  }
+
+  private burstParticleCount(design: FireworkDesign): number {
+    switch (design.geometry) {
+      case 'radial_arms':
+        return Math.max(44, Math.round(design.size * 0.46));
+      case 'falling_tail':
+        return Math.max(52, Math.round(design.size * 0.62));
+      case 'pearls':
+        return Math.max(18, Math.round(design.size * 0.18));
+      case 'ring':
+        return Math.max(72, Math.round(design.size * 0.72));
+      case 'fragment_cloud':
+        return Math.max(90, Math.round(design.size * 0.9));
+      default:
+        return design.size;
+    }
+  }
+
+  private burstVelocity(
+    design: FireworkDesign,
+    index: number,
+    count: number,
+    speed: number,
+    seed: 1 | 2 | 3,
+    rng: RandomSource,
+  ): THREE.Vector3 {
+    const direction = fibonacciDirection(index, count);
+    switch (design.geometry) {
+      case 'ring': {
+        const angle = (index / count) * Math.PI * 2;
+        const wobble = (rng.next() - 0.5) * 0.18;
+        return new THREE.Vector3(
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed * 0.96,
+          wobble * speed,
+        );
+      }
+      case 'crown':
+      case 'weeping': {
+        if (isBrocadeCrown(design)) {
+          const fill = Math.cbrt((index + 0.5) / count);
+          const radius = speed * (0.2 + fill * (1.08 + rng.next() * 0.24));
+          return new THREE.Vector3(
+            direction.x * radius,
+            direction.y * radius * 0.96,
+            direction.z * radius * 0.88,
+          );
+        }
+        const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
+        const lift =
+          design.geometry === 'weeping' ? 0.35 + rng.next() * 0.45 : 0.55 + rng.next() * 0.62;
+        return new THREE.Vector3(
+          (direction.x / lateral) * speed * (0.65 + rng.next() * 0.35),
+          speed * lift,
+          (direction.z / lateral) * speed * (0.65 + rng.next() * 0.35),
+        );
+      }
+      case 'radial_arms': {
+        const arms = 7;
+        const arm = index % arms;
+        const angle = (arm / arms) * Math.PI * 2 + (rng.next() - 0.5) * 0.1;
+        const length = 0.74 + Math.floor(index / arms) / Math.max(1, count / arms);
+        return new THREE.Vector3(
+          Math.cos(angle) * speed * length,
+          speed * (0.22 + rng.next() * 0.44),
+          Math.sin(angle) * speed * length,
+        );
+      }
+      case 'falling_tail': {
+        const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
+        return new THREE.Vector3(
+          (direction.x / lateral) * speed * (0.28 + rng.next() * 0.5),
+          -speed * (0.05 + rng.next() * 0.42),
+          (direction.z / lateral) * speed * (0.28 + rng.next() * 0.5),
+        );
+      }
+      case 'pearls': {
+        const angle = (index / count) * Math.PI * 2;
+        return new THREE.Vector3(
+          Math.cos(angle) * speed * (0.45 + rng.next() * 0.28),
+          speed * (0.5 + rng.next() * 0.35),
+          Math.sin(angle) * speed * (0.45 + rng.next() * 0.28),
+        );
+      }
+      case 'fragment_cloud': {
+        return direction.multiplyScalar(speed * (0.72 + rng.next() * 0.78));
+      }
+      default: {
+        const warble = seed === 2 ? 0.78 + rng.next() * 0.5 : 1;
+        return direction.multiplyScalar(speed * warble);
+      }
+    }
+  }
+
+  private starColor(
+    design: FireworkDesign,
+    color: THREE.Color,
+    index: number,
+    rng: RandomSource,
+  ): THREE.Color {
+    const secondary = resolveOptionalColor(design.secondaryColor, rng);
+    if (isBrocadeCrown(design)) {
+      const pale = secondary ?? BROCADE_WHITE_GOLD;
+      return rng.next() > 0.58
+        ? applyColorMix(color, pale, 0.76)
+        : applyColorMix(color, HOT_SPARK_COLOR, 0.28);
+    }
+    if (!secondary) return color;
+    if (design.geometry === 'pistil') return index % 4 === 0 ? secondary : color;
+    if (design.trailProfile === 'blink' || design.pattern === 'strobe') {
+      return rng.next() > 0.62 ? secondary : color;
+    }
+    if (design.geometry === 'pearls') return index % 2 === 0 ? color : secondary;
+    return rng.next() > 0.78 ? secondary : color;
+  }
+
+  private starLife(design: FireworkDesign, baseLife: number, rng: RandomSource): number {
+    if (isBrocadeCrown(design)) return baseLife * (1.08 + rng.next() * 0.32);
+    switch (design.geometry) {
+      case 'weeping':
+      case 'falling_tail':
+      case 'waterfall':
+        return baseLife * (1.25 + rng.next() * 0.35);
+      case 'pearls':
+        return baseLife * 0.62;
+      case 'ring':
+        return baseLife * 0.82;
+      default:
+        return baseLife;
+    }
+  }
+
+  private starGravity(design: FireworkDesign, gravity: number, rng: RandomSource): number {
+    switch (design.geometry) {
+      case 'crown':
+        if (isBrocadeCrown(design)) {
+          return clamp(gravity * (0.78 + rng.next() * 0.18), MIN_STAR_GRAVITY, -0.16);
+        }
+        return gravity + (rng.next() - 0.5) * 0.035;
+      case 'weeping':
+        return clamp(gravity * 0.52, MIN_STAR_GRAVITY, -0.08);
+      case 'falling_tail':
+      case 'waterfall':
+        return clamp(gravity * 0.45, MIN_STAR_GRAVITY, -0.05);
+      case 'pearls':
+        return clamp(gravity * 1.15, MIN_STAR_GRAVITY, -0.18);
+      default:
+        return gravity + (rng.next() - 0.5) * 0.035;
+    }
+  }
+
+  private starDrag(design: FireworkDesign): number {
+    switch (design.geometry) {
+      case 'crown':
+        return isBrocadeCrown(design) ? STAR_DRAG * 0.56 : STAR_DRAG;
+      case 'weeping':
+      case 'falling_tail':
+        return STAR_DRAG * 0.58;
+      case 'radial_arms':
+        return STAR_DRAG * 0.82;
+      case 'pearls':
+        return STAR_DRAG * 1.35;
+      default:
+        return STAR_DRAG;
+    }
+  }
+
+  private starDecay(design: FireworkDesign, rng: RandomSource): number {
+    if (isBrocadeCrown(design)) return 8 + rng.next() * 22;
+    switch (design.geometry) {
+      case 'weeping':
+      case 'falling_tail':
+      case 'waterfall':
+        return 9 + rng.next() * 26;
+      case 'pearls':
+        return 46 + rng.next() * 80;
+      default:
+        return 20 + rng.next() * 80;
+    }
+  }
+
+  private spawnPistil(
+    particle: Particle,
+    design: FireworkDesign,
+    outerColor: THREE.Color,
+    seed: 1 | 2 | 3,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    const pistilColor =
+      resolveOptionalColor(design.pistil.color ?? design.secondaryColor, rng) ??
+      applyColorMix(outerColor, HOT_SPARK_COLOR, 0.55);
+    const count = Math.max(24, Math.round(design.size * design.pistil.sizeRatio));
+    const speed = rangeRand(design.burst.speed, rng) * design.pistil.speedRatio;
+    const life = [design.burst.life[0] * 0.62, design.burst.life[1] * 0.82] as [number, number];
+    for (let i = 0; i < count; i++) {
+      const direction = fibonacciDirection(i, count).multiplyScalar(speed);
+      this.pp.new({
+        x: particle.x,
+        y: particle.y,
+        z: particle.z,
+        size: design.size * 0.62,
+        mass: 0.001,
+        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.9),
+        drag: STAR_DRAG * 1.16,
+        vx: direction.x,
+        vy: direction.y,
+        vz: direction.z,
+        r: pistilColor.r,
+        g: pistilColor.g,
+        b: pistilColor.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: rangeRand(life, rng),
+        decay: 28 + rng.next() * 80,
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, seed, pistilColor, design, rng, audible),
+      });
+    }
+  }
+
+  private spawnBrocadeHalo(particle: Particle, color: THREE.Color, rng: RandomSource): void {
+    const haloColor = applyColorMix(BROCADE_AMBER_SMOKE, color, 0.18);
+    for (let i = 0; i < 18; i++) {
+      this.pp.new({
+        x: particle.x + (rng.next() - 0.5) * 36,
+        y: particle.y + (rng.next() - 0.5) * 36,
+        z: particle.z + (rng.next() - 0.5) * 24,
+        mass: 0.006,
+        gravity: -0.02 + rng.next() * 0.05,
+        drag: 1.25,
+        size: 34 + rng.next() * 58,
+        vx: (rng.next() - 0.5) * 0.18,
+        vy: (rng.next() - 0.35) * 0.18,
+        vz: (rng.next() - 0.5) * 0.18,
+        r: haloColor.r,
+        g: haloColor.g,
+        b: haloColor.b,
+        h: 1.0,
+        s: 0.5,
+        l: 0.0,
+        life: 0.7 + rng.next() * 1.6,
+        decay: 16 + rng.next() * 20,
+      });
+    }
+  }
+
+  private splitCrossette(
+    particle: Particle,
+    _dt: number,
+    _time: number,
+    design: FireworkDesign,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    if (audible && rng.next() < 0.18) this.sh.playRandomCrackle(0.08, rng);
+    const fragments = design.split.fragments;
+    const baseAngle = rng.next() * Math.PI;
+    for (let i = 0; i < fragments; i++) {
+      const angle = baseAngle + (i / fragments) * Math.PI * 2;
+      const upward = (i % 2 === 0 ? 0.28 : -0.08) + (rng.next() - 0.5) * 0.18;
+      this.pp.new({
+        x: particle.x,
+        y: particle.y,
+        z: particle.z,
+        size: design.size * (0.34 + rng.next() * 0.22),
+        mass: 0.001,
+        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.82),
+        drag: STAR_DRAG * 0.92,
+        vx: particle.vx * 0.22 + Math.cos(angle) * design.split.speed,
+        vy: particle.vy * 0.1 + upward * design.split.speed,
+        vz: particle.vz * 0.22 + Math.sin(angle) * design.split.speed,
         r: color.r,
         g: color.g,
         b: color.b,
         h: rng.next(),
         s: rng.next(),
         l: rng.next(),
-        life: rangeRand(lifeRange, rng),
-        decay: 20 + rng.next() * 80,
-        effect: (p, dt, t) => this.flairEffect(p, dt, t, seed, color, design, rng, audible),
+        life: 0.65 + rng.next() * 1.6,
+        decay: 30 + rng.next() * 70,
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, 2, color, design, rng, audible),
+      });
+    }
+  }
+
+  private cometFinish(
+    particle: Particle,
+    design: FireworkDesign,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    this.explodeBurst(particle, rng, false);
+    const count = Math.max(8, Math.round(design.size * 0.18));
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const speed = rangeRand(design.burst.speed, rng) * 0.55;
+      this.pp.new({
+        x: particle.x,
+        y: particle.y,
+        z: particle.z,
+        size: design.size * (0.75 + rng.next() * 0.45),
+        mass: 0.001,
+        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.75),
+        drag: STAR_DRAG * 1.25,
+        vx: Math.cos(angle) * speed * 0.45,
+        vy: speed * (0.1 + rng.next() * 0.28),
+        vz: Math.sin(angle) * speed * 0.45,
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: rangeRand(design.burst.life, rng) * 0.55,
+        decay: 42 + rng.next() * 80,
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, 2, color, design, rng, audible),
+      });
+    }
+  }
+
+  private spawnFishSwarm(
+    particle: Particle,
+    design: FireworkDesign,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    const count = Math.max(80, Math.round(design.size * 0.72));
+    for (let i = 0; i < count; i++) {
+      const direction = fibonacciDirection(i, count).multiplyScalar(
+        rangeRand(design.burst.speed, rng),
+      );
+      const phase = rng.next() * Math.PI * 2;
+      this.pp.new({
+        x: particle.x,
+        y: particle.y,
+        z: particle.z,
+        size: design.size * (0.24 + rng.next() * 0.24),
+        mass: 0.001,
+        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.55),
+        drag: STAR_DRAG * 0.55,
+        vx: direction.x,
+        vy: direction.y * 0.25,
+        vz: direction.z,
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: 0.8 + rng.next() * 1.8,
+        decay: 28 + rng.next() * 60,
+        effect: (p, dt, t) => {
+          p.vx += Math.cos(t * 14 + phase) * dt * 1.8;
+          p.vz += Math.sin(t * 17 + phase) * dt * 1.8;
+          this.flairEffect(p, dt, t, 2, color, design, rng, audible);
+        },
+      });
+    }
+  }
+
+  private spawnWaterfall(
+    particle: Particle,
+    design: FireworkDesign,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    const count = Math.max(90, Math.round(design.size * 0.78));
+    for (let i = 0; i < count; i++) {
+      const curtain = (i / count - 0.5) * design.size * 2.2;
+      this.pp.new({
+        x: particle.x + curtain + (rng.next() - 0.5) * 28,
+        y: particle.y - rng.next() * 58,
+        z: particle.z + (rng.next() - 0.5) * 24,
+        size: design.size * (0.5 + rng.next() * 0.35),
+        mass: 0.001,
+        gravity: -0.32 - rng.next() * 0.34,
+        drag: STAR_DRAG * 0.28,
+        vx: (rng.next() - 0.5) * 0.28,
+        vy: -1.0 - rng.next() * 1.45,
+        vz: (rng.next() - 0.5) * 0.2,
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: rangeRand(design.burst.life, rng) * 1.35,
+        decay: 8 + rng.next() * 24,
+        effect: (p, dt, t) => this.flairEffect(p, dt, t, 2, color, design, rng, audible),
+      });
+    }
+  }
+
+  private spawnWhirl(
+    particle: Particle,
+    design: FireworkDesign,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+  ): void {
+    const count = Math.max(32, Math.round(design.size * 0.28));
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const phase = rng.next() * Math.PI * 2;
+      this.pp.new({
+        x: particle.x,
+        y: particle.y,
+        z: particle.z,
+        size: design.size * (0.32 + rng.next() * 0.28),
+        mass: 0.001,
+        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.7),
+        drag: STAR_DRAG * 0.62,
+        vx: Math.cos(angle) * rangeRand(design.burst.speed, rng),
+        vy: (rng.next() - 0.15) * rangeRand(design.burst.speed, rng),
+        vz: Math.sin(angle) * rangeRand(design.burst.speed, rng),
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: 1 + rng.next() * 2,
+        decay: 24 + rng.next() * 60,
+        effect: (p, dt, t) => {
+          p.vx += Math.cos(t * 18 + phase) * dt * 2.4;
+          p.vz += Math.sin(t * 18 + phase) * dt * 2.4;
+          this.flairEffect(p, dt, t, 3, color, design, rng, audible);
+        },
       });
     }
   }
@@ -355,13 +944,32 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
   ): void {
+    const secondary = resolveOptionalColor(design.secondaryColor, rng);
+    const brocade = isBrocadeCrown(design);
+    const ageRatio = particle.maxLife > 0 ? 1 - clamp(particle.life / particle.maxLife, 0, 1) : 0;
+    if (secondary && particle.maxLife > 0 && design.trailProfile !== 'blink') {
+      if (ageRatio > 0.42) {
+        const shifted = applyColorMix(color, secondary, (ageRatio - 0.42) / 0.45);
+        particle.color.setRGB(shifted.r, shifted.g, shifted.b);
+      }
+    }
+
+    if (design.strobe.enabled || design.trailProfile === 'blink') {
+      const phase = (time * design.strobe.frequencyHz + particle.i * 0.037) % 1;
+      const lit = phase < design.strobe.dutyCycle;
+      particle.size = lit
+        ? Math.max(particle.size, design.size * (0.42 + rng.next() * 0.22))
+        : Math.min(particle.size, design.size * 0.08);
+      if (!lit && rng.next() > 0.08) return;
+    }
+
     const strobe = design.burst.flairSizeStrobe;
     switch (seed) {
       case 1:
-        if (strobe) {
+        if (design.trailProfile === 'glitter' && rng.next() < 0.18) {
+          particle.size = Math.max(particle.size, design.size * 0.28);
+        } else if (strobe) {
           particle.size = rng.next() > 0.5 ? strobe[1] : strobe[0];
-        } else {
-          particle.size = rng.next() > 0.5 ? 250 : 10;
         }
         break;
       case 2:
@@ -391,33 +999,100 @@ export class Effects {
     }
 
     if (!design.flair.enabled) return;
-    const trailRate = STAR_TRAIL_PARTICLES_PER_SECOND * (audible ? 1 : 0.42);
+    if (design.trailProfile === 'none' || design.trail.density <= 0) return;
+    if (brocade && ageRatio < 0.18) return;
+    const trailRate = STAR_TRAIL_PARTICLES_PER_SECOND * design.trail.density * (audible ? 1 : 0.42);
     if (rng.next() > Math.min(1, trailRate * dt)) return;
 
     const trail = flairColor(design, color, rng);
-    const r = trail.r;
-    const g = trail.g;
-    const b = trail.b;
-    const tailR = Math.min(1, r * 0.44 + 0.7);
-    const tailG = Math.min(1, g * 0.36 + 0.56);
-    const tailB = Math.min(1, b * 0.24 + 0.32);
+    const sparkle = rng.next() < design.trail.sparkle;
+    const trailColor = brocade
+      ? sparkle
+        ? (secondary ?? BROCADE_WHITE_GOLD)
+        : applyColorMix(color, BROCADE_WHITE_GOLD, 0.42)
+      : design.trailProfile === 'glitter' && sparkle
+        ? HOT_SPARK_COLOR
+        : design.trailProfile === 'long_hang' && secondary && rng.next() > 0.72
+          ? secondary
+          : design.trailProfile === 'waterfall'
+            ? applyColorMix(color, SILVER_SPARK_COLOR, 0.25)
+            : new THREE.Color(trail.r, trail.g, trail.b);
+    const r = trailColor.r;
+    const g = trailColor.g;
+    const b = trailColor.b;
+    const tailR = brocade ? Math.min(1, r * 0.58 + 0.36) : Math.min(1, r * 0.44 + 0.7);
+    const tailG = brocade ? Math.min(1, g * 0.5 + 0.3) : Math.min(1, g * 0.36 + 0.56);
+    const tailB = brocade ? Math.min(1, b * 0.42 + 0.22) : Math.min(1, b * 0.24 + 0.32);
+    const streakSize = brocade ? clamp(design.trail.streakSize, 0.4, 4) : 1;
+    const streakLength = brocade ? clamp(design.trail.streakLength, 0.4, 4) : 1;
+    const streakLife = brocade ? clamp(design.trail.streakLife, 0.2, 4) : 1;
+    const originX = particle.x;
+    const originY = particle.y;
+    const originZ = particle.z;
     this.pp.new({
-      x: particle.x,
-      y: particle.y,
-      z: particle.z,
+      x: originX,
+      y: originY,
+      z: originZ,
       mass: 0.002,
-      gravity: TRAIL_GRAVITY,
-      drag: TRAIL_DRAG,
-      size: 13 + rng.next() * 26,
-      r: tailR,
-      g: tailG,
-      b: tailB,
+      gravity: brocade ? TRAIL_GRAVITY * 0.7 : TRAIL_GRAVITY,
+      drag: brocade ? TRAIL_DRAG * 0.68 : TRAIL_DRAG,
+      size:
+        (brocade ? 10 + rng.next() * 20 : 13 + rng.next() * 26) *
+        design.trail.thickness *
+        streakSize,
+      shape: brocade && !sparkle ? 1 : 0,
+      r: sparkle ? r : tailR,
+      g: sparkle ? g : tailG,
+      b: sparkle ? b : tailB,
       h: 1.0,
       s: 0.5,
       l: 0.0,
-      life: 0.32 + rng.next() * 0.9,
-      decay: 32 + rng.next() * 42,
+      life:
+        (brocade ? 0.58 + rng.next() * 1.24 : 0.32 + rng.next() * 0.9) *
+        design.trail.length *
+        (brocade ? streakLife : 1),
+      decay:
+        (brocade ? 18 + rng.next() * 26 : 32 + rng.next() * 42) /
+        Math.max(0.65, design.trail.length),
     });
+
+    if (brocade) {
+      for (let i = 1; i <= 4; i++) {
+        const taper = 1 - i * 0.18;
+        const offset = i * (8 + rng.next() * 3.5) * streakLength;
+        const streak = i % 2 === 1;
+        this.pp.new({
+          x: originX - particle.vx * offset,
+          y: originY - particle.vy * offset,
+          z: originZ - particle.vz * offset,
+          mass: 0.002,
+          gravity: TRAIL_GRAVITY * 0.55,
+          drag: TRAIL_DRAG * 0.82,
+          size:
+            (streak ? 7 + rng.next() * 9 : 4 + rng.next() * 7) *
+            taper *
+            design.trail.thickness *
+            streakSize,
+          shape: streak ? 1 : 0,
+          vx: particle.vx * 0.015 + (rng.next() - 0.5) * 0.05,
+          vy: particle.vy * 0.015 + (rng.next() - 0.5) * 0.05,
+          vz: particle.vz * 0.015 + (rng.next() - 0.5) * 0.05,
+          r: tailR * taper,
+          g: tailG * taper,
+          b: tailB * taper,
+          h: 1.0,
+          s: 0.5,
+          l: 0.0,
+          life:
+            (0.5 + rng.next() * 0.9) *
+            taper *
+            design.trail.length *
+            streakLife *
+            (streak ? 0.85 + streakLength * 0.15 : 1),
+          decay: (14 + rng.next() * 22) / Math.max(0.65, design.trail.length),
+        });
+      }
+    }
   }
 
   private crackleEffect(

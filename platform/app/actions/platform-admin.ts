@@ -49,6 +49,7 @@ import {
   OPENROUTER_MODEL_OPTIONS,
   type ImportedFireworkSpec,
 } from '@/lib/import-jobs';
+import { compileFireworkDesign } from '@/lib/fireworks/design';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 import type { Json } from '@/lib/database.types';
 
@@ -164,6 +165,77 @@ const ApproveImportSchema = z.object({
 /** Pull the first user-facing message off a ZodError, with a generic fallback. */
 function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Check the form details.';
+}
+
+type ProductKind =
+  | 'single_shot'
+  | 'multi_shot'
+  | 'assortment'
+  | 'cake'
+  | 'rack'
+  | 'shell_kit'
+  | 'fountain'
+  | 'other';
+
+function hexColour(value: unknown): string | null {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : null;
+}
+
+function collectSpecColours(spec: ImportedFireworkSpec['spec']): string[] {
+  const seen = new Set<string>();
+  const colours: string[] = [];
+  const add = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    const colour = hexColour(value);
+    if (!colour || seen.has(colour)) return;
+    seen.add(colour);
+    colours.push(colour);
+  };
+
+  add(spec.outerColor);
+  add(spec.color);
+  add(spec.colorPalette);
+  add(spec.innerColor);
+  add(spec.secondColor);
+  add(spec.pistilColor);
+  add(spec.tailColor);
+  add(spec.glitterColor);
+  add(spec.launch?.tailColor);
+  add(spec.launch?.tracerColor);
+  return colours;
+}
+
+function baseEffectSlugForImport(spec: ImportedFireworkSpec['spec']): string {
+  if (spec.crackle || spec.shellType === 'crackle') return 'crackle';
+  if (spec.strobe || spec.shellType === 'strobe') return 'strobe';
+  if (spec.crossette || spec.shellType === 'crossette') return 'crossette';
+  if (spec.horsetail || spec.shellType === 'horsetail') return 'horsetail';
+  if (spec.ring || spec.shellType === 'ring') return 'ring';
+  if (spec.shellType === 'palm') return 'palm';
+  if (spec.shellType === 'willow' || spec.fallingLeaves || spec.shellType === 'fallingLeaves') {
+    return 'willow';
+  }
+  if (spec.shellType === 'comet') return 'comet';
+  if (spec.glitter && spec.glitter !== 'none') return 'chrysanthemum';
+  return 'peony';
+}
+
+function productKindForImport(
+  spec: ImportedFireworkSpec['spec'],
+  category: string | undefined,
+  fireworkType: string | undefined,
+): ProductKind {
+  const text = `${category ?? ''} ${fireworkType ?? ''}`.toLowerCase();
+  if (text.includes('assortment')) return 'assortment';
+  if (text.includes('shell kit') || text.includes('reloadable')) return 'shell_kit';
+  if (text.includes('fountain')) return 'fountain';
+  if (text.includes('rack')) return 'rack';
+  if (text.includes('cake')) return 'cake';
+  if ((spec.shots?.length ?? 0) > 1) return 'multi_shot';
+  return 'single_shot';
 }
 
 /** Make a filename safe to embed in a Supabase Storage path. */
@@ -690,9 +762,10 @@ export async function updateImportDraftSpecAction(formData: FormData): Promise<v
 /**
  * Approve the current draft spec to the live catalogue.
  *
- * Requires both `admin.manage_imports` and `admin.manage_catalogue`. Creates
- * an `effect_specs` row, a `products` row, and a single `product_shots` row
- * linking them, then marks the import job complete and invalidates every
+ * Requires both `admin.manage_imports` and `admin.manage_catalogue`. Creates a
+ * legacy `effect_specs` bridge row, a base-effect-backed `firework_variants`
+ * row, a `products` row, and a single `product_shots` row linking the product
+ * to the variant. Then marks the import job complete and invalidates every
  * related cache so the next read sees the new product.
  */
 export async function approveImportJobAction(formData: FormData): Promise<void> {
@@ -716,12 +789,25 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   }
 
   const supabase = createClient(await cookies());
-  const effectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
+  const baseEffectSlug = baseEffectSlugForImport(spec.spec);
+  const legacyEffectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
+  const variantSlug = `${baseEffectSlug}-${legacyEffectSlug}`;
   const fireworkSpec = spec.spec;
+  const colours = collectSpecColours(fireworkSpec);
+  const { data: baseEffect, error: baseEffectError } = await supabase
+    .from('firework_effects')
+    .select('id')
+    .eq('slug', baseEffectSlug)
+    .maybeSingle();
+  if (baseEffectError || !baseEffect) {
+    console.error('[approveImportJobAction] base effect lookup failed:', baseEffectError);
+    return;
+  }
+
   const { data: effect, error: effectError } = await supabase
     .from('effect_specs')
     .insert({
-      slug: effectSlug,
+      slug: legacyEffectSlug,
       name: parsed.data.name,
       description: spec.description || null,
       type: fireworkSpec.shellType,
@@ -739,6 +825,32 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     return;
   }
 
+  const { data: variant, error: variantError } = await supabase
+    .from('firework_variants')
+    .insert({
+      effect_id: baseEffect.id,
+      source_effect_spec_id: effect.id,
+      slug: variantSlug,
+      name: parsed.data.name,
+      description: spec.description || null,
+      primary_color: colours[0] ?? null,
+      secondary_color: colours[1] ?? null,
+      color_palette: colours,
+      caliber: spec.caliber ?? null,
+      duration_seconds: spec.durationSeconds,
+      height_meters: spec.heightMeters ?? null,
+      variant_json: fireworkSpec as unknown as Json,
+      render_overrides_json: compileFireworkDesign({ legacySpec: fireworkSpec }) as unknown as Json,
+      source: 'video_inferred',
+      confidence: spec.confidence,
+    })
+    .select('id')
+    .single();
+  if (variantError || !variant) {
+    console.error('[approveImportJobAction] firework variant insert failed:', variantError);
+    return;
+  }
+
   const { data: product, error: productError } = await supabase
     .from('products')
     .insert({
@@ -748,6 +860,14 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
       subtype: parsed.data.fireworkType || 'Video reconstructed',
       duration_seconds: spec.durationSeconds,
       description: spec.description || null,
+      product_kind: productKindForImport(spec.spec, parsed.data.category, parsed.data.fireworkType),
+      product_metadata: {
+        category: parsed.data.category || null,
+        importJobId: parsed.data.id,
+        source: 'video_import',
+        baseEffectSlug,
+        variantId: variant.id,
+      } as Json,
     })
     .select('id')
     .single();
@@ -759,9 +879,12 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   const { error: shotError } = await supabase.from('product_shots').insert({
     product_id: product.id,
     effect_spec_id: effect.id,
+    firework_variant_id: variant.id,
     shot_index: 1,
     time_offset_seconds: 0,
     pan_degrees: 0,
+    tilt_degrees: 0,
+    caliber: spec.caliber ?? null,
   });
   if (shotError) {
     console.error('[approveImportJobAction] product_shots insert failed:', shotError);
@@ -783,13 +906,14 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   await invalidateAdminImportsCache();
   await invalidateAdminCatalogueCache();
   await invalidateAdminEffectsCache(effect.id);
-  await invalidateAdminFireworksCache();
+  await invalidateAdminFireworksCache(product.id);
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/imports');
   revalidatePath('/admin/catalogue');
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${effect.id}`);
   revalidatePath('/admin/fireworks');
+  revalidatePath(`/admin/fireworks/${product.id}`);
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 

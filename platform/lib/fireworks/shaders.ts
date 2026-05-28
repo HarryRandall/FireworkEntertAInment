@@ -8,11 +8,14 @@
 
 export const VERTEX_SHADER = /* glsl */ `
 attribute float size;
+attribute float shape;
 varying vec3 vColor;
 varying float vDepthFade;
+varying float vShape;
 
 void main() {
   vColor = color;
+  vShape = shape;
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   float distanceScale = 500.0 / max(-mvPosition.z, 1.0);
   gl_PointSize = clamp(size * distanceScale, 1.5, 38.0);
@@ -24,21 +27,34 @@ void main() {
 export const FRAGMENT_SHADER = /* glsl */ `
 varying vec3 vColor;
 varying float vDepthFade;
+varying float vShape;
 
 void main() {
   vec2 centered = gl_PointCoord - vec2(0.5);
-  float squareDistance = max(abs(centered.x), abs(centered.y));
+  float isSquare = step(0.5, vShape);
   float roundDistance = length(centered);
+  float squareX = abs(centered.x);
+  float squareY = abs(centered.y);
+  float squareDistance = max(squareX, squareY);
+  if (isSquare < 0.5 && roundDistance > 0.58) discard;
+  if (isSquare > 0.5 && squareDistance > 0.5) discard;
 
-  float squareCore = 1.0 - smoothstep(0.16, 0.39, squareDistance);
-  float hotInner = 1.0 - smoothstep(0.0, 0.17, roundDistance);
-  float softHalo = 1.0 - smoothstep(0.22, 0.72, roundDistance);
-  float edgeSpark = 1.0 - smoothstep(0.41, 0.5, squareDistance);
+  float roundCore = 1.0 - smoothstep(0.08, 0.25, roundDistance);
+  float hotInner = 1.0 - smoothstep(0.0, 0.14, roundDistance);
+  float softHalo = 1.0 - smoothstep(0.18, 0.58, roundDistance);
+  float rimSpark = smoothstep(0.22, 0.34, roundDistance) * (1.0 - smoothstep(0.34, 0.58, roundDistance));
+  float squareBody = 1.0 - smoothstep(0.34, 0.5, squareDistance);
+  float squareHot = 1.0 - smoothstep(0.0, 0.22, squareDistance);
+  float squareHalo = 1.0 - smoothstep(0.18, 0.5, squareDistance);
 
   vec3 whiteHot = vec3(1.0, 0.94, 0.78);
-  vec3 sparkColor = mix(vColor, whiteHot, hotInner * 0.46);
-  float sparkIntensity = squareCore * 1.0 + softHalo * 0.32 + edgeSpark * 0.08;
-  float sparkAlpha = squareCore * 0.86 + softHalo * 0.25;
+  vec3 sparkColor = mix(vColor, whiteHot, mix(hotInner * 0.46, squareHot * 0.42, isSquare));
+  float sparkIntensity = mix(
+    roundCore * 1.0 + softHalo * 0.26 + rimSpark * 0.07,
+    squareBody * 1.05 + squareHalo * 0.18,
+    isSquare
+  );
+  float sparkAlpha = mix(roundCore * 0.82 + softHalo * 0.22, squareBody * 0.76 + squareHalo * 0.15, isSquare);
   float intensity = sparkIntensity;
   float alpha = clamp(sparkAlpha * vDepthFade, 0.0, 1.0);
 

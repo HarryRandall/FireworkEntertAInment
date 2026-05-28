@@ -45,6 +45,7 @@ function collectColorCandidates(value: unknown, colors: string[], depth = 0): vo
 
   for (const key of [
     'color',
+    'secondaryColor',
     'outerColor',
     'innerColor',
     'secondColor',
@@ -57,7 +58,15 @@ function collectColorCandidates(value: unknown, colors: string[], depth = 0): vo
     pushColor(colors, value[key]);
   }
 
-  for (const key of ['colorPalette', 'colors', 'peakColors', 'regionColors', 'shell', 'launch']) {
+  for (const key of [
+    'colorPalette',
+    'colors',
+    'peakColors',
+    'regionColors',
+    'renderDefaults',
+    'shell',
+    'launch',
+  ]) {
     collectColorCandidates(value[key], colors, depth + 1);
     if (colors.length >= 4) return;
   }

@@ -8,7 +8,7 @@
  */
 
 import type { FireworkSpec } from '@/lib/fireworks/spec';
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import type { FireworkDesign, LaunchPosition } from '@/lib/fireworks/design';
 
 export type ShowStatus = 'draft' | 'complete';
 export type ShowGenerationStatus = 'idle' | 'running' | 'completed' | 'failed';
@@ -63,11 +63,28 @@ export type FireworkSpecification = {
   shotCount: number | null;
   spec: FireworkSpec;
   rawSpec: unknown;
+  renderDesign: FireworkDesign | null;
+  baseEffect: {
+    id: string;
+    slug: string;
+    name: string;
+    patternKey: string;
+  } | null;
+  variant: {
+    id: string;
+    slug: string;
+    primaryColor: string | null;
+    secondaryColor: string | null;
+    colorPalette: string[];
+  } | null;
 };
 
 export type ReplayCue = ShowCue & {
   timeSeconds: number;
   firework: FireworkSpecification;
+  shotPanDegrees?: number | null;
+  shotTiltDegrees?: number | null;
+  shotPositionOverride?: LaunchPosition | null;
 };
 
 export type ShoppingListItem = {

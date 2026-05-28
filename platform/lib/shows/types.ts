@@ -11,6 +11,8 @@ import type { ShoppingListItem } from '@/lib/show-domain';
 export type ShowRow = Database['public']['Tables']['shows']['Row'];
 export type ShowCueRow = Database['public']['Tables']['show_cues']['Row'];
 export type EffectSpecRow = Database['public']['Tables']['effect_specs']['Row'];
+export type FireworkEffectRow = Database['public']['Tables']['firework_effects']['Row'];
+export type FireworkVariantRow = Database['public']['Tables']['firework_variants']['Row'];
 
 /** Subset of `shows` columns the UI actually consumes. Keep in sync with {@link SHOW_SELECT}. */
 export type ShowProjection = Pick<
@@ -60,6 +62,29 @@ export type EffectSpecProjection = Pick<
   'id' | 'slug' | 'name' | 'description' | 'duration_seconds' | 'height_meters' | 'spec_json'
 >;
 
+export type FireworkEffectProjection = Pick<
+  FireworkEffectRow,
+  'id' | 'slug' | 'name' | 'pattern_key' | 'model_json'
+>;
+
+export type FireworkVariantProjection = Pick<
+  FireworkVariantRow,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'description'
+  | 'primary_color'
+  | 'secondary_color'
+  | 'color_palette'
+  | 'caliber'
+  | 'duration_seconds'
+  | 'height_meters'
+  | 'render_overrides_json'
+  | 'variant_json'
+> & {
+  firework_effects: FireworkEffectProjection | FireworkEffectProjection[] | null;
+};
+
 /** Replay-time row alias — same shape as the authoring projection today. */
 export type ReplayCueRow = ShowCueProjection;
 
@@ -70,7 +95,7 @@ export type ShoppingListComputation = {
 };
 
 /** Cache namespace for everything in this module. Bump the version on schema-affecting changes. */
-export const CACHE_PREFIX = 'shows:v6';
+export const CACHE_PREFIX = 'shows:v7';
 /** TTL for show/cue/shopping reads. Short so mutations don't need to wait for invalidation propagation. */
 export const SHOWS_TTL_SECONDS = 60;
 /** TTL for the firework catalogue lookups — they rarely change. */
@@ -82,5 +107,7 @@ export const SHOW_CUE_SELECT =
   'id, position, time_seconds, description, product_id, seed_override, launch_position_index';
 export const EFFECT_SPEC_SELECT =
   'id, slug, name, description, duration_seconds, height_meters, spec_json';
+export const FIREWORK_VARIANT_SELECT =
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects(id, slug, name, pattern_key, model_json)';
 export const SHOW_CUES_WITH_PRODUCT_SELECT =
   'product_id, products(id, name, part_number, manufacturer)';
