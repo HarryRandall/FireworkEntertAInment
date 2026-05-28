@@ -163,20 +163,17 @@ export type AdminEffectSummary = {
   slug: string;
   name: string;
   description: string | null;
-  type: string;
+  family: string;
+  patternKey: string;
   source: string;
-  confidence: number;
-  durationSeconds: number;
-  heightMeters: number | null;
-  shotCount: number;
-  productCount: number;
+  sortOrder: number;
+  variantCount: number;
   preview: AdminEffectPreview;
   updatedAt: string;
 };
 
 export type AdminEffectDetail = AdminEffectSummary & {
-  specJson: Json;
-  linkedProducts: AdminLinkedProduct[];
+  modelJson: Json;
 };
 
 export type AdminFireworkSummary = {
@@ -184,6 +181,7 @@ export type AdminFireworkSummary = {
   partNumber: string;
   name: string;
   manufacturer: string | null;
+  productKind: string;
   fireworkType: string | null;
   description: string | null;
   durationSeconds: number | null;
@@ -201,6 +199,37 @@ export type AdminFireworkSummary = {
     heightMeters: number | null;
   }[];
   updatedAt: string;
+};
+
+export type AdminFireworkShot = {
+  id: string;
+  shotIndex: number;
+  timeOffsetSeconds: number;
+  panDegrees: number;
+  tiltDegrees: number;
+  caliber: string | null;
+  notes: string | null;
+  variantId: string | null;
+  effectSpecId: string | null;
+  variantName: string | null;
+  variantSlug: string | null;
+  primaryColor: string | null;
+  baseEffectName: string | null;
+};
+
+export type AdminFireworkVariantOption = {
+  id: string;
+  name: string;
+  slug: string;
+  primaryColor: string | null;
+  baseEffectName: string;
+  sourceEffectSpecId: string | null;
+};
+
+export type AdminFireworkDetail = AdminFireworkSummary & {
+  productMetadata: Json;
+  shots: AdminFireworkShot[];
+  variantOptions: AdminFireworkVariantOption[];
 };
 
 export type ShowTemplateCue = {

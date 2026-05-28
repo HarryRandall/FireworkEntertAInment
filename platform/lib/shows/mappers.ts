@@ -3,6 +3,7 @@
  * {@link ../show-domain}. No I/O — safe to import from anywhere.
  */
 import { parseLaunchPositions } from '@/lib/fireworks/design';
+import { compileFireworkDesign } from '@/lib/fireworks/design';
 import { safeParseFireworkSpec } from '@/lib/fireworks/spec';
 import type {
   FireworkSpecification,
@@ -13,6 +14,8 @@ import type {
 } from '@/lib/show-domain';
 import type {
   EffectSpecProjection,
+  FireworkEffectProjection,
+  FireworkVariantProjection,
   ReplayCueRow,
   ShowCueProjection,
   ShowProjection,
@@ -90,6 +93,63 @@ export function mapEffectSpecification(
     shotCount: null,
     spec: safeParseFireworkSpec(row.spec_json),
     rawSpec: row.spec_json,
+    renderDesign: compileFireworkDesign({ legacySpec: row.spec_json }),
+    baseEffect: null,
+    variant: null,
+  };
+}
+
+function firstEffect(
+  effect: FireworkVariantProjection['firework_effects'],
+): FireworkEffectProjection | null {
+  if (!effect) return null;
+  return Array.isArray(effect) ? (effect[0] ?? null) : effect;
+}
+
+export function mapFireworkVariantSpecification(
+  row: FireworkVariantProjection,
+  index = 0,
+  shotCaliber: string | null = null,
+  legacySpec: unknown = null,
+): FireworkSpecification {
+  const effect = firstEffect(row.firework_effects);
+  const caliber = shotCaliber ?? row.caliber;
+  const renderDesign = compileFireworkDesign({
+    baseModel: effect?.model_json,
+    variantOverrides: row.render_overrides_json,
+    primaryColor: row.primary_color,
+    colorPalette: row.color_palette,
+    legacySpec,
+  });
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    sortOrder: index,
+    durationSeconds: row.duration_seconds,
+    heightMeters: row.height_meters,
+    caliber,
+    shotCount: null,
+    spec: safeParseFireworkSpec(row.variant_json),
+    rawSpec: row.render_overrides_json,
+    renderDesign,
+    baseEffect: effect
+      ? {
+          id: effect.id,
+          slug: effect.slug,
+          name: effect.name,
+          patternKey: effect.pattern_key,
+        }
+      : null,
+    variant: {
+      id: row.id,
+      slug: row.slug,
+      primaryColor: row.primary_color,
+      secondaryColor: row.secondary_color,
+      colorPalette: row.color_palette,
+    },
   };
 }
 

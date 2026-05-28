@@ -16,8 +16,8 @@ export const MIN_PRODUCT_DURATION_SECONDS = 0.5;
 type AppSupabase = SupabaseClient<Database>;
 
 // Total airtime a product occupies on a tube. Prefer the pre-aggregated
-// `products.duration_seconds`; fall back to the largest
-// `time_offset_seconds + effect_specs.duration_seconds` from `product_shots`.
+// `products.duration_seconds`; fall back to the largest shot duration from the
+// preferred firework variant or the legacy effect specification.
 export async function getProductDurationSeconds(
   supabase: AppSupabase,
   productId: string,
@@ -31,16 +31,20 @@ export async function getProductDurationSeconds(
 
   const { data: shots } = await supabase
     .from('product_shots')
-    .select('time_offset_seconds, effect_specs!inner(duration_seconds)')
+    .select(
+      'time_offset_seconds, firework_variants(duration_seconds), effect_specs(duration_seconds)',
+    )
     .eq('product_id', productId);
   if (!shots || shots.length === 0) return null;
   let max = 0;
   for (const shot of shots as Array<{
     time_offset_seconds: number;
+    firework_variants: { duration_seconds: number | null } | null;
     effect_specs: { duration_seconds: number } | null;
   }>) {
-    const end =
-      Number(shot.time_offset_seconds ?? 0) + Number(shot.effect_specs?.duration_seconds ?? 0);
+    const duration =
+      shot.firework_variants?.duration_seconds ?? shot.effect_specs?.duration_seconds ?? 0;
+    const end = Number(shot.time_offset_seconds ?? 0) + Number(duration);
     if (end > max) max = end;
   }
   return max;

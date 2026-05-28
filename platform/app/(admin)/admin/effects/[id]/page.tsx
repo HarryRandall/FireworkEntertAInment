@@ -16,7 +16,7 @@ export default async function AdminEffectDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       <AppPageHeader
         title={effect.name}
-        description={`${effect.type} effect, ${effect.productCount} linked products.`}
+        description={`${effect.family} base effect, ${effect.variantCount} variants.`}
         breadcrumbs={[{ label: 'Effects', href: '/admin/effects' }, { label: effect.name }]}
       />
       <EffectEditor effect={effect} />

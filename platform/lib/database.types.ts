@@ -62,6 +62,126 @@ export type Database = {
         }
         Relationships: []
       }
+      firework_effects: {
+        Row: {
+          created_at: string
+          description: string | null
+          family: string
+          id: string
+          model_json: Json
+          name: string
+          pattern_key: string
+          slug: string
+          sort_order: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          family?: string
+          id?: string
+          model_json?: Json
+          name: string
+          pattern_key: string
+          slug: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          family?: string
+          id?: string
+          model_json?: Json
+          name?: string
+          pattern_key?: string
+          slug?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      firework_variants: {
+        Row: {
+          caliber: string | null
+          color_palette: string[]
+          confidence: number
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          effect_id: string
+          height_meters: number | null
+          id: string
+          name: string
+          primary_color: string | null
+          render_overrides_json: Json
+          secondary_color: string | null
+          slug: string
+          source: string
+          source_effect_spec_id: string | null
+          updated_at: string
+          variant_json: Json
+        }
+        Insert: {
+          caliber?: string | null
+          color_palette?: string[]
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effect_id: string
+          height_meters?: number | null
+          id?: string
+          name: string
+          primary_color?: string | null
+          render_overrides_json?: Json
+          secondary_color?: string | null
+          slug: string
+          source?: string
+          source_effect_spec_id?: string | null
+          updated_at?: string
+          variant_json?: Json
+        }
+        Update: {
+          caliber?: string | null
+          color_palette?: string[]
+          confidence?: number
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effect_id?: string
+          height_meters?: number | null
+          id?: string
+          name?: string
+          primary_color?: string | null
+          render_overrides_json?: Json
+          secondary_color?: string | null
+          slug?: string
+          source?: string
+          source_effect_spec_id?: string | null
+          updated_at?: string
+          variant_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_variants_effect_id_fkey"
+            columns: ["effect_id"]
+            isOneToOne: false
+            referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_variants_source_effect_spec_id_fkey"
+            columns: ["source_effect_spec_id"]
+            isOneToOne: true
+            referencedRelation: "effect_specs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           approved_firework_specification_id: string | null
@@ -248,31 +368,43 @@ export type Database = {
         Row: {
           caliber: string | null
           created_at: string | null
-          effect_spec_id: string
+          effect_spec_id: string | null
+          firework_variant_id: string | null
           id: string
           pan_degrees: number
+          position_override_json: Json | null
           product_id: string
           shot_index: number
+          shot_notes: string | null
+          tilt_degrees: number
           time_offset_seconds: number
         }
         Insert: {
           caliber?: string | null
           created_at?: string | null
-          effect_spec_id: string
+          effect_spec_id?: string | null
+          firework_variant_id?: string | null
           id?: string
           pan_degrees?: number
+          position_override_json?: Json | null
           product_id: string
           shot_index: number
+          shot_notes?: string | null
+          tilt_degrees?: number
           time_offset_seconds?: number
         }
         Update: {
           caliber?: string | null
           created_at?: string | null
-          effect_spec_id?: string
+          effect_spec_id?: string | null
+          firework_variant_id?: string | null
           id?: string
           pan_degrees?: number
+          position_override_json?: Json | null
           product_id?: string
           shot_index?: number
+          shot_notes?: string | null
+          tilt_degrees?: number
           time_offset_seconds?: number
         }
         Relationships: [
@@ -290,6 +422,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_shots_firework_variant_id_fkey"
+            columns: ["firework_variant_id"]
+            isOneToOne: false
+            referencedRelation: "firework_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -301,6 +440,8 @@ export type Database = {
           manufacturer: string | null
           name: string
           part_number: string
+          product_kind: string
+          product_metadata: Json
           subtype: string | null
           updated_at: string
         }
@@ -312,6 +453,8 @@ export type Database = {
           manufacturer?: string | null
           name: string
           part_number: string
+          product_kind?: string
+          product_metadata?: Json
           subtype?: string | null
           updated_at?: string
         }
@@ -323,6 +466,8 @@ export type Database = {
           manufacturer?: string | null
           name?: string
           part_number?: string
+          product_kind?: string
+          product_metadata?: Json
           subtype?: string | null
           updated_at?: string
         }

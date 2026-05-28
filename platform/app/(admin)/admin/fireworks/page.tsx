@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
@@ -45,7 +46,7 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
           <>
             <FilterSkeleton />
             <div className="min-h-0 flex-1 overflow-hidden">
-              <TableSkeleton rows={TABLE_PAGE_SIZE} columns={8} />
+              <TableSkeleton rows={TABLE_PAGE_SIZE} columns={9} />
             </div>
           </>
         }
@@ -144,6 +145,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
               <th className={tableHeaderCellClasses('px-5 py-3')}>Calibre</th>
               <th className={tableHeaderCellClasses('px-5 py-3')}>Shots</th>
               <th className={tableHeaderCellClasses('px-5 py-3')}>Duration</th>
+              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Open</th>
             </tr>
           </thead>
           <tbody>
@@ -239,6 +241,15 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                     )}
                   >
                     {formatDuration(firework.durationSeconds)}
+                  </td>
+                  <td className={tableCellClasses('px-5 py-4 text-right')}>
+                    <Link
+                      href={`/admin/fireworks/${firework.id}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+                      aria-label={`Open ${firework.name}`}
+                    >
+                      <ArrowRight size={16} />
+                    </Link>
                   </td>
                 </tr>
               );

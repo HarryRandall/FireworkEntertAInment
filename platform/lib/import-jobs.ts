@@ -14,6 +14,7 @@
  */
 import { z } from 'zod';
 import type { ReplayCue } from '@/lib/show-domain';
+import { compileFireworkDesign } from '@/lib/fireworks/design';
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,
@@ -466,6 +467,9 @@ export function importedSpecToReplayCues(imported: ImportedFireworkSpec): Replay
         shotCount: 1,
         spec,
         rawSpec: spec,
+        renderDesign: compileFireworkDesign({ legacySpec: spec }),
+        baseEffect: null,
+        variant: null,
       },
     },
   ];

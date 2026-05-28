@@ -53,6 +53,11 @@ export function getAdminFireworksCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:fireworks`;
 }
 
+/** Cache key for one product-level firework detail editor. */
+export function getAdminFireworkCacheKey(productId: string): string {
+  return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}`;
+}
+
 /** Cache key for the import job list. */
 export function getAdminImportsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:imports`;
@@ -96,8 +101,10 @@ export async function invalidateAdminEffectsCache(effectId?: string): Promise<vo
 }
 
 /** Invalidate product-level firework reads. */
-export async function invalidateAdminFireworksCache(): Promise<void> {
-  await deleteCachedKeys([getAdminFireworksCacheKey()]);
+export async function invalidateAdminFireworksCache(productId?: string): Promise<void> {
+  const keys = [getAdminFireworksCacheKey()];
+  if (productId) keys.push(getAdminFireworkCacheKey(productId));
+  await deleteCachedKeys(keys);
 }
 
 /** Invalidate the cached import jobs list. */

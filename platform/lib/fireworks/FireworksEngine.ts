@@ -16,7 +16,7 @@ import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
   type LaunchPosition,
-  safeParseFireworkDesign,
+  compileFireworkDesign,
   scaleDesignForCaliber,
 } from '@/lib/fireworks/design';
 import { ParticlePool } from '@/lib/fireworks/ParticlePool';
@@ -36,7 +36,7 @@ import type { Particle } from '@/lib/fireworks/Particle';
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife,shape] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -54,7 +54,7 @@ const FIXED_DT = 1 / 60;
 // the eye; cuts physics work ~3x vs 60Hz stepping.
 const SCRUB_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 16;
+const SNAPSHOT_STRIDE = 17;
 const MAX_SNAPSHOTS = 120;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
@@ -80,12 +80,14 @@ export class FireworksEngine {
   private positions: Float32Array;
   private colors: Float32Array;
   private sizes: Float32Array;
+  private shapes: Float32Array;
   private smokePositions: Float32Array;
   private smokeColors: Float32Array;
   private smokeSizes: Float32Array;
   private positionAttribute: THREE.BufferAttribute;
   private colorAttribute: THREE.BufferAttribute;
   private sizeAttribute: THREE.BufferAttribute;
+  private shapeAttribute: THREE.BufferAttribute;
   private smokePositionAttribute: THREE.BufferAttribute;
   private smokeColorAttribute: THREE.BufferAttribute;
   private smokeSizeAttribute: THREE.BufferAttribute;
@@ -129,6 +131,7 @@ export class FireworksEngine {
     this.positions = new Float32Array(PARTICLE_CAPACITY * 3);
     this.colors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.sizes = new Float32Array(PARTICLE_CAPACITY);
+    this.shapes = new Float32Array(PARTICLE_CAPACITY);
     this.smokePositions = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeColors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeSizes = new Float32Array(PARTICLE_CAPACITY);
@@ -141,9 +144,13 @@ export class FireworksEngine {
       THREE.DynamicDrawUsage,
     );
     this.sizeAttribute = new THREE.BufferAttribute(this.sizes, 1).setUsage(THREE.DynamicDrawUsage);
+    this.shapeAttribute = new THREE.BufferAttribute(this.shapes, 1).setUsage(
+      THREE.DynamicDrawUsage,
+    );
     this.geometry.setAttribute('position', this.positionAttribute);
     this.geometry.setAttribute('color', this.colorAttribute);
     this.geometry.setAttribute('size', this.sizeAttribute);
+    this.geometry.setAttribute('shape', this.shapeAttribute);
     this.geometry.setDrawRange(0, 0);
 
     this.smokeGeometry = new THREE.BufferGeometry();
@@ -217,11 +224,19 @@ export class FireworksEngine {
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
     const design = scaleDesignForCaliber(
-      safeParseFireworkDesign(cue.firework.rawSpec),
+      cue.firework.renderDesign ?? compileFireworkDesign({ legacySpec: cue.firework.rawSpec }),
       cue.firework.caliber,
     );
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
-    const pos = this.world.getLaunchPosition(idx);
+    const basePos = this.world.getLaunchPosition(idx);
+    const override = cue.shotPositionOverride;
+    const pos = override
+      ? {
+          x: basePos.x + override.x,
+          y: basePos.y + override.y,
+          z: basePos.z + override.z,
+        }
+      : basePos;
     const seed = mixSeed(
       cue.seedOverride ?? undefined,
       cue.id,
@@ -232,6 +247,8 @@ export class FireworksEngine {
     this.effects.fire(design, pos, {
       rng: createSeededRng(seed),
       audible,
+      panDegrees: cue.shotPanDegrees ?? 0,
+      tiltDegrees: cue.shotTiltDegrees ?? 0,
     });
   }
 
@@ -301,6 +318,7 @@ export class FireworksEngine {
     const positions = this.positions;
     const colors = this.colors;
     const sizes = this.sizes;
+    const shapes = this.shapes;
     const smokePositions = this.smokePositions;
     const smokeColors = this.smokeColors;
     const smokeSizes = this.smokeSizes;
@@ -335,6 +353,7 @@ export class FireworksEngine {
       positions[pi + 1] = p.y;
       positions[pi + 2] = p.z;
       sizes[drawCount] = renderParticleSize(p);
+      shapes[drawCount] = p.shape;
       // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
       // then settle into their pure burst colour as they cool — matches the
       // way burning magnesium chemistry actually looks.
@@ -371,6 +390,10 @@ export class FireworksEngine {
       this.sizeAttribute.clearUpdateRanges();
       this.sizeAttribute.addUpdateRange(0, drawCount);
       this.sizeAttribute.needsUpdate = true;
+
+      this.shapeAttribute.clearUpdateRanges();
+      this.shapeAttribute.addUpdateRange(0, drawCount);
+      this.shapeAttribute.needsUpdate = true;
     }
     if (smokeDrawCount > 0) {
       const smokePositionCount = smokeDrawCount * 3;
@@ -425,6 +448,7 @@ export class FireworksEngine {
       state.data[o + 13] = p.gravity;
       state.data[o + 14] = p.drag;
       state.data[o + 15] = p.maxLife;
+      state.data[o + 16] = p.shape;
       w++;
     }
     return state;
@@ -453,6 +477,7 @@ export class FireworksEngine {
       p.gravity = state.data[o + 13];
       p.drag = state.data[o + 14];
       p.maxLife = state.data[o + 15] || p.life;
+      p.shape = state.data[o + 16] || 0;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);
