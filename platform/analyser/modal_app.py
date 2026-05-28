@@ -40,9 +40,6 @@ app = modal.App("showcrafter-analyser")
     timeout=600,
     cpu=2.0,
     memory=4096,
-    min_containers=1,
-    buffer_containers=1,
-    scaledown_window=1200,
     enable_memory_snapshot=True,
 )
 class SongAnalyser:
@@ -86,6 +83,15 @@ class SongAnalyser:
         expected = os.environ.get("ANALYSER_SHARED_SECRET", "")
         if not expected or authorization != f"Bearer {expected}":
             raise HTTPException(status_code=401, detail="unauthorized")
+
+        if payload.get("warmup") is True:
+            from showcrafter import SCHEMA_VERSION
+
+            return {
+                "ok": True,
+                "runner_version": "modal-librosa-2",
+                "schema_version": SCHEMA_VERSION,
+            }
 
         audio_url = payload.get("audio_url")
         if not audio_url:
