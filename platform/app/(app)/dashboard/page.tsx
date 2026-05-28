@@ -96,7 +96,7 @@ async function DashboardShows({
               prefetch
               className="group block rounded-xl focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
             >
-              <Card radius="lg" hoverable className="p-6">
+              <Card radius="lg" className="p-6">
                 <div className="mb-5 flex items-start justify-between">
                   <div className="flex h-10 w-10 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-default)]">
                     <Icon size={18} strokeWidth={1.75} />
