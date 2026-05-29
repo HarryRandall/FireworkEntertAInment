@@ -44,9 +44,11 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   const warmRoute = readFileSync(join(root, 'app/api/admin/analyser/warm/route.ts'), 'utf8');
 
   assert.match(modalApp, /payload\.get\("warmup"\) is True/);
+  assert.match(modalApp, /min_containers=0/);
+  assert.match(modalApp, /buffer_containers=0/);
+  assert.match(modalApp, /scaledown_window=2/);
   assert.doesNotMatch(modalApp, /min_containers=1/);
   assert.doesNotMatch(modalApp, /buffer_containers=1/);
-  assert.doesNotMatch(modalApp, /scaledown_window=/);
   assert.match(adminPage, /AnalyserWarmthControl/);
   assert.match(warmControl, /Keep warm for 30 minutes/);
   assert.match(warmControl, /Extend 30 minutes/);

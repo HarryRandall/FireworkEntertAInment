@@ -40,6 +40,9 @@ app = modal.App("showcrafter-analyser")
     timeout=600,
     cpu=2.0,
     memory=4096,
+    min_containers=0,
+    buffer_containers=0,
+    scaledown_window=2,
     enable_memory_snapshot=True,
 )
 class SongAnalyser:
