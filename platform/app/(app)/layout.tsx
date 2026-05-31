@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/app/components/app/AppShell';
 import { getCurrentProfile } from '@/lib/admin.server';
+import { getActiveImpersonation } from '@/lib/impersonation.server';
 import { measureServerTask } from '@/lib/perf.server';
 
 // Authenticated routes always need a fresh session check.
@@ -15,5 +16,13 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   );
   if (!profile) redirect('/login');
 
-  return <AppShell profile={profile}>{children}</AppShell>;
+  const impersonation = await measureServerTask('app-layout:getActiveImpersonation', () =>
+    getActiveImpersonation(),
+  );
+
+  return (
+    <AppShell profile={profile} impersonation={impersonation}>
+      {children}
+    </AppShell>
+  );
 }

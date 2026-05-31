@@ -11,7 +11,7 @@ import { Field, FieldLabel } from '@/app/components/ui/Field';
 
 const initialState: PasswordActionState = { status: 'idle' };
 
-export function PasswordChangeForm() {
+export function PasswordChangeForm({ disabled = false }: { disabled?: boolean }) {
   const [state, formAction, pending] = useActionState(updatePasswordAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -31,6 +31,7 @@ export function PasswordChangeForm() {
           name="currentPassword"
           autoComplete="current-password"
           required
+          disabled={disabled}
         />
       </Field>
 
@@ -44,6 +45,7 @@ export function PasswordChangeForm() {
             autoComplete="new-password"
             minLength={8}
             required
+            disabled={disabled}
           />
         </Field>
         <Field>
@@ -55,6 +57,7 @@ export function PasswordChangeForm() {
             autoComplete="new-password"
             minLength={8}
             required
+            disabled={disabled}
           />
         </Field>
       </div>
@@ -71,7 +74,7 @@ export function PasswordChangeForm() {
       ) : null}
 
       <div className="flex justify-end">
-        <Button type="submit" loading={pending}>
+        <Button type="submit" loading={pending} disabled={disabled}>
           Update password
         </Button>
       </div>

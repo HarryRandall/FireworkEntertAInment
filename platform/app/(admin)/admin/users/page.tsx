@@ -16,8 +16,9 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from '@/app/components/ui/DataTable';
-import { listAdminUsers } from '@/lib/admin.server';
+import { getCurrentProfile, listAdminUsers } from '@/lib/admin.server';
 import type { ProfileStatus, RoleKey } from '@/lib/admin.types';
+import { InlineCopyButton } from './InlineCopyButton';
 import { UserRowActions } from './UserRowActions';
 
 type PageProps = {
@@ -89,7 +90,10 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
   const roleFilter = params.role;
   const statusFilter = params.status;
   const requestedPage = Number(params.page ?? '1');
-  const users = await listAdminUsers();
+  const [users, currentProfile] = await Promise.all([listAdminUsers(), getCurrentProfile()]);
+  const canStartImpersonation = Boolean(
+    currentProfile?.permissions.includes('admin.impersonate_users'),
+  );
   const filtered = users.filter((user) => {
     const text = [user.fullName, user.email, user.phone, user.roles.join(' ')]
       .filter(Boolean)
@@ -124,26 +128,62 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
             {paginated.map((user) => {
               const href = `/admin/users/${user.id}`;
               const primaryRole = user.roles[0] ?? 'user';
+              const displayName = user.fullName || 'Unnamed user';
+              const canImpersonate =
+                canStartImpersonation && user.status === 'active' && user.id !== currentProfile?.id;
               return (
                 <tr key={user.id} className={tableRowClasses('group')}>
                   <td className={tableCellClasses('p-0')}>
-                    <Link
-                      href={href}
-                      prefetch
-                      className={`${rowLinkClasses} flex items-center gap-3`}
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)]">
+                    <div className="flex items-center gap-3 px-5 py-4">
+                      <Link
+                        href={href}
+                        prefetch
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+                        aria-label={`View ${displayName}`}
+                      >
                         <UserRound size={16} />
-                      </span>
-                      <span>
-                        <span className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
-                          {user.fullName || 'Unnamed user'}
+                      </Link>
+                      <span className="min-w-0 flex-1">
+                        <span className="group/identity flex min-w-0 items-center gap-1.5">
+                          <Link
+                            href={href}
+                            prefetch
+                            className="min-w-0 truncate text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline focus:underline focus:outline-none"
+                          >
+                            {displayName}
+                          </Link>
+                          {user.fullName ? (
+                            <InlineCopyButton
+                              value={user.fullName}
+                              label={`Copy ${user.fullName}'s name`}
+                              successMessage="Name copied"
+                            />
+                          ) : null}
                         </span>
-                        <span className="mt-0.5 block text-xs text-[color:var(--color-content-subtle)]">
-                          {user.email || 'No email'}
+                        <span className="group/identity mt-0.5 flex min-w-0 items-center gap-1.5">
+                          {user.email ? (
+                            <>
+                              <Link
+                                href={href}
+                                prefetch
+                                className="min-w-0 truncate text-xs text-[color:var(--color-content-subtle)] hover:underline focus:underline focus:outline-none"
+                              >
+                                {user.email}
+                              </Link>
+                              <InlineCopyButton
+                                value={user.email}
+                                label={`Copy ${user.email}`}
+                                successMessage="Email copied"
+                              />
+                            </>
+                          ) : (
+                            <span className="text-xs text-[color:var(--color-content-subtle)]">
+                              No email
+                            </span>
+                          )}
                         </span>
                       </span>
-                    </Link>
+                    </div>
                   </td>
                   <td className={tableCellClasses('p-0')}>
                     <Link href={href} prefetch className={rowLinkClasses}>
@@ -169,7 +209,13 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                     </Link>
                   </td>
                   <td className={tableCellClasses('px-5 py-4 text-right')}>
-                    <UserRowActions userId={user.id} email={user.email} status={user.status} />
+                    <UserRowActions
+                      userId={user.id}
+                      email={user.email}
+                      status={user.status}
+                      displayName={user.fullName || user.email || 'this user'}
+                      canImpersonate={canImpersonate}
+                    />
                   </td>
                 </tr>
               );

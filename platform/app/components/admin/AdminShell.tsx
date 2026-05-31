@@ -35,8 +35,10 @@ import {
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import type { CurrentProfile } from '@/lib/admin.types';
+import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
 const ADMIN_LINKS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
@@ -71,9 +73,11 @@ const readSidebarCollapsedPreference = () => {
 export function AdminShell({
   children,
   profile,
+  impersonation,
 }: {
   children: ReactNode;
   profile: CurrentProfile;
+  impersonation?: ActiveImpersonation | null;
 }) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -281,6 +285,15 @@ export function AdminShell({
     return renderSidebarTooltip(link, 'Back to app', collapsed);
   };
 
+  const renderSidebarFooter = (collapsed = sidebarCollapsed) => (
+    <div className={cn('mt-auto flex flex-col gap-2 pt-3', collapsed && 'items-center')}>
+      {impersonation ? (
+        <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
+      ) : null}
+      {renderProfileCard(collapsed)}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)] lg:p-2">
       <ThemePreferenceSync themePreference={profile.themePreference} />
@@ -327,7 +340,7 @@ export function AdminShell({
           >
             {backToApp()}
           </div>
-          <div className="mt-auto pt-3">{renderProfileCard(sidebarCollapsed)}</div>
+          {renderSidebarFooter()}
         </aside>
 
         <div className="flex min-w-0 flex-col bg-[color:var(--color-bg-default)] lg:h-[calc(100vh-1rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
@@ -370,7 +383,7 @@ export function AdminShell({
                     {backToApp(closeDrawer, false)}
                   </div>
                 </ScrollArea>
-                <div className="mt-auto pt-4">{renderProfileCard(false)}</div>
+                {renderSidebarFooter(false)}
               </SheetContent>
             </Sheet>
           </header>

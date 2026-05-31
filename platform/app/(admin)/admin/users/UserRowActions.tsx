@@ -4,7 +4,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { Copy, Eye, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
+import { Copy, LogIn, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
 import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
@@ -17,17 +17,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { deleteUserAction, setUserStatusAction } from '@/app/actions/admin-users';
+import { startImpersonationAction } from '@/app/actions/impersonation';
 
 type Props = {
   userId: string;
   email: string | null;
   status: 'active' | 'suspended';
+  displayName: string;
+  canImpersonate: boolean;
 };
 
-export function UserRowActions({ userId, email, status }: Props) {
+export function UserRowActions({ userId, email, status, displayName, canImpersonate }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [impersonateConfirmOpen, setImpersonateConfirmOpen] = useState(false);
 
   const isActive = status === 'active';
 
@@ -66,7 +70,17 @@ export function UserRowActions({ userId, email, status }: Props) {
       } else {
         toast.error(result.error);
       }
-      setConfirmOpen(false);
+      setDeleteConfirmOpen(false);
+    });
+  };
+
+  const startImpersonating = () => {
+    startTransition(async () => {
+      const result = await startImpersonationAction({ targetUserId: userId });
+      if (result?.ok === false) {
+        toast.error(result.error);
+        setImpersonateConfirmOpen(false);
+      }
     });
   };
 
@@ -75,9 +89,10 @@ export function UserRowActions({ userId, email, status }: Props) {
       <RowActionsMenu
         items={[
           {
-            label: 'View',
-            icon: <Eye size={14} />,
-            onSelect: () => router.push(`/admin/users/${userId}`),
+            label: 'Impersonate',
+            icon: <LogIn size={14} />,
+            disabled: !canImpersonate,
+            onSelect: () => setImpersonateConfirmOpen(true),
           },
           {
             label: 'Copy email',
@@ -93,11 +108,34 @@ export function UserRowActions({ userId, email, status }: Props) {
             label: 'Delete',
             icon: <Trash2 size={14} />,
             destructive: true,
-            onSelect: () => setConfirmOpen(true),
+            onSelect: () => setDeleteConfirmOpen(true),
           },
         ]}
       />
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog open={impersonateConfirmOpen} onOpenChange={setImpersonateConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Impersonate user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will switch into {displayName}&apos;s account for support. This session is
+              audited, expires automatically, and can be stopped from the sidebar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                startImpersonating();
+              }}
+            >
+              Start impersonating
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete user?</AlertDialogTitle>

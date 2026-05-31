@@ -292,6 +292,51 @@ export type Database = {
           },
         ]
       }
+      impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          ended_at: string | null
+          end_reason: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          return_token_hash: string
+          started_at: string
+          target_user_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          ended_at?: string | null
+          end_reason?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          return_token_hash: string
+          started_at?: string
+          target_user_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          ended_at?: string | null
+          end_reason?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          return_token_hash?: string
+          started_at?: string
+          target_user_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           created_at: string

@@ -9,6 +9,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { hasImpersonationCookie } from '@/lib/impersonation.server';
 import { createClient } from '@/utils/supabase/server';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 
@@ -33,6 +34,13 @@ export async function updatePasswordAction(
   _prev: PasswordActionState,
   formData: FormData,
 ): Promise<PasswordActionState> {
+  if (await hasImpersonationCookie()) {
+    return {
+      status: 'error',
+      message: 'Password changes are disabled while impersonating a user.',
+    };
+  }
+
   const parsed = PasswordSchema.safeParse({
     currentPassword: formData.get('currentPassword') ?? '',
     newPassword: formData.get('newPassword') ?? '',
@@ -90,6 +98,13 @@ export async function deleteAccountAction(
   _prev: DeleteAccountState,
   formData: FormData,
 ): Promise<DeleteAccountState> {
+  if (await hasImpersonationCookie()) {
+    return {
+      status: 'error',
+      message: 'Account deletion is disabled while impersonating a user.',
+    };
+  }
+
   const parsed = DeleteAccountSchema.safeParse({
     password: formData.get('password') ?? '',
     confirmation: formData.get('confirmation') ?? '',
