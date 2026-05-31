@@ -12,14 +12,18 @@ import {
   getAdminUserById,
   getCurrentProfile,
   getUserActivity,
-  listPermissions,
+  listRolePermissionMatrix,
   listRoles,
 } from '@/lib/admin.server';
 import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
+import type { PermissionOverrideOption } from './AddPermissionOverrideDialog';
+import {
+  PermissionExceptionsPanel,
+  type PermissionExceptionState,
+} from './PermissionExceptionsPanel';
 import { UserActivityChart } from './UserActivityChart';
 import { UserHeaderActions } from './UserHeaderActions';
 import { UserRoleSelect } from './UserRoleSelect';
-import { PermissionOverrideRow } from './PermissionOverrideRow';
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -185,38 +189,47 @@ async function AdminUserRoleCard({ user }: { user: AdminUser }) {
 }
 
 async function AdminUserPermissionsCard({ user }: { user: AdminUser }) {
-  const permissions = await listPermissions();
-  const overrideByPermissionId = new Map(
-    user.permissionOverrides.map((o) => [o.permissionId, o.enabled ? 'grant' : 'deny'] as const),
+  // Permission overrides render in a client panel so add/clear actions feel immediate.
+  const matrix = await listRolePermissionMatrix();
+  const roles = matrix?.roles ?? [];
+  const permissions = matrix?.permissions ?? [];
+  const permissionById = new Map(permissions.map((permission) => [permission.id, permission]));
+  const primaryRole = user.roles[0] ?? 'user';
+  const primaryRoleRow = roles.find((role) => role.key === primaryRole);
+  const grantKeys = new Set(
+    (matrix?.grants ?? []).map((grant) => `${grant.roleId}:${grant.permissionId}`),
   );
+  const overriddenPermissionIds = new Set(
+    user.permissionOverrides.map((override) => override.permissionId),
+  );
+  const exceptions: PermissionExceptionState[] = user.permissionOverrides.flatMap((override) => {
+    const permission = permissionById.get(override.permissionId);
+    if (!permission) return [];
+    return [
+      {
+        permission,
+        inheritedAllowed: primaryRoleRow
+          ? grantKeys.has(`${primaryRoleRow.id}:${permission.id}`)
+          : false,
+        mode: override.enabled ? ('grant' as const) : ('deny' as const),
+      },
+    ];
+  });
+  const addOptions: PermissionOverrideOption[] = permissions
+    .filter((permission) => !overriddenPermissionIds.has(permission.id))
+    .map((permission) => ({
+      ...permission,
+      inheritedAllowed: primaryRoleRow
+        ? grantKeys.has(`${primaryRoleRow.id}:${permission.id}`)
+        : false,
+    }));
+
   return (
-    <Card elevation="low" radius="lg" className="p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            Permission overrides
-          </h2>
-          <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-            Override role permissions per user. Defaults to inherit.
-          </p>
-        </div>
-      </div>
-      <div className="divide-y divide-[color:var(--color-border-subtle)]">
-        {permissions.map((permission) => {
-          const mode = (overrideByPermissionId.get(permission.id) ?? 'clear') as
-            | 'grant'
-            | 'deny'
-            | 'clear';
-          return (
-            <PermissionOverrideRow
-              key={permission.id}
-              userId={user.id}
-              permission={permission}
-              initialMode={mode}
-            />
-          );
-        })}
-      </div>
-    </Card>
+    <PermissionExceptionsPanel
+      userId={user.id}
+      roleName={primaryRoleRow?.name ?? primaryRole}
+      initialExceptions={exceptions}
+      initialAddOptions={addOptions}
+    />
   );
 }

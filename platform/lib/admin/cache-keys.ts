@@ -73,6 +73,11 @@ export function getAdminPermissionsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:permissions`;
 }
 
+/** Cache key for role permission defaults joined to roles and permissions. */
+export function getAdminRolePermissionMatrixCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:role-permissions`;
+}
+
 /**
  * Invalidate the admin user list and (optionally) a single user's detail blob.
  * Call after any mutation that affects role assignments or profile data.
@@ -117,7 +122,11 @@ export async function invalidateAdminImportsCache(): Promise<void> {
  * are derived from role membership.
  */
 export async function invalidateAdminRolesCache(): Promise<void> {
-  await deleteCachedKeys([getAdminRolesCacheKey(), getAdminUsersCacheKey()]);
+  await deleteCachedKeys([
+    getAdminRolesCacheKey(),
+    getAdminRolePermissionMatrixCacheKey(),
+    getAdminUsersCacheKey(),
+  ]);
 }
 
 /**
@@ -125,5 +134,14 @@ export async function invalidateAdminRolesCache(): Promise<void> {
  * effective permissions depend on the permission catalogue.
  */
 export async function invalidateAdminPermissionsCache(): Promise<void> {
-  await deleteCachedKeys([getAdminPermissionsCacheKey(), getAdminUsersCacheKey()]);
+  await deleteCachedKeys([
+    getAdminPermissionsCacheKey(),
+    getAdminRolePermissionMatrixCacheKey(),
+    getAdminUsersCacheKey(),
+  ]);
+}
+
+/** Invalidate role permission defaults and user-facing permission rollups. */
+export async function invalidateAdminRolePermissionsCache(): Promise<void> {
+  await deleteCachedKeys([getAdminRolePermissionMatrixCacheKey(), getAdminUsersCacheKey()]);
 }

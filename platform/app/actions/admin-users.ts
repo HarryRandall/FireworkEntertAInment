@@ -14,6 +14,8 @@ import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const SELF_LOCKOUT_PERMISSION_KEYS = new Set(['admin.view', 'admin.manage_users']);
+
 const SetStatusSchema = z.object({
   userId: z.string().uuid(),
   status: z.enum(['active', 'suspended']),
@@ -63,6 +65,9 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   if (!admin) return { ok: false, error: 'Not permitted.' };
   const parsed = SetRoleSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  if (parsed.data.userId === admin.id) {
+    return { ok: false, error: 'You cannot change your own role.' };
+  }
 
   const supabase = createClient(await cookies());
   const { data: role, error: roleError } = await supabase
@@ -121,6 +126,18 @@ export async function setUserPermissionOverrideAction(
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
   const supabase = createClient(await cookies());
+  if (parsed.data.userId === admin.id && parsed.data.mode === 'deny') {
+    const { data: permission, error: permissionError } = await supabase
+      .from('permissions')
+      .select('key')
+      .eq('id', parsed.data.permissionId)
+      .maybeSingle();
+    if (permissionError) return { ok: false, error: permissionError.message };
+    if (permission && SELF_LOCKOUT_PERMISSION_KEYS.has(permission.key)) {
+      return { ok: false, error: 'You cannot deny your own admin access.' };
+    }
+  }
+
   if (parsed.data.mode === 'clear') {
     const { error } = await supabase
       .from('user_permission_overrides')
