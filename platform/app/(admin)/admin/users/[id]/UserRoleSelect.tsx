@@ -2,7 +2,7 @@
 
 /** RBAC role picker on the admin user detail page. */
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setUserRoleAction } from '@/app/actions/admin-users';
 import { toast } from '@/app/components/ui/toast';
@@ -27,18 +27,24 @@ export function UserRoleSelect({ userId, roles, initialRoleId }: Props) {
   const [roleId, setRoleId] = useState(initialRoleId);
   const [isPending, startTransition] = useTransition();
 
+  useEffect(() => {
+    setRoleId(initialRoleId);
+  }, [initialRoleId]);
+
   const onChange = (next: string) => {
     if (next === roleId) return;
     const previous = roleId;
+    const role = roles.find((item) => item.id === next);
+    const toastId = toast.loading(`Saving ${role?.name ?? 'role'}...`);
     setRoleId(next);
     startTransition(async () => {
       const result = await setUserRoleAction({ userId, roleId: next });
       if (result.ok) {
-        toast.success('Role updated');
+        toast.success(`${role?.name ?? 'Role'} saved.`, { id: toastId });
         router.refresh();
       } else {
         setRoleId(previous);
-        toast.error(result.error);
+        toast.error(result.error, { id: toastId });
       }
     });
   };

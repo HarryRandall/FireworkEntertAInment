@@ -19,6 +19,7 @@ import {
   PanelLeftOpen,
   Rocket,
   Settings,
+  ShieldCheck,
   Sparkles,
   Store,
   Users,
@@ -43,6 +44,7 @@ import type { ActiveImpersonation } from '@/lib/impersonation.types';
 const ADMIN_LINKS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
   { href: '/admin/suppliers', label: 'Suppliers', icon: Store },
   { href: '/admin/catalogue', label: 'Catalogue', icon: Database },
   { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },

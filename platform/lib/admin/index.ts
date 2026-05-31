@@ -24,7 +24,7 @@ export {
   unique,
 } from './mappers';
 export { getCurrentProfile, requirePermission } from './current-user.server';
-export { listPermissions, listRoles } from './roles.server';
+export { listPermissions, listRolePermissionMatrix, listRoles } from './roles.server';
 export {
   getAdminUserById,
   getUserActivity,

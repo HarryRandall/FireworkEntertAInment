@@ -69,6 +69,15 @@ export type Permission = {
   category: string;
 };
 
+export type RolePermissionMatrix = {
+  roles: Role[];
+  permissions: Permission[];
+  grants: {
+    roleId: string;
+    permissionId: string;
+  }[];
+};
+
 export type SupplierSummary = {
   id: string;
   name: string;
