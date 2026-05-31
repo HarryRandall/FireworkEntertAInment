@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Clock3, Gauge, Zap } from 'lucide-react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
+import { Gauge } from 'lucide-react';
 import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
-import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
-import { Toggle } from '@/app/components/ui/Toggle';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { toast } from '@/app/components/ui/toast';
 import type { AnalyserWarmthState } from '@/lib/analyser-warmth.server';
+import { cn } from '@/lib/utils';
 
 const minuteFormatter = new Intl.RelativeTimeFormat('en-AU', { numeric: 'auto' });
 const BROWSER_WARMUP_INTERVAL_MS = 45 * 1000;
@@ -18,19 +18,11 @@ function getRemainingMinutes(warmUntil: string | null, now: number): number {
   return Math.max(Math.ceil((Date.parse(warmUntil) - now) / 60000), 0);
 }
 
-function formatTime(value: string | null): string {
-  if (!value) return 'Not scheduled';
-  return new Intl.DateTimeFormat('en-AU', {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
 function statusCopy(state: AnalyserWarmthState, now: number): string {
-  if (!state.active) return 'Cold start mode';
   const remainingMinutes = getRemainingMinutes(state.warmUntil, now);
-  if (remainingMinutes <= 1) return 'Warm for less than a minute';
-  return `Warm for ${minuteFormatter.format(remainingMinutes, 'minute').replace('in ', '')}`;
+  if (!state.active || remainingMinutes === 0) return 'Idle: next analysis may cold start.';
+  if (remainingMinutes <= 1) return 'Live for less than a minute.';
+  return `Live for ${minuteFormatter.format(remainingMinutes, 'minute').replace('in ', '')}.`;
 }
 
 type Props = {
@@ -43,6 +35,7 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   const [now, setNow] = useState(() => Date.now());
   const [isPending, startTransition] = useTransition();
   const pulseInFlightRef = useRef(false);
+  const buttonDescriptionId = useId();
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -50,28 +43,22 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   }, []);
 
   const active = state.active && getRemainingMinutes(state.warmUntil, now) > 0;
-  const badgeTone = active ? 'success' : 'neutral';
-  const lastWarmupCopy = useMemo(() => {
-    if (state.lastWarmupOk === true) return `Last ping ${formatTime(state.lastWarmupAt)}`;
-    if (state.lastWarmupOk === false) return state.lastWarmupError || 'Last warm-up failed';
-    return 'Waiting for the first ping';
-  }, [state.lastWarmupAt, state.lastWarmupError, state.lastWarmupOk]);
 
-  const updateWarmth = (enabled: boolean) => {
+  const keepWarm = () => {
     if (!canManage) {
       toast.error('You do not have permission to manage the analyser.');
       return;
     }
 
     startTransition(async () => {
-      const result = await setAnalyserWarmthAction({ enabled });
+      const result = await setAnalyserWarmthAction({ enabled: true });
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
 
       setState(result.state);
-      toast.success(enabled ? 'Warm analyser enabled for 30 minutes' : 'Warm analyser disabled');
+      toast.success('Analyser live for 30 minutes');
     });
   };
 
@@ -118,69 +105,52 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   }, [active, canManage]);
 
   return (
-    <Card radius="md" className="p-5">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={badgeTone} solid>
-              {active ? 'Warm boost active' : 'Cold starts'}
-            </Badge>
-            <Badge tone={state.cacheMode === 'shared' ? 'info' : 'warning'} solid>
-              {state.cacheMode === 'shared' ? 'Shared timer' : 'Local timer'}
-            </Badge>
-          </div>
+    <Card
+      radius="md"
+      className={cn(
+        'px-4 py-3',
+        active &&
+          'border-[color-mix(in_srgb,var(--color-status-success)_36%,var(--color-border-default))]',
+      )}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border',
+              active
+                ? 'border-[color-mix(in_srgb,var(--color-status-success)_34%,var(--color-border-default))] bg-[color-mix(in_srgb,var(--color-status-success)_14%,transparent)] text-[color:var(--color-status-success)]'
+                : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]',
+            )}
+          >
+            <Gauge aria-hidden className="h-4 w-4" />
+          </span>
 
-          <div className="space-y-1">
-            <h2 className="text-on-surface flex items-center gap-2 text-lg font-bold">
-              <Gauge aria-hidden className="h-5 w-5 text-[color:var(--color-accent)]" />
-              Analyser container
-            </h2>
-            <p className="text-on-surface-variant max-w-2xl text-sm">
-              {active
-                ? `The analyser stays ready until ${formatTime(state.warmUntil)}.`
-                : 'The analyser will use the normal cold start path.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="border-outline-variant/45 bg-surface-container-low rounded-lg border p-3">
-              <div className="text-on-surface-variant flex items-center gap-2 text-xs font-semibold tracking-[0.14em] uppercase">
-                <Clock3 aria-hidden className="h-3.5 w-3.5" />
-                Window
-              </div>
-              <p className="text-on-surface mt-1 text-sm font-semibold">{statusCopy(state, now)}</p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-on-surface text-sm font-semibold">Analyser warm-up</h2>
+              <InfoTooltip text="Keeps the analyser container ready for demos or rapid testing. It turns off automatically after 30 minutes." />
             </div>
-            <div className="border-outline-variant/45 bg-surface-container-low rounded-lg border p-3">
-              <div className="text-on-surface-variant flex items-center gap-2 text-xs font-semibold tracking-[0.14em] uppercase">
-                <Zap aria-hidden className="h-3.5 w-3.5" />
-                Warm-up
-              </div>
-              <p className="text-on-surface mt-1 text-sm font-semibold break-words">
-                {lastWarmupCopy}
-              </p>
-            </div>
+            <p className="text-on-surface-variant mt-0.5 text-xs">{statusCopy(state, now)}</p>
           </div>
         </div>
 
-        <div className="flex w-full flex-col gap-3 lg:w-80">
-          <Toggle
-            checked={active}
+        <div className="flex shrink-0 items-center gap-3">
+          <span id={buttonDescriptionId} className="sr-only">
+            Keep the analyser warm for 30 minutes. Click again to refresh the timer.
+          </span>
+          <Button
+            type="button"
+            variant={active ? 'secondary' : 'accent'}
+            size="sm"
+            className="cursor-pointer"
             disabled={!canManage || isPending}
-            onChange={updateWarmth}
-            label="Keep warm for 30 minutes"
-            description="Use for demos or rapid testing, then let the analyser return to cold starts."
-          />
-          {active ? (
-            <Button
-              type="button"
-              variant="secondary"
-              loading={isPending}
-              disabled={!canManage || isPending}
-              onClick={() => updateWarmth(true)}
-            >
-              Extend 30 minutes
-            </Button>
-          ) : null}
+            loading={isPending}
+            aria-describedby={buttonDescriptionId}
+            onClick={keepWarm}
+          >
+            Keep warm 30 min
+          </Button>
         </div>
       </div>
     </Card>
