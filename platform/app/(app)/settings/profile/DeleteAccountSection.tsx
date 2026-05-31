@@ -21,7 +21,7 @@ import {
 const initialState: DeleteAccountState = { status: 'idle' };
 const CONFIRM_PHRASE = 'delete my account';
 
-export function DeleteAccountSection() {
+export function DeleteAccountSection({ disabled = false }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState('');
   const [state, formAction, pending] = useActionState(deleteAccountAction, initialState);
@@ -43,7 +43,12 @@ export function DeleteAccountSection() {
             Permanently remove your account, profile, and any shows you own. This cannot be undone.
           </p>
         </div>
-        <Button type="button" variant="destructive" onClick={() => setOpen(true)}>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => setOpen(true)}
+          disabled={disabled}
+        >
           <Trash2 size={16} strokeWidth={1.85} />
           Delete account
         </Button>

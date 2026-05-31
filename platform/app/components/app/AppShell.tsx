@@ -37,7 +37,9 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
+import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
+import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
 type AppNavLink = {
   href: string;
@@ -64,6 +66,7 @@ type AppShellProps = {
   children: ReactNode;
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
+  impersonation?: ActiveImpersonation | null;
 };
 
 const navBase =
@@ -86,7 +89,7 @@ const readSidebarCollapsedPreference = () => {
   }
 };
 
-export function AppShell({ children, profile }: AppShellProps) {
+export function AppShell({ children, profile, impersonation }: AppShellProps) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const effectivePath = pendingHref ?? pathname;
@@ -349,9 +352,19 @@ export function AppShell({ children, profile }: AppShellProps) {
   const mobileDescription = inSettings
     ? 'Jump between personal details, notifications, billing, and security.'
     : 'Jump between dashboard, new show, library, and admin sections.';
-  const profileFooter = inSettings ? null : (
-    <div className="mt-auto pt-3">{renderProfileCard(sidebarCollapsed)}</div>
-  );
+  const renderSidebarFooter = (collapsed = sidebarCollapsed) => {
+    if (!impersonation && inSettings) return null;
+
+    return (
+      <div className={cn('mt-auto flex flex-col gap-2 pt-3', collapsed && 'items-center')}>
+        {impersonation ? (
+          <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
+        ) : null}
+        {!inSettings ? renderProfileCard(collapsed) : null}
+      </div>
+    );
+  };
+
   const sidebarToggleLabel = 'Collapse sidebar';
 
   return (
@@ -403,7 +416,7 @@ export function AppShell({ children, profile }: AppShellProps) {
               {settingsBackLink()}
             </div>
           ) : null}
-          {profileFooter}
+          {renderSidebarFooter()}
         </aside>
 
         {/* Content panel */}
@@ -450,9 +463,7 @@ export function AppShell({ children, profile }: AppShellProps) {
                   ) : null}
                 </ScrollArea>
 
-                {!inSettings ? (
-                  <div className="mt-auto pt-4">{renderProfileCard(false)}</div>
-                ) : null}
+                {renderSidebarFooter(false)}
               </SheetContent>
             </Sheet>
           </header>

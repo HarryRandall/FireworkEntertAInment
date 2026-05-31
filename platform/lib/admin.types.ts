@@ -17,6 +17,7 @@ export type PermissionKey =
   | 'shows.create'
   | 'admin.view'
   | 'admin.manage_users'
+  | 'admin.impersonate_users'
   | 'admin.manage_suppliers'
   | 'admin.manage_catalogue'
   | 'admin.manage_imports'

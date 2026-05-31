@@ -8,7 +8,13 @@ import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { Card } from '@/app/components/ui/Card';
 import { StatTile } from '@/app/components/ui/StatTile';
-import { getAdminUserById, getUserActivity, listPermissions, listRoles } from '@/lib/admin.server';
+import {
+  getAdminUserById,
+  getCurrentProfile,
+  getUserActivity,
+  listPermissions,
+  listRoles,
+} from '@/lib/admin.server';
 import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
 import { UserActivityChart } from './UserActivityChart';
 import { UserHeaderActions } from './UserHeaderActions';
@@ -46,10 +52,16 @@ function formatDate(value: string | null) {
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const user = await getAdminUserById(id);
+  const [user, currentProfile] = await Promise.all([getAdminUserById(id), getCurrentProfile()]);
   if (!user) notFound();
 
   const primaryRole = user.roles[0] ?? 'user';
+  const canImpersonate = Boolean(
+    currentProfile &&
+    currentProfile.permissions.includes('admin.impersonate_users') &&
+    user.status === 'active' &&
+    user.id !== currentProfile.id,
+  );
 
   return (
     <div className="space-y-8">
@@ -88,7 +100,11 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             </p>
           </div>
         </div>
-        <UserHeaderActions userId={user.id} />
+        <UserHeaderActions
+          userId={user.id}
+          displayName={user.fullName || user.email || 'this user'}
+          canImpersonate={canImpersonate}
+        />
       </header>
 
       <Suspense fallback={<ListSkeleton rows={3} />}>

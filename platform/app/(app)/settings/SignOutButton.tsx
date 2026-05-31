@@ -4,16 +4,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
+import { LogOut, Undo2 } from 'lucide-react';
+import { stopImpersonationAction } from '@/app/actions/impersonation';
+import { Button, toast } from '@/app/components/ui';
 import { createClient } from '@/utils/supabase/client';
 
-export function SignOutButton() {
+export function SignOutButton({ impersonating = false }: { impersonating?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
   const handle = async () => {
     setPending(true);
+    if (impersonating) {
+      const result = await stopImpersonationAction('sign_out');
+      if (result?.ok === false) {
+        toast.error(result.error);
+        setPending(false);
+      }
+      return;
+    }
+
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');
@@ -22,8 +32,12 @@ export function SignOutButton() {
 
   return (
     <Button type="button" variant="destructive" onClick={handle} loading={pending}>
-      <LogOut size={16} strokeWidth={1.85} />
-      Sign out
+      {impersonating ? (
+        <Undo2 size={16} strokeWidth={1.85} />
+      ) : (
+        <LogOut size={16} strokeWidth={1.85} />
+      )}
+      {impersonating ? 'Stop impersonating' : 'Sign out'}
     </Button>
   );
 }
