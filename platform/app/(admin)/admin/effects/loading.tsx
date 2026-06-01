@@ -1,11 +1,16 @@
 /** Loading skeleton for the admin effects list. */
 
-import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
 export default function AdminEffectsLoading() {
   return (
-    <div className="space-y-8" aria-label="Loading effects">
-      <FilterSkeleton />
-      <TableSkeleton rows={12} columns={8} />
-    </div>
+    <AdminTableRouteSkeleton
+      title="Effects"
+      description="Colourless base patterns used by firework variants."
+      searchPlaceholder="Search name, slug, description..."
+      headers={['Preview', 'Effect', 'Family', 'Pattern', 'Source', 'Variants', 'Updated', 'Open']}
+      tableClassName="min-w-[1080px]"
+      rows={12}
+      ariaLabel="Loading effects"
+    />
   );
 }

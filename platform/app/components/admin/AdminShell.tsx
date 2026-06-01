@@ -236,7 +236,12 @@ export function AdminShell({
             collapsed && 'h-8 w-8 rounded-lg',
           )}
         >
-          <span className="transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0">
+          <span
+            className={cn(
+              'transition-opacity',
+              collapsed && 'group-hover:opacity-0 group-focus-visible:opacity-0',
+            )}
+          >
             {initials}
           </span>
           <Settings

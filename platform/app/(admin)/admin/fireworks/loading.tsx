@@ -1,13 +1,26 @@
 /** Loading skeleton for the admin fireworks list. */
 
-import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { TABLE_PAGE_SIZE } from '@/app/components/ui/TablePagination';
-
+import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
 export default function AdminFireworksLoading() {
   return (
-    <div className="space-y-8" aria-label="Loading fireworks">
-      <FilterSkeleton />
-      <TableSkeleton rows={TABLE_PAGE_SIZE} columns={8} />
-    </div>
+    <AdminTableRouteSkeleton
+      title="Fireworks"
+      description="Product-level fireworks assembled from one or more reusable effects."
+      searchPlaceholder="Search product, part number, effect..."
+      headers={[
+        'Preview',
+        'Product',
+        'Manufacturer',
+        'Type',
+        'Effects',
+        'Calibre',
+        'Shots',
+        'Duration',
+        'Open',
+      ]}
+      tableClassName="min-w-[1120px]"
+      rows={8}
+      ariaLabel="Loading fireworks"
+    />
   );
 }

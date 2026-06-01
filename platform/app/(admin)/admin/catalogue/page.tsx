@@ -44,9 +44,14 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <>
-            <FilterSkeleton />
+            <FilterSkeleton searchPlaceholder="Search part #, name, manufacturer..." />
             <div className="min-h-0 flex-1 overflow-hidden">
-              <TableSkeleton rows={TABLE_PAGE_SIZE} columns={6} />
+              <TableSkeleton
+                rows={TABLE_PAGE_SIZE}
+                headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
+                tableClassName="min-w-[960px]"
+                rowSize="relaxed"
+              />
             </div>
           </>
         }

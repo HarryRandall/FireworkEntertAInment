@@ -45,9 +45,22 @@ export default async function AdminEffectsPage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <>
-            <FilterSkeleton />
+            <FilterSkeleton searchPlaceholder="Search name, slug, description..." />
             <div className="min-h-0 flex-1 overflow-hidden">
-              <TableSkeleton rows={BASE_EFFECT_PAGE_SIZE} columns={8} />
+              <TableSkeleton
+                rows={BASE_EFFECT_PAGE_SIZE}
+                headers={[
+                  'Preview',
+                  'Effect',
+                  'Family',
+                  'Pattern',
+                  'Source',
+                  'Variants',
+                  'Updated',
+                  'Open',
+                ]}
+                tableClassName="min-w-[1080px]"
+              />
             </div>
           </>
         }

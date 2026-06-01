@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, UserRound } from 'lucide-react';
-import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import {
+  AdminUserActivitySkeleton,
+  AdminUserPermissionsSkeleton,
+  AdminUserRoleSkeleton,
+} from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { Card } from '@/app/components/ui/Card';
 import { StatTile } from '@/app/components/ui/StatTile';
@@ -111,15 +115,15 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         />
       </header>
 
-      <Suspense fallback={<ListSkeleton rows={3} />}>
+      <Suspense fallback={<AdminUserActivitySkeleton />}>
         <AdminUserActivity userId={user.id} />
       </Suspense>
 
-      <Suspense fallback={<ListSkeleton rows={1} />}>
+      <Suspense fallback={<AdminUserRoleSkeleton />}>
         <AdminUserRoleCard user={user} />
       </Suspense>
 
-      <Suspense fallback={<ListSkeleton rows={6} />}>
+      <Suspense fallback={<AdminUserPermissionsSkeleton />}>
         <AdminUserPermissionsCard user={user} />
       </Suspense>
 
