@@ -44,9 +44,22 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <>
-            <FilterSkeleton />
+            <FilterSkeleton searchPlaceholder="Search product, part number, effect..." />
             <div className="min-h-0 flex-1 overflow-hidden">
-              <TableSkeleton rows={TABLE_PAGE_SIZE} columns={9} />
+              <TableSkeleton
+                rows={TABLE_PAGE_SIZE}
+                headers={[
+                  'Preview',
+                  'Product',
+                  'Manufacturer',
+                  'Type',
+                  'Effects',
+                  'Calibre',
+                  'Shots',
+                  'Duration',
+                  'Open',
+                ]}
+              />
             </div>
           </>
         }

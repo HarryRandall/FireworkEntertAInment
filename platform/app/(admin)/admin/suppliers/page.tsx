@@ -67,7 +67,10 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <div className="min-h-0 flex-1 overflow-hidden">
-            <TableSkeleton rows={TABLE_PAGE_SIZE} columns={6} />
+            <TableSkeleton
+              rows={TABLE_PAGE_SIZE}
+              headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
+            />
           </div>
         }
       >

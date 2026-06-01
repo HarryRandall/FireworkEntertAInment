@@ -4,7 +4,28 @@
  * mirrors the layout of a specific page so the swap to real content
  * does not cause large layout shifts.
  */
+import { Gauge, ListFilter, Search } from 'lucide-react';
 import { Skeleton } from '@/app/components/ui/Feedback';
+
+const ADMIN_OVERVIEW_STAT_LABELS = [
+  'Users',
+  'Suppliers',
+  'Imports',
+  'Catalogue products',
+  'Fireworks',
+  'Effects',
+] as const;
+
+const ADMIN_OVERVIEW_ACTIVITY_GROUPS = [
+  {
+    title: 'Platform mix',
+    rows: ['Users', 'Suppliers', 'Catalogue', 'Fireworks', 'Effects'],
+  },
+  {
+    title: 'Import pipeline',
+    rows: ['Draft', 'Needs review', 'Complete'],
+  },
+] as const;
 
 /** Grid of card placeholders for paginated list routes. */
 export function CardGridSkeleton({
@@ -23,39 +44,27 @@ export function CardGridSkeleton({
   );
 }
 
-/** Table-shaped skeleton matching DataTable header + rows. */
-export function TableSkeleton({ rows = 8, columns = 5 }: { rows?: number; columns?: number }) {
-  return (
-    <div
-      className="overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)]"
-      aria-label="Loading table"
-    >
-      <div className="grid gap-px bg-[color:var(--color-border-subtle)]">
-        {Array.from({ length: rows + 1 }).map((_, rowIndex) => (
-          <div
-            key={rowIndex}
-            className="grid gap-4 bg-[color:var(--color-bg-default)] p-4"
-            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-          >
-            {Array.from({ length: columns }).map((__, columnIndex) => (
-              <Skeleton key={columnIndex} className={rowIndex === 0 ? 'h-4' : 'h-6'} />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+/** Minimal table fallback matching DataTable header + row rhythm. */
+export function TableSkeleton({
+  rows = 8,
+  columns = 5,
+  headers,
+}: {
+  rows?: number;
+  columns?: number;
+  headers?: string[];
+}) {
+  const tableHeaders = headers ?? Array.from({ length: columns }, () => '');
+  return <AdminTableRowsSkeleton headers={tableHeaders} rows={rows} />;
 }
 
 /** Filter bar placeholder for list routes. */
-export function FilterSkeleton() {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-border-subtle)] p-4 sm:flex-row">
-      <Skeleton className="h-10 flex-1" />
-      <Skeleton className="h-10 w-full sm:w-44" />
-      <Skeleton className="h-10 w-full sm:w-44" />
-    </div>
-  );
+export function FilterSkeleton({
+  searchPlaceholder = 'Search...',
+}: {
+  searchPlaceholder?: string;
+}) {
+  return <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} />;
 }
 
 /** Skeleton for the `/library` template grid. */
@@ -83,14 +92,46 @@ export function LibraryCardsSkeleton() {
 export function AdminOverviewSkeleton() {
   return (
     <div className="space-y-8" aria-label="Loading admin overview">
+      <AdminAnalyserWarmupSkeleton />
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} className="h-28 rounded-xl" />
+        {ADMIN_OVERVIEW_STAT_LABELS.map((label) => (
+          <div
+            key={label}
+            className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-5"
+          >
+            <p className="text-sm font-semibold text-[color:var(--color-content-subtle)]">
+              {label}
+            </p>
+            <Skeleton className="mt-4 h-8 w-14" />
+          </div>
         ))}
       </div>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Skeleton className="h-64 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
+        {ADMIN_OVERVIEW_ACTIVITY_GROUPS.map((group) => (
+          <div
+            key={group.title}
+            className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-5"
+          >
+            <h2 className="text-lg font-bold text-[color:var(--color-content-emphasis)]">
+              {group.title}
+            </h2>
+            <div className="mt-4 space-y-3">
+              {group.rows.map((row) => (
+                <div key={row} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-semibold text-[color:var(--color-content-subtle)]">
+                      {row}
+                    </span>
+                    <Skeleton className="h-4 w-8" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -100,7 +141,10 @@ export function AdminOverviewSkeleton() {
 export function AdminOverviewRouteSkeleton() {
   return (
     <div className="space-y-8" aria-label="Loading admin overview">
-      <AdminRouteHeaderSkeleton />
+      <AdminRouteHeaderSkeleton
+        title="Platform command centre"
+        description="Manage access, suppliers, catalogue data, and VDL/video import records from a dedicated control surface."
+      />
       <AdminOverviewSkeleton />
     </div>
   );
@@ -233,20 +277,21 @@ export function AdminUserDetailSkeleton() {
 export function AdminRolesSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8" aria-label="Loading roles">
-      <div className="-mx-6 -mt-6 mb-6 border-b border-[color:var(--color-border-subtle)] px-6 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="mt-2 h-4 w-80 max-w-full" />
-      </div>
+      <AdminRouteHeaderSkeleton
+        title="Roles"
+        description="Edit the default permissions each role receives."
+      />
 
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-11 flex-1 rounded-xl" />
-        <Skeleton className="h-11 w-28 rounded-full" />
-      </div>
+      <AdminFilterControlsSkeleton searchPlaceholder="Search permissions by name or area..." />
 
       <div className="flex min-h-[420px] flex-1 flex-col overflow-hidden rounded-2xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] lg:max-h-[calc(100dvh-14rem)]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--color-border-subtle)] px-5 py-4">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3 w-44" />
+          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            Role defaults
+          </h2>
+          <span className="text-xs text-[color:var(--color-content-subtle)]">
+            Changes save automatically.
+          </span>
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden">
@@ -257,44 +302,29 @@ export function AdminRolesSkeleton() {
                 gridTemplateColumns: 'minmax(220px, 1.05fr) repeat(3, minmax(124px, 0.8fr))',
               }}
             >
-              <Skeleton className="h-3 w-24" />
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex justify-center">
-                  <Skeleton className="h-3 w-20" />
+              <div className="text-xs font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase">
+                Permission
+              </div>
+              {['Admin', 'Supplier', 'User'].map((role) => (
+                <div
+                  key={role}
+                  className="text-center text-xs font-semibold tracking-wide text-[color:var(--color-content-emphasis)] uppercase"
+                >
+                  {role}
                 </div>
               ))}
             </div>
 
-            {Array.from({ length: 3 }).map((_, groupIndex) => (
-              <section
-                key={groupIndex}
-                className="border-b border-[color:var(--color-border-subtle)] px-4 py-3 last:border-b-0"
-              >
-                <Skeleton className="mb-2 h-3 w-32" />
-                <div className="space-y-2">
-                  {Array.from({ length: groupIndex === 0 ? 4 : 3 }).map((__, rowIndex) => (
-                    <div
-                      key={rowIndex}
-                      className="grid items-center rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3"
-                      style={{
-                        gridTemplateColumns:
-                          'minmax(220px, 1.05fr) repeat(3, minmax(124px, 0.8fr))',
-                      }}
-                    >
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <Skeleton className="h-4 w-40" />
-                        <Skeleton className="h-4 w-4 rounded-full" />
-                      </div>
-                      {Array.from({ length: 3 }).map((___, columnIndex) => (
-                        <div key={columnIndex} className="flex justify-center">
-                          <Skeleton className="h-8 w-24 rounded-md" />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+            <div className="space-y-2 px-4 py-4">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-5"
+                >
+                  <Skeleton className="h-4 w-full max-w-[220px]" />
                 </div>
-              </section>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -305,23 +335,27 @@ export function AdminRolesSkeleton() {
 /** Generic admin list route skeleton with page header, filters, and table. */
 export function AdminTableRouteSkeleton({
   rows = 10,
-  columns = 6,
-  filterCount = 2,
+  headers,
+  title,
+  description,
+  searchPlaceholder = 'Search...',
   hasAction = false,
   ariaLabel = 'Loading admin table',
 }: {
   rows?: number;
-  columns?: number;
-  filterCount?: number;
+  headers: string[];
+  title: string;
+  description: string;
+  searchPlaceholder?: string;
   hasAction?: boolean;
   ariaLabel?: string;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8" aria-label={ariaLabel}>
-      <AdminRouteHeaderSkeleton hasAction={hasAction} />
-      <AdminFilterControlsSkeleton filterCount={filterCount} />
+      <AdminRouteHeaderSkeleton title={title} description={description} hasAction={hasAction} />
+      <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} />
       <div className="min-h-0 flex-1 overflow-hidden">
-        <TableSkeleton rows={rows} columns={columns} />
+        <AdminTableRowsSkeleton headers={headers} rows={rows} />
       </div>
     </div>
   );
@@ -331,10 +365,17 @@ export function AdminTableRouteSkeleton({
 export function AdminImportsSkeleton() {
   return (
     <div className="space-y-6" aria-label="Loading imports">
-      <AdminRouteHeaderSkeleton />
+      <AdminRouteHeaderSkeleton
+        title="Firework video reconstruction"
+        description="Upload short source videos, generate a synced 3D reconstruction, then review and publish the result to the catalogue."
+      />
       <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-5">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="mt-2 h-4 w-full max-w-2xl" />
+        <h2 className="text-lg font-bold text-[color:var(--color-content-emphasis)]">
+          Upload firework video
+        </h2>
+        <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
+          Import a video up to 1 minute, then let the worker reconstruct a reviewable 3D firework.
+        </p>
         <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_140px]">
           <Skeleton className="h-11 rounded-xl" />
           <Skeleton className="h-11 rounded-xl" />
@@ -436,13 +477,31 @@ export function AdminFireworkEditorSkeleton() {
   );
 }
 
-function AdminRouteHeaderSkeleton({ hasAction = false }: { hasAction?: boolean }) {
+function AdminRouteHeaderSkeleton({
+  title,
+  description,
+  hasAction = false,
+}: {
+  title?: string;
+  description?: string;
+  hasAction?: boolean;
+}) {
   return (
     <div className="-mx-6 -mt-6 mb-6 border-b border-[color:var(--color-border-subtle)] px-6 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+          {title ? (
+            <h1 className="text-lg leading-7 font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+              {title}
+            </h1>
+          ) : (
+            <Skeleton className="h-6 w-40" />
+          )}
+          {description ? (
+            <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">{description}</p>
+          ) : (
+            <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+          )}
         </div>
         {hasAction ? <Skeleton className="h-11 w-36 rounded-full" /> : null}
       </div>
@@ -450,16 +509,116 @@ function AdminRouteHeaderSkeleton({ hasAction = false }: { hasAction?: boolean }
   );
 }
 
-function AdminFilterControlsSkeleton({ filterCount }: { filterCount: number }) {
+function AdminFilterControlsSkeleton({ searchPlaceholder }: { searchPlaceholder: string }) {
   return (
     <div className="flex items-center gap-2">
-      <Skeleton className="h-11 flex-1 rounded-xl" />
-      {Array.from({ length: filterCount }).map((_, index) => (
-        <Skeleton key={index} className="hidden h-11 w-32 rounded-full sm:block" />
-      ))}
-      <Skeleton className="h-11 w-28 rounded-full" />
+      <div className="flex h-11 flex-1 items-center gap-3 rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-muted)]">
+        <Search size={16} />
+        <span className="truncate">{searchPlaceholder}</span>
+      </div>
+      <div className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 text-sm font-medium text-[color:var(--color-content-emphasis)]">
+        <ListFilter size={16} />
+        <span className="hidden sm:inline">Filter</span>
+      </div>
     </div>
   );
+}
+
+function AdminAnalyserWarmupSkeleton() {
+  return (
+    <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]">
+            <Gauge aria-hidden className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+              Analyser warm-up
+            </h2>
+            <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+              Idle: next analysis may cold start.
+            </p>
+          </div>
+        </div>
+        <div className="flex h-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-content-emphasis)] px-5 text-sm font-semibold text-[color:var(--color-bg-default)]">
+          Keep warm 30 min
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminTableRowsSkeleton({ headers, rows }: { headers: string[]; rows: number }) {
+  const templateColumns = `repeat(${headers.length}, minmax(0, 1fr))`;
+
+  return (
+    <div
+      className="overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]"
+      aria-label="Loading table"
+    >
+      <div className="overflow-x-auto">
+        <div className="min-w-[760px]">
+          <div
+            className="grid items-center gap-4 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] px-5 py-3"
+            style={{ gridTemplateColumns: templateColumns }}
+          >
+            {headers.map((header, index) => (
+              <div
+                key={`${header}-${index}`}
+                className="min-h-4 truncate text-xs font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase"
+              >
+                {header}
+              </div>
+            ))}
+          </div>
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <div
+              key={rowIndex}
+              className="grid items-center gap-4 border-b border-[color:var(--color-border-subtle)] px-5 py-4 last:border-b-0"
+              style={{ gridTemplateColumns: templateColumns }}
+            >
+              {headers.map((header, columnIndex) => (
+                <Skeleton
+                  key={`${rowIndex}-${header}-${columnIndex}`}
+                  className={getTableSkeletonCellClass(header, columnIndex)}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-border-subtle)] px-5 py-4">
+        <Skeleton className="h-4 w-24" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="h-9 w-24 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getTableSkeletonCellClass(header: string, columnIndex: number) {
+  const normalized = header.toLowerCase();
+
+  if (normalized === 'preview') return 'h-9 w-9 rounded-lg';
+  if (normalized === 'open' || normalized === 'actions') return 'h-4 w-8 justify-self-end';
+  if (
+    normalized === 'status' ||
+    normalized === 'role' ||
+    normalized === 'type' ||
+    normalized === 'duration' ||
+    normalized === 'shots' ||
+    normalized === 'calibre' ||
+    normalized === 'updated'
+  ) {
+    return 'h-4 w-16 max-w-full rounded-md';
+  }
+  if (normalized === 'effects') return 'h-4 w-28 max-w-full rounded-md';
+  if (columnIndex === 0) return 'h-4 w-28 max-w-full';
+  return 'h-4 w-36 max-w-full';
 }
 
 function AdminFormCardSkeleton({ rows }: { rows: number }) {

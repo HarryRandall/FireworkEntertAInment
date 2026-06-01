@@ -75,7 +75,10 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       <Suspense
         fallback={
           <div className="min-h-0 flex-1 overflow-hidden">
-            <TableSkeleton rows={TABLE_PAGE_SIZE} columns={5} />
+            <TableSkeleton
+              rows={TABLE_PAGE_SIZE}
+              headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
+            />
           </div>
         }
       >

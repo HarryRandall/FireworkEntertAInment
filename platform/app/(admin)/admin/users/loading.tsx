@@ -3,5 +3,14 @@
 import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
 
 export default function AdminUsersLoading() {
-  return <AdminTableRouteSkeleton rows={10} columns={5} ariaLabel="Loading admin users" />;
+  return (
+    <AdminTableRouteSkeleton
+      title="Users"
+      description="Search, filter, and manage platform users."
+      searchPlaceholder="Search name, email, phone..."
+      headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
+      rows={10}
+      ariaLabel="Loading admin users"
+    />
+  );
 }

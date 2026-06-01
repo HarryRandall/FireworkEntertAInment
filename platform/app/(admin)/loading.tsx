@@ -28,7 +28,16 @@ export default function AdminLoading() {
   }
 
   if (/^\/admin\/users\/?$/.test(currentPathname)) {
-    return <AdminTableRouteSkeleton rows={10} columns={5} ariaLabel="Loading admin users" />;
+    return (
+      <AdminTableRouteSkeleton
+        title="Users"
+        description="Search, filter, and manage platform users."
+        searchPlaceholder="Search name, email, phone..."
+        headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
+        rows={10}
+        ariaLabel="Loading admin users"
+      />
+    );
   }
 
   if (/^\/admin\/roles\/?$/.test(currentPathname)) {
@@ -38,9 +47,11 @@ export default function AdminLoading() {
   if (/^\/admin\/suppliers\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
+        title="Suppliers"
+        description="Manage supplier records, contacts, and status."
+        searchPlaceholder="Search name, email, phone, website..."
+        headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
         rows={10}
-        columns={6}
-        filterCount={1}
         hasAction
         ariaLabel="Loading suppliers"
       />
@@ -50,9 +61,11 @@ export default function AdminLoading() {
   if (/^\/admin\/catalogue\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
+        title="Catalogue"
+        description="Browse and edit catalogue products."
+        searchPlaceholder="Search part #, name, manufacturer..."
+        headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
         rows={10}
-        columns={6}
-        filterCount={3}
         hasAction
         ariaLabel="Loading catalogue"
       />
@@ -66,9 +79,21 @@ export default function AdminLoading() {
   if (/^\/admin\/fireworks\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
+        title="Fireworks"
+        description="Product-level fireworks assembled from one or more reusable effects."
+        searchPlaceholder="Search product, part number, effect..."
+        headers={[
+          'Preview',
+          'Product',
+          'Manufacturer',
+          'Type',
+          'Effects',
+          'Calibre',
+          'Shots',
+          'Duration',
+          'Open',
+        ]}
         rows={10}
-        columns={9}
-        filterCount={3}
         ariaLabel="Loading fireworks"
       />
     );
@@ -80,7 +105,23 @@ export default function AdminLoading() {
 
   if (/^\/admin\/effects\/?$/.test(currentPathname)) {
     return (
-      <AdminTableRouteSkeleton rows={12} columns={8} filterCount={2} ariaLabel="Loading effects" />
+      <AdminTableRouteSkeleton
+        title="Effects"
+        description="Colourless base patterns used by firework variants."
+        searchPlaceholder="Search name, slug, description..."
+        headers={[
+          'Preview',
+          'Effect',
+          'Family',
+          'Pattern',
+          'Source',
+          'Variants',
+          'Updated',
+          'Open',
+        ]}
+        rows={12}
+        ariaLabel="Loading effects"
+      />
     );
   }
 
