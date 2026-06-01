@@ -9,7 +9,9 @@ export default function AdminCatalogueLoading() {
       description="Browse and edit catalogue products."
       searchPlaceholder="Search part #, name, manufacturer..."
       headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
-      rows={10}
+      tableClassName="min-w-[960px]"
+      rowSize="relaxed"
+      rows={8}
       hasAction
       ariaLabel="Loading catalogue"
     />

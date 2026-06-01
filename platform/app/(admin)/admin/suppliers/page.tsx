@@ -70,6 +70,7 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
             <TableSkeleton
               rows={TABLE_PAGE_SIZE}
               headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
+              rowSize="relaxed"
             />
           </div>
         }

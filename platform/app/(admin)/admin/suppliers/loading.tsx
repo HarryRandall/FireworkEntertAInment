@@ -9,7 +9,8 @@ export default function AdminSuppliersLoading() {
       description="Manage supplier records, contacts, and status."
       searchPlaceholder="Search name, email, phone, website..."
       headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
-      rows={10}
+      rowSize="relaxed"
+      rows={8}
       hasAction
       ariaLabel="Loading suppliers"
     />

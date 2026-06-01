@@ -59,6 +59,7 @@ export default async function AdminEffectsPage({ searchParams }: PageProps) {
                   'Updated',
                   'Open',
                 ]}
+                tableClassName="min-w-[1080px]"
               />
             </div>
           </>

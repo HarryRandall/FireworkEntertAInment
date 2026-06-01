@@ -9,7 +9,7 @@ export default function AdminUsersLoading() {
       description="Search, filter, and manage platform users."
       searchPlaceholder="Search name, email, phone..."
       headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
-      rows={10}
+      rows={8}
       ariaLabel="Loading admin users"
     />
   );

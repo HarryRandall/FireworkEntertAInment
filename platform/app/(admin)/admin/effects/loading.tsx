@@ -8,6 +8,7 @@ export default function AdminEffectsLoading() {
       description="Colourless base patterns used by firework variants."
       searchPlaceholder="Search name, slug, description..."
       headers={['Preview', 'Effect', 'Family', 'Pattern', 'Source', 'Variants', 'Updated', 'Open']}
+      tableClassName="min-w-[1080px]"
       rows={12}
       ariaLabel="Loading effects"
     />

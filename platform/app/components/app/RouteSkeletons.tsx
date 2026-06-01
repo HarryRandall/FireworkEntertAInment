@@ -6,6 +6,18 @@
  */
 import { Gauge, ListFilter, Search } from 'lucide-react';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { Button } from '@/app/components/ui/Button';
+import {
+  DataTableShell,
+  tableCellClasses,
+  tableClasses,
+  tableHeadClasses,
+  tableHeaderCellClasses,
+  tableRowClasses,
+} from '@/app/components/ui/DataTable';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
+import { Input } from '@/app/components/ui/Input';
+import { StatTile } from '@/app/components/ui/StatTile';
 
 const ADMIN_OVERVIEW_STAT_LABELS = [
   'Users',
@@ -49,13 +61,24 @@ export function TableSkeleton({
   rows = 8,
   columns = 5,
   headers,
+  tableClassName,
+  rowSize = 'default',
 }: {
   rows?: number;
   columns?: number;
   headers?: string[];
+  tableClassName?: string;
+  rowSize?: AdminTableSkeletonRowSize;
 }) {
   const tableHeaders = headers ?? Array.from({ length: columns }, () => '');
-  return <AdminTableRowsSkeleton headers={tableHeaders} rows={rows} />;
+  return (
+    <AdminTableRowsSkeleton
+      headers={tableHeaders}
+      rows={rows}
+      tableClassName={tableClassName}
+      rowSize={rowSize}
+    />
+  );
 }
 
 /** Filter bar placeholder for list routes. */
@@ -96,15 +119,16 @@ export function AdminOverviewSkeleton() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {ADMIN_OVERVIEW_STAT_LABELS.map((label) => (
-          <div
+          <StatTile
             key={label}
-            className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-5"
-          >
-            <p className="text-sm font-semibold text-[color:var(--color-content-subtle)]">
-              {label}
-            </p>
-            <Skeleton className="mt-4 h-8 w-14" />
-          </div>
+            label={label}
+            labelAddon={
+              label === 'Users' ? (
+                <InfoTooltip text="This is the total users we have." />
+              ) : undefined
+            }
+            value={<Skeleton className="h-7 w-12" />}
+          />
         ))}
       </div>
 
@@ -334,11 +358,13 @@ export function AdminRolesSkeleton() {
 
 /** Generic admin list route skeleton with page header, filters, and table. */
 export function AdminTableRouteSkeleton({
-  rows = 10,
+  rows = 8,
   headers,
   title,
   description,
   searchPlaceholder = 'Search...',
+  tableClassName,
+  rowSize = 'default',
   hasAction = false,
   ariaLabel = 'Loading admin table',
 }: {
@@ -347,6 +373,8 @@ export function AdminTableRouteSkeleton({
   title: string;
   description: string;
   searchPlaceholder?: string;
+  tableClassName?: string;
+  rowSize?: AdminTableSkeletonRowSize;
   hasAction?: boolean;
   ariaLabel?: string;
 }) {
@@ -355,7 +383,12 @@ export function AdminTableRouteSkeleton({
       <AdminRouteHeaderSkeleton title={title} description={description} hasAction={hasAction} />
       <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} />
       <div className="min-h-0 flex-1 overflow-hidden">
-        <AdminTableRowsSkeleton headers={headers} rows={rows} />
+        <AdminTableRowsSkeleton
+          headers={headers}
+          rows={rows}
+          tableClassName={tableClassName}
+          rowSize={rowSize}
+        />
       </div>
     </div>
   );
@@ -511,14 +544,29 @@ function AdminRouteHeaderSkeleton({
 
 function AdminFilterControlsSkeleton({ searchPlaceholder }: { searchPlaceholder: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex h-11 flex-1 items-center gap-3 rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-muted)]">
-        <Search size={16} />
-        <span className="truncate">{searchPlaceholder}</span>
-      </div>
-      <div className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 text-sm font-medium text-[color:var(--color-content-emphasis)]">
-        <ListFilter size={16} />
-        <span className="hidden sm:inline">Filter</span>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <Input
+            readOnly
+            tabIndex={-1}
+            value=""
+            placeholder={searchPlaceholder}
+            iconLeft={<Search size={16} />}
+            aria-label="Search"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          tabIndex={-1}
+          aria-disabled
+          className="pointer-events-none"
+        >
+          <ListFilter size={16} />
+          Filter
+        </Button>
       </div>
     </div>
   );
@@ -533,9 +581,12 @@ function AdminAnalyserWarmupSkeleton() {
             <Gauge aria-hidden className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-              Analyser warm-up
-            </h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                Analyser warm-up
+              </h2>
+              <InfoTooltip text="Keeps the analyser container ready for demos or rapid testing. It turns off automatically after 30 minutes." />
+            </div>
             <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
               Idle: next analysis may cold start.
             </p>
@@ -549,52 +600,72 @@ function AdminAnalyserWarmupSkeleton() {
   );
 }
 
-function AdminTableRowsSkeleton({ headers, rows }: { headers: string[]; rows: number }) {
-  const templateColumns = `repeat(${headers.length}, minmax(0, 1fr))`;
+type AdminTableSkeletonRowSize = 'default' | 'relaxed';
 
+function AdminTableRowsSkeleton({
+  headers,
+  rows,
+  tableClassName,
+  rowSize,
+}: {
+  headers: string[];
+  rows: number;
+  tableClassName?: string;
+  rowSize: AdminTableSkeletonRowSize;
+}) {
   return (
-    <div
-      className="overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]"
-      aria-label="Loading table"
+    <DataTableShell
+      viewport
+      footer={<AdminTablePaginationSkeleton />}
+      className="h-full max-h-full bg-[color:var(--color-bg-default)]"
     >
-      <div className="overflow-x-auto">
-        <div className="min-w-[760px]">
-          <div
-            className="grid items-center gap-4 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] px-5 py-3"
-            style={{ gridTemplateColumns: templateColumns }}
-          >
+      <table className={tableClasses(tableClassName)} aria-label="Loading table">
+        <thead className={tableHeadClasses()}>
+          <tr>
             {headers.map((header, index) => (
-              <div
+              <th
                 key={`${header}-${index}`}
-                className="min-h-4 truncate text-xs font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase"
+                className={tableHeaderCellClasses(
+                  header === 'Open' || header === 'Actions' ? 'px-5 py-3 text-right' : 'px-5 py-3',
+                )}
               >
                 {header}
-              </div>
+              </th>
             ))}
-          </div>
+          </tr>
+        </thead>
+        <tbody>
           {Array.from({ length: rows }).map((_, rowIndex) => (
-            <div
-              key={rowIndex}
-              className="grid items-center gap-4 border-b border-[color:var(--color-border-subtle)] px-5 py-4 last:border-b-0"
-              style={{ gridTemplateColumns: templateColumns }}
-            >
+            <tr key={rowIndex} className={tableRowClasses()}>
               {headers.map((header, columnIndex) => (
-                <Skeleton
+                <td
                   key={`${rowIndex}-${header}-${columnIndex}`}
-                  className={getTableSkeletonCellClass(header, columnIndex)}
-                />
+                  className={tableCellClasses(getTableSkeletonCellWrapperClass(header, rowSize))}
+                >
+                  <Skeleton className={getTableSkeletonCellClass(header, columnIndex)} />
+                </td>
               ))}
-            </div>
+            </tr>
           ))}
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-border-subtle)] px-5 py-4">
-        <Skeleton className="h-4 w-24" />
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-24 rounded-full" />
-          <Skeleton className="h-9 w-9 rounded-full" />
-          <Skeleton className="h-9 w-24 rounded-full" />
-        </div>
+        </tbody>
+      </table>
+    </DataTableShell>
+  );
+}
+
+function getTableSkeletonCellWrapperClass(header: string, rowSize: AdminTableSkeletonRowSize) {
+  const padding = rowSize === 'relaxed' ? 'px-5 py-6' : 'px-5 py-4';
+  return header === 'Open' || header === 'Actions' ? `${padding} text-right` : padding;
+}
+
+function AdminTablePaginationSkeleton() {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Skeleton className="h-4 w-24" />
+      <div className="flex items-center gap-1">
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-9 rounded-full" />
+        <Skeleton className="h-9 w-16 rounded-full" />
       </div>
     </div>
   );
@@ -604,7 +675,7 @@ function getTableSkeletonCellClass(header: string, columnIndex: number) {
   const normalized = header.toLowerCase();
 
   if (normalized === 'preview') return 'h-9 w-9 rounded-lg';
-  if (normalized === 'open' || normalized === 'actions') return 'h-4 w-8 justify-self-end';
+  if (normalized === 'open' || normalized === 'actions') return 'ml-auto h-4 w-8';
   if (
     normalized === 'status' ||
     normalized === 'role' ||

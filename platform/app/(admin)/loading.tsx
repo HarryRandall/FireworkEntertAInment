@@ -34,7 +34,7 @@ export default function AdminLoading() {
         description="Search, filter, and manage platform users."
         searchPlaceholder="Search name, email, phone..."
         headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
-        rows={10}
+        rows={8}
         ariaLabel="Loading admin users"
       />
     );
@@ -51,7 +51,8 @@ export default function AdminLoading() {
         description="Manage supplier records, contacts, and status."
         searchPlaceholder="Search name, email, phone, website..."
         headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
-        rows={10}
+        rowSize="relaxed"
+        rows={8}
         hasAction
         ariaLabel="Loading suppliers"
       />
@@ -65,7 +66,9 @@ export default function AdminLoading() {
         description="Browse and edit catalogue products."
         searchPlaceholder="Search part #, name, manufacturer..."
         headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
-        rows={10}
+        tableClassName="min-w-[960px]"
+        rowSize="relaxed"
+        rows={8}
         hasAction
         ariaLabel="Loading catalogue"
       />
@@ -93,7 +96,8 @@ export default function AdminLoading() {
           'Duration',
           'Open',
         ]}
-        rows={10}
+        tableClassName="min-w-[1120px]"
+        rows={8}
         ariaLabel="Loading fireworks"
       />
     );
@@ -119,6 +123,7 @@ export default function AdminLoading() {
           'Updated',
           'Open',
         ]}
+        tableClassName="min-w-[1080px]"
         rows={12}
         ariaLabel="Loading effects"
       />

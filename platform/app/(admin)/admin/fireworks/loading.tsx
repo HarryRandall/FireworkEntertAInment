@@ -18,7 +18,8 @@ export default function AdminFireworksLoading() {
         'Duration',
         'Open',
       ]}
-      rows={10}
+      tableClassName="min-w-[1120px]"
+      rows={8}
       ariaLabel="Loading fireworks"
     />
   );

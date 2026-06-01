@@ -49,6 +49,8 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
               <TableSkeleton
                 rows={TABLE_PAGE_SIZE}
                 headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
+                tableClassName="min-w-[960px]"
+                rowSize="relaxed"
               />
             </div>
           </>

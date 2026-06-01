@@ -59,6 +59,7 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
                   'Duration',
                   'Open',
                 ]}
+                tableClassName="min-w-[1120px]"
               />
             </div>
           </>
