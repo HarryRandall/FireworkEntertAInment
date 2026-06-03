@@ -32,6 +32,7 @@ test('cue generation defaults to local fast planning instead of waiting on OpenR
   assert.match(fastPlanner, /export function planCuesFast/);
   assert.match(fastPlanner, /MAX_FAST_CUES = 110/);
   assert.match(envExample, /default fast local planner/);
+  assert.doesNotMatch(envExample, /CUE_GENERATION_MODE/);
 });
 
 test('cue slot target and response cap stay reduced', () => {

@@ -16,21 +16,13 @@ import type { ShowBriefRow } from './schemas';
 
 type AppSupabase = SupabaseClient<Database>;
 
-const ANALYSIS_WAIT_TIMEOUT_MS = 20_000;
-const ANALYSIS_WAIT_INTERVAL_MS = 1_000;
-
 export type AnalysisJsonLoadResult =
   | { status: 'absent'; analysis: null }
   | { status: 'completed'; analysis: AnalyserResult }
   | { status: 'running'; analysis: null }
   | { status: 'failed'; analysis: null; errorMessage: string | null }
   | { status: 'missing'; analysis: null }
-  | { status: 'empty'; analysis: null }
-  | { status: 'timeout'; analysis: null };
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+  | { status: 'empty'; analysis: null };
 
 /** Loads the slim show "brief" used to build the LLM prompt. */
 export async function loadBrief(
@@ -53,7 +45,8 @@ export async function loadBrief(
   return (data as ShowBriefRow) ?? null;
 }
 
-async function loadAnalysisState(
+/** Loads the current analyser state without imposing a wall-clock cutoff. */
+export async function loadAnalysisState(
   supabase: AppSupabase,
   musicAnalysisId: string,
 ): Promise<AnalysisJsonLoadResult> {
@@ -82,27 +75,6 @@ export async function loadAnalysisJson(
 ): Promise<AnalyserResult | null> {
   const result = await loadAnalysisState(supabase, musicAnalysisId);
   return result.status === 'completed' ? result.analysis : null;
-}
-
-/**
- * Waits briefly for upload-scoped analysis so Generate does not silently fall
- * back to a synthetic beat grid while the hidden analyser is still running.
- */
-export async function waitForAnalysisJson(
-  supabase: AppSupabase,
-  musicAnalysisId: string,
-  options: { timeoutMs?: number; intervalMs?: number } = {},
-): Promise<AnalysisJsonLoadResult> {
-  const timeoutMs = options.timeoutMs ?? ANALYSIS_WAIT_TIMEOUT_MS;
-  const intervalMs = options.intervalMs ?? ANALYSIS_WAIT_INTERVAL_MS;
-  const deadline = Date.now() + timeoutMs;
-
-  while (true) {
-    const result = await loadAnalysisState(supabase, musicAnalysisId);
-    if (result.status !== 'running') return result;
-    if (Date.now() >= deadline) return { status: 'timeout', analysis: null };
-    await sleep(Math.min(intervalMs, Math.max(0, deadline - Date.now())));
-  }
 }
 
 /**

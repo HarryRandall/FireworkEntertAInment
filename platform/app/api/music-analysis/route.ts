@@ -5,6 +5,8 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
+import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { markGenerationStatus } from '@/lib/cue-generation/loaders.server';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -27,6 +29,67 @@ const BodySchema = z.object({
 
 function isUserAudioPath(path: string, userId: string): boolean {
   return path.startsWith(`${userId}/`) && !path.includes('..');
+}
+
+type AppSupabaseClient = ReturnType<typeof createClient>;
+
+async function listRunningShowsForAnalysis(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  musicAnalysisId: string;
+}) {
+  const { data: shows, error } = await params.supabase
+    .from('shows')
+    .select('id')
+    .eq('user_id', params.userId)
+    .eq('music_analysis_id', params.musicAnalysisId)
+    .eq('generation_status', 'running')
+    .is('generation_completed_at', null);
+
+  if (error) {
+    console.error('[api/music-analysis] linked show lookup failed:', error);
+    return [];
+  }
+
+  return shows ?? [];
+}
+
+async function resumeCueGenerationForCompletedAnalysis(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  musicAnalysisId: string;
+}) {
+  const shows = await listRunningShowsForAnalysis(params);
+
+  for (const show of shows ?? []) {
+    const result = await generateCuesForShow({
+      supabase: params.supabase,
+      userId: params.userId,
+      showId: show.id,
+      musicAnalysisId: params.musicAnalysisId,
+    });
+    if (!result.ok) {
+      console.error('[api/music-analysis] resumed cue generation failed:', result.error);
+    }
+  }
+}
+
+async function markLinkedShowGenerationFailed(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  musicAnalysisId: string;
+  error: string;
+}) {
+  const shows = await listRunningShowsForAnalysis(params);
+  const message = `Music analysis failed: ${params.error}`;
+
+  for (const show of shows) {
+    await markGenerationStatus(params.supabase, params.userId, show.id, {
+      generation_status: 'failed',
+      generation_error: message,
+      generation_completed_at: new Date().toISOString(),
+    });
+  }
 }
 
 export async function POST(request: Request) {
@@ -101,7 +164,19 @@ export async function POST(request: Request) {
     });
     if (!result.ok) {
       console.error('[api/music-analysis] background analysis failed:', result.error);
+      await markLinkedShowGenerationFailed({
+        supabase,
+        userId: user.id,
+        musicAnalysisId: data.id,
+        error: result.error,
+      });
+      return;
     }
+    await resumeCueGenerationForCompletedAnalysis({
+      supabase,
+      userId: user.id,
+      musicAnalysisId: data.id,
+    });
   });
 
   return NextResponse.json({ ok: true, musicAnalysisId: data.id });

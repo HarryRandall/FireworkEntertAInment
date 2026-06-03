@@ -25,9 +25,9 @@ import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { extractProviderError, stripJsonFence } from './llm';
 import {
+  loadAnalysisState,
   loadBrief,
   markGenerationStatus,
-  waitForAnalysisJson,
   type AnalysisJsonLoadResult,
 } from './loaders.server';
 import {
@@ -95,7 +95,10 @@ export async function generateCuesForShow(params: {
   let catalogueCount = 0;
   let acceptedCount = 0;
   let droppedCount = 0;
-  const logTimings = (outcome: 'completed' | 'failed', extra: { error?: string } = {}) => {
+  const logTimings = (
+    outcome: 'completed' | 'failed' | 'waiting',
+    extra: { error?: string } = {},
+  ) => {
     console.info('[cue-generation] timings', {
       outcome,
       showId,
@@ -141,7 +144,7 @@ export async function generateCuesForShow(params: {
     [brief, analysisResult] = await Promise.all([
       loadBrief(supabase, userId, showId),
       musicAnalysisId
-        ? waitForAnalysisJson(supabase, musicAnalysisId)
+        ? loadAnalysisState(supabase, musicAnalysisId)
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
@@ -151,10 +154,10 @@ export async function generateCuesForShow(params: {
       } else if (analysisResult.status === 'failed') {
         const detail = analysisResult.errorMessage ? `: ${analysisResult.errorMessage}` : '.';
         throw new Error(`Music analysis failed${detail}`);
-      } else if (analysisResult.status === 'timeout') {
-        throw new Error(
-          'Music analysis is still finishing. Please wait a few seconds and try again.',
-        );
+      } else if (analysisResult.status === 'running') {
+        timings.loadInputsMs = elapsedMs(loadStart);
+        logTimings('waiting');
+        return { ok: true, pending: true, reason: 'music_analysis_running' };
       } else if (analysisResult.status === 'missing') {
         throw new Error('Music analysis was not found. Please upload the song again.');
       } else {
