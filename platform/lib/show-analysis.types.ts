@@ -152,6 +152,7 @@ export type ShowAnalysisSnapshot = {
   createdAt: string;
   completedAt: string | null;
   contextMarkdown: string | null;
+  analysis: AnalyserResult | null;
   cueGenerationStatus: CueGenerationStatus;
   cueGenerationError: string | null;
   cueCount: number | null;

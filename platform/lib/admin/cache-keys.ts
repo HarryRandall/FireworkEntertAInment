@@ -78,6 +78,16 @@ export function getAdminRolePermissionMatrixCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:role-permissions`;
 }
 
+/** Cache key for editable prompt configuration rows. */
+export function getAdminPromptConfigsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:prompt-configs`;
+}
+
+/** Cache key for admin generation settings. */
+export function getAdminGenerationSettingsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:generation-settings`;
+}
+
 /**
  * Invalidate the admin user list and (optionally) a single user's detail blob.
  * Call after any mutation that affects role assignments or profile data.
@@ -144,4 +154,9 @@ export async function invalidateAdminPermissionsCache(): Promise<void> {
 /** Invalidate role permission defaults and user-facing permission rollups. */
 export async function invalidateAdminRolePermissionsCache(): Promise<void> {
   await deleteCachedKeys([getAdminRolePermissionMatrixCacheKey(), getAdminUsersCacheKey()]);
+}
+
+/** Invalidate editable prompt configuration reads. */
+export async function invalidateAdminPromptConfigsCache(): Promise<void> {
+  await deleteCachedKeys([getAdminPromptConfigsCacheKey(), getAdminGenerationSettingsCacheKey()]);
 }

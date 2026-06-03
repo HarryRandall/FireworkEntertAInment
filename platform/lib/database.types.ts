@@ -379,6 +379,41 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_settings: {
+        Row: {
+          created_at: string
+          generation_mode: string
+          key: string
+          product_catalogue_fields: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          generation_mode?: string
+          key: string
+          product_catalogue_fields?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          generation_mode?: string
+          key?: string
+          product_catalogue_fields?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           category: string
@@ -408,6 +443,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      prompt_configs: {
+        Row: {
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          name: string
+          product_context_text: string | null
+          system_prompt_text: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          name: string
+          product_context_text?: string | null
+          system_prompt_text: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          name?: string
+          product_context_text?: string | null
+          system_prompt_text?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_configs_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_shots: {
         Row: {

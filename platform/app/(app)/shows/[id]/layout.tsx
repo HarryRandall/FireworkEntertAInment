@@ -1,6 +1,5 @@
 /** Show detail layout; loads the show by slug and renders the per-show tab navigation. */
 
-import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { Button } from '@/app/components/ui/Button';
@@ -17,7 +16,9 @@ export const maxDuration = 300;
 export default async function ShowLayout({ children, params }: LayoutProps) {
   const { id } = await params;
   const show = await getShowBySlug(id);
-  if (!show) notFound();
+  if (!show) {
+    return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
+  }
 
   // While the show is still being generated, hide the metadata row, the
   // Refine/Export actions, and the tab nav — those controls point at pages
@@ -28,12 +29,7 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
   const description = [show.artist, show.song].filter(Boolean).join(' - ') || undefined;
 
   if (isGenerating) {
-    return (
-      <div className="space-y-6">
-        <AppPageHeader title={show.title} description={description} />
-        {children}
-      </div>
-    );
+    return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
   }
 
   return (

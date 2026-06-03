@@ -11,6 +11,7 @@ const beatGrid = readFileSync(join(root, 'lib/beat-grid.server.ts'), 'utf8');
 const prompt = readFileSync(join(root, 'lib/cue-generation/prompt.ts'), 'utf8');
 const fastPlanner = readFileSync(join(root, 'lib/cue-generation/fast-planner.ts'), 'utf8');
 const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
+const promptConfigs = readFileSync(join(root, 'lib/prompt-configs.server.ts'), 'utf8');
 const schemas = readFileSync(join(root, 'lib/cue-generation/schemas.ts'), 'utf8');
 const envExample = readFileSync(join(root, '.env.example'), 'utf8');
 
@@ -23,10 +24,9 @@ test('cue generation defaults to the faster OpenRouter model while keeping env o
 });
 
 test('cue generation defaults to local fast planning instead of waiting on OpenRouter', () => {
-  assert.match(
-    runner,
-    /generationMode = process\.env\.CUE_GENERATION_MODE === 'llm' \? 'llm' : 'fast'/,
-  );
+  assert.match(runner, /generationSettings = await getShowCueGenerationSettings\(\)/);
+  assert.match(promptConfigs, /getDefaultShowGenerationSettings/);
+  assert.match(promptConfigs, /process\.env\.CUE_GENERATION_MODE === 'llm' \? 'llm' : 'fast'/);
   assert.match(runner, /if \(generationMode === 'fast'\)/);
   assert.match(runner, /planCuesFast\(/);
   assert.match(fastPlanner, /export function planCuesFast/);
@@ -47,6 +47,9 @@ test('cue slot target and response cap stay reduced', () => {
 test('catalogue prompt projection is compact', () => {
   assert.match(prompt, /compactText\(product\.description, 140\)/);
   assert.match(prompt, /Object\.keys\(effects\)\.length/);
+  assert.match(prompt, /selectedFields\?: readonly ProductCatalogueField\[\] \| null/);
+  assert.match(prompt, /include\('description'\)/);
+  assert.match(prompt, /Catalogue fields sent in this request/);
   assert.doesNotMatch(prompt, /description: product\.description/);
   assert.doesNotMatch(prompt, /crackle: spec\?\.crackle \?\? false/);
 });

@@ -98,5 +98,5 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     showSlug: show.slug,
   });
   revalidatePath('/dashboard');
-  redirect(`/shows/${show.slug}`);
+  redirect(`/shows/${show.slug}/preview`);
 }

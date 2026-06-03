@@ -27,6 +27,7 @@ MAX_DURATION_SECONDS = 60.0
 WORKER_VERSION = os.getenv("WORKER_VERSION", "firework-import-worker/v1")
 POLL_SECONDS = int(os.getenv("POLL_SECONDS", "8"))
 DEFAULT_MODEL = os.getenv("DEFAULT_OPENROUTER_MODEL", "openai/gpt-4.1")
+PROMPT_CONFIGS_TABLE = "prompt_configs"
 
 
 # Validated in-process after the model returns JSON. OpenRouter JSON-schema support
@@ -318,7 +319,7 @@ def bgr_to_hex(color):
 # Sensor cores in firework footage clip to white; sampling them as "the colour" loses the
 # actual hue. We split each frame into:
 #   - chroma pixels: bright AND saturated AND below the clipped-white ceiling (this is where
-#     the real firework colour lives — the warm shoulder around the white core),
+#     the real firework colour lives, the warm shoulder around the white core),
 #   - flash pixels: very bright pixels regardless of saturation (used as a "did it explode?" signal).
 # Palettes are derived from chroma pixels, not the mean of all bright pixels.
 _CHROMA_MIN_VALUE = 70
@@ -375,7 +376,7 @@ def _extract_palette(small_bgr, max_colors=5):
 
 
 def _region_colors(small_bgr):
-    """Dominant colour per vertical region — distinguishes head vs trail vs ground-level mine."""
+    """Dominant colour per vertical region, distinguishing head vs trail vs ground-level mine."""
     rows = small_bgr.shape[0]
     bands = {
         "upper": small_bgr[: rows // 3],
@@ -1061,7 +1062,34 @@ def validate_import_spec(spec):
         raise RuntimeError(f"Model output failed schema validation at {path}: {exc.message}") from exc
 
 
-def call_openrouter(model, source_name, duration, frame_summary, frame_images, audio, refinement_prompt):
+def fetch_prompt_config(supabase, key):
+    try:
+        result = (
+            supabase.table(PROMPT_CONFIGS_TABLE)
+            .select("system_prompt_text,is_active")
+            .eq("key", key)
+            .eq("is_active", True)
+            .single()
+            .execute()
+        )
+        data = result.data or {}
+        prompt = data.get("system_prompt_text")
+        return prompt.strip() if isinstance(prompt, str) and prompt.strip() else None
+    except Exception as exc:
+        print(f"prompt config fallback for {key}: {exc}")
+        return None
+
+
+def call_openrouter(
+    model,
+    source_name,
+    duration,
+    frame_summary,
+    frame_images,
+    audio,
+    refinement_prompt,
+    reconstruction_prompt,
+):
     api_key = env_required("OPENROUTER_API_KEY")
     global_palette = frame_summary.get("globalPalette") or []
     peak_times = frame_summary.get("peakTimesSeconds") or []
@@ -1083,12 +1111,12 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "begins 0.6–1.4s before its burst. Mirror each timeline entry as a `break` observedEvent at the "
         "same `timeSeconds`. Do not invent extra bursts and do not skip any.\n"
         "\n"
-        "COLOUR — read this carefully. Sources of truth, in priority order:\n"
-        "  1. `timeline[i].colors` — the chroma at burst i. The effect colorPalette and the "
+        "COLOUR - read this carefully. Sources of truth, in priority order:\n"
+        "  1. `timeline[i].colors` - the chroma at burst i. The effect colorPalette and the "
         "associated `break` observedEvent's `color` MUST come from this list.\n"
-        "  2. `timeline[i].regionColors` (upper/middle/lower) — drives layered colour "
+        "  2. `timeline[i].regionColors` (upper/middle/lower) - drives layered colour "
         "gradients (e.g. upper=blue head, lower=gold trail).\n"
-        "  3. `globalPalette` — weighted top hues across the whole show; use it to populate the "
+        "  3. `globalPalette` - weighted top hues across the whole show; use it to populate the "
         "spec-level `colorPalette` (3–6 hues).\n"
         "  4. Product/source name colour words are authoritative when the image is clipped or "
         "dim (e.g. 'Silver tail to Red' means silver/white launch tail and red burst; "
@@ -1096,7 +1124,7 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "Do NOT default to white or yellow. White is only allowed when a timeline entry has "
         "`flashIntensity > 0.5` AND its `colors` array is empty (a true white strobe). If a "
         "timeline entry's colors include '#C9302F' or '#3FA7FF', the corresponding break event "
-        "and break colorPalette MUST list that exact hue — never substitute '#FFFFFF'.\n"
+        "and break colorPalette MUST list that exact hue - never substitute '#FFFFFF'.\n"
         "For multicolour shells: use effectSpec.colorPalette and each shot.colorPalette. "
         "Set shell.color/outerColor to the OUTER or dominant non-white colour, set shell.pistil=true "
         "and shell.pistilColor/innerColor for a white or coloured centre, and set shell.secondColor "
@@ -1143,12 +1171,14 @@ def call_openrouter(model, source_name, duration, frame_summary, frame_images, a
         "{\"shellType\":\"crysanthemum\",\"spreadSize\":4.6,\"starLifeMs\":1400,\"color\":\"#ffbf36\",\"glitter\":\"light\"}. "
         "That is a fallback, not a reconstruction.\n"
     )
+    if isinstance(reconstruction_prompt, str) and reconstruction_prompt.strip():
+        instructions = reconstruction_prompt.strip() + "\n"
 
     context = (
         f"Source name: {source_name}. Duration: {duration:.3f}s.\n"
         f"Global palette (weighted, white-clipped cores excluded): {json.dumps(global_palette)}.\n"
         f"Peak burst timestamps (seconds): {json.dumps(peak_times)}.\n"
-        f"Timeline (one entry per burst — emit one shot per entry): {json.dumps(timeline)}.\n"
+        f"Timeline (one entry per burst - emit one shot per entry): {json.dumps(timeline)}.\n"
         f"Per-frame analysis: {json.dumps(frame_summary.get('frames'))[:14000]}.\n"
         f"Audio analysis: {json.dumps(audio)[:6000]}.\n"
         f"Refinement request: {refinement_prompt or 'none'}.\n"
@@ -1298,6 +1328,7 @@ def process_job(supabase, job):
             .data
         )
         refinement_prompt = latest_refinement(outputs)
+        reconstruction_prompt = fetch_prompt_config(supabase, "firework_video_reconstruction")
         supabase.table("import_jobs").update({"processing_progress": 70}).eq("id", job_id).execute()
 
         spec, raw_model_output = call_openrouter(
@@ -1308,6 +1339,7 @@ def process_job(supabase, job):
             frame_images,
             audio,
             refinement_prompt,
+            reconstruction_prompt,
         )
         supabase.table("import_outputs").insert(
             {

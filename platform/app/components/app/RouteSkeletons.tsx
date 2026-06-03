@@ -356,6 +356,65 @@ export function AdminRolesSkeleton() {
   );
 }
 
+/** Skeleton for the admin prompt control route. */
+export function AdminPromptsSkeleton() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-5 pb-14" aria-label="Loading prompts">
+      <AdminRouteHeaderSkeleton
+        title="Prompts"
+        description="Edit generation mode and prompt text."
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav
+          aria-label="Prompt settings"
+          className="inline-flex flex-wrap gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1"
+        >
+          {[0, 1, 2].map((item) => (
+            <Skeleton
+              key={item}
+              className={item === 1 ? 'h-10 w-36 rounded-md' : 'h-10 w-28 rounded-md'}
+            />
+          ))}
+        </nav>
+
+        <div className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1">
+          {[0, 1].map((item) => (
+            <Skeleton key={item} className="h-9 w-24 rounded-md" />
+          ))}
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-4 pb-5 shadow-[var(--shadow-card)]">
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <Skeleton className="h-11 w-11 shrink-0 rounded-md" />
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-[color:var(--color-content-emphasis)]">
+                  Show generation system prompt
+                </h2>
+                <p className="mt-1 max-w-3xl text-sm text-[color:var(--color-content-subtle)]">
+                  Define the system instructions used when the LLM turns a song and creative brief
+                  into show cues.
+                </p>
+              </div>
+            </div>
+            <Skeleton className="mt-0.5 h-6 w-16 shrink-0 rounded-md" />
+          </div>
+
+          <Skeleton className="min-h-[416px] flex-1 rounded-md" />
+
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end sm:pb-1">
+            <Skeleton className="h-10 w-full rounded-lg sm:w-[92px]" />
+            <Skeleton className="h-10 w-full rounded-lg sm:w-[82px]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Generic admin list route skeleton with page header, filters, and table. */
 export function AdminTableRouteSkeleton({
   rows = 8,
@@ -709,11 +768,174 @@ function AdminFormCardSkeleton({ rows }: { rows: number }) {
 /** Skeleton for the replay panel on the show detail route. */
 export function ReplayPanelSkeleton() {
   return (
-    <div
-      className="border-outline-variant/35 bg-surface-container-low h-[min(72vh,680px)] min-h-[520px] rounded-xl border"
-      aria-label="Loading replay"
-    >
-      <Skeleton className="h-full rounded-xl" />
+    <div className="space-y-6" aria-label="Loading replay">
+      <div className="border-outline-variant/35 bg-surface-container-low relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-xl border">
+        <div className="absolute inset-0 bg-[color:var(--color-bg-subtle)]" />
+        <div className="absolute top-6 left-6 space-y-3">
+          <Skeleton className="h-10 w-72 max-w-[calc(100vw-5rem)]" />
+          <Skeleton className="h-4 w-64 max-w-[calc(100vw-5rem)]" />
+        </div>
+        <Skeleton className="absolute top-6 right-6 h-9 w-9 rounded-full" />
+        <Skeleton className="absolute bottom-6 left-1/2 h-[4.5rem] w-[min(620px,calc(100%-2rem))] -translate-x-1/2 rounded-lg" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
+        <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-6 xl:col-span-2">
+          <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div className="space-y-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+            <Skeleton className="h-9 w-36 rounded-full" />
+          </div>
+          <DataTableShell>
+            <table className={tableClasses('min-w-0 table-fixed')} aria-label="Loading cues">
+              <colgroup>
+                <col className="w-[88px]" />
+                <col />
+                <col className="w-[110px]" />
+                <col className="w-[56px]" />
+              </colgroup>
+              <thead className={tableHeadClasses()}>
+                <tr>
+                  {['Time', 'Firework', 'Mortar', 'Actions'].map((header) => (
+                    <th
+                      key={header}
+                      className={tableHeaderCellClasses(
+                        header === 'Actions' ? 'text-right' : undefined,
+                      )}
+                    >
+                      {header === 'Actions' ? <span className="sr-only">Actions</span> : header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, rowIndex) => (
+                  <tr key={rowIndex} className={tableRowClasses()}>
+                    <td className={tableCellClasses('h-14')}>
+                      <Skeleton className="h-4 w-12" />
+                    </td>
+                    <td className={tableCellClasses('h-14')}>
+                      <Skeleton className="h-4 w-full max-w-56" />
+                    </td>
+                    <td className={tableCellClasses('h-14')}>
+                      <Skeleton className="h-4 w-14" />
+                    </td>
+                    <td className={tableCellClasses('h-14 text-right')}>
+                      <Skeleton className="ml-auto h-8 w-8 rounded-full" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DataTableShell>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-[4.25rem] rounded-lg" />
+            ))}
+          </div>
+          <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-5">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-3">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-5 w-36" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+            <Skeleton className="mt-4 h-32 rounded-xl" />
+            <div className="mt-3 flex justify-end">
+              <Skeleton className="h-9 w-36 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Skeleton matching the song-context tab on the show detail route. */
+export function SongContextSkeleton() {
+  return (
+    <div className="space-y-5" aria-label="Loading song context">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className="border-outline-variant/55 bg-surface-container-low rounded-lg border p-4"
+          >
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="mt-3 h-7 w-28" />
+            <Skeleton className="mt-2 h-3 w-36 max-w-full" />
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-6">
+        <div className="mb-5 space-y-3">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+
+        <div className="bg-surface-container-low rounded-md p-4">
+          <div className="space-y-3">
+            {Array.from({ length: 14 }).map((_, index) => (
+              <Skeleton key={index} className={index % 4 === 0 ? 'h-3 w-3/5' : 'h-3 w-full'} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Skeleton matching the shopping-list card on the show detail route. */
+export function ShoppingListSkeleton() {
+  return (
+    <div className="max-w-3xl" aria-label="Loading shopping list">
+      <div className="rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-8">
+        <header className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <Skeleton className="h-8 w-44" />
+            <Skeleton className="h-4 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-24 shrink-0 rounded-full" />
+        </header>
+
+        <div className="mt-6 flex items-center gap-4">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-10" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="border-outline-variant/10 bg-surface-container-highest/40 flex items-center justify-between gap-4 rounded-xl border p-4"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-56 max-w-full" />
+                  <Skeleton className="h-3 w-72 max-w-full" />
+                </div>
+              </div>
+              <Skeleton className="h-5 w-16 shrink-0" />
+            </div>
+          ))}
+        </div>
+
+        <div className="border-outline-variant/10 mt-6 flex items-center justify-between border-t pt-6">
+          <Skeleton className="h-4 w-36" />
+          <Skeleton className="h-8 w-28" />
+        </div>
+      </div>
     </div>
   );
 }

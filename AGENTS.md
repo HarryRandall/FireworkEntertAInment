@@ -137,6 +137,13 @@ Shared app UI primitives live in `platform/app/components/ui`. Generated
 Radix/shadcn primitives live in `platform/components/ui`. Use `cn()` from
 `@/lib/utils`.
 
+For loading states, keep stable route chrome such as page titles,
+descriptions, labels, table headers, and form section headings visible. Use
+neutral `Skeleton` placeholders for data-driven fields, active/selected
+states, coloured badges, and controls whose value is still loading. Match the
+loaded component's height, width, radius, and footer button sizes closely so
+loading does not shift the layout.
+
 ## Repository Structure
 
 ```text

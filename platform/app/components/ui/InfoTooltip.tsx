@@ -16,11 +16,11 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
         suppressHydrationWarning
         aria-label="More information"
         className={cn(
-          'inline-flex h-4 w-4 items-center justify-center rounded-full border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-subtle)] transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]',
+          'inline-flex h-3.5 w-3.5 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-subtle)] transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]',
           className,
         )}
       >
-        <span className="block text-[10px] leading-none italic">i</span>
+        <span className="block text-[9px] leading-none italic">i</span>
       </TooltipTrigger>
       <TooltipContent
         side="top"

@@ -1,6 +1,6 @@
 /** 3D preview tab for a show, rendering the firework replay canvas. */
 
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { FireworkReplayViewer } from '@/app/components/app/FireworkReplayViewer';
 import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
@@ -10,23 +10,26 @@ import {
   listFireworkProducts,
   listReplayCuesForShow,
 } from '@/lib/shows.server';
-import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default async function ShowPreviewPage({ params }: PageProps) {
-  const { id } = await params;
-  const show = await getShowBySlug(id);
-  if (!show) notFound();
+export default function ShowPreviewPage(props: PageProps) {
+  const { params } = props;
 
   return (
     <Suspense fallback={<ReplayPanelSkeleton />}>
-      <ShowPreviewReplay show={show} />
+      <ShowPreviewReplay params={params} />
     </Suspense>
   );
 }
 
-async function ShowPreviewReplay({ show }: { show: Show }) {
+async function ShowPreviewReplay(props: PageProps) {
+  const { params } = props;
+  const { id } = await params;
+  const show = await getShowBySlug(id);
+  if (!show) notFound();
+  if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
+
   const [cues, specifications, audioUrl] = await Promise.all([
     listReplayCuesForShow(show.id),
     listFireworkProducts(),

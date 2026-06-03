@@ -4,7 +4,6 @@
 
 import { cookies } from 'next/headers';
 import { after } from 'next/server';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
@@ -42,9 +41,10 @@ const NewShowSchema = z.object({
   moodTags: z.array(z.string().min(1).max(40)).max(20),
   audioPath: z.string().trim().max(300).optional(),
   musicAnalysisId: z.string().uuid().optional(),
+  desiredSlug: z.string().trim().max(120).optional(),
 });
 
-export type NewShowResult = { ok: true } | { ok: false; error: string };
+export type NewShowResult = { ok: true; slug: string } | { ok: false; error: string };
 
 function isUserAudioPath(path: string, userId: string): boolean {
   return path.startsWith(`${userId}/`) && !path.includes('..');
@@ -72,6 +72,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     moodTags: formData.getAll('moodTags').map(String),
     audioPath: formData.get('audioPath') ?? undefined,
     musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
+    desiredSlug: formData.get('desiredSlug') ?? undefined,
   });
 
   if (!parsed.success) {
@@ -103,7 +104,9 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     }
   }
 
-  const baseSlug = slugifyTitle(parsed.data.title);
+  const baseSlug = parsed.data.desiredSlug
+    ? slugifyTitle(parsed.data.desiredSlug)
+    : slugifyTitle(parsed.data.title);
   const durationSeconds = parseDurationSeconds(parsed.data.duration);
 
   // Avoid clashing with an existing slug for the same user.
@@ -167,5 +170,5 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     }
   });
 
-  redirect(`/shows/${show.slug}/generating`);
+  return { ok: true, slug: show.slug };
 }

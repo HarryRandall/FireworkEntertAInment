@@ -18,6 +18,7 @@ import { createClient } from '@/utils/supabase/server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import type { Database } from '@/lib/database.types';
 import type {
+  AnalyserResult,
   AnalysisStatus,
   CueGenerationStatus,
   ShowAnalysisSnapshot,
@@ -27,9 +28,9 @@ type MusicAnalysisRow = Database['public']['Tables']['music_analyses']['Row'];
 type ShowAnalysisRow = Database['public']['Tables']['show_analyses']['Row'];
 
 const MUSIC_ANALYSIS_SELECT =
-  'id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown';
+  'id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json';
 const LEGACY_SHOW_ANALYSIS_SELECT =
-  'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, cue_generation_status, cue_generation_error, cue_count';
+  'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json, cue_generation_status, cue_generation_error, cue_count';
 
 const getServerClient = cache(async () => {
   return createClient(await cookies());
@@ -55,6 +56,7 @@ function hydrateMusicAnalysis(
     createdAt: row.created_at,
     completedAt: row.completed_at,
     contextMarkdown: row.markdown,
+    analysis: row.analysis_json as unknown as AnalyserResult | null,
     cueGenerationStatus,
     cueGenerationError,
     cueCount,
@@ -75,6 +77,7 @@ function hydrateLegacyShowAnalysis(row: ShowAnalysisRow): ShowAnalysisSnapshot {
     createdAt: row.created_at,
     completedAt: row.completed_at,
     contextMarkdown: row.markdown,
+    analysis: row.analysis_json as unknown as AnalyserResult | null,
     cueGenerationStatus: (row.cue_generation_status as CueGenerationStatus) ?? 'pending',
     cueGenerationError: row.cue_generation_error,
     cueCount: row.cue_count,

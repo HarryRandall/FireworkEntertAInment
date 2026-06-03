@@ -1,6 +1,6 @@
 'use client';
 
-/** Client tab navigation linking the preview, timeline, show-guide and shopping-list sub-routes for a show. */
+/** Client tab navigation linking the preview, song context, show-guide and shopping-list sub-routes for a show. */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,7 +14,7 @@ export function ShowTabs({ id }: Props) {
     { href: `/shows/${id}/preview`, label: 'Live preview' },
     { href: `/shows/${id}/shopping-list`, label: 'Shopping list' },
     { href: `/shows/${id}/show-guide`, label: 'Show guide' },
-    { href: `/shows/${id}/timeline`, label: 'Timeline' },
+    { href: `/shows/${id}/timeline`, label: 'Song context' },
   ];
 
   return (

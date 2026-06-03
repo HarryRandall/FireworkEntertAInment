@@ -75,6 +75,20 @@ test('app and admin routes have granular loading coverage and streaming boundari
   ]) {
     assert.match(read(path), /<Suspense\b/, `${path} uses Suspense`);
   }
+
+  const previewPage = read('app/(app)/shows/[id]/preview/page.tsx');
+  const previewShell = functionBody(previewPage, 'ShowPreviewPage');
+  const previewLoader = functionBody(previewPage, 'ShowPreviewReplay');
+  assert.match(previewShell, /<Suspense fallback=\{<ReplayPanelSkeleton \/>\}>/);
+  assert.match(previewShell, /<ShowPreviewReplay params=\{params\} \/>/);
+  assert.doesNotMatch(previewShell, /await params/);
+  assert.doesNotMatch(previewShell, /getShowBySlug\(/);
+  assert.doesNotMatch(previewShell, /listReplayCuesForShow\(/);
+  assert.doesNotMatch(previewShell, /listFireworkProducts\(/);
+  assert.doesNotMatch(previewShell, /getAudioSignedUrl\(/);
+  assert.match(previewLoader, /const \{ id \} = await params/);
+  assert.match(previewLoader, /getShowBySlug\(id\)/);
+  assert.match(previewLoader, /Promise\.all\(/);
 });
 
 test('three replay canvases are lazy loaded without console warning monkey patches', () => {

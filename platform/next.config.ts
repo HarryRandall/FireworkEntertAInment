@@ -1,5 +1,5 @@
-import type { NextConfig } from "next";
-import path from "path";
+import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -7,14 +7,14 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "250mb",
+      bodySizeLimit: '250mb',
     },
   },
   async redirects() {
     return [
       {
-        source: "/supabase-example",
-        destination: "/dev/supabase-example",
+        source: '/supabase-example',
+        destination: '/dev/supabase-example',
         permanent: true,
       },
     ];

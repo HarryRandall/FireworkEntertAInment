@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(node --test tests/fireworks-renderer-fidelity.test.mjs)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Read(//Users/harry/Downloads/**)"
     ]
   }
 }

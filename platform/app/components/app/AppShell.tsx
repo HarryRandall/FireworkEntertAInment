@@ -38,6 +38,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
+import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
@@ -67,6 +68,8 @@ type AppShellProps = {
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
   impersonation?: ActiveImpersonation | null;
+  initialSidebarCollapsed?: boolean;
+  hasInitialSidebarCollapsedCookie?: boolean;
 };
 
 const navBase =
@@ -75,28 +78,23 @@ const navActive =
   'bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]';
 const navInactive =
   'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]';
-const sidebarCollapsedStorageKey = 'showcrafter:sidebar-collapsed';
 
-const readSidebarCollapsedPreference = () => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  try {
-    return window.localStorage.getItem(sidebarCollapsedStorageKey) === 'true';
-  } catch {
-    return false;
-  }
-};
-
-export function AppShell({ children, profile, impersonation }: AppShellProps) {
+export function AppShell({
+  children,
+  profile,
+  impersonation,
+  initialSidebarCollapsed = false,
+  hasInitialSidebarCollapsedCookie = false,
+}: AppShellProps) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const effectivePath = pendingHref ?? pathname;
   const inSettings = effectivePath?.startsWith('/settings');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarTransitionReady, setSidebarTransitionReady] = useState(false);
+  const { sidebarCollapsed, sidebarTransitionReady, toggleSidebar } = useSidebarPreference({
+    initialCollapsed: initialSidebarCollapsed,
+    hasInitialCookie: hasInitialSidebarCollapsedCookie,
+  });
   const permissions = new Set(profile?.permissions ?? []);
   const visibleLinks = APP_LINKS.filter(
     (link) => !link.permission || permissions.has(link.permission),
@@ -118,24 +116,6 @@ export function AppShell({ children, profile, impersonation }: AppShellProps) {
     closeDrawer();
     setPendingHref(null);
   }, [pathname]);
-
-  useEffect(() => {
-    setSidebarCollapsed(readSidebarCollapsedPreference());
-    const frame = window.requestAnimationFrame(() => setSidebarTransitionReady(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed((collapsed) => {
-      const next = !collapsed;
-      try {
-        window.localStorage.setItem(sidebarCollapsedStorageKey, String(next));
-      } catch {
-        // Ignore storage errors; the button should still work for this session.
-      }
-      return next;
-    });
-  };
 
   const renderSidebarTooltip = (
     content: ReactNode,
@@ -425,7 +405,7 @@ export function AppShell({ children, profile, impersonation }: AppShellProps) {
         </aside>
 
         {/* Content panel */}
-        <div className="min-w-0 bg-[color:var(--color-bg-default)] lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
+        <div className="flex min-h-screen min-w-0 flex-col bg-[color:var(--color-bg-default)] lg:min-h-[calc(100vh-1rem)] lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
           {/* Mobile top bar */}
           <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3 lg:hidden">
             {renderBrand(false)}
@@ -473,7 +453,7 @@ export function AppShell({ children, profile, impersonation }: AppShellProps) {
             </Sheet>
           </header>
 
-          <main className="px-6 py-6 sm:px-8 lg:px-10">{children}</main>
+          <main className="flex flex-1 flex-col px-6 py-6 sm:px-8 lg:px-10">{children}</main>
         </div>
       </div>
     </div>

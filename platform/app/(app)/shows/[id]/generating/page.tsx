@@ -3,17 +3,43 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
-import { ShowGenerationSplash } from '@/app/components/app/ShowGenerationSplash';
+import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { getShowBySlug, listReplayCuesForShow } from '@/lib/shows.server';
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ creating?: string; t?: string }>;
+};
 
-export default async function ShowGeneratingPage({ params }: PageProps) {
+const SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
+
+export default async function ShowGeneratingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const show = await getShowBySlug(id);
-  if (!show) notFound();
+  const { creating, t } = await searchParams;
+  const [show, warmth] = await Promise.all([getShowBySlug(id), getAnalyserWarmthState()]);
+  const isWarm = warmth.active;
+
+  // Race: the wizard navigates here client-side immediately on Generate,
+  // before the server action has finished inserting the show row. While
+  // creating=1 is set, render the splash; the component polls every few
+  // seconds and the page re-renders with real data once the row appears.
+  if (!show) {
+    if (creating === '1') {
+      const provisionalTitle = (t ?? '').trim() || 'Your show';
+      return (
+        <GeneratingShowAnimation
+          showTitle={provisionalTitle}
+          isWarm={isWarm}
+          persistKey={id}
+          className={SPLASH_CLASS}
+        />
+      );
+    }
+    notFound();
+  }
 
   const cues = await listReplayCuesForShow(show.id);
   if (cues.length > 0 && show.generationStatus === 'completed') {
@@ -36,8 +62,8 @@ export default async function ShowGeneratingPage({ params }: PageProps) {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button href={`/shows/${show.slug}`} size="sm">
-                Back to brief
+              <Button href={`/shows/${show.slug}/preview`} size="sm">
+                Back to preview
               </Button>
               <Link
                 href={`/shows/${show.slug}/preview`}
@@ -52,5 +78,14 @@ export default async function ShowGeneratingPage({ params }: PageProps) {
     );
   }
 
-  return <ShowGenerationSplash showTitle={show.title} />;
+  return (
+    <GeneratingShowAnimation
+      showTitle={show.title}
+      status={show.generationStatus === 'completed' ? 'completed' : 'running'}
+      isWarm={isWarm}
+      startedAt={show.generationStartedAt}
+      persistKey={show.slug}
+      className={SPLASH_CLASS}
+    />
+  );
 }

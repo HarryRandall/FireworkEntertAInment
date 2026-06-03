@@ -14,15 +14,22 @@ export default function AppError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <InlineAlert tone="danger" title="This workspace view failed to load">
-        {error.message ||
-          'Try again. If the issue persists, check the latest import or profile changes.'}
-      </InlineAlert>
-      <Button type="button" onClick={reset} variant="secondary">
-        <RotateCcw size={16} />
-        Retry
-      </Button>
+    <div className="flex min-h-[calc(100vh-8rem)] w-full items-center justify-center py-8">
+      <div className="flex w-full max-w-3xl flex-col items-center gap-6">
+        <InlineAlert
+          tone="danger"
+          size="lg"
+          title="This workspace view failed to load"
+          className="w-full"
+        >
+          {error.message ||
+            'Try again. If the issue persists, check the latest import or profile changes.'}
+        </InlineAlert>
+        <Button type="button" onClick={reset} variant="secondary" size="lg" className="text-base">
+          <RotateCcw size={20} />
+          Retry
+        </Button>
+      </div>
     </div>
   );
 }
