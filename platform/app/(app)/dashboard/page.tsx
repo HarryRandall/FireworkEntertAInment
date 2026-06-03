@@ -92,7 +92,7 @@ async function DashboardShows({
           return (
             <Link
               key={show.id}
-              href={`/shows/${show.slug}`}
+              href={`/shows/${show.slug}/preview`}
               prefetch
               className="group block rounded-xl focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
             >

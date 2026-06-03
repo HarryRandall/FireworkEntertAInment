@@ -3,8 +3,12 @@
 import { Home } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Container } from '@/app/components/ui/Container';
+import { getCurrentUserId } from '@/lib/current-user.server';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const userId = await getCurrentUserId();
+  const homeHref = userId ? '/dashboard' : '/';
+
   return (
     <div className="bg-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
       {/* Neon glow backdrop */}
@@ -59,11 +63,11 @@ export default function NotFound() {
 
         {/* Body */}
         <p className="text-on-surface-variant max-w-md text-base leading-relaxed">
-          The page you're looking for doesn't exist — or it's been moved to a different part of the
+          The page you're looking for doesn't exist, or it's been moved to a different part of the
           show. Head back and pick up where you left off.
         </p>
 
-        <Button href="/" size="lg">
+        <Button href={homeHref} size="lg">
           <Home size={18} strokeWidth={1.75} />
           Return Home
         </Button>

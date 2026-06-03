@@ -22,15 +22,20 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check, MapPin, Music4, Sparkles } from 'lucide-react';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
-import { ShowGenerationSplash } from '@/app/components/app/ShowGenerationSplash';
 import { ChoiceChip } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
+import {
+  clearPersistedGenerationStart,
+  persistGenerationStartedAt,
+} from '@/lib/generation-progress-storage';
+import { slugifyTitle } from '@/lib/show-domain';
 import { createShowAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
 import { BudgetPicker } from './_components/BudgetPicker';
@@ -56,6 +61,7 @@ import { inferAudioContentType, sanitizeStorageName } from './utils';
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   // === Step 0: constraints =================================================
   const [budget, setBudget] = useState(2500);
@@ -92,12 +98,15 @@ export default function NewShowPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
   const [isLaunching, setIsLaunching] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [, startTransition] = useTransition();
 
   const durationValue =
     durationMode === 'custom'
       ? `${customDuration.trim()} minute${customDuration.trim() === '1' ? '' : 's'}`
       : `${durationPreset} minute${durationPreset === 1 ? '' : 's'}`;
+
+  useEffect(() => setMounted(true), []);
 
   /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {
@@ -317,6 +326,13 @@ export default function NewShowPage() {
       return;
     }
     setIsLaunching(true);
+    // Navigate to the generating route immediately so the URL and splash swap
+    // happens on click, not after the server action returns. If the server
+    // needs to suffix the slug, the stored start time is copied across below.
+    const desiredSlug = slugifyTitle(title.trim());
+    const titleParam = encodeURIComponent(title.trim());
+    const generationStartedAt = persistGenerationStartedAt(desiredSlug);
+    router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`);
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
       if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
@@ -324,6 +340,8 @@ export default function NewShowPage() {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
           setIsLaunching(false);
+          clearPersistedGenerationStart(desiredSlug);
+          router.replace('/shows/new');
           toast.error('Could not upload track', {
             description: error instanceof Error ? error.message : 'Try replacing the audio file.',
           });
@@ -332,6 +350,8 @@ export default function NewShowPage() {
       }
       if (audioFile && audioUploadState === 'error') {
         setIsLaunching(false);
+        clearPersistedGenerationStart(desiredSlug);
+        router.replace('/shows/new');
         toast.error('Could not upload track', {
           description: audioUploadError ?? 'Try replacing the audio file.',
         });
@@ -345,6 +365,7 @@ export default function NewShowPage() {
       data.set('location', location.trim());
       data.set('title', title.trim());
       data.set('description', description);
+      data.set('desiredSlug', desiredSlug);
       const vibeInput = formRef.current?.elements.namedItem('vibe');
       if (vibeInput instanceof HTMLInputElement) data.set('vibe', vibeInput.value);
       activeMoods.forEach((mood) => data.append('moodTags', mood));
@@ -354,9 +375,21 @@ export default function NewShowPage() {
       }
 
       const result = await createShowAction(data);
-      if (result && !result.ok) {
+      if (!result.ok) {
         setIsLaunching(false);
+        clearPersistedGenerationStart(desiredSlug);
+        router.replace('/shows/new');
         toast.error(result.error);
+        return;
+      }
+      // Collision: the server assigned a suffixed slug. Redirect to the real
+      // one so the route stops waiting on a row that will never appear.
+      if (result.slug !== desiredSlug) {
+        persistGenerationStartedAt(result.slug, generationStartedAt);
+        clearPersistedGenerationStart(desiredSlug);
+        router.replace(`/shows/${result.slug}/generating`);
+      } else {
+        router.refresh();
       }
     });
   };
@@ -390,10 +423,6 @@ export default function NewShowPage() {
 
   const activeStep = STEPS[stepIndex];
 
-  if (isLaunching) {
-    return <ShowGenerationSplash showTitle={title.trim() || 'your show'} />;
-  }
-
   return (
     <form ref={formRef} noValidate onSubmit={handleSubmit} className="space-y-6">
       <AppPageHeader
@@ -404,7 +433,12 @@ export default function NewShowPage() {
       <div className="mx-auto max-w-3xl">
         <Card radius="lg" className="overflow-hidden">
           <div className="border-b border-[color:var(--color-border-subtle)] px-5 py-4 sm:px-6">
-            <ProgressTrack steps={STEPS} current={stepIndex} onSelect={goToStep} />
+            <ProgressTrack
+              steps={STEPS}
+              current={stepIndex}
+              onSelect={goToStep}
+              mounted={mounted}
+            />
             <div className="mt-5">
               <h2 className="text-base font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
                 {activeStep.title}
@@ -555,13 +589,17 @@ export default function NewShowPage() {
               type="button"
               variant="secondary"
               onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-              disabled={stepIndex === 0}
+              disabled={mounted && stepIndex === 0}
             >
               <ArrowLeft size={16} />
               Back
             </Button>
             {stepIndex < STEPS.length - 1 ? (
-              <Button type="button" onClick={() => goToStep(stepIndex + 1)} disabled={!stepValid}>
+              <Button
+                type="button"
+                onClick={() => goToStep(stepIndex + 1)}
+                disabled={mounted && !stepValid}
+              >
                 Continue
                 <ArrowRight size={16} />
               </Button>
@@ -569,7 +607,7 @@ export default function NewShowPage() {
               <Button
                 type="button"
                 onClick={triggerGenerate}
-                disabled={!title.trim() || isLaunching}
+                disabled={mounted && (!title.trim() || isLaunching)}
               >
                 Generate show
                 <Sparkles size={16} strokeWidth={2} />

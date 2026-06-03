@@ -60,8 +60,8 @@ export function LivePreviewTile({
       </div>
 
       <p className="text-on-surface-variant mt-8 max-w-md text-sm leading-relaxed">
-        A 2D / 3D simulator preview is on the roadmap. For now, head to the timeline tab to inspect
-        every cue, or export to Finale 3D for a production-grade visualisation.
+        A 2D / 3D simulator preview is on the roadmap. For now, head to the show guide tab to
+        inspect every cue, or export to Finale 3D for a production-grade visualisation.
       </p>
     </div>
   );

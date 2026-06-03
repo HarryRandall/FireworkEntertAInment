@@ -1,6 +1,6 @@
 /** Show-guide tab listing each cue with launch instructions for the operator. */
 
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShowGuideList } from '@/app/components/app/ShowGuideList';
 import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
@@ -13,6 +13,7 @@ export default async function ShowGuidePage({ params }: PageProps) {
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) notFound();
+  if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
 
   return (
     <div className="max-w-3xl">

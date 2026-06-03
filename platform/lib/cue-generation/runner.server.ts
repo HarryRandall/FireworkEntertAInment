@@ -21,13 +21,14 @@ import {
   type CueWindow,
 } from '@/lib/cue-overlap.server';
 import { DEFAULT_CUE_MODEL, getOpenRouterClient } from '@/lib/openrouter.server';
+import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { extractProviderError, stripJsonFence } from './llm';
 import {
+  loadAnalysisState,
   loadBrief,
   markGenerationStatus,
-  waitForAnalysisJson,
   type AnalysisJsonLoadResult,
 } from './loaders.server';
 import {
@@ -78,7 +79,8 @@ export async function generateCuesForShow(params: {
 }): Promise<GenerateCuesResult> {
   const { supabase, userId, showId, musicAnalysisId } = params;
   const model = DEFAULT_CUE_MODEL;
-  const generationMode = process.env.CUE_GENERATION_MODE === 'llm' ? 'llm' : 'fast';
+  const generationSettings = await getShowCueGenerationSettings();
+  const generationMode = generationSettings.generationMode;
   const totalStart = performance.now();
   const timings = {
     loadInputsMs: 0,
@@ -95,7 +97,10 @@ export async function generateCuesForShow(params: {
   let catalogueCount = 0;
   let acceptedCount = 0;
   let droppedCount = 0;
-  const logTimings = (outcome: 'completed' | 'failed', extra: { error?: string } = {}) => {
+  const logTimings = (
+    outcome: 'completed' | 'failed' | 'waiting',
+    extra: { error?: string } = {},
+  ) => {
     console.info('[cue-generation] timings', {
       outcome,
       showId,
@@ -141,7 +146,7 @@ export async function generateCuesForShow(params: {
     [brief, analysisResult] = await Promise.all([
       loadBrief(supabase, userId, showId),
       musicAnalysisId
-        ? waitForAnalysisJson(supabase, musicAnalysisId)
+        ? loadAnalysisState(supabase, musicAnalysisId)
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
@@ -151,10 +156,10 @@ export async function generateCuesForShow(params: {
       } else if (analysisResult.status === 'failed') {
         const detail = analysisResult.errorMessage ? `: ${analysisResult.errorMessage}` : '.';
         throw new Error(`Music analysis failed${detail}`);
-      } else if (analysisResult.status === 'timeout') {
-        throw new Error(
-          'Music analysis is still finishing. Please wait a few seconds and try again.',
-        );
+      } else if (analysisResult.status === 'running') {
+        timings.loadInputsMs = elapsedMs(loadStart);
+        logTimings('waiting');
+        return { ok: true, pending: true, reason: 'music_analysis_running' };
       } else if (analysisResult.status === 'missing') {
         throw new Error('Music analysis was not found. Please upload the song again.');
       } else {
@@ -217,8 +222,8 @@ export async function generateCuesForShow(params: {
   } else {
     // === Stage 2: build prompt + call the LLM ============================
     const promptStart = performance.now();
-    catalogue = projectCatalogue(products);
-    const catalogueIndex = new Map(catalogue.map((p) => [p.id, p]));
+    catalogue = projectCatalogue(products, generationSettings.productCatalogueFields);
+    const productIndex = new Map(products.map((product) => [product.id, product]));
     const slotIndex = new Map(slots.map((s) => [s.index, s]));
 
     const userPayload = {
@@ -245,7 +250,12 @@ export async function generateCuesForShow(params: {
       },
     };
 
-    const systemPrompt = buildSystemPrompt();
+    const promptConfig = await getActivePromptConfig('show_cue_generation');
+    const systemPrompt = buildSystemPrompt({
+      systemPromptText: promptConfig?.systemPromptText,
+      productContextText: promptConfig?.productContextText,
+      productCatalogueFields: generationSettings.productCatalogueFields,
+    });
     const userContent = JSON.stringify(userPayload);
     promptBytes = jsonByteLength(systemPrompt) + jsonByteLength(userContent);
     timings.promptBuildMs = elapsedMs(promptStart);
@@ -321,7 +331,7 @@ export async function generateCuesForShow(params: {
         dropped.push({ assignment: a, reason: 'duplicate slotIndex' });
         continue;
       }
-      if (!catalogueIndex.has(a.productId)) {
+      if (!productIndex.has(a.productId)) {
         dropped.push({ assignment: a, reason: 'unknown productId' });
         continue;
       }
@@ -340,7 +350,7 @@ export async function generateCuesForShow(params: {
     reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
     const acceptedWindows: CueWindow[] = [];
     for (const cue of reconstructed) {
-      const product = catalogueIndex.get(cue.productId);
+      const product = productIndex.get(cue.productId);
       const productDuration = product?.durationSeconds ?? MIN_PRODUCT_DURATION_SECONDS;
       const window: CueWindow = {
         timeSeconds: cue.timeSeconds,

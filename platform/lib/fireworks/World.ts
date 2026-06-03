@@ -48,13 +48,20 @@ export class World {
     if (this.mortarPositions.length === 0) return;
 
     const mortarGeo = new THREE.CylinderGeometry(8, 8, 40, 16);
-    const mortarMat = new THREE.MeshStandardMaterial({
-      color: 0x3b4352,
-      roughness: 0.82,
-      metalness: 0.12,
+    const mortarMat = new THREE.MeshBasicMaterial({
+      color: 0x7f8da8,
+      toneMapped: false,
     });
     const mortars = new THREE.InstancedMesh(mortarGeo, mortarMat, this.mortarPositions.length);
     mortars.frustumCulled = false;
+
+    const rimGeo = new THREE.TorusGeometry(8.2, 1.1, 8, 24);
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: 0xb1c3dd,
+      toneMapped: false,
+    });
+    const rims = new THREE.InstancedMesh(rimGeo, rimMat, this.mortarPositions.length);
+    rims.frustumCulled = false;
 
     const transform = new THREE.Object3D();
     for (let i = 0; i < this.mortarPositions.length; i++) {
@@ -64,12 +71,18 @@ export class World {
       transform.scale.setScalar(1);
       transform.updateMatrix();
       mortars.setMatrixAt(i, transform.matrix);
+
+      transform.position.set(pos.x, pos.y + 40.5, pos.z);
+      transform.rotation.set(Math.PI / 2, 0, 0);
+      transform.updateMatrix();
+      rims.setMatrixAt(i, transform.matrix);
     }
     mortars.instanceMatrix.needsUpdate = true;
+    rims.instanceMatrix.needsUpdate = true;
 
-    this.group.add(mortars);
-    this.geometries.push(mortarGeo);
-    this.materials.push(mortarMat);
+    this.group.add(mortars, rims);
+    this.geometries.push(mortarGeo, rimGeo);
+    this.materials.push(mortarMat, rimMat);
   }
 
   rebuild(positions: LaunchPosition[]): void {

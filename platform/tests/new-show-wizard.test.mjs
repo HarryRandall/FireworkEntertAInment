@@ -38,19 +38,23 @@ test('new show wizard moves ready uploaded music into the AI brief step', () => 
   assert.match(page, /focusTitleRequirement\(\)/);
 });
 
-test('new show wizard shows the generation splash immediately on launch', () => {
-  assert.match(page, /import \{ ShowGenerationSplash \}/);
+test('new show wizard routes to the generation page immediately on launch', () => {
+  assert.doesNotMatch(page, /import \{ GeneratingShowAnimation \}/);
   assert.match(page, /const \[isLaunching, setIsLaunching\] = useState\(false\)/);
-  assert.match(
-    page,
-    /if \(isLaunching\) \{\s+return <ShowGenerationSplash showTitle=\{title\.trim\(\) \|\| 'your show'\} \/>;\s+\}/s,
-  );
+  assert.doesNotMatch(page, /<GeneratingShowAnimation/);
+  assert.match(page, /persistGenerationStartedAt\(desiredSlug\)/);
+  assert.match(page, /persistGenerationStartedAt\(result\.slug, generationStartedAt\)/);
 
   const launchIdx = page.indexOf('setIsLaunching(true)');
+  const routeIdx = page.indexOf(
+    'router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`)',
+  );
   const transitionIdx = page.indexOf('startTransition(async () =>');
   assert.notEqual(launchIdx, -1, 'Generate should enter launching state immediately');
+  assert.notEqual(routeIdx, -1, 'Generate should navigate to the generating route immediately');
   assert.notEqual(transitionIdx, -1, 'Generate should still run the server action transition');
-  assert.ok(launchIdx < transitionIdx, 'splash state should be set before async generation work');
+  assert.ok(launchIdx < routeIdx, 'launching state should be set before navigation');
+  assert.ok(routeIdx < transitionIdx, 'navigation should happen before async generation work');
   assert.doesNotMatch(page, /loading=\{isPending\}/);
 });
 

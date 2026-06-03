@@ -22,7 +22,10 @@ export const GenerationResponseSchema = z.object({
 export type Assignment = z.infer<typeof AssignmentSchema>;
 
 /** Discriminated result returned by {@link ../runner.server.generateCuesForShow}. */
-export type GenerateCuesResult = { ok: true; cueCount: number } | { ok: false; error: string };
+export type GenerateCuesResult =
+  | { ok: true; cueCount: number }
+  | { ok: true; pending: true; reason: 'music_analysis_running' }
+  | { ok: false; error: string };
 
 /** Subset of `shows` columns the cue generator needs. */
 export type ShowBriefRow = {

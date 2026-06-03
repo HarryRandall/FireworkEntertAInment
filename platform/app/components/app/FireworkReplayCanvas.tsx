@@ -29,14 +29,32 @@ type Props = {
   muted?: boolean;
   interactive?: boolean;
   controlsVisible?: boolean;
+  onReady?: () => void;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(950, 1250, 2500);
 const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 850, 0);
+const GROUND_PLANE_Y = 0;
+const MIN_CAMERA_HEIGHT = 16;
 const BLOOM_STRENGTH = 0.38;
 const BLOOM_RADIUS = 0.18;
 const BLOOM_THRESHOLD = 0.52;
+
+function keepCameraAboveGround(camera: THREE.PerspectiveCamera, controls: OrbitControls): boolean {
+  let changed = false;
+  if (controls.target.y < GROUND_PLANE_Y) {
+    const lift = GROUND_PLANE_Y - controls.target.y;
+    controls.target.y += lift;
+    camera.position.y += lift;
+    changed = true;
+  }
+  if (camera.position.y < MIN_CAMERA_HEIGHT) {
+    camera.position.y = MIN_CAMERA_HEIGHT;
+    changed = true;
+  }
+  return changed;
+}
 
 export function FireworkReplayCanvas({
   cues,
@@ -46,6 +64,7 @@ export function FireworkReplayCanvas({
   muted = false,
   interactive = true,
   controlsVisible = true,
+  onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
@@ -62,6 +81,11 @@ export function FireworkReplayCanvas({
   const [panMode, setPanMode] = useState(false);
   const [showCameraControls, setShowCameraControls] = useState(false);
   const [showViewHelper, setShowViewHelper] = useState(false);
+  const onReadyRef = useRef(onReady);
+
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
@@ -131,16 +155,15 @@ export function FireworkReplayCanvas({
     controls.target.copy(DEFAULT_CAMERA_TARGET);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    // Vertical pan lets the viewer drop to ground level or rise up.
     controls.enablePan = true;
     controls.screenSpacePanning = true;
     controls.minDistance = 80;
     controls.maxDistance = 5000;
     controls.minPolarAngle = 0.05;
-    // Just below horizon so the camera can sit at ground level looking up.
-    controls.maxPolarAngle = Math.PI / 2 + 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.01;
     controls.enabled = interactive;
     controls.update();
+    keepCameraAboveGround(camera, controls);
     controlsRef.current = controls;
     function onControlsStart() {
       renderFor(900);
@@ -160,6 +183,7 @@ export function FireworkReplayCanvas({
     engine.setMuted(muted);
     engineRef.current = engine;
     composer.render(0);
+    onReadyRef.current?.();
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
     // Keep the axis helper below the camera settings button when enabled.
@@ -208,8 +232,15 @@ export function FireworkReplayCanvas({
         forceRenderRef.current = true;
       }
       const controlsChanged = controls.enabled ? controls.update() : false;
+      const cameraClamped = keepCameraAboveGround(cam, controls);
       const interactionActive = now < interactionRenderUntilRef.current;
-      if (timelineChanged || controlsChanged || forceRenderRef.current || interactionActive) {
+      if (
+        timelineChanged ||
+        controlsChanged ||
+        cameraClamped ||
+        forceRenderRef.current ||
+        interactionActive
+      ) {
         forceRenderRef.current = false;
         comp.render(dt);
         if (showViewHelperRef.current) {
@@ -301,6 +332,7 @@ export function FireworkReplayCanvas({
     else if (dist > ctrl.maxDistance) offset.setLength(ctrl.maxDistance);
     cam.position.copy(ctrl.target).add(offset);
     ctrl.update();
+    keepCameraAboveGround(cam, ctrl);
     renderFor(360);
   }
 
@@ -311,6 +343,7 @@ export function FireworkReplayCanvas({
     cam.position.copy(DEFAULT_CAMERA_POSITION);
     ctrl.target.copy(DEFAULT_CAMERA_TARGET);
     ctrl.update();
+    keepCameraAboveGround(cam, ctrl);
     renderFor(360);
   }
 

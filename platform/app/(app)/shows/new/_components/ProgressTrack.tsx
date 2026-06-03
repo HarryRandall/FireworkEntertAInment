@@ -13,10 +13,12 @@ export function ProgressTrack({
   steps,
   current,
   onSelect,
+  mounted = true,
 }: {
   steps: readonly { key: string; label: string }[];
   current: number;
   onSelect: (index: number) => void;
+  mounted?: boolean;
 }) {
   return (
     <ol className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
@@ -24,12 +26,13 @@ export function ProgressTrack({
         const isActive = index === current;
         const isComplete = index < current;
         const isClickable = index <= current;
+        const isDisabled = mounted && !isClickable;
         return (
           <li key={step.key}>
             <button
               type="button"
               onClick={() => onSelect(index)}
-              disabled={!isClickable}
+              disabled={isDisabled}
               className={cn(
                 'inline-flex items-center gap-2 rounded-md py-1 text-sm transition-colors',
                 isActive

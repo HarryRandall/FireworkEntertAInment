@@ -36,4 +36,9 @@ export { getImportJobDetail, listImportJobs } from './imports.server';
 export { listCatalogueProducts } from './catalogue.server';
 export { getAdminEffectById, listAdminEffects } from './effects.server';
 export { getAdminFireworkById, listAdminFireworks } from './fireworks.server';
+export {
+  getAdminPromptControlData,
+  getAdminShowGenerationSetting,
+  listAdminPromptConfigs,
+} from './prompts.server';
 export { getShowTemplateBySlug, listShowTemplates } from './templates.server';

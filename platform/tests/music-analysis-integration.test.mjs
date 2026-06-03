@@ -48,8 +48,8 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   assert.doesNotMatch(modalApp, /buffer_containers=1/);
   assert.doesNotMatch(modalApp, /scaledown_window=/);
   assert.match(adminPage, /AnalyserWarmthControl/);
-  assert.match(warmControl, /Keep warm for 30 minutes/);
-  assert.match(warmControl, /Extend 30 minutes/);
+  assert.match(warmControl, /Keep warm 30 min/);
+  assert.match(warmControl, /Keep the analyser warm for 30 minutes/);
   assert.match(warmControl, /pingAnalyserWarmthAction/);
   assert.match(warmControl, /BROWSER_WARMUP_INTERVAL_MS = 45 \* 1000/);
   assert.match(warmLib, /WARM_WINDOW_MS = 30 \* 60 \* 1000/);
@@ -68,7 +68,7 @@ test('show creation attaches analysed music and starts cue generation', () => {
   assert.match(action, /after\(async \(\) =>/);
   assert.match(action, /generateCuesForShow/);
   assert.equal(action.includes('redirect(`/shows/${slug}/preview`)'), false);
-  assert.match(action, /redirect\(`\/shows\/\$\{show\.slug\}\/generating`\)/);
+  assert.match(action, /return \{ ok: true, slug: show\.slug \}/);
 });
 
 test('music analyses migration creates upload-scoped analysis rows', () => {
@@ -113,19 +113,36 @@ test('show analyses repair migration relaxes legacy not-null columns', () => {
   assert.match(migration, /personality_preset DROP NOT NULL/);
 });
 
-test('show timeline exposes stored context and manual show generation', () => {
+test('show song context exposes stored analysis context', () => {
   const page = readFileSync(join(root, 'app/(app)/shows/[id]/timeline/page.tsx'), 'utf8');
   const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
+  const previewRedirect = readFileSync(
+    join(root, 'app/(app)/shows/[id]/ShowPreviewRedirect.tsx'),
+    'utf8',
+  );
   const timeline = readFileSync(join(root, 'app/components/app/AudioAnalysisTimeline.tsx'), 'utf8');
-  const splashPath = join(root, 'app/components/app/ShowGenerationSplash.tsx');
+  const splashPath = join(root, 'app/components/app/GeneratingShowAnimation.tsx');
   const generatorPath = join(root, 'lib/cue-generation.server.ts');
   assert.equal(existsSync(splashPath), true);
   assert.equal(existsSync(generatorPath), true);
 
-  assert.match(indexPage, /redirect\(`\/shows\/\$\{id\}\/preview`\)/);
-  assert.match(page, /Stored song context/);
-  assert.match(page, /latestAnalysis\?\.contextMarkdown/);
+  assert.match(indexPage, /<ShowPreviewRedirect \/>/);
+  assert.match(indexPage, /<ReplayPanelSkeleton \/>/);
+  assert.doesNotMatch(indexPage, /redirect\(/);
+  assert.match(
+    previewRedirect,
+    /router\.replace\(`\/shows\/\$\{encodeURIComponent\(id\)\}\/preview`\)/,
+  );
+  assert.match(page, /ShowSongContextPage/);
+  assert.match(page, /getLatestAnalysisForShow\(show\.id\)/);
+  assert.match(page, /generationStatus === 'running'/);
+  assert.match(
+    page,
+    /<AudioAnalysisTimeline hasAudio=\{Boolean\(show\.audioPath\)\} initialAnalysis=\{latestAnalysis\} \/>/,
+  );
   assert.match(timeline, /Song context/);
+  assert.match(timeline, /contextMarkdown/);
+  assert.match(timeline, /buildKpis/);
   assert.match(timeline, /window\.setInterval\(\(\) => router\.refresh\(\), 5000\)/);
   assert.doesNotMatch(timeline, /Run analysis/);
   assert.doesNotMatch(timeline, /Re-run/);

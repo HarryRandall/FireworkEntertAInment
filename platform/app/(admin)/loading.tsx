@@ -9,6 +9,7 @@ import {
   AdminImportDetailSkeleton,
   AdminImportsSkeleton,
   AdminOverviewRouteSkeleton,
+  AdminPromptsSkeleton,
   AdminRolesSkeleton,
   AdminTableRouteSkeleton,
   AdminUserDetailSkeleton,
@@ -42,6 +43,10 @@ export default function AdminLoading() {
 
   if (/^\/admin\/roles\/?$/.test(currentPathname)) {
     return <AdminRolesSkeleton />;
+  }
+
+  if (/^\/admin\/prompts\/?$/.test(currentPathname)) {
+    return <AdminPromptsSkeleton />;
   }
 
   if (/^\/admin\/suppliers\/?$/.test(currentPathname)) {

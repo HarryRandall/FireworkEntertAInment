@@ -21,6 +21,7 @@ export type PermissionKey =
   | 'admin.manage_suppliers'
   | 'admin.manage_catalogue'
   | 'admin.manage_imports'
+  | 'admin.manage_prompts'
   | 'supplier.view'
   | 'supplier.manage_stock';
 

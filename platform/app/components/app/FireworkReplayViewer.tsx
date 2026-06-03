@@ -78,9 +78,12 @@ const LAUNCH_POSITION_OPTIONS = [
 ];
 const PLAYBACK_CONTROL_IDLE_MS = 1800;
 
-function ReplayCanvasSkeleton() {
+function ReplayCanvasPlaceholder() {
   return (
-    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+    <div
+      className="pointer-events-none absolute inset-0 bg-[color:var(--color-bg-subtle)]"
+      aria-label="Loading preview"
+    />
   );
 }
 
@@ -88,13 +91,13 @@ const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
-    loading: () => <ReplayCanvasSkeleton />,
+    loading: () => null,
   },
 );
 
 function EmptyPreview() {
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8 text-center">
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8 text-center">
       <div className="border-outline-variant/15 bg-surface-container-low/85 max-w-md rounded-2xl border p-6 backdrop-blur">
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
         <h3 className="text-on-surface text-xl font-bold">No typed fireworks yet</h3>
@@ -141,6 +144,7 @@ export function FireworkReplayViewer({
   const [showAddForm, setShowAddForm] = useState(false);
   const [cueDialogTab, setCueDialogTab] = useState<CueDialogTab>('manual');
   const [insertBeforeTime, setInsertBeforeTime] = useState<number | null>(null);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [cuePage, setCuePage] = useState(0);
@@ -469,6 +473,7 @@ export function FireworkReplayViewer({
           onFocusCapture={wakePlaybackControls}
           onPointerDown={wakePlaybackControls}
           onPointerMove={wakePlaybackControls}
+          aria-busy={!isCanvasReady}
         >
           <div className="absolute top-6 left-6 z-10 space-y-2">
             <h2 className="text-on-surface max-w-xl text-3xl font-extrabold tracking-tight md:text-4xl">
@@ -485,9 +490,11 @@ export function FireworkReplayViewer({
             playbackRef={elapsedRef}
             launchPositions={launchPositions}
             muted={!isPlaying}
-            controlsVisible={playbackControlsVisible}
+            controlsVisible={isCanvasReady && playbackControlsVisible}
+            onReady={() => setIsCanvasReady(true)}
           />
 
+          {!isCanvasReady ? <ReplayCanvasPlaceholder /> : null}
           {!hasReplayCues ? <EmptyPreview /> : null}
           {audioUrl ? (
             <audio
