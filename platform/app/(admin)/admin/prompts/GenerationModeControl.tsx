@@ -91,7 +91,7 @@ export function GenerationModeControl({ setting }: { setting: GenerationSetting 
     <div
       role="radiogroup"
       aria-label="Show generation mode"
-      className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1"
+      className="border-border bg-card inline-flex items-center gap-1 rounded-lg border p-1"
     >
       {MODE_OPTIONS.map((option) => {
         const active = option.value === selectedMode;
@@ -103,8 +103,8 @@ export function GenerationModeControl({ setting }: { setting: GenerationSetting 
             className={cn(
               'inline-flex h-9 min-w-24 cursor-pointer items-center rounded-md text-sm font-semibold transition-colors',
               active
-                ? 'bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-[var(--shadow-card)]'
-                : 'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             <button
@@ -114,7 +114,7 @@ export function GenerationModeControl({ setting }: { setting: GenerationSetting 
               aria-label={`${option.label} mode. ${option.description}`}
               aria-busy={option.value === pendingMode || undefined}
               onClick={() => saveMode(option.value)}
-              className="inline-flex h-full min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md py-0 pr-1.5 pl-3 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+              className="focus-visible:ring-ring/50 inline-flex h-full min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md py-0 pr-1.5 pl-3 focus:outline-none focus-visible:ring-3"
             >
               <Icon aria-hidden className="h-4 w-4" />
               <span>{option.label}</span>
@@ -123,7 +123,7 @@ export function GenerationModeControl({ setting }: { setting: GenerationSetting 
               text={option.description}
               className={cn(
                 'mr-2 h-3.5 w-3.5 shrink-0 border-current bg-transparent text-current hover:border-current hover:text-current [&_span]:text-[7px]',
-                active && 'focus-visible:outline-[color:var(--color-content-inverted)]',
+                active && 'focus-visible:ring-primary-foreground/50',
               )}
             />
           </div>

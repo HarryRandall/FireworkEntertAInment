@@ -61,7 +61,7 @@ export function InlineAlert({
   return (
     <div
       className={cn(
-        'flex border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]',
+        'border-border bg-card text-card-foreground flex border shadow-xs',
         sizeClasses.root,
         className,
       )}
@@ -72,13 +72,9 @@ export function InlineAlert({
         size={sizeClasses.iconSize}
       />
       <div>
-        <p className={cn('text-[color:var(--color-content-emphasis)]', sizeClasses.title)}>
-          {title}
-        </p>
+        <p className={cn('text-foreground', sizeClasses.title)}>{title}</p>
         {children ? (
-          <div className={cn('text-[color:var(--color-content-subtle)]', sizeClasses.body)}>
-            {children}
-          </div>
+          <div className={cn('text-muted-foreground', sizeClasses.body)}>{children}</div>
         ) : null}
       </div>
     </div>
@@ -102,19 +98,15 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-4 rounded-xl border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-muted)] p-10 text-center',
+        'border-border bg-muted/50 flex flex-col items-center gap-4 rounded-xl border border-dashed p-10 text-center',
         className,
       )}
     >
-      {icon ? <span className="text-[color:var(--color-content-muted)]">{icon}</span> : null}
+      {icon ? <span className="text-muted-foreground">{icon}</span> : null}
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">
-          {title}
-        </h2>
+        <h2 className="text-foreground text-base font-semibold">{title}</h2>
         {children ? (
-          <p className="max-w-md text-sm leading-relaxed text-[color:var(--color-content-subtle)]">
-            {children}
-          </p>
+          <p className="text-muted-foreground max-w-md text-sm leading-relaxed">{children}</p>
         ) : null}
       </div>
       {action}
@@ -124,23 +116,18 @@ export function EmptyState({
 
 /** Thin wrapper around the shadcn Skeleton, use for loading placeholders. */
 export function Skeleton({ className }: { className?: string }) {
-  return (
-    <ShadcnSkeleton className={cn('rounded-md bg-[color:var(--color-bg-subtle)]', className)} />
-  );
+  return <ShadcnSkeleton className={cn('rounded-md', className)} />;
 }
 
 /** Labelled progress bar, use for determinate progress (upload, import jobs). */
 export function ProgressIndicator({ label, value }: { label: string; value?: number }) {
   return (
     <div className="space-y-2" role="status" aria-label={label}>
-      <div className="flex items-center gap-2 text-xs text-[color:var(--color-content-subtle)]">
+      <div className="text-muted-foreground flex items-center gap-2 text-xs">
         <Loader2 size={14} className="animate-spin" />
         {label}
       </div>
-      <Progress
-        value={value ?? 42}
-        className="h-1 bg-[color:var(--color-bg-subtle)] [&>div]:bg-[color:var(--color-accent)]"
-      />
+      <Progress value={value ?? 42} className="bg-muted [&>div]:bg-primary h-1" />
     </div>
   );
 }

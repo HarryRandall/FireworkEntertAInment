@@ -30,6 +30,19 @@ test('new show wizard uploads audio before final submit', () => {
   assert.doesNotMatch(page, /data\.set\('audio', audioFile\)/);
 });
 
+test('new show wizard can prefill a prompt without bypassing the wizard', () => {
+  assert.match(page, /useSearchParams/);
+  assert.match(page, /searchParams\.get\('prompt'\)/);
+  assert.match(page, /setDescription\(prompt\.slice\(0, 2000\)\)/);
+
+  const promptEffectStart = page.indexOf("const prompt = searchParams.get('prompt')");
+  assert.notEqual(promptEffectStart, -1, 'prompt prefill effect must exist');
+  const promptEffectEnd = page.indexOf('}, [searchParams]);', promptEffectStart);
+  assert.notEqual(promptEffectEnd, -1, 'prompt prefill effect must be dependency-scoped');
+  const promptEffect = page.slice(promptEffectStart, promptEffectEnd);
+  assert.doesNotMatch(promptEffect, /setStepIndex/);
+});
+
 test('new show wizard moves ready uploaded music into the AI brief step', () => {
   assert.match(page, /setUploadedAudio\(uploaded\)/);
   assert.match(page, /uploadedAudio &&\s+audioUploadState === 'ready' &&\s+title\.trim\(\)/s);

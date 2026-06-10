@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { Clock, LogIn, MailCheck, UserPlus } from 'lucide-react';
-import { Card } from '@/app/components/ui/Card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createClient } from '@/utils/supabase/server';
 
 function formatDateTime(value: string | null | undefined): string {
@@ -67,36 +67,32 @@ export async function RecentSecurityActivity() {
   ];
 
   return (
-    <Card radius="md" className="space-y-5 p-6">
-      <div className="space-y-2">
-        <h2 className="text-on-surface text-2xl font-bold">Recent activity</h2>
-        <p className="text-on-surface-variant text-sm">
-          A snapshot of your account&apos;s security events.
-        </p>
-      </div>
-      <ul className="divide-outline-variant/45 border-outline-variant/45 bg-surface-container-low divide-y rounded-xl border">
-        {rows.map((row) => {
-          const Icon = row.icon;
-          return (
-            <li key={row.label} className="flex items-center gap-4 px-5 py-4">
-              <span className="border-outline-variant/55 bg-surface text-on-surface-variant flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border">
-                <Icon size={16} strokeWidth={1.85} />
-              </span>
-              <div className="flex min-w-0 flex-1 items-baseline justify-between gap-4">
-                <span className="text-on-surface text-sm font-medium">{row.label}</span>
-                <span className="flex items-baseline gap-2 text-right">
-                  <span className="text-on-surface font-mono text-sm tabular-nums">
-                    {row.value}
-                  </span>
-                  {row.hint ? (
-                    <span className="text-on-surface-variant text-xs">{row.hint}</span>
-                  ) : null}
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent activity</CardTitle>
+        <CardDescription>A snapshot of your account&apos;s security events.</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-border divide-y">
+          {rows.map((row) => {
+            const Icon = row.icon;
+            return (
+              <div key={row.label} className="flex items-center gap-3 px-5 py-4">
+                <span className="border-border bg-background text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border">
+                  <Icon size={16} strokeWidth={1.85} />
                 </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-foreground text-sm font-medium">{row.label}</p>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    <span className="font-mono tabular-nums">{row.value}</span>
+                    {row.hint ? <span className="ml-2 text-xs">{row.hint}</span> : null}
+                  </p>
+                </div>
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </div>
+      </CardContent>
     </Card>
   );
 }

@@ -1,53 +1,53 @@
 /** Loading skeleton for the `/settings/security` route. */
 
-import { Card } from '@/app/components/ui/Card';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function SecuritySettingsLoading() {
   return (
     <div className="space-y-6" aria-label="Loading security settings">
-      <Card elevation="low" radius="md" className="space-y-5 p-6">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-32" />
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-80 max-w-full" />
-        </div>
-        <div className="space-y-4">
+        </CardHeader>
+        <CardContent className="space-y-5 p-6">
           <div className="space-y-2">
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="h-11 w-full rounded-xl" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full rounded-md" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-10 w-full rounded-md" />
             </div>
             <div className="space-y-2">
-              <Skeleton className="h-3 w-40" />
-              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-10 w-full rounded-md" />
             </div>
           </div>
           <div className="flex justify-end">
-            <Skeleton className="h-9 w-40 rounded-lg" />
+            <Skeleton className="h-10 w-40 rounded-md" />
           </div>
-        </div>
+        </CardContent>
       </Card>
 
-      <Card radius="md" className="space-y-5 p-6">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-40" />
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-36" />
           <Skeleton className="h-4 w-72 max-w-full" />
-        </div>
-        <ul className="divide-outline-variant/45 border-outline-variant/45 bg-surface-container-low divide-y rounded-xl border">
+        </CardHeader>
+        <CardContent className="divide-border divide-y p-0">
           {Array.from({ length: 3 }).map((_, index) => (
-            <li key={index} className="flex items-center gap-4 px-5 py-4">
-              <Skeleton className="h-9 w-9 rounded-lg" />
-              <div className="flex flex-1 items-center justify-between gap-4">
+            <div key={index} className="flex items-center gap-3 px-5 py-4">
+              <Skeleton className="size-9 rounded-lg" />
+              <div className="space-y-2">
                 <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-48" />
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </CardContent>
       </Card>
     </div>
   );

@@ -36,10 +36,10 @@ export function DeleteAccountSection({ disabled = false }: { disabled?: boolean 
 
   return (
     <>
-      <div className="border-outline-variant/45 bg-surface-container-low flex items-center justify-between gap-4 rounded-xl border p-5 sm:p-6">
+      <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-on-surface text-base font-bold">Delete account</h2>
-          <p className="text-on-surface-variant mt-1 text-sm">
+          <h2 className="text-foreground text-sm font-medium">Delete account</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
             Permanently remove your account, profile, and any shows you own. This cannot be undone.
           </p>
         </div>

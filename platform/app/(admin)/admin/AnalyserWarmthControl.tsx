@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
-import { Gauge } from 'lucide-react';
+import { Gauge, Loader2 } from 'lucide-react';
 import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { toast } from '@/app/components/ui/toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import type { AnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { cn } from '@/lib/utils';
 
@@ -105,50 +106,54 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   }, [active, canManage]);
 
   return (
-    <Card
-      radius="md"
-      className={cn(
-        'px-4 py-3',
-        active &&
-          'border-[color-mix(in_srgb,var(--color-status-success)_36%,var(--color-border-default))]',
-      )}
-    >
+    <Card className={cn('gap-0 p-4', active && 'ring-green-500/30')}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <span
             className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border',
+              'flex size-8 shrink-0 items-center justify-center rounded-md border',
               active
-                ? 'border-[color-mix(in_srgb,var(--color-status-success)_34%,var(--color-border-default))] bg-[color-mix(in_srgb,var(--color-status-success)_14%,transparent)] text-[color:var(--color-status-success)]'
-                : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]',
+                ? 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-300'
+                : 'border-border bg-muted text-muted-foreground',
             )}
           >
             <Gauge aria-hidden className="h-4 w-4" />
           </span>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-on-surface text-sm font-semibold">Analyser warm-up</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-medium">Analyser warm-up</h2>
+              <Badge
+                className={cn(
+                  active
+                    ? 'bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300'
+                    : 'bg-secondary text-secondary-foreground',
+                )}
+              >
+                {active ? 'Live' : 'Idle'}
+              </Badge>
               <InfoTooltip text="Keeps the analyser container ready for demos or rapid testing. It turns off automatically after 30 minutes." />
             </div>
-            <p className="text-on-surface-variant mt-0.5 text-xs">{statusCopy(state, now)}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+              {statusCopy(state, now)}
+            </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0">
           <span id={buttonDescriptionId} className="sr-only">
             Keep the analyser warm for 30 minutes. Click again to refresh the timer.
           </span>
           <Button
             type="button"
-            variant={active ? 'secondary' : 'accent'}
+            variant={active ? 'secondary' : 'default'}
             size="sm"
-            className="cursor-pointer"
+            className="w-full cursor-pointer sm:w-auto"
             disabled={!canManage || isPending}
-            loading={isPending}
             aria-describedby={buttonDescriptionId}
             onClick={keepWarm}
           >
+            {isPending ? <Loader2 aria-hidden className="animate-spin" /> : <Gauge aria-hidden />}
             Keep warm 30 min
           </Button>
         </div>

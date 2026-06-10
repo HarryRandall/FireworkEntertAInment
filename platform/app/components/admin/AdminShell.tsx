@@ -1,49 +1,74 @@
 'use client';
 
 /**
- * AdminShell - top-level chrome (sidebar + mobile sheet) for the
- * `/admin` route group. Mirrors the authenticated app chrome but exposes admin-only
- * destinations and is gated upstream by RBAC checks in server
- * components / middleware.
+ * AdminShell - admin route chrome built on the shared shadcn sidebar primitive.
+ * Admin destinations stay RBAC-gated upstream by server components and middleware.
  */
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import {
   ArrowLeft,
+  ChevronRight,
+  CircleUser,
+  CreditCard,
   Database,
+  EllipsisVertical,
   FileInput,
   LayoutDashboard,
-  Menu,
+  LogOut,
+  MessageSquareDot,
   MessageSquareText,
-  PanelLeftClose,
-  PanelLeftOpen,
   Rocket,
-  Settings,
   ShieldCheck,
   Sparkles,
   Store,
   Users,
-  X,
+  type LucideIcon,
 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { createClient } from '@/utils/supabase/client';
+import { cn } from '@/lib/utils';
 import type { CurrentProfile } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
-const ADMIN_LINKS = [
+type AdminNavLink = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
@@ -55,12 +80,261 @@ const ADMIN_LINKS = [
   { href: '/admin/prompts', label: 'Prompts', icon: MessageSquareText },
 ];
 
-const navBase =
-  "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']";
-const navActive =
-  'bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]';
-const navInactive =
-  'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]';
+type ProfileSummary = {
+  displayName: string;
+  secondaryLine: string;
+  initials: string;
+};
+
+type Breadcrumb = {
+  label: string;
+  href?: string;
+};
+
+function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    !event.defaultPrevented &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey &&
+    event.button === 0
+  );
+}
+
+function isActivePath(pathname: string | null, href: string) {
+  return pathname === href || (href !== '/admin' && Boolean(pathname?.startsWith(`${href}/`)));
+}
+
+function getAdminBreadcrumbs(pathname: string | null): Breadcrumb[] {
+  const match = ADMIN_LINKS.find((link) => isActivePath(pathname, link.href));
+  return [{ label: 'Admin', href: '/admin' }, { label: match?.label ?? 'Overview' }];
+}
+
+function SidebarBrand() {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild size="lg" tooltip="ShowCrafter Admin">
+          <Link
+            href="/admin"
+            prefetch
+            onClick={() => {
+              if (isMobile) setOpenMobile(false);
+            }}
+          >
+            <span className="brand-logo-mark flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
+              <Sparkles size={14} strokeWidth={2.2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold tracking-tight">ShowCrafter</span>
+              <span className="text-muted-foreground block truncate text-[10px] font-medium tracking-wide uppercase">
+                Admin
+              </span>
+            </span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+function SidebarNavItem({
+  link,
+  active,
+  onNavigate,
+}: {
+  link: AdminNavLink;
+  active: boolean;
+  onNavigate: (href: string) => void;
+}) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const Icon = link.icon;
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={active} tooltip={link.label}>
+        <Link
+          href={link.href}
+          prefetch
+          onClick={(event) => {
+            if (isPlainLeftClick(event)) {
+              onNavigate(link.href);
+              if (isMobile) setOpenMobile(false);
+            }
+          }}
+        >
+          <Icon size={16} strokeWidth={2} />
+          <span>{link.label}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function BackToAppItem({ onNavigate }: { onNavigate: (href: string) => void }) {
+  return (
+    <SidebarNavItem
+      link={{ href: '/dashboard', label: 'Back to app', icon: ArrowLeft }}
+      active={false}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+function ProfileMenuButton({
+  profile,
+  onSignOut,
+}: {
+  profile: ProfileSummary;
+  onSignOut: () => Promise<void>;
+}) {
+  const { isMobile } = useSidebar();
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Avatar>
+                <AvatarFallback>{profile.initials}</AvatarFallback>
+              </Avatar>
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{profile.displayName}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {profile.secondaryLine}
+                </span>
+              </div>
+              <EllipsisVertical className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            side={isMobile ? 'bottom' : 'right'}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar>
+                  <AvatarFallback>{profile.initials}</AvatarFallback>
+                </Avatar>
+                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{profile.displayName}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {profile.secondaryLine}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/profile" prefetch>
+                  <CircleUser />
+                  Account
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/billing" prefetch>
+                  <CreditCard />
+                  Billing
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/notifications" prefetch>
+                  <MessageSquareDot />
+                  Notifications
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                void onSignOut();
+              }}
+            >
+              <LogOut />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+function AdminSidebarFooter({
+  profile,
+  impersonation,
+  onSignOut,
+}: {
+  profile: ProfileSummary;
+  impersonation?: ActiveImpersonation | null;
+  onSignOut: () => Promise<void>;
+}) {
+  const { isMobile, state } = useSidebar();
+  const collapsed = state === 'collapsed' && !isMobile;
+
+  return (
+    <SidebarFooter>
+      {impersonation ? (
+        <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
+      ) : null}
+      <ProfileMenuButton profile={profile} onSignOut={onSignOut} />
+    </SidebarFooter>
+  );
+}
+
+function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
+  return (
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
+      <SidebarTrigger className="-ml-1" />
+      <Separator
+        orientation="vertical"
+        className="mx-1 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
+      />
+      <nav
+        aria-label="Breadcrumb"
+        className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm"
+      >
+        {breadcrumbs.map((crumb, index) => {
+          const isLast = index === breadcrumbs.length - 1;
+          const content =
+            crumb.href && !isLast ? (
+              <Link
+                href={crumb.href}
+                prefetch
+                className="hover:text-foreground truncate transition-colors"
+              >
+                {crumb.label}
+              </Link>
+            ) : (
+              <span className={cn('truncate', isLast && 'text-foreground font-medium')}>
+                {crumb.label}
+              </span>
+            );
+
+          return (
+            <span key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-1">
+              {content}
+              {!isLast ? (
+                <ChevronRight size={14} className="text-muted-foreground shrink-0" />
+              ) : null}
+            </span>
+          );
+        })}
+      </nav>
+    </header>
+  );
+}
 
 export function AdminShell({
   children,
@@ -75,309 +349,97 @@ export function AdminShell({
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
 }) {
+  const router = useRouter();
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const { sidebarCollapsed, sidebarTransitionReady, toggleSidebar } = useSidebarPreference({
-    initialCollapsed: initialSidebarCollapsed,
-    hasInitialCookie: hasInitialSidebarCollapsedCookie,
-  });
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const effectivePath = pendingHref ?? pathname;
+  const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
+    useSidebarPreference({
+      initialCollapsed: initialSidebarCollapsed,
+      hasInitialCookie: hasInitialSidebarCollapsedCookie,
+    });
+  const breadcrumbs = getAdminBreadcrumbs(effectivePath);
   const displayName = profile.fullName || profile.email || 'Admin';
-  const secondaryLine = profile.fullName && profile.email ? profile.email : 'Platform admin';
-  const profileHref = '/settings/profile';
-  const initials =
-    displayName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join('') || 'A';
-
-  const closeDrawer = () => setDrawerOpen(false);
+  const profileSummary: ProfileSummary = {
+    displayName,
+    secondaryLine: profile.fullName && profile.email ? profile.email : 'Platform admin',
+    initials:
+      displayName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join('') || 'A',
+  };
 
   useEffect(() => {
-    closeDrawer();
+    setPendingHref(null);
   }, [pathname]);
 
-  const renderSidebarTooltip = (
-    content: ReactNode,
-    label: string,
-    collapsed: boolean,
-    key?: string,
-  ) =>
-    collapsed ? (
-      <Tooltip key={key}>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent
-          side="right"
-          sideOffset={8}
-          className="bg-[color:var(--color-bg-inverted)] text-[color:var(--color-content-inverted)]"
-        >
-          {label}
-        </TooltipContent>
-      </Tooltip>
-    ) : (
-      content
-    );
-
-  const collapsedNavClasses =
-    'h-8 w-8 min-w-8 self-center justify-center px-0 pl-0 before:left-0 before:top-1.5 before:h-5';
-
-  const renderBrand = (collapsed = false) => {
-    if (collapsed) {
-      return (
-        <button
-          type="button"
-          aria-label="Expand sidebar"
-          aria-pressed={sidebarCollapsed}
-          onClick={toggleSidebar}
-          className="group flex h-9 w-9 min-w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
-        >
-          <span className="brand-logo-mark relative h-8 w-8 overflow-hidden rounded-lg">
-            <Sparkles
-              className="transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
-              size={15}
-              strokeWidth={2.2}
-            />
-            <PanelLeftOpen
-              className="absolute opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-              size={16}
-              strokeWidth={2}
-            />
-          </span>
-        </button>
-      );
-    }
-
-    const brand = (
-      <Link
-        href="/admin"
-        prefetch
-        className="flex items-center gap-2 px-1.5 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
-      >
-        <span className="brand-logo-mark h-7 w-7 rounded-md">
-          <Sparkles size={14} strokeWidth={2.2} />
-        </span>
-        <span className="flex flex-col leading-tight">
-          <span>ShowCrafter</span>
-          <span className="text-[10px] font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase">
-            Admin
-          </span>
-        </span>
-      </Link>
-    );
-
-    return brand;
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
   };
-
-  const renderNavLinks = (onClick?: () => void, collapsed = sidebarCollapsed) =>
-    ADMIN_LINKS.map((link) => {
-      const Icon = link.icon;
-      const active =
-        pathname === link.href || (link.href !== '/admin' && pathname?.startsWith(link.href));
-      const item = (
-        <Link
-          key={link.href}
-          href={link.href}
-          prefetch
-          onClick={onClick}
-          aria-label={collapsed ? link.label : undefined}
-          className={cn(
-            navBase,
-            active ? navActive : navInactive,
-            collapsed && collapsedNavClasses,
-          )}
-        >
-          <Icon className="shrink-0" size={16} strokeWidth={2} />
-          <span className={cn('truncate', collapsed && 'sr-only')}>{link.label}</span>
-        </Link>
-      );
-      return renderSidebarTooltip(item, link.label, collapsed, link.href);
-    });
-
-  const renderProfileCard = (collapsed = false) => {
-    const profileCard = (
-      <Link
-        href={profileHref}
-        prefetch
-        onClick={closeDrawer}
-        aria-label={collapsed ? 'Profile settings' : undefined}
-        className={cn(
-          'group flex items-center rounded-lg transition-colors hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
-          collapsed
-            ? 'h-8 w-8 min-w-8 justify-center self-center bg-transparent p-0'
-            : 'gap-2.5 border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-2',
-        )}
-      >
-        <span
-          className={cn(
-            'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-xs font-medium text-[color:var(--color-content-default)]',
-            collapsed && 'h-8 w-8 rounded-lg',
-          )}
-        >
-          <span
-            className={cn(
-              'transition-opacity',
-              collapsed && 'group-hover:opacity-0 group-focus-visible:opacity-0',
-            )}
-          >
-            {initials}
-          </span>
-          <Settings
-            className={cn(
-              'absolute opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
-              !collapsed && 'hidden',
-            )}
-            size={16}
-          />
-        </span>
-        <span className={cn('min-w-0 flex-1', collapsed && 'sr-only')}>
-          <span className="block truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            {displayName}
-          </span>
-          <span className="block truncate text-xs text-[color:var(--color-content-subtle)]">
-            {secondaryLine}
-          </span>
-        </span>
-        <Settings
-          className={cn('shrink-0 text-[color:var(--color-content-subtle)]', collapsed && 'hidden')}
-          size={14}
-        />
-      </Link>
-    );
-
-    return renderSidebarTooltip(profileCard, 'Profile settings', collapsed);
-  };
-
-  const sidebarToggleLabel = 'Collapse sidebar';
-
-  const backToApp = (onClick?: () => void, collapsed = sidebarCollapsed) => {
-    const link = (
-      <Link
-        href="/dashboard"
-        prefetch
-        onClick={onClick}
-        aria-label={collapsed ? 'Back to app' : undefined}
-        className={cn(
-          'flex h-8 items-center gap-2 rounded-lg px-2 text-sm text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
-          collapsed && 'h-8 w-8 min-w-8 justify-center self-center px-0',
-        )}
-      >
-        <ArrowLeft className="shrink-0" size={14} />
-        <span className={cn(collapsed && 'sr-only')}>Back to app</span>
-      </Link>
-    );
-
-    return renderSidebarTooltip(link, 'Back to app', collapsed);
-  };
-
-  const renderSidebarFooter = (collapsed = sidebarCollapsed) => (
-    <div className={cn('mt-auto flex flex-col gap-2 pt-3', collapsed && 'items-center')}>
-      {impersonation ? (
-        <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
-      ) : null}
-      {renderProfileCard(collapsed)}
-    </div>
-  );
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)] lg:p-2">
+    <SidebarProvider
+      defaultOpen={!initialSidebarCollapsed}
+      open={!sidebarCollapsed}
+      onOpenChange={(open) => setSidebarCollapsedPreference(!open)}
+      className={cn(
+        'bg-sidebar text-sidebar-foreground h-svh overflow-hidden font-sans',
+        !sidebarTransitionReady && '[&_*]:!transition-none',
+      )}
+      style={{ '--sidebar-width': 'calc(var(--spacing) * 60)' } as CSSProperties}
+    >
       <ThemePreferenceSync themePreference={profile.themePreference} />
-      <div
-        className={cn(
-          'lg:grid lg:gap-2',
-          sidebarTransitionReady &&
-            'lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out',
-          sidebarCollapsed
-            ? 'lg:grid-cols-[40px_minmax(0,1fr)]'
-            : 'lg:grid-cols-[216px_minmax(0,1fr)]',
-        )}
-      >
-        <aside
-          className={cn(
-            'hidden lg:sticky lg:top-2 lg:flex lg:h-[calc(100vh-1rem)] lg:flex-col lg:gap-5 lg:p-2',
-          )}
-        >
-          <div
-            className={cn(
-              'pt-2',
-              sidebarCollapsed ? 'flex justify-center' : 'flex items-center justify-between gap-1',
-            )}
-          >
-            {renderBrand(sidebarCollapsed)}
-            {!sidebarCollapsed ? (
-              <button
-                type="button"
-                aria-label={sidebarToggleLabel}
-                aria-pressed={false}
-                onClick={toggleSidebar}
-                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
-              >
-                <PanelLeftClose size={18} strokeWidth={2} />
-              </button>
-            ) : null}
-          </div>
-          <nav className="flex w-full flex-col gap-0.5">{renderNavLinks()}</nav>
-          <div
-            className={cn(
-              'border-t border-[color:var(--color-border-subtle)] pt-3',
-              sidebarCollapsed && 'flex justify-center',
-            )}
-          >
-            {backToApp()}
-          </div>
-          {renderSidebarFooter()}
-        </aside>
+      <Sidebar variant="inset" collapsible="icon">
+        <SidebarHeader>
+          <SidebarBrand />
+        </SidebarHeader>
 
-        <div className="flex min-w-0 flex-col bg-[color:var(--color-bg-default)] lg:h-[calc(100vh-1rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:border-[color:var(--color-border-subtle)]">
-          <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-4 py-3 lg:hidden">
-            {renderBrand(false)}
-            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Open admin navigation"
-                  className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)]"
-                >
-                  <Menu size={18} />
-                </button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                showCloseButton={false}
-                className="!max-w-[216px] border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 data-[side=left]:!w-[min(86vw,216px)] lg:hidden"
-              >
-                <SheetTitle className="sr-only">Admin navigation</SheetTitle>
-                <SheetDescription className="sr-only">
-                  Browse admin tools, then return to the main app.
-                </SheetDescription>
-                <div className="mb-6 flex items-center justify-between">
-                  {renderBrand(false)}
-                  <SheetClose asChild>
-                    <button
-                      type="button"
-                      aria-label="Close admin navigation"
-                      className="flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)]"
-                    >
-                      <X size={18} />
-                    </button>
-                  </SheetClose>
-                </div>
-                <ScrollArea className="min-h-0 flex-1">
-                  <nav className="flex flex-col gap-0.5">{renderNavLinks(closeDrawer, false)}</nav>
-                  <div className="mt-4 border-t border-[color:var(--color-border-subtle)] pt-3">
-                    {backToApp(closeDrawer, false)}
-                  </div>
-                </ScrollArea>
-                {renderSidebarFooter(false)}
-              </SheetContent>
-            </Sheet>
-          </header>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-1">
+                {ADMIN_LINKS.map((link) => (
+                  <SidebarNavItem
+                    key={link.href}
+                    link={link}
+                    active={isActivePath(effectivePath, link.href)}
+                    onNavigate={setPendingHref}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
-            {children}
-          </main>
-        </div>
-      </div>
-    </div>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-1">
+                <BackToAppItem onNavigate={setPendingHref} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <AdminSidebarFooter
+          profile={profileSummary}
+          impersonation={impersonation}
+          onSignOut={handleSignOut}
+        />
+      </Sidebar>
+
+      <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
+        <ShellTopBar breadcrumbs={breadcrumbs} />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

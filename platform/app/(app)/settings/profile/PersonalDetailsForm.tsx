@@ -9,6 +9,8 @@ import { updateProfileAction } from '@/app/actions/platform-admin';
 import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
 import { Input } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { ThemePreference } from '@/lib/admin.types';
 
@@ -83,90 +85,113 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
   };
 
   return (
-    <div className="border-outline-variant/45 bg-surface-container-low space-y-6 rounded-xl border p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <Field>
-        <FieldLabel htmlFor="fullName">Full name</FieldLabel>
-        <Input
-          id="fullName"
-          name="fullName"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          onBlur={commitFullName}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.currentTarget.blur();
-            }
-          }}
-          iconLeft={<User size={17} />}
-          placeholder="Your full name"
-        />
-      </Field>
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile</CardTitle>
+        <CardDescription>Update your name, contact details, and interface theme.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 p-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+            <Input
+              id="fullName"
+              name="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              onBlur={commitFullName}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              iconLeft={<User size={17} />}
+              placeholder="Your full name"
+            />
+          </Field>
 
-      <Field>
-        <FieldLabel htmlFor="phone">Phone</FieldLabel>
-        <Input
-          id="phone"
-          name="phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          onBlur={commitPhone}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.currentTarget.blur();
-            }
-          }}
-          iconLeft={<Phone size={17} />}
-          placeholder="+61 ..."
-        />
-      </Field>
+          <Field>
+            <FieldLabel htmlFor="phone">Phone</FieldLabel>
+            <Input
+              id="phone"
+              name="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onBlur={commitPhone}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              iconLeft={<Phone size={17} />}
+              placeholder="+61 ..."
+            />
+          </Field>
 
-      <Field>
-        <FieldLabel>Email</FieldLabel>
-        <div className="border-outline/55 bg-surface text-on-surface-variant flex h-11 items-center gap-3 rounded-xl border px-4 text-sm">
-          <Mail size={17} className="text-on-surface-variant" />
-          <span className="truncate">{email || 'No email'}</span>
-          <LockKeyhole size={14} className="text-on-surface-variant ml-auto" />
+          <Field className="sm:col-span-2">
+            <FieldLabel>Email</FieldLabel>
+            <div className="border-input bg-background text-muted-foreground flex h-10 items-center gap-3 rounded-md border px-3 text-sm shadow-xs">
+              <Mail size={17} />
+              <span className="truncate">{email || 'No email'}</span>
+              <LockKeyhole size={14} className="ml-auto" />
+            </div>
+            <FieldHint>Email changes are handled through account security.</FieldHint>
+          </Field>
         </div>
-        <FieldHint className="text-xs">Email changes go through the security tab.</FieldHint>
-      </Field>
 
-      <fieldset className="space-y-3">
-        <legend className="text-on-surface-variant text-[11px] font-bold tracking-[0.18em] uppercase">
-          Interface theme
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {THEME_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const active = mounted ? selectedTheme === option.value : initialTheme === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => chooseTheme(option.value)}
-                className={cn(
-                  'focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none',
-                  active
-                    ? 'border-primary/50 bg-surface-container-high text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_18%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_68%,transparent)]'
-                    : 'border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low',
-                )}
-              >
-                <span className="flex w-full items-center justify-between gap-3">
-                  <Icon size={18} className={active ? 'text-on-surface' : ''} />
-                  {active ? <Check size={16} className="text-primary" /> : null}
-                </span>
-                <span>
-                  <span className="text-on-surface block text-sm font-bold">{option.label}</span>
-                  <span className="mt-1 block text-xs leading-relaxed">{option.description}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-    </div>
+        <Separator />
+
+        <fieldset className="space-y-3">
+          <legend className="text-foreground text-sm font-medium">Interface theme</legend>
+          <div className="grid gap-3 md:grid-cols-3">
+            {THEME_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const active = mounted
+                ? selectedTheme === option.value
+                : initialTheme === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => chooseTheme(option.value)}
+                  className={cn(
+                    'focus-visible:ring-ring/50 flex min-h-28 flex-col items-start gap-3 rounded-xl border p-4 text-left shadow-xs transition-all focus:outline-none focus-visible:ring-3',
+                    active
+                      ? 'border-primary bg-primary/10 text-foreground ring-primary/20 ring-1'
+                      : 'border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                  )}
+                >
+                  <span className="flex w-full items-center justify-between gap-3">
+                    <span
+                      className={cn(
+                        'flex size-8 items-center justify-center rounded-lg border',
+                        active
+                          ? 'border-primary/25 bg-background text-primary'
+                          : 'border-border bg-muted/40',
+                      )}
+                    >
+                      <Icon size={17} />
+                    </span>
+                    {active ? <Check size={16} className="text-primary" /> : null}
+                  </span>
+                  <span>
+                    <span className="text-foreground block text-sm font-medium">
+                      {option.label}
+                    </span>
+                    <span className="text-muted-foreground mt-1 block text-sm leading-relaxed">
+                      {option.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      </CardContent>
+    </Card>
   );
 }

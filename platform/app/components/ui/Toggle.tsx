@@ -42,23 +42,15 @@ export function Toggle({
     <label
       htmlFor={id}
       className={cn(
-        'group flex cursor-pointer items-start gap-4 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 transition-colors hover:bg-[color:var(--color-bg-muted)]',
+        'group border-border bg-card text-card-foreground hover:bg-muted/60 flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >
-      {icon ? (
-        <span className="mt-0.5 shrink-0 text-[color:var(--color-content-subtle)]">{icon}</span>
-      ) : null}
+      {icon ? <span className="text-muted-foreground mt-0.5 shrink-0">{icon}</span> : null}
       <span className="min-w-0 flex-1">
-        {label ? (
-          <span className="block text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            {label}
-          </span>
-        ) : null}
+        {label ? <span className="text-foreground block text-sm font-medium">{label}</span> : null}
         {description ? (
-          <span className="mt-1 block text-sm text-[color:var(--color-content-subtle)]">
-            {description}
-          </span>
+          <span className="text-muted-foreground mt-1 block text-sm">{description}</span>
         ) : null}
       </span>
       <span className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center justify-center">
@@ -68,7 +60,7 @@ export function Toggle({
           checked={value}
           onCheckedChange={handle}
           disabled={disabled}
-          className="h-6 w-11 data-checked:bg-[color:var(--color-accent)] data-unchecked:bg-[color:var(--color-border-default)] [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:bg-white [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
+          className="data-checked:bg-primary data-unchecked:bg-input [&_[data-slot=switch-thumb]]:bg-background h-6 w-11 [&_[data-slot=switch-thumb]]:size-5 [&_[data-slot=switch-thumb]]:data-checked:translate-x-5"
         />
       </span>
     </label>

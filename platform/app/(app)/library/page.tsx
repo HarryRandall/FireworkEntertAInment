@@ -56,7 +56,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-8">
       <AppPageHeader
-        title="Show library"
+        title="Explore"
         description="Browse ready-made pyromusical templates, preview the fixed-camera replay, then clone one into your dashboard."
       />
 

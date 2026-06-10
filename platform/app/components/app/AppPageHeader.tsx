@@ -31,36 +31,29 @@ export function AppPageHeader({
   return (
     <header
       className={cn(
-        '-mx-6 -mt-6 mb-6 border-b border-[color:var(--color-border-subtle)] px-6 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10',
+        'border-border -mx-6 -mt-6 mb-6 border-b px-6 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10',
         className,
       )}
     >
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <nav
           aria-label="Breadcrumb"
-          className="mb-2 flex items-center gap-1 text-sm text-[color:var(--color-content-subtle)]"
+          className="text-muted-foreground mb-2 flex items-center gap-1 text-sm"
         >
           {breadcrumbs.map((crumb, idx) => {
             const isLast = idx === breadcrumbs.length - 1;
             const content =
               crumb.href && !isLast ? (
-                <Link
-                  href={crumb.href}
-                  className="transition-colors hover:text-[color:var(--color-content-emphasis)]"
-                >
+                <Link href={crumb.href} className="hover:text-foreground transition-colors">
                   {crumb.label}
                 </Link>
               ) : (
-                <span className={cn(isLast && 'text-[color:var(--color-content-emphasis)]')}>
-                  {crumb.label}
-                </span>
+                <span className={cn(isLast && 'text-foreground')}>{crumb.label}</span>
               );
             return (
               <span key={idx} className="flex items-center gap-1">
                 {content}
-                {!isLast ? (
-                  <ChevronRight size={14} className="text-[color:var(--color-content-muted)]" />
-                ) : null}
+                {!isLast ? <ChevronRight size={14} className="text-muted-foreground" /> : null}
               </span>
             );
           })}
@@ -68,12 +61,10 @@ export function AppPageHeader({
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg leading-7 font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+          <h1 className="text-foreground text-lg leading-7 font-semibold tracking-tight">
             {title}
           </h1>
-          {description ? (
-            <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">{description}</p>
-          ) : null}
+          {description ? <p className="text-muted-foreground mt-1 text-sm">{description}</p> : null}
         </div>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
       </div>

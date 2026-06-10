@@ -54,14 +54,12 @@ export function NumberInput({
   return (
     <div
       className={cn(
-        'flex h-10 items-center rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] transition-colors focus-within:border-[color:var(--color-content-emphasis)]',
+        'border-input bg-background text-foreground focus-within:border-ring focus-within:ring-ring/50 flex h-10 items-center rounded-md border shadow-xs transition-[color,box-shadow] focus-within:ring-3',
         disabled && 'opacity-60',
         className,
       )}
     >
-      {iconLeft ? (
-        <span className="pl-3 text-[color:var(--color-content-subtle)]">{iconLeft}</span>
-      ) : null}
+      {iconLeft ? <span className="text-muted-foreground pl-3">{iconLeft}</span> : null}
       <input
         type="number"
         name={name}
@@ -83,16 +81,16 @@ export function NumberInput({
         required={required}
         disabled={disabled}
         aria-label={ariaLabel}
-        className="h-full w-full [appearance:textfield] appearance-none border-0 bg-transparent px-3 text-sm font-medium text-[color:var(--color-content-emphasis)] tabular-nums shadow-none outline-none placeholder:text-[color:var(--color-content-muted)] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="text-foreground placeholder:text-muted-foreground h-full w-full [appearance:textfield] appearance-none border-0 bg-transparent px-3 text-sm font-medium tabular-nums shadow-none outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
-      <div className="flex h-full shrink-0 flex-col border-l border-[color:var(--color-border-subtle)]">
+      <div className="border-border/50 flex h-full shrink-0 flex-col border-l">
         <button
           type="button"
           tabIndex={-1}
           aria-label="Increase"
           disabled={disabled || (typeof max === 'number' && current >= max)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) + step)}
-          className="flex h-1/2 w-8 items-center justify-center text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-1/2 w-8 items-center justify-center transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus size={12} strokeWidth={2.5} />
         </button>
@@ -102,7 +100,7 @@ export function NumberInput({
           aria-label="Decrease"
           disabled={disabled || (typeof min === 'number' && current <= min)}
           onClick={() => commit((Number.isFinite(current) ? current : 0) - step)}
-          className="flex h-1/2 w-8 items-center justify-center border-t border-[color:var(--color-border-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="border-border/50 text-muted-foreground hover:bg-muted hover:text-foreground flex h-1/2 w-8 items-center justify-center border-t transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Minus size={12} strokeWidth={2.5} />
         </button>

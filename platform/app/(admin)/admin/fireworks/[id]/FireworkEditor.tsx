@@ -267,14 +267,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           <table className={tableClasses('min-w-[1180px]')}>
             <thead className={tableHeadClasses()}>
               <tr>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>#</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Variant</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Time</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Pan</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Tilt</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Calibre</th>
-                <th className={tableHeaderCellClasses('px-4 py-3')}>Notes</th>
-                <th className={tableHeaderCellClasses('px-4 py-3 text-right')}>Save</th>
+                <th className={tableHeaderCellClasses()}>#</th>
+                <th className={tableHeaderCellClasses()}>Variant</th>
+                <th className={tableHeaderCellClasses()}>Time</th>
+                <th className={tableHeaderCellClasses()}>Pan</th>
+                <th className={tableHeaderCellClasses()}>Tilt</th>
+                <th className={tableHeaderCellClasses()}>Calibre</th>
+                <th className={tableHeaderCellClasses()}>Notes</th>
+                <th className={tableHeaderCellClasses('text-right')}>Save</th>
               </tr>
             </thead>
             <tbody>
@@ -370,7 +370,7 @@ function ShotRowEditor({
 
   return (
     <tr className={tableRowClasses()}>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <Input
           aria-label="Shot index"
           className="w-20 font-mono tabular-nums"
@@ -379,7 +379,7 @@ function ShotRowEditor({
           onChange={(event) => setDraft((next) => ({ ...next, shotIndex: event.target.value }))}
         />
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <div className="min-w-72 space-y-2">
           <SelectField
             ariaLabel="Firework variant"
@@ -395,7 +395,7 @@ function ShotRowEditor({
           <FieldError>{error}</FieldError>
         </div>
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <Input
           aria-label="Time offset seconds"
           className="w-24 font-mono tabular-nums"
@@ -406,7 +406,7 @@ function ShotRowEditor({
           }
         />
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <Input
           aria-label="Pan degrees"
           className="w-20 font-mono tabular-nums"
@@ -415,7 +415,7 @@ function ShotRowEditor({
           onChange={(event) => setDraft((next) => ({ ...next, panDegrees: event.target.value }))}
         />
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <Input
           aria-label="Tilt degrees"
           className="w-20 font-mono tabular-nums"
@@ -424,7 +424,7 @@ function ShotRowEditor({
           onChange={(event) => setDraft((next) => ({ ...next, tiltDegrees: event.target.value }))}
         />
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <Input
           aria-label="Calibre"
           className="w-24"
@@ -433,7 +433,7 @@ function ShotRowEditor({
           onChange={(event) => setDraft((next) => ({ ...next, caliber: event.target.value }))}
         />
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('align-top')}>
         <div className="min-w-56">
           <Input
             aria-label="Shot notes"
@@ -442,7 +442,7 @@ function ShotRowEditor({
           />
         </div>
       </td>
-      <td className={tableCellClasses('px-4 py-3 align-top')}>
+      <td className={tableCellClasses('text-right align-top')}>
         <div className="flex justify-end gap-2">
           <Button
             size="icon"

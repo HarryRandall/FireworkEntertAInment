@@ -14,20 +14,18 @@ export function StatTile({ label, labelAddon, value, unit, className }: StatTile
   return (
     <div
       className={cn(
-        'rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3',
+        'border-border bg-card text-card-foreground rounded-lg border px-4 py-3',
         className,
       )}
     >
-      <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-[color:var(--color-content-subtle)]">
+      <div className="text-muted-foreground mb-1 flex items-center gap-1.5 text-xs font-medium">
         <span>{label}</span>
         {labelAddon}
       </div>
-      <div className="text-2xl font-semibold text-[color:var(--color-content-emphasis)] tabular-nums">
+      <div className="text-foreground text-2xl font-semibold tabular-nums">
         {value}
         {unit ? (
-          <span className="ml-1 text-sm font-normal text-[color:var(--color-content-subtle)]">
-            {unit}
-          </span>
+          <span className="text-muted-foreground ml-1 text-sm font-normal">{unit}</span>
         ) : null}
       </div>
     </div>

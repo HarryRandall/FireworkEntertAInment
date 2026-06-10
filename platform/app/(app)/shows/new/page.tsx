@@ -22,7 +22,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check, MapPin, Music4, Sparkles } from 'lucide-react';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { ChoiceChip } from '@/app/components/ui/Badge';
@@ -62,6 +62,7 @@ import { inferAudioContentType, sanitizeStorageName } from './utils';
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // === Step 0: constraints =================================================
   const [budget, setBudget] = useState(2500);
@@ -93,6 +94,7 @@ export default function NewShowPage() {
   // === Step 2: brief =======================================================
   const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
   const [description, setDescription] = useState('');
+  const promptPrefilledRef = useRef(false);
 
   // === Wizard nav ==========================================================
   const [stepIndex, setStepIndex] = useState(0);
@@ -107,6 +109,14 @@ export default function NewShowPage() {
       : `${durationPreset} minute${durationPreset === 1 ? '' : 's'}`;
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (promptPrefilledRef.current) return;
+    const prompt = searchParams.get('prompt')?.trim();
+    if (!prompt) return;
+    promptPrefilledRef.current = true;
+    setDescription(prompt.slice(0, 2000));
+  }, [searchParams]);
 
   /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {

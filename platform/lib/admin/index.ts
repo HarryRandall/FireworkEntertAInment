@@ -31,6 +31,7 @@ export {
   listAdminUsers,
   type UserActivity,
 } from './users.server';
+export { getAdminOverviewMetrics, type AdminOverviewMetrics } from './overview.server';
 export { listSuppliers } from './suppliers.server';
 export { getImportJobDetail, listImportJobs } from './imports.server';
 export { listCatalogueProducts } from './catalogue.server';

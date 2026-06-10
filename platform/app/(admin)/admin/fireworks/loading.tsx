@@ -4,8 +4,6 @@ import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
 export default function AdminFireworksLoading() {
   return (
     <AdminTableRouteSkeleton
-      title="Fireworks"
-      description="Product-level fireworks assembled from one or more reusable effects."
       searchPlaceholder="Search product, part number, effect..."
       headers={[
         'Preview',

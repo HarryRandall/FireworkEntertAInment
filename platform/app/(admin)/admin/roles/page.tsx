@@ -1,7 +1,6 @@
 /** Admin roles page for editing role-level permission defaults. */
 
 import { redirect } from 'next/navigation';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { FilterBar } from '@/app/components/ui/FilterBar';
 import { listRolePermissionMatrix } from '@/lib/admin.server';
 import type { Permission } from '@/lib/admin.types';
@@ -86,8 +85,6 @@ export default async function AdminRolesPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <AppPageHeader title="Roles" description="Edit the default permissions each role receives." />
-
       <FilterBar searchPlaceholder="Search permissions by name or area…" filters={filters} />
 
       <RolePermissionMatrix

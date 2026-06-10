@@ -31,42 +31,38 @@ type Tone =
   | 'wow';
 
 const dotClasses: Record<Tone, string> = {
-  neutral: 'bg-[color:var(--color-content-muted)]',
+  neutral: 'bg-muted-foreground',
   success: 'bg-[color:var(--color-status-success)]',
-  danger: 'bg-[color:var(--color-status-danger)]',
+  danger: 'bg-destructive',
   warning: 'bg-[color:var(--color-status-warning)]',
   info: 'bg-[color:var(--color-status-info)]',
-  accent: 'bg-[color:var(--color-accent)]',
+  accent: 'bg-primary',
   violet: 'bg-violet-500',
   sky: 'bg-sky-500',
   'amber-soft': 'bg-amber-500',
-  primary: 'bg-[color:var(--color-content-emphasis)]',
+  primary: 'bg-primary',
   live: 'bg-[color:var(--color-status-success)]',
-  wow: 'bg-[color:var(--color-accent)]',
+  wow: 'bg-primary',
 };
 
 // Coloured pill chips — Dub StatusBadge pattern: tinted subtle background,
 // saturated tone-coloured text, leading tone icon. Uses explicit color-mix so
 // the background opacity renders reliably on every theme. Applied when `solid` is true.
 const solidClasses: Record<Tone, string> = {
-  neutral:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-content-muted)_18%,transparent)] text-[color:var(--color-content-default)]',
+  neutral: 'border-transparent bg-muted text-muted-foreground',
   success:
     'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  danger:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-status-danger)_18%,transparent)] text-[color:var(--color-status-danger)]',
+  danger: 'border-transparent bg-destructive/10 text-destructive',
   warning:
     'border-transparent bg-[color-mix(in_srgb,var(--color-status-warning)_18%,transparent)] text-[color:var(--color-status-warning)]',
   info: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-info)_18%,transparent)] text-[color:var(--color-status-info)]',
-  accent:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]',
+  accent: 'border-transparent bg-accent text-accent-foreground',
   violet: 'border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300',
   sky: 'border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300',
   'amber-soft': 'border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300',
-  primary:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-content-emphasis)_18%,transparent)] text-[color:var(--color-content-emphasis)]',
+  primary: 'border-transparent bg-primary/10 text-foreground',
   live: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  wow: 'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[color:var(--color-accent-emphasis)]',
+  wow: 'border-transparent bg-accent text-accent-foreground',
 };
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -108,9 +104,7 @@ export function Badge({
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium',
-        solid
-          ? solidClasses[tone]
-          : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)]',
+        solid ? solidClasses[tone] : 'border-border bg-background text-foreground',
         className,
       )}
     >
@@ -154,11 +148,11 @@ export function ChoiceChip({
       type="button"
       aria-pressed={selected}
       className={cn(
-        'inline-flex items-center border font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
+        'focus-visible:ring-ring/50 inline-flex items-center border font-medium transition-colors focus:outline-none focus-visible:ring-3',
         chipSizeClasses[size],
         selected
-          ? 'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]'
-          : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-muted)]',
+          ? 'bg-primary text-primary-foreground border-transparent'
+          : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
         className,
       )}
       {...rest}
@@ -180,7 +174,7 @@ export function Eyebrow({
   return (
     <span
       className={cn(
-        'block text-xs font-medium tracking-wide text-[color:var(--color-content-subtle)] uppercase',
+        'text-muted-foreground block text-xs font-medium tracking-wide uppercase',
         className,
       )}
     >

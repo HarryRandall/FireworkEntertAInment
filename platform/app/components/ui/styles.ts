@@ -9,57 +9,51 @@ import { cn } from '@/lib/utils';
  */
 export const uiStyles = {
   focus: {
-    action: 'focus:outline-none focus-visible:outline-none',
+    action:
+      'focus:outline-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
     field:
-      'focus:outline-none focus-visible:outline-none focus:border-[color:var(--color-content-emphasis)]',
-    fieldGroup: 'focus-within:border-[color:var(--color-content-emphasis)]',
+      'focus:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+    fieldGroup: 'focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50',
   },
   control: {
-    base: 'h-10 w-full rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60',
+    base: 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60',
     select:
-      'h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+      'h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] disabled:cursor-not-allowed disabled:opacity-60',
     invalid:
-      'border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]',
-    icon: 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[color:var(--color-content-subtle)]',
+      'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
+    icon: 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground',
   },
   text: {
-    label: 'text-sm font-medium text-[color:var(--color-content-emphasis)]',
-    hint: 'text-sm text-[color:var(--color-content-subtle)]',
-    error: 'text-sm text-[color:var(--color-status-danger)]',
-    metadata: 'font-mono text-xs tabular-nums text-[color:var(--color-content-subtle)]',
+    label: 'text-sm font-medium text-foreground',
+    hint: 'text-sm text-muted-foreground',
+    error: 'text-sm text-destructive',
+    metadata: 'font-mono text-xs tabular-nums text-muted-foreground',
   },
   surface: {
-    panel:
-      'rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]',
-    elevated:
-      'rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] shadow-[var(--shadow-card)]',
-    popover:
-      'rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-1 shadow-[var(--shadow-modal)]',
+    panel: 'rounded-xl border border-border bg-card text-card-foreground',
+    elevated: 'rounded-xl border border-border bg-card text-card-foreground shadow-xs',
+    popover: 'rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md',
     empty:
-      'rounded-xl border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-muted)] p-8 text-center text-sm text-[color:var(--color-content-subtle)]',
+      'rounded-xl border border-dashed border-border bg-muted/50 p-8 text-center text-sm text-muted-foreground',
   },
   layer: {
     popover: 'z-50',
   },
   action: {
     iconButton:
-      'inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-default)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-none',
+      'inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-xs transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
     navBase:
-      "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-none before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']",
-    navActive:
-      'bg-[color:var(--color-accent-subtle)] text-[color:var(--color-accent-emphasis)] before:bg-[color:var(--color-accent)]',
-    navInactive:
-      'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+      "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']",
+    navActive: 'bg-accent text-accent-foreground before:bg-primary',
+    navInactive: 'text-muted-foreground hover:bg-muted hover:text-foreground',
   },
   table: {
-    shell:
-      'overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)]',
-    caption:
-      'border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-sm font-medium text-[color:var(--color-content-default)]',
-    head: 'sticky top-0 z-10 bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]',
+    shell: 'overflow-hidden rounded-xl border border-border bg-card text-card-foreground',
+    caption: 'border-b border-border px-4 py-3 text-sm font-medium text-foreground',
+    head: 'sticky top-0 z-10 bg-muted text-muted-foreground',
     headerCell: 'px-4 py-2.5 text-xs font-medium uppercase tracking-wide',
-    row: 'border-t border-[color:var(--color-border-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)]',
-    cell: 'px-4 py-3 align-middle text-sm text-[color:var(--color-content-default)]',
+    row: 'border-t border-border/50 transition-colors hover:bg-muted/60',
+    cell: 'px-4 py-3 align-middle text-sm text-foreground',
   },
 } as const;
 

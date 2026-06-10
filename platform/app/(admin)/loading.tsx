@@ -31,8 +31,6 @@ export default function AdminLoading() {
   if (/^\/admin\/users\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        title="Users"
-        description="Search, filter, and manage platform users."
         searchPlaceholder="Search name, email, phone..."
         headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
         rows={8}
@@ -52,8 +50,6 @@ export default function AdminLoading() {
   if (/^\/admin\/suppliers\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        title="Suppliers"
-        description="Manage supplier records, contacts, and status."
         searchPlaceholder="Search name, email, phone, website..."
         headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
         rowSize="relaxed"
@@ -67,8 +63,6 @@ export default function AdminLoading() {
   if (/^\/admin\/catalogue\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        title="Catalogue"
-        description="Browse and edit catalogue products."
         searchPlaceholder="Search part #, name, manufacturer..."
         headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
         tableClassName="min-w-[960px]"
@@ -87,8 +81,6 @@ export default function AdminLoading() {
   if (/^\/admin\/fireworks\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        title="Fireworks"
-        description="Product-level fireworks assembled from one or more reusable effects."
         searchPlaceholder="Search product, part number, effect..."
         headers={[
           'Preview',
@@ -115,8 +107,6 @@ export default function AdminLoading() {
   if (/^\/admin\/effects\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        title="Effects"
-        description="Colourless base patterns used by firework variants."
         searchPlaceholder="Search name, slug, description..."
         headers={[
           'Preview',

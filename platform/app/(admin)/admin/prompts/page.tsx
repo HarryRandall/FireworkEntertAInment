@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 import { Boxes, RotateCcw, Save, Sparkles, WandSparkles } from 'lucide-react';
 import { updatePromptConfigAction } from '@/app/actions/admin-prompts';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -43,10 +42,10 @@ const PROMPT_TABS: Array<{
 ];
 
 const STATIC_SECONDARY_BUTTON_CLASS =
-  '!transition-none hover:!border-[color:var(--color-border-subtle)] hover:!bg-[color:var(--color-bg-default)] hover:!text-[color:var(--color-content-emphasis)] hover:!ring-0 focus:!border-[color:var(--color-border-subtle)] focus:!bg-[color:var(--color-bg-default)] focus:!text-[color:var(--color-content-emphasis)] focus:!ring-0 active:!border-[color:var(--color-border-subtle)] active:!bg-[color:var(--color-bg-default)] active:!text-[color:var(--color-content-emphasis)] active:!ring-0';
+  '!transition-none hover:!border-border hover:!bg-background hover:!text-foreground hover:!ring-0 focus:!border-border focus:!bg-background focus:!text-foreground focus:!ring-0 active:!border-border active:!bg-background active:!text-foreground active:!ring-0';
 
 const STATIC_PRIMARY_BUTTON_CLASS =
-  '!transition-none hover:!border-[color:var(--color-content-emphasis)] hover:!bg-[color:var(--color-content-emphasis)] hover:!text-[color:var(--color-content-inverted)] hover:!ring-0 focus:!border-[color:var(--color-content-emphasis)] focus:!bg-[color:var(--color-content-emphasis)] focus:!text-[color:var(--color-content-inverted)] focus:!ring-0 active:!border-[color:var(--color-content-emphasis)] active:!bg-[color:var(--color-content-emphasis)] active:!text-[color:var(--color-content-inverted)] active:!ring-0';
+  '!transition-none hover:!border-primary hover:!bg-primary hover:!text-primary-foreground hover:!ring-0 focus:!border-primary focus:!bg-primary focus:!text-primary-foreground focus:!ring-0 active:!border-primary active:!bg-primary active:!text-primary-foreground active:!ring-0';
 
 const PROMPT_TEXTAREA_CLASS = 'min-h-0 flex-1 resize-none font-mono text-xs leading-relaxed';
 
@@ -67,7 +66,6 @@ export default async function AdminPromptsPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5 pb-8">
-      <AppPageHeader title="Prompts" description="Edit generation mode and prompt text." />
       <Suspense key={activeKey} fallback={<PromptContentSkeleton activeKey={activeKey} />}>
         <AdminPromptsContent activeKey={activeKey} />
       </Suspense>
@@ -121,7 +119,7 @@ function PromptTabs({ activeKey, configs }: { activeKey: PromptTabKey; configs: 
   return (
     <nav
       aria-label="Prompt settings"
-      className="inline-flex flex-wrap gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1"
+      className="border-border bg-card inline-flex flex-wrap gap-1 rounded-lg border p-1"
     >
       {PROMPT_TABS.map((tab) => {
         const active = tab.key === activeKey;
@@ -136,10 +134,10 @@ function PromptTabs({ activeKey, configs }: { activeKey: PromptTabKey; configs: 
             href={`/admin/prompts?tab=${tab.key}`}
             prefetch
             className={cn(
-              'inline-flex min-h-10 min-w-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
+              'focus-visible:ring-ring/50 inline-flex min-h-10 min-w-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-3',
               active
-                ? 'bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-[var(--shadow-card)]'
-                : 'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)]',
+                ? 'bg-primary text-primary-foreground shadow-xs'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
             aria-current={active ? 'page' : undefined}
           >
@@ -165,7 +163,7 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Prompt settings"
-          className="inline-flex flex-wrap gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1"
+          className="border-border bg-card inline-flex flex-wrap gap-1 rounded-lg border p-1"
         >
           {PROMPT_TABS.map((tab) => {
             const active = tab.key === activeKey;
@@ -176,10 +174,10 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
                 href={`/admin/prompts?tab=${tab.key}`}
                 prefetch
                 className={cn(
-                  'inline-flex min-h-10 min-w-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
+                  'focus-visible:ring-ring/50 inline-flex min-h-10 min-w-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-3',
                   active
-                    ? 'bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-[var(--shadow-card)]'
-                    : 'text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)]',
+                    ? 'bg-primary text-primary-foreground shadow-xs'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
               >
@@ -191,7 +189,7 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
 
         <div
           aria-hidden
-          className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-1"
+          className="border-border bg-card inline-flex items-center gap-1 rounded-lg border p-1"
         >
           <Skeleton className="h-9 w-24 rounded-md" />
           <Skeleton className="h-9 w-24 rounded-md" />
@@ -200,7 +198,7 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
 
       <Card
         radius="md"
-        className="flex min-h-0 flex-1 p-4 pb-5 shadow-[var(--shadow-card)]"
+        className="flex min-h-0 flex-1 p-4 pb-5 shadow-xs"
         aria-label="Loading prompt editor"
       >
         <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -208,9 +206,7 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
             <div className="flex min-w-0 items-start gap-3">
               <Skeleton className="h-11 w-11 shrink-0 rounded-md" />
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-[color:var(--color-content-emphasis)]">
-                  {heading}
-                </h2>
+                <h2 className="text-foreground text-lg font-semibold">{heading}</h2>
                 <Skeleton className="mt-2 h-4 w-[min(36rem,70vw)] rounded-md" />
                 <Skeleton className="mt-2 h-4 w-[min(28rem,62vw)] rounded-md" />
               </div>
@@ -243,7 +239,7 @@ function ProductContextEditor({
   const textareaKey = `${prompt.key}:productContextText:${prompt.updatedAt}`;
 
   return (
-    <Card radius="md" className="flex min-h-0 flex-1 p-4 pb-5 shadow-[var(--shadow-card)]">
+    <Card radius="md" className="flex min-h-0 flex-1 p-4 pb-5 shadow-xs">
       <form action={updatePromptConfigAction} className="flex min-h-0 flex-1 flex-col gap-4">
         <input type="hidden" name="key" value={prompt.key} />
 
@@ -363,16 +359,12 @@ function PromptCardHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
-        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)]">
+        <span className="border-border bg-muted text-foreground inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border">
           {icon}
         </span>
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-[color:var(--color-content-emphasis)]">
-            {title}
-          </h2>
-          <p className="mt-1 max-w-3xl text-sm text-[color:var(--color-content-subtle)]">
-            {description}
-          </p>
+          <h2 className="text-foreground text-lg font-semibold">{title}</h2>
+          <p className="text-muted-foreground mt-1 max-w-3xl text-sm">{description}</p>
         </div>
       </div>
       <Badge tone={isActive ? 'success' : 'neutral'} solid className="mt-0.5 shrink-0">
@@ -385,10 +377,8 @@ function PromptCardHeader({
 function MissingPrompt() {
   return (
     <Card radius="md" className="p-5">
-      <h2 className="text-lg font-semibold text-[color:var(--color-content-emphasis)]">
-        Missing prompt config
-      </h2>
-      <p className="mt-2 text-sm text-[color:var(--color-content-subtle)]">
+      <h2 className="text-foreground text-lg font-semibold">Missing prompt config</h2>
+      <p className="text-muted-foreground mt-2 text-sm">
         Apply the latest Supabase migrations to seed prompt and generation settings.
       </p>
     </Card>

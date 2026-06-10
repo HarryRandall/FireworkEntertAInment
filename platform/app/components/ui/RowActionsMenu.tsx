@@ -35,7 +35,7 @@ export function RowActionsMenu({ items, label = 'Actions' }: RowActionsMenuProps
         <button
           type="button"
           aria-label={label}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-3"
         >
           <MoreHorizontal size={16} />
         </button>
@@ -56,7 +56,7 @@ export function RowActionsMenu({ items, label = 'Actions' }: RowActionsMenuProps
               className={cn(
                 'gap-2',
                 item.destructive &&
-                  'text-[color:var(--color-status-danger)] focus:bg-[color:var(--color-status-danger-subtle)] focus:text-[color:var(--color-status-danger)] data-[highlighted]:text-[color:var(--color-status-danger)]',
+                  'text-destructive focus:bg-destructive/10 focus:text-destructive data-[highlighted]:text-destructive',
               )}
             >
               {item.icon ? <span className="flex h-4 w-4 items-center">{item.icon}</span> : null}

@@ -9,7 +9,6 @@ import {
   requestImportRefinementAction,
   updateImportDraftSpecAction,
 } from '@/app/actions/platform-admin';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -20,7 +19,6 @@ import {
   OPENROUTER_MODEL_OPTIONS,
 } from '@/lib/import-jobs';
 import { getImportJobDetail } from '@/lib/admin.server';
-import { formatDuration } from '@/lib/show-domain';
 import { FireworkImportPreview } from './FireworkImportPreview';
 import { ImportProgressWatcher } from './ImportProgressWatcher';
 
@@ -42,18 +40,6 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <AppPageHeader
-        title={job.sourceName}
-        description={
-          <>
-            {job.mediaAsset?.durationSeconds
-              ? `Source video duration ${formatDuration(job.mediaAsset.durationSeconds)}.`
-              : 'The worker will verify the source duration before analysis.'}{' '}
-            Model: {selectedModel}.
-          </>
-        }
-      />
-
       <div className="flex flex-col gap-4">
         <Link
           href="/admin/imports"

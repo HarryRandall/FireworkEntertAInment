@@ -64,5 +64,15 @@ export function useSidebarPreference({
     });
   };
 
-  return { sidebarCollapsed, sidebarTransitionReady, toggleSidebar };
+  const setSidebarCollapsedPreference = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    writeStoredSidebarPreference(collapsed);
+  };
+
+  return {
+    sidebarCollapsed,
+    sidebarTransitionReady,
+    toggleSidebar,
+    setSidebarCollapsedPreference,
+  };
 }
