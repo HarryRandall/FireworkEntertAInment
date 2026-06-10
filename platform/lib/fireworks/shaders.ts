@@ -19,7 +19,11 @@ void main() {
   vShape = shape;
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   float distanceScale = 500.0 / max(-mvPosition.z, 1.0);
-  gl_PointSize = clamp(size * distanceScale, 1.5, 96.0);
+  // Head orbs (shape >= 2) get a much higher ceiling: with the shared 96px
+  // cap, zooming right in let trail squares catch up to the heads so the
+  // heads read smaller than their own trail. Heads must stay dominant.
+  float maxPointSize = mix(96.0, 480.0, step(1.5, shape));
+  gl_PointSize = clamp(size * distanceScale, 1.5, maxPointSize);
   vDepthFade = smoothstep(6200.0, 800.0, -mvPosition.z);
   // Zoomed out, more particles overlap per pixel and additive blending
   // saturates to white. Attenuate alpha with distance so colours stay
@@ -57,7 +61,9 @@ void main() {
   float squareBody = 1.0 - smoothstep(0.46, 0.5, squareDistance);
 
   // Head orb: small white-hot core, saturated coloured body, soft halo. One
-  // sprite per head so the core and its glow can never drift apart.
+  // sprite per head so the core and its glow can never drift apart. Glow
+  // strength is decoded from the shape attribute (shape = 2 + glow * 0.25).
+  float headGlowStrength = max(vShape - 2.0, 0.0) * 4.0;
   float headCore = 1.0 - smoothstep(0.0, 0.09, roundDistance);
   float headBody = 1.0 - smoothstep(0.04, 0.17, roundDistance);
   float headGlow = 1.0 - smoothstep(0.1, 0.5, roundDistance);
@@ -70,9 +76,9 @@ void main() {
     squareBody * 1.15,
     isSquare
   );
-  sparkIntensity = mix(sparkIntensity, headBody * 1.4 + headGlow * 0.2, isHead);
+  sparkIntensity = mix(sparkIntensity, headBody * 1.4 + headGlow * 0.2 * headGlowStrength, isHead);
   float sparkAlpha = mix(roundCore * 0.82 + softHalo * 0.22, squareBody * 0.9, isSquare);
-  sparkAlpha = mix(sparkAlpha, headBody * 0.95 + headGlow * 0.18, isHead);
+  sparkAlpha = mix(sparkAlpha, headBody * 0.95 + headGlow * 0.18 * headGlowStrength, isHead);
   float intensity = sparkIntensity;
   float alpha = clamp(sparkAlpha * vDepthFade * vZoomAtten, 0.0, 1.0);
 

@@ -65,11 +65,16 @@ export class Particle {
     // lifetimes. Asymmetric so rising shells aren't capped as hard.
     const VMAX_DOWN = 4;
     const VMAX_LATERAL = 6;
-    if (this.vy < -VMAX_DOWN) this.vy = -VMAX_DOWN;
-    if (this.vx > VMAX_LATERAL) this.vx = VMAX_LATERAL;
-    else if (this.vx < -VMAX_LATERAL) this.vx = -VMAX_LATERAL;
-    if (this.vz > VMAX_LATERAL) this.vz = VMAX_LATERAL;
-    else if (this.vz < -VMAX_LATERAL) this.vz = -VMAX_LATERAL;
+    // Brocade heads carry a higher shape value and need to keep their full
+    // burst vector, otherwise large crowns flatten instead of scaling as a sphere.
+    const isBrocadeHead = this.shape > 1.5;
+    const lateralLimit = isBrocadeHead ? 18 : VMAX_LATERAL;
+    const downwardLimit = isBrocadeHead ? 18 : VMAX_DOWN;
+    if (this.vy < -downwardLimit) this.vy = -downwardLimit;
+    if (this.vx > lateralLimit) this.vx = lateralLimit;
+    else if (this.vx < -lateralLimit) this.vx = -lateralLimit;
+    if (this.vz > lateralLimit) this.vz = lateralLimit;
+    else if (this.vz < -lateralLimit) this.vz = -lateralLimit;
 
     this.x += this.vx * dt * 100;
     this.y += this.vy * dt * 100;

@@ -50,9 +50,9 @@ export type FireworksEngineStats = {
 
 const PARTICLE_CAPACITY = 100_000;
 const FIXED_DT = 1 / 60;
-// Coarser step for silent rebuilds (scrub/seek). Final state looks the same to
-// the eye; cuts physics work ~3x vs 60Hz stepping.
-const SCRUB_DT = 1 / 12;
+// Scrub rebuilds can be coarser than playback; procedural emitters compensate
+// by ageing particles across each rebuilt segment.
+const SCRUB_DT = 1 / 24;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 17;
 const MAX_SNAPSHOTS = 120;
@@ -287,9 +287,9 @@ export class FireworksEngine {
       }
       this.tickPhysics(next - cursor);
       cursor = next;
-      // Skip frames with mid-flight shells: their detonation callbacks
-      // would be lost on restore and leave dangling ascending particles.
-      if (cursor >= this.nextSnapshotAt && !this.poolHasMidFlightShells()) {
+      // Skip frames with live callback-driven particles: those callbacks are
+      // intentionally not serialised, so restoring them would change effects.
+      if (cursor >= this.nextSnapshotAt && !this.poolHasLiveCallbackParticles()) {
         this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
         if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
@@ -488,14 +488,15 @@ export class FireworksEngine {
     this.pool.aliveMax = state.aliveMax;
   }
 
-  /** Shells use mass=0.5 (vs 0.001-0.02 for flair/smoke); detect by mass. */
-  private poolHasMidFlightShells(): boolean {
+  /** Shells and brocade heads have live callbacks that snapshots cannot serialise. */
+  private poolHasLiveCallbackParticles(): boolean {
     const ps = this.pool.particles;
     const live = this.pool.aliveIndices;
     const count = this.pool.aliveCount;
     for (let slot = 0; slot < count; slot++) {
       const p = ps[live[slot]];
-      if (p.alive && p.mass >= 0.1) return true;
+      if (!p.alive) continue;
+      if (p.mass >= 0.1 || p.shape > 1.5) return true;
     }
     return false;
   }
@@ -546,8 +547,9 @@ function renderParticleSize(p: Particle): number {
   if (isFlash) return clamp(base * 1.08, 1.4, 18);
   if (p.mass >= 0.1) return clamp(base * 1.38, 1.8, 24);
   // Glowing head orbs: larger size budget, but allowed to shrink with
-  // distance so zoomed-out bursts don't read as pure glow.
-  if (p.mass <= 0.0006) return clamp(base * 2.4, 3, 96);
+  // distance so zoomed-out bursts don't read as pure glow. The cap sits
+  // above the shader's square clamp so heads stay dominant when zoomed in.
+  if (p.mass <= 0.0006) return clamp(base * 2.4, 3, 200);
   if (p.mass <= 0.0015) return clamp(base * 1.55, 1.4, 34);
   if (p.mass <= 0.003) return clamp(base * 1.05, 1.0, 14);
   return clamp(base * 1.2, 1.1, 20);
