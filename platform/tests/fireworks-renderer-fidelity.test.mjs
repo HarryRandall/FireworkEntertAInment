@@ -37,6 +37,9 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(engine, /mixSeed/);
   assert.match(engine, /this\.seekTo\(next\)/);
   assert.match(engine, /this\.advanceTo\(target, false\)/);
+  assert.match(engine, /const SCRUB_DT = 1 \/ 24/);
+  assert.match(engine, /poolHasLiveCallbackParticles/);
+  assert.match(engine, /p\.mass >= 0\.1 \|\| p\.shape > 1\.5/);
   assert.match(engine, /this\.lights\.reset\(\)/);
   assert.match(effects, /audible: boolean/);
   assert.match(effects, /if \(audible\)/);
@@ -240,4 +243,54 @@ test('world uses a stable textured floor and instanced launch hardware', () => {
   assert.match(world, /new THREE\.InstancedMesh/);
   assert.match(world, /CylinderGeometry\(8, 8, 40, 16\)/);
   assert.doesNotMatch(world, /GridHelper|LineSegments/);
+});
+
+test('brocade calibration is data-driven and admin-tunable', () => {
+  const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+  const particle = read('lib/fireworks/Particle.ts');
+  const shaders = read('lib/fireworks/shaders.ts');
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const migration = read('supabase/migrations/20260610121500_brocade_admin_calibration_params.sql');
+
+  // Brocade tuning lives in the design schema, not renderer constants.
+  assert.match(design, /brocade: z/);
+  assert.match(design, /streakCount: z\.coerce\.number\(\)/);
+  assert.match(design, /estimateDesignDurationSeconds/);
+  assert.match(effects, /design\.brocade/);
+  assert.match(effects, /brocade\.streakCount \?\? design\.size/);
+  assert.match(effects, /BROCADE_GLOW_SHAPE_SCALE/);
+  assert.match(effects, /BROCADE_MAX_HEAD_GRAVITY = 0/);
+  assert.match(effects, /BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32/);
+  // Heads sustain a scene-light tint that decays with their life.
+  assert.match(effects, /sustainHemi/);
+  assert.match(effects, /const speed = burstSpeed \* \(0\.985 \+ rng\.next\(\) \* 0\.03\)/);
+  assert.match(
+    effects,
+    /const sampleAge = Math\.max\(0, headAge - \(\(1 - progress\) \* dt\) \/ p\.maxLife\)/,
+  );
+  assert.match(effects, /const agedLife = life - ageOffset/);
+  assert.match(effects, /particle\.maxLife = life/);
+  assert.match(effects, /const stepX = dx \/ emissionCount/);
+  assert.doesNotMatch(effects, /p\.life < 0\.35/);
+  // Heads escape the shared point-size ceiling so they stay dominant
+  // over trail squares at close zoom, and glow scales per particle.
+  assert.match(shaders, /maxPointSize = mix\(96\.0, 480\.0, step\(1\.5, shape\)\)/);
+  assert.match(shaders, /headGlowStrength/);
+  assert.match(engine, /clamp\(base \* 2\.4, 3, 200\)/);
+  assert.match(particle, /const isBrocadeHead = this\.shape > 1\.5/);
+  assert.match(particle, /const lateralLimit = isBrocadeHead \? 18 : VMAX_LATERAL/);
+  assert.match(particle, /const downwardLimit = isBrocadeHead \? 18 : VMAX_DOWN/);
+  // Admin editor exposes a full-duration scrub timeline and brocade sliders.
+  assert.match(editor, /estimateDesignDurationSeconds/);
+  assert.match(editor, /SliderField/);
+  assert.match(editor, /setBrocadeValue/);
+  assert.match(editor, /MIN_RENDER_SIZE = 20/);
+  assert.match(editor, /defaults\.size = Math\.max\(MIN_RENDER_SIZE, value\)/);
+  assert.match(editor, /setBrocadeGravityUpper/);
+  assert.match(editor, /label="Floatiness"[\s\S]*max=\{0\}/);
+  assert.match(editor, /label="Burst size"[\s\S]*max=\{12\}/);
+  assert.match(migration, /'streakCount', 60/);
+  assert.match(migration, /'glowStrength', 1/);
 });

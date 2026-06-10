@@ -39,22 +39,20 @@ const MAX_STAR_GRAVITY = 0.28;
 const TRAIL_GRAVITY = -0.03;
 const SHELL_TRAIL_DENSITY = 0.68;
 const STAR_TRAIL_PARTICLES_PER_SECOND = 11;
+const BROCADE_MAX_HEAD_GRAVITY = 0;
 const LIFT_SPARK_COLOR = new THREE.Color(1, 0.76, 0.38);
 const HOT_SPARK_COLOR = new THREE.Color(1, 0.92, 0.72);
 const SILVER_SPARK_COLOR = new THREE.Color(0.86, 0.94, 1);
 const BROCADE_TRAIL_PEACH = new THREE.Color(1, 0.84, 0.6);
-const BROCADE_CORE_ORANGE = new THREE.Color(1, 0.42, 0.1);
-/** Fire gradient: white-gold hot at the burst centre, cooling to ember out. */
-const BROCADE_TRAIL_HOT = new THREE.Color(1, 0.93, 0.72);
-const BROCADE_TRAIL_EMBER = new THREE.Color(1, 0.42, 0.14);
-const BROCADE_HEAD_GREEN = new THREE.Color(0.4, 1, 0.5);
-const BROCADE_HEAD_RED = new THREE.Color(1, 0.28, 0.32);
 /** Brocade crown burst: hard cap on streak heads per shell. */
 const BROCADE_MAX_STREAKS = 64;
-/** Arc-length spacing (world units) between trail square emissions. */
-const BROCADE_TRAIL_STEP = 3.0;
-/** Radius (world units) of the tube the trail squares may scatter within. */
-const BROCADE_TUBE_RADIUS = 3.2;
+const BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32;
+/**
+ * Head orbs encode their glow strength into the `shape` attribute so the
+ * fragment shader can scale the halo per particle: shape = 2 + glow * this.
+ * Anything >= 1.5 still reads as a head sprite throughout the renderer.
+ */
+const BROCADE_GLOW_SHAPE_SCALE = 0.25;
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
@@ -419,7 +417,6 @@ export class Effects {
     }
 
     if (isBrocadeCrown(design)) {
-      this.lights.setHemi(2.2, 1, 0.45, 0.16);
       this.spawnBrocadeBurst(particle, design, rng);
       return;
     }
@@ -692,18 +689,44 @@ export class Effects {
    * {@link BROCADE_MAX_STREAKS} stars with green or red circular heads. Each
    * head lays down square trail particles along its own trajectory via
    * distance-based emission (see the per-star effect closure), so the trail
-   * reads as one clean streak rather than a probabilistic spray.
+   * reads as one clean streak rather than a probabilistic spray. All tuning
+   * (streak count, trail spacing, head size/glow, colours) comes from
+   * `design.brocade` so the admin effects page can calibrate it live.
    */
   private spawnBrocadeBurst(particle: Particle, design: FireworkDesign, rng: RandomSource): void {
-    this.spawnBrocadeCore(particle, rng);
+    const brocade = design.brocade;
+    this.spawnBrocadeCore(particle, design, rng);
 
     const originX = particle.x;
     const originY = particle.y;
     const originZ = particle.z;
-    const count = clamp(Math.round(design.size), 8, BROCADE_MAX_STREAKS);
+    const count = clamp(Math.round(brocade.streakCount ?? design.size), 8, BROCADE_MAX_STREAKS);
     const burstSpeed = rangeRand(design.burst.speed, rng);
     const trailsEnabled = design.flair.enabled && design.trail.density > 0;
-    const trailStep = BROCADE_TRAIL_STEP * clamp(design.trail.streakLength, 0.4, 4);
+    const trailStep = brocade.trailStep * clamp(design.trail.streakLength, 0.4, 4);
+    const glow = clamp(brocade.glowStrength, 0, 3);
+    const headShape = 2 + glow * BROCADE_GLOW_SHAPE_SCALE;
+    const headGreen = new THREE.Color(
+      brocade.headColors.green.r,
+      brocade.headColors.green.g,
+      brocade.headColors.green.b,
+    );
+    const headRed = new THREE.Color(
+      brocade.headColors.red.r,
+      brocade.headColors.red.g,
+      brocade.headColors.red.b,
+    );
+
+    // Scene light bleed: the burst tints the ground with the aggregate head
+    // colour. A warm flash on detonation, then the lead head sustains the
+    // tint each frame so it decays only as the heads themselves fade.
+    const hemiTint = applyColorMix(headRed, headGreen, clamp(brocade.greenRatio, 0, 1));
+    this.lights.setHemi(1.2 + glow, 1, 0.45, 0.16);
+    const sustainHemi = (p: Particle) => {
+      const lifeRatio = p.maxLife > 0 ? clamp(p.life / p.maxLife, 0, 1) : 0;
+      const intensity = 0.5 + 1.2 * glow * lifeRatio;
+      this.lights.setHemi(intensity, hemiTint.r, hemiTint.g, hemiTint.b);
+    };
 
     for (let i = 0; i < count; i++) {
       // Fibonacci-sphere distribution: evenly spaced directions for any star
@@ -714,10 +737,15 @@ export class Effects {
       const jy = direction.y + (rng.next() - 0.5) * 0.14;
       const jz = direction.z + (rng.next() - 0.5) * 0.14;
       const norm = Math.sqrt(jx * jx + jy * jy + jz * jz) || 1;
-      // Tight speed band keeps the expanding shell spherical.
-      const speed = burstSpeed * (0.9 + rng.next() * 0.18);
-      const headColor = rng.next() < 0.5 ? BROCADE_HEAD_GREEN : BROCADE_HEAD_RED;
-      const headGravity = clamp(rangeRand(design.burst.gravity, rng), MIN_STAR_GRAVITY, -0.1);
+      // Very tight speed band keeps the expanding shell spherical as burst
+      // size scales up; angular jitter already provides the organic variation.
+      const speed = burstSpeed * (0.985 + rng.next() * 0.03);
+      const headColor = rng.next() < brocade.greenRatio ? headGreen : headRed;
+      const headGravity = clamp(
+        rangeRand(design.burst.gravity, rng),
+        MIN_STAR_GRAVITY,
+        BROCADE_MAX_HEAD_GRAVITY,
+      );
       // Lower drag + faster burst speed roughly doubles the travel distance,
       // so the burst reads as a proper sphere from far away too.
       const headDrag = STAR_DRAG * 0.42;
@@ -732,16 +760,65 @@ export class Effects {
       let lastY = originY;
       let lastZ = originZ;
 
-      // Single head particle. shape 2 renders core + glow in one sprite (a
+      const emitTrail = trailsEnabled
+        ? (p: Particle, dt: number) => {
+            const dx = p.x - lastX;
+            const dy = p.y - lastY;
+            const dz = p.z - lastZ;
+            const segment = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (segment < trailStep) return;
+            const emissionCount = Math.min(
+              BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP,
+              Math.max(1, Math.round(segment / trailStep)),
+            );
+            const stepX = dx / emissionCount;
+            const stepY = dy / emissionCount;
+            const stepZ = dz / emissionCount;
+            const headAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
+            let emitted = 0;
+            while (emitted < emissionCount) {
+              const progress = (emitted + 1) / emissionCount;
+              lastX += stepX;
+              lastY += stepY;
+              lastZ += stepZ;
+              // No squares right at the burst centre: the core flash owns
+              // that moment, and the hot material reads as being shot
+              // outward instead of stacking into a white blob.
+              const ox = lastX - originX;
+              const oy = lastY - originY;
+              const oz = lastZ - originZ;
+              if (ox * ox + oy * oy + oz * oz > 50 * 50) {
+                const sampleAge = Math.max(0, headAge - ((1 - progress) * dt) / p.maxLife);
+                const sampleRemaining = p.life + (1 - progress) * dt;
+                this.emitBrocadeTrailCluster(
+                  lastX,
+                  lastY,
+                  lastZ,
+                  sampleAge,
+                  sampleRemaining,
+                  (1 - progress) * dt,
+                  design,
+                  rng,
+                );
+              }
+              emitted++;
+            }
+          }
+        : null;
+      // The lead head owns the sustained hemisphere tint; one writer per
+      // burst avoids per-frame fighting between heads.
+      const lead = i === 0;
+
+      // Single head particle. shape >= 2 renders core + glow in one sprite (a
       // separate glow companion drifted apart because quadratic drag depends
       // on mass), and the small mass selects the large glow size class.
       this.pp.new({
         x: originX,
         y: originY,
         z: originZ,
-        size: 900,
+        size: brocade.headSize,
         mass: 0.0005,
-        shape: 2,
+        shape: headShape,
         gravity: headGravity,
         drag: headDrag,
         vx,
@@ -755,49 +832,25 @@ export class Effects {
         l: rng.next(),
         life: headLife,
         decay: 12 + rng.next() * 10,
-        effect: trailsEnabled
-          ? (p) => {
-              // Stop emitting just before the head dies so no fresh squares
-              // appear while it fades; the head must be the last to go.
-              if (p.life < 0.35) return;
-              const dx = p.x - lastX;
-              const dy = p.y - lastY;
-              const dz = p.z - lastZ;
-              const segment = Math.sqrt(dx * dx + dy * dy + dz * dz);
-              if (segment < trailStep) return;
-              const stepX = (dx / segment) * trailStep;
-              const stepY = (dy / segment) * trailStep;
-              const stepZ = (dz / segment) * trailStep;
-              const headAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
-              let remaining = segment;
-              let emitted = 0;
-              while (remaining >= trailStep && emitted < 8) {
-                lastX += stepX;
-                lastY += stepY;
-                lastZ += stepZ;
-                remaining -= trailStep;
-                // No squares right at the burst centre: the core flash owns
-                // that moment, and the hot material reads as being shot
-                // outward instead of stacking into a white blob.
-                const ox = lastX - originX;
-                const oy = lastY - originY;
-                const oz = lastZ - originZ;
-                if (ox * ox + oy * oy + oz * oz > 50 * 50) {
-                  this.emitBrocadeTrailCluster(lastX, lastY, lastZ, headAge, p.life, design, rng);
-                }
-                emitted++;
+        effect:
+          lead || emitTrail
+            ? (p, dt) => {
+                if (lead) sustainHemi(p);
+                emitTrail?.(p, dt);
               }
-            }
-          : undefined,
+            : undefined,
       });
     }
   }
 
   /** Brief dense white-hot flash at the moment of detonation. */
-  private spawnBrocadeCore(particle: Particle, rng: RandomSource): void {
+  private spawnBrocadeCore(particle: Particle, design: FireworkDesign, rng: RandomSource): void {
+    const palette = design.brocade.palette;
+    const hot = new THREE.Color(palette.hot.r, palette.hot.g, palette.hot.b);
+    const ember = new THREE.Color(palette.ember.r, palette.ember.g, palette.ember.b);
     const count = 26 + Math.floor(rng.next() * 10);
     for (let i = 0; i < count; i++) {
-      const core = applyColorMix(BROCADE_TRAIL_HOT, BROCADE_CORE_ORANGE, rng.next() * 0.6);
+      const core = applyColorMix(hot, ember, rng.next() * 0.6);
       this.pp.new({
         x: particle.x + (rng.next() - 0.5) * 12,
         y: particle.y + (rng.next() - 0.5) * 12,
@@ -835,6 +888,7 @@ export class Effects {
     z: number,
     headAge: number,
     headRemaining: number,
+    ageOffset: number,
     design: FireworkDesign,
     rng: RandomSource,
   ): void {
@@ -844,20 +898,18 @@ export class Effects {
     const warmth = clamp(headAge * 2.2, 0, 1);
     const streakSize = clamp(design.trail.streakSize, 0.4, 4);
     const lifeScale = clamp(design.trail.length, 0.2, 4) * clamp(design.trail.streakLife, 0.2, 4);
+    const palette = design.brocade.palette;
+    const hot = new THREE.Color(palette.hot.r, palette.hot.g, palette.hot.b);
+    const ember = new THREE.Color(palette.ember.r, palette.ember.g, palette.ember.b);
+    const tubeRadius = design.brocade.tubeRadius;
     for (let i = 0; i < clusterCount; i++) {
-      const tone = applyColorMix(
-        BROCADE_TRAIL_HOT,
-        BROCADE_TRAIL_EMBER,
-        clamp(warmth + (rng.next() - 0.5) * 0.18, 0, 1),
-      );
+      const tone = applyColorMix(hot, ember, clamp(warmth + (rng.next() - 0.5) * 0.18, 0, 1));
       const size = (12 + rng.next() * 9) * design.trail.thickness * streakSize;
+      const lifeCeiling = headRemaining * (0.78 + rng.next() * 0.22);
+      if (lifeCeiling <= 0.015) continue;
       // Cap square life to the head's remaining life, staggered so the tail
-      // melts away gradually rather than vanishing all at once, with the
-      // head circle always fading last.
-      const life = Math.min(
-        (1.5 + rng.next() * 0.6) * lifeScale,
-        Math.max(0.25, headRemaining * (0.78 + rng.next() * 0.22)),
-      );
+      // melts away gradually rather than vanishing all at once.
+      const life = Math.min((1.5 + rng.next() * 0.6) * lifeScale, lifeCeiling);
       const deathRoll = rng.next();
       // Every square shrinks as it ages, so the older squares further back
       // along the trail are visibly smaller than the fresh ones at the head.
@@ -867,25 +919,30 @@ export class Effects {
           : deathRoll < 0.6
             ? (size * 0.5) / life // fade with a clear shrink
             : (size * 0.85) / life; // shrink hard, then fade
-      this.pp.new({
-        x: x + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
-        y: y + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
-        z: z + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
+      const agedLife = life - ageOffset;
+      if (agedLife <= 0.015) continue;
+      const agedSize = Math.max(0.01, size - decay * ageOffset);
+      const age = clamp(ageOffset / life, 0, 1);
+      const cool = clamp(age * 3.2, 0, 1);
+      const particle = this.pp.new({
+        x: x + (rng.next() - 0.5) * tubeRadius * 2,
+        y: y + (rng.next() - 0.5) * tubeRadius * 2,
+        z: z + (rng.next() - 0.5) * tubeRadius * 2,
         mass: 0.002,
         gravity: -0.014,
         drag: 1.6,
-        size,
+        size: agedSize,
         shape: 1,
         vx: (rng.next() - 0.5) * 0.04,
         vy: -0.012 + (rng.next() - 0.5) * 0.02,
         vz: (rng.next() - 0.5) * 0.04,
-        r: tone.r,
-        g: tone.g,
-        b: tone.b,
+        r: tone.r + (ember.r - tone.r) * cool,
+        g: tone.g + (ember.g - tone.g) * cool,
+        b: tone.b + (ember.b - tone.b) * cool,
         h: 1.0,
         s: 0.5,
         l: 0.0,
-        life,
+        life: agedLife,
         decay,
         // Cool from the spawn tone toward ember over the square's life, so
         // the white-hot burst centre fades into orange instead of staying
@@ -894,12 +951,13 @@ export class Effects {
           const age = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
           const cool = clamp(age * 3.2, 0, 1);
           p.color.setRGB(
-            tone.r + (BROCADE_TRAIL_EMBER.r - tone.r) * cool,
-            tone.g + (BROCADE_TRAIL_EMBER.g - tone.g) * cool,
-            tone.b + (BROCADE_TRAIL_EMBER.b - tone.b) * cool,
+            tone.r + (ember.r - tone.r) * cool,
+            tone.g + (ember.g - tone.g) * cool,
+            tone.b + (ember.b - tone.b) * cool,
           );
         },
       });
+      particle.maxLife = life;
     }
   }
 

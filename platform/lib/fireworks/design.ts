@@ -48,14 +48,13 @@ export const FIREWORK_TRAIL_PROFILES = [
 ] as const;
 export type FireworkTrailProfile = (typeof FIREWORK_TRAIL_PROFILES)[number];
 
-const ColorSchema = z.union([
-  z.object({
-    r: z.coerce.number().min(0).max(1),
-    g: z.coerce.number().min(0).max(1),
-    b: z.coerce.number().min(0).max(1),
-  }),
-  z.literal('random'),
-]);
+const RgbSchema = z.object({
+  r: z.coerce.number().min(0).max(1),
+  g: z.coerce.number().min(0).max(1),
+  b: z.coerce.number().min(0).max(1),
+});
+
+const ColorSchema = z.union([RgbSchema, z.literal('random')]);
 
 const RangeSchema = z.tuple([z.coerce.number(), z.coerce.number()]);
 
@@ -143,6 +142,49 @@ export const FireworkDesignSchema = z.object({
       sound: z.boolean().default(true),
     })
     .default({ smokeParticles: 100, sound: true }),
+  /**
+   * Brocade crown calibration. Only read when the design is a brocade crown
+   * (`geometry: 'crown'` + `trailProfile: 'glitter'`). Defaults mirror the
+   * renderer constants the brocade rework shipped with, so designs without an
+   * explicit `brocade` block look identical to before.
+   */
+  brocade: z
+    .object({
+      /** Streak heads per shell. Falls back to `size` when absent. */
+      streakCount: z.coerce.number().int().min(8).max(64).optional(),
+      /** Arc-length spacing (world units) between trail square emissions. */
+      trailStep: z.coerce.number().min(1).max(10).default(3),
+      /** Radius (world units) of the tube trail squares scatter within. */
+      tubeRadius: z.coerce.number().min(0.5).max(12).default(3.2),
+      /** Size budget of each glowing head orb. */
+      headSize: z.coerce.number().min(100).max(4000).default(900),
+      /** Halo brightness multiplier; also drives scene light tinting. */
+      glowStrength: z.coerce.number().min(0).max(3).default(1),
+      /** Probability a head is green rather than red. */
+      greenRatio: z.coerce.number().min(0).max(1).default(0.5),
+      headColors: z
+        .object({
+          green: RgbSchema.default({ r: 0.4, g: 1, b: 0.5 }),
+          red: RgbSchema.default({ r: 1, g: 0.28, b: 0.32 }),
+        })
+        .default({ green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } }),
+      /** Trail fire gradient: white-gold hot core cooling to ember tips. */
+      palette: z
+        .object({
+          hot: RgbSchema.default({ r: 1, g: 0.93, b: 0.72 }),
+          ember: RgbSchema.default({ r: 1, g: 0.42, b: 0.14 }),
+        })
+        .default({ hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } }),
+    })
+    .default({
+      trailStep: 3,
+      tubeRadius: 3.2,
+      headSize: 900,
+      glowStrength: 1,
+      greenRatio: 0.5,
+      headColors: { green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } },
+      palette: { hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } },
+    }),
 });
 
 export type FireworkDesign = z.infer<typeof FireworkDesignSchema>;
@@ -467,6 +509,36 @@ export function scaleDesignForCaliber(
       speed: [design.burst.speed[0] * scale, design.burst.speed[1] * scale],
     },
   };
+}
+
+/**
+ * Estimate how long a single shell takes from launch to the last particle
+ * fading, in seconds. Mirrors the particle physics in `Particle.update`
+ * (quadratic drag, gravity, shell mass 0.5) closely enough for preview
+ * timelines; it does not need to be frame-exact.
+ */
+export function estimateDesignDurationSeconds(design: FireworkDesign): number {
+  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
+  const shellMass = 0.5;
+  const dt = 1 / 60;
+  let vy = liftVelocity * 0.96;
+  let liftTime = 0;
+  while (vy > 0 && liftTime < design.shellLife) {
+    vy += ((-dragK * vy * Math.abs(vy)) / shellMass) * dt;
+    vy += -9.82 * dt;
+    liftTime += dt;
+  }
+
+  const burstLife = Math.max(design.burst.life[0], design.burst.life[1]);
+  const longHangGeometry =
+    design.geometry === 'weeping' ||
+    design.geometry === 'falling_tail' ||
+    design.geometry === 'waterfall';
+  const starLifeMultiplier = longHangGeometry ? 1.6 : 1;
+  // Flair/trail particles spawned near a star's death linger a little longer.
+  const trailTail = Math.max(1, 1.25 * design.trail.length);
+  return liftTime + burstLife * starLifeMultiplier + trailTail;
 }
 
 export type LaunchPosition = { x: number; y: number; z: number };
