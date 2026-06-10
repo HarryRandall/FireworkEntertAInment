@@ -358,7 +358,9 @@ export class FireworksEngine {
       // then settle into their pure burst colour as they cool — matches the
       // way burning magnesium chemistry actually looks.
       const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
-      const heat = isStar ? Math.max(0, lifeRatio - 0.72) * 0.8 : 0;
+      // Brocade head orbs (shape 2) keep their pure green/red; white-hot
+      // tinting made them blend into the burst centre.
+      const heat = isStar && p.shape < 1.5 ? Math.max(0, lifeRatio - 0.72) * 0.8 : 0;
       const cool = 1 - heat;
       const heatAdd = heat * alpha * BRIGHTNESS_BOOST;
       colors[pi] = Math.min(
@@ -543,7 +545,10 @@ function renderParticleSize(p: Particle): number {
   if (isSmoke) return clamp(base * 1.25, 4, 28);
   if (isFlash) return clamp(base * 1.08, 1.4, 18);
   if (p.mass >= 0.1) return clamp(base * 1.38, 1.8, 24);
-  if (p.mass <= 0.0015) return clamp(base * 1.55, 1.4, 30);
+  // Glowing head orbs: larger size budget, but allowed to shrink with
+  // distance so zoomed-out bursts don't read as pure glow.
+  if (p.mass <= 0.0006) return clamp(base * 2.4, 3, 96);
+  if (p.mass <= 0.0015) return clamp(base * 1.55, 1.4, 34);
   if (p.mass <= 0.003) return clamp(base * 1.05, 1.0, 14);
   return clamp(base * 1.2, 1.1, 20);
 }
@@ -561,7 +566,13 @@ function renderParticleAlpha(p: Particle): number {
   let peak = 0.34;
   if (isFlash) peak = 0.14;
   else if (p.mass >= 0.1) peak = 0.28;
-  else if (p.mass <= 0.0015) peak = 0.78;
+  else if (p.shape > 1.5)
+    peak = 0.66; // brocade heads: bright core + glow in one sprite
+  else if (p.shape > 0.5)
+    peak = 0.6; // brocade trail squares read brighter
+  else if (p.mass <= 0.0006)
+    peak = 0.46; // glow halos: large but soft
+  else if (p.mass <= 0.0015) peak = 0.82;
   else if (p.mass <= 0.003) peak = 0.2;
 
   const fade = Math.pow(lifeRatio, isFlash ? 1.7 : 0.96);

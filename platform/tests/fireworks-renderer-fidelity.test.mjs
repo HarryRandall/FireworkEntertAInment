@@ -196,8 +196,9 @@ test('renderer draws compact mixed round and streak particles', () => {
   assert.match(effects, /design\.trail\.streakSize/);
   assert.match(effects, /design\.trail\.streakLength/);
   assert.match(effects, /design\.trail\.streakLife/);
-  assert.match(effects, /design\.geometry !== 'pearls' && !brocade/);
-  assert.match(effects, /if \(brocade && ageRatio < 0\.18\) return/);
+  assert.match(effects, /BROCADE_MAX_STREAKS = \d+/);
+  assert.match(effects, /spawnBrocadeBurst/);
+  assert.match(effects, /emitBrocadeTrailCluster/);
   assert.doesNotMatch(shaders, /rectStretch|rectYLimit/);
   assert.match(shaders, /softHalo/);
   assert.match(shaders, /gl_FragColor = vec4\(sparkColor \* intensity, alpha\)/);

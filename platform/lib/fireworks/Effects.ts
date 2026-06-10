@@ -42,8 +42,19 @@ const STAR_TRAIL_PARTICLES_PER_SECOND = 11;
 const LIFT_SPARK_COLOR = new THREE.Color(1, 0.76, 0.38);
 const HOT_SPARK_COLOR = new THREE.Color(1, 0.92, 0.72);
 const SILVER_SPARK_COLOR = new THREE.Color(0.86, 0.94, 1);
-const BROCADE_WHITE_GOLD = new THREE.Color(1, 0.96, 0.82);
-const BROCADE_AMBER_SMOKE = new THREE.Color(0.18, 0.08, 0.025);
+const BROCADE_TRAIL_PEACH = new THREE.Color(1, 0.84, 0.6);
+const BROCADE_CORE_ORANGE = new THREE.Color(1, 0.42, 0.1);
+/** Fire gradient: white-gold hot at the burst centre, cooling to ember out. */
+const BROCADE_TRAIL_HOT = new THREE.Color(1, 0.93, 0.72);
+const BROCADE_TRAIL_EMBER = new THREE.Color(1, 0.42, 0.14);
+const BROCADE_HEAD_GREEN = new THREE.Color(0.4, 1, 0.5);
+const BROCADE_HEAD_RED = new THREE.Color(1, 0.28, 0.32);
+/** Brocade crown burst: hard cap on streak heads per shell. */
+const BROCADE_MAX_STREAKS = 64;
+/** Arc-length spacing (world units) between trail square emissions. */
+const BROCADE_TRAIL_STEP = 3.0;
+/** Radius (world units) of the tube the trail squares may scatter within. */
+const BROCADE_TUBE_RADIUS = 3.2;
 
 function rangeRand(range: [number, number], rng: RandomSource): number {
   const [a, b] = range;
@@ -147,7 +158,6 @@ function fibonacciDirection(index: number, count: number): THREE.Vector3 {
 
 function starSizeFor(design: FireworkDesign, rng: RandomSource): number {
   const base = design.size;
-  if (isBrocadeCrown(design)) return base * (0.16 + rng.next() * 0.1);
   switch (design.geometry) {
     case 'pearls':
       return base * (1.05 + rng.next() * 0.35);
@@ -194,11 +204,14 @@ export class Effects {
     const lateralVelocity = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
     const forwardVelocity = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
 
+    // Brocade designs carry a small `size` (streak count), but the ascending
+    // shell still needs enough size budget to survive its decay until apex.
+    const shellSize = isBrocadeCrown(design) ? Math.max(size, 110) : size;
     this.pp.new({
       x: position.x,
       y: position.y,
       z: position.z,
-      size,
+      size: shellSize,
       mass: 0.5,
       vy: liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96),
       vx: lateralVelocity,
@@ -315,7 +328,7 @@ export class Effects {
         break;
     }
     const liftTrailMultiplier = isBrocadeCrown(design)
-      ? 2.35
+      ? 1.0
       : design.geometry === 'single_tail' || design.trailProfile === 'thick_tail'
         ? 2.25
         : design.geometry === 'radial_arms'
@@ -339,7 +352,7 @@ export class Effects {
           design.trailProfile === 'thick_tail' ||
           design.trailProfile === 'glitter');
       const sparkColor = brocadeLift
-        ? applyColorMix(color, BROCADE_WHITE_GOLD, 0.72 + rng.next() * 0.2)
+        ? applyColorMix(color, BROCADE_TRAIL_PEACH, 0.66 + rng.next() * 0.24)
         : hotTrail
           ? applyColorMix(color, HOT_SPARK_COLOR, 0.45)
           : color;
@@ -405,9 +418,12 @@ export class Effects {
       }
     }
 
-    const brocade = isBrocadeCrown(design);
+    if (isBrocadeCrown(design)) {
+      this.lights.setHemi(2.2, 1, 0.45, 0.16);
+      this.spawnBrocadeBurst(particle, design, rng);
+      return;
+    }
     this.lights.setHemi(design.size / 100, color.r, color.g, color.b);
-    if (brocade) this.spawnBrocadeHalo(particle, color, rng);
     if (design.geometry === 'single_tail') {
       this.cometFinish(particle, design, color, rng, audible);
       return;
@@ -425,7 +441,7 @@ export class Effects {
       return;
     }
 
-    if (design.geometry !== 'pearls' && !brocade) this.explodeBurst(particle, rng, audible);
+    if (design.geometry !== 'pearls') this.explodeBurst(particle, rng, audible);
 
     const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
     const speed = rangeRand(design.burst.speed, rng);
@@ -511,15 +527,6 @@ export class Effects {
       }
       case 'crown':
       case 'weeping': {
-        if (isBrocadeCrown(design)) {
-          const fill = Math.cbrt((index + 0.5) / count);
-          const radius = speed * (0.2 + fill * (1.08 + rng.next() * 0.24));
-          return new THREE.Vector3(
-            direction.x * radius,
-            direction.y * radius * 0.96,
-            direction.z * radius * 0.88,
-          );
-        }
         const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
         const lift =
           design.geometry === 'weeping' ? 0.35 + rng.next() * 0.45 : 0.55 + rng.next() * 0.62;
@@ -573,12 +580,6 @@ export class Effects {
     rng: RandomSource,
   ): THREE.Color {
     const secondary = resolveOptionalColor(design.secondaryColor, rng);
-    if (isBrocadeCrown(design)) {
-      const pale = secondary ?? BROCADE_WHITE_GOLD;
-      return rng.next() > 0.58
-        ? applyColorMix(color, pale, 0.76)
-        : applyColorMix(color, HOT_SPARK_COLOR, 0.28);
-    }
     if (!secondary) return color;
     if (design.geometry === 'pistil') return index % 4 === 0 ? secondary : color;
     if (design.trailProfile === 'blink' || design.pattern === 'strobe') {
@@ -589,7 +590,6 @@ export class Effects {
   }
 
   private starLife(design: FireworkDesign, baseLife: number, rng: RandomSource): number {
-    if (isBrocadeCrown(design)) return baseLife * (1.08 + rng.next() * 0.32);
     switch (design.geometry) {
       case 'weeping':
       case 'falling_tail':
@@ -606,11 +606,6 @@ export class Effects {
 
   private starGravity(design: FireworkDesign, gravity: number, rng: RandomSource): number {
     switch (design.geometry) {
-      case 'crown':
-        if (isBrocadeCrown(design)) {
-          return clamp(gravity * (0.78 + rng.next() * 0.18), MIN_STAR_GRAVITY, -0.16);
-        }
-        return gravity + (rng.next() - 0.5) * 0.035;
       case 'weeping':
         return clamp(gravity * 0.52, MIN_STAR_GRAVITY, -0.08);
       case 'falling_tail':
@@ -626,7 +621,7 @@ export class Effects {
   private starDrag(design: FireworkDesign): number {
     switch (design.geometry) {
       case 'crown':
-        return isBrocadeCrown(design) ? STAR_DRAG * 0.56 : STAR_DRAG;
+        return STAR_DRAG;
       case 'weeping':
       case 'falling_tail':
         return STAR_DRAG * 0.58;
@@ -640,7 +635,6 @@ export class Effects {
   }
 
   private starDecay(design: FireworkDesign, rng: RandomSource): number {
-    if (isBrocadeCrown(design)) return 8 + rng.next() * 22;
     switch (design.geometry) {
       case 'weeping':
       case 'falling_tail':
@@ -693,28 +687,218 @@ export class Effects {
     }
   }
 
-  private spawnBrocadeHalo(particle: Particle, color: THREE.Color, rng: RandomSource): void {
-    const haloColor = applyColorMix(BROCADE_AMBER_SMOKE, color, 0.18);
-    for (let i = 0; i < 18; i++) {
+  /**
+   * Brocade crown burst: a modest rich orange/red core flash, then up to
+   * {@link BROCADE_MAX_STREAKS} stars with green or red circular heads. Each
+   * head lays down square trail particles along its own trajectory via
+   * distance-based emission (see the per-star effect closure), so the trail
+   * reads as one clean streak rather than a probabilistic spray.
+   */
+  private spawnBrocadeBurst(particle: Particle, design: FireworkDesign, rng: RandomSource): void {
+    this.spawnBrocadeCore(particle, rng);
+
+    const originX = particle.x;
+    const originY = particle.y;
+    const originZ = particle.z;
+    const count = clamp(Math.round(design.size), 8, BROCADE_MAX_STREAKS);
+    const burstSpeed = rangeRand(design.burst.speed, rng);
+    const trailsEnabled = design.flair.enabled && design.trail.density > 0;
+    const trailStep = BROCADE_TRAIL_STEP * clamp(design.trail.streakLength, 0.4, 4);
+
+    for (let i = 0; i < count; i++) {
+      // Fibonacci-sphere distribution: evenly spaced directions for any star
+      // count, so more stars always means a fuller sphere with no clumping.
+      // A small seeded jitter stops it reading as a perfect lattice.
+      const direction = fibonacciDirection(i, count);
+      const jx = direction.x + (rng.next() - 0.5) * 0.14;
+      const jy = direction.y + (rng.next() - 0.5) * 0.14;
+      const jz = direction.z + (rng.next() - 0.5) * 0.14;
+      const norm = Math.sqrt(jx * jx + jy * jy + jz * jz) || 1;
+      // Tight speed band keeps the expanding shell spherical.
+      const speed = burstSpeed * (0.9 + rng.next() * 0.18);
+      const headColor = rng.next() < 0.5 ? BROCADE_HEAD_GREEN : BROCADE_HEAD_RED;
+      const headGravity = clamp(rangeRand(design.burst.gravity, rng), MIN_STAR_GRAVITY, -0.1);
+      // Lower drag + faster burst speed roughly doubles the travel distance,
+      // so the burst reads as a proper sphere from far away too.
+      const headDrag = STAR_DRAG * 0.42;
+      const headLife = rangeRand(design.burst.life, rng);
+      const vx = (jx / norm) * speed;
+      const vy = (jy / norm) * speed;
+      const vz = (jz / norm) * speed;
+
+      // Trail emission state, captured per star: squares spawn every
+      // `trailStep` of arc length travelled, not per frame.
+      let lastX = originX;
+      let lastY = originY;
+      let lastZ = originZ;
+
+      // Single head particle. shape 2 renders core + glow in one sprite (a
+      // separate glow companion drifted apart because quadratic drag depends
+      // on mass), and the small mass selects the large glow size class.
       this.pp.new({
-        x: particle.x + (rng.next() - 0.5) * 36,
-        y: particle.y + (rng.next() - 0.5) * 36,
-        z: particle.z + (rng.next() - 0.5) * 24,
-        mass: 0.006,
-        gravity: -0.02 + rng.next() * 0.05,
-        drag: 1.25,
-        size: 34 + rng.next() * 58,
-        vx: (rng.next() - 0.5) * 0.18,
-        vy: (rng.next() - 0.35) * 0.18,
-        vz: (rng.next() - 0.5) * 0.18,
-        r: haloColor.r,
-        g: haloColor.g,
-        b: haloColor.b,
+        x: originX,
+        y: originY,
+        z: originZ,
+        size: 900,
+        mass: 0.0005,
+        shape: 2,
+        gravity: headGravity,
+        drag: headDrag,
+        vx,
+        vy,
+        vz,
+        r: headColor.r,
+        g: headColor.g,
+        b: headColor.b,
+        h: rng.next(),
+        s: rng.next(),
+        l: rng.next(),
+        life: headLife,
+        decay: 12 + rng.next() * 10,
+        effect: trailsEnabled
+          ? (p) => {
+              // Stop emitting just before the head dies so no fresh squares
+              // appear while it fades; the head must be the last to go.
+              if (p.life < 0.35) return;
+              const dx = p.x - lastX;
+              const dy = p.y - lastY;
+              const dz = p.z - lastZ;
+              const segment = Math.sqrt(dx * dx + dy * dy + dz * dz);
+              if (segment < trailStep) return;
+              const stepX = (dx / segment) * trailStep;
+              const stepY = (dy / segment) * trailStep;
+              const stepZ = (dz / segment) * trailStep;
+              const headAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
+              let remaining = segment;
+              let emitted = 0;
+              while (remaining >= trailStep && emitted < 8) {
+                lastX += stepX;
+                lastY += stepY;
+                lastZ += stepZ;
+                remaining -= trailStep;
+                // No squares right at the burst centre: the core flash owns
+                // that moment, and the hot material reads as being shot
+                // outward instead of stacking into a white blob.
+                const ox = lastX - originX;
+                const oy = lastY - originY;
+                const oz = lastZ - originZ;
+                if (ox * ox + oy * oy + oz * oz > 50 * 50) {
+                  this.emitBrocadeTrailCluster(lastX, lastY, lastZ, headAge, p.life, design, rng);
+                }
+                emitted++;
+              }
+            }
+          : undefined,
+      });
+    }
+  }
+
+  /** Brief dense white-hot flash at the moment of detonation. */
+  private spawnBrocadeCore(particle: Particle, rng: RandomSource): void {
+    const count = 26 + Math.floor(rng.next() * 10);
+    for (let i = 0; i < count; i++) {
+      const core = applyColorMix(BROCADE_TRAIL_HOT, BROCADE_CORE_ORANGE, rng.next() * 0.6);
+      this.pp.new({
+        x: particle.x + (rng.next() - 0.5) * 12,
+        y: particle.y + (rng.next() - 0.5) * 12,
+        z: particle.z + (rng.next() - 0.5) * 12,
+        size: 22 + rng.next() * 40,
+        mass: 0.5,
+        gravity: TRAIL_GRAVITY,
+        drag: FLASH_DRAG,
+        vx: (rng.next() - 0.5) * 2.4,
+        vy: (rng.next() - 0.5) * 2.4,
+        vz: (rng.next() - 0.5) * 2.4,
+        r: core.r,
+        g: core.g,
+        b: core.b,
         h: 1.0,
         s: 0.5,
         l: 0.0,
-        life: 0.7 + rng.next() * 1.6,
-        decay: 16 + rng.next() * 20,
+        life: 0.1 + rng.next() * 0.3,
+        decay: 26 + rng.next() * 40,
+      });
+    }
+  }
+
+  /**
+   * Spawn 1-3 trail squares jittered inside the streak's tube cross-section.
+   * Squares hang where they spawned (tiny downward drift only) and pick one
+   * of three death modes: pop out abruptly, fade, or shrink then fade. The
+   * short life turns the trail into a following tail whose oldest end
+   * vanishes first. Colour runs white-gold hot at the burst centre, cooling
+   * toward ember orange-red as the streak travels out.
+   */
+  private emitBrocadeTrailCluster(
+    x: number,
+    y: number,
+    z: number,
+    headAge: number,
+    headRemaining: number,
+    design: FireworkDesign,
+    rng: RandomSource,
+  ): void {
+    const clusterRoll = rng.next();
+    const clusterCount = clusterRoll < 0.5 ? 1 : clusterRoll < 0.85 ? 2 : 3;
+    // Steep ramp: only the first moments after the burst stay white-hot.
+    const warmth = clamp(headAge * 2.2, 0, 1);
+    const streakSize = clamp(design.trail.streakSize, 0.4, 4);
+    const lifeScale = clamp(design.trail.length, 0.2, 4) * clamp(design.trail.streakLife, 0.2, 4);
+    for (let i = 0; i < clusterCount; i++) {
+      const tone = applyColorMix(
+        BROCADE_TRAIL_HOT,
+        BROCADE_TRAIL_EMBER,
+        clamp(warmth + (rng.next() - 0.5) * 0.18, 0, 1),
+      );
+      const size = (12 + rng.next() * 9) * design.trail.thickness * streakSize;
+      // Cap square life to the head's remaining life, staggered so the tail
+      // melts away gradually rather than vanishing all at once, with the
+      // head circle always fading last.
+      const life = Math.min(
+        (1.5 + rng.next() * 0.6) * lifeScale,
+        Math.max(0.25, headRemaining * (0.78 + rng.next() * 0.22)),
+      );
+      const deathRoll = rng.next();
+      // Every square shrinks as it ages, so the older squares further back
+      // along the trail are visibly smaller than the fresh ones at the head.
+      const decay =
+        deathRoll < 0.12
+          ? size / (life * (0.55 + rng.next() * 0.35)) // occasional early pop via size death
+          : deathRoll < 0.6
+            ? (size * 0.5) / life // fade with a clear shrink
+            : (size * 0.85) / life; // shrink hard, then fade
+      this.pp.new({
+        x: x + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
+        y: y + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
+        z: z + (rng.next() - 0.5) * BROCADE_TUBE_RADIUS * 2,
+        mass: 0.002,
+        gravity: -0.014,
+        drag: 1.6,
+        size,
+        shape: 1,
+        vx: (rng.next() - 0.5) * 0.04,
+        vy: -0.012 + (rng.next() - 0.5) * 0.02,
+        vz: (rng.next() - 0.5) * 0.04,
+        r: tone.r,
+        g: tone.g,
+        b: tone.b,
+        h: 1.0,
+        s: 0.5,
+        l: 0.0,
+        life,
+        decay,
+        // Cool from the spawn tone toward ember over the square's life, so
+        // the white-hot burst centre fades into orange instead of staying
+        // blindingly bright.
+        effect: (p) => {
+          const age = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
+          const cool = clamp(age * 3.2, 0, 1);
+          p.color.setRGB(
+            tone.r + (BROCADE_TRAIL_EMBER.r - tone.r) * cool,
+            tone.g + (BROCADE_TRAIL_EMBER.g - tone.g) * cool,
+            tone.b + (BROCADE_TRAIL_EMBER.b - tone.b) * cool,
+          );
+        },
       });
     }
   }
@@ -945,7 +1129,6 @@ export class Effects {
     audible: boolean,
   ): void {
     const secondary = resolveOptionalColor(design.secondaryColor, rng);
-    const brocade = isBrocadeCrown(design);
     const ageRatio = particle.maxLife > 0 ? 1 - clamp(particle.life / particle.maxLife, 0, 1) : 0;
     if (secondary && particle.maxLife > 0 && design.trailProfile !== 'blink') {
       if (ageRatio > 0.42) {
@@ -1000,17 +1183,13 @@ export class Effects {
 
     if (!design.flair.enabled) return;
     if (design.trailProfile === 'none' || design.trail.density <= 0) return;
-    if (brocade && ageRatio < 0.18) return;
     const trailRate = STAR_TRAIL_PARTICLES_PER_SECOND * design.trail.density * (audible ? 1 : 0.42);
     if (rng.next() > Math.min(1, trailRate * dt)) return;
 
     const trail = flairColor(design, color, rng);
     const sparkle = rng.next() < design.trail.sparkle;
-    const trailColor = brocade
-      ? sparkle
-        ? (secondary ?? BROCADE_WHITE_GOLD)
-        : applyColorMix(color, BROCADE_WHITE_GOLD, 0.42)
-      : design.trailProfile === 'glitter' && sparkle
+    const trailColor =
+      design.trailProfile === 'glitter' && sparkle
         ? HOT_SPARK_COLOR
         : design.trailProfile === 'long_hang' && secondary && rng.next() > 0.72
           ? secondary
@@ -1020,79 +1199,27 @@ export class Effects {
     const r = trailColor.r;
     const g = trailColor.g;
     const b = trailColor.b;
-    const tailR = brocade ? Math.min(1, r * 0.58 + 0.36) : Math.min(1, r * 0.44 + 0.7);
-    const tailG = brocade ? Math.min(1, g * 0.5 + 0.3) : Math.min(1, g * 0.36 + 0.56);
-    const tailB = brocade ? Math.min(1, b * 0.42 + 0.22) : Math.min(1, b * 0.24 + 0.32);
-    const streakSize = brocade ? clamp(design.trail.streakSize, 0.4, 4) : 1;
-    const streakLength = brocade ? clamp(design.trail.streakLength, 0.4, 4) : 1;
-    const streakLife = brocade ? clamp(design.trail.streakLife, 0.2, 4) : 1;
-    const originX = particle.x;
-    const originY = particle.y;
-    const originZ = particle.z;
+    const tailR = Math.min(1, r * 0.44 + 0.7);
+    const tailG = Math.min(1, g * 0.36 + 0.56);
+    const tailB = Math.min(1, b * 0.24 + 0.32);
     this.pp.new({
-      x: originX,
-      y: originY,
-      z: originZ,
+      x: particle.x,
+      y: particle.y,
+      z: particle.z,
       mass: 0.002,
-      gravity: brocade ? TRAIL_GRAVITY * 0.7 : TRAIL_GRAVITY,
-      drag: brocade ? TRAIL_DRAG * 0.68 : TRAIL_DRAG,
-      size:
-        (brocade ? 10 + rng.next() * 20 : 13 + rng.next() * 26) *
-        design.trail.thickness *
-        streakSize,
-      shape: brocade && !sparkle ? 1 : 0,
+      gravity: TRAIL_GRAVITY,
+      drag: TRAIL_DRAG,
+      size: (13 + rng.next() * 26) * design.trail.thickness,
+      shape: 0,
       r: sparkle ? r : tailR,
       g: sparkle ? g : tailG,
       b: sparkle ? b : tailB,
       h: 1.0,
       s: 0.5,
       l: 0.0,
-      life:
-        (brocade ? 0.58 + rng.next() * 1.24 : 0.32 + rng.next() * 0.9) *
-        design.trail.length *
-        (brocade ? streakLife : 1),
-      decay:
-        (brocade ? 18 + rng.next() * 26 : 32 + rng.next() * 42) /
-        Math.max(0.65, design.trail.length),
+      life: (0.32 + rng.next() * 0.9) * design.trail.length,
+      decay: (32 + rng.next() * 42) / Math.max(0.65, design.trail.length),
     });
-
-    if (brocade) {
-      for (let i = 1; i <= 4; i++) {
-        const taper = 1 - i * 0.18;
-        const offset = i * (8 + rng.next() * 3.5) * streakLength;
-        const streak = i % 2 === 1;
-        this.pp.new({
-          x: originX - particle.vx * offset,
-          y: originY - particle.vy * offset,
-          z: originZ - particle.vz * offset,
-          mass: 0.002,
-          gravity: TRAIL_GRAVITY * 0.55,
-          drag: TRAIL_DRAG * 0.82,
-          size:
-            (streak ? 7 + rng.next() * 9 : 4 + rng.next() * 7) *
-            taper *
-            design.trail.thickness *
-            streakSize,
-          shape: streak ? 1 : 0,
-          vx: particle.vx * 0.015 + (rng.next() - 0.5) * 0.05,
-          vy: particle.vy * 0.015 + (rng.next() - 0.5) * 0.05,
-          vz: particle.vz * 0.015 + (rng.next() - 0.5) * 0.05,
-          r: tailR * taper,
-          g: tailG * taper,
-          b: tailB * taper,
-          h: 1.0,
-          s: 0.5,
-          l: 0.0,
-          life:
-            (0.5 + rng.next() * 0.9) *
-            taper *
-            design.trail.length *
-            streakLife *
-            (streak ? 0.85 + streakLength * 0.15 : 1),
-          decay: (14 + rng.next() * 22) / Math.max(0.65, design.trail.length),
-        });
-      }
-    }
   }
 
   private crackleEffect(
