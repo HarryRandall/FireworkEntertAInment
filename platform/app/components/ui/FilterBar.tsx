@@ -168,10 +168,7 @@ export function FilterBar({
             >
               <Badge tone="neutral" solid className="gap-1 pr-1">
                 {chip}
-                <X
-                  size={12}
-                  className="ml-1 text-[color:var(--color-content-subtle)] group-hover:text-[color:var(--color-content-emphasis)]"
-                />
+                <X size={12} className="text-muted-foreground group-hover:text-foreground ml-1" />
               </Badge>
             </button>
           ))}
@@ -252,9 +249,7 @@ function FilterPopover({
                       <span
                         className={cn(
                           'mr-2 h-2 w-2 rounded-full',
-                          selected
-                            ? 'bg-[color:var(--color-content-emphasis)]'
-                            : 'bg-transparent ring-1 ring-[color:var(--color-border-default)]',
+                          selected ? 'bg-primary' : 'ring-border bg-transparent ring-1',
                         )}
                       />
                       {opt.label}
@@ -283,7 +278,7 @@ function FilterPopoverBackButton({ label, onClick }: { label: string; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="mx-1 mt-1 flex h-8 items-center gap-2 rounded-md px-2 text-sm font-medium text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)]"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground mx-1 mt-1 flex h-8 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors"
     >
       <ArrowLeft size={14} />
       {label}
@@ -322,9 +317,7 @@ function RangeFilterPanel({
       }}
     >
       <FilterPopoverBackButton label="All filters" onClick={onBack} />
-      <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-        {filter.label}
-      </div>
+      <div className="text-foreground text-sm font-medium">{filter.label}</div>
       <div className="flex items-center gap-2">
         <Input
           type="number"
@@ -334,7 +327,7 @@ function RangeFilterPanel({
           placeholder={filter.minPlaceholder ?? 'Min'}
           aria-label={`${filter.label} minimum`}
         />
-        <span className="text-xs text-[color:var(--color-content-subtle)]">to</span>
+        <span className="text-muted-foreground text-xs">to</span>
         <Input
           type="number"
           inputMode="decimal"

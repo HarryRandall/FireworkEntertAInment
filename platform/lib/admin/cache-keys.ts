@@ -23,6 +23,11 @@ export function getAdminUsersCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:users`;
 }
 
+/** Cache key for overview-only platform metrics. */
+export function getAdminOverviewCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:overview`;
+}
+
 /** Cache key for a single admin user detail blob. */
 export function getAdminUserCacheKey(userId: string): string {
   return `${ADMIN_CACHE_PREFIX}:users:${userId}`;

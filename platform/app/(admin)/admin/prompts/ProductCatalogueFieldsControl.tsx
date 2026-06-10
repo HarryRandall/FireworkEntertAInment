@@ -45,7 +45,7 @@ const FIELD_HELP: Record<ProductCatalogueField, string> = {
 };
 
 const STATIC_SECONDARY_BUTTON_CLASS =
-  '!transition-none hover:!border-[color:var(--color-border-subtle)] hover:!bg-[color:var(--color-bg-default)] hover:!text-[color:var(--color-content-emphasis)] hover:!ring-0 focus:!border-[color:var(--color-border-subtle)] focus:!bg-[color:var(--color-bg-default)] focus:!text-[color:var(--color-content-emphasis)] focus:!ring-0 active:!border-[color:var(--color-border-subtle)] active:!bg-[color:var(--color-bg-default)] active:!text-[color:var(--color-content-emphasis)] active:!ring-0';
+  '!transition-none hover:!border-border hover:!bg-background hover:!text-foreground hover:!ring-0 focus:!border-border focus:!bg-background focus:!text-foreground focus:!ring-0 active:!border-border active:!bg-background active:!text-foreground active:!ring-0';
 
 type Props = {
   initialFields: readonly ProductCatalogueField[];
@@ -89,10 +89,10 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
             Configure fields
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-hidden border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] p-0 text-[color:var(--color-content-emphasis)] duration-[180ms] ease-out sm:max-w-[760px]">
-          <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 pt-6 pb-4">
+        <DialogContent className="border-border bg-card text-card-foreground max-h-[calc(100dvh-2rem)] overflow-hidden border p-0 duration-[180ms] ease-out sm:max-w-[760px]">
+          <DialogHeader className="border-border/50 border-b px-6 pt-6 pb-4">
             <DialogTitle className="text-lg">Catalogue fields</DialogTitle>
-            <DialogDescription className="max-w-2xl text-sm text-[color:var(--color-content-subtle)]">
+            <DialogDescription className="text-muted-foreground max-w-2xl text-sm">
               Choose which catalogue attributes are included in the LLM payload. These fields help
               the model pick products that match timing, colour, duration, and effect intent.
             </DialogDescription>
@@ -115,10 +115,10 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
                     aria-pressed={checked}
                     onClick={() => toggleField(field)}
                     className={cn(
-                      'flex min-h-20 min-w-0 items-start gap-3 rounded-lg border p-3 text-left transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]',
+                      'focus-visible:ring-ring/50 flex min-h-20 min-w-0 items-start gap-3 rounded-lg border p-3 text-left transition-colors focus:outline-none focus-visible:ring-3',
                       checked
-                        ? 'border-[color-mix(in_srgb,var(--color-status-success)_40%,var(--color-border-default))] bg-[color-mix(in_srgb,var(--color-status-success)_14%,transparent)] text-[color:var(--color-content-emphasis)]'
-                        : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-default)] hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]',
+                        ? 'text-foreground border-[color-mix(in_srgb,var(--color-status-success)_40%,var(--border))] bg-[color-mix(in_srgb,var(--color-status-success)_14%,transparent)]'
+                        : 'border-border/50 bg-muted text-foreground hover:border-ring hover:text-foreground',
                       locked && 'cursor-not-allowed opacity-70',
                     )}
                   >
@@ -127,7 +127,7 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
                         'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border',
                         checked
                           ? 'border-[color:var(--color-status-success)] bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]'
-                          : 'border-[color:var(--color-border-default)] text-transparent',
+                          : 'border-border text-transparent',
                       )}
                       aria-hidden
                     >
@@ -135,7 +135,7 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-medium">{PRODUCT_FIELD_LABELS[field]}</span>
-                      <span className="mt-1 block text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
+                      <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
                         {FIELD_HELP[field]}
                       </span>
                     </span>

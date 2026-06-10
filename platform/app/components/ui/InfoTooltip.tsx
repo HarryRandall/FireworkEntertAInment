@@ -1,5 +1,6 @@
-/** InfoTooltip — small `(i)` icon with hover/focus tooltip — use for inline help next to form fields and labels. */
+/** InfoTooltip - compact shadcn-style info icon with hover/focus help. */
 import type { ReactNode } from 'react';
+import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -11,24 +12,19 @@ type InfoTooltipProps = {
 export function InfoTooltip({ text, className }: InfoTooltipProps) {
   return (
     <Tooltip>
-      <TooltipTrigger
-        type="button"
-        suppressHydrationWarning
-        aria-label="More information"
-        className={cn(
-          'inline-flex h-3.5 w-3.5 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-subtle)] transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)]',
-          className,
-        )}
-      >
-        <span className="block text-[9px] leading-none italic">i</span>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="More information"
+          className={cn(
+            'text-muted-foreground focus-visible:ring-ring/50 focus-visible:ring-offset-background inline-flex size-4 items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+            className,
+          )}
+        >
+          <Info className="size-3" aria-hidden />
+        </button>
       </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        sideOffset={6}
-        className="max-w-56 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-3 py-2 text-xs text-[color:var(--color-content-default)] shadow-[var(--shadow-modal)]"
-      >
-        {text}
-      </TooltipContent>
+      <TooltipContent>{text}</TooltipContent>
     </Tooltip>
   );
 }

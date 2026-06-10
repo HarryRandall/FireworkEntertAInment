@@ -156,6 +156,7 @@ export function FireworkReplayViewer({
   const lastUIElapsedRef = useRef(elapsed);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoplayStartedRef = useRef(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -369,6 +370,23 @@ export function FireworkReplayViewer({
     seekTo(timeSeconds, true);
     setIsPlaying(true);
   }
+
+  useEffect(() => {
+    if (searchParams.get('autoplay') !== '1') return;
+    if (autoplayStartedRef.current || !hasReplayCues || !isCanvasReady) return;
+    autoplayStartedRef.current = true;
+    elapsedRef.current = 0;
+    lastUIElapsedRef.current = 0;
+    setDisplayElapsed(0);
+    playheadStart.current = 0;
+    startedAt.current = performance.now();
+    if (audioRef.current && Math.abs(audioRef.current.currentTime) > 0.1) {
+      audioRef.current.currentTime = 0;
+    }
+    setElapsed(0);
+    setIsPlaying(true);
+    router.replace(`/shows/${showSlug}/preview`, { scroll: false });
+  }, [hasReplayCues, isCanvasReady, router, searchParams, showSlug]);
 
   function openCueDialog(tab: CueDialogTab, prompt?: string) {
     setCueDialogTab(tab);

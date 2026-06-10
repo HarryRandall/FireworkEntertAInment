@@ -41,9 +41,7 @@ export function SliderField({
           <FieldLabel htmlFor={id}>{label}</FieldLabel>
           {hint ? <InfoTooltip text={hint} /> : null}
         </div>
-        <span className="font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums">
-          {display}
-        </span>
+        <span className="text-muted-foreground font-mono text-xs tabular-nums">{display}</span>
       </div>
       <Slider
         id={id}

@@ -6,20 +6,17 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const button = cva(
-  'inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 rounded-md border border-transparent bg-clip-padding text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        primary:
-          'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] hover:bg-[color:var(--color-bg-inverted)] hover:ring-4 hover:ring-[color:var(--color-bg-subtle)]',
+        primary: 'bg-primary text-primary-foreground hover:bg-primary/80',
         secondary:
-          'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] hover:bg-[color:var(--color-bg-muted)]',
-        ghost:
-          'border-transparent bg-transparent text-[color:var(--color-content-default)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]',
-        accent:
-          'border-[color:var(--color-accent)] bg-[color:var(--color-accent)] text-[color:var(--color-on-accent)] hover:bg-[color:var(--color-accent-hover)] hover:ring-4 hover:ring-[color:var(--color-accent-subtle)]',
+          'border-border bg-background text-foreground shadow-xs hover:bg-muted hover:text-foreground',
+        ghost: 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
+        accent: 'bg-accent text-accent-foreground hover:bg-accent/80',
         destructive:
-          'border-[#dc2626] bg-[#dc2626] text-white hover:bg-[#b91c1c] hover:border-[#b91c1c] hover:ring-4 hover:ring-[#dc2626]/15',
+          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20',
       },
       size: {
         sm: 'h-8 px-3',

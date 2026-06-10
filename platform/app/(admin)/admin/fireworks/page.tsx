@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import {
@@ -36,11 +35,6 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <AppPageHeader
-        title="Fireworks"
-        description="Product-level fireworks assembled from one or more reusable effects."
-      />
-
       <Suspense
         fallback={
           <>
@@ -138,28 +132,28 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
       <DataTableShell
         viewport
         footer={
-          totalPages > 1 ? (
-            <TablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              searchParams={params}
-              className="mt-0"
-            />
-          ) : null
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            searchParams={params}
+            visibleItems={paginated.length}
+            totalItems={filtered.length}
+            itemLabel="firework"
+          />
         }
       >
         <table className={tableClasses('min-w-[1120px]')}>
           <thead className={tableHeadClasses()}>
             <tr>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Preview</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Product</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Manufacturer</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Type</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Effects</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Calibre</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Shots</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Duration</th>
-              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Open</th>
+              <th className={tableHeaderCellClasses()}>Preview</th>
+              <th className={tableHeaderCellClasses()}>Product</th>
+              <th className={tableHeaderCellClasses()}>Manufacturer</th>
+              <th className={tableHeaderCellClasses()}>Type</th>
+              <th className={tableHeaderCellClasses()}>Effects</th>
+              <th className={tableHeaderCellClasses()}>Calibre</th>
+              <th className={tableHeaderCellClasses()}>Shots</th>
+              <th className={tableHeaderCellClasses()}>Duration</th>
+              <th className={tableHeaderCellClasses('text-right')}>Open</th>
             </tr>
           </thead>
           <tbody>
@@ -170,10 +164,10 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
 
               return (
                 <tr key={firework.id} className={tableRowClasses()}>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     <EffectPreviewIcon preview={firework.preview} />
                   </td>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     <div className="line-clamp-2 max-w-xs font-medium text-[color:var(--color-content-emphasis)]">
                       {firework.name}
                     </div>
@@ -181,14 +175,10 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                       {firework.partNumber}
                     </div>
                   </td>
-                  <td
-                    className={tableCellClasses(
-                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
-                    )}
-                  >
+                  <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
                     {firework.manufacturer ?? '—'}
                   </td>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     {firework.fireworkType ? (
                       <Badge tone="neutral" solid className="whitespace-nowrap">
                         {firework.fireworkType}
@@ -197,7 +187,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                       '—'
                     )}
                   </td>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     <div className="grid max-w-sm grid-cols-2 gap-2">
                       {visibleEffects.length > 0 ? (
                         visibleEffects.map((effect) => (
@@ -225,7 +215,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                       ) : null}
                     </div>
                   </td>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     <div className="flex max-w-40 flex-nowrap gap-2 overflow-hidden">
                       {firework.calibers.length > 0 ? (
                         firework.calibers.map((caliber) => (
@@ -244,19 +234,19 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
+                      'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
                   >
                     {firework.shotCount}
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
+                      'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
                   >
                     {formatDuration(firework.durationSeconds)}
                   </td>
-                  <td className={tableCellClasses('px-5 py-4 text-right')}>
+                  <td className={tableCellClasses('text-right')}>
                     <Link
                       href={`/admin/fireworks/${firework.id}`}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"

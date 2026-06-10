@@ -1,4 +1,4 @@
-/** DataTable primitives — class helpers + a Shell wrapper for consistent table styling across admin/app routes. */
+/** DataTable primitives: class helpers + a Shell wrapper for consistent table styling across admin/app routes. */
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -19,55 +19,63 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]',
+        'border-border bg-background overflow-hidden rounded-lg border shadow-xs',
         viewport && 'min-h-0 md:flex md:flex-1 md:flex-col',
         className,
       )}
     >
       {caption ? (
-        <div className="shrink-0 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-sm font-medium text-[color:var(--color-content-default)]">
+        <div className="border-border/50 text-foreground shrink-0 border-b px-4 py-3 text-sm font-medium">
           {caption}
         </div>
       ) : null}
-      <div className={cn('overflow-x-auto', viewport && 'md:min-h-0 md:flex-1 md:overflow-auto')}>
+      <div
+        className={cn(
+          'isolate overflow-x-auto overscroll-x-contain',
+          viewport &&
+            'md:min-h-0 md:flex-1 md:overflow-x-auto md:overflow-y-auto md:overscroll-none',
+        )}
+      >
         {children}
       </div>
-      {footer ? (
-        <div className="shrink-0 border-t border-[color:var(--color-border-subtle)] px-4 py-4 sm:px-5">
-          {footer}
-        </div>
-      ) : null}
+      {footer ? <div className="border-border/50 shrink-0 border-t px-4 py-3">{footer}</div> : null}
     </div>
   );
 }
 
 /** Base classes for the `<table>` element. */
 export function tableClasses(className?: string) {
-  return cn('w-full min-w-[760px] text-left text-sm', className);
+  return cn(
+    'w-full min-w-[760px] caption-bottom border-separate border-spacing-0 text-left text-sm',
+    className,
+  );
 }
 
 /** Classes for `<thead>`. */
 export function tableHeadClasses(className?: string) {
   return cn(
-    'sticky top-0 z-10 bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-subtle)]',
+    'bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:border-b [&_th]:border-border/50 [&_th]:bg-background',
     className,
   );
 }
 
 /** Classes for `<th>` cells. */
 export function tableHeaderCellClasses(className?: string) {
-  return cn('px-4 py-2.5 text-xs font-medium uppercase tracking-wide', className);
+  return cn(
+    'h-11 px-4 py-3 text-left align-middle text-sm font-medium whitespace-nowrap text-foreground',
+    className,
+  );
 }
 
 /** Classes for `<tr>` rows. */
 export function tableRowClasses(className?: string) {
   return cn(
-    'border-t border-[color:var(--color-border-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)]',
+    'transition-colors last:[&>*]:border-b-0 [&>*]:border-b [&>*]:border-border/50',
     className,
   );
 }
 
 /** Classes for `<td>` cells. */
 export function tableCellClasses(className?: string) {
-  return cn('px-4 py-3 align-middle text-sm text-[color:var(--color-content-default)]', className);
+  return cn('px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground', className);
 }

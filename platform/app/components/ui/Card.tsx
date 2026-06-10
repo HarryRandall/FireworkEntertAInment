@@ -34,10 +34,10 @@ export function Card({
     <div
       className={cn(
         radiusClasses[radius],
-        'bg-[color:var(--color-bg-default)]',
-        bordered && 'border border-[color:var(--color-border-default)]',
-        shadow && 'shadow-[var(--shadow-card)]',
-        hoverable && 'transition-colors hover:bg-[color:var(--color-bg-muted)]',
+        'bg-card text-card-foreground',
+        bordered && 'border-border border',
+        shadow && 'shadow-xs',
+        hoverable && 'hover:bg-muted/60 transition-colors',
         className,
       )}
       {...rest}

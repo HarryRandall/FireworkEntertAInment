@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react';
 import { deleteImportJobAction, updateImportJobAction } from '@/app/actions/platform-admin';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
@@ -25,11 +24,6 @@ const STATUS_OPTIONS = [
 export default function AdminImportsPage() {
   return (
     <div className="space-y-6">
-      <AppPageHeader
-        title="Firework video reconstruction"
-        description="Upload short source videos, generate a synced 3D reconstruction, then review and publish the result to the catalogue."
-      />
-
       <Card elevation="high" radius="md" className="p-5">
         <div className="mb-4">
           <h2 className="text-on-surface text-lg font-bold">Upload firework video</h2>

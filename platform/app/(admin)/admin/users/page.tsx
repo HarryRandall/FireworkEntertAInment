@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { UserRound } from 'lucide-react';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { FilterBar } from '@/app/components/ui/FilterBar';
@@ -26,7 +25,7 @@ type PageProps = {
 };
 type UsersSearchParams = Awaited<PageProps['searchParams']>;
 
-const rowLinkClasses = 'block px-5 py-4';
+const rowLinkClasses = 'block px-4 py-3';
 
 function roleTone(role: RoleKey) {
   if (role === 'admin') return 'violet' as const;
@@ -45,8 +44,6 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <AppPageHeader title="Users" description="Search, filter, and manage platform users." />
-
       <FilterBar
         searchPlaceholder="Search name, email, phone…"
         filters={[
@@ -116,15 +113,26 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
 
   return (
     <>
-      <DataTableShell>
+      <DataTableShell
+        footer={
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            searchParams={params}
+            visibleItems={paginated.length}
+            totalItems={filtered.length}
+            itemLabel="user"
+          />
+        }
+      >
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>User</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Role</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Status</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Updated</th>
-              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Actions</th>
+              <th className={tableHeaderCellClasses()}>User</th>
+              <th className={tableHeaderCellClasses()}>Role</th>
+              <th className={tableHeaderCellClasses()}>Status</th>
+              <th className={tableHeaderCellClasses()}>Updated</th>
+              <th className={tableHeaderCellClasses('text-right')}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -137,7 +145,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
               return (
                 <tr key={user.id} className={tableRowClasses('group')}>
                   <td className={tableCellClasses('p-0')}>
-                    <div className="flex items-center gap-3 px-5 py-4">
+                    <div className="flex items-center gap-3 px-4 py-3">
                       <Link
                         href={href}
                         prefetch
@@ -211,7 +219,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                       {new Date(user.updatedAt).toLocaleDateString()}
                     </Link>
                   </td>
-                  <td className={tableCellClasses('px-5 py-4 text-right')}>
+                  <td className={tableCellClasses('text-right')}>
                     <UserRowActions
                       userId={user.id}
                       email={user.email}
@@ -226,8 +234,6 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
           </tbody>
         </table>
       </DataTableShell>
-
-      <TablePagination currentPage={currentPage} totalPages={totalPages} searchParams={params} />
     </>
   );
 }

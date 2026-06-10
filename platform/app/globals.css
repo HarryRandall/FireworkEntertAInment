@@ -7,47 +7,54 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * ShowCrafter design tokens - minimal, dub.co-inspired.
+ * ShowCrafter design tokens - aligned to the shadcn dashboard reference palette.
  *
  * Light theme: white / near-white surfaces, thin neutral borders, near-black text.
- * Dark theme: hand-tuned near-black surfaces (not a flat invert) with crisp contrast.
+ * Dark theme: black-first surfaces with subtle borders and only muted fills raised.
  * Accent: neutral by default, with sparse static rainbow washes reserved for
  * background atmosphere and tiny highlights.
  */
 @theme {
   /* Type */
-  --font-sans: 'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: 'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans:
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-body:
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
   --font-headline:
-    'Inter', 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
   --font-mono:
-    'ui-monospace', 'SFMono-Regular', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+    var(--font-geist-mono, 'Geist Mono'), 'ui-monospace', 'SFMono-Regular', 'SF Mono', Consolas,
+    'Liberation Mono', Menlo, monospace;
 
   /* ---------- Semantic tokens (light defaults) ---------- */
   /* Surfaces */
   --color-bg-default: #ffffff;
-  --color-bg-muted: #fafafa; /* neutral-50 */
-  --color-bg-subtle: #f5f5f5; /* neutral-100 */
-  --color-bg-emphasis: #e5e5e5; /* neutral-200 */
-  --color-bg-inverted: #171717; /* neutral-900 */
+  --color-bg-muted: #f4f4f6;
+  --color-bg-subtle: #ededf1;
+  --color-bg-emphasis: #e1e1e7;
+  --color-bg-elevated: #ffffff;
+  --color-bg-inverted: #09090b;
 
   /* Borders */
-  --color-border-subtle: #e5e5e5; /* neutral-200 */
-  --color-border-default: #d4d4d4; /* neutral-300 */
-  --color-border-emphasis: #a3a3a3; /* neutral-400 */
+  --color-border-subtle: #e5e5ea;
+  --color-border-default: #d9d9e2;
+  --color-border-emphasis: #b9bbc6;
 
   /* Content (text/icons) */
-  --color-content-emphasis: #171717; /* neutral-900 */
-  --color-content-default: #404040; /* neutral-700 */
-  --color-content-subtle: #737373; /* neutral-500 */
-  --color-content-muted: #a3a3a3; /* neutral-400 */
+  --color-content-emphasis: #24242a;
+  --color-content-default: #3d3d45;
+  --color-content-subtle: #747680;
+  --color-content-muted: #9b9da7;
   --color-content-inverted: #ffffff;
 
   /* Accent - neutral system colour. Use rainbow utilities for soft highlights. */
-  --color-accent: #525252; /* neutral-600 */
-  --color-accent-hover: #404040; /* neutral-700 */
-  --color-accent-subtle: #f5f5f5; /* neutral-100 */
-  --color-accent-emphasis: #262626; /* neutral-800 */
+  --color-accent: #09090b;
+  --color-accent-hover: #18181b;
+  --color-accent-subtle: #e1e1e7;
+  --color-accent-emphasis: #24242a;
   --color-on-accent: #ffffff;
 
   /* Sparse Dub-style rainbow wash for marketing backdrops. */
@@ -75,7 +82,7 @@
 
   /* ---------- Legacy aliases (mapped to semantic tokens) ---------- */
   /* Existing components reference these - kept so the sweep can happen incrementally. */
-  --color-background: var(--color-bg-default);
+  --color-background: var(--background);
   --color-surface: var(--color-bg-default);
   --color-surface-dim: var(--color-bg-muted);
   --color-surface-bright: var(--color-bg-default);
@@ -91,22 +98,22 @@
   --color-on-surface-variant: var(--color-content-subtle);
   --color-on-background: var(--color-content-emphasis);
 
-  --color-primary: var(--color-content-emphasis);
-  --color-primary-container: var(--color-content-emphasis);
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary);
   --color-primary-fixed: var(--color-bg-emphasis);
   --color-primary-fixed-dim: var(--color-border-default);
-  --color-on-primary: var(--color-content-inverted);
-  --color-on-primary-container: var(--color-content-inverted);
+  --color-on-primary: var(--primary-foreground);
+  --color-on-primary-container: var(--primary-foreground);
   --color-on-primary-fixed: var(--color-content-emphasis);
   --color-on-primary-fixed-variant: var(--color-content-default);
   --color-inverse-primary: var(--color-bg-default);
 
-  --color-secondary: var(--color-content-default);
-  --color-secondary-container: var(--color-bg-subtle);
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary);
   --color-secondary-fixed: var(--color-bg-emphasis);
   --color-secondary-fixed-dim: var(--color-border-default);
-  --color-on-secondary: var(--color-content-inverted);
-  --color-on-secondary-container: var(--color-content-emphasis);
+  --color-on-secondary: var(--secondary-foreground);
+  --color-on-secondary-container: var(--secondary-foreground);
   --color-on-secondary-fixed: var(--color-content-emphasis);
   --color-on-secondary-fixed-variant: var(--color-content-default);
 
@@ -140,9 +147,9 @@
   --radius-hero: 16px;
 
   /* Shadows - soft, dub-style */
-  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
-  --shadow-cta: 0 1px 2px 0 rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 2px 0 rgba(15, 15, 20, 0.06);
+  --shadow-card-hover: 0 8px 20px -14px rgba(15, 15, 20, 0.2);
+  --shadow-cta: 0 1px 2px 0 rgba(15, 15, 20, 0.12);
   --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
 
   /* Preview chrome (kept for WebGL preview card surround) */
@@ -153,31 +160,32 @@
 /* ---------- Dark theme overrides ---------- */
 [data-theme='dark'],
 .dark {
-  /* Surfaces - inner content panel slightly lighter than the page so it lifts */
-  --color-bg-default: #111111; /* inner content card */
-  --color-bg-muted: #0a0a0a; /* page background (darker, recessed) */
-  --color-bg-subtle: #1a1a1a; /* hover / subtle fill on the inner card */
-  --color-bg-emphasis: #262626;
-  --color-bg-inverted: #fafafa;
+  /* Surfaces - tables, cards, dialogs, and panels should read black, not grey. */
+  --color-bg-default: #09090b;
+  --color-bg-muted: #050507;
+  --color-bg-subtle: #171719;
+  --color-bg-emphasis: #242428;
+  --color-bg-elevated: #09090b;
+  --color-bg-inverted: oklch(0.985 0 0);
 
   /* Borders */
-  --color-border-subtle: #333333;
-  --color-border-default: #454545;
-  --color-border-emphasis: #666666;
+  --color-border-subtle: oklch(1 0 0 / 10%);
+  --color-border-default: oklch(1 0 0 / 15%);
+  --color-border-emphasis: oklch(0.556 0 0);
 
   /* Content */
-  --color-content-emphasis: #fafafa;
-  --color-content-default: #d4d4d4; /* neutral-300 */
-  --color-content-subtle: #a3a3a3; /* neutral-400 */
-  --color-content-muted: #737373; /* neutral-500 */
-  --color-content-inverted: #0a0a0a;
+  --color-content-emphasis: oklch(0.985 0 0);
+  --color-content-default: oklch(0.922 0 0);
+  --color-content-subtle: oklch(0.708 0 0);
+  --color-content-muted: oklch(0.556 0 0);
+  --color-content-inverted: #09090b;
 
   /* Accent - neutral system colour. */
-  --color-accent: #d4d4d4; /* neutral-300 */
-  --color-accent-hover: #f5f5f5; /* neutral-100 */
-  --color-accent-subtle: #262626; /* neutral-800 */
-  --color-accent-emphasis: #fafafa; /* neutral-50 */
-  --color-on-accent: #0a0a0a;
+  --color-accent: oklch(0.922 0 0);
+  --color-accent-hover: oklch(0.985 0 0);
+  --color-accent-subtle: #171719;
+  --color-accent-emphasis: oklch(0.985 0 0);
+  --color-on-accent: #09090b;
 
   --color-status-success: #4ade80;
   --color-status-success-subtle: #052e16;
@@ -199,7 +207,7 @@
 html {
   min-height: 100%;
   overscroll-behavior-y: none;
-  background-color: var(--color-bg-default);
+  background-color: var(--background);
   color-scheme: light;
 }
 [data-theme='dark'],
@@ -211,7 +219,7 @@ body {
   min-height: 100vh;
   overscroll-behavior-y: none;
   font-family: var(--font-body);
-  background-color: var(--color-bg-default);
+  background-color: var(--background);
   color: var(--color-content-default);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -231,6 +239,15 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 .brand-logo-mark {
@@ -351,41 +368,75 @@ body {
  ---break---
  */
 :root,
-.dark,
-[data-theme='dark'],
 [data-theme='light'] {
-  --background: var(--color-bg-default);
-  --foreground: var(--color-content-emphasis);
-  --card: var(--color-bg-default);
-  --card-foreground: var(--color-content-emphasis);
-  --popover: var(--color-bg-default);
-  --popover-foreground: var(--color-content-emphasis);
-  --primary: var(--color-content-emphasis);
-  --primary-foreground: var(--color-content-inverted);
-  --secondary: var(--color-bg-subtle);
-  --secondary-foreground: var(--color-content-emphasis);
-  --muted: var(--color-bg-muted);
-  --muted-foreground: var(--color-content-subtle);
-  --accent: var(--color-bg-subtle);
-  --accent-foreground: var(--color-content-emphasis);
-  --destructive: var(--color-status-danger);
-  --border: var(--color-border-subtle);
-  --input: var(--color-border-default);
-  --ring: var(--color-content-emphasis);
-  --chart-1: var(--color-accent);
-  --chart-2: var(--color-status-info);
-  --chart-3: var(--color-status-success);
-  --chart-4: var(--color-status-warning);
-  --chart-5: var(--color-content-subtle);
+  --background: #ffffff;
+  --foreground: #24242a;
+  --card: #ffffff;
+  --card-foreground: #24242a;
+  --popover: #ffffff;
+  --popover-foreground: #24242a;
+  --primary: #09090b;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f6;
+  --secondary-foreground: #24242a;
+  --muted: #f4f4f6;
+  --muted-foreground: #747680;
+  --accent: #e1e1e7;
+  --accent-foreground: #24242a;
+  --destructive: #dc2626;
+  --border: #e5e5ea;
+  --input: #d9d9e2;
+  --ring: #b9bbc6;
+  --chart-1: #09090b;
+  --chart-2: #747680;
+  --chart-3: #9b9da7;
+  --chart-4: #c8c9d1;
+  --chart-5: #e1e1e7;
   --radius: var(--radius-card);
-  --sidebar: var(--color-bg-muted);
-  --sidebar-foreground: var(--color-content-default);
-  --sidebar-primary: var(--color-content-emphasis);
-  --sidebar-primary-foreground: var(--color-content-inverted);
-  --sidebar-accent: var(--color-accent-subtle);
-  --sidebar-accent-foreground: var(--color-accent);
-  --sidebar-border: var(--color-border-subtle);
-  --sidebar-ring: var(--color-content-emphasis);
+  --sidebar: #f4f4f6;
+  --sidebar-foreground: #747680;
+  --sidebar-primary: #09090b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e1e1e7;
+  --sidebar-accent-foreground: #24242a;
+  --sidebar-border: #e5e5ea;
+  --sidebar-ring: #b9bbc6;
+}
+
+.dark,
+[data-theme='dark'] {
+  --background: #050507;
+  --foreground: oklch(0.985 0 0);
+  --card: #09090b;
+  --card-foreground: oklch(0.985 0 0);
+  --popover: #09090b;
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: #09090b;
+  --secondary: #171719;
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: #171719;
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: #171719;
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: #171719;
+  --radius: var(--radius-card);
+  --sidebar: #09090b;
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: #171719;
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }
 /*
  ---break---

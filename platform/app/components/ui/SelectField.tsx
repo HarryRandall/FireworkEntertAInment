@@ -68,36 +68,32 @@ export function SelectField({
         <SelectTrigger
           aria-label={ariaLabel}
           className={cn(
-            'h-10 w-full cursor-pointer rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors focus:border-[color:var(--color-content-emphasis)] focus:outline-none',
+            'border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full cursor-pointer rounded-md border px-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3',
             disabled && 'cursor-not-allowed opacity-60',
             className,
           )}
         >
-          {iconLeft ? (
-            <span className="text-[color:var(--color-content-subtle)]">{iconLeft}</span>
-          ) : null}
+          {iconLeft ? <span className="text-muted-foreground">{iconLeft}</span> : null}
           <SelectValue placeholder={placeholder}>{selected?.label}</SelectValue>
         </SelectTrigger>
         <SelectContent
           align="start"
-          className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-1 shadow-[var(--shadow-modal)]"
+          className="border-border bg-popover text-popover-foreground rounded-lg border p-1 shadow-md"
         >
           {options.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-[color:var(--color-content-subtle)]">
-              No options
-            </div>
+            <div className="text-muted-foreground px-3 py-2 text-sm">No options</div>
           ) : null}
           {options.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
               disabled={option.disabled}
-              className="rounded-md text-sm text-[color:var(--color-content-default)] focus:bg-[color:var(--color-bg-muted)] focus:text-[color:var(--color-content-emphasis)] data-[state=checked]:font-medium data-[state=checked]:text-[color:var(--color-content-emphasis)]"
+              className="text-foreground focus:bg-muted focus:text-foreground rounded-md text-sm data-[state=checked]:font-medium"
             >
               <span className="min-w-0">
                 <span className="block truncate">{option.label}</span>
                 {option.description ? (
-                  <span className="mt-0.5 block truncate text-xs text-[color:var(--color-content-subtle)]">
+                  <span className="text-muted-foreground mt-0.5 block truncate text-xs">
                     {option.description}
                   </span>
                 ) : null}

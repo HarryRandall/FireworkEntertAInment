@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 
 const controlBase =
-  'h-10 w-full rounded-md border bg-[color:var(--color-bg-default)] text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none';
+  'h-10 w-full rounded-md border bg-background text-sm text-foreground shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-3';
 
 type InputProps = ComponentPropsWithoutRef<'input'> & {
   iconLeft?: ReactNode;
@@ -16,7 +16,7 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
   return (
     <div className="relative">
       {iconLeft ? (
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[color:var(--color-content-subtle)]">
+        <div className="text-muted-foreground pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           {iconLeft}
         </div>
       ) : null}
@@ -26,8 +26,8 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
         className={cn(
           controlBase,
           invalid
-            ? 'border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]'
-            : 'border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]',
+            ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
+            : 'border-input focus-visible:border-ring focus-visible:ring-ring/50',
           iconLeft ? 'pr-3 pl-10' : 'px-3',
           className,
         )}
@@ -45,10 +45,10 @@ export function Textarea({ className, invalid = false, ...rest }: TextareaProps)
       {...rest}
       aria-invalid={invalid || rest['aria-invalid'] || undefined}
       className={cn(
-        'w-full resize-y rounded-md border bg-[color:var(--color-bg-default)] p-3 text-sm text-[color:var(--color-content-emphasis)] transition-colors placeholder:text-[color:var(--color-content-muted)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-60',
+        'bg-background text-foreground placeholder:text-muted-foreground w-full resize-y rounded-md border p-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
         invalid
-          ? 'border-[color:var(--color-status-danger)] focus:border-[color:var(--color-status-danger)]'
-          : 'border-[color:var(--color-border-default)] focus:border-[color:var(--color-content-emphasis)]',
+          ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
+          : 'border-input focus-visible:border-ring focus-visible:ring-ring/50',
         className,
       )}
     />

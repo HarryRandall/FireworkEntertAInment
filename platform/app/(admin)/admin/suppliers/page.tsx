@@ -1,7 +1,6 @@
 /** Admin supplier list page with create / edit dialogs. */
 
 import { Suspense } from 'react';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { FilterBar } from '@/app/components/ui/FilterBar';
@@ -41,11 +40,9 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <AppPageHeader
-        title="Suppliers"
-        description="Manage supplier records, contacts, and status."
-        actions={<SupplierFormDialog />}
-      />
+      <div className="flex justify-end">
+        <SupplierFormDialog />
+      </div>
 
       <FilterBar
         searchPlaceholder="Search name, email, phone, website…"
@@ -108,25 +105,25 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
       <DataTableShell
         viewport
         footer={
-          totalPages > 1 ? (
-            <TablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              searchParams={params}
-              className="mt-0"
-            />
-          ) : null
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            searchParams={params}
+            visibleItems={paginated.length}
+            totalItems={filtered.length}
+            itemLabel="supplier"
+          />
         }
       >
         <table className={tableClasses()}>
           <thead className={tableHeadClasses()}>
             <tr>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Name</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Email</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Phone</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Website</th>
-              <th className={tableHeaderCellClasses('px-5 py-3')}>Status</th>
-              <th className={tableHeaderCellClasses('px-5 py-3 text-right')}>Actions</th>
+              <th className={tableHeaderCellClasses()}>Name</th>
+              <th className={tableHeaderCellClasses()}>Email</th>
+              <th className={tableHeaderCellClasses()}>Phone</th>
+              <th className={tableHeaderCellClasses()}>Website</th>
+              <th className={tableHeaderCellClasses()}>Status</th>
+              <th className={tableHeaderCellClasses('text-right')}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -143,30 +140,22 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
                 <tr key={s.id} className={tableRowClasses()}>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-medium whitespace-nowrap text-[color:var(--color-content-emphasis)]',
+                      'font-medium text-[color:var(--color-content-emphasis)]',
                     )}
                   >
                     {s.name}
                   </td>
-                  <td
-                    className={tableCellClasses(
-                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
-                    )}
-                  >
+                  <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
                     {s.contactEmail || '—'}
                   </td>
                   <td
                     className={tableCellClasses(
-                      'px-5 py-4 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums',
+                      'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
                   >
                     {s.phone || '—'}
                   </td>
-                  <td
-                    className={tableCellClasses(
-                      'px-5 py-4 whitespace-nowrap text-[color:var(--color-content-subtle)]',
-                    )}
-                  >
+                  <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
                     {s.websiteUrl ? (
                       <a
                         href={s.websiteUrl}
@@ -180,12 +169,12 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
                       '—'
                     )}
                   </td>
-                  <td className={tableCellClasses('px-5 py-4')}>
+                  <td className={tableCellClasses()}>
                     <Badge solid tone={statusTone(s.status)}>
                       {s.status}
                     </Badge>
                   </td>
-                  <td className={tableCellClasses('px-5 py-4 text-right')}>
+                  <td className={tableCellClasses('text-right')}>
                     <SupplierRowActions supplier={supplierForActions} />
                   </td>
                 </tr>

@@ -1,4 +1,4 @@
-/** Settings index page summarising account preferences and linking to sub-pages. */
+/** Settings index page redirecting to the first user-facing settings section. */
 
 import { redirect } from 'next/navigation';
 
