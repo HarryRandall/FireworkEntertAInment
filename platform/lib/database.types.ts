@@ -1017,6 +1017,9 @@ export type Database = {
           music_analysis_id: string | null
           mood_tags: string[]
           safety_meters: number | null
+          show_style: string
+          site_width_feet: number | null
+          firework_types: string[] | null
           slug: string
           song: string | null
           status: string
@@ -1046,6 +1049,9 @@ export type Database = {
           music_analysis_id?: string | null
           mood_tags?: string[]
           safety_meters?: number | null
+          show_style?: string
+          site_width_feet?: number | null
+          firework_types?: string[] | null
           slug: string
           song?: string | null
           status?: string
@@ -1075,6 +1081,9 @@ export type Database = {
           music_analysis_id?: string | null
           mood_tags?: string[]
           safety_meters?: number | null
+          show_style?: string
+          site_width_feet?: number | null
+          firework_types?: string[] | null
           slug?: string
           song?: string | null
           status?: string

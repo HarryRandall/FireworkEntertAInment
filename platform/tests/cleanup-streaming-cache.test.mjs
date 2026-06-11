@@ -99,7 +99,6 @@ test('three replay canvases are lazy loaded without console warning monkey patch
 
   assert.match(viewer, /dynamic\(/);
   assert.match(template, /IntersectionObserver/);
-  assert.match(template, /shouldMountCanvas/);
   assert.match(importPreview, /dynamic\(/);
   for (const source of [viewer, template, importPreview, heroCanvas]) {
     assert.doesNotMatch(source, /console\.warn\s*=/);

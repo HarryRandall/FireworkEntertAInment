@@ -2,38 +2,22 @@
 
 import { Suspense } from 'react';
 import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { Badge } from '@/app/components/ui/Badge';
 import { FilterBar } from '@/app/components/ui/FilterBar';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import {
   DataTableShell,
-  tableCellClasses,
   tableClasses,
   tableHeadClasses,
   tableHeaderCellClasses,
-  tableRowClasses,
 } from '@/app/components/ui/DataTable';
 import { listSuppliers } from '@/lib/admin.server';
 import { SupplierFormDialog } from './SupplierFormDialog';
-import { SupplierRowActions } from './SupplierRowActions';
+import { SuppliersTableBody } from './SuppliersTableBody';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 };
 type SuppliersSearchParams = Awaited<PageProps['searchParams']>;
-
-function statusTone(status: string) {
-  switch (status) {
-    case 'active':
-      return 'success' as const;
-    case 'suspended':
-      return 'danger' as const;
-    case 'archived':
-      return 'neutral' as const;
-    default:
-      return 'amber-soft' as const;
-  }
-}
 
 export default async function AdminSuppliersPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -126,61 +110,7 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
               <th className={tableHeaderCellClasses('text-right')}>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {paginated.map((s) => {
-              const supplierForActions = {
-                id: s.id,
-                name: s.name,
-                contactEmail: s.contactEmail ?? '',
-                phone: s.phone ?? undefined,
-                websiteUrl: s.websiteUrl ?? '',
-                status: (s.status as 'draft' | 'active' | 'suspended' | 'archived') ?? 'draft',
-              };
-              return (
-                <tr key={s.id} className={tableRowClasses()}>
-                  <td
-                    className={tableCellClasses(
-                      'font-medium text-[color:var(--color-content-emphasis)]',
-                    )}
-                  >
-                    {s.name}
-                  </td>
-                  <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
-                    {s.contactEmail || '—'}
-                  </td>
-                  <td
-                    className={tableCellClasses(
-                      'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                    )}
-                  >
-                    {s.phone || '—'}
-                  </td>
-                  <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
-                    {s.websiteUrl ? (
-                      <a
-                        href={s.websiteUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="underline decoration-dotted underline-offset-2 hover:text-[color:var(--color-content-emphasis)]"
-                      >
-                        {s.websiteUrl.replace(/^https?:\/\//, '')}
-                      </a>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className={tableCellClasses()}>
-                    <Badge solid tone={statusTone(s.status)}>
-                      {s.status}
-                    </Badge>
-                  </td>
-                  <td className={tableCellClasses('text-right')}>
-                    <SupplierRowActions supplier={supplierForActions} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+          <SuppliersTableBody suppliers={paginated} />
         </table>
       </DataTableShell>
     </>

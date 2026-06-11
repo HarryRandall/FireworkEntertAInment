@@ -9,7 +9,33 @@ import * as THREE from 'three';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 
 const GROUND_SIZE = 8000;
+const BASE_GROUND_SIZE = 40000;
 const GRID_TEXTURE_SIZE = 1024;
+const SKY_RADIUS = 30000;
+
+const SKY_VERTEX_SHADER = /* glsl */ `
+varying float vHeight;
+
+void main() {
+  vHeight = clamp(position.y / ${SKY_RADIUS.toFixed(1)}, 0.0, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const SKY_FRAGMENT_SHADER = /* glsl */ `
+varying float vHeight;
+
+void main() {
+  // Pure black at and below the ground line (so the floor melts seamlessly
+  // into the distance) fading steadily up into night-time navy at the zenith.
+  vec3 horizon = vec3(0.0, 0.0, 0.0);
+  vec3 mid = vec3(0.012, 0.024, 0.068);
+  vec3 zenith = vec3(0.024, 0.048, 0.125);
+  vec3 sky = mix(horizon, mid, smoothstep(0.0, 0.45, vHeight));
+  sky = mix(sky, zenith, smoothstep(0.45, 1.0, vHeight));
+  gl_FragColor = vec4(sky, 1.0);
+}
+`;
 
 export class World {
   group: THREE.Group;
@@ -27,10 +53,34 @@ export class World {
   private build(positions: LaunchPosition[]): void {
     this.mortarPositions = positions.slice(0, 3);
 
+    this.addSkyDome();
+
+    // Giant matte-black base plane: the world floor runs out to the horizon
+    // in black, so the gridded show area never reads as a floating rectangle.
+    const baseGeo = new THREE.PlaneGeometry(BASE_GROUND_SIZE, BASE_GROUND_SIZE, 1, 1);
+    // Pure black to match the sky gradient at the ground line, so the plane
+    // edge never reads against the horizon.
+    const baseMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      depthWrite: true,
+      toneMapped: false,
+    });
+    const basePlane = new THREE.Mesh(baseGeo, baseMat);
+    basePlane.rotation.x = -Math.PI / 2;
+    // Keep a real gap below the grid plane: at multi-thousand-unit view
+    // distances the depth buffer cannot separate planes a fraction of a unit
+    // apart, which showed up as flickering black z-fighting bars.
+    basePlane.position.y = -6;
+    basePlane.frustumCulled = false;
+    this.group.add(basePlane);
+    this.geometries.push(baseGeo);
+    this.materials.push(baseMat);
+
     this.groundTexture = createGroundTexture();
     const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 1, 1);
     const groundMat = new THREE.MeshBasicMaterial({
       map: this.groundTexture,
+      transparent: true,
       depthWrite: true,
       toneMapped: false,
     });
@@ -42,6 +92,29 @@ export class World {
     this.materials.push(groundMat);
 
     this.addMortars();
+  }
+
+  /** Navy gradient sky, black at the horizon rising to navy at the zenith. */
+  private addSkyDome(): void {
+    // Full sphere: elevated cameras can look well past the ground line, and a
+    // dome that stops near the horizon leaves a visible rim against the clear
+    // colour. Below the horizon the gradient is pure black anyway.
+    const skyGeo = new THREE.SphereGeometry(SKY_RADIUS, 32, 24);
+    const skyMat = new THREE.ShaderMaterial({
+      vertexShader: SKY_VERTEX_SHADER,
+      fragmentShader: SKY_FRAGMENT_SHADER,
+      side: THREE.BackSide,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+    });
+    const sky = new THREE.Mesh(skyGeo, skyMat);
+    sky.frustumCulled = false;
+    // Sort is disabled on the renderer, so the dome must be the first child
+    // to draw behind the ground and particles.
+    this.group.add(sky);
+    this.geometries.push(skyGeo);
+    this.materials.push(skyMat);
   }
 
   private addMortars(): void {
@@ -118,25 +191,34 @@ function createGroundTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Unable to create firework ground texture');
 
-  ctx.fillStyle = '#03050a';
+  const half = GRID_TEXTURE_SIZE / 2;
+
+  // The texture is alpha-blended over the giant black base plane, so it only
+  // carries the lit show area: a pale pool of light around the launch site
+  // plus grid lines, all fading to fully transparent at the edges.
+  ctx.clearRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
+
+  const pool = ctx.createRadialGradient(half, half, 0, half, half, half * 0.62);
+  pool.addColorStop(0, 'rgba(132, 150, 188, 0.32)');
+  pool.addColorStop(0.45, 'rgba(86, 102, 140, 0.14)');
+  pool.addColorStop(1, 'rgba(70, 84, 116, 0)');
+  ctx.fillStyle = pool;
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
 
-  drawGridLayer(ctx, 64, 'rgba(80, 98, 138, 0.4)', 1);
-  drawGridLayer(ctx, 256, 'rgba(132, 154, 206, 0.54)', 2);
+  drawMaskedGrid(ctx, half);
 
-  const gradient = ctx.createRadialGradient(
-    GRID_TEXTURE_SIZE / 2,
-    GRID_TEXTURE_SIZE / 2,
-    0,
-    GRID_TEXTURE_SIZE / 2,
-    GRID_TEXTURE_SIZE / 2,
-    GRID_TEXTURE_SIZE / 2,
-  );
-  gradient.addColorStop(0, 'rgba(42, 52, 76, 0.4)');
-  gradient.addColorStop(0.36, 'rgba(8, 12, 22, 0.08)');
-  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.62)');
-  ctx.fillStyle = gradient;
+  // Erase toward the edges so the grid melts into the black floor instead of
+  // ending at a visible rectangle.
+  ctx.globalCompositeOperation = 'destination-out';
+  const fade = ctx.createRadialGradient(half, half, 0, half, half, half);
+  fade.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  fade.addColorStop(0.45, 'rgba(0, 0, 0, 0.1)');
+  fade.addColorStop(0.75, 'rgba(0, 0, 0, 0.72)');
+  fade.addColorStop(0.95, 'rgba(0, 0, 0, 1)');
+  fade.addColorStop(1, 'rgba(0, 0, 0, 1)');
+  ctx.fillStyle = fade;
   ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
+  ctx.globalCompositeOperation = 'source-over';
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -166,4 +248,30 @@ function drawGridLayer(
     ctx.lineTo(GRID_TEXTURE_SIZE, p);
   }
   ctx.stroke();
+}
+
+function drawMaskedGrid(ctx: CanvasRenderingContext2D, half: number): void {
+  const gridCanvas = document.createElement('canvas');
+  gridCanvas.width = GRID_TEXTURE_SIZE;
+  gridCanvas.height = GRID_TEXTURE_SIZE;
+  const gridCtx = gridCanvas.getContext('2d');
+  if (!gridCtx) throw new Error('Unable to create firework ground grid texture');
+
+  drawGridLayer(gridCtx, 64, 'rgba(124, 146, 192, 0.5)', 1);
+  drawGridLayer(gridCtx, 256, 'rgba(168, 188, 228, 0.66)', 2);
+
+  // Keep grid pixels out of the transparent outer band before mipmaps are
+  // generated, otherwise oblique views smear faint strokes into curved edge
+  // artefacts around the floor.
+  gridCtx.globalCompositeOperation = 'destination-in';
+  const gridMask = gridCtx.createRadialGradient(half, half, 0, half, half, half * 0.82);
+  gridMask.addColorStop(0, 'rgba(0, 0, 0, 1)');
+  gridMask.addColorStop(0.58, 'rgba(0, 0, 0, 1)');
+  gridMask.addColorStop(0.82, 'rgba(0, 0, 0, 0.2)');
+  gridMask.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  gridCtx.fillStyle = gridMask;
+  gridCtx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
+  gridCtx.globalCompositeOperation = 'source-over';
+
+  ctx.drawImage(gridCanvas, 0, 0);
 }

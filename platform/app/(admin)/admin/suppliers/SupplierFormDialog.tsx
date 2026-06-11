@@ -2,7 +2,7 @@
 
 /** Client dialog form for creating or editing a supplier profile. */
 
-import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useId, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import {
@@ -16,7 +16,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/app/components/ui/Button';
-import { Input, Select } from '@/app/components/ui/Input';
+import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { Input } from '@/app/components/ui/Input';
+import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
 import {
   createSupplier,
@@ -47,6 +49,7 @@ export function SupplierFormDialog({
   onOpenChange,
 }: Props) {
   const router = useRouter();
+  const fieldId = useId();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = (v: boolean) => {
@@ -61,6 +64,10 @@ export function SupplierFormDialog({
   const [status, setStatus] = useState<SupplierInputType['status']>(initial?.status ?? 'draft');
   const [isPending, startTransition] = useTransition();
   const isEdit = Boolean(initial?.id);
+  const nameId = `${fieldId}-name`;
+  const contactEmailId = `${fieldId}-contact-email`;
+  const phoneId = `${fieldId}-phone`;
+  const websiteId = `${fieldId}-website`;
 
   useEffect(() => {
     if (open) {
@@ -113,42 +120,51 @@ export function SupplierFormDialog({
             submit();
           }}
         >
-          <Field label="Name">
+          <Field>
+            <FieldLabel htmlFor={nameId}>Name</FieldLabel>
             <Input
+              id={nameId}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Supplier name"
             />
           </Field>
-          <Field label="Contact email">
+          <Field>
+            <FieldLabel htmlFor={contactEmailId}>Contact email</FieldLabel>
             <Input
+              id={contactEmailId}
               type="email"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
               placeholder="hello@supplier.com"
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Phone">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+61 …" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor={phoneId}>Phone</FieldLabel>
+              <Input
+                id={phoneId}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+61 ..."
+              />
             </Field>
-            <Field label="Status">
-              <Select
+            <Field>
+              <FieldLabel>Status</FieldLabel>
+              <SelectField
                 name="status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as SupplierInputType['status'])}
-              >
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => setStatus(value as SupplierInputType['status'])}
+                options={STATUS_OPTIONS}
+                ariaLabel="Status"
+              />
             </Field>
           </div>
-          <Field label="Website">
+          <Field>
+            <FieldLabel htmlFor={websiteId}>Website</FieldLabel>
             <Input
+              id={websiteId}
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
               placeholder="https://…"
@@ -168,14 +184,5 @@ export function SupplierFormDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block space-y-1">
-      <span className="text-xs font-medium text-[color:var(--color-content-subtle)]">{label}</span>
-      {children}
-    </label>
   );
 }

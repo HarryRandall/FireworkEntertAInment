@@ -543,17 +543,12 @@ export function AdminImportDetailSkeleton() {
 /** Skeleton for admin effect editor detail pages. */
 export function AdminEffectEditorSkeleton() {
   return (
-    <div className="space-y-6" aria-label="Loading effect editor">
-      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[minmax(420px,0.9fr)_minmax(0,1.1fr)]">
-        <div className="space-y-6">
-          <Skeleton className="h-[520px] rounded-xl" />
-          <Skeleton className="h-64 rounded-xl" />
-        </div>
-        <div className="space-y-6">
-          <Skeleton className="h-[720px] rounded-xl" />
-          <Skeleton className="h-72 rounded-xl" />
-        </div>
-      </div>
+    <div
+      className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch"
+      aria-label="Loading effect editor"
+    >
+      <Skeleton className="h-[min(62vw,560px)] min-h-[360px] flex-1 rounded-xl xl:h-auto" />
+      <Skeleton className="h-[480px] w-full rounded-xl xl:h-auto xl:w-[440px] xl:shrink-0" />
     </div>
   );
 }

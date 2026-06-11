@@ -12,6 +12,13 @@ type Callback = (p: Particle, dt: number, time: number) => void;
 
 const NOOP: Callback = () => {};
 
+/**
+ * Shape sentinel for particles that should simulate (fly, run their effect
+ * callbacks) but never be drawn, e.g. hidden brocade heads that still emit
+ * their trail squares.
+ */
+export const HIDDEN_PARTICLE_SHAPE = -1;
+
 export class Particle {
   i = 0;
   x = 0;
@@ -66,8 +73,9 @@ export class Particle {
     const VMAX_DOWN = 4;
     const VMAX_LATERAL = 6;
     // Brocade heads carry a higher shape value and need to keep their full
-    // burst vector, otherwise large crowns flatten instead of scaling as a sphere.
-    const isBrocadeHead = this.shape > 1.5;
+    // burst vector, otherwise large crowns flatten instead of scaling as a
+    // sphere. Hidden heads (negative sentinel shape) are still heads.
+    const isBrocadeHead = this.shape > 1.5 || this.shape <= HIDDEN_PARTICLE_SHAPE;
     const lateralLimit = isBrocadeHead ? 18 : VMAX_LATERAL;
     const downwardLimit = isBrocadeHead ? 18 : VMAX_DOWN;
     if (this.vy < -downwardLimit) this.vy = -downwardLimit;

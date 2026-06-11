@@ -228,7 +228,7 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
   assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.68/);
   assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND = 11/);
-  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND \* design\.trail\.density/);
+  assert.match(effects, /STAR_TRAIL_PARTICLES_PER_SECOND \*[\s\S]*design\.trail\.density/);
   assert.match(effects, /design\.trailProfile === 'none'/);
   assert.match(effects, /fullQuality\s*\?\s*90 \+ Math\.floor\(rng\.next\(\) \* 120\)/);
   assert.match(effects, /mass: 0\.006/);
@@ -276,9 +276,13 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.doesNotMatch(effects, /p\.life < 0\.35/);
   // Heads escape the shared point-size ceiling so they stay dominant
   // over trail squares at close zoom, and glow scales per particle.
-  assert.match(shaders, /maxPointSize = mix\(96\.0, 480\.0, step\(1\.5, shape\)\)/);
+  assert.match(shaders, /maxPointSize = mix\(96\.0, 640\.0, isHead\)/);
   assert.match(shaders, /headGlowStrength/);
-  assert.match(engine, /clamp\(base \* 2\.4, 3, 200\)/);
+  // Compressed perspective keeps sprites readable at every zoom level, and
+  // glow growth is compensated so the solid orb size is glow-independent.
+  assert.match(shaders, /float exponent = mix\(0\.7, 0\.55, isHead\)/);
+  assert.match(shaders, /vHeadGrow = pointSize \/ max\(baseSize, 0\.0001\)/);
+  assert.match(engine, /clamp\(base, 4, 240\)/);
   assert.match(particle, /const isBrocadeHead = this\.shape > 1\.5/);
   assert.match(particle, /const lateralLimit = isBrocadeHead \? 18 : VMAX_LATERAL/);
   assert.match(particle, /const downwardLimit = isBrocadeHead \? 18 : VMAX_DOWN/);

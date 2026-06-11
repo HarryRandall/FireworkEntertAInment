@@ -1,80 +1,99 @@
 /**
- * The "create new show" wizard page.
+ * The "create new show" flow.
  *
- * Three-step form:
- *   0. Constraints — budget, duration, location, time of day.
- *   1. Sound — title + audio upload (uploads + kicks off music analysis).
- *   2. Brief — free-text prompt + mood tag chips.
+ * Five minimal full-screen steps, one question each, everything answerable
+ * by tapping a card (the brief is the only typed field):
+ *   0. Describe — big-type creative brief + style pills.
+ *   1. Sound — drop a track, or pick "No soundtrack" (+ length cards).
+ *      Upload + music analysis start in the background immediately.
+ *   2. Budget — four human-labelled tiers, no sliders.
+ *   3. Fireworks — multi-select type cards, all on by default.
+ *   4. Site — width presets with firing-position dot diagrams.
+ *
+ * The show title is derived automatically (track filename, then the brief)
+ * so nothing has to be typed beyond the description.
  *
  * Critical invariants enforced by the wizard tests in
  * `tests/new-show-wizard.test.mjs`:
- *   - The form's `onSubmit` only advances the wizard; it must never call
+ *   - The form's `onSubmit` only advances the flow; it must never call
  *     `createShowAction`.
  *   - The create-show server action is invoked once, and only inside
  *     {@link triggerGenerate}, so accidental Enter-presses can't create a draft.
  *   - The audio file is uploaded directly to Supabase Storage and only the
  *     path + `musicAnalysisId` are submitted via the action.
- *
- * Step UI primitives, pickers, helper formatters, and constants are extracted
- * into `./_components/`, `./constants.ts`, and `./utils.ts` to keep this file
- * focused on orchestration.
  */
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Check, MapPin, Music4, Sparkles } from 'lucide-react';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
+import { ArrowLeft, ArrowRight, MicOff, Sparkles, X } from 'lucide-react';
 import { ChoiceChip } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
+import {
+  FIREWORK_TYPES,
+  FIREWORK_TYPE_KEYS,
+  launchPositionsForWidth,
+  type FireworkTypeKey,
+} from '@/lib/cue-generation/show-options';
+import {
+  DEFAULT_SHOW_STYLE,
+  SHOW_STYLE_LIST,
+  type ShowStyleKey,
+} from '@/lib/cue-generation/show-styles';
 import {
   clearPersistedGenerationStart,
   persistGenerationStartedAt,
 } from '@/lib/generation-progress-storage';
 import { slugifyTitle } from '@/lib/show-domain';
+import { cn } from '@/lib/utils';
 import { createShowAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
-import { BudgetPicker } from './_components/BudgetPicker';
-import { DurationPicker } from './_components/DurationPicker';
-import { Field, FieldError } from './_components/Field';
-import { ProgressTrack } from './_components/ProgressTrack';
+import { ChoiceCard, PositionDots } from './_components/cards';
 import { StepPanel } from './_components/StepPanel';
 import {
   AUDIO_BUCKET,
-  DURATION_PRESETS,
+  BUDGET_TIERS,
   MAX_AUDIO_BYTES,
-  MOOD_TAGS,
+  NO_MUSIC_DURATIONS,
   STEPS,
-  TIME_OF_DAY,
+  WIDTH_PRESETS,
 } from './constants';
-import type {
-  AudioUploadState,
-  FieldError as FieldErrorKey,
-  TimeOfDay,
-  UploadedAudio,
-} from './types';
-import { inferAudioContentType, sanitizeStorageName } from './utils';
+import type { AudioUploadState, FieldError as FieldErrorKey, UploadedAudio } from './types';
+import {
+  deriveTitleFromDescription,
+  inferAudioContentType,
+  sanitizeStorageName,
+  suggestTitleFromFilename,
+} from './utils';
+
+type SoundtrackMode = 'song' | 'none';
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // === Step 0: constraints =================================================
-  const [budget, setBudget] = useState(2500);
-  const [budgetMode, setBudgetMode] = useState<'preset' | 'custom'>('preset');
-  const [customBudget, setCustomBudget] = useState('');
-  const [durationMode, setDurationMode] = useState<'preset' | 'custom'>('preset');
-  const [durationPreset, setDurationPreset] = useState<(typeof DURATION_PRESETS)[number]>(3);
-  const [customDuration, setCustomDuration] = useState('');
-  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('Night');
-  const [location, setLocation] = useState('');
+  // === Step 0: describe ====================================================
+  const [description, setDescription] = useState('');
+  const [styleKey, setStyleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
+  const promptPrefilledRef = useRef(false);
 
   // === Step 1: sound =======================================================
+  const [soundtrackMode, setSoundtrackMode] = useState<SoundtrackMode>('song');
+  const [durationMinutes, setDurationMinutes] =
+    useState<(typeof NO_MUSIC_DURATIONS)[number]['minutes']>(3);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [audioUploadState, setAudioUploadState] = useState<AudioUploadState>('idle');
@@ -91,22 +110,32 @@ export default function NewShowPage() {
   const uploadTokenRef = useRef(0);
   const autoBriefUploadIdRef = useRef<string | null>(null);
 
-  // === Step 2: brief =======================================================
-  const [activeMoods, setActiveMoods] = useState<Set<string>>(new Set(['High energy']));
-  const [description, setDescription] = useState('');
-  const promptPrefilledRef = useRef(false);
+  // === Step 2: budget ======================================================
+  const [budget, setBudget] = useState<number>(1000);
 
-  // === Wizard nav ==========================================================
+  // === Step 3: firework types =============================================
+  const [fireworkTypes, setFireworkTypes] = useState<Set<FireworkTypeKey>>(
+    () => new Set(FIREWORK_TYPE_KEYS),
+  );
+
+  // === Step 4: site width ==================================================
+  const [widthFeet, setWidthFeet] = useState<number>(80);
+  const [measuredWidth, setMeasuredWidth] = useState('');
+
+  // === Flow nav ============================================================
   const [stepIndex, setStepIndex] = useState(0);
   const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
   const [isLaunching, setIsLaunching] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [, startTransition] = useTransition();
 
-  const durationValue =
-    durationMode === 'custom'
-      ? `${customDuration.trim()} minute${customDuration.trim() === '1' ? '' : 's'}`
-      : `${durationPreset} minute${durationPreset === 1 ? '' : 's'}`;
+  const durationValue = `${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`;
+  const measuredFeet = Number(measuredWidth);
+  const effectiveWidthFeet =
+    measuredWidth.trim() && Number.isFinite(measuredFeet) && measuredFeet >= 5
+      ? Math.min(Math.round(measuredFeet), 2000)
+      : widthFeet;
+  const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
 
   useEffect(() => setMounted(true), []);
 
@@ -120,14 +149,9 @@ export default function NewShowPage() {
 
   /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {
-    if (stepIndex === 0) {
-      const budgetOk = budgetMode === 'preset' || !!customBudget.trim();
-      const durationOk = durationMode === 'preset' || !!customDuration.trim();
-      return budgetOk && durationOk && location.trim().length > 0;
-    }
-    if (stepIndex === 1) return title.trim().length > 0;
+    if (stepIndex === 0) return description.trim().length > 0;
     return true;
-  }, [stepIndex, budgetMode, customBudget, durationMode, customDuration, location, title]);
+  }, [stepIndex, description]);
 
   // Resolve the audio file's duration locally so we can show "M:SS" in the
   // attached-track pill. The `<audio>` element is throwaway and never plays.
@@ -167,11 +191,15 @@ export default function NewShowPage() {
     });
   };
 
-  const toggleMood = (mood: string) => {
-    setActiveMoods((prev) => {
+  const toggleFireworkType = (type: FireworkTypeKey) => {
+    setFireworkTypes((prev) => {
       const next = new Set(prev);
-      if (next.has(mood)) next.delete(mood);
-      else next.add(mood);
+      if (next.has(type)) {
+        // Keep at least one type selected — an empty show isn't a show.
+        if (next.size > 1) next.delete(type);
+      } else {
+        next.add(type);
+      }
       return next;
     });
   };
@@ -195,6 +223,17 @@ export default function NewShowPage() {
       toast.error('Unsupported file', { description: 'Please pick an audio file.' });
       return;
     }
+    // Nothing else to type: the title comes from the track name (editable
+    // later on the show page).
+    if (!titleRef.current.trim()) {
+      const suggested = suggestTitleFromFilename(file.name);
+      if (suggested) {
+        titleRef.current = suggested;
+        setTitle(suggested);
+        if (fieldError === 'title') setFieldError(null);
+      }
+    }
+    setSoundtrackMode('song');
     setAudioFile(file);
     setUploadedAudio(null);
     setAudioUploadError(null);
@@ -217,6 +256,11 @@ export default function NewShowPage() {
     uploadPromiseRef.current = null;
     autoBriefUploadIdRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const chooseNoSoundtrack = () => {
+    clearAudio();
+    setSoundtrackMode('none');
   };
 
   /**
@@ -312,7 +356,7 @@ export default function NewShowPage() {
   };
 
   /**
-   * The form's submit handler is intent-only: it advances the wizard on
+   * The form's submit handler is intent-only: it advances the flow on
    * Enter and never creates a show. Generation runs ONLY when the user
    * explicitly clicks the "Generate show" button (see triggerGenerate).
    */
@@ -324,23 +368,36 @@ export default function NewShowPage() {
     }
   };
 
-  /** Click handler for the Generate button. Guards required fields, awaits
-   * any pending upload, then submits the show via the server action. */
+  /** Enter advances the flow from anywhere except textareas and buttons. */
+  const handleKeyDown = (e: KeyboardEvent<HTMLFormElement>) => {
+    if (e.key !== 'Enter') return;
+    const target = e.target as HTMLElement;
+    if (target instanceof HTMLTextAreaElement) return;
+    if (target.closest('button')) return;
+    e.preventDefault();
+    if (stepIndex < STEPS.length - 1) goToStep(stepIndex + 1);
+  };
+
+  /** Click handler for the Generate button. Derives the title, awaits any
+   * pending upload, then submits the show via the server action. */
   const triggerGenerate = () => {
     setFieldError(null);
-    if (!title.trim()) {
-      setFieldError('title');
-      setStepIndex(1);
-      focusTitleRequirement();
-      toast.error('Show title is required.');
-      return;
+    // No manual title entry anywhere: track name first, then the brief.
+    const finalTitle =
+      title.trim() ||
+      suggestTitleFromFilename(audioFile?.name ?? '') ||
+      deriveTitleFromDescription(description) ||
+      'Untitled show';
+    if (finalTitle !== title) {
+      titleRef.current = finalTitle;
+      setTitle(finalTitle);
     }
     setIsLaunching(true);
     // Navigate to the generating route immediately so the URL and splash swap
     // happens on click, not after the server action returns. If the server
     // needs to suffix the slug, the stored start time is copied across below.
-    const desiredSlug = slugifyTitle(title.trim());
-    const titleParam = encodeURIComponent(title.trim());
+    const desiredSlug = slugifyTitle(finalTitle);
+    const titleParam = encodeURIComponent(finalTitle);
     const generationStartedAt = persistGenerationStartedAt(desiredSlug);
     router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`);
     startTransition(async () => {
@@ -371,14 +428,13 @@ export default function NewShowPage() {
       const data = new FormData();
       data.set('budget', String(budget));
       data.set('duration', durationValue);
-      data.set('timeOfDay', timeOfDay);
-      data.set('location', location.trim());
-      data.set('title', title.trim());
+      data.set('timeOfDay', 'Night');
+      data.set('title', finalTitle);
       data.set('description', description);
+      data.set('showStyle', styleKey);
+      data.set('siteWidthFeet', String(effectiveWidthFeet));
       data.set('desiredSlug', desiredSlug);
-      const vibeInput = formRef.current?.elements.namedItem('vibe');
-      if (vibeInput instanceof HTMLInputElement) data.set('vibe', vibeInput.value);
-      activeMoods.forEach((mood) => data.append('moodTags', mood));
+      fireworkTypes.forEach((type) => data.append('fireworkTypes', type));
       if (finalUploadedAudio) {
         data.set('audioPath', finalUploadedAudio.audioPath);
         data.set('musicAnalysisId', finalUploadedAudio.musicAnalysisId);
@@ -405,9 +461,8 @@ export default function NewShowPage() {
   };
 
   /**
-   * Move the wizard to `nextIndex`. Going backward is always allowed; going
-   * forward requires the current step to be valid (otherwise we set
-   * `fieldError` and toast).
+   * Move the flow to `nextIndex`. Going backward is always allowed; going
+   * forward requires the current step to be valid (otherwise toast).
    */
   const goToStep = (nextIndex: number) => {
     if (nextIndex <= stepIndex) {
@@ -416,15 +471,7 @@ export default function NewShowPage() {
       return;
     }
     if (!stepValid) {
-      if (stepIndex === 0 && !location.trim()) {
-        setFieldError('location');
-        toast.error('Event location is required.');
-      } else if (stepIndex === 1 && !title.trim()) {
-        setFieldError('title');
-        toast.error('Show title is required.');
-      } else {
-        toast.error('Complete the required fields to continue.');
-      }
+      toast.error('Describe the show first - a sentence is plenty.');
       return;
     }
     setFieldError(null);
@@ -432,109 +479,77 @@ export default function NewShowPage() {
   };
 
   const activeStep = STEPS[stepIndex];
+  const isFinalStep = stepIndex === STEPS.length - 1;
 
   return (
-    <form ref={formRef} noValidate onSubmit={handleSubmit} className="space-y-6">
-      <AppPageHeader
-        title="Create a new show"
-        description="Three quick steps to save the brief, music, and constraints."
-      />
+    <form
+      ref={formRef}
+      noValidate
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      className="-mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
+    >
+      {/* Hidden derived title — kept as a named element for focus targeting. */}
+      <input type="hidden" name="title" value={title} readOnly />
 
-      <div className="mx-auto max-w-3xl">
-        <Card radius="lg" className="overflow-hidden">
-          <div className="border-b border-[color:var(--color-border-subtle)] px-5 py-4 sm:px-6">
-            <ProgressTrack
-              steps={STEPS}
-              current={stepIndex}
-              onSelect={goToStep}
-              mounted={mounted}
-            />
-            <div className="mt-5">
-              <h2 className="text-base font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-                {activeStep.title}
-              </h2>
-              <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
-                {activeStep.description}
-              </p>
-            </div>
-          </div>
+      <div className="flex w-full flex-col px-6 pt-5 pb-6 sm:px-10">
+        {/* === Top bar: counter + close ================================== */}
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-xs tracking-[0.18em] text-[color:var(--color-content-muted)] tabular-nums">
+            {stepIndex + 1} / {STEPS.length}
+          </p>
+          <Link
+            href="/shows"
+            aria-label="Close"
+            className="rounded-full p-2 text-[color:var(--color-content-muted)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+          >
+            <X size={18} strokeWidth={1.75} />
+          </Link>
+        </div>
 
-          <div className="p-5 sm:p-6">
+        {/* === Step content, vertically centred ========================== */}
+        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center py-8">
+          <h1 className="text-3xl font-black tracking-tight text-[color:var(--color-content-emphasis)] sm:text-5xl">
+            {activeStep.title}
+          </h1>
+          <p className="mt-3 text-sm text-[color:var(--color-content-subtle)] sm:text-base">
+            {activeStep.description}
+          </p>
+
+          <div className="mt-8">
             <StepPanel active={stepIndex === 0}>
               <div className="space-y-6">
-                <BudgetPicker
-                  budget={budget}
-                  mode={budgetMode}
-                  customValue={customBudget}
-                  onBudgetChange={setBudget}
-                  onModeChange={setBudgetMode}
-                  onCustomValueChange={setCustomBudget}
+                <Textarea
+                  name="description"
+                  rows={4}
+                  autoFocus
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Gold and silver, slow elegant start, everything ends in one huge crackling finale."
+                  className="text-base sm:text-lg"
                 />
-
-                <DurationPicker
-                  mode={durationMode}
-                  preset={durationPreset}
-                  customValue={customDuration}
-                  onModeChange={setDurationMode}
-                  onPresetChange={setDurationPreset}
-                  onCustomValueChange={setCustomDuration}
-                />
-
-                <Field label="Event location" required helper="Where the show will be fired.">
-                  <Input
-                    name="location"
-                    value={location}
-                    invalid={fieldError === 'location'}
-                    placeholder="Park, venue, or suburb"
-                    iconLeft={<MapPin size={16} strokeWidth={1.75} />}
-                    onChange={(e) => {
-                      setLocation(e.target.value);
-                      if (fieldError === 'location') setFieldError(null);
-                    }}
-                  />
-                  {fieldError === 'location' ? (
-                    <FieldError>Event location is required.</FieldError>
-                  ) : null}
-                </Field>
-
-                <Field label="Time of day" required>
-                  <div className="flex flex-wrap gap-2">
-                    {TIME_OF_DAY.map(({ value, icon: Icon }) => (
-                      <ChoiceChip
-                        key={value}
-                        selected={value === timeOfDay}
-                        onClick={() => setTimeOfDay(value)}
-                      >
-                        <Icon size={13} strokeWidth={1.75} />
-                        {value}
-                      </ChoiceChip>
-                    ))}
-                  </div>
-                </Field>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="mr-1 font-mono text-[10px] tracking-[0.18em] text-[color:var(--color-content-muted)] uppercase">
+                    Style
+                  </span>
+                  {SHOW_STYLE_LIST.map((style) => (
+                    <ChoiceChip
+                      key={style.key}
+                      size="md"
+                      selected={styleKey === style.key}
+                      onClick={() => setStyleKey(style.key)}
+                      title={style.tagline}
+                    >
+                      {style.name}
+                    </ChoiceChip>
+                  ))}
+                </div>
               </div>
             </StepPanel>
 
             <StepPanel active={stepIndex === 1}>
-              <div className="space-y-6">
-                <Field label="Show title" required helper="A working title — you can rename later.">
-                  <Input
-                    name="title"
-                    value={title}
-                    invalid={fieldError === 'title'}
-                    placeholder="e.g. New Year's Eve at Bondi"
-                    iconLeft={<Sparkles size={16} strokeWidth={1.75} />}
-                    className="h-11"
-                    onChange={(e) => {
-                      const nextTitle = e.target.value;
-                      titleRef.current = nextTitle;
-                      setTitle(nextTitle);
-                      if (fieldError === 'title') setFieldError(null);
-                    }}
-                  />
-                  {fieldError === 'title' ? <FieldError>Show title is required.</FieldError> : null}
-                </Field>
-
-                <Field label="Audio track" helper="Optional — drives the choreography if added.">
+              <div className="space-y-3">
+                <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
                   <AudioUpload
                     file={audioFile}
                     duration={audioDuration}
@@ -544,67 +559,123 @@ export default function NewShowPage() {
                     onFile={onFilePicked}
                     onClear={clearAudio}
                   />
-                </Field>
-
-                <Field
-                  label="Track vibe"
-                  helper="Optional — a word or two about the energy or style."
-                >
-                  <Input
-                    name="vibe"
-                    placeholder="e.g. cinematic build into a euphoric drop"
-                    iconLeft={<Music4 size={16} strokeWidth={1.75} />}
-                  />
-                </Field>
+                </div>
+                <ChoiceCard
+                  selected={soundtrackMode === 'none'}
+                  title="No soundtrack"
+                  description="Design to a rhythm instead - the show builds its own arc."
+                  diagram={
+                    <MicOff
+                      size={16}
+                      strokeWidth={1.75}
+                      className="text-[color:var(--color-content-muted)]"
+                    />
+                  }
+                  onClick={chooseNoSoundtrack}
+                />
+                {soundtrackMode === 'none' ? (
+                  <div className="grid gap-3 pt-3 sm:grid-cols-3">
+                    {NO_MUSIC_DURATIONS.map((option) => (
+                      <ChoiceCard
+                        key={option.minutes}
+                        selected={durationMinutes === option.minutes}
+                        title={option.label}
+                        hint={`${option.minutes} min`}
+                        description={option.description}
+                        onClick={() => setDurationMinutes(option.minutes)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </StepPanel>
 
             <StepPanel active={stepIndex === 2}>
-              <div className="space-y-6">
-                <Field
-                  label="Custom prompt for the AI"
-                  helper="This is sent verbatim to the choreography model. Be specific about colours, pacing, key moments, and the finale."
-                >
-                  <Textarea
-                    name="description"
-                    rows={8}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="e.g. Slow elegant opening with single white shells, gradual build through the first chorus, dense red/gold climax on the final drop, finish with a crackling palm finale."
+              <div className="grid gap-3 sm:grid-cols-2">
+                {BUDGET_TIERS.map((tier) => (
+                  <ChoiceCard
+                    key={tier.value}
+                    selected={budget === tier.value}
+                    title={tier.label}
+                    hint={tier.hint}
+                    description={tier.description}
+                    onClick={() => setBudget(tier.value)}
                   />
-                  <div className="mt-1 text-right text-xs text-[color:var(--color-content-muted)]">
-                    {description.length} chars
-                  </div>
-                </Field>
+                ))}
+              </div>
+            </StepPanel>
 
-                <Field label="Mood tags" helper="Pick any that fit — guides the AI's tone.">
-                  <div className="flex flex-wrap gap-2">
-                    {MOOD_TAGS.map((mood) => {
-                      const active = activeMoods.has(mood);
-                      return (
-                        <ChoiceChip key={mood} selected={active} onClick={() => toggleMood(mood)}>
-                          {active ? <Check size={12} strokeWidth={2.5} /> : null}
-                          {mood}
-                        </ChoiceChip>
-                      );
-                    })}
-                  </div>
-                </Field>
+            <StepPanel active={stepIndex === 3}>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {FIREWORK_TYPE_KEYS.map((key) => {
+                  const type = FIREWORK_TYPES[key];
+                  return (
+                    <ChoiceCard
+                      key={key}
+                      multi
+                      selected={fireworkTypes.has(key)}
+                      title={type.label}
+                      description={type.description}
+                      onClick={() => toggleFireworkType(key)}
+                    />
+                  );
+                })}
+              </div>
+            </StepPanel>
+
+            <StepPanel active={stepIndex === 4}>
+              <div className="space-y-5">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {WIDTH_PRESETS.map((preset) => (
+                    <ChoiceCard
+                      key={preset.feet}
+                      selected={!measuredWidth.trim() && widthFeet === preset.feet}
+                      title={preset.label}
+                      description={preset.description}
+                      diagram={<PositionDots count={preset.positions} />}
+                      onClick={() => {
+                        setMeasuredWidth('');
+                        setWidthFeet(preset.feet);
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 text-sm text-[color:var(--color-content-subtle)]">
+                  <span>I&apos;ve measured:</span>
+                  <Input
+                    type="number"
+                    min={5}
+                    max={2000}
+                    inputMode="numeric"
+                    value={measuredWidth}
+                    onChange={(e) => setMeasuredWidth(e.target.value)}
+                    placeholder="width"
+                    className="h-9 w-24 text-center tabular-nums"
+                  />
+                  <span>ft</span>
+                  {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
+                </div>
               </div>
             </StepPanel>
           </div>
+        </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-border-subtle)] px-5 py-4 sm:px-6">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-              disabled={mounted && stepIndex === 0}
-            >
-              <ArrowLeft size={16} />
-              Back
-            </Button>
-            {stepIndex < STEPS.length - 1 ? (
+        {/* === Bottom bar: navigation ==================================== */}
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
+            disabled={mounted && stepIndex === 0}
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Button>
+          <div className="flex items-center gap-4">
+            <span className="hidden font-mono text-[11px] text-[color:var(--color-content-muted)] sm:inline">
+              press Enter ↵
+            </span>
+            {!isFinalStep ? (
               <Button
                 type="button"
                 onClick={() => goToStep(stepIndex + 1)}
@@ -614,17 +685,13 @@ export default function NewShowPage() {
                 <ArrowRight size={16} />
               </Button>
             ) : (
-              <Button
-                type="button"
-                onClick={triggerGenerate}
-                disabled={mounted && (!title.trim() || isLaunching)}
-              >
+              <Button type="button" onClick={triggerGenerate} disabled={mounted && isLaunching}>
                 Generate show
                 <Sparkles size={16} strokeWidth={2} />
               </Button>
             )}
           </div>
-        </Card>
+        </div>
       </div>
     </form>
   );

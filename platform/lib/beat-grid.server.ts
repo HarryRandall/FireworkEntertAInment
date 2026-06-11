@@ -67,7 +67,11 @@ function vibeBoost(vibe: SlotVibe): number {
   }
 }
 
-export function buildCueSlots(analysis: AnalyserResult | null, songDuration: number): CueSlot[] {
+export function buildCueSlots(
+  analysis: AnalyserResult | null,
+  songDuration: number,
+  maxTubes: 1 | 2 | 3 = 3,
+): CueSlot[] {
   if (!songDuration || songDuration <= 0) return [];
 
   const sections = analysis?.sections ?? [];
@@ -139,9 +143,11 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
 
   // 4. Sample quieter sections, but keep every chorus/drop/climax beat.
   const WINDOW_COUNT = 12;
+  const tubesForBeat = (beat: { intensity: number; nearClimax: boolean; vibe: SlotVibe }) =>
+    Math.min(tubeCountForBeat(beat), maxTubes);
   const fullCoverage = live.filter(isFullCoverageBeat);
   const sampled: Scored[] = [...fullCoverage];
-  let sampledSlotCount = fullCoverage.reduce((total, beat) => total + tubeCountForBeat(beat), 0);
+  let sampledSlotCount = fullCoverage.reduce((total, beat) => total + tubesForBeat(beat), 0);
   const remainingTarget = Math.max(0, TARGET_SLOTS - sampledSlotCount);
 
   if (remainingTarget > 0) {
@@ -166,7 +172,7 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
       for (const bucket of buckets) {
         const candidate = bucket.shift();
         if (!candidate) continue;
-        const candidateSlotCount = tubeCountForBeat(candidate);
+        const candidateSlotCount = tubesForBeat(candidate);
         if (sampledSlotCount + candidateSlotCount > MAX_TARGET_SLOTS) continue;
         sampled.push(candidate);
         sampledSlotCount += candidateSlotCount;
@@ -185,12 +191,12 @@ export function buildCueSlots(analysis: AnalyserResult | null, songDuration: num
   let idx = 0;
   let rotor: 0 | 1 | 2 = 0;
   for (const b of sampled) {
-    const tubeCount = tubeCountForBeat(b);
+    const tubeCount = tubesForBeat(b);
     const tubes: Array<0 | 1 | 2> = [];
     for (let i = 0; i < tubeCount; i++) {
-      tubes.push(((rotor + i) % 3) as 0 | 1 | 2);
+      tubes.push(((rotor + i) % maxTubes) as 0 | 1 | 2);
     }
-    rotor = ((rotor + 1) % 3) as 0 | 1 | 2;
+    rotor = ((rotor + 1) % maxTubes) as 0 | 1 | 2;
     for (const tube of tubes) {
       slots.push({
         index: idx++,

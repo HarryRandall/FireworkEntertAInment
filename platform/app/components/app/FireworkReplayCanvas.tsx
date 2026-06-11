@@ -36,7 +36,12 @@ const MAX_DEVICE_PIXEL_RATIO = 1.25;
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(950, 1250, 2500);
 const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 850, 0);
 const GROUND_PLANE_Y = 0;
-const MIN_CAMERA_HEIGHT = 16;
+const MIN_CAMERA_HEIGHT = 24;
+// Zoom envelope: keep the camera inside the band where point sprites read
+// well. Closer than ~150 units the nearest sparks outgrow their pixel caps;
+// past ~4200 the whole burst falls below readable sprite sizes.
+const MIN_CAMERA_DISTANCE = 150;
+const MAX_CAMERA_DISTANCE = 4200;
 const BLOOM_STRENGTH = 0.38;
 const BLOOM_RADIUS = 0.18;
 const BLOOM_THRESHOLD = 0.52;
@@ -114,11 +119,17 @@ export function FireworkReplayCanvas({
     const height = container.clientHeight || 600;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x05070d);
-    scene.fog = new THREE.FogExp2(0x05070d, 0.00016);
+    // Deep night backdrop; the World adds a gradient dome that is black at
+    // the horizon and rises into dark navy, so the floor melts into the
+    // distance instead of meeting the sky at a visible edge.
+    scene.background = new THREE.Color(0x020409);
+    scene.fog = new THREE.FogExp2(0x05070f, 0.00012);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(58, width / height, 0.1, 100000);
+    // Near plane of 2 (not 0.1): with a 100k far plane, a tiny near plane
+    // leaves almost no depth precision at distance and the overlapping
+    // ground planes z-fight into flickering black bars.
+    const camera = new THREE.PerspectiveCamera(58, width / height, 2, 100000);
     camera.position.copy(DEFAULT_CAMERA_POSITION);
     cameraRef.current = camera;
 
@@ -157,8 +168,8 @@ export function FireworkReplayCanvas({
     controls.dampingFactor = 0.08;
     controls.enablePan = true;
     controls.screenSpacePanning = true;
-    controls.minDistance = 80;
-    controls.maxDistance = 5000;
+    controls.minDistance = MIN_CAMERA_DISTANCE;
+    controls.maxDistance = MAX_CAMERA_DISTANCE;
     controls.minPolarAngle = 0.05;
     controls.maxPolarAngle = Math.PI / 2 - 0.01;
     controls.enabled = interactive;

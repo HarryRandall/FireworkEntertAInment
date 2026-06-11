@@ -115,7 +115,7 @@ export function UserHeaderActions({ userId, displayName, canImpersonate }: Props
                 e.preventDefault();
                 onDelete();
               }}
-              className="bg-[color:var(--color-status-danger)] text-white hover:bg-[color:var(--color-status-danger)]/90"
+              variant="destructive"
             >
               Delete
             </AlertDialogAction>
