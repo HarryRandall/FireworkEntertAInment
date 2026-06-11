@@ -11,9 +11,5 @@ export default async function AdminEffectDetailPage({ params }: PageProps) {
   const effect = await getAdminEffectById(id);
   if (!effect) notFound();
 
-  return (
-    <div className="space-y-6">
-      <EffectEditor effect={effect} />
-    </div>
-  );
+  return <EffectEditor effect={effect} />;
 }

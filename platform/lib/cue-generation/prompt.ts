@@ -9,6 +9,7 @@ import type { CueSlot } from '@/lib/beat-grid.server';
 import { asProductCatalogueFields, type ProductCatalogueField } from '@/lib/prompt-configs';
 import type { listFireworkProducts } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
+import { SHOW_STYLES, type ShowStyleKey } from './show-styles';
 
 /**
  * Top-level summary of the song analysis we hand the LLM. Falls back to a
@@ -33,11 +34,38 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
   return {
     durationSeconds: analysis.duration_seconds || durationSeconds,
     tempoBpm: analysis.tempo_bpm,
+    beatGrid: describeBeatGrid(beatTimes, analysis.tempo_bpm),
     musicProfile: analysis.music_profile,
     showPersonality: analysis.show_personality,
     sections,
     climaxes: analysis.key_moments?.filter((m) => m.type === 'climax'),
     buildups: analysis.buildups,
+  };
+}
+
+/**
+ * Compact beat-grid description so the model knows slot times ARE the
+ * analysed beats and how tightly spaced they are.
+ */
+function describeBeatGrid(beatTimes: number[], tempoBpm: number | null | undefined) {
+  if (!beatTimes.length) {
+    return {
+      source: 'synthetic' as const,
+      note: 'Slot times come from a synthetic tempo grid; firing on a slot still lands on the implied beat.',
+    };
+  }
+  const intervals: number[] = [];
+  for (let i = 1; i < beatTimes.length; i += 1) {
+    intervals.push(beatTimes[i] - beatTimes[i - 1]);
+  }
+  intervals.sort((a, b) => a - b);
+  const median = intervals.length ? intervals[Math.floor(intervals.length / 2)] : null;
+  return {
+    source: 'analysed' as const,
+    beatCount: beatTimes.length,
+    medianBeatIntervalSeconds: median != null ? Number(median.toFixed(3)) : null,
+    tempoBpm: tempoBpm ?? null,
+    note: 'Every slot time t is an exact analysed beat timestamp. Assigning a cue to a slot fires it exactly on that beat.',
   };
 }
 
@@ -146,8 +174,10 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '',
   'Inputs you receive:',
   "  - userPrompt: the user's verbatim creative brief. Always re-read it before assigning cues.",
-  '  - brief: title, mood tags, budget, time of day, location, requested duration.',
-  '  - analysisSummary: song structure: duration, tempo, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, music_profile, show_personality.',
+  '  - brief: title, mood tags, budget, time of day, location, requested duration, siteWidthFeet, launchPositions, and optionally fireworkTypes.',
+  '  - brief.launchPositions is how many firing positions the site supports; the slots already respect it, so never assume more tubes exist.',
+  '  - brief.fireworkTypes, when present, lists the only product families the user wants. The catalogue is already filtered to match where possible - stay inside it.',
+  '  - analysisSummary: song structure: duration, tempo, beatGrid, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, music_profile, show_personality.',
   '  - catalogue: every available product with id, name, compact description, durationSeconds, shotCount, isMultiShot, caliber, heightMeters, shellType, color, colorPalette, and any active effect flags.',
   '  - slots: a dense beat grid sampled from the actual analysed beats. Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), climax, section }. Slots are the ONLY times you can fire on.',
   '',
@@ -158,6 +188,12 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '  - productId MUST be a catalogue id. Never invent ids.',
   '  - You do NOT choose the time or tube - they come from the slot you pick.',
   '  - One cue per slotIndex, no duplicates.',
+  '',
+  'Beat synchronisation (non-negotiable):',
+  '  - Every slot time t is an exact analysed beat timestamp. A cue on a slot fires exactly on that beat; there is no other way to be on-beat.',
+  '  - Never leave a climax slot empty. Climax beats are the moments the audience remembers.',
+  '  - Treat consecutive slots that share the same t as one beat across multiple tubes: stack them for emphasis on strong beats.',
+  '  - When in doubt between two slots, pick the one whose section and intensity better match the product size - never shift a big product onto a weak beat.',
   '',
   'Pacing rules (this is the biggest quality lever - get it right):',
   "  - The show must FEEL like the song. Cue density and product size should track each slot's intensity e and section densityHint.",
@@ -209,12 +245,17 @@ export function buildSystemPrompt(
     systemPromptText?: string | null;
     productContextText?: string | null;
     productCatalogueFields?: readonly ProductCatalogueField[] | null;
+    /** Show style picked in the wizard; layers style directives on the base prompt. */
+    showStyle?: ShowStyleKey | null;
   } = {},
 ): string {
   const systemPrompt = options.systemPromptText?.trim() || DEFAULT_SHOW_CUE_SYSTEM_PROMPT;
+  const styleDirectives = options.showStyle
+    ? (SHOW_STYLES[options.showStyle]?.promptDirectives ?? null)
+    : null;
   const productContext = options.productContextText?.trim();
   const productFields = asProductCatalogueFields(options.productCatalogueFields);
   const fieldContext = `Catalogue fields sent in this request: ${productFields.join(', ')}. Do not assume omitted catalogue fields are available.`;
 
-  return [systemPrompt, productContext, fieldContext].filter(Boolean).join('\n\n');
+  return [systemPrompt, styleDirectives, productContext, fieldContext].filter(Boolean).join('\n\n');
 }

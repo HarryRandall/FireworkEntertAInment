@@ -21,6 +21,7 @@ import {
   type CueWindow,
 } from '@/lib/cue-overlap.server';
 import { DEFAULT_CUE_MODEL, getOpenRouterClient } from '@/lib/openrouter.server';
+import type { GenerationMode } from '@/lib/prompt-configs';
 import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
@@ -38,6 +39,9 @@ import {
   projectSlotsForLLM,
 } from './prompt';
 import { planCuesFast } from './fast-planner';
+import { planCuesOnBeats } from './beat-sync-planner';
+import { launchPositionsForWidth, parseFireworkTypes, productMatchesTypes } from './show-options';
+import { SHOW_STYLES, isShowStyleKey, type ShowStyleKey } from './show-styles';
 import {
   GenerationResponseSchema,
   type Assignment,
@@ -80,7 +84,13 @@ export async function generateCuesForShow(params: {
   const { supabase, userId, showId, musicAnalysisId } = params;
   const model = DEFAULT_CUE_MODEL;
   const generationSettings = await getShowCueGenerationSettings();
-  const generationMode = generationSettings.generationMode;
+  // The show's style (picked in the wizard) overrides the global setting:
+  // 'beat_test' runs the deterministic beat planner, every other style runs
+  // the LLM with the fast planner as an automatic rescue path.
+  let generationMode: GenerationMode | 'beat' = generationSettings.generationMode;
+  let showStyle: ShowStyleKey | null = null;
+  /** Launch positions the site supports (capped by `shows.site_width_feet`). */
+  let maxTubes: 1 | 2 | 3 = 3;
   const totalStart = performance.now();
   const timings = {
     loadInputsMs: 0,
@@ -150,6 +160,11 @@ export async function generateCuesForShow(params: {
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
+    showStyle = isShowStyleKey(brief.show_style) ? brief.show_style : null;
+    if (showStyle) {
+      generationMode = SHOW_STYLES[showStyle].engine === 'beat' ? 'beat' : 'llm';
+    }
+    maxTubes = launchPositionsForWidth(brief.site_width_feet);
     if (musicAnalysisId) {
       if (analysisResult.status === 'completed') {
         analysis = analysisResult.analysis;
@@ -172,10 +187,18 @@ export async function generateCuesForShow(params: {
     }
 
     products = await listFireworkProducts();
-    catalogueCount = products.length;
     if (products.length === 0) {
       throw new Error('Product catalogue contains no firework products.');
     }
+    // Honour the user's firework-type constraint when it leaves a workable
+    // catalogue; otherwise keep the full list and let the prompt express the
+    // preference instead.
+    const allowedTypes = parseFireworkTypes(brief.firework_types);
+    if (allowedTypes) {
+      const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
+      if (filtered.length >= 3) products = filtered;
+    }
+    catalogueCount = products.length;
     timings.loadInputsMs = elapsedMs(loadStart);
 
     const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
@@ -184,7 +207,7 @@ export async function generateCuesForShow(params: {
     }
 
     const slotStart = performance.now();
-    slots = buildCueSlots(analysis, songDuration);
+    slots = buildCueSlots(analysis, songDuration, maxTubes);
     slotCount = slots.length;
     timings.slotBuildMs = elapsedMs(slotStart);
     if (slots.length === 0) {
@@ -205,11 +228,11 @@ export async function generateCuesForShow(params: {
   const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
   let accepted: ReconstructedCue[] = [];
 
-  if (generationMode === 'fast') {
-    // === Stage 2: fast local music-aware planning =========================
+  /** Rescue path: deterministic local plan when the LLM cannot deliver. */
+  const runFastFallback = () => {
     const planStart = performance.now();
     const plan = planCuesFast({
-      brief,
+      brief: brief!,
       analysis,
       slots,
       products,
@@ -219,6 +242,21 @@ export async function generateCuesForShow(params: {
     acceptedCount = accepted.length;
     droppedCount = plan.skippedSlots;
     timings.fastPlanMs = elapsedMs(planStart);
+  };
+
+  if (generationMode === 'beat') {
+    // === Stage 2: deterministic beat-sync test planning ===================
+    // One single-shot cue on every analysed beat, rotating tubes - sync is
+    // provably perfect, no LLM involved.
+    const planStart = performance.now();
+    const plan = planCuesOnBeats({ analysis, products, songDuration, maxTubes });
+    accepted = plan.cues;
+    acceptedCount = accepted.length;
+    droppedCount = plan.skippedSlots;
+    timings.fastPlanMs = elapsedMs(planStart);
+  } else if (generationMode === 'fast') {
+    // === Stage 2: fast local music-aware planning =========================
+    runFastFallback();
   } else {
     // === Stage 2: build prompt + call the LLM ============================
     const promptStart = performance.now();
@@ -237,6 +275,10 @@ export async function generateCuesForShow(params: {
         location: brief.location,
         requestedDurationSeconds: brief.duration_seconds,
         budgetUsd: brief.budget_cents != null ? Math.round(brief.budget_cents / 100) : null,
+        showStyle: showStyle ? SHOW_STYLES[showStyle].name : null,
+        siteWidthFeet: brief.site_width_feet,
+        launchPositions: maxTubes,
+        fireworkTypes: parseFireworkTypes(brief.firework_types),
       },
       analysisSummary: buildAnalysisSummary(analysis, songDuration),
       catalogue,
@@ -255,11 +297,12 @@ export async function generateCuesForShow(params: {
       systemPromptText: promptConfig?.systemPromptText,
       productContextText: promptConfig?.productContextText,
       productCatalogueFields: generationSettings.productCatalogueFields,
+      showStyle,
     });
     const userContent = JSON.stringify(userPayload);
     promptBytes = jsonByteLength(systemPrompt) + jsonByteLength(userContent);
     timings.promptBuildMs = elapsedMs(promptStart);
-    let rawResponse: string;
+    let rawResponse: string | null = null;
     const llmStart = performance.now();
     try {
       const client = getOpenRouterClient();
@@ -286,102 +329,113 @@ export async function generateCuesForShow(params: {
       const message = providerDetail
         ? `${baseMessage} - ${providerDetail} (model: ${model})`
         : `${baseMessage} (model: ${model})`;
-      console.error('[cue-generation] LLM call failed:', { model, error });
-      await markGenerationStatus(supabase, userId, showId, {
-        generation_status: 'failed',
-        generation_error: message,
-        generation_completed_at: new Date().toISOString(),
+      // The user must still get a show: rescue with the local fast planner
+      // instead of failing the whole run.
+      console.error('[cue-generation] LLM call failed, falling back to fast planner:', {
+        model,
+        error: message,
       });
-      logTimings('failed', { error: message });
-      return { ok: false, error: message };
+      rawResponse = null;
     }
 
     // === Stage 3: parse + validate the LLM response ======================
-    let parsed: ReturnType<typeof GenerationResponseSchema.parse>;
+    let parsed: ReturnType<typeof GenerationResponseSchema.parse> | null = null;
     const parseStart = performance.now();
-    try {
-      parsed = GenerationResponseSchema.parse(JSON.parse(stripJsonFence(rawResponse)));
-    } catch (error) {
+    if (rawResponse) {
+      try {
+        parsed = GenerationResponseSchema.parse(JSON.parse(stripJsonFence(rawResponse)));
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? `Could not parse LLM response: ${error.message}`
+            : 'Could not parse LLM response.';
+        console.error('[cue-generation] parse failed, falling back to fast planner:', message);
+        parsed = null;
+      }
+    }
+
+    if (!parsed) {
       timings.parseValidateMs = elapsedMs(parseStart);
-      const message =
-        error instanceof Error
-          ? `Could not parse LLM response: ${error.message}`
-          : 'Could not parse LLM response.';
-      await markGenerationStatus(supabase, userId, showId, {
-        generation_status: 'failed',
-        generation_error: message,
-        generation_completed_at: new Date().toISOString(),
-      });
-      logTimings('failed', { error: message });
-      return { ok: false, error: message };
-    }
+      runFastFallback();
+    } else {
+      // Drop unknown slots / unknown products / duplicate slot indices.
+      const seenSlot = new Set<number>();
+      const reconstructed: ReconstructedCue[] = [];
+      const dropped: Array<{ assignment: Assignment; reason: string }> = [];
 
-    // Drop unknown slots / unknown products / duplicate slot indices.
-    const seenSlot = new Set<number>();
-    const reconstructed: ReconstructedCue[] = [];
-    const dropped: Array<{ assignment: Assignment; reason: string }> = [];
-
-    for (const a of parsed.cues) {
-      const slot = slotIndex.get(a.slotIndex);
-      if (!slot) {
-        dropped.push({ assignment: a, reason: 'unknown slotIndex' });
-        continue;
-      }
-      if (seenSlot.has(a.slotIndex)) {
-        dropped.push({ assignment: a, reason: 'duplicate slotIndex' });
-        continue;
-      }
-      if (!productIndex.has(a.productId)) {
-        dropped.push({ assignment: a, reason: 'unknown productId' });
-        continue;
-      }
-      seenSlot.add(a.slotIndex);
-      reconstructed.push({
-        timeSeconds: slot.time,
-        tube: slot.tube,
-        productId: a.productId,
-        description: a.description,
-        slotIndex: slot.index,
-        intensity: slot.intensity,
-      });
-    }
-
-    // === Stage 4: tube-overlap dedupe with real product durations ========
-    reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
-    const acceptedWindows: CueWindow[] = [];
-    for (const cue of reconstructed) {
-      const product = productIndex.get(cue.productId);
-      const productDuration = product?.durationSeconds ?? MIN_PRODUCT_DURATION_SECONDS;
-      const window: CueWindow = {
-        timeSeconds: cue.timeSeconds,
-        durationSeconds: productDuration,
-        launchPositionIndex: cue.tube,
-      };
-      const conflict = findTubeOverlap(window, acceptedWindows);
-      if (conflict) {
-        dropped.push({
-          assignment: {
-            slotIndex: cue.slotIndex,
-            productId: cue.productId,
-            description: cue.description,
-          },
-          reason: 'tube overlap',
+      for (const a of parsed.cues) {
+        const slot = slotIndex.get(a.slotIndex);
+        if (!slot) {
+          dropped.push({ assignment: a, reason: 'unknown slotIndex' });
+          continue;
+        }
+        if (seenSlot.has(a.slotIndex)) {
+          dropped.push({ assignment: a, reason: 'duplicate slotIndex' });
+          continue;
+        }
+        if (!productIndex.has(a.productId)) {
+          dropped.push({ assignment: a, reason: 'unknown productId' });
+          continue;
+        }
+        seenSlot.add(a.slotIndex);
+        reconstructed.push({
+          timeSeconds: slot.time,
+          tube: slot.tube,
+          productId: a.productId,
+          description: a.description,
+          slotIndex: slot.index,
+          intensity: slot.intensity,
         });
-        continue;
       }
-      accepted.push(cue);
-      acceptedWindows.push(window);
+
+      // === Stage 4: tube-overlap dedupe with real product durations ========
+      reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
+      const acceptedWindows: CueWindow[] = [];
+      for (const cue of reconstructed) {
+        const product = productIndex.get(cue.productId);
+        const productDuration = product?.durationSeconds ?? MIN_PRODUCT_DURATION_SECONDS;
+        const window: CueWindow = {
+          timeSeconds: cue.timeSeconds,
+          durationSeconds: productDuration,
+          launchPositionIndex: cue.tube,
+        };
+        const conflict = findTubeOverlap(window, acceptedWindows);
+        if (conflict) {
+          dropped.push({
+            assignment: {
+              slotIndex: cue.slotIndex,
+              productId: cue.productId,
+              description: cue.description,
+            },
+            reason: 'tube overlap',
+          });
+          continue;
+        }
+        accepted.push(cue);
+        acceptedWindows.push(window);
+      }
+      acceptedCount = accepted.length;
+      droppedCount = dropped.length;
+      timings.parseValidateMs = elapsedMs(parseStart);
+
+      // An LLM response that validated down to nothing is still a failure
+      // mode the user shouldn't see - rescue with the fast planner.
+      if (accepted.length === 0) {
+        console.error(
+          '[cue-generation] LLM returned no usable cues after validation, falling back to fast planner.',
+        );
+        runFastFallback();
+      }
     }
-    acceptedCount = accepted.length;
-    droppedCount = dropped.length;
-    timings.parseValidateMs = elapsedMs(parseStart);
   }
 
   if (accepted.length === 0) {
     const message =
-      generationMode === 'fast'
-        ? 'Fast cue planner returned no usable cues.'
-        : 'LLM returned no usable cues after validation.';
+      generationMode === 'beat'
+        ? 'Beat-sync planner returned no usable cues.'
+        : generationMode === 'fast'
+          ? 'Fast cue planner returned no usable cues.'
+          : 'Cue generation returned no usable cues, even after the fast-planner fallback.';
     await markGenerationStatus(supabase, userId, showId, {
       generation_status: 'failed',
       generation_error: message,

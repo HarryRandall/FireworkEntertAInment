@@ -31,6 +31,21 @@ export const FIREWORK_GEOMETRIES = [
 ] as const;
 export type FireworkGeometry = (typeof FIREWORK_GEOMETRIES)[number];
 
+/**
+ * How each star renders its persistent trail.
+ *
+ * - `none`: clean point stars (peony, ring, pearls, strobe).
+ * - `spark`: legacy probabilistic spark dust via {@link Effects.flairEffect}.
+ * - `streak`: brocade-style distance-based square emission along the star's
+ *   own trajectory — the "super realistic" look generalised to every effect.
+ */
+export const STAR_TRAIL_MODES = ['none', 'spark', 'streak'] as const;
+export type StarTrailMode = (typeof STAR_TRAIL_MODES)[number];
+
+/** Colour treatment of streak-trail particles as they age. */
+export const STAR_TRAIL_COLOR_MODES = ['star', 'gold', 'silver', 'ember', 'starFade'] as const;
+export type StarTrailColorMode = (typeof STAR_TRAIL_COLOR_MODES)[number];
+
 export const FIREWORK_TRAIL_PROFILES = [
   'none',
   'spark',
@@ -143,6 +158,63 @@ export const FireworkDesignSchema = z.object({
     })
     .default({ smokeParticles: 100, sound: true }),
   /**
+   * Generalised star calibration shared by every non-brocade effect.
+   *
+   * `heads` renders each star as a glowing orb (the brocade head treatment);
+   * with heads off, stars fall back to the legacy round-spark rendering.
+   * `trail` selects between no trail, legacy spark dust, and brocade-style
+   * distance-emitted streak squares. All values are admin-tunable through
+   * the shared physics panel on the admin effects page.
+   */
+  stars: z
+    .object({
+      heads: z
+        .object({
+          enabled: z.boolean().default(false),
+          /** Size budget of each glowing star orb. */
+          size: z.coerce.number().min(40).max(4000).default(260),
+          /** Halo brightness multiplier, same encoding as brocade heads. */
+          glowStrength: z.coerce.number().min(0).max(3).default(0.7),
+        })
+        .default({ enabled: false, size: 260, glowStrength: 0.7 }),
+      trail: z
+        .object({
+          mode: z.enum(STAR_TRAIL_MODES).default('spark'),
+          /** Arc-length spacing (world units) between streak emissions. */
+          step: z.coerce.number().min(1).max(10).default(3.2),
+          /** Radius (world units) of the tube streak squares scatter within. */
+          tubeRadius: z.coerce.number().min(0.3).max(12).default(1.6),
+          /** Size multiplier for each streak square. */
+          squareSize: z.coerce.number().min(0.3).max(4).default(0.8),
+          /** Base life of each streak square, in seconds. */
+          lifeSeconds: z.coerce.number().min(0.1).max(4).default(0.9),
+          colorMode: z.enum(STAR_TRAIL_COLOR_MODES).default('gold'),
+          /** Probability a streak square pops white-hot (glitter twinkle). */
+          flicker: z.coerce.number().min(0).max(1).default(0),
+        })
+        .default({
+          mode: 'spark',
+          step: 3.2,
+          tubeRadius: 1.6,
+          squareSize: 0.8,
+          lifeSeconds: 0.9,
+          colorMode: 'gold',
+          flicker: 0,
+        }),
+    })
+    .default({
+      heads: { enabled: false, size: 260, glowStrength: 0.7 },
+      trail: {
+        mode: 'spark',
+        step: 3.2,
+        tubeRadius: 1.6,
+        squareSize: 0.8,
+        lifeSeconds: 0.9,
+        colorMode: 'gold',
+        flicker: 0,
+      },
+    }),
+  /**
    * Brocade crown calibration. Only read when the design is a brocade crown
    * (`geometry: 'crown'` + `trailProfile: 'glitter'`). Defaults mirror the
    * renderer constants the brocade rework shipped with, so designs without an
@@ -156,6 +228,8 @@ export const FireworkDesignSchema = z.object({
       trailStep: z.coerce.number().min(1).max(10).default(3),
       /** Radius (world units) of the tube trail squares scatter within. */
       tubeRadius: z.coerce.number().min(0.5).max(12).default(3.2),
+      /** Render the glowing head orbs. Off leaves the trails as bare streaks. */
+      headsEnabled: z.boolean().default(true),
       /** Size budget of each glowing head orb. */
       headSize: z.coerce.number().min(100).max(4000).default(900),
       /** Halo brightness multiplier; also drives scene light tinting. */
@@ -179,6 +253,7 @@ export const FireworkDesignSchema = z.object({
     .default({
       trailStep: 3,
       tubeRadius: 3.2,
+      headsEnabled: true,
       headSize: 900,
       glowStrength: 1,
       greenRatio: 0.5,
@@ -320,6 +395,159 @@ function glitterToTrailProfile(
   }
 }
 
+type StarsLike = {
+  heads: { enabled: boolean; size: number; glowStrength: number };
+  trail: {
+    mode: StarTrailMode;
+    step: number;
+    tubeRadius: number;
+    squareSize: number;
+    lifeSeconds: number;
+    colorMode: StarTrailColorMode;
+    flicker: number;
+  };
+};
+
+function starsBlock(
+  heads: [size: number, glow: number] | null,
+  trail?: Partial<StarsLike['trail']>,
+): StarsLike {
+  return {
+    heads: heads
+      ? { enabled: true, size: heads[0], glowStrength: heads[1] }
+      : { enabled: false, size: 260, glowStrength: 0.7 },
+    trail: {
+      mode: 'none',
+      step: 3.2,
+      tubeRadius: 1.6,
+      squareSize: 0.8,
+      lifeSeconds: 0.9,
+      colorMode: 'gold',
+      flicker: 0,
+      ...trail,
+    },
+  };
+}
+
+/**
+ * Realistic per-shell-type star treatment for legacy catalogue specs: which
+ * shells read as glowing orbs, and which lay brocade-style streak trails.
+ */
+function shellTypeToStars(shellType: string | undefined): StarsLike {
+  switch (shellType) {
+    case 'peony':
+      return starsBlock([220, 0.55]);
+    case 'crysanthemum':
+    case 'chrysanthemum':
+      return starsBlock([240, 0.7], {
+        mode: 'streak',
+        step: 3,
+        squareSize: 0.7,
+        lifeSeconds: 0.9,
+        flicker: 0.12,
+      });
+    case 'willow':
+    case 'fallingLeaves':
+      return starsBlock([190, 0.45], {
+        mode: 'streak',
+        step: 2.6,
+        tubeRadius: 1.5,
+        squareSize: 0.65,
+        lifeSeconds: 2.3,
+        flicker: 0.06,
+      });
+    case 'horsetail':
+      return starsBlock([340, 0.8], {
+        mode: 'streak',
+        step: 2.2,
+        tubeRadius: 2.4,
+        squareSize: 0.9,
+        lifeSeconds: 1.8,
+        flicker: 0.05,
+      });
+    case 'palm':
+      return starsBlock([620, 1.1], {
+        mode: 'streak',
+        step: 2.4,
+        tubeRadius: 3.4,
+        squareSize: 1.15,
+        lifeSeconds: 1.2,
+      });
+    case 'ring':
+      return starsBlock([260, 0.85]);
+    case 'pearls':
+      return starsBlock([430, 1]);
+    case 'strobe':
+    case 'ghost':
+      return starsBlock([240, 0.9]);
+    case 'crossette':
+      return starsBlock([320, 0.8], {
+        mode: 'streak',
+        step: 2.8,
+        squareSize: 0.75,
+        lifeSeconds: 0.7,
+        colorMode: 'starFade',
+      });
+    case 'comet':
+    case 'tail':
+      return starsBlock([900, 1.2], {
+        mode: 'streak',
+        step: 2,
+        tubeRadius: 3,
+        squareSize: 1.1,
+        lifeSeconds: 1.3,
+      });
+    case 'mine':
+      return starsBlock([200, 0.65], {
+        mode: 'streak',
+        step: 2.8,
+        squareSize: 0.6,
+        lifeSeconds: 0.5,
+        colorMode: 'starFade',
+      });
+    case 'pistil':
+    case 'floral':
+      return starsBlock([230, 0.7], {
+        mode: 'streak',
+        step: 3.2,
+        tubeRadius: 1.4,
+        squareSize: 0.65,
+        lifeSeconds: 0.7,
+        colorMode: 'star',
+      });
+    case 'silverFish':
+      return starsBlock([170, 0.7], {
+        mode: 'streak',
+        step: 2.4,
+        tubeRadius: 1,
+        squareSize: 0.55,
+        lifeSeconds: 0.5,
+        colorMode: 'silver',
+      });
+    case 'waterfall':
+      return starsBlock([200, 0.55], {
+        mode: 'streak',
+        step: 2,
+        squareSize: 0.7,
+        lifeSeconds: 2.6,
+        colorMode: 'silver',
+      });
+    case 'whirl':
+      return starsBlock([220, 0.9], {
+        mode: 'streak',
+        step: 2.6,
+        tubeRadius: 1.2,
+        squareSize: 0.6,
+        lifeSeconds: 0.7,
+        colorMode: 'silver',
+      });
+    case 'crackle':
+      return starsBlock([120, 0.6]);
+    default:
+      return starsBlock(null, { mode: 'spark' });
+  }
+}
+
 function trailProfileToSettings(profile: FireworkTrailProfile): FireworkDesign['trail'] {
   switch (profile) {
     case 'none':
@@ -411,6 +639,7 @@ function fireworkSpecToDesignLike(spec: RecordLike): RecordLike | null {
     ...(color == null ? {} : { color }),
     ...(secondaryColor == null ? {} : { secondaryColor }),
     trail: trailProfileToSettings(trailProfile),
+    stars: shellTypeToStars(shellType),
     burst: {
       ...(spreadSpeed == null
         ? {}
@@ -538,7 +767,13 @@ export function estimateDesignDurationSeconds(design: FireworkDesign): number {
   const starLifeMultiplier = longHangGeometry ? 1.6 : 1;
   // Flair/trail particles spawned near a star's death linger a little longer.
   const trailTail = Math.max(1, 1.25 * design.trail.length);
-  return liftTime + burstLife * starLifeMultiplier + trailTail;
+  // Streak trails melt away shortly after their head dies; give the timeline
+  // room for the last squares' staggered fade.
+  const streakTail =
+    design.stars.trail.mode === 'streak'
+      ? design.stars.trail.lifeSeconds * Math.max(0.2, design.trail.streakLife) * 1.1
+      : 0;
+  return liftTime + burstLife * starLifeMultiplier + Math.max(trailTail, streakTail);
 }
 
 export type LaunchPosition = { x: number; y: number; z: number };

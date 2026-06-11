@@ -2,13 +2,13 @@
  * Audio drop-zone / attached-track UI for the wizard.
  *
  * Renders one of two states: a dashed drop zone when no file is attached, or
- * a green "track ready" pill when one is. Display-only — upload progress and
+ * a "track ready" panel when one is. Display-only — upload progress and
  * error state are owned by the parent (see `uploadAudioAndStartAnalysis` in
  * the wizard page).
  */
 'use client';
 
-import { Check, CloudUpload, Music4, Pencil, Trash2 } from 'lucide-react';
+import { Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
@@ -55,7 +55,11 @@ export function AudioUpload({
               : 'text-[color:var(--color-status-success)]',
           )}
         >
-          <Music4 size={18} strokeWidth={1.75} />
+          {uploadState === 'uploading' ? (
+            <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+          ) : (
+            <Music4 size={18} strokeWidth={1.75} />
+          )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

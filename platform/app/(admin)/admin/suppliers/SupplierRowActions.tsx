@@ -22,22 +22,34 @@ import type { SupplierInputType } from '@/app/actions/admin-suppliers';
 
 type Props = {
   supplier: { id: string } & SupplierInputType;
+  onOptimisticDelete?: (id: string) => void;
+  onDeleteFailed?: (id: string) => void;
 };
 
-export function SupplierRowActions({ supplier }: Props) {
+export function SupplierRowActions({ supplier, onOptimisticDelete, onDeleteFailed }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const onDelete = () => {
+    setConfirmOpen(false);
+    onOptimisticDelete?.(supplier.id);
+
     startTransition(async () => {
-      const result = await deleteSupplier({ id: supplier.id });
-      if (result.ok) {
-        toast.success('Supplier deleted');
-        router.refresh();
-      } else toast.error(result.error);
-      setConfirmOpen(false);
+      try {
+        const result = await deleteSupplier({ id: supplier.id });
+        if (result.ok) {
+          toast.success('Supplier deleted');
+          router.refresh();
+        } else {
+          onDeleteFailed?.(supplier.id);
+          toast.error(result.error);
+        }
+      } catch {
+        onDeleteFailed?.(supplier.id);
+        toast.error('Supplier could not be deleted.');
+      }
     });
   };
 
@@ -74,7 +86,7 @@ export function SupplierRowActions({ supplier }: Props) {
                 e.preventDefault();
                 onDelete();
               }}
-              className="bg-[color:var(--color-status-danger)] text-white hover:bg-[color:var(--color-status-danger)]/90"
+              variant="destructive"
             >
               Delete
             </AlertDialogAction>

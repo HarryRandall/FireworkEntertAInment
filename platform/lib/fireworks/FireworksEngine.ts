@@ -32,7 +32,7 @@ import {
   VERTEX_SHADER,
 } from '@/lib/fireworks/shaders';
 import { createSeededRng, mixSeed } from '@/lib/fireworks/random';
-import type { Particle } from '@/lib/fireworks/Particle';
+import { HIDDEN_PARTICLE_SHAPE, type Particle } from '@/lib/fireworks/Particle';
 
 type PoolSnapshot = {
   indices: Uint32Array;
@@ -328,6 +328,9 @@ export class FireworksEngine {
     for (let slot = 0; slot < count; slot++) {
       const p = ps[live[slot]];
       if (!p.alive) continue;
+      // Hidden carrier particles (e.g. brocade heads switched off) still fly
+      // and emit their trails, but are never drawn.
+      if (p.shape <= HIDDEN_PARTICLE_SHAPE) continue;
       const isStar = p.mass <= 0.0015;
       const isSmoke = p.mass >= 0.004 && p.mass < 0.01;
       // Subtle shimmer — enough to read as "alive" without strobing. Higher
@@ -353,11 +356,15 @@ export class FireworksEngine {
       positions[pi + 1] = p.y;
       positions[pi + 2] = p.z;
       sizes[drawCount] = renderParticleSize(p);
-      shapes[drawCount] = p.shape;
       // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
       // then settle into their pure burst colour as they cool — matches the
       // way burning magnesium chemistry actually looks.
       const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
+      // Burn-out halo: over the last quarter of a head's life, widen its glow
+      // (the shape attribute encodes glow strength as 2 + glow * 0.25) so the
+      // star glows out softly instead of vanishing.
+      const burnout = p.shape > 1.5 && lifeRatio < 0.25 ? 1 - lifeRatio / 0.25 : 0;
+      shapes[drawCount] = p.shape + burnout * 0.25;
       // Brocade head orbs (shape 2) keep their pure green/red; white-hot
       // tinting made them blend into the burst centre.
       const heat = isStar && p.shape < 1.5 ? Math.max(0, lifeRatio - 0.72) * 0.8 : 0;
@@ -488,7 +495,7 @@ export class FireworksEngine {
     this.pool.aliveMax = state.aliveMax;
   }
 
-  /** Shells and brocade heads have live callbacks that snapshots cannot serialise. */
+  /** Live callbacks are intentionally not serialised into snapshots. */
   private poolHasLiveCallbackParticles(): boolean {
     const ps = this.pool.particles;
     const live = this.pool.aliveIndices;
@@ -549,7 +556,9 @@ function renderParticleSize(p: Particle): number {
   // Glowing head orbs: larger size budget, but allowed to shrink with
   // distance so zoomed-out bursts don't read as pure glow. The cap sits
   // above the shader's square clamp so heads stay dominant when zoomed in.
-  if (p.mass <= 0.0006) return clamp(base * 2.4, 3, 200);
+  // sqrt(headSize) maps the 100..4000 slider to a ~10..63px budget with the
+  // default of 900 landing at 30 — the calibrated "clearly visible orb" size.
+  if (p.mass <= 0.0006) return clamp(base, 4, 240);
   if (p.mass <= 0.0015) return clamp(base * 1.55, 1.4, 34);
   if (p.mass <= 0.003) return clamp(base * 1.05, 1.0, 14);
   return clamp(base * 1.2, 1.1, 20);
@@ -568,9 +577,13 @@ function renderParticleAlpha(p: Particle): number {
   let peak = 0.34;
   if (isFlash) peak = 0.14;
   else if (p.mass >= 0.1) peak = 0.28;
-  else if (p.shape > 1.5)
-    peak = 0.66; // brocade heads: bright core + glow in one sprite
-  else if (p.shape > 0.5)
+  else if (p.shape > 1.5) {
+    // Brocade heads hold full brightness for most of their life, then wink
+    // out quickly while the shader widens their halo — "glow out" rather
+    // than a long dim fade.
+    const holdFade = Math.pow(clamp(lifeRatio / 0.18, 0, 1), 0.8);
+    return clamp(0.7 * fadeIn * holdFade, 0, 0.82);
+  } else if (p.shape > 0.5)
     peak = 0.6; // brocade trail squares read brighter
   else if (p.mass <= 0.0006)
     peak = 0.46; // glow halos: large but soft

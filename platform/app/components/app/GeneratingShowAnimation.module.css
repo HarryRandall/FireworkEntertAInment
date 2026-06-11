@@ -1,11 +1,20 @@
+/*
+ * Generating-show splash.
+ *
+ * A calm night sky (gradient + starfield) with occasional soft firework
+ * bursts behind a glassy progress card. Sky colours are deliberately
+ * hard-coded (tokens cannot express the simulation backdrop); the card and
+ * bar consume design-system tokens so both themes hold up.
+ */
+
 .stage {
   position: relative;
   display: flex;
   flex: 1 1 auto;
   min-height: 100%;
   overflow: hidden;
-  background: #000;
   border-radius: 16px;
+  background: linear-gradient(180deg, #03050b 0%, #0b1226 100%);
 }
 
 @media (max-width: 1023px) {
@@ -17,78 +26,143 @@
 .container {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  isolation: isolate;
-  contain: paint;
-  background: #000;
-  --blob-base: #000;
-  --blob-filter: blur(4.6em) brightness(2.08) saturate(1.58);
-  --dot-radius: 2px;
-  --dot-mask: hsl(0 0% 4%);
-  --blob-1: #13e85f;
-  --blob-2: #d6c700;
-  --blob-3: #00a8d9;
-  --blob-4: #68d600;
-  --blob-5: #2868d9;
-  --blob-6: #d69a00;
-  --blob-7: #00d67f;
-  --blob-8: #c12edb;
-  --blob-9: #91d600;
-  --blob-10: #7147d9;
-  --blob-11: #00d624;
-  --blob-12: #d69f00;
-}
-
-.container::before {
-  content: '';
-  position: absolute;
-  inset: -6em;
   z-index: 0;
-  filter: var(--blob-filter);
-  animation: blobs-1e28bd3d 150s linear infinite;
-  background-color: var(--blob-base);
-  background-image:
-    radial-gradient(ellipse 72px 168px at 50% 50%, var(--blob-1) 0%, transparent 100%),
-    radial-gradient(ellipse 220px 72px at 50% 50%, var(--blob-2) 0%, transparent 100%),
-    radial-gradient(ellipse 96px 260px at 50% 50%, var(--blob-3) 0%, transparent 100%),
-    radial-gradient(ellipse 260px 132px at 50% 50%, var(--blob-4) 0%, transparent 100%),
-    radial-gradient(ellipse 58px 78px at 50% 50%, var(--blob-5) 0%, transparent 100%),
-    radial-gradient(ellipse 320px 86px at 50% 50%, var(--blob-6) 0%, transparent 100%),
-    radial-gradient(ellipse 140px 220px at 50% 50%, var(--blob-7) 0%, transparent 100%),
-    radial-gradient(ellipse 82px 336px at 50% 50%, var(--blob-8) 0%, transparent 100%),
-    radial-gradient(ellipse 210px 108px at 50% 50%, var(--blob-9) 0%, transparent 100%),
-    radial-gradient(ellipse 112px 54px at 50% 50%, var(--blob-10) 0%, transparent 100%),
-    radial-gradient(ellipse 360px 158px at 50% 50%, var(--blob-11) 0%, transparent 100%),
-    radial-gradient(ellipse 70px 236px at 50% 50%, var(--blob-12) 0%, transparent 100%);
-  background-size:
-    438px 514px,
-    812px 398px,
-    556px 926px,
-    692px 604px,
-    318px 362px,
-    934px 486px,
-    742px 678px,
-    382px 816px,
-    604px 438px,
-    268px 292px,
-    1086px 742px,
-    486px 924px;
+  pointer-events: none;
 }
 
+/* Far + near starfield layers. */
+.container::before,
 .container::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background-image: radial-gradient(
-    circle at 50% 50%,
-    #0000 0,
-    #0000 var(--dot-radius),
-    var(--dot-mask) var(--dot-radius)
-  );
-  background-size: 8px 8px;
+  background-repeat: repeat;
 }
+
+.container::before {
+  background-image:
+    radial-gradient(1px 1px at 22% 28%, rgba(255, 255, 255, 0.5), transparent 55%),
+    radial-gradient(1px 1px at 64% 12%, rgba(255, 255, 255, 0.38), transparent 55%),
+    radial-gradient(1px 1px at 85% 44%, rgba(255, 255, 255, 0.42), transparent 55%),
+    radial-gradient(1px 1px at 40% 66%, rgba(255, 255, 255, 0.3), transparent 55%),
+    radial-gradient(1px 1px at 8% 80%, rgba(255, 255, 255, 0.34), transparent 55%);
+  background-size: 440px 400px;
+  opacity: 0.55;
+}
+
+.container::after {
+  background-image:
+    radial-gradient(1.4px 1.4px at 15% 18%, rgba(255, 255, 255, 0.85), transparent 55%),
+    radial-gradient(1.2px 1.2px at 72% 32%, rgba(255, 255, 255, 0.65), transparent 55%),
+    radial-gradient(1.6px 1.6px at 48% 8%, rgba(255, 255, 255, 0.75), transparent 55%),
+    radial-gradient(1.2px 1.2px at 90% 72%, rgba(255, 255, 255, 0.55), transparent 55%),
+    radial-gradient(1.4px 1.4px at 30% 50%, rgba(255, 255, 255, 0.6), transparent 55%);
+  background-size: 280px 260px;
+  opacity: 0.6;
+  animation: splash-twinkle 7s ease-in-out infinite alternate;
+}
+
+@keyframes splash-twinkle {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 0.75;
+  }
+}
+
+/* Horizon glow anchoring the scene. */
+.horizon {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -16%;
+  height: 60%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at 50% 100%,
+    rgba(0, 229, 255, 0.16) 0%,
+    rgba(59, 130, 246, 0.08) 38%,
+    transparent 72%
+  );
+  filter: blur(10px);
+}
+
+/* Soft distant firework bursts, staggered around the card. */
+.burst {
+  position: absolute;
+  z-index: 0;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(2px);
+  animation: splash-burst 11s linear infinite;
+}
+
+.burstA {
+  top: 6%;
+  left: 10%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 229, 255, 0.55) 0%,
+    rgba(0, 229, 255, 0.16) 35%,
+    transparent 62%
+  );
+  animation-delay: 0s;
+}
+
+.burstB {
+  top: 14%;
+  right: 8%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(
+    circle,
+    rgba(139, 92, 246, 0.55) 0%,
+    rgba(139, 92, 246, 0.16) 35%,
+    transparent 62%
+  );
+  animation-delay: 3.8s;
+}
+
+.burstC {
+  bottom: 18%;
+  left: 18%;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 209, 102, 0.5) 0%,
+    rgba(255, 209, 102, 0.14) 35%,
+    transparent 62%
+  );
+  animation-delay: 7.4s;
+}
+
+@keyframes splash-burst {
+  0%,
+  70% {
+    opacity: 0;
+    transform: scale(0.25);
+  }
+  75% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
+  84% {
+    opacity: 0.18;
+    transform: scale(1.05);
+  }
+  93%,
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* === Card =============================================================== */
 
 .overlay {
   position: absolute;
@@ -103,42 +177,41 @@
 
 .card {
   position: relative;
-  max-width: 48rem;
+  max-width: 34rem;
   width: 100%;
-  color: #ffffff;
   text-align: center;
   display: flex;
   flex-direction: column;
-  background: #05070d;
-  border-radius: 24px;
-  filter: drop-shadow(0 30px 80px rgba(0, 0, 0, 0.55));
+  border: 1px solid color-mix(in srgb, var(--color-border-subtle) 85%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-bg-default) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  color: var(--color-content-default);
 }
 
 .panelTop {
-  padding: 2.75rem 2.25rem 1.75rem;
+  padding: 2.25rem 2rem 1.5rem;
 }
 
 .panelBottom {
-  padding: 1.75rem 2.25rem 2.5rem;
+  padding: 1.5rem 2rem 2rem;
 }
 
 .barRow {
   display: flex;
   justify-content: center;
-  padding: 0 2.25rem;
+  padding: 0 2rem;
 }
 
 @media (max-width: 640px) {
-  .card {
-    border-radius: 20px;
-  }
-
   .panelTop {
-    padding: 1.75rem 1.25rem 1.25rem;
+    padding: 1.5rem 1.25rem 1.1rem;
   }
 
   .panelBottom {
-    padding: 1.25rem 1.25rem 1.75rem;
+    padding: 1.1rem 1.25rem 1.5rem;
   }
 
   .barRow {
@@ -147,29 +220,29 @@
 }
 
 .eyebrow {
-  opacity: 0;
-  height: 0;
-  margin: 0;
-  overflow: hidden;
-  pointer-events: none;
+  margin: 0 0 0.85rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-accent);
 }
 
 .title {
-  font-size: clamp(3rem, 7vw, 5rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  font-size: clamp(1.6rem, 3.6vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
   margin: 0;
-  color: #ffffff;
+  color: var(--color-content-emphasis);
   word-break: break-word;
 }
 
 .stageLabelWrap {
   position: relative;
-  margin: 2.25rem 0 0;
-  /* Match the label's font-size so 1.6em is correctly sized for descenders
-     ("g", "p") and the ellipsis on the largest stage labels. */
-  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  margin: 1.25rem 0 0;
+  font-size: 0.9375rem;
   height: 1.6em;
   overflow: hidden;
 }
@@ -183,9 +256,8 @@
   justify-content: center;
   font-size: 1em;
   line-height: 1.4;
-  font-weight: 700;
-  letter-spacing: -0.015em;
-  color: #ffffff;
+  font-weight: 500;
+  color: var(--color-content-subtle);
   font-variant-numeric: tabular-nums;
   will-change: transform, opacity;
   animation: stage-slide-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -203,10 +275,9 @@
 }
 
 .progressTrack {
-  width: min(36rem, 100%);
-  height: 16px;
-  background: #000000;
-  border: 1px solid #ffffff;
+  width: 100%;
+  height: 8px;
+  background: color-mix(in srgb, var(--color-border-subtle) 55%, transparent);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -215,122 +286,69 @@
 .progressFill {
   width: 100%;
   height: 100%;
-  background: #ffffff;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-accent) 0%, #3b82f6 100%);
+  box-shadow: 0 0 14px -2px var(--color-accent);
   transform: scaleX(var(--progress-scale, 0));
   transform-origin: left center;
   will-change: transform;
 }
 
 .progressMeta {
-  margin: 1.5rem 0 0;
+  margin: 1rem 0 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 0.75rem;
-  color: rgba(255, 255, 255, 0.7);
+  gap: 0.6rem;
 }
 
 .percent {
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  font-size: 1.75rem;
-  color: #ffffff;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-content-emphasis);
+  letter-spacing: -0.01em;
 }
 
 .hint {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9375rem;
+  color: var(--color-content-muted);
+  font-size: 0.8125rem;
 }
 
-/* Light theme keeps the same structure with inverted panel and bar colours. */
-:global([data-theme='light']) .stage,
-:global([data-theme='light']) .container {
-  background: #fff;
+/* === Light theme ======================================================== */
+
+:global([data-theme='light']) .stage {
+  background: linear-gradient(180deg, #f4f8fd 0%, #dde9f8 100%);
 }
 
-:global([data-theme='light']) .container {
-  --blob-base: #fff;
-  --blob-filter: blur(5.8em) brightness(1.18) saturate(2.55) contrast(1.18);
-  --dot-radius: 2.4px;
-  --dot-mask: #fff;
-  --blob-1: #00d655;
-  --blob-2: #f5b400;
-  --blob-3: #06b6d4;
-  --blob-4: #65cc00;
-  --blob-5: #5b54ee;
-  --blob-6: #ff6d18;
-  --blob-7: #00c478;
-  --blob-8: #c026d3;
-  --blob-9: #84cc16;
-  --blob-10: #8b5cf6;
-  --blob-11: #16a34a;
-  --blob-12: #e2570d;
+:global([data-theme='light']) .container::before,
+:global([data-theme='light']) .container::after {
+  opacity: 0.1;
+}
+
+:global([data-theme='light']) .horizon {
+  opacity: 0.55;
+}
+
+:global([data-theme='light']) .burst {
+  opacity: 0;
+  animation: none;
 }
 
 :global([data-theme='light']) .card {
-  color: #0b1020;
-  background: #ffffff;
-  filter: drop-shadow(0 30px 80px rgba(11, 16, 32, 0.22));
+  box-shadow: 0 24px 70px rgba(11, 16, 32, 0.16);
 }
 
-:global([data-theme='light']) .title,
-:global([data-theme='light']) .stageLabel,
-:global([data-theme='light']) .percent {
-  color: #0b1020;
-}
-
-:global([data-theme='light']) .progressTrack {
-  background: #ffffff;
-  border-color: #000000;
-}
-
-:global([data-theme='light']) .progressFill {
-  background: #000000;
-}
-
-:global([data-theme='light']) .progressMeta,
-:global([data-theme='light']) .hint {
-  color: rgba(11, 16, 32, 0.6);
-}
+/* === Reduced motion ===================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  .container::before,
+  .container::after,
   .stageLabel {
     animation: none;
   }
-}
 
-@keyframes blobs-1e28bd3d {
-  0% {
-    background-position:
-      28px 416px,
-      332px 42px,
-      76px 682px,
-      588px 236px,
-      184px 128px,
-      814px 374px,
-      416px 562px,
-      16px 736px,
-      668px 78px,
-      212px 312px,
-      936px 618px,
-      118px 862px;
-  }
-
-  to {
-    background-position:
-      -9414px -2296px,
-      21986px 8742px,
-      -14672px 7082px,
-      9844px -2618px,
-      -7230px 4816px,
-      17240px 5212px,
-      -11680px 14864px,
-      6048px -12872px,
-      -18840px 3216px,
-      8246px 9904px,
-      -23118px 13242px,
-      1412px 19872px;
+  .burst {
+    animation: none;
+    display: none;
   }
 }

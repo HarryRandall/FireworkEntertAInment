@@ -2,21 +2,21 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Pause, Play, Repeat, RotateCcw, Save, SlidersHorizontal } from 'lucide-react';
+import { Pause, Play, Repeat, RotateCcw, Save } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { updateEffect } from '@/app/actions/admin-effects';
-import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
-import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
-import { Field, FieldError, FieldHint, FieldLabel } from '@/app/components/ui/Field';
+import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
-import { Input, Textarea } from '@/app/components/ui/Input';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
+import { Input } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Toggle } from '@/app/components/ui/Toggle';
 import { toast } from '@/app/components/ui/toast';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import type { AdminEffectDetail } from '@/lib/admin.types';
 import {
   compileFireworkDesign,
@@ -38,14 +38,6 @@ const LazyFireworkReplayCanvas = dynamic(
   },
 );
 
-const FAMILY_OPTIONS = [
-  { value: 'aerial_burst', label: 'Aerial burst' },
-  { value: 'ascending', label: 'Ascending' },
-  { value: 'ground', label: 'Ground' },
-  { value: 'noise', label: 'Noise' },
-  { value: 'compound', label: 'Compound' },
-];
-
 const RENDER_PATTERN_OPTIONS = FIREWORK_PATTERNS.map((pattern) => ({
   value: pattern,
   label: pattern,
@@ -55,6 +47,20 @@ const BOOM_OPTIONS = [
   { value: 'auto', label: 'Auto' },
   { value: 'light', label: 'Light' },
   { value: 'heavy', label: 'Heavy' },
+];
+
+const TRAIL_MODE_OPTIONS = [
+  { value: 'none', label: 'None' },
+  { value: 'spark', label: 'Spark dust' },
+  { value: 'streak', label: 'Solid streaks' },
+];
+
+const TRAIL_COLOR_OPTIONS = [
+  { value: 'star', label: 'Star colour' },
+  { value: 'gold', label: 'Gold' },
+  { value: 'silver', label: 'Silver' },
+  { value: 'ember', label: 'Ember' },
+  { value: 'starFade', label: 'Star, fading to ember' },
 ];
 
 const PREVIEW_COLOR = '#22d3ee';
@@ -104,38 +110,11 @@ function finiteNumber(value: string, fallback: number): number {
   return Number.isFinite(next) ? next : fallback;
 }
 
-function rangeValue(value: unknown, fallback: [number, number]): [number, number] {
-  if (!Array.isArray(value)) return fallback;
-  const first = Number(value[0]);
-  const second = Number(value[1]);
-  return [
-    Number.isFinite(first) ? first : fallback[0],
-    Number.isFinite(second) ? second : fallback[1],
-  ];
-}
-
 function hasConcreteRendererColor(value: unknown): boolean {
   if (!isRecord(value)) return false;
   const renderDefaults = readRecord(value, 'renderDefaults');
   const color = renderDefaults.color ?? value.color;
   return color !== undefined && color !== 'random';
-}
-
-function rendererColorToHex(value: unknown, fallback: string): string {
-  if (!isRecord(value)) return fallback;
-  const toByte = (channel: unknown) =>
-    Math.max(0, Math.min(255, Math.round(Number(channel) * 255)));
-  const channels = [value.r, value.g, value.b];
-  if (!channels.every((channel) => Number.isFinite(Number(channel)))) return fallback;
-  return `#${channels.map((channel) => toByte(channel).toString(16).padStart(2, '0')).join('')}`;
-}
-
-function hexToRendererRgb(hex: string): { r: number; g: number; b: number } | null {
-  const match = hex.trim().match(/^#?([0-9a-f]{6})$/i);
-  if (!match) return null;
-  const int = Number.parseInt(match[1], 16);
-  const to01 = (byte: number) => Math.round((byte / 255) * 1000) / 1000;
-  return { r: to01((int >> 16) & 0xff), g: to01((int >> 8) & 0xff), b: to01(int & 0xff) };
 }
 
 function rangeMid(range: [number, number]): number {
@@ -195,57 +174,22 @@ function NumberField({
   );
 }
 
-function ColorField({
-  label,
-  value,
-  hint,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  hint?: ReactNode;
-  disabled?: boolean;
-  onChange: (hex: string) => void;
-}) {
-  const id = useId();
-  return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <div className="flex items-center gap-3">
-        <input
-          id={id}
-          type="color"
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.currentTarget.value)}
-          className="h-9 w-14 cursor-pointer rounded-md border border-[color:var(--color-border-subtle)] bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <span className="font-mono text-xs text-[color:var(--color-content-subtle)]">{value}</span>
-      </div>
-      {hint ? <FieldHint>{hint}</FieldHint> : null}
-    </Field>
-  );
-}
-
 function PanelSection({
   title,
-  description,
+  action,
   children,
 }: {
   title: string;
-  description?: ReactNode;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-4 first:border-t-0 first:pt-0">
-      <div>
+    <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-5 first:border-t-0 first:pt-0">
+      <div className="flex items-center gap-2.5">
         <h3 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
           {title}
         </h3>
-        {description ? (
-          <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">{description}</p>
-        ) : null}
+        {action}
       </div>
       {children}
     </div>
@@ -258,23 +202,20 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
-  const [name, setName] = useState(effect.name);
-  const [description, setDescription] = useState(effect.description ?? '');
-  const [family, setFamily] = useState(effect.family);
-  const [patternKey, setPatternKey] = useState(effect.patternKey);
-  const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
   const [modelText, setModelText] = useState(JSON.stringify(effect.modelJson, null, 2));
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
+  const trailsToggleId = useId();
+  const headsToggleId = useId();
 
   const parsedModel = useMemo(() => parseJsonObject(modelText), [modelText]);
   const baseModel = parsedModel.ok ? parsedModel.value : effect.modelJson;
   const modelRecord = parsedModel.ok ? parsedModel.value : {};
   const renderDefaults = readRecord(modelRecord, 'renderDefaults');
-  const burstDefaults = readRecord(renderDefaults, 'burst');
   const flairDefaults = readRecord(renderDefaults, 'flair');
+  const strobeDefaults = readRecord(renderDefaults, 'strobe');
   const crackleDefaults = readRecord(renderDefaults, 'crackle');
   const soundDefaults = readRecord(renderDefaults, 'sound');
   const modelHasColour = hasConcreteRendererColor(baseModel);
@@ -286,8 +227,24 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       }),
     [baseModel, modelHasColour],
   );
-  const previewColour = rendererColorToHex(previewDesign.color, PREVIEW_COLOR);
   const isBrocade = previewDesign.geometry === 'crown' && previewDesign.trailProfile === 'glitter';
+  const trailsEnabled =
+    typeof flairDefaults.enabled === 'boolean'
+      ? flairDefaults.enabled
+      : previewDesign.flair.enabled;
+  const headsEnabled = previewDesign.brocade.headsEnabled;
+  const starHeadsEnabled = previewDesign.stars.heads.enabled;
+  const trailMode = previewDesign.stars.trail.mode;
+  const strobeEnabled =
+    typeof strobeDefaults.enabled === 'boolean'
+      ? strobeDefaults.enabled
+      : previewDesign.strobe.enabled;
+  const crackleEnabled =
+    typeof crackleDefaults.enabled === 'boolean'
+      ? crackleDefaults.enabled
+      : previewDesign.crackle.enabled;
+  const showSplitControls = previewDesign.split.enabled || previewDesign.geometry === 'split_cross';
+  const showPistilControls = previewDesign.pistil.enabled || previewDesign.geometry === 'pistil';
   // Full launch-to-fade window for the timeline, rounded up to a half second.
   const previewDuration = useMemo(() => {
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
@@ -307,15 +264,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       id: `${effect.id}-base-preview`,
       position: 1,
       timeSeconds: PREVIEW_CUE_TIME_SECONDS,
-      description: description || name,
+      description: effect.description || effect.name,
       productId: effect.id,
       launchPositionIndex: 0,
       firework: {
         id: effect.id,
         slug: effect.slug,
-        name,
-        description: description || null,
-        sortOrder: Number(sortOrder) || effect.sortOrder,
+        name: effect.name,
+        description: effect.description ?? null,
+        sortOrder: effect.sortOrder,
         durationSeconds: previewDuration,
         heightMeters: null,
         caliber: null,
@@ -326,26 +283,14 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         baseEffect: {
           id: effect.id,
           slug: effect.slug,
-          name,
-          patternKey,
+          name: effect.name,
+          patternKey: effect.patternKey,
         },
         variant: null,
       },
     }),
-    [
-      baseModel,
-      description,
-      effect.id,
-      effect.slug,
-      effect.sortOrder,
-      name,
-      patternKey,
-      previewDesign,
-      previewDuration,
-      sortOrder,
-    ],
+    [baseModel, effect, previewDesign, previewDuration],
   );
-
   useEffect(() => {
     if (!isPlaying) return;
     let frameId = 0;
@@ -405,16 +350,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
-  function setBurstRange(key: 'speed' | 'gravity' | 'life', index: 0 | 1, value: number) {
-    updateModelDefaults((defaults) => {
-      const burst = ensureRecord(defaults, 'burst');
-      const fallback = previewDesign.burst[key];
-      const next = rangeValue(burst[key], fallback);
-      next[index] = value;
-      burst[key] = next;
-    });
-  }
-
   /** Writes a [mid - halfWidth, mid + halfWidth] random band for the friendly sliders. */
   function setBurstRangeMid(key: 'speed' | 'gravity' | 'life', mid: number, halfWidth: number) {
     updateModelDefaults((defaults) => {
@@ -438,6 +373,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
+  /** Writes `renderDefaults.stars.<group>.<key>` for the shared physics panel. */
+  function setStarsValue(group: 'heads' | 'trail', key: string, value: unknown) {
+    updateModelDefaults((defaults) => {
+      const stars = ensureRecord(defaults, 'stars');
+      const target = ensureRecord(stars, group);
+      target[key] = value;
+    });
+  }
+
   function setStreakCount(value: number) {
     updateModelDefaults((defaults) => {
       const brocade = ensureRecord(defaults, 'brocade');
@@ -445,16 +389,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       // Keep legacy fallback valid without breaking the design schema when
       // brocade streak counts are deliberately below the generic size minimum.
       defaults.size = Math.max(MIN_RENDER_SIZE, value);
-    });
-  }
-
-  function setBrocadeColor(group: 'headColors' | 'palette', key: string, hex: string) {
-    const rgb = hexToRendererRgb(hex);
-    if (!rgb) return;
-    updateModelDefaults((defaults) => {
-      const brocade = ensureRecord(defaults, 'brocade');
-      const target = ensureRecord(brocade, group);
-      target[key] = rgb;
     });
   }
 
@@ -469,11 +403,11 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       const result = await updateEffect({
         id: effect.id,
         expectedUpdatedAt: lastSavedUpdatedAt,
-        name,
-        description,
-        family: family as 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound',
-        patternKey,
-        sortOrder: Number(sortOrder),
+        name: effect.name,
+        description: effect.description ?? '',
+        family: effect.family as 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound',
+        patternKey: effect.patternKey,
+        sortOrder: effect.sortOrder,
         modelJson: modelText,
       });
 
@@ -489,262 +423,187 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   }
 
   return (
-    <div className="space-y-5">
-      {error ? (
-        <InlineAlert tone="danger" title="Could not save">
-          {error}
-        </InlineAlert>
-      ) : null}
+    <div className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch">
+      <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
+        <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
+          <LazyFireworkReplayCanvas
+            cues={[previewCue]}
+            elapsed={elapsed}
+            playbackRef={playbackRef}
+            launchPositions={PREVIEW_LAUNCH_POSITIONS}
+            muted
+            interactive
+            controlsVisible
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => {
+                if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
+                  setPreviewTime(PREVIEW_START_SECONDS);
+                }
+                setIsPlaying((playing) => !playing);
+              }}
+              aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
+            >
+              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => {
+                setIsPlaying(false);
+                setPreviewTime(PREVIEW_START_SECONDS);
+              }}
+              aria-label="Reset preview"
+            >
+              <RotateCcw size={16} />
+            </Button>
+            <Button
+              variant={isLooping ? 'primary' : 'secondary'}
+              size="icon"
+              onClick={() => setIsLooping((looping) => !looping)}
+              aria-pressed={isLooping}
+              aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
+            >
+              <Repeat size={16} />
+            </Button>
+          </div>
+          <Slider
+            value={[Math.min(elapsed, previewDuration)]}
+            min={0}
+            max={previewDuration}
+            step={0.05}
+            onValueChange={(next) => setPreviewTime(next[0] ?? 0)}
+            aria-label="Preview timeline"
+            className="min-w-40 flex-1"
+          />
+          <div className="font-mono text-sm text-[color:var(--color-content-subtle)] tabular-nums">
+            {elapsed.toFixed(1)}s / {previewDuration.toFixed(1)}s
+          </div>
+        </div>
+      </Card>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] xl:items-start">
-        <section className="min-w-0 space-y-5">
-          <Card radius="lg" className="overflow-hidden p-0">
-            <div className="relative h-[min(62vw,620px)] min-h-[400px] bg-[#05070d] xl:h-[min(70vh,760px)] xl:min-h-[560px]">
-              <LazyFireworkReplayCanvas
-                cues={[previewCue]}
-                elapsed={elapsed}
-                playbackRef={playbackRef}
-                launchPositions={PREVIEW_LAUNCH_POSITIONS}
-                muted
-                interactive
-                controlsVisible
-              />
-              <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2">
-                <Badge tone="accent" solid>
-                  Preview
-                </Badge>
-                <span
-                  className="inline-flex h-6 items-center gap-2 rounded-full border border-white/15 bg-black/55 px-2.5 text-xs font-medium text-white backdrop-blur"
-                  aria-label="Preview colour"
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full border border-white/30"
-                    style={{ backgroundColor: previewColour }}
-                    aria-hidden
-                  />
-                  {previewColour}
-                </span>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => {
-                    if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
-                      setPreviewTime(PREVIEW_START_SECONDS);
+      <Card
+        radius="lg"
+        className="flex w-full min-w-0 flex-col p-0 xl:w-[440px] xl:shrink-0 xl:self-stretch"
+      >
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 pb-8">
+          {error ? (
+            <InlineAlert tone="danger" title="Could not save">
+              {error}
+            </InlineAlert>
+          ) : null}
+
+          {isBrocade ? (
+            <>
+              <PanelSection title="Burst">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <SliderField
+                    label="Streak count"
+                    min={8}
+                    max={64}
+                    step={1}
+                    value={
+                      previewDesign.brocade.streakCount ??
+                      Math.min(64, Math.max(8, Math.round(previewDesign.size)))
                     }
-                    setIsPlaying((playing) => !playing);
-                  }}
-                  aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-                >
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => {
-                    setIsPlaying(false);
-                    setPreviewTime(PREVIEW_START_SECONDS);
-                  }}
-                  aria-label="Reset preview"
-                >
-                  <RotateCcw size={16} />
-                </Button>
-                <Button
-                  variant={isLooping ? 'primary' : 'secondary'}
-                  size="icon"
-                  onClick={() => setIsLooping((looping) => !looping)}
-                  aria-pressed={isLooping}
-                  aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
-                >
-                  <Repeat size={16} />
-                </Button>
-              </div>
-              <Slider
-                value={[Math.min(elapsed, previewDuration)]}
-                min={0}
-                max={previewDuration}
-                step={0.05}
-                onValueChange={(next) => setPreviewTime(next[0] ?? 0)}
-                aria-label="Preview timeline"
-                className="min-w-40 flex-1"
-              />
-              <div className="font-mono text-sm text-[color:var(--color-content-subtle)] tabular-nums">
-                {elapsed.toFixed(1)}s / {previewDuration.toFixed(1)}s
-              </div>
-            </div>
-          </Card>
-
-          <Card radius="lg" className="space-y-5 p-5">
-            <div className="flex items-start gap-4">
-              <EffectPreviewIcon preview={effect.preview} size="md" />
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="accent" solid>
-                    {effect.patternKey}
-                  </Badge>
-                  <Badge tone="neutral">{effect.source}</Badge>
+                    disabled={!parsedModel.ok}
+                    hint="How many streaks the shell splits into. 20 reads as a small cake; 60 is a full display crown."
+                    onChange={setStreakCount}
+                  />
+                  <SliderField
+                    label="Burst size"
+                    min={0.5}
+                    max={12}
+                    step={0.1}
+                    value={round2(rangeMid(previewDesign.burst.speed))}
+                    disabled={!parsedModel.ok}
+                    hint="How far the streaks fly from the centre. 2.5 is garden-size, 4.8 is a wide display sphere, 8+ is an extra-wide crown."
+                    onChange={(value) => setBurstRangeMid('speed', value, BROCADE_SPEED_HALF_WIDTH)}
+                  />
+                  <SliderField
+                    label="Hang time"
+                    min={0.5}
+                    max={8}
+                    step={0.1}
+                    value={round2(rangeMid(previewDesign.burst.life))}
+                    formatValue={formatSeconds}
+                    disabled={!parsedModel.ok}
+                    hint="How long the streak heads burn before fading. Trails always melt away just before their head does."
+                    onChange={(value) => setBurstRangeMid('life', value, BROCADE_LIFE_HALF_WIDTH)}
+                  />
+                  <SliderField
+                    label="Floatiness"
+                    min={-1.85}
+                    max={0}
+                    step={0.01}
+                    value={round2(rangeUpper(previewDesign.burst.gravity))}
+                    disabled={!parsedModel.ok}
+                    hint="0 keeps the stars almost perfectly flat; more negative values let them sink faster after the burst."
+                    onChange={setBrocadeGravityUpper}
+                  />
                 </div>
-                <p className="mt-3 font-mono text-xs break-all text-[color:var(--color-content-subtle)]">
-                  {effect.slug}
-                </p>
-              </div>
-            </div>
+              </PanelSection>
 
-            <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <div>
-                <dt className="text-[color:var(--color-content-subtle)]">Family</dt>
-                <dd className="mt-1 font-medium text-[color:var(--color-content-emphasis)]">
-                  {effect.family}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[color:var(--color-content-subtle)]">Variants</dt>
-                <dd className="mt-1 font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
-                  {effect.variantCount}
-                </dd>
-              </div>
-            </dl>
-          </Card>
-
-          <Card radius="lg" className="space-y-4 p-5">
-            <Field>
-              <FieldLabel htmlFor="effect-name">Name</FieldLabel>
-              <Input
-                id="effect-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="effect-description">Description</FieldLabel>
-              <Textarea
-                id="effect-description"
-                rows={4}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel>Family</FieldLabel>
-                <SelectField
-                  value={family}
-                  onChange={setFamily}
-                  options={FAMILY_OPTIONS}
-                  ariaLabel="Effect family"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="pattern-key">Pattern key</FieldLabel>
-                <Input
-                  id="pattern-key"
-                  value={patternKey}
-                  onChange={(event) => setPatternKey(event.target.value)}
-                />
-              </Field>
-            </div>
-
-            <Field>
-              <FieldLabel htmlFor="sort-order">Sort order</FieldLabel>
-              <Input
-                id="sort-order"
-                inputMode="numeric"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
-              />
-            </Field>
-          </Card>
-        </section>
-
-        <section className="min-w-0 xl:sticky xl:top-5">
-          <Card
-            radius="lg"
-            className="space-y-5 p-5 xl:max-h-[calc(100vh-2.5rem)] xl:overflow-y-auto"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="flex items-center gap-2 text-base font-semibold text-[color:var(--color-content-emphasis)]">
-                  <SlidersHorizontal size={16} />
-                  {isBrocade ? 'Brocade Calibration' : 'Base Model'}
-                </h2>
-                <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
-                  {isBrocade
-                    ? 'Tune the brocade crown look. Every change updates the preview immediately; save to keep it.'
-                    : 'Shared renderer defaults for this colourless effect.'}
-                </p>
-              </div>
-              <Button onClick={saveEffect} loading={isPending} disabled={!parsedModel.ok}>
-                <Save size={16} />
-                Save effect
-              </Button>
-            </div>
-
-            {isBrocade ? (
-              <div className="space-y-5">
-                <PanelSection
-                  title="Burst"
-                  description="The shape and energy of the crown at the moment it opens."
-                >
-                  <div className="grid gap-x-6 gap-y-4">
-                    <SliderField
-                      label="Streak count"
-                      min={8}
-                      max={64}
-                      step={1}
-                      value={
-                        previewDesign.brocade.streakCount ??
-                        Math.min(64, Math.max(8, Math.round(previewDesign.size)))
-                      }
+              <PanelSection title="Launch">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <SliderField
+                    label="Lift velocity"
+                    min={4}
+                    max={40}
+                    step={0.1}
+                    value={round2(liftVelocity)}
+                    disabled={!parsedModel.ok}
+                    hint="Launch speed, which sets the burst height. 12.6 is the calibrated default."
+                    onChange={(value) => setRenderValue('liftVelocity', round2(value))}
+                  />
+                  <SliderField
+                    label="Smoke particles"
+                    min={0}
+                    max={500}
+                    step={10}
+                    value={previewDesign.mortar.smokeParticles}
+                    disabled={!parsedModel.ok}
+                    hint="Ground smoke puffed out by the mortar at launch."
+                    onChange={(value) => setNestedRenderValue('mortar', 'smokeParticles', value)}
+                  />
+                  <Field>
+                    <div className="flex items-center gap-1.5">
+                      <FieldLabel>Boom</FieldLabel>
+                      <InfoTooltip text="Detonation sound weight when the shell opens." />
+                    </div>
+                    <SelectField
+                      value={boomValue}
+                      onChange={(value) => setNestedRenderValue('sound', 'boom', value)}
+                      options={BOOM_OPTIONS}
+                      ariaLabel="Boom"
                       disabled={!parsedModel.ok}
-                      hint="How many streaks the shell splits into. 20 reads as a small cake; 60 is a full display crown."
-                      onChange={setStreakCount}
                     />
-                    <SliderField
-                      label="Burst size"
-                      min={0.5}
-                      max={12}
-                      step={0.1}
-                      value={round2(rangeMid(previewDesign.burst.speed))}
+                  </Field>
+                </div>
+              </PanelSection>
+
+              <PanelSection
+                title="Trails"
+                action={
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip text="Turn the square trails off entirely to see just the bare heads." />
+                    <Switch
+                      id={trailsToggleId}
+                      aria-label="Show trails"
+                      checked={trailsEnabled}
+                      onCheckedChange={(value) => setNestedRenderValue('flair', 'enabled', value)}
                       disabled={!parsedModel.ok}
-                      hint="How far the streaks fly from the centre. 2.5 is garden-size, 4.8 is a wide display sphere, 8+ is an extra-wide crown."
-                      onChange={(value) =>
-                        setBurstRangeMid('speed', value, BROCADE_SPEED_HALF_WIDTH)
-                      }
-                    />
-                    <SliderField
-                      label="Hang time"
-                      min={0.5}
-                      max={8}
-                      step={0.1}
-                      value={round2(rangeMid(previewDesign.burst.life))}
-                      formatValue={formatSeconds}
-                      disabled={!parsedModel.ok}
-                      hint="How long the streak heads burn before fading. Trails always melt away just before their head does."
-                      onChange={(value) => setBurstRangeMid('life', value, BROCADE_LIFE_HALF_WIDTH)}
-                    />
-                    <SliderField
-                      label="Floatiness"
-                      min={-1.85}
-                      max={0}
-                      step={0.01}
-                      value={round2(rangeUpper(previewDesign.burst.gravity))}
-                      disabled={!parsedModel.ok}
-                      hint="0 keeps the stars almost perfectly flat; more negative values let them sink faster after the burst."
-                      onChange={setBrocadeGravityUpper}
                     />
                   </div>
-                </PanelSection>
-
-                <PanelSection
-                  title="Trails"
-                  description="The square embers each streak lays down along its arc."
-                >
-                  <div className="grid gap-x-6 gap-y-4">
+                }
+              >
+                {trailsEnabled ? (
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <SliderField
                       label="Trail spacing"
                       min={1}
@@ -790,24 +649,26 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
                       }
                     />
                   </div>
-                  <Toggle
-                    checked={
-                      typeof flairDefaults.enabled === 'boolean'
-                        ? flairDefaults.enabled
-                        : previewDesign.flair.enabled
-                    }
-                    onChange={(value) => setNestedRenderValue('flair', 'enabled', value)}
-                    disabled={!parsedModel.ok}
-                    label="Streak trails"
-                    description="Turn the square trails off entirely to see just the bare heads."
-                  />
-                </PanelSection>
+                ) : null}
+              </PanelSection>
 
-                <PanelSection
-                  title="Heads"
-                  description="The glowing green and red orbs that lead each streak."
-                >
-                  <div className="grid gap-x-6 gap-y-4">
+              <PanelSection
+                title="Heads"
+                action={
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip text="Turn the glowing head orbs off to leave just the trails." />
+                    <Switch
+                      id={headsToggleId}
+                      aria-label="Show heads"
+                      checked={headsEnabled}
+                      onCheckedChange={(value) => setBrocadeValue('headsEnabled', value)}
+                      disabled={!parsedModel.ok}
+                    />
+                  </div>
+                }
+              >
+                {headsEnabled ? (
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <SliderField
                       label="Head size"
                       min={100}
@@ -829,94 +690,415 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
                       onChange={(value) => setBrocadeValue('glowStrength', round2(value))}
                     />
                   </div>
-                </PanelSection>
+                ) : null}
+              </PanelSection>
+            </>
+          ) : (
+            <>
+              <PanelSection title="Burst">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <SliderField
+                    label="Star count"
+                    min={20}
+                    max={370}
+                    step={2}
+                    value={previewDesign.size}
+                    disabled={!parsedModel.ok}
+                    hint="How many stars the shell breaks into. Spheres read well from 150; tails and comets use far fewer."
+                    onChange={(value) => setRenderValue('size', value)}
+                  />
+                  <SliderField
+                    label="Burst size"
+                    min={0.5}
+                    max={12}
+                    step={0.1}
+                    value={round2(rangeMid(previewDesign.burst.speed))}
+                    disabled={!parsedModel.ok}
+                    hint="How far the stars fly from the centre. 2.5 is garden-size; 4.5 is a wide display sphere."
+                    onChange={(value) => setBurstRangeMid('speed', value, BROCADE_SPEED_HALF_WIDTH)}
+                  />
+                  <SliderField
+                    label="Hang time"
+                    min={0.5}
+                    max={8}
+                    step={0.1}
+                    value={round2(rangeMid(previewDesign.burst.life))}
+                    formatValue={formatSeconds}
+                    disabled={!parsedModel.ok}
+                    hint="How long the stars burn before fading. Willow and horsetail hang longest."
+                    onChange={(value) => setBurstRangeMid('life', value, BROCADE_LIFE_HALF_WIDTH)}
+                  />
+                  <SliderField
+                    label="Floatiness"
+                    min={-1.85}
+                    max={0}
+                    step={0.01}
+                    value={round2(rangeUpper(previewDesign.burst.gravity))}
+                    disabled={!parsedModel.ok}
+                    hint="0 keeps the stars almost perfectly flat; more negative values let them sink faster after the burst."
+                    onChange={setBrocadeGravityUpper}
+                  />
+                </div>
+              </PanelSection>
 
-                <PanelSection
-                  title="Colour (temporary)"
-                  description="These move to the firework level later (red brocade, green brocade, and so on). Set them here while calibrating the effect."
-                >
-                  <div className="grid gap-x-6 gap-y-4">
+              <PanelSection title="Launch">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  <SliderField
+                    label="Lift velocity"
+                    min={4}
+                    max={40}
+                    step={0.1}
+                    value={round2(liftVelocity)}
+                    disabled={!parsedModel.ok}
+                    hint="Launch speed, which sets the burst height. Mines and ground effects sit low."
+                    onChange={(value) => setRenderValue('liftVelocity', round2(value))}
+                  />
+                  <SliderField
+                    label="Smoke particles"
+                    min={0}
+                    max={500}
+                    step={10}
+                    value={previewDesign.mortar.smokeParticles}
+                    disabled={!parsedModel.ok}
+                    hint="Ground smoke puffed out by the mortar at launch."
+                    onChange={(value) => setNestedRenderValue('mortar', 'smokeParticles', value)}
+                  />
+                  <Field>
+                    <div className="flex items-center gap-1.5">
+                      <FieldLabel>Boom</FieldLabel>
+                      <InfoTooltip text="Detonation sound weight when the shell opens." />
+                    </div>
+                    <SelectField
+                      value={boomValue}
+                      onChange={(value) => setNestedRenderValue('sound', 'boom', value)}
+                      options={BOOM_OPTIONS}
+                      ariaLabel="Boom"
+                      disabled={!parsedModel.ok}
+                    />
+                  </Field>
+                </div>
+              </PanelSection>
+
+              <PanelSection
+                title="Stars"
+                action={
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip text="Render each star as a glowing orb. Off falls back to simple point sparks." />
+                    <Switch
+                      id={headsToggleId}
+                      aria-label="Glowing star orbs"
+                      checked={starHeadsEnabled}
+                      onCheckedChange={(value) => setStarsValue('heads', 'enabled', value)}
+                      disabled={!parsedModel.ok}
+                    />
+                  </div>
+                }
+              >
+                {starHeadsEnabled ? (
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <SliderField
-                      label="Green / red split"
+                      label="Star size"
+                      min={40}
+                      max={4000}
+                      step={20}
+                      value={previewDesign.stars.heads.size}
+                      disabled={!parsedModel.ok}
+                      hint="Size budget for each glowing star. 250 reads as a classic display star; comets sit near 900."
+                      onChange={(value) => setStarsValue('heads', 'size', value)}
+                    />
+                    <SliderField
+                      label="Glow strength"
+                      min={0}
+                      max={3}
+                      step={0.05}
+                      value={previewDesign.stars.heads.glowStrength}
+                      disabled={!parsedModel.ok}
+                      hint="Halo brightness around each star. 0 is a bare core, 1 is standard, 2+ is full display bloom."
+                      onChange={(value) => setStarsValue('heads', 'glowStrength', round2(value))}
+                    />
+                  </div>
+                ) : null}
+              </PanelSection>
+
+              <PanelSection
+                title="Trails"
+                action={
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip text="Master switch for all trail particles behind the stars." />
+                    <Switch
+                      id={trailsToggleId}
+                      aria-label="Show trails"
+                      checked={trailsEnabled}
+                      onCheckedChange={(value) => setNestedRenderValue('flair', 'enabled', value)}
+                      disabled={!parsedModel.ok}
+                    />
+                  </div>
+                }
+              >
+                {trailsEnabled ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <Field>
+                        <div className="flex items-center gap-1.5">
+                          <FieldLabel>Trail style</FieldLabel>
+                          <InfoTooltip text="Solid streaks lay a continuous burning line behind each star (chrysanthemum, willow, horsetail). Spark dust is a loose glitter sprinkle." />
+                        </div>
+                        <SelectField
+                          value={previewDesign.stars.trail.mode}
+                          onChange={(value) => setStarsValue('trail', 'mode', value)}
+                          options={TRAIL_MODE_OPTIONS}
+                          ariaLabel="Trail style"
+                          disabled={!parsedModel.ok}
+                        />
+                      </Field>
+                      {trailMode === 'streak' ? (
+                        <Field>
+                          <div className="flex items-center gap-1.5">
+                            <FieldLabel>Trail colour</FieldLabel>
+                            <InfoTooltip text="Gold and silver are the classic metallic chemistries. Star colour follows each star's own colour." />
+                          </div>
+                          <SelectField
+                            value={previewDesign.stars.trail.colorMode}
+                            onChange={(value) => setStarsValue('trail', 'colorMode', value)}
+                            options={TRAIL_COLOR_OPTIONS}
+                            ariaLabel="Trail colour"
+                            disabled={!parsedModel.ok}
+                          />
+                        </Field>
+                      ) : null}
+                    </div>
+                    {trailMode === 'streak' ? (
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                        <SliderField
+                          label="Trail spacing"
+                          min={1}
+                          max={10}
+                          step={0.1}
+                          value={previewDesign.stars.trail.step}
+                          disabled={!parsedModel.ok}
+                          hint="Gap between squares along each streak. Lower packs them into near-solid lines."
+                          onChange={(value) => setStarsValue('trail', 'step', round2(value))}
+                        />
+                        <SliderField
+                          label="Trail thickness"
+                          min={0.3}
+                          max={12}
+                          step={0.1}
+                          value={previewDesign.stars.trail.tubeRadius}
+                          disabled={!parsedModel.ok}
+                          hint="How far squares scatter around the streak line. 1 is a pencil line; 4 is a fat palm frond."
+                          onChange={(value) => setStarsValue('trail', 'tubeRadius', round2(value))}
+                        />
+                        <SliderField
+                          label="Square size"
+                          min={0.3}
+                          max={4}
+                          step={0.1}
+                          value={previewDesign.stars.trail.squareSize}
+                          disabled={!parsedModel.ok}
+                          hint="Size of each trail square. Fine effects sit near 0.6; thick comet tails above 1."
+                          onChange={(value) => setStarsValue('trail', 'squareSize', round2(value))}
+                        />
+                        <SliderField
+                          label="Trail persistence"
+                          min={0.1}
+                          max={4}
+                          step={0.1}
+                          value={previewDesign.stars.trail.lifeSeconds}
+                          formatValue={formatSeconds}
+                          disabled={!parsedModel.ok}
+                          hint="How long each square burns. Willow and waterfall hang above 2 seconds."
+                          onChange={(value) => setStarsValue('trail', 'lifeSeconds', round2(value))}
+                        />
+                        <SliderField
+                          label="Glitter flicker"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={previewDesign.stars.trail.flicker}
+                          disabled={!parsedModel.ok}
+                          hint="Chance each square pops white-hot instead of burning steadily. 0.1 reads as gentle glitter."
+                          onChange={(value) => setStarsValue('trail', 'flicker', round2(value))}
+                        />
+                      </div>
+                    ) : null}
+                    {trailMode === 'spark' ? (
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                        <SliderField
+                          label="Dust density"
+                          min={0}
+                          max={4}
+                          step={0.05}
+                          value={previewDesign.trail.density}
+                          disabled={!parsedModel.ok}
+                          hint="How much spark dust each star sheds."
+                          onChange={(value) =>
+                            setNestedRenderValue('trail', 'density', round2(value))
+                          }
+                        />
+                        <SliderField
+                          label="Dust length"
+                          min={0.2}
+                          max={4}
+                          step={0.05}
+                          value={previewDesign.trail.length}
+                          disabled={!parsedModel.ok}
+                          hint="How long the dust lingers behind each star."
+                          onChange={(value) =>
+                            setNestedRenderValue('trail', 'length', round2(value))
+                          }
+                        />
+                        <SliderField
+                          label="Sparkle"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={previewDesign.trail.sparkle}
+                          disabled={!parsedModel.ok}
+                          hint="Chance each dust particle flashes white-hot."
+                          onChange={(value) =>
+                            setNestedRenderValue('trail', 'sparkle', round2(value))
+                          }
+                        />
+                        <SliderField
+                          label="Dust thickness"
+                          min={0.4}
+                          max={4}
+                          step={0.05}
+                          value={previewDesign.trail.thickness}
+                          disabled={!parsedModel.ok}
+                          hint="Size of each dust particle."
+                          onChange={(value) =>
+                            setNestedRenderValue('trail', 'thickness', round2(value))
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </PanelSection>
+
+              <PanelSection title="Behaviour">
+                <div className="space-y-4">
+                  <Toggle
+                    checked={
+                      typeof strobeDefaults.enabled === 'boolean'
+                        ? strobeDefaults.enabled
+                        : previewDesign.strobe.enabled
+                    }
+                    onChange={(value) => setNestedRenderValue('strobe', 'enabled', value)}
+                    disabled={!parsedModel.ok}
+                    label="Strobe"
+                    description="Stars blink rapidly instead of burning steadily."
+                  />
+                  {strobeEnabled ? (
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <SliderField
+                        label="Blink rate"
+                        min={2}
+                        max={28}
+                        step={0.5}
+                        value={previewDesign.strobe.frequencyHz}
+                        disabled={!parsedModel.ok}
+                        hint="Flashes per second."
+                        onChange={(value) => setNestedRenderValue('strobe', 'frequencyHz', value)}
+                      />
+                      <SliderField
+                        label="Blink duty"
+                        min={0.1}
+                        max={0.9}
+                        step={0.05}
+                        value={previewDesign.strobe.dutyCycle}
+                        disabled={!parsedModel.ok}
+                        hint="Fraction of each blink the star spends lit."
+                        onChange={(value) =>
+                          setNestedRenderValue('strobe', 'dutyCycle', round2(value))
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  <Toggle
+                    checked={
+                      typeof crackleDefaults.enabled === 'boolean'
+                        ? crackleDefaults.enabled
+                        : previewDesign.crackle.enabled
+                    }
+                    onChange={(value) => setNestedRenderValue('crackle', 'enabled', value)}
+                    disabled={!parsedModel.ok}
+                    label="Crackle"
+                    description="Stars pop into crackling silver fragments as they die."
+                  />
+                  {crackleEnabled ? (
+                    <SliderField
+                      label="Crackle probability"
                       min={0}
                       max={1}
-                      step={0.05}
-                      value={previewDesign.brocade.greenRatio}
-                      formatValue={(value) => `${Math.round(value * 100)}% green`}
+                      step={0.01}
+                      value={previewDesign.crackle.probability}
                       disabled={!parsedModel.ok}
-                      hint="Chance each head comes out green rather than red. 50% is an even mix like the exemplar."
-                      onChange={(value) => setBrocadeValue('greenRatio', round2(value))}
+                      hint="Per-frame chance a dying star pops. 0.05 is a gentle fizz; 0.3 is a full dragon-egg cloud."
+                      onChange={(value) =>
+                        setNestedRenderValue('crackle', 'probability', round2(value))
+                      }
                     />
-                  </div>
-                  <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                    <ColorField
-                      label="Head green"
-                      value={rendererColorToHex(previewDesign.brocade.headColors.green, '#66ff80')}
-                      disabled={!parsedModel.ok}
-                      onChange={(hex) => setBrocadeColor('headColors', 'green', hex)}
-                    />
-                    <ColorField
-                      label="Head red"
-                      value={rendererColorToHex(previewDesign.brocade.headColors.red, '#ff4852')}
-                      disabled={!parsedModel.ok}
-                      onChange={(hex) => setBrocadeColor('headColors', 'red', hex)}
-                    />
-                    <ColorField
-                      label="Trail hot core"
-                      value={rendererColorToHex(previewDesign.brocade.palette.hot, '#ffedb8')}
-                      hint="Colour of fresh squares near the burst centre."
-                      disabled={!parsedModel.ok}
-                      onChange={(hex) => setBrocadeColor('palette', 'hot', hex)}
-                    />
-                    <ColorField
-                      label="Trail ember tip"
-                      value={rendererColorToHex(previewDesign.brocade.palette.ember, '#ff6b24')}
-                      hint="Colour the squares cool toward as they age."
-                      disabled={!parsedModel.ok}
-                      onChange={(hex) => setBrocadeColor('palette', 'ember', hex)}
-                    />
-                  </div>
-                </PanelSection>
-
-                <PanelSection title="Launch" description="The mortar shot before the burst.">
-                  <div className="grid gap-x-6 gap-y-4">
-                    <SliderField
-                      label="Lift velocity"
-                      min={4}
-                      max={40}
-                      step={0.1}
-                      value={round2(liftVelocity)}
-                      disabled={!parsedModel.ok}
-                      hint="Launch speed, which sets the burst height. 12.6 is the calibrated default."
-                      onChange={(value) => setRenderValue('liftVelocity', round2(value))}
-                    />
-                    <SliderField
-                      label="Smoke particles"
-                      min={0}
-                      max={500}
-                      step={10}
-                      value={previewDesign.mortar.smokeParticles}
-                      disabled={!parsedModel.ok}
-                      hint="Ground smoke puffed out by the mortar at launch."
-                      onChange={(value) => setNestedRenderValue('mortar', 'smokeParticles', value)}
-                    />
-                    <Field>
-                      <FieldLabel>Boom</FieldLabel>
-                      <SelectField
-                        value={boomValue}
-                        onChange={(value) => setNestedRenderValue('sound', 'boom', value)}
-                        options={BOOM_OPTIONS}
-                        ariaLabel="Boom"
+                  ) : null}
+                  {showSplitControls ? (
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <SliderField
+                        label="Split fragments"
+                        min={2}
+                        max={8}
+                        step={1}
+                        value={previewDesign.split.fragments}
                         disabled={!parsedModel.ok}
+                        hint="How many pieces each crossette star splits into."
+                        onChange={(value) => setNestedRenderValue('split', 'fragments', value)}
                       />
-                      <FieldHint>Detonation sound weight when the shell opens.</FieldHint>
-                    </Field>
-                  </div>
-                </PanelSection>
-              </div>
-            ) : (
-              <>
-                <div className="grid gap-4 md:grid-cols-3">
+                      <SliderField
+                        label="Split speed"
+                        min={0.4}
+                        max={4}
+                        step={0.05}
+                        value={previewDesign.split.speed}
+                        disabled={!parsedModel.ok}
+                        hint="How hard the fragments kick away from the split."
+                        onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
+                      />
+                    </div>
+                  ) : null}
+                  {showPistilControls ? (
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                      <SliderField
+                        label="Pistil size"
+                        min={0.1}
+                        max={0.9}
+                        step={0.02}
+                        value={previewDesign.pistil.sizeRatio}
+                        disabled={!parsedModel.ok}
+                        hint="Core star count relative to the outer petals."
+                        onChange={(value) =>
+                          setNestedRenderValue('pistil', 'sizeRatio', round2(value))
+                        }
+                      />
+                      <SliderField
+                        label="Pistil speed"
+                        min={0.1}
+                        max={0.9}
+                        step={0.02}
+                        value={previewDesign.pistil.speedRatio}
+                        disabled={!parsedModel.ok}
+                        hint="Core burst speed relative to the outer petals."
+                        onChange={(value) =>
+                          setNestedRenderValue('pistil', 'speedRatio', round2(value))
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </PanelSection>
+
+              <PanelSection title="Advanced">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel>Renderer pattern</FieldLabel>
                     <SelectField
@@ -928,28 +1110,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
                     />
                   </Field>
                   <NumberField
-                    id="render-size"
-                    label="Particles"
-                    min={20}
-                    max={370}
-                    value={previewDesign.size}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setRenderValue('size', value)}
-                  />
-                  <NumberField
-                    id="render-lift-velocity"
-                    label="Lift velocity"
-                    min={4}
-                    max={40}
-                    step="0.1"
-                    value={liftVelocity}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setRenderValue('liftVelocity', value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <NumberField
                     id="render-shell-life"
                     label="Shell life"
                     min={2}
@@ -959,86 +1119,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
                     disabled={!parsedModel.ok}
                     onChange={(value) => setRenderValue('shellLife', value)}
                   />
-                  <Field>
-                    <FieldLabel>Boom</FieldLabel>
-                    <SelectField
-                      value={boomValue}
-                      onChange={(value) => setNestedRenderValue('sound', 'boom', value)}
-                      options={BOOM_OPTIONS}
-                      ariaLabel="Boom"
-                      disabled={!parsedModel.ok}
-                    />
-                  </Field>
-                  <NumberField
-                    id="render-smoke-particles"
-                    label="Smoke particles"
-                    min={0}
-                    max={500}
-                    value={previewDesign.mortar.smokeParticles}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setNestedRenderValue('mortar', 'smokeParticles', value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <NumberField
-                    id="render-burst-speed-min"
-                    label="Speed min"
-                    step="0.1"
-                    value={rangeValue(burstDefaults.speed, previewDesign.burst.speed)[0]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('speed', 0, value)}
-                  />
-                  <NumberField
-                    id="render-burst-speed-max"
-                    label="Speed max"
-                    step="0.1"
-                    value={rangeValue(burstDefaults.speed, previewDesign.burst.speed)[1]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('speed', 1, value)}
-                  />
-                  <NumberField
-                    id="render-burst-life-min"
-                    label="Spark life min"
-                    min={0.5}
-                    max={6.5}
-                    step="0.1"
-                    value={rangeValue(burstDefaults.life, previewDesign.burst.life)[0]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('life', 0, value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <NumberField
-                    id="render-burst-life-max"
-                    label="Spark life max"
-                    min={0.5}
-                    max={6.5}
-                    step="0.1"
-                    value={rangeValue(burstDefaults.life, previewDesign.burst.life)[1]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('life', 1, value)}
-                  />
-                  <NumberField
-                    id="render-gravity-min"
-                    label="Gravity min"
-                    step="0.01"
-                    value={rangeValue(burstDefaults.gravity, previewDesign.burst.gravity)[0]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('gravity', 0, value)}
-                  />
-                  <NumberField
-                    id="render-gravity-max"
-                    label="Gravity max"
-                    step="0.01"
-                    value={rangeValue(burstDefaults.gravity, previewDesign.burst.gravity)[1]}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setBurstRange('gravity', 1, value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
                   <NumberField
                     id="render-streak-size"
                     label="Streak size"
@@ -1070,62 +1150,14 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
                     onChange={(value) => setNestedRenderValue('trail', 'streakLife', value)}
                   />
                 </div>
+              </PanelSection>
+            </>
+          )}
+        </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <NumberField
-                    id="render-crackle-probability"
-                    label="Crackle probability"
-                    min={0}
-                    max={1}
-                    step="0.01"
-                    value={previewDesign.crackle.probability}
-                    disabled={!parsedModel.ok}
-                    onChange={(value) => setNestedRenderValue('crackle', 'probability', value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Toggle
-                    checked={
-                      typeof flairDefaults.enabled === 'boolean'
-                        ? flairDefaults.enabled
-                        : previewDesign.flair.enabled
-                    }
-                    onChange={(value) => setNestedRenderValue('flair', 'enabled', value)}
-                    disabled={!parsedModel.ok}
-                    label="Flair trails"
-                    description="Persistent glow and sparkle trails after the burst."
-                  />
-                  <Toggle
-                    checked={
-                      typeof crackleDefaults.enabled === 'boolean'
-                        ? crackleDefaults.enabled
-                        : previewDesign.crackle.enabled
-                    }
-                    onChange={(value) => setNestedRenderValue('crackle', 'enabled', value)}
-                    disabled={!parsedModel.ok}
-                    label="Crackle"
-                    description="Fragment sparkle and crackle behaviour in the base pattern."
-                  />
-                </div>
-              </>
-            )}
-          </Card>
-        </section>
-      </div>
-
-      <Card radius="lg" className="space-y-4 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">
-              Model JSON
-            </h2>
-            <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
-              Colourless renderer defaults for this base pattern.
-            </p>
-          </div>
+        <div className="border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
           <Button
-            variant="secondary"
+            className="w-full"
             onClick={saveEffect}
             loading={isPending}
             disabled={!parsedModel.ok}
@@ -1134,19 +1166,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             Save effect
           </Button>
         </div>
-
-        <Field>
-          <FieldLabel htmlFor="model-json">Base model</FieldLabel>
-          <Textarea
-            id="model-json"
-            rows={24}
-            value={modelText}
-            onChange={(event) => setModelText(event.target.value)}
-            className="font-mono text-xs leading-relaxed"
-            spellCheck={false}
-          />
-          <FieldError>{parsedModel.ok ? null : parsedModel.error}</FieldError>
-        </Field>
       </Card>
     </div>
   );

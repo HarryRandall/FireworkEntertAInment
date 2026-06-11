@@ -26,6 +26,40 @@ export function sanitizeStorageName(name: string): string {
 }
 
 /**
+ * Suggest a show title from an audio filename: strips the extension,
+ * normalises separators, and capitalises each word. Returns an empty string
+ * when nothing usable remains so callers can skip the suggestion.
+ */
+export function suggestTitleFromFilename(filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, '');
+  const cleaned = base
+    .replace(/[-_.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120);
+  if (!cleaned) return '';
+  return cleaned
+    .split(' ')
+    .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+    .join(' ');
+}
+
+/**
+ * Derive a show title from the creative brief: first handful of words,
+ * capped, with the first letter capitalised. Empty string when the brief is
+ * blank so callers can fall through to other sources.
+ */
+export function deriveTitleFromDescription(description: string): string {
+  const words = description.replace(/\s+/g, ' ').trim().split(' ').slice(0, 6).join(' ');
+  const cleaned = words
+    .replace(/[.,;:!?]+$/, '')
+    .slice(0, 60)
+    .trim();
+  if (!cleaned) return '';
+  return cleaned[0].toUpperCase() + cleaned.slice(1);
+}
+
+/**
  * Browsers sometimes report an empty `File.type` for less common audio
  * containers. Fall back to mime-type-by-extension so the storage policy
  * (which checks mime) doesn't reject perfectly fine uploads.

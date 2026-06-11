@@ -39,4 +39,7 @@ export type ShowBriefRow = {
   location: string | null;
   mood_tags: string[] | null;
   music_analysis_id: string | null;
+  show_style: string | null;
+  site_width_feet: number | null;
+  firework_types: string[] | null;
 };

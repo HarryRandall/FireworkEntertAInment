@@ -159,6 +159,10 @@ export function GeneratingShowAnimation({
   return (
     <section aria-label="Generating show" className={cn(styles.stage, className)}>
       <div className={styles.container} aria-hidden="true" />
+      <div className={styles.horizon} aria-hidden="true" />
+      <span className={cn(styles.burst, styles.burstA)} aria-hidden="true" />
+      <span className={cn(styles.burst, styles.burstB)} aria-hidden="true" />
+      <span className={cn(styles.burst, styles.burstC)} aria-hidden="true" />
       <div className={styles.overlay}>
         <div className={styles.card}>
           <div className={styles.panelTop}>

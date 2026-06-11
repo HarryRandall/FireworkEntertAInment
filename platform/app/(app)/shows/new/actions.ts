@@ -10,6 +10,12 @@ import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { DEFAULT_SHOW_STYLE, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';
+import {
+  FIREWORK_TYPE_KEYS,
+  MAX_SITE_WIDTH_FEET,
+  MIN_SITE_WIDTH_FEET,
+} from '@/lib/cue-generation/show-options';
 
 const DURATION_TO_SECONDS: Record<string, number> = {
   '1 minute': 60,
@@ -39,6 +45,14 @@ const NewShowSchema = z.object({
   location: z.string().trim().max(120).optional(),
   description: z.string().trim().max(2000).optional(),
   moodTags: z.array(z.string().min(1).max(40)).max(20),
+  showStyle: z.enum(SHOW_STYLE_KEYS).catch(DEFAULT_SHOW_STYLE),
+  siteWidthFeet: z.coerce
+    .number()
+    .int()
+    .min(MIN_SITE_WIDTH_FEET)
+    .max(MAX_SITE_WIDTH_FEET)
+    .optional(),
+  fireworkTypes: z.array(z.enum(FIREWORK_TYPE_KEYS)).max(FIREWORK_TYPE_KEYS.length).optional(),
   audioPath: z.string().trim().max(300).optional(),
   musicAnalysisId: z.string().uuid().optional(),
   desiredSlug: z.string().trim().max(120).optional(),
@@ -70,6 +84,9 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     location: formData.get('location') ?? '',
     description: formData.get('description') ?? '',
     moodTags: formData.getAll('moodTags').map(String),
+    showStyle: formData.get('showStyle') ?? DEFAULT_SHOW_STYLE,
+    siteWidthFeet: formData.get('siteWidthFeet') ?? undefined,
+    fireworkTypes: formData.getAll('fireworkTypes').map(String),
     audioPath: formData.get('audioPath') ?? undefined,
     musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
     desiredSlug: formData.get('desiredSlug') ?? undefined,
@@ -134,6 +151,9 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       time_of_day: parsed.data.timeOfDay,
       location: parsed.data.location || null,
       mood_tags: parsed.data.moodTags,
+      show_style: parsed.data.showStyle,
+      site_width_feet: parsed.data.siteWidthFeet ?? null,
+      firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,
       music_analysis_id: musicAnalysisId,
       status: 'draft',
