@@ -23,9 +23,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 
 const SIDEBAR_WIDTH = '15rem';
-const SIDEBAR_WIDTH_MOBILE = '17rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
+
+type SidebarWidthValue = string | number;
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed';
@@ -34,6 +35,7 @@ type SidebarContextProps = {
   openMobile: boolean;
   setOpenMobile: (open: boolean | ((open: boolean) => boolean)) => void;
   isMobile: boolean;
+  sidebarWidth: SidebarWidthValue;
   toggleSidebar: () => void;
 };
 
@@ -46,6 +48,14 @@ function useSidebar() {
   }
 
   return context;
+}
+
+function getSidebarWidth(style: React.CSSProperties | undefined): SidebarWidthValue {
+  const customProperties = style as
+    | (React.CSSProperties & Record<string, SidebarWidthValue | undefined>)
+    | undefined;
+
+  return customProperties?.['--sidebar-width'] ?? SIDEBAR_WIDTH;
 }
 
 function SidebarProvider({
@@ -63,6 +73,7 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const sidebarWidth = getSidebarWidth(style);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -108,11 +119,12 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      sidebarWidth,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+    [state, open, setOpen, isMobile, sidebarWidth, openMobile, setOpenMobile, toggleSidebar],
   );
 
   return (
@@ -151,7 +163,7 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, sidebarWidth } = useSidebar();
 
   if (collapsible === 'none') {
     return (
@@ -179,7 +191,9 @@ function Sidebar({
           className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) overflow-x-hidden p-0 [&>button]:hidden"
           style={
             {
-              '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
+              '--sidebar-width': sidebarWidth,
+              width: 'var(--sidebar-width)',
+              maxWidth: 'calc(100vw - 2rem)',
             } as React.CSSProperties
           }
           side={side}
@@ -207,7 +221,7 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear',
+          'relative w-(--sidebar-width) bg-transparent transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
           'group-data-[collapsible=offcanvas]:w-0',
           'group-data-[side=right]:rotate-180',
           variant === 'floating' || variant === 'inset'
@@ -219,7 +233,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-x-hidden transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-x-hidden transition-[left,right,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
@@ -294,7 +308,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        'bg-background relative flex w-full flex-1 flex-col md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
+        'bg-background relative flex w-full flex-1 flex-col md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm',
         className,
       )}
       {...props}

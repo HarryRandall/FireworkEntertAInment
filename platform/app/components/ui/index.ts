@@ -6,6 +6,7 @@ export * from './Container';
 export * from './DataTable';
 export * from './Feedback';
 export * from './Field';
+export * from './GeneratedAvatar';
 export * from './Input';
 export * from './NumberInput';
 export * from './SelectField';

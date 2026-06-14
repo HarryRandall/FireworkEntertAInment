@@ -9,7 +9,7 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
   const env = getSupabaseServerEnv();
   if (!env) {
     throw new Error(
-      'Supabase URL and anon/publishable key are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) in .env.local for dev, or in Vercel Project Settings → Environment Variables. Optional server-only fallbacks: SUPABASE_URL, SUPABASE_ANON_KEY.',
+      'Supabase URL and anon/publishable key are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local for dev, or in Vercel Project Settings > Environment Variables. Optional server-only fallbacks: SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_ANON_KEY.',
     );
   }
 

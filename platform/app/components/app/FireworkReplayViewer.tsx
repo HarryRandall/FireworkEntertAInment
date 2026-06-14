@@ -102,7 +102,7 @@ function EmptyPreview() {
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
         <h3 className="text-on-surface text-xl font-bold">No typed fireworks yet</h3>
         <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-          Add a cue below, then drag the scene to orbit and scroll to zoom.
+          Add a cue below, then drag the scene to orbit and scroll to switch view distance.
         </p>
       </div>
     </div>
@@ -498,7 +498,7 @@ export function FireworkReplayViewer({
               {showName}
             </h2>
             <p className="text-on-surface-variant max-w-sm text-xs font-medium">
-              Drag to orbit. Scroll to zoom. Use the timeline to scrub.
+              Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
             </p>
           </div>
 

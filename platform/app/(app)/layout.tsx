@@ -11,6 +11,10 @@ import {
   parseSidebarCollapsedPreference,
   sidebarCollapsedCookieName,
 } from '@/lib/sidebar-preference';
+import {
+  featuredTemplateDismissalCookieName,
+  parseFeaturedTemplateDismissedUntil,
+} from '@/lib/featured-template-dismissal';
 
 // Authenticated routes always need a fresh session check.
 export const dynamic = 'force-dynamic';
@@ -28,6 +32,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,
   );
+  const featuredTemplateDismissedUntil = parseFeaturedTemplateDismissedUntil(
+    cookieStore.get(featuredTemplateDismissalCookieName)?.value,
+  );
 
   return (
     <AppShell
@@ -35,6 +42,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       impersonation={impersonation}
       initialSidebarCollapsed={sidebarPreference ?? false}
       hasInitialSidebarCollapsedCookie={sidebarPreference !== null}
+      initialFeaturedTemplateDismissedUntil={featuredTemplateDismissedUntil}
     >
       {children}
     </AppShell>

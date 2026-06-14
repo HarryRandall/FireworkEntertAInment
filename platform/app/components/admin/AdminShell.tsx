@@ -6,7 +6,14 @@
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import {
   ArrowLeft,
   ChevronRight,
@@ -29,7 +36,7 @@ import {
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,7 +90,6 @@ const ADMIN_LINKS: AdminNavLink[] = [
 type ProfileSummary = {
   displayName: string;
   secondaryLine: string;
-  initials: string;
 };
 
 type Breadcrumb = {
@@ -192,6 +198,7 @@ function ProfileMenuButton({
   onSignOut: () => Promise<void>;
 }) {
   const { isMobile } = useSidebar();
+  const closeFromPointerOutsideRef = useRef(false);
 
   return (
     <SidebarMenu>
@@ -202,9 +209,7 @@ function ProfileMenuButton({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar>
-                <AvatarFallback>{profile.initials}</AvatarFallback>
-              </Avatar>
+              <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{profile.displayName}</span>
                 <span className="text-muted-foreground truncate text-xs">
@@ -219,12 +224,19 @@ function ProfileMenuButton({
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
+            onPointerDownOutside={() => {
+              closeFromPointerOutsideRef.current = true;
+            }}
+            onCloseAutoFocus={(event) => {
+              if (!closeFromPointerOutsideRef.current) return;
+
+              event.preventDefault();
+              closeFromPointerOutsideRef.current = false;
+            }}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar>
-                  <AvatarFallback>{profile.initials}</AvatarFallback>
-                </Avatar>
+                <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{profile.displayName}</span>
                   <span className="text-muted-foreground truncate text-xs">
@@ -363,13 +375,6 @@ export function AdminShell({
   const profileSummary: ProfileSummary = {
     displayName,
     secondaryLine: profile.fullName && profile.email ? profile.email : 'Platform admin',
-    initials:
-      displayName
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('') || 'A',
   };
 
   useEffect(() => {

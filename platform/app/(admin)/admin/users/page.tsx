@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { UserRound } from 'lucide-react';
 import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { FilterBar } from '@/app/components/ui/FilterBar';
+import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import {
   DataTableShell,
@@ -149,10 +149,14 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                       <Link
                         href={href}
                         prefetch
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+                        className="focus-visible:ring-ring/50 shrink-0 rounded-full focus:outline-none focus-visible:ring-2"
                         aria-label={`View ${displayName}`}
                       >
-                        <UserRound size={16} />
+                        <GeneratedAvatar
+                          name={user.fullName}
+                          email={user.email}
+                          className="size-[30.6px]"
+                        />
                       </Link>
                       <span className="min-w-0 flex-1">
                         <span className="group/identity flex min-w-0 items-center gap-1.5">

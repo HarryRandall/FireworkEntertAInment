@@ -17,7 +17,7 @@ export async function GET() {
         ok: false,
         step: 'env',
         message:
-          'Missing Supabase URL/key. Use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY (optional: SUPABASE_URL, SUPABASE_ANON_KEY on server).',
+          'Missing Supabase URL/key. Use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY (optional: SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_ANON_KEY on server).',
       },
       { status: 503 },
     );

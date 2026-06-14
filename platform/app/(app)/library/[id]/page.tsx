@@ -1,8 +1,7 @@
 /** Show template detail page; lets the user clone a template into a new show. */
 
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock, Heart, Sparkles, Wallet } from 'lucide-react';
-import Link from 'next/link';
+import { Clock, Heart, Sparkles, Wallet } from 'lucide-react';
 import { Suspense } from 'react';
 import { cloneShowTemplateAction } from '@/app/actions/show-templates';
 import { AppPageHeader } from '@/app/components/app/AppPageHeader';
@@ -27,17 +26,10 @@ export default async function LibraryDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       <AppPageHeader title={template.title} description={template.description} />
 
-      <div className="flex flex-col gap-4">
-        <Link
-          href="/library"
-          className="text-primary inline-flex items-center gap-2 text-sm font-bold"
-        >
-          <ArrowLeft size={16} />
-          Back to show library
-        </Link>
+      <div className="flex flex-col gap-3">
         <div className="text-on-surface-variant flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <span className="flex items-center gap-2">
-            <Heart size={16} />
+            <Heart size={16} className="fill-current text-[color:var(--destructive)]" />
             {template.likeCount} likes
           </span>
           <span className="flex items-center gap-2">

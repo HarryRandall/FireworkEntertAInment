@@ -1,7 +1,6 @@
 /** Show library page listing the user's saved shows and curated show templates. */
 
 import { Suspense } from 'react';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { LibraryCardsSkeleton } from '@/app/components/app/RouteSkeletons';
 import { ShowTemplatePreview } from '@/app/components/app/ShowTemplatePreview';
 import { LibraryControls } from '@/app/(app)/library/LibraryControls';
@@ -54,12 +53,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
     : 'popular';
 
   return (
-    <div className="space-y-8">
-      <AppPageHeader
-        title="Explore"
-        description="Browse ready-made pyromusical templates, preview the fixed-camera replay, then clone one into your dashboard."
-      />
-
+    <div className="space-y-5">
       <LibraryControls sort={sort} sorts={SORTS} />
 
       <Suspense fallback={<LibraryCardsSkeleton />}>

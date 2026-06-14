@@ -270,17 +270,29 @@ export function TemplateSummaryCardView({
       href={`/library/${template.slug}`}
       prefetch
       className={cn(
-        'group focus-visible:ring-ring/50 block rounded-xl focus:outline-none focus-visible:ring-3',
+        'group focus-visible:ring-ring/50 block h-full rounded-xl focus:outline-none focus-visible:ring-3',
         className,
       )}
     >
-      <Card hoverable radius="lg" className="h-full overflow-hidden p-0">
+      <Card
+        hoverable
+        radius="lg"
+        className="flex h-full min-h-[10rem] flex-col overflow-hidden p-0"
+      >
         <div
-          className="h-14 border-b border-[color:var(--color-border-subtle)] bg-[image:var(--template-gradient)]"
+          className="relative h-20 shrink-0 overflow-hidden border-b border-[color:var(--color-border-subtle)] bg-[image:var(--template-gradient)]"
           style={style}
-        />
-        <div className="space-y-3 p-4">
-          <div>
+        >
+          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-0.5 rounded-md bg-black/35 px-2 py-1 text-right text-[11px] leading-4 text-white shadow-sm backdrop-blur">
+            <span className="inline-flex items-center gap-1">
+              <Heart size={12} className="shrink-0 fill-current text-[color:var(--destructive)]" />
+              <span className="tabular-nums">{template.likes}</span>
+            </span>
+            <span className="tabular-nums">{formatBudget(template.totalCostCents)}</span>
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col gap-3 p-3.5">
+          <div className="min-w-0">
             <h3 className="group-hover:text-foreground line-clamp-1 text-sm font-medium text-[color:var(--color-content-emphasis)]">
               {template.title}
             </h3>
@@ -288,16 +300,8 @@ export function TemplateSummaryCardView({
               {template.theme}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--color-content-subtle)]">
-            <span className="inline-flex items-center gap-1">
-              <Heart size={13} />
-              {template.likes}
-            </span>
-            <span>{formatDuration(template.lengthSeconds)}</span>
-            <span>{formatBudget(template.totalCostCents)}</span>
-          </div>
           {showCloneAction ? (
-            <span className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-border-subtle)] px-2.5 text-xs font-medium text-[color:var(--color-content-emphasis)]">
+            <span className="inline-flex h-7 items-center self-start rounded-md border border-[color:var(--color-border-subtle)] px-2.5 text-xs font-medium text-[color:var(--color-content-emphasis)]">
               Clone and customise
             </span>
           ) : null}
@@ -306,7 +310,6 @@ export function TemplateSummaryCardView({
     </Link>
   );
 }
-
 const PROMPT_SUGGESTIONS = [
   {
     label: 'Birthday party',
@@ -435,7 +438,7 @@ export function EmptyShowsPanel({
               <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {templates.map((template) => (
               <TemplateSummaryCardView key={template.id} template={template} showCloneAction />
             ))}
