@@ -82,13 +82,12 @@ export async function updateFireworkProduct(
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from('products')
+    .from('catalogue_items')
     .update({
       part_number: parsed.data.partNumber,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
-      subtype: parsed.data.fireworkType || null,
-      product_kind: parsed.data.productKind,
+      firework_type: parsed.data.fireworkType || null,
       duration_seconds: parsed.data.durationSeconds ?? null,
       description: parsed.data.description || null,
     })
@@ -97,6 +96,59 @@ export async function updateFireworkProduct(
   if (error) return { ok: false, error: error.message };
   await refreshFireworkAdmin(parsed.data.id);
   return { ok: true };
+}
+
+async function ensureMultishotForCatalogueItem(
+  supabase: ReturnType<typeof createClient>,
+  catalogueItemId: string,
+) {
+  const { data: item, error } = await supabase
+    .from('catalogue_items')
+    .select(
+      'id, part_number, name, description, duration_seconds, metadata, firework_id, multishot_id',
+    )
+    .eq('id', catalogueItemId)
+    .maybeSingle();
+
+  if (error) return { data: null, error };
+  if (!item) return { data: null, error: new Error('Catalogue item was not found.') };
+  if (item.multishot_id) return { data: item.multishot_id, error: null };
+
+  const multishotId = item.id;
+  const { error: insertError } = await supabase.from('multishots').insert({
+    id: multishotId,
+    slug: item.part_number,
+    name: item.name,
+    description: item.description,
+    duration_seconds: item.duration_seconds,
+    shot_count: item.firework_id ? 1 : 0,
+    metadata: item.metadata ?? {},
+  });
+  if (insertError) return { data: null, error: insertError };
+
+  if (item.firework_id) {
+    const { error: firstShotError } = await supabase.from('multishot_fireworks').insert({
+      multishot_id: multishotId,
+      firework_id: item.firework_id,
+      sequence_index: 1,
+      time_offset_seconds: 0,
+      pan_degrees: 0,
+      tilt_degrees: 0,
+    });
+    if (firstShotError) return { data: null, error: firstShotError };
+  }
+
+  const { error: updateError } = await supabase
+    .from('catalogue_items')
+    .update({
+      catalogue_item_kind: 'multishot',
+      firework_id: null,
+      multishot_id: multishotId,
+    })
+    .eq('id', catalogueItemId);
+
+  if (updateError) return { data: null, error: updateError };
+  return { data: multishotId, error: null };
 }
 
 export async function upsertProductShot(input: z.infer<typeof ShotSchema>): Promise<Result> {
@@ -109,29 +161,33 @@ export async function upsertProductShot(input: z.infer<typeof ShotSchema>): Prom
 
   const supabase = createClient(await cookies());
   const { data: variant, error: variantError } = await supabase
-    .from('firework_variants')
-    .select('source_effect_spec_id')
+    .from('fireworks')
+    .select('id')
     .eq('id', parsed.data.variantId)
     .maybeSingle();
 
   if (variantError) return { ok: false, error: variantError.message };
-  if (!variant) return { ok: false, error: 'Selected firework variant was not found.' };
+  if (!variant) return { ok: false, error: 'Selected firework was not found.' };
+
+  const multishot = await ensureMultishotForCatalogueItem(supabase, parsed.data.productId);
+  if (multishot.error || !multishot.data) {
+    return { ok: false, error: multishot.error?.message ?? 'Could not prepare multishot.' };
+  }
 
   const payload = {
-    product_id: parsed.data.productId,
-    firework_variant_id: parsed.data.variantId,
-    effect_spec_id: variant.source_effect_spec_id,
-    shot_index: parsed.data.shotIndex,
+    multishot_id: multishot.data,
+    firework_id: parsed.data.variantId,
+    sequence_index: parsed.data.shotIndex,
     time_offset_seconds: parsed.data.timeOffsetSeconds,
     pan_degrees: parsed.data.panDegrees,
     tilt_degrees: parsed.data.tiltDegrees,
     caliber: parsed.data.caliber || null,
-    shot_notes: parsed.data.notes || null,
+    notes: parsed.data.notes || null,
   };
 
   const query = parsed.data.id
-    ? supabase.from('product_shots').update(payload).eq('id', parsed.data.id)
-    : supabase.from('product_shots').insert(payload);
+    ? supabase.from('multishot_fireworks').update(payload).eq('id', parsed.data.id)
+    : supabase.from('multishot_fireworks').insert(payload);
   const { error } = await query;
 
   if (error) return { ok: false, error: error.message };
@@ -149,10 +205,10 @@ export async function deleteProductShot(input: z.infer<typeof DeleteShotSchema>)
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from('product_shots')
+    .from('multishot_fireworks')
     .delete()
     .eq('id', parsed.data.id)
-    .eq('product_id', parsed.data.productId);
+    .eq('multishot_id', parsed.data.productId);
 
   if (error) return { ok: false, error: error.message };
   await refreshFireworkAdmin(parsed.data.productId);

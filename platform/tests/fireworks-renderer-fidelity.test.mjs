@@ -8,7 +8,7 @@ function read(path) {
   return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-test('firework replay compiles variants, raw spec_json, and cache-busts old shapes', () => {
+test('firework replay compiles fireworks, render overrides, and cache-busts old shapes', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const showMappers = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
@@ -19,7 +19,7 @@ test('firework replay compiles variants, raw spec_json, and cache-busts old shap
     engine,
     /cue\.firework\.renderDesign \?\? compileFireworkDesign\(\{ legacySpec: cue\.firework\.rawSpec \}\)/,
   );
-  assert.match(showMappers, /rawSpec: row\.spec_json/);
+  assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
   assert.match(showTypes, /CACHE_PREFIX = 'shows:v7'/);
@@ -116,13 +116,14 @@ test('renderer preserves named firework geometry and trail profiles', () => {
   }
 });
 
-test('replay carries product-shot fan angles into launch physics', () => {
+test('replay carries multishot fan angles into launch physics', () => {
   const queries = read('lib/shows/queries.server.ts');
   const domain = read('lib/show-domain.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const effects = read('lib/fireworks/Effects.ts');
 
-  assert.match(queries, /pan_degrees, tilt_degrees, position_override_json/);
+  assert.match(queries, /multishot_fireworks/);
+  assert.match(queries, /pan_degrees,[\s\S]*tilt_degrees,[\s\S]*position_override_json/);
   assert.match(queries, /shotPanDegrees: shots\[i\]\.panDegrees/);
   assert.match(queries, /shotTiltDegrees: shots\[i\]\.tiltDegrees/);
   assert.match(domain, /shotPanDegrees\?: number \| null/);
@@ -208,54 +209,19 @@ test('renderer draws compact mixed round and streak particles', () => {
   assert.match(shaders, /gl_PointSize = clamp/);
   assert.doesNotMatch(shaders, /projectionScale = projectionMatrix\[1\]\[1\]/);
   assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
-  assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 1850\)/);
-  assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 120, 0\)/);
-  assert.match(canvas, /FLOOR_PAN_TRIGGER_HEIGHT = 92/);
-  assert.match(canvas, /FLOOR_PAN_TARGET_EPSILON = 1/);
-  assert.match(canvas, /FLOOR_PAN_DRAG_RATIO = 0\.1/);
-  assert.match(canvas, /FLOOR_PAN_UP_ANGLE_PER_PULL = THREE\.MathUtils\.degToRad\(22\)/);
-  assert.match(canvas, /FLOOR_PAN_UP_MAX_ANGLE_NEAR = THREE\.MathUtils\.degToRad\(12\)/);
-  assert.match(canvas, /FLOOR_PAN_UP_MAX_ANGLE_FAR = THREE\.MathUtils\.degToRad\(22\)/);
-  assert.match(canvas, /FLOOR_PAN_UP_POLAR_OVERSHOOT = 0\.22/);
-  assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ FLOOR_PAN_UP_POLAR_OVERSHOOT/);
-  assert.match(canvas, /function floorPanMaxAngle\(distance: number\)/);
-  assert.match(canvas, /function isAtFloorPanLimit/);
-  assert.match(canvas, /controls\.target\.y <= GROUND_PLANE_Y \+ FLOOR_PAN_TARGET_EPSILON/);
-  assert.match(canvas, /function applyFloorLookPitch/);
-  assert.match(canvas, /function updateFloorLookPitch/);
-  assert.match(canvas, /event\.clientY - floorDragLastY/);
-  assert.match(canvas, /floorPushDelta = -deltaY/);
-  assert.match(canvas, /!isAtFloorPanLimit\(camera, controls\)/);
-  assert.match(
-    canvas,
-    /const angleDelta = \(floorPushDelta \* FLOOR_PAN_UP_ANGLE_PER_PULL\) \/ maxDragPixels/,
-  );
-  assert.match(
-    canvas,
-    /const handled = Math\.abs\(deltaY\) >= 0\.1 \|\| currentPitch > 0 \|\| clamped/,
-  );
-  assert.match(canvas, /floorLookPitchRef = useRef\(0\)/);
-  assert.match(canvas, /panModeRef = useRef\(false\)/);
-  assert.match(canvas, /panModeRef\.current = panMode/);
-  assert.match(canvas, /!panModeRef\.current/);
+  assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 2850\)/);
+  assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 1000, 0\)/);
+  assert.match(canvas, /MIN_CAMERA_HEIGHT = 24/);
+  assert.match(canvas, /ORBIT_FLOOR_OVERSHOOT = 0\.35/);
+  assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ ORBIT_FLOOR_OVERSHOOT/);
+  assert.match(canvas, /function liftCameraRig/);
+  assert.match(canvas, /floorLiftRef = useRef\(0\)/);
+  assert.match(canvas, /if \(floorLiftRef\.current !== 0\) liftCameraRig/);
+  assert.match(canvas, /if \(controls\.target\.y < GROUND_PLANE_Y\)/);
+  assert.match(canvas, /MIN_CAMERA_HEIGHT - \(cam\.position\.y \+ floorLift\)/);
+  assert.match(canvas, /floorLiftRef\.current = floorLift/);
   assert.match(canvas, /controls\.enableDamping = false/);
-  assert.match(canvas, /event\.stopImmediatePropagation\(\)/);
-  assert.match(canvas, /function stopOrbitControlMomentum/);
-  assert.match(canvas, /function syncOrbitControlDragCursor/);
-  assert.match(canvas, /function panCameraHorizontally/);
-  assert.match(canvas, /const horizontalPanned = panCameraHorizontally/);
-  assert.match(canvas, /camera\.rotateX\(pitchOffset\)/);
-  assert.match(canvas, /floorLookPitchRef\.current = nextFloorPitch\.pitch/);
   assert.doesNotMatch(canvas, /THREE\.MathUtils\.damp\(/);
-  assert.match(canvas, /applyFloorLookPitch\(cam, controls, floorLookPitchRef\.current\)/);
-  assert.match(
-    canvas,
-    /renderer\.domElement\.addEventListener\('pointerdown', onFloorDragPointerDown\)/,
-  );
-  assert.match(
-    canvas,
-    /window\.addEventListener\('pointermove', onFloorDragPointerMove, \{ capture: true \}\)/,
-  );
   assert.match(canvas, /function adjustZoom\(factor: number\)/);
   assert.match(canvas, /MAX_CAMERA_DISTANCE = 3000/);
   assert.match(canvas, /adjustZoom\(0\.85\)/);

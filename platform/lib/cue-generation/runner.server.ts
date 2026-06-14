@@ -6,7 +6,7 @@
  *   2. Use the fast local planner by default, or optionally call OpenRouter.
  *   3. Parse + validate the optional LLM response.
  *   4. Apply per-tube overlap dedupe for the optional LLM response.
- *   5. Replace the show's existing `show_cues` with the accepted set.
+ *   5. Replace the show's existing `show_timeline_items` with the accepted set.
  *   6. Mark the show `completed` and refresh derived fields.
  */
 import 'server-only';
@@ -445,9 +445,12 @@ export async function generateCuesForShow(params: {
     return { ok: false, error: message };
   }
 
-  // === Stage 5: replace existing show_cues with the new set ==============
+  // === Stage 5: replace existing show_timeline_items with the new set =====
   const dbStart = performance.now();
-  const { error: deleteError } = await supabase.from('show_cues').delete().eq('show_id', showId);
+  const { error: deleteError } = await supabase
+    .from('show_timeline_items')
+    .delete()
+    .eq('show_id', showId);
   if (deleteError) {
     const message = `Could not clear existing cues: ${deleteError.message}`;
     await markGenerationStatus(supabase, userId, showId, {
@@ -465,11 +468,11 @@ export async function generateCuesForShow(params: {
     position: i + 1,
     time_seconds: cue.timeSeconds,
     description: cue.description,
-    product_id: cue.productId,
+    catalogue_item_id: cue.productId,
     launch_position_index: cue.tube,
   }));
 
-  const { error: insertError } = await supabase.from('show_cues').insert(rows);
+  const { error: insertError } = await supabase.from('show_timeline_items').insert(rows);
   if (insertError) {
     const message = `Could not insert generated cues: ${insertError.message}`;
     await markGenerationStatus(supabase, userId, showId, {

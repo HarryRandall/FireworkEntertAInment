@@ -49,7 +49,7 @@ async function loadTargetUser(
   const [{ data: profile, error: profileError }, { data: authUser, error: authError }] =
     await Promise.all([
       service
-        .from('profiles')
+        .from('users')
         .select('id, email, full_name, status')
         .eq('id', targetUserId)
         .maybeSingle(),
@@ -243,7 +243,7 @@ export async function stopImpersonationAction(
   }
 
   const { data: profile } = await service
-    .from('profiles')
+    .from('users')
     .select('email')
     .eq('id', session.admin_user_id)
     .maybeSingle();

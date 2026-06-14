@@ -82,7 +82,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     { data: overrides },
   ] = await Promise.all([
     supabase
-      .from('profiles')
+      .from('users')
       .select('id, email, full_name, phone, status, theme_preference')
       .eq('id', userId)
       .maybeSingle(),

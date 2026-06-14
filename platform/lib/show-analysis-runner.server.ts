@@ -4,7 +4,7 @@
  * Pipeline:
  *   1. Mint a short-lived Supabase Storage signed URL for the audio.
  *   2. POST that URL + personality to the Modal endpoint with a bearer secret.
- *   3. Parse the analyser JSON, persist a `music_analyses` / `show_analyses`
+ *   3. Parse the analyser JSON, persist a `song_analyses` / `show_generation_runs`
  *      row, and let the caller render markdown.
  *
  * Failures are recorded on the analysis row (`status = 'failed'`,
@@ -232,7 +232,7 @@ async function markMusicAnalysisFailed(params: {
   errorMessage: string;
 }) {
   const { error } = await params.supabase
-    .from('music_analyses')
+    .from('song_analyses')
     .update({
       status: 'failed',
       runtime_ms: params.runtimeMs,
@@ -251,7 +251,7 @@ async function markShowAnalysisFailed(params: {
   errorMessage: string;
 }) {
   const { error } = await params.supabase
-    .from('show_analyses')
+    .from('show_generation_runs')
     .update({
       status: 'failed',
       runtime_ms: params.runtimeMs,
@@ -270,7 +270,7 @@ export async function runMusicAnalysisForUpload(params: {
   personality?: 'balanced' | 'bold' | 'cinematic' | 'elegant' | 'intimate' | 'playful';
 }): Promise<RunShowAnalysisResult> {
   const { data: row, error: lookupError } = await params.supabase
-    .from('music_analyses')
+    .from('song_analyses')
     .select('id, user_id, audio_path, personality')
     .eq('id', params.analysisId)
     .eq('user_id', params.userId)
@@ -287,7 +287,7 @@ export async function runMusicAnalysisForUpload(params: {
   const startedAt = Date.now();
 
   await params.supabase
-    .from('music_analyses')
+    .from('song_analyses')
     .update({
       status: 'running',
       error_message: null,
@@ -311,7 +311,7 @@ export async function runMusicAnalysisForUpload(params: {
     const runtimeMs = Date.now() - startedAt;
 
     const { error: updateError } = await params.supabase
-      .from('music_analyses')
+      .from('song_analyses')
       .update({
         status: 'completed',
         schema_version: analysis.schema_version,
@@ -368,7 +368,7 @@ export async function runShowAnalysisForShow(params: {
 
   const analysisId = randomUUID();
   const startedAt = Date.now();
-  const { error: insertError } = await params.supabase.from('show_analyses').insert({
+  const { error: insertError } = await params.supabase.from('show_generation_runs').insert({
     id: analysisId,
     show_id: typedShow.id,
     user_id: params.userId,
@@ -398,7 +398,7 @@ export async function runShowAnalysisForShow(params: {
     const runtimeMs = Date.now() - startedAt;
 
     const { error: updateError } = await params.supabase
-      .from('show_analyses')
+      .from('show_generation_runs')
       .update({
         status: 'completed',
         schema_version: analysis.schema_version,

@@ -24,7 +24,7 @@ export async function listShowTemplates(): Promise<ShowTemplate[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('show_templates')
+    .from('show_presets')
     .select(SHOW_TEMPLATES_SELECT)
     .order('is_featured', { ascending: false })
     .order('sort_order', { ascending: true });
@@ -48,7 +48,7 @@ export async function getShowTemplateBySlug(slug: string): Promise<ShowTemplate 
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('show_templates')
+    .from('show_presets')
     .select(SHOW_TEMPLATES_SELECT)
     .eq('slug', slug)
     .maybeSingle();

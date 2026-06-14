@@ -75,7 +75,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
   const { data, error } = await supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
     )
     .order('updated_at', { ascending: false });
   if (error) {
@@ -113,8 +113,7 @@ export async function listImportJobs(): Promise<ImportJobSummary[]> {
       mediaAssetId: null,
       selectedModel: null,
       processingProgress: row.status === 'complete' ? 100 : 0,
-      approvedProductId: null,
-      approvedFireworkSpecificationId: null,
+      approvedCatalogueItemId: null,
       rowCount: row.row_count,
       errorMessage: row.error_message,
       createdAt: row.created_at,
@@ -139,7 +138,7 @@ export async function getImportJobDetail(jobId: string): Promise<ImportJobDetail
   const { data: job, error: jobError } = await supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_product_id, approved_firework_specification_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
     )
     .eq('id', jobId)
     .maybeSingle();

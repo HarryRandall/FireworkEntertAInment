@@ -2,7 +2,7 @@
 
 /**
  * Admin catalogue server actions: create / update / delete entries
- * in the `products` catalogue table. All actions are gated by the
+ * in the `catalogue_items` table. All actions are gated by the
  * `admin.manage_catalogue` RBAC permission.
  */
 
@@ -45,7 +45,7 @@ const DeleteProduct = z.object({ id: z.string().uuid() });
 
 export type ProductInputType = z.infer<typeof ProductInput>;
 
-/** Insert a new row in the `products` catalogue (RBAC: `admin.manage_catalogue`). */
+/** Insert a new row in the catalogue (RBAC: `admin.manage_catalogue`). */
 export async function createProduct(input: ProductInputType): Promise<Result> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
@@ -55,12 +55,13 @@ export async function createProduct(input: ProductInputType): Promise<Result> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('products').insert({
+  const { error } = await supabase.from('catalogue_items').insert({
     part_number: parsed.data.partNumber,
     name: parsed.data.name,
     manufacturer: parsed.data.manufacturer || null,
-    subtype: parsed.data.fireworkType || null,
+    firework_type: parsed.data.fireworkType || null,
     duration_seconds: parsed.data.durationSeconds,
+    catalogue_item_kind: 'other',
   });
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
@@ -73,7 +74,7 @@ export async function createProduct(input: ProductInputType): Promise<Result> {
   return { ok: true };
 }
 
-/** Update an existing `products` row (RBAC: `admin.manage_catalogue`). */
+/** Update an existing catalogue row (RBAC: `admin.manage_catalogue`). */
 export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promise<Result> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
@@ -84,12 +85,12 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from('products')
+    .from('catalogue_items')
     .update({
       part_number: parsed.data.partNumber,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
-      subtype: parsed.data.fireworkType || null,
+      firework_type: parsed.data.fireworkType || null,
       duration_seconds: parsed.data.durationSeconds,
     })
     .eq('id', parsed.data.id);
@@ -104,7 +105,7 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
   return { ok: true };
 }
 
-/** Delete a `products` row by id (RBAC: `admin.manage_catalogue`). */
+/** Delete a catalogue row by id (RBAC: `admin.manage_catalogue`). */
 export async function deleteProduct(input: z.infer<typeof DeleteProduct>): Promise<Result> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
@@ -113,7 +114,7 @@ export async function deleteProduct(input: z.infer<typeof DeleteProduct>): Promi
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('products').delete().eq('id', parsed.data.id);
+  const { error } = await supabase.from('catalogue_items').delete().eq('id', parsed.data.id);
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
   await invalidateAdminEffectsCache();

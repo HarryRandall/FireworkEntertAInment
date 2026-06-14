@@ -33,14 +33,14 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
 
   const supabase = await getServerClient();
   const [
-    { data: profiles },
+    { data: users },
     { data: userRoles },
     { data: roles },
     { data: overrides },
     { data: permissions },
   ] = await Promise.all([
     supabase
-      .from('profiles')
+      .from('users')
       .select('id, email, full_name, phone, status, updated_at')
       .order('updated_at', { ascending: false }),
     supabase.from('user_roles').select('user_id, role_id, assigned_by, created_at'),
@@ -54,7 +54,7 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
   ]);
 
   const mapped = mapAdminUsersFromRows({
-    profiles: (profiles ?? []) as Pick<
+    users: (users ?? []) as Pick<
       ProfileRow,
       'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'
     >[],
@@ -84,7 +84,7 @@ export async function getAdminUserById(userId: string): Promise<AdminUser | null
     { data: permissions },
   ] = await Promise.all([
     supabase
-      .from('profiles')
+      .from('users')
       .select('id, email, full_name, phone, status, updated_at')
       .eq('id', userId)
       .maybeSingle(),
@@ -109,7 +109,7 @@ export async function getAdminUserById(userId: string): Promise<AdminUser | null
   if (!profile) return null;
 
   const [mapped] = mapAdminUsersFromRows({
-    profiles: [
+    users: [
       profile as Pick<ProfileRow, 'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'>,
     ],
     userRoles: (userRoles ?? []) as UserRoleRow[],

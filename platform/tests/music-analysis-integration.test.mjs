@@ -62,7 +62,7 @@ test('show creation attaches analysed music and starts cue generation', () => {
   const action = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
 
   assert.match(action, /musicAnalysisId: z\.string\(\)\.uuid\(\)\.optional\(\)/);
-  assert.match(action, /\.from\('music_analyses'\)/);
+  assert.match(action, /\.from\('song_analyses'\)/);
   assert.match(action, /music_analysis_id: musicAnalysisId/);
   assert.match(action, /generation_status: 'running'/);
   assert.match(action, /after\(async \(\) =>/);
@@ -76,12 +76,22 @@ test('music analyses migration creates upload-scoped analysis rows', () => {
     join(root, 'supabase/migrations/20260525090000_music_analyses_show_generation.sql'),
     'utf8',
   );
+  const renameMigration = readFileSync(
+    join(root, 'supabase/migrations/20260614132007_schema_firework_catalogue_rework.sql'),
+    'utf8',
+  );
 
   assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.music_analyses/);
   assert.match(migration, /analysis_json jsonb/);
   assert.match(migration, /ADD COLUMN IF NOT EXISTS music_analysis_id uuid/);
   assert.match(migration, /ADD COLUMN IF NOT EXISTS generation_status text/);
   assert.match(migration, /music_analyses_select_own/);
+  assert.match(
+    renameMigration,
+    /alter table if exists public\.music_analyses rename to song_analyses/,
+  );
+  assert.doesNotMatch(renameMigration, /create view public\.music_analyses/);
+  assert.match(renameMigration, /drop view if exists public\.music_analyses/);
 });
 
 test('show analyses migration matches the current database contract', () => {

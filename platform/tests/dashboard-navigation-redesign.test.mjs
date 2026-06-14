@@ -104,9 +104,10 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(templatePreview, /formatBudget\(template\.totalCents\)/);
   assert.match(templatePreview, /translate-y-full/);
   assert.match(templatePreview, /opacity-0 transition-all/);
-  assert.match(templatePreview, /duration-700 ease-out/);
+  assert.match(templatePreview, /duration-\[1800ms\]/);
+  assert.match(templatePreview, /\[transition-timing-function:cubic-bezier\(\.16,1,\.3,1\)\]/);
   assert.match(templatePreview, /duration-500 ease-in-out/);
-  assert.match(templatePreview, /h-\[22%\]/);
+  assert.match(templatePreview, /h-\[15%\]/);
   assert.match(templatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
   assert.match(templatePreview, /mask-image:linear-gradient\(to_top/);
   assert.doesNotMatch(templatePreview, /border-t p-4/);
@@ -115,23 +116,22 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showTemplatePreview, /buildVisualPalette/);
   assert.match(showTemplatePreview, /--template-accent-start/);
   assert.match(showTemplatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
-  assert.match(showTemplatePreview, /relative grid flex-1/);
+  assert.match(showTemplatePreview, /relative -mt-px grid flex-1/);
   assert.match(
     showTemplatePreview,
-    /h-1 bg-\[linear-gradient\(90deg,var\(--template-accent-start\)/,
+    /h-\[5px\] bg-\[linear-gradient\(90deg,var\(--template-accent-start\)/,
   );
-  assert.match(showTemplatePreview, /preserveAspectRatio="none"/);
-  assert.match(showTemplatePreview, /strokeDasharray: 180/);
-  assert.match(showTemplatePreview, /strokeDashoffset: isHovered \? 0 : 180/);
-  assert.match(showTemplatePreview, /strokeLinecap="butt"/);
-  assert.match(showTemplatePreview, /strokeLinejoin="round"/);
-  assert.match(showTemplatePreview, /strokeWidth=\{4\}/);
-  assert.match(showTemplatePreview, /template-card-trace/);
+  assert.match(showTemplatePreview, /CardBorderTrace/);
+  assert.match(showTemplatePreview, /active=\{isHovered\}/);
+  assert.match(showTemplatePreview, /radius=\{10\}/);
+  assert.match(
+    showTemplatePreview,
+    /colors=\{\[palette\.hex\[0\], palette\.hex\[1\], palette\.hex\[2\]\]\}/,
+  );
   assert.match(showTemplatePreview, /h-32 overflow-hidden/);
   assert.match(showTemplatePreview, /origin-top -translate-y-6 scale-y-50/);
   assert.match(showTemplatePreview, /blur-lg/);
-  assert.match(showTemplatePreview, /duration-\[1250ms\]/);
-  assert.match(showTemplatePreview, /duration-\[1100ms\]/);
+  assert.match(showTemplatePreview, /duration-\[1800ms\]/);
   assert.match(showTemplatePreview, /group-hover:opacity-40/);
   assert.doesNotMatch(showTemplatePreview, /group-hover:-translate-y-1/);
   assert.doesNotMatch(showTemplatePreview, /group-hover:opacity-0 group-focus-visible:opacity-0/);
