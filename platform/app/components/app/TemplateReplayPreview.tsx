@@ -8,10 +8,10 @@
  */
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pause, Play, RotateCcw } from 'lucide-react';
+import { Heart, Pause, Play, RotateCcw } from 'lucide-react';
 import type { ShowTemplate, ShowTemplateCue } from '@/lib/admin.types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
-import { formatDuration } from '@/lib/show-domain';
+import { formatBudget, formatDuration } from '@/lib/show-domain';
 
 type TemplateReplayPreviewProps = {
   template: ShowTemplate;
@@ -224,12 +224,12 @@ export function TemplateReplayPreview({
       ref={containerRef}
       className={
         isDetail
-          ? 'border-outline-variant/15 bg-surface-container-low overflow-hidden rounded-xl border'
-          : 'relative h-52 overflow-hidden'
+          ? 'border-outline-variant/15 relative overflow-hidden rounded-xl border bg-black'
+          : 'relative h-44 overflow-hidden'
       }
       style={isDetail ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
     >
-      <div className={isDetail ? 'relative h-[min(58vh,560px)] min-h-[380px]' : 'relative h-full'}>
+      <div className={isDetail ? 'relative h-[min(62vh,620px)] min-h-[420px]' : 'relative h-full'}>
         {shouldMountCanvas ? (
           <LazyFireworkReplayCanvas
             cues={cues}
@@ -241,54 +241,73 @@ export function TemplateReplayPreview({
           <ReplayCanvasSkeleton />
         )}
       </div>
-      {!isDetail ? (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-20"
-          style={{ backgroundImage: 'var(--preview-card-fade)' }}
-        />
-      ) : (
-        <div className="border-outline-variant/15 bg-surface-container-low/90 border-t p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={togglePlayback}
-                disabled={cues.length === 0}
-                aria-label={isPlaying ? 'Pause template preview' : 'Play template preview'}
-                className="focus-glow-action bg-primary-container text-on-primary-container disabled:bg-surface-container-high disabled:text-on-surface-variant/40 flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--shadow-cta)] transition-all hover:brightness-110 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
-              >
-                {isPlaying ? <Pause size={17} /> : <Play size={17} />}
-              </button>
-              <button
-                type="button"
-                onClick={restart}
-                aria-label="Restart template preview"
-                className="focus-glow-action border-outline/20 text-primary hover:bg-surface-container-highest/50 flex h-10 w-10 items-center justify-center rounded-full border transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
-              >
-                <RotateCcw size={15} />
-              </button>
-            </div>
-            <div className="flex-1">
-              <input
-                type="range"
-                min={0}
-                max={duration}
-                step={0.05}
-                value={elapsed}
-                onChange={(event) => {
-                  setIsPlaying(false);
-                  setElapsed(Number(event.target.value));
-                }}
-                className="accent-tertiary h-2 w-full"
-                aria-label="Template preview timeline"
-              />
-              <div className="text-tertiary/80 mt-2 flex justify-between font-mono text-[11px] tabular-nums">
-                <span>{formatDuration(elapsed)}</span>
-                <span>{formatDuration(duration)}</span>
+      {isDetail ? (
+        <>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+          <div className="absolute right-4 bottom-4 left-4 z-20">
+            <div className="rounded-xl border border-white/15 bg-black/60 px-3 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md sm:rounded-full sm:px-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={togglePlayback}
+                    disabled={cues.length === 0}
+                    aria-label={isPlaying ? 'Pause template preview' : 'Play template preview'}
+                    className="focus-glow-action flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-[var(--shadow-cta)] transition-all hover:bg-white/90 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40 disabled:shadow-none"
+                  >
+                    {isPlaying ? <Pause size={17} /> : <Play size={17} fill="currentColor" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={restart}
+                    aria-label="Restart template preview"
+                    className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all hover:bg-white/12 focus:outline-none focus-visible:outline-none active:scale-[0.98]"
+                  >
+                    <RotateCcw size={15} />
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex justify-between font-mono text-[11px] text-white/75 tabular-nums">
+                    <span>{formatDuration(elapsed)}</span>
+                    <span>{formatDuration(duration)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration}
+                    step={0.05}
+                    value={elapsed}
+                    onChange={(event) => {
+                      setIsPlaying(false);
+                      setElapsed(Number(event.target.value));
+                    }}
+                    className="h-1.5 w-full cursor-pointer accent-white"
+                    aria-label="Template preview timeline"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
+      ) : (
+        <>
+          <div className="pointer-events-none absolute top-3 right-3 z-10 rounded-lg border border-white/15 bg-black/45 px-2.5 py-1.5 text-right text-xs text-white shadow-sm backdrop-blur transition-all duration-200 group-hover:-translate-y-1 group-hover:opacity-0 group-focus-visible:-translate-y-1 group-focus-visible:opacity-0">
+            <span className="inline-flex items-center justify-end gap-1">
+              <Heart size={14} className="fill-current text-[color:var(--destructive)]" />
+              <span className="tabular-nums">{template.likeCount}</span>
+            </span>
+            <span className="block font-mono tabular-nums">
+              {formatBudget(template.totalCents)}
+            </span>
+          </div>
+          <div
+            className={
+              isCardHovered
+                ? 'pointer-events-none absolute inset-x-0 bottom-0 h-[15%] translate-y-full bg-[linear-gradient(90deg,var(--template-accent-start),var(--template-accent-middle),var(--template-accent-end))] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.5)_28%,transparent_72%)] opacity-0 transition-all duration-[1800ms] [transition-timing-function:cubic-bezier(.16,1,.3,1)] motion-reduce:transition-none'
+                : 'pointer-events-none absolute inset-x-0 bottom-0 h-[15%] translate-y-0 bg-[linear-gradient(90deg,var(--template-accent-start),var(--template-accent-middle),var(--template-accent-end))] [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.5)_28%,transparent_72%)] opacity-70 transition-all duration-500 ease-in-out motion-reduce:transition-none'
+            }
+          />
+        </>
       )}
     </div>
   );

@@ -6,7 +6,14 @@
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import {
   ArrowLeft,
   Bell,
@@ -27,12 +34,13 @@ import {
   Star,
   TriangleAlert,
   UserRound,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +72,12 @@ import { Separator } from '@/components/ui/separator';
 import { PaletteStrip } from '@/app/components/app/ShowSummaryCards';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  featuredTemplateDismissalCookieMaxAge,
+  featuredTemplateDismissalCookieName,
+  featuredTemplateDismissalDurationMs,
+  parseFeaturedTemplateDismissedUntil,
+} from '@/lib/featured-template-dismissal';
 import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 import type { ShowSummaryCard, TemplateSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
@@ -101,6 +115,27 @@ const SETTINGS_BREADCRUMB_LABELS: Record<string, string> = {
   '/settings/security': 'Security',
 };
 
+function getFeaturedTemplateAccentStyle(template: TemplateSummaryCard): CSSProperties {
+  const [startColour, middleColour] = template.palette.hex;
+
+  return {
+    background: `linear-gradient(90deg, ${startColour}, ${middleColour} 54%, var(--sidebar-primary-foreground))`,
+  };
+}
+
+const SHOW_SUBPAGE_LABELS: Record<string, string> = {
+  preview: 'Preview',
+  timeline: 'Timeline',
+  'shopping-list': 'Shopping list',
+  'show-guide': 'Show guide',
+  generating: 'Generating',
+};
+
+type ShellBreadcrumb = {
+  label: string;
+  href?: string;
+};
+
 type AppShellProps = {
   children: ReactNode;
   containerWidth?: 'default' | 'wide' | 'fluid';
@@ -108,12 +143,12 @@ type AppShellProps = {
   impersonation?: ActiveImpersonation | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
+  initialFeaturedTemplateDismissedUntil?: number | null;
 };
 
 type ProfileSummary = {
   displayName: string;
   secondaryLine: string;
-  initials: string;
 };
 
 function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -136,13 +171,40 @@ function isActivePath(pathname: string | null, href: string) {
   return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
 }
 
+function readFeaturedTemplateDismissedUntil() {
+  try {
+    const cookiePrefix = `${featuredTemplateDismissalCookieName}=`;
+    const cookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(cookiePrefix))
+      ?.slice(cookiePrefix.length);
+
+    return parseFeaturedTemplateDismissedUntil(cookie ? decodeURIComponent(cookie) : null);
+  } catch {
+    return null;
+  }
+}
+
+function writeFeaturedTemplateDismissalCookie(dismissedUntil: number) {
+  try {
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${featuredTemplateDismissalCookieName}=${dismissedUntil}; Path=/; Max-Age=${featuredTemplateDismissalCookieMaxAge}; SameSite=Lax${secure}`;
+  } catch {
+    // Ignore cookie errors; the card should still stay hidden in this session.
+  }
+}
+
 function SidebarBrand() {
   const { isMobile, setOpenMobile } = useSidebar();
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton asChild size="lg" tooltip="ShowCrafter">
+        <SidebarMenuButton
+          asChild
+          size="lg"
+          className="group-data-[collapsible=icon]:justify-center"
+        >
           <Link
             href="/dashboard"
             prefetch
@@ -153,7 +215,7 @@ function SidebarBrand() {
             <span className="brand-logo-mark flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
               <Sparkles size={14} strokeWidth={2.2} />
             </span>
-            <span className="min-w-0 flex-1 truncate font-semibold tracking-tight">
+            <span className="min-w-0 flex-1 truncate font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
               ShowCrafter
             </span>
           </Link>
@@ -307,17 +369,21 @@ function SidebarRecentShows({
 function SidebarFeaturedTemplate({
   template,
   onNavigate,
+  onDismiss,
+  dismissed,
 }: {
   template: TemplateSummaryCard | null;
   onNavigate: (href: string) => void;
+  onDismiss: () => void;
+  dismissed: boolean;
 }) {
   const { isMobile, setOpenMobile } = useSidebar();
-  if (!template) return null;
+  if (!template || dismissed) return null;
 
   const href = `/library/${template.slug}`;
 
   return (
-    <div className="mt-auto px-2 py-0.5 group-data-[collapsible=icon]:hidden">
+    <div className="relative mt-auto px-2 pt-2 pb-1 group-data-[collapsible=icon]:hidden">
       <Link
         href={href}
         prefetch
@@ -327,20 +393,28 @@ function SidebarFeaturedTemplate({
             if (isMobile) setOpenMobile(false);
           }
         }}
-        className="border-sidebar-border bg-sidebar-accent/35 hover:bg-sidebar-accent focus-visible:ring-sidebar-ring block rounded-md border px-2 py-1.5 transition-colors focus:outline-none focus-visible:ring-2"
+        className="border-sidebar-border/80 bg-sidebar-accent/20 hover:bg-sidebar-accent/45 focus-visible:ring-sidebar-ring block rounded-lg border px-2.5 py-2 transition-colors focus:outline-none focus-visible:ring-2"
       >
-        <span className="text-sidebar-foreground/55 block text-[13px] font-medium">
+        <span className="text-sidebar-foreground/50 block pr-7 text-[11px] leading-4 font-semibold">
           Show of the week
         </span>
-        <span className="text-sidebar-foreground block truncate text-[15px] font-semibold">
+        <span className="text-sidebar-accent-foreground mt-0.5 block truncate pr-7 text-[13px] leading-4 font-semibold tracking-tight">
           {template.title}
         </span>
-        <PaletteStrip
-          palette={template.palette}
-          orientation="horizontal"
-          className="mt-1.5 h-1 w-full"
+        <span
+          aria-hidden
+          className="mt-2 block h-1 w-full rounded-full"
+          style={getFeaturedTemplateAccentStyle(template)}
         />
       </Link>
+      <button
+        type="button"
+        aria-label="Hide show of the week for one day"
+        onClick={onDismiss}
+        className="text-sidebar-foreground/45 hover:bg-destructive/10 hover:text-destructive focus-visible:ring-sidebar-ring absolute top-3 right-4 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2"
+      >
+        <X aria-hidden size={13} strokeWidth={2} />
+      </button>
     </div>
   );
 }
@@ -353,6 +427,7 @@ function ProfileMenuButton({
   onSignOut: () => Promise<void>;
 }) {
   const { isMobile } = useSidebar();
+  const closeFromPointerOutsideRef = useRef(false);
 
   return (
     <SidebarMenu>
@@ -363,9 +438,7 @@ function ProfileMenuButton({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar>
-                <AvatarFallback>{profile.initials}</AvatarFallback>
-              </Avatar>
+              <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
               <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{profile.displayName}</span>
                 {profile.secondaryLine ? (
@@ -382,12 +455,19 @@ function ProfileMenuButton({
             side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
+            onPointerDownOutside={() => {
+              closeFromPointerOutsideRef.current = true;
+            }}
+            onCloseAutoFocus={(event) => {
+              if (!closeFromPointerOutsideRef.current) return;
+
+              event.preventDefault();
+              closeFromPointerOutsideRef.current = false;
+            }}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar>
-                  <AvatarFallback>{profile.initials}</AvatarFallback>
-                </Avatar>
+                <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{profile.displayName}</span>
                   {profile.secondaryLine ? (
@@ -462,13 +542,66 @@ function AppSidebarFooter({
   );
 }
 
-function ShellBreadcrumbs({ pathname }: { pathname: string | null }) {
-  const current = SETTINGS_BREADCRUMB_LABELS[pathname ?? ''] ?? 'Settings';
-  const crumbs = [
-    { label: 'Workspace', href: '/dashboard' },
+function formatPathSegment(segment: string) {
+  return decodeURIComponent(segment)
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getSettingsBreadcrumbs(pathname: string): ShellBreadcrumb[] {
+  const current = SETTINGS_BREADCRUMB_LABELS[pathname] ?? 'Settings';
+  return [
     { label: 'Settings', href: current === 'Settings' ? undefined : '/settings/profile' },
     ...(current === 'Settings' ? [] : [{ label: current }]),
   ];
+}
+
+function getShowBreadcrumbs(segments: string[]): ShellBreadcrumb[] {
+  if (segments[1] === 'new') {
+    return [{ label: 'My shows', href: '/shows' }, { label: 'New show' }];
+  }
+
+  if (!segments[1]) {
+    return [{ label: 'My shows' }];
+  }
+
+  const showHref = `/shows/${segments[1]}`;
+  return [
+    { label: 'My shows', href: '/shows' },
+    {
+      label: formatPathSegment(segments[1]),
+      href: segments[2] ? showHref : undefined,
+    },
+    ...(segments[2]
+      ? [
+          {
+            label: SHOW_SUBPAGE_LABELS[segments[2]] ?? formatPathSegment(segments[2]),
+          },
+        ]
+      : []),
+  ];
+}
+
+function getAppBreadcrumbs(pathname: string | null): ShellBreadcrumb[] {
+  const normalisedPath = (pathname ?? '/dashboard').replace(/\/+$/, '') || '/dashboard';
+  if (normalisedPath === '/dashboard') return [{ label: 'Dashboard' }];
+  if (normalisedPath.startsWith('/settings')) return getSettingsBreadcrumbs(normalisedPath);
+
+  const segments = normalisedPath.split('/').filter(Boolean);
+  if (segments[0] === 'shows') return getShowBreadcrumbs(segments);
+  if (segments[0] === 'library') {
+    return [
+      { label: 'Explore', href: segments[1] ? '/library' : undefined },
+      ...(segments[1] ? [{ label: formatPathSegment(segments[1]) }] : []),
+    ];
+  }
+
+  const staticLabel = APP_LINKS.find((link) => link.href === `/${segments[0]}`)?.label;
+  return [{ label: staticLabel ?? formatPathSegment(segments[0] ?? 'Workspace') }];
+}
+
+function ShellBreadcrumbs({ breadcrumbs }: { breadcrumbs: ShellBreadcrumb[] }) {
+  const crumbs = breadcrumbs.length > 0 ? breadcrumbs : [{ label: 'Dashboard' }];
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
@@ -501,7 +634,9 @@ function ShellBreadcrumbs({ pathname }: { pathname: string | null }) {
   );
 }
 
-function ShellTopBar({ title, settingsPath }: { title: string; settingsPath?: string | null }) {
+function ShellTopBar({ pathname }: { pathname: string | null }) {
+  const breadcrumbs = getAppBreadcrumbs(pathname);
+
   return (
     <header
       className={cn(
@@ -513,11 +648,7 @@ function ShellTopBar({ title, settingsPath }: { title: string; settingsPath?: st
         orientation="vertical"
         className="mx-1 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
       />
-      {settingsPath ? (
-        <ShellBreadcrumbs pathname={settingsPath} />
-      ) : (
-        <span className="text-foreground truncate text-sm font-medium">{title}</span>
-      )}
+      <ShellBreadcrumbs breadcrumbs={breadcrumbs} />
     </header>
   );
 }
@@ -528,11 +659,15 @@ export function AppShell({
   impersonation,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
+  initialFeaturedTemplateDismissedUntil = null,
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
+  const [featuredTemplateDismissedUntil, setFeaturedTemplateDismissedUntil] = useState<
+    number | null
+  >(initialFeaturedTemplateDismissedUntil);
   const effectivePath = pendingHref ?? pathname;
   const inSettings = effectivePath?.startsWith('/settings') ?? false;
   const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
@@ -561,18 +696,26 @@ export function AppShell({
   const profileSummary: ProfileSummary = {
     displayName,
     secondaryLine,
-    initials:
-      displayName
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0]?.toUpperCase())
-        .join('') || 'SC',
   };
 
   useEffect(() => {
     setPendingHref(null);
   }, [pathname]);
+
+  useEffect(() => {
+    const storedDismissedUntil = readFeaturedTemplateDismissedUntil();
+    setFeaturedTemplateDismissedUntil(
+      storedDismissedUntil ?? initialFeaturedTemplateDismissedUntil,
+    );
+  }, [initialFeaturedTemplateDismissedUntil]);
+
+  useEffect(() => {
+    if (!featuredTemplateDismissedUntil) return;
+
+    const remainingMs = Math.max(0, featuredTemplateDismissedUntil - Date.now());
+    const timer = window.setTimeout(() => setFeaturedTemplateDismissedUntil(null), remainingMs);
+    return () => window.clearTimeout(timer);
+  }, [featuredTemplateDismissedUntil]);
 
   useEffect(() => {
     let active = true;
@@ -603,6 +746,12 @@ export function AppShell({
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
+  };
+
+  const handleDismissFeaturedTemplate = () => {
+    const dismissedUntil = Date.now() + featuredTemplateDismissalDurationMs;
+    setFeaturedTemplateDismissedUntil(dismissedUntil);
+    writeFeaturedTemplateDismissalCookie(dismissedUntil);
   };
 
   return (
@@ -680,6 +829,8 @@ export function AppShell({
               <SidebarFeaturedTemplate
                 template={workspaceSummary?.featuredTemplate ?? null}
                 onNavigate={setPendingHref}
+                onDismiss={handleDismissFeaturedTemplate}
+                dismissed={featuredTemplateDismissedUntil !== null}
               />
             </>
           )}
@@ -694,7 +845,7 @@ export function AppShell({
       </Sidebar>
 
       <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
-        <ShellTopBar title="Workspace" settingsPath={inSettings ? effectivePath : null} />
+        <ShellTopBar pathname={effectivePath} />
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10">
           {children}
         </main>

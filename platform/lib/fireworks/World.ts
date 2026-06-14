@@ -10,7 +10,10 @@ import type { LaunchPosition } from '@/lib/fireworks/design';
 
 const GROUND_SIZE = 8000;
 const BASE_GROUND_SIZE = 40000;
-const GRID_TEXTURE_SIZE = 1024;
+const MINOR_GRID_STEP = 62.5;
+const MAJOR_GRID_STEP = MINOR_GRID_STEP * 4;
+const MINOR_GRID_LINE_WIDTH = 0.3;
+const MAJOR_GRID_LINE_WIDTH = 0.55;
 const SKY_RADIUS = 30000;
 
 const SKY_VERTEX_SHADER = /* glsl */ `
@@ -37,10 +40,52 @@ void main() {
 }
 `;
 
+const GROUND_VERTEX_SHADER = /* glsl */ `
+varying vec2 vWorldXZ;
+
+void main() {
+  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  vWorldXZ = worldPosition.xz;
+  gl_Position = projectionMatrix * viewMatrix * worldPosition;
+}
+`;
+
+const GROUND_FRAGMENT_SHADER = /* glsl */ `
+varying vec2 vWorldXZ;
+
+float gridLine(vec2 coord, float step, float width) {
+  vec2 wrapped = abs(mod(coord + step * 0.5, step) - step * 0.5);
+  float distanceToLine = min(wrapped.x, wrapped.y);
+  float aa = max(min(fwidth(coord.x), fwidth(coord.y)) * 1.15, 1.0);
+  return 1.0 - smoothstep(width, width + aa, distanceToLine);
+}
+
+void main() {
+  float radial = length(vWorldXZ) / ${(GROUND_SIZE / 2).toFixed(1)};
+  float pool = 1.0 - smoothstep(0.0, 0.62, radial);
+  float centerGlow = pow(1.0 - smoothstep(0.0, 0.32, radial), 1.35);
+  float gridFade = 1.0 - smoothstep(0.58, 0.94, radial);
+  float edgeFade = 1.0 - smoothstep(0.82, 1.0, radial);
+
+  float minorLine = gridLine(vWorldXZ, ${MINOR_GRID_STEP.toFixed(1)}, ${MINOR_GRID_LINE_WIDTH.toFixed(1)});
+  float majorLine = gridLine(vWorldXZ, ${MAJOR_GRID_STEP.toFixed(1)}, ${MAJOR_GRID_LINE_WIDTH.toFixed(1)});
+  float minorOnly = minorLine * (1.0 - majorLine);
+  float gridAlpha = (minorOnly * 0.05 + majorLine * 0.11) * gridFade;
+
+  vec3 poolColor = vec3(0.31, 0.32, 0.34) * (pool * 0.15 + centerGlow * 0.09);
+  vec3 minorColor = vec3(0.37, 0.39, 0.42) * minorOnly * 0.52;
+  vec3 majorColor = vec3(0.58, 0.6, 0.64) * majorLine;
+  vec3 gridColor = (minorColor * 0.22 + majorColor * 0.24) * gridFade;
+
+  float alpha = clamp((pool * 0.11 + centerGlow * 0.065) * edgeFade + gridAlpha, 0.0, 0.42);
+  if (alpha < 0.004) discard;
+  gl_FragColor = vec4(poolColor + gridColor, alpha);
+}
+`;
+
 export class World {
   group: THREE.Group;
   private mortarPositions: LaunchPosition[] = [];
-  private groundTexture: THREE.Texture | null = null;
   private materials: THREE.Material[] = [];
   private geometries: THREE.BufferGeometry[] = [];
 
@@ -76,14 +121,8 @@ export class World {
     this.geometries.push(baseGeo);
     this.materials.push(baseMat);
 
-    this.groundTexture = createGroundTexture();
     const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 1, 1);
-    const groundMat = new THREE.MeshBasicMaterial({
-      map: this.groundTexture,
-      transparent: true,
-      depthWrite: true,
-      toneMapped: false,
-    });
+    const groundMat = createGroundMaterial();
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.05;
@@ -120,17 +159,17 @@ export class World {
   private addMortars(): void {
     if (this.mortarPositions.length === 0) return;
 
-    const mortarGeo = new THREE.CylinderGeometry(8, 8, 40, 16);
+    const mortarGeo = new THREE.CylinderGeometry(5.5, 5.5, 28, 16);
     const mortarMat = new THREE.MeshBasicMaterial({
-      color: 0x7f8da8,
+      color: 0xaeb3bb,
       toneMapped: false,
     });
     const mortars = new THREE.InstancedMesh(mortarGeo, mortarMat, this.mortarPositions.length);
     mortars.frustumCulled = false;
 
-    const rimGeo = new THREE.TorusGeometry(8.2, 1.1, 8, 24);
+    const rimGeo = new THREE.TorusGeometry(5.7, 0.75, 8, 24);
     const rimMat = new THREE.MeshBasicMaterial({
-      color: 0xb1c3dd,
+      color: 0xc3c8d0,
       toneMapped: false,
     });
     const rims = new THREE.InstancedMesh(rimGeo, rimMat, this.mortarPositions.length);
@@ -139,13 +178,13 @@ export class World {
     const transform = new THREE.Object3D();
     for (let i = 0; i < this.mortarPositions.length; i++) {
       const pos = this.mortarPositions[i];
-      transform.position.set(pos.x, pos.y + 20, pos.z);
+      transform.position.set(pos.x, pos.y + 14, pos.z);
       transform.rotation.set(0, 0, 0);
       transform.scale.setScalar(1);
       transform.updateMatrix();
       mortars.setMatrixAt(i, transform.matrix);
 
-      transform.position.set(pos.x, pos.y + 40.5, pos.z);
+      transform.position.set(pos.x, pos.y + 28.5, pos.z);
       transform.rotation.set(Math.PI / 2, 0, 0);
       transform.updateMatrix();
       rims.setMatrixAt(i, transform.matrix);
@@ -164,8 +203,6 @@ export class World {
     }
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
-    this.groundTexture?.dispose();
-    this.groundTexture = null;
     this.geometries.length = 0;
     this.materials.length = 0;
     this.build(positions);
@@ -179,99 +216,18 @@ export class World {
   dispose(): void {
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
-    this.groundTexture?.dispose();
     this.group.parent?.remove(this.group);
   }
 }
 
-function createGroundTexture(): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = GRID_TEXTURE_SIZE;
-  canvas.height = GRID_TEXTURE_SIZE;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Unable to create firework ground texture');
-
-  const half = GRID_TEXTURE_SIZE / 2;
-
-  // The texture is alpha-blended over the giant black base plane, so it only
-  // carries the lit show area: a pale pool of light around the launch site
-  // plus grid lines, all fading to fully transparent at the edges.
-  ctx.clearRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
-
-  const pool = ctx.createRadialGradient(half, half, 0, half, half, half * 0.62);
-  pool.addColorStop(0, 'rgba(132, 150, 188, 0.32)');
-  pool.addColorStop(0.45, 'rgba(86, 102, 140, 0.14)');
-  pool.addColorStop(1, 'rgba(70, 84, 116, 0)');
-  ctx.fillStyle = pool;
-  ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
-
-  drawMaskedGrid(ctx, half);
-
-  // Erase toward the edges so the grid melts into the black floor instead of
-  // ending at a visible rectangle.
-  ctx.globalCompositeOperation = 'destination-out';
-  const fade = ctx.createRadialGradient(half, half, 0, half, half, half);
-  fade.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  fade.addColorStop(0.45, 'rgba(0, 0, 0, 0.1)');
-  fade.addColorStop(0.75, 'rgba(0, 0, 0, 0.72)');
-  fade.addColorStop(0.95, 'rgba(0, 0, 0, 1)');
-  fade.addColorStop(1, 'rgba(0, 0, 0, 1)');
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
-  ctx.globalCompositeOperation = 'source-over';
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.generateMipmaps = true;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.anisotropy = 4;
-  return texture;
-}
-
-function drawGridLayer(
-  ctx: CanvasRenderingContext2D,
-  step: number,
-  color: string,
-  width: number,
-): void {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.beginPath();
-  for (let i = 0; i <= GRID_TEXTURE_SIZE; i += step) {
-    const p = i + 0.5;
-    ctx.moveTo(p, 0);
-    ctx.lineTo(p, GRID_TEXTURE_SIZE);
-    ctx.moveTo(0, p);
-    ctx.lineTo(GRID_TEXTURE_SIZE, p);
-  }
-  ctx.stroke();
-}
-
-function drawMaskedGrid(ctx: CanvasRenderingContext2D, half: number): void {
-  const gridCanvas = document.createElement('canvas');
-  gridCanvas.width = GRID_TEXTURE_SIZE;
-  gridCanvas.height = GRID_TEXTURE_SIZE;
-  const gridCtx = gridCanvas.getContext('2d');
-  if (!gridCtx) throw new Error('Unable to create firework ground grid texture');
-
-  drawGridLayer(gridCtx, 64, 'rgba(124, 146, 192, 0.5)', 1);
-  drawGridLayer(gridCtx, 256, 'rgba(168, 188, 228, 0.66)', 2);
-
-  // Keep grid pixels out of the transparent outer band before mipmaps are
-  // generated, otherwise oblique views smear faint strokes into curved edge
-  // artefacts around the floor.
-  gridCtx.globalCompositeOperation = 'destination-in';
-  const gridMask = gridCtx.createRadialGradient(half, half, 0, half, half, half * 0.82);
-  gridMask.addColorStop(0, 'rgba(0, 0, 0, 1)');
-  gridMask.addColorStop(0.58, 'rgba(0, 0, 0, 1)');
-  gridMask.addColorStop(0.82, 'rgba(0, 0, 0, 0.2)');
-  gridMask.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  gridCtx.fillStyle = gridMask;
-  gridCtx.fillRect(0, 0, GRID_TEXTURE_SIZE, GRID_TEXTURE_SIZE);
-  gridCtx.globalCompositeOperation = 'source-over';
-
-  ctx.drawImage(gridCanvas, 0, 0);
+function createGroundMaterial(): THREE.ShaderMaterial {
+  const material = new THREE.ShaderMaterial({
+    vertexShader: GROUND_VERTEX_SHADER,
+    fragmentShader: GROUND_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: true,
+    fog: false,
+    toneMapped: false,
+  });
+  return material;
 }

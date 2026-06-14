@@ -26,8 +26,8 @@
     var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
     sans-serif;
   --font-mono:
-    var(--font-geist-mono, 'Geist Mono'), 'ui-monospace', 'SFMono-Regular', 'SF Mono', Consolas,
-    'Liberation Mono', Menlo, monospace;
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
 
   /* ---------- Semantic tokens (light defaults) ---------- */
   /* Surfaces */
@@ -325,6 +325,142 @@ body {
   width: 70%;
   transform-origin: left center;
   animation: route-progress 1.15s ease-in-out infinite;
+}
+
+@keyframes sheet-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-left-in {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-left-out {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+@keyframes sheet-right-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-right-out {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes sheet-top-in {
+  from {
+    transform: translate3d(0, -100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-top-out {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -100%, 0);
+  }
+}
+
+@keyframes sheet-bottom-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-bottom-out {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+[data-slot='sheet-overlay'][data-state='open'] {
+  animation: sheet-overlay-in 160ms ease-out both;
+}
+
+[data-slot='sheet-overlay'][data-state='closed'] {
+  animation: sheet-overlay-out 130ms ease-in both;
+}
+
+[data-slot='sheet-content'] {
+  backface-visibility: hidden;
+  contain: paint;
+  will-change: transform;
+}
+
+[data-slot='sheet-content'][data-side='left'][data-state='open'] {
+  animation: sheet-left-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-slot='sheet-content'][data-side='left'][data-state='closed'] {
+  animation: sheet-left-out 210ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+[data-slot='sheet-content'][data-side='right'][data-state='open'] {
+  animation: sheet-right-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-slot='sheet-content'][data-side='right'][data-state='closed'] {
+  animation: sheet-right-out 210ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+[data-slot='sheet-content'][data-side='top'][data-state='open'] {
+  animation: sheet-top-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-slot='sheet-content'][data-side='top'][data-state='closed'] {
+  animation: sheet-top-out 210ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+[data-slot='sheet-content'][data-side='bottom'][data-state='open'] {
+  animation: sheet-bottom-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-slot='sheet-content'][data-side='bottom'][data-state='closed'] {
+  animation: sheet-bottom-out 210ms cubic-bezier(0.32, 0, 0.67, 0) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3,7 +3,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerEnv } from '@/utils/supabase/env';
 
 const PROTECTED_PREFIXES = [
+  '/catalogue',
   '/dashboard',
+  '/exports',
   '/shows',
   '/library',
   '/recommendations',
@@ -14,6 +16,13 @@ const AUTH_ONLY_PATHS = ['/login', '/signup'];
 
 function matchesPathPrefix(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function copySupabaseCookies(source: NextResponse, target: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie);
+  });
+  return target;
 }
 
 export async function proxy(request: NextRequest) {
@@ -39,7 +48,7 @@ export async function proxy(request: NextRequest) {
   if (!env) {
     if (process.env.NODE_ENV === 'development') {
       console.warn(
-        '[proxy] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local. Auth gating disabled.',
+        '[proxy] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local. Auth gating disabled.',
       );
     }
     return supabaseResponse;
@@ -71,21 +80,17 @@ export async function proxy(request: NextRequest) {
   if (isProtected && !userId) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
+    url.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+    return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
   }
 
   if (isAuthPage && userId) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+    return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
   }
 
-  const response = createSupabaseResponse();
-  supabaseResponse.cookies.getAll().forEach((cookie) => {
-    response.cookies.set(cookie);
-  });
-  return response;
+  return copySupabaseCookies(supabaseResponse, createSupabaseResponse());
 }
 
 export const config = {

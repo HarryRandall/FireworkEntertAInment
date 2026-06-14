@@ -206,7 +206,68 @@ test('renderer draws compact mixed round and streak particles', () => {
   assert.match(shaders, /softHalo/);
   assert.match(shaders, /gl_FragColor = vec4\(sparkColor \* intensity, alpha\)/);
   assert.match(shaders, /gl_PointSize = clamp/);
+  assert.doesNotMatch(shaders, /projectionScale = projectionMatrix\[1\]\[1\]/);
   assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
+  assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 1850\)/);
+  assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 120, 0\)/);
+  assert.match(canvas, /FLOOR_PAN_TRIGGER_HEIGHT = 92/);
+  assert.match(canvas, /FLOOR_PAN_TARGET_EPSILON = 1/);
+  assert.match(canvas, /FLOOR_PAN_DRAG_RATIO = 0\.1/);
+  assert.match(canvas, /FLOOR_PAN_UP_ANGLE_PER_PULL = THREE\.MathUtils\.degToRad\(22\)/);
+  assert.match(canvas, /FLOOR_PAN_UP_MAX_ANGLE_NEAR = THREE\.MathUtils\.degToRad\(12\)/);
+  assert.match(canvas, /FLOOR_PAN_UP_MAX_ANGLE_FAR = THREE\.MathUtils\.degToRad\(22\)/);
+  assert.match(canvas, /FLOOR_PAN_UP_POLAR_OVERSHOOT = 0\.22/);
+  assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ FLOOR_PAN_UP_POLAR_OVERSHOOT/);
+  assert.match(canvas, /function floorPanMaxAngle\(distance: number\)/);
+  assert.match(canvas, /function isAtFloorPanLimit/);
+  assert.match(canvas, /controls\.target\.y <= GROUND_PLANE_Y \+ FLOOR_PAN_TARGET_EPSILON/);
+  assert.match(canvas, /function applyFloorLookPitch/);
+  assert.match(canvas, /function updateFloorLookPitch/);
+  assert.match(canvas, /event\.clientY - floorDragLastY/);
+  assert.match(canvas, /floorPushDelta = -deltaY/);
+  assert.match(canvas, /!isAtFloorPanLimit\(camera, controls\)/);
+  assert.match(
+    canvas,
+    /const angleDelta = \(floorPushDelta \* FLOOR_PAN_UP_ANGLE_PER_PULL\) \/ maxDragPixels/,
+  );
+  assert.match(
+    canvas,
+    /const handled = Math\.abs\(deltaY\) >= 0\.1 \|\| currentPitch > 0 \|\| clamped/,
+  );
+  assert.match(canvas, /floorLookPitchRef = useRef\(0\)/);
+  assert.match(canvas, /panModeRef = useRef\(false\)/);
+  assert.match(canvas, /panModeRef\.current = panMode/);
+  assert.match(canvas, /!panModeRef\.current/);
+  assert.match(canvas, /controls\.enableDamping = false/);
+  assert.match(canvas, /event\.stopImmediatePropagation\(\)/);
+  assert.match(canvas, /function stopOrbitControlMomentum/);
+  assert.match(canvas, /function syncOrbitControlDragCursor/);
+  assert.match(canvas, /function panCameraHorizontally/);
+  assert.match(canvas, /const horizontalPanned = panCameraHorizontally/);
+  assert.match(canvas, /camera\.rotateX\(pitchOffset\)/);
+  assert.match(canvas, /floorLookPitchRef\.current = nextFloorPitch\.pitch/);
+  assert.doesNotMatch(canvas, /THREE\.MathUtils\.damp\(/);
+  assert.match(canvas, /applyFloorLookPitch\(cam, controls, floorLookPitchRef\.current\)/);
+  assert.match(
+    canvas,
+    /renderer\.domElement\.addEventListener\('pointerdown', onFloorDragPointerDown\)/,
+  );
+  assert.match(
+    canvas,
+    /window\.addEventListener\('pointermove', onFloorDragPointerMove, \{ capture: true \}\)/,
+  );
+  assert.match(canvas, /function adjustZoom\(factor: number\)/);
+  assert.match(canvas, /MAX_CAMERA_DISTANCE = 3000/);
+  assert.match(canvas, /adjustZoom\(0\.85\)/);
+  assert.match(canvas, /adjustZoom\(1\.2\)/);
+  assert.match(canvas, /label="Zoom in"/);
+  assert.match(canvas, /label="Zoom out"/);
+  assert.doesNotMatch(canvas, /CLOSE_CAMERA_ZOOM/);
+  assert.doesNotMatch(canvas, /CAMERA_ZOOM_TRANSITION_MS/);
+  assert.doesNotMatch(canvas, /controls\.enableZoom = false/);
+  assert.doesNotMatch(canvas, /setCameraZoomLevel/);
+  assert.doesNotMatch(canvas, /camera\.zoom = THREE\.MathUtils\.lerp/);
+  assert.doesNotMatch(canvas, /CLOSE_CAMERA_DISTANCE/);
   assert.match(canvas, /EffectComposer/);
   assert.match(canvas, /UnrealBloomPass/);
   assert.match(canvas, /antialias: false/);
@@ -234,15 +295,32 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(effects, /mass: 0\.006/);
 });
 
-test('world uses a stable textured floor and instanced launch hardware', () => {
+test('world uses a crisp procedural grid floor and instanced launch hardware', () => {
   const world = read('lib/fireworks/World.ts');
 
-  assert.match(world, /createGroundTexture/);
-  assert.match(world, /new THREE\.CanvasTexture/);
-  assert.match(world, /LinearMipmapLinearFilter/);
+  assert.match(world, /MINOR_GRID_STEP = 62\.5/);
+  assert.match(world, /MAJOR_GRID_STEP = MINOR_GRID_STEP \* 4/);
+  assert.match(world, /MINOR_GRID_LINE_WIDTH = 0\.3/);
+  assert.match(world, /MAJOR_GRID_LINE_WIDTH = 0\.55/);
+  assert.match(world, /minorOnly \* 0\.05 \+ majorLine \* 0\.11/);
+  assert.match(world, /createGroundMaterial/);
+  assert.match(world, /new THREE\.ShaderMaterial/);
+  assert.match(world, /fwidth\(coord\.x\)/);
+  assert.match(world, /smoothstep\(0\.0, 0\.62, radial\)/);
+  assert.match(world, /centerGlow = pow\(1\.0 - smoothstep\(0\.0, 0\.32, radial\), 1\.35\)/);
+  assert.match(world, /vec3\(0\.31, 0\.32, 0\.34\)/);
+  assert.match(world, /vec3\(0\.37, 0\.39, 0\.42\)/);
+  assert.match(world, /vec3\(0\.58, 0\.6, 0\.64\)/);
+  assert.match(world, /pool \* 0\.15/);
+  assert.match(world, /centerGlow \* 0\.09/);
+  assert.match(world, /pool \* 0\.11 \+ centerGlow \* 0\.065/);
+  assert.match(world, /smoothstep\(0\.58, 0\.94, radial\)/);
   assert.match(world, /new THREE\.InstancedMesh/);
-  assert.match(world, /CylinderGeometry\(8, 8, 40, 16\)/);
-  assert.doesNotMatch(world, /GridHelper|LineSegments/);
+  assert.match(world, /CylinderGeometry\(5\.5, 5\.5, 28, 16\)/);
+  assert.match(world, /TorusGeometry\(5\.7, 0\.75, 8, 24\)/);
+  assert.match(world, /color: 0xaeb3bb/);
+  assert.match(world, /color: 0xc3c8d0/);
+  assert.doesNotMatch(world, /CanvasTexture|LinearMipmapLinearFilter|GridHelper|LineSegments/);
 });
 
 test('brocade calibration is data-driven and admin-tunable', () => {

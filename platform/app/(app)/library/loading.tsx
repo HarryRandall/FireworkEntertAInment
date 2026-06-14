@@ -18,11 +18,11 @@ export default function LibraryLoading() {
             key={index}
             className="border-outline-variant/45 bg-surface-container-low/80 overflow-hidden rounded-xl border"
           >
-            <Skeleton className="h-52 rounded-none" />
-            <div className="space-y-4 p-5">
-              <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-44 rounded-none" />
+            <div className="space-y-3 p-4">
+              <Skeleton className="h-5 w-2/3" />
               <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-full" />
             </div>
           </div>
         ))}

@@ -13,15 +13,6 @@ export default async function ExportsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          Exports
-        </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
-          Export history will appear here once files are generated.
-        </p>
-      </header>
-
       <Card radius="xl" className="p-6">
         <div className="flex max-w-2xl items-start gap-4">
           <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]">

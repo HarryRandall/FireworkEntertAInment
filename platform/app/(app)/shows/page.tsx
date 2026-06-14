@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { ArrowUpDown, Play, Search } from 'lucide-react';
 import { EmptyShowsPanel, PaletteStrip } from '@/app/components/app/ShowSummaryCards';
+import { TablePagination } from '@/app/components/ui/TablePagination';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 
 type SortKey = 'updated' | 'cost' | 'length' | 'name';
+const SHOWS_PAGE_SIZE = 10;
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: 'updated', label: 'Last edited' },
@@ -18,6 +20,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 type PageProps = {
   searchParams?: Promise<{
+    page?: string;
     q?: string;
     sort?: string;
   }>;
@@ -56,6 +59,11 @@ function showMeta(show: ShowSummaryCard) {
   return [show.songTitle ?? 'Untitled track', show.style].filter(Boolean).join(' · ');
 }
 
+function parsePage(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '1', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export default async function ShowsPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q ?? '';
@@ -64,6 +72,13 @@ export default async function ShowsPage({ searchParams }: PageProps) {
     : 'updated';
   const summary = await getDashboardSummary();
   const shows = sortShows(filterShows(summary.allShows, query), sort);
+  const shouldPaginate = shows.length > SHOWS_PAGE_SIZE;
+  const totalPages = shouldPaginate ? Math.ceil(shows.length / SHOWS_PAGE_SIZE) : 1;
+  const currentPage = shouldPaginate ? Math.min(parsePage(params.page), totalPages) : 1;
+  const pageStart = (currentPage - 1) * SHOWS_PAGE_SIZE;
+  const paginatedShows = shouldPaginate
+    ? shows.slice(pageStart, pageStart + SHOWS_PAGE_SIZE)
+    : shows;
 
   if (summary.showCount === 0) {
     return (
@@ -75,15 +90,6 @@ export default async function ShowsPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          My shows
-        </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
-          {summary.showCount} saved {summary.showCount === 1 ? 'show' : 'shows'}
-        </p>
-      </header>
-
       <form className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Search shows</span>
@@ -139,7 +145,7 @@ export default async function ShowsPage({ searchParams }: PageProps) {
                 </tr>
               </thead>
               <tbody>
-                {shows.map((show) => (
+                {paginatedShows.map((show) => (
                   <tr
                     key={show.id}
                     className="border-b border-[color:var(--color-border-subtle)] last:border-b-0 hover:bg-[color:var(--color-bg-subtle)]/45"
@@ -161,13 +167,13 @@ export default async function ShowsPage({ searchParams }: PageProps) {
                         </span>
                       </Link>
                     </td>
-                    <td className="hidden px-4 py-3 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums md:table-cell">
+                    <td className="hidden px-4 py-3 text-xs text-[color:var(--color-content-emphasis)] tabular-nums md:table-cell">
                       {formatDuration(show.lengthSeconds)}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
+                    <td className="px-4 py-3 text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
                       {show.cueCount}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
+                    <td className="px-4 py-3 text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
                       {formatBudget(show.totalCostCents)}
                     </td>
                     <td className="hidden px-4 py-3 text-xs text-[color:var(--color-content-subtle)] lg:table-cell">
@@ -193,6 +199,18 @@ export default async function ShowsPage({ searchParams }: PageProps) {
             No shows match that search.
           </div>
         )}
+        {shouldPaginate ? (
+          <div className="border-t border-[color:var(--color-border-subtle)] px-4 py-3">
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              searchParams={params}
+              visibleItems={paginatedShows.length}
+              totalItems={shows.length}
+              itemLabel="show"
+            />
+          </div>
+        ) : null}
       </section>
     </div>
   );

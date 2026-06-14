@@ -23,11 +23,14 @@ for (const path of ['app/components/app/AppShell.tsx', 'app/components/admin/Adm
   });
 }
 
-test('app shell keeps workspace navigation, summary fetch, and settings breadcrumbs', () => {
+test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs', () => {
   const appSource = readFileSync(join(root, 'app/components/app/AppShell.tsx'), 'utf8');
   const adminSource = readFileSync(join(root, 'app/components/admin/AdminShell.tsx'), 'utf8');
 
-  assert.doesNotMatch(appSource, /getAppBreadcrumbs/);
+  assert.match(appSource, /getAppBreadcrumbs/);
+  assert.match(appSource, /formatPathSegment/);
+  assert.match(appSource, /normalisedPath === '\/dashboard'\) return \[\{ label: 'Dashboard' \}\]/);
+  assert.doesNotMatch(appSource, /label: 'Workspace'/);
   assert.match(appSource, /SidebarPrimaryAction/);
   assert.match(appSource, /label: 'My shows'/);
   assert.match(appSource, /label: 'Explore'/);
@@ -38,10 +41,7 @@ test('app shell keeps workspace navigation, summary fetch, and settings breadcru
   assert.doesNotMatch(appSource, /label: 'Library'/);
   assert.match(appSource, /\/api\/me\/summary/);
   assert.match(appSource, /aria-label="Breadcrumb"/);
-  assert.match(
-    appSource,
-    /<ShellTopBar title="Workspace" settingsPath=\{inSettings \? effectivePath : null\} \/>/,
-  );
+  assert.match(appSource, /<ShellTopBar pathname=\{effectivePath\} \/>/);
 
   assert.match(adminSource, /getAdminBreadcrumbs/);
   assert.match(adminSource, /aria-label="Breadcrumb"/);

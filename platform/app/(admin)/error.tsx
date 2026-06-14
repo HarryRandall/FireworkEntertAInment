@@ -14,14 +14,14 @@ export default function AdminError({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] w-full flex-1 items-center justify-center py-8">
-      <div className="flex w-full max-w-3xl flex-col items-center gap-6">
-        <InlineAlert tone="danger" size="lg" title="Admin data failed to load" className="w-full">
+    <div className="flex min-h-[calc(100vh-8rem)] w-full flex-1 items-start justify-center px-4 py-8">
+      <div className="flex w-full max-w-xl flex-col items-start gap-3">
+        <InlineAlert tone="danger" title="Admin data failed to load" className="w-full">
           {error.message ||
             'Retry the request. If it continues, check database permissions and the latest migration.'}
         </InlineAlert>
-        <Button type="button" onClick={reset} variant="secondary" size="lg" className="text-base">
-          <RotateCcw size={20} />
+        <Button type="button" onClick={reset} variant="secondary" size="md">
+          <RotateCcw size={16} />
           Retry
         </Button>
       </div>

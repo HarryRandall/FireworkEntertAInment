@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, UserRound } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import {
   AdminUserActivitySkeleton,
   AdminUserPermissionsSkeleton,
@@ -11,6 +11,7 @@ import {
 } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { Card } from '@/app/components/ui/Card';
+import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { StatTile } from '@/app/components/ui/StatTile';
 import {
   getAdminUserById,
@@ -43,16 +44,6 @@ function statusTone(status: ProfileStatus) {
   return 'amber-soft' as const;
 }
 
-function initialsFor(name: string | null, email: string | null) {
-  const source = (name ?? email ?? 'U').trim();
-  return source
-    .split(/\s+/)
-    .map((part) => part[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 function formatDate(value: string | null) {
   if (!value) return '—';
   return new Date(value).toLocaleString();
@@ -83,13 +74,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-            {user.fullName || user.email ? (
-              initialsFor(user.fullName, user.email)
-            ) : (
-              <UserRound size={20} />
-            )}
-          </span>
+          <GeneratedAvatar name={user.fullName} email={user.email} size="lg" className="size-12" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold text-[color:var(--color-content-emphasis)]">

@@ -24,6 +24,7 @@ async function DashboardContent() {
   const summary = await getDashboardSummary();
   const latestShow = summary.recentShows[0] ?? null;
   const secondaryShows = summary.recentShows.slice(1, 5);
+  const communityPreviewTemplates = summary.communityTemplates.slice(0, 3);
   const hasOneShow = summary.showCount === 1;
 
   return (
@@ -46,8 +47,8 @@ async function DashboardContent() {
                   <ArrowRight size={14} />
                 </Link>
               </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {summary.communityTemplates.map((template) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {communityPreviewTemplates.map((template) => (
                   <TemplateSummaryCardView key={template.id} template={template} showCloneAction />
                 ))}
               </div>
@@ -76,11 +77,20 @@ async function DashboardContent() {
 
           {summary.communityTemplates.length > 0 ? (
             <section className="space-y-3">
-              <h2 className="text-sm font-medium text-[color:var(--color-content-subtle)]">
-                From the community
-              </h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {summary.communityTemplates.map((template) => (
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-medium text-[color:var(--color-content-subtle)]">
+                  From the community
+                </h2>
+                <Link
+                  href="/library"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+                >
+                  View all
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {communityPreviewTemplates.map((template) => (
                   <TemplateSummaryCardView key={template.id} template={template} />
                 ))}
               </div>

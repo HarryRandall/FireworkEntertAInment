@@ -18,10 +18,21 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(dashboard, /JumpBackInHero/);
   assert.match(dashboard, /ShowSummaryRow/);
   assert.match(dashboard, /TemplateSummaryCardView/);
+  assert.match(dashboard, /communityPreviewTemplates = summary\.communityTemplates\.slice\(0, 3\)/);
+  assert.match(dashboard, /sm:grid-cols-3/);
+  assert.match(dashboard, /View all/);
   assert.match(dashboard, /EmptyShowsPanel/);
   assert.doesNotMatch(dashboard, /TablePagination/);
   assert.doesNotMatch(dashboard, /PAGE_SIZE/);
   assert.doesNotMatch(dashboard, /Draft/);
+
+  const summaryCards = read('app/components/app/ShowSummaryCards.tsx');
+  assert.match(summaryCards, /min-h-\[10rem\]/);
+  assert.match(summaryCards, /top-2 right-2/);
+  assert.match(summaryCards, /fill-current text-\[color:var\(--destructive\)\]/);
+  assert.doesNotMatch(summaryCards, /values={template\.energySeries}/);
+  assert.doesNotMatch(summaryCards, /formatDuration\(template\.lengthSeconds\)/);
+  assert.doesNotMatch(summaryCards, /mt-auto space-y-2 pt-5/);
 });
 
 test('app shell exposes only shipped V1 navigation routes', () => {
@@ -38,6 +49,11 @@ test('app shell exposes only shipped V1 navigation routes', () => {
   assert.match(shell, /href="\/shows\/new"/);
   assert.match(shell, /SidebarRecentShows/);
   assert.match(shell, /SidebarFeaturedTemplate/);
+  assert.match(shell, /getFeaturedTemplateAccentStyle/);
+  assert.match(shell, /var\(--sidebar-primary-foreground\)/);
+  assert.match(shell, /text-\[11px\]/);
+  assert.match(shell, /w-full rounded-full/);
+  assert.doesNotMatch(shell, /orientation="horizontal"/);
   assert.doesNotMatch(shell, /Shopping lists/);
 });
 
@@ -52,9 +68,87 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showsPage, /Search shows or songs/);
   assert.match(showsPage, /sortShows/);
   assert.match(showsPage, /filterShows/);
+  assert.match(showsPage, /SHOWS_PAGE_SIZE = 10/);
+  assert.match(showsPage, /shouldPaginate = shows\.length > SHOWS_PAGE_SIZE/);
+  assert.match(showsPage, /paginatedShows/);
+  assert.match(showsPage, /<TablePagination/);
+  assert.doesNotMatch(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
+  const showLayout = read('app/(app)/shows/[id]/layout.tsx');
+  assert.match(showLayout, /ShowTabs/);
+  assert.doesNotMatch(showLayout, /AppPageHeader/);
 
-  assert.match(read('app/(app)/catalogue/page.tsx'), /listFireworkProducts/);
-  assert.match(read('app/(app)/exports/page.tsx'), /No exported files yet/);
+  const cataloguePage = read('app/(app)/catalogue/page.tsx');
+  assert.match(cataloguePage, /listFireworkProducts/);
+  assert.doesNotMatch(cataloguePage, /Browse firework products available for show planning/);
+  assert.doesNotMatch(cataloguePage, /<h1[^>]*>\s*Catalogue\s*<\/h1>/);
+
+  const exportsPage = read('app/(app)/exports/page.tsx');
+  assert.match(exportsPage, /No exported files yet/);
+  assert.doesNotMatch(exportsPage, /Export history will appear here once files are generated/);
+  assert.doesNotMatch(exportsPage, /<h1[^>]*>\s*Exports\s*<\/h1>/);
+
+  const libraryPage = read('app/(app)/library/page.tsx');
+  assert.doesNotMatch(libraryPage, /AppPageHeader/);
+  assert.doesNotMatch(libraryPage, /<h1[^>]*>\s*Explore\s*<\/h1>/);
+  assert.doesNotMatch(libraryPage, /Browse ready-made pyromusical templates/);
+  const libraryDetailPage = read('app/(app)/library/[id]/page.tsx');
+  assert.doesNotMatch(libraryDetailPage, /Back to show library/);
+
+  const templatePreview = read('app/components/app/TemplateReplayPreview.tsx');
+  assert.match(templatePreview, /absolute right-4 bottom-4 left-4/);
+  assert.match(templatePreview, /bg-black\/60/);
+  assert.match(templatePreview, /relative h-44 overflow-hidden/);
+  assert.doesNotMatch(templatePreview, /relative h-64 overflow-hidden/);
+  assert.match(templatePreview, /top-3 right-3/);
+  assert.match(templatePreview, /fill-current text-\[color:var\(--destructive\)\]/);
+  assert.match(templatePreview, /formatBudget\(template\.totalCents\)/);
+  assert.match(templatePreview, /translate-y-full/);
+  assert.match(templatePreview, /opacity-0 transition-all/);
+  assert.match(templatePreview, /duration-700 ease-out/);
+  assert.match(templatePreview, /duration-500 ease-in-out/);
+  assert.match(templatePreview, /h-\[22%\]/);
+  assert.match(templatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
+  assert.match(templatePreview, /mask-image:linear-gradient\(to_top/);
+  assert.doesNotMatch(templatePreview, /border-t p-4/);
+
+  const showTemplatePreview = read('app/components/app/ShowTemplatePreview.tsx');
+  assert.match(showTemplatePreview, /buildVisualPalette/);
+  assert.match(showTemplatePreview, /--template-accent-start/);
+  assert.match(showTemplatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
+  assert.match(showTemplatePreview, /relative grid flex-1/);
+  assert.match(
+    showTemplatePreview,
+    /h-1 bg-\[linear-gradient\(90deg,var\(--template-accent-start\)/,
+  );
+  assert.match(showTemplatePreview, /preserveAspectRatio="none"/);
+  assert.match(showTemplatePreview, /strokeDasharray: 180/);
+  assert.match(showTemplatePreview, /strokeDashoffset: isHovered \? 0 : 180/);
+  assert.match(showTemplatePreview, /strokeLinecap="butt"/);
+  assert.match(showTemplatePreview, /strokeLinejoin="round"/);
+  assert.match(showTemplatePreview, /strokeWidth=\{4\}/);
+  assert.match(showTemplatePreview, /template-card-trace/);
+  assert.match(showTemplatePreview, /h-32 overflow-hidden/);
+  assert.match(showTemplatePreview, /origin-top -translate-y-6 scale-y-50/);
+  assert.match(showTemplatePreview, /blur-lg/);
+  assert.match(showTemplatePreview, /duration-\[1250ms\]/);
+  assert.match(showTemplatePreview, /duration-\[1100ms\]/);
+  assert.match(showTemplatePreview, /group-hover:opacity-40/);
+  assert.doesNotMatch(showTemplatePreview, /group-hover:-translate-y-1/);
+  assert.doesNotMatch(showTemplatePreview, /group-hover:opacity-0 group-focus-visible:opacity-0/);
+  assert.doesNotMatch(showTemplatePreview, /top-0 left-0 z-20 h-\[2px\] w-1\/2/);
+  assert.doesNotMatch(showTemplatePreview, /origin-top scale-y-0/);
+  assert.doesNotMatch(showTemplatePreview, /pathLength=\{1\}/);
+  assert.doesNotMatch(showTemplatePreview, /blur-2xl/);
+  assert.doesNotMatch(showTemplatePreview, /group-hover:opacity-20/);
+  assert.doesNotMatch(showTemplatePreview, /origin-left -translate-y-10 scale-x-0/);
+  assert.doesNotMatch(showTemplatePreview, /origin-right -translate-y-10 scale-x-0/);
+  assert.doesNotMatch(showTemplatePreview, /conic-gradient/);
+  assert.doesNotMatch(showTemplatePreview, /h-1\.5 w-1\.5 rounded-full/);
+  assert.doesNotMatch(showTemplatePreview, /formatBudget\(template\.totalCents\)/);
+  assert.doesNotMatch(showTemplatePreview, /bg-\[linear-gradient\(135deg/);
+
+  const globals = read('app/globals.css');
+  assert.doesNotMatch(globals, /show-card-border-orbit/);
 
   const summaryRoute = read('app/api/me/summary/route.ts');
   assert.match(summaryRoute, /getWorkspaceSummary/);

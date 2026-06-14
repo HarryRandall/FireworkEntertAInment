@@ -96,7 +96,7 @@ export default function BillingSettingsPage() {
               return (
                 <Card
                   key={item.title}
-                  className="border-border rounded-none border-0 border-b ring-0 last:border-b-0 sm:border-r sm:last:border-r-0 lg:border-r-0 lg:last:border-b-0"
+                  className="border-border rounded-none border-0 border-b ring-0 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0 lg:border-r-0 lg:border-b lg:last:border-b-0"
                 >
                   <CardHeader>
                     <CardTitle className="text-sm font-normal">{item.title}</CardTitle>

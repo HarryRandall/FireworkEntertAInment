@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
   if (!env) {
     if (process.env.NODE_ENV === 'development') {
       console.warn(
-        '[supabase/middleware] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see .env.example). Session refresh skipped.',
+        '[supabase/middleware] Missing Supabase URL or key. Add NEXT_PUBLIC_SUPABASE_URL plus NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local (see .env.example). Session refresh skipped.',
       );
     }
     return supabaseResponse;
@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }

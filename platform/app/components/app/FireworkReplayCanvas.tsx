@@ -33,32 +33,40 @@ type Props = {
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(950, 1250, 2500);
-const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 850, 0);
+// Orbit centre sits at y=1000 (upper-show). Camera is low and pulled back so the
+// default looks up into the show from below; zooming in tracks toward the centre
+// and is stopped by the keep-out sphere before it rises into the burst. At this
+// target height the default distance (~3000) is right at the zoom-out limit.
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 64, 2850);
+const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 1000, 0);
 const GROUND_PLANE_Y = 0;
 const MIN_CAMERA_HEIGHT = 24;
-// Zoom envelope: keep the camera inside the band where point sprites read
-// well. Closer than ~150 units the nearest sparks outgrow their pixel caps;
-// past ~4200 the whole burst falls below readable sprite sizes.
-const MIN_CAMERA_DISTANCE = 150;
-const MAX_CAMERA_DISTANCE = 4200;
+// How far past horizontal (radians) the orbit may dip before the hard ceiling.
+// This is the "go a bit more" travel: once the camera reaches the floor the rig
+// pans upward through this band instead of dead-stopping. Larger = more travel.
+const ORBIT_FLOOR_OVERSHOOT = 0.35;
+// Zoom envelope: keep the camera inside the band where point sprites read well.
+// MIN_CAMERA_DISTANCE is a keep-out sphere around the target so you cannot fly
+// into the particles; past ~3000 the preview loses the floor and burst
+// proportions the editor needs.
+const MIN_CAMERA_DISTANCE = 600;
+const MAX_CAMERA_DISTANCE = 3000;
 const BLOOM_STRENGTH = 0.38;
 const BLOOM_RADIUS = 0.18;
 const BLOOM_THRESHOLD = 0.52;
 
-function keepCameraAboveGround(camera: THREE.PerspectiveCamera, controls: OrbitControls): boolean {
-  let changed = false;
-  if (controls.target.y < GROUND_PLANE_Y) {
-    const lift = GROUND_PLANE_Y - controls.target.y;
-    controls.target.y += lift;
-    camera.position.y += lift;
-    changed = true;
-  }
-  if (camera.position.y < MIN_CAMERA_HEIGHT) {
-    camera.position.y = MIN_CAMERA_HEIGHT;
-    changed = true;
-  }
-  return changed;
+/**
+ * Pan the whole camera rig (camera + target together) up by `lift` units. Used
+ * by the floor-pan in the render loop: because both move by the same amount the
+ * camera-to-target offset, and therefore the orbit angle, is preserved.
+ */
+function liftCameraRig(
+  camera: THREE.PerspectiveCamera,
+  controls: OrbitControls,
+  lift: number,
+): void {
+  camera.position.y += lift;
+  controls.target.y += lift;
 }
 
 export function FireworkReplayCanvas({
@@ -82,6 +90,8 @@ export function FireworkReplayCanvas({
   const internalElapsedRef = useRef(elapsed);
   const forceRenderRef = useRef(true);
   const interactionRenderUntilRef = useRef(0);
+  // Current upward pan applied to keep the camera off the floor (see loop).
+  const floorLiftRef = useRef(0);
   const showViewHelperRef = useRef(false);
   const [panMode, setPanMode] = useState(false);
   const [showCameraControls, setShowCameraControls] = useState(false);
@@ -148,6 +158,16 @@ export function FireworkReplayCanvas({
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
+    // OrbitControls calls releasePointerCapture on pointer-up for a pointer it
+    // may no longer hold (e.g. after a pointercancel), which throws "Invalid
+    // pointer id". Guard the canvas method so the release is a no-op unless the
+    // capture is actually held.
+    const domEl = renderer.domElement;
+    const nativeReleasePointerCapture = domEl.releasePointerCapture.bind(domEl);
+    domEl.releasePointerCapture = (pointerId: number) => {
+      if (domEl.hasPointerCapture(pointerId)) nativeReleasePointerCapture(pointerId);
+    };
+
     const renderPass = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(width, height),
@@ -164,17 +184,15 @@ export function FireworkReplayCanvas({
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.copy(DEFAULT_CAMERA_TARGET);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    controls.enableDamping = false;
     controls.enablePan = true;
     controls.screenSpacePanning = true;
     controls.minDistance = MIN_CAMERA_DISTANCE;
     controls.maxDistance = MAX_CAMERA_DISTANCE;
     controls.minPolarAngle = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.01;
+    controls.maxPolarAngle = Math.PI / 2 + ORBIT_FLOOR_OVERSHOOT;
     controls.enabled = interactive;
     controls.update();
-    keepCameraAboveGround(camera, controls);
     controlsRef.current = controls;
     function onControlsStart() {
       renderFor(900);
@@ -242,13 +260,27 @@ export function FireworkReplayCanvas({
         viewHelper.update(dt);
         forceRenderRef.current = true;
       }
+      // Floor pan. Undo last frame's lift so OrbitControls solves the orbit from
+      // the true pivot (camera + target shift together, so the angle is intact),
+      // run the controls, then re-lift by whatever shortfall keeps the camera
+      // off the floor. The lift is a pure function of the current angle, so
+      // orbiting back up unwinds it: "go a bit more" on the way down, "go out of
+      // the pan" on the way back.
+      if (floorLiftRef.current !== 0) liftCameraRig(cam, controls, -floorLiftRef.current);
       const controlsChanged = controls.enabled ? controls.update() : false;
-      const cameraClamped = keepCameraAboveGround(cam, controls);
+      let floorLift = 0;
+      if (controls.target.y < GROUND_PLANE_Y) floorLift += GROUND_PLANE_Y - controls.target.y;
+      if (cam.position.y + floorLift < MIN_CAMERA_HEIGHT) {
+        floorLift += MIN_CAMERA_HEIGHT - (cam.position.y + floorLift);
+      }
+      if (floorLift !== 0) liftCameraRig(cam, controls, floorLift);
+      const floorLiftChanged = Math.abs(floorLift - floorLiftRef.current) > 1e-4;
+      floorLiftRef.current = floorLift;
       const interactionActive = now < interactionRenderUntilRef.current;
       if (
         timelineChanged ||
         controlsChanged ||
-        cameraClamped ||
+        floorLiftChanged ||
         forceRenderRef.current ||
         interactionActive
       ) {
@@ -326,11 +358,14 @@ export function FireworkReplayCanvas({
   useEffect(() => {
     const ctrl = controlsRef.current;
     if (!ctrl) return;
+    // Orbit mode: left orbits/swivels, right pans the centre point.
+    // Pan ("Hand") mode: left pans, right swivels.
     ctrl.mouseButtons = {
       LEFT: panMode ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE,
       MIDDLE: THREE.MOUSE.DOLLY,
       RIGHT: panMode ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN,
     };
+    forceRenderRef.current = true;
   }, [panMode]);
 
   function adjustZoom(factor: number) {
@@ -343,7 +378,6 @@ export function FireworkReplayCanvas({
     else if (dist > ctrl.maxDistance) offset.setLength(ctrl.maxDistance);
     cam.position.copy(ctrl.target).add(offset);
     ctrl.update();
-    keepCameraAboveGround(cam, ctrl);
     renderFor(360);
   }
 
@@ -353,8 +387,8 @@ export function FireworkReplayCanvas({
     if (!cam || !ctrl) return;
     cam.position.copy(DEFAULT_CAMERA_POSITION);
     ctrl.target.copy(DEFAULT_CAMERA_TARGET);
+    floorLiftRef.current = 0;
     ctrl.update();
-    keepCameraAboveGround(cam, ctrl);
     renderFor(360);
   }
 

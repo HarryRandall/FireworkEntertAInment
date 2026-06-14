@@ -1,7 +1,6 @@
 /** Show detail layout; loads the show by slug and renders the per-show tab navigation. */
 
 import type { ReactNode } from 'react';
-import { AppPageHeader } from '@/app/components/app/AppPageHeader';
 import { Button } from '@/app/components/ui/Button';
 import { ShowTabs } from './ShowTabs';
 import { getShowBySlug } from '@/lib/shows.server';
@@ -21,12 +20,10 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
   }
 
   // While the show is still being generated, hide the metadata row, the
-  // Refine/Export actions, and the tab nav — those controls point at pages
+  // Refine/Export actions, and the tab nav, those controls point at pages
   // that have no data yet. The splash rendered by the /generating route
   // takes over the space instead.
   const isGenerating = show.generationStatus === 'running';
-
-  const description = [show.artist, show.song].filter(Boolean).join(' - ') || undefined;
 
   if (isGenerating) {
     return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
@@ -34,8 +31,6 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
 
   return (
     <div className="space-y-6">
-      <AppPageHeader title={show.title} description={description} />
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={show.slug} />
         <div className="flex items-center gap-2">

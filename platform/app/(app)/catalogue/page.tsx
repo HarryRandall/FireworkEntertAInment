@@ -34,15 +34,6 @@ export default async function CataloguePage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          Catalogue
-        </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
-          Browse firework products available for show planning.
-        </p>
-      </header>
-
       <form className="flex max-w-xl items-center gap-2">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Search catalogue</span>
