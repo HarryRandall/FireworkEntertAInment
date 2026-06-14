@@ -2,9 +2,10 @@
 /**
  * Seed script: Hammer & Anvil supplier catalogue.
  *
- * Upserts one `supplier_profiles` row, the full {@link PRODUCTS} fixture, and
- * a matching `supplier_inventory_items` row per product. Idempotent — safe
- * to re-run, since every write is conflict-targeted.
+ * Upserts one `supplier_profiles` row, the full {@link PRODUCTS} fixture as
+ * `catalogue_items`, and a matching `supplier_inventory_items` row per
+ * catalogue item. Idempotent — safe to re-run, since every write is
+ * conflict-targeted.
  *
  * Fixture data lives in `./seed/hammer-anvil/`:
  *   - `supplier.ts` — the supplier profile constant
@@ -46,35 +47,42 @@ async function main() {
   const supplierId = supplierRows![0].id as string;
   console.log(`  supplier_id: ${supplierId}`);
 
-  // 2. Upsert catalogue products by part_number.
-  console.log(`\nUpserting ${PRODUCTS.length} catalogue products...`);
-  const productRows = PRODUCTS.map((p) => ({
+  // 2. Upsert catalogue items by part_number.
+  console.log(`\nUpserting ${PRODUCTS.length} catalogue items...`);
+  const catalogueItemRows = PRODUCTS.map((p) => ({
     part_number: p.partNumber,
     name: p.name,
     manufacturer: 'HA',
-    subtype: p.fireworkSubtype ?? p.partType ?? null,
+    catalogue_item_kind: 'other',
+    firework_type: p.fireworkSubtype ?? p.partType ?? null,
     duration_seconds: p.durationSeconds != null ? parseFloat(String(p.durationSeconds)) : null,
     description: p.vdl,
+    metadata: {
+      category: p.category,
+      partType: p.partType,
+      fireworkSubtype: p.fireworkSubtype,
+      sourcePayload: p.sourcePayload,
+    },
   }));
 
   const { data: catalogueRows, error: catalogueErr } = await supabase
-    .from('products')
-    .upsert(productRows, { onConflict: 'part_number' })
+    .from('catalogue_items')
+    .upsert(catalogueItemRows, { onConflict: 'part_number' })
     .select('id, part_number');
 
   if (catalogueErr) throw catalogueErr;
-  console.log(`  inserted/updated ${catalogueRows!.length} products`);
+  console.log(`  inserted/updated ${catalogueRows!.length} catalogue items`);
 
-  // Map part_number → product_id so we can link inventory below.
-  const productIdByPartNumber = new Map(
+  // Map part_number → catalogue_item_id so we can link inventory below.
+  const catalogueItemIdByPartNumber = new Map(
     catalogueRows!.map((r: { id: string; part_number: string }) => [r.part_number, r.id]),
   );
 
-  // 3. Upsert inventory items keyed by (supplier_id, product_id).
+  // 3. Upsert inventory items keyed by (supplier_id, catalogue_item_id).
   console.log('\nUpserting inventory items...');
   const inventoryRows = PRODUCTS.map((p) => ({
     supplier_id: supplierId,
-    product_id: productIdByPartNumber.get(p.partNumber)!,
+    catalogue_item_id: catalogueItemIdByPartNumber.get(p.partNumber)!,
     supplier_sku: p.manufacturerPartNumber ?? null,
     quantity_on_hand: p.qoh != null ? Number(p.qoh) : 0,
     // The spreadsheet doesn't carry pricing yet — leave null so the cheapest-
@@ -86,7 +94,7 @@ async function main() {
 
   const { error: inventoryErr } = await supabase
     .from('supplier_inventory_items')
-    .upsert(inventoryRows, { onConflict: 'supplier_id,product_id' });
+    .upsert(inventoryRows, { onConflict: 'supplier_id,catalogue_item_id' });
 
   if (inventoryErr) throw inventoryErr;
   console.log(`  inserted/updated ${inventoryRows.length} inventory items`);

@@ -3,7 +3,7 @@
 /**
  * ThemePreferenceSync — invisible client component mounted inside
  * AppShell/AdminShell that applies the user's stored theme preference
- * (from `profiles.theme_preference`) on first load. Skips when a
+ * (from `users.theme_preference`) on first load. Skips when a
  * local override already exists in `localStorage.theme`.
  */
 import { useEffect } from 'react';

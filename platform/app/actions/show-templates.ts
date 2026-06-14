@@ -53,40 +53,65 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   }
 
   if (template.previewCues.length > 0) {
-    // Map every effect_spec slug to a product whose first product_shot
-    // references that effect_spec. After the schema restructure, every
-    // legacy effect_spec has at least an `auto-<slug>` wrapper product, so
-    // the lookup is total for any slug the templates use.
-    type ProductShotRow = {
-      product_id: string;
-      shot_index: number;
-      effect_specs: { slug: string } | null;
+    type FireworkSlugJoin = { slug: string } | { slug: string }[] | null;
+    type CatalogueItemRow = {
+      id: string;
+      part_number: string;
+      fireworks: FireworkSlugJoin;
+      multishots: {
+        multishot_fireworks: Array<{
+          sequence_index: number;
+          fireworks: FireworkSlugJoin;
+        }>;
+      } | null;
     };
-    const { data: shots } = await supabase
-      .from('product_shots')
-      .select('product_id, shot_index, effect_specs ( slug )')
-      .eq('shot_index', 1);
-    const productByEffectSlug = new Map<string, string>();
-    for (const shot of (shots ?? []) as ProductShotRow[]) {
-      const slug = shot.effect_specs?.slug;
-      if (!slug || productByEffectSlug.has(slug)) continue;
-      productByEffectSlug.set(slug, shot.product_id);
+    const { data: catalogueItems } = await supabase.from('catalogue_items').select(
+      `id, part_number,
+         fireworks (slug),
+         multishots (
+           multishot_fireworks (
+             sequence_index,
+             fireworks (slug)
+           )
+         )`,
+    );
+    const firstSlug = (value: FireworkSlugJoin): string | null => {
+      if (!value) return null;
+      const row = Array.isArray(value) ? (value[0] ?? null) : value;
+      return row?.slug ?? null;
+    };
+    const catalogueItemBySlug = new Map<string, string>();
+    for (const item of (catalogueItems ?? []) as CatalogueItemRow[]) {
+      if (!catalogueItemBySlug.has(item.part_number)) {
+        catalogueItemBySlug.set(item.part_number, item.id);
+      }
+      const directSlug = firstSlug(item.fireworks);
+      if (directSlug && !catalogueItemBySlug.has(directSlug)) {
+        catalogueItemBySlug.set(directSlug, item.id);
+      }
+      const firstMultishot = [...(item.multishots?.multishot_fireworks ?? [])].sort(
+        (a, b) => a.sequence_index - b.sequence_index,
+      )[0];
+      const multishotSlug = firstSlug(firstMultishot?.fireworks ?? null);
+      if (multishotSlug && !catalogueItemBySlug.has(multishotSlug)) {
+        catalogueItemBySlug.set(multishotSlug, item.id);
+      }
     }
     const cueRows = template.previewCues
       .map((cue, index) => {
-        const productId = productByEffectSlug.get(cue.fireworkSlug);
-        if (!productId) return null;
+        const catalogueItemId = catalogueItemBySlug.get(cue.fireworkSlug);
+        if (!catalogueItemId) return null;
         return {
           show_id: show.id,
           position: index + 1,
           time_seconds: cue.timeSeconds,
           description: cue.description,
-          product_id: productId,
+          catalogue_item_id: catalogueItemId,
         };
       })
       .filter((row): row is NonNullable<typeof row> => row != null);
     if (cueRows.length > 0) {
-      const { error: cuesError } = await supabase.from('show_cues').insert(cueRows);
+      const { error: cuesError } = await supabase.from('show_timeline_items').insert(cueRows);
       if (cuesError) {
         console.error('[cloneShowTemplateAction] cue insert failed:', cuesError);
       }

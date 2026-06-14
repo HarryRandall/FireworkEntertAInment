@@ -36,7 +36,7 @@ const OverrideSchema = z.object({
   mode: z.enum(['grant', 'deny', 'clear']),
 });
 
-/** Set a user's `profiles.status` (active / suspended); refuses to suspend the current admin. */
+/** Set a user's `users.status` (active / suspended); refuses to suspend the current admin. */
 export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>): Promise<Result> {
   const admin = await requirePermission('admin.manage_users');
   if (!admin) return { ok: false, error: 'Not permitted.' };
@@ -48,7 +48,7 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
 
   const supabase = createClient(await cookies());
   const { error } = await supabase
-    .from('profiles')
+    .from('users')
     .update({ status: parsed.data.status })
     .eq('id', parsed.data.userId);
   if (error) return { ok: false, error: error.message };
@@ -97,7 +97,7 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   return { ok: true };
 }
 
-/** Delete a user's `profiles` row; refuses to delete the current admin. */
+/** Delete a user's `users` row; refuses to delete the current admin. */
 export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>): Promise<Result> {
   const admin = await requirePermission('admin.manage_users');
   if (!admin) return { ok: false, error: 'Not permitted.' };
@@ -108,7 +108,7 @@ export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>):
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('profiles').delete().eq('id', parsed.data.userId);
+  const { error } = await supabase.from('users').delete().eq('id', parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
   await invalidateAdminUsersCache(parsed.data.userId);

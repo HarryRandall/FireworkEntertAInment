@@ -13,7 +13,6 @@ import type {
   ShowStatus,
 } from '@/lib/show-domain';
 import type {
-  EffectSpecProjection,
   FireworkEffectProjection,
   FireworkVariantProjection,
   ReplayCueRow,
@@ -53,7 +52,7 @@ export function mapShow(row: ShowProjection): Show {
 }
 
 /**
- * Map a `show_cues` row to {@link ShowCue}. Clamps `launch_position_index`
+ * Map a `show_timeline_items` row to {@link ShowCue}. Clamps `launch_position_index`
  * to the valid 0..2 range so a bad write can't crash the renderer.
  */
 export function mapCue(row: ShowCueProjection): ShowCue {
@@ -62,40 +61,12 @@ export function mapCue(row: ShowCueProjection): ShowCue {
     position: row.position,
     timeSeconds: row.time_seconds == null ? null : Number(row.time_seconds),
     description: row.description,
-    productId: row.product_id,
+    productId: row.catalogue_item_id,
     seedOverride: row.seed_override,
     launchPositionIndex: Math.max(
       0,
       Math.min(2, Math.floor(Number(row.launch_position_index ?? 0))),
     ),
-  };
-}
-
-/**
- * Map an `effect_specs` row to {@link FireworkSpecification}.
- * `index` becomes the sortOrder; `caliber` and `shotCount` are filled in by
- * the product-aware caller (`listFireworkProducts`).
- */
-export function mapEffectSpecification(
-  row: EffectSpecProjection,
-  index = 0,
-  caliber: string | null = null,
-): FireworkSpecification {
-  return {
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    description: row.description,
-    sortOrder: index,
-    durationSeconds: row.duration_seconds,
-    heightMeters: row.height_meters,
-    caliber,
-    shotCount: null,
-    spec: safeParseFireworkSpec(row.spec_json),
-    rawSpec: row.spec_json,
-    renderDesign: compileFireworkDesign({ legacySpec: row.spec_json }),
-    baseEffect: null,
-    variant: null,
   };
 }
 

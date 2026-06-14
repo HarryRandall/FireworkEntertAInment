@@ -4,8 +4,8 @@
  * The analyser is a Python (librosa) job that produces beat/section/key-moment
  * data for an uploaded track. Two related rows hold the result:
  *
- * - `music_analyses` — analyser output keyed by audio file (newer schema).
- * - `show_analyses` — legacy per-show row, still read for old shows.
+ * - `song_analyses` — analyser output keyed by audio file (newer schema).
+ * - `show_generation_runs` — legacy per-show row, still read for old shows.
  *
  * This module exposes a unified {@link ShowAnalysisSnapshot} so callers
  * don't have to know which table their analysis lives in.
@@ -24,8 +24,8 @@ import type {
   ShowAnalysisSnapshot,
 } from '@/lib/show-analysis.types';
 
-type MusicAnalysisRow = Database['public']['Tables']['music_analyses']['Row'];
-type ShowAnalysisRow = Database['public']['Tables']['show_analyses']['Row'];
+type MusicAnalysisRow = Database['public']['Tables']['song_analyses']['Row'];
+type ShowAnalysisRow = Database['public']['Tables']['show_generation_runs']['Row'];
 
 const MUSIC_ANALYSIS_SELECT =
   'id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json';
@@ -105,7 +105,7 @@ export async function getLatestAnalysisForShow(
 
   if (show?.music_analysis_id) {
     const { data, error } = await supabase
-      .from('music_analyses')
+      .from('song_analyses')
       .select(MUSIC_ANALYSIS_SELECT)
       .eq('id', show.music_analysis_id)
       .eq('user_id', userId)
@@ -135,7 +135,7 @@ export async function getLatestAnalysisForShow(
   }
 
   const { data, error } = await supabase
-    .from('show_analyses')
+    .from('show_generation_runs')
     .select(LEGACY_SHOW_ANALYSIS_SELECT)
     .eq('show_id', showId)
     .eq('user_id', userId)

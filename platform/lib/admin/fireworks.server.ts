@@ -16,16 +16,6 @@ import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from './current-user.server';
 import { getServerClient } from './supabase';
 
-type EffectShotRow = {
-  id: string;
-  slug: string;
-  name: string;
-  type: string;
-  duration_seconds: number | null;
-  height_meters: number | null;
-  spec_json: Json;
-};
-
 type FireworkEffectRow = {
   id: string;
   name: string;
@@ -33,40 +23,52 @@ type FireworkEffectRow = {
   pattern_key: string;
 };
 
-type FireworkVariantRow = {
+type FireworkRow = {
   id: string;
   slug: string;
   name: string;
+  description: string | null;
   primary_color: string | null;
   secondary_color: string | null;
-  source_effect_spec_id: string | null;
+  caliber: string | null;
+  duration_seconds: number | null;
+  height_meters: number | null;
+  render_overrides_json: Json;
+  variant_json: Json;
   firework_effects: FireworkEffectRow | FireworkEffectRow[] | null;
 };
 
-type ProductWithShotsRow = {
+type MultishotFireworkRow = {
+  id?: string;
+  sequence_index: number;
+  time_offset_seconds?: number;
+  pan_degrees?: number;
+  tilt_degrees?: number;
+  position_override_json?: Json | null;
+  caliber: string | null;
+  notes?: string | null;
+  firework_id?: string | null;
+  fireworks?: FireworkRow | FireworkRow[] | null;
+};
+
+type CatalogueItemWithVisualRow = {
   id: string;
   part_number: string;
   name: string;
   manufacturer: string | null;
-  subtype: string | null;
-  product_kind: string;
-  product_metadata?: Json;
+  firework_type: string | null;
+  catalogue_item_kind: string;
+  metadata?: Json;
   description: string | null;
   duration_seconds: number | null;
   updated_at: string;
-  product_shots: Array<{
-    id?: string;
-    shot_index: number;
-    time_offset_seconds?: number;
-    pan_degrees?: number;
-    tilt_degrees?: number;
-    caliber: string | null;
-    shot_notes?: string | null;
-    firework_variant_id?: string | null;
-    effect_spec_id?: string | null;
-    firework_variants?: FireworkVariantRow | FireworkVariantRow[] | null;
-    effect_specs: EffectShotRow | EffectShotRow[] | null;
-  }> | null;
+  fireworks: FireworkRow | FireworkRow[] | null;
+  multishots: {
+    id: string;
+    shot_count: number;
+    metadata?: Json;
+    multishot_fireworks: MultishotFireworkRow[];
+  } | null;
 };
 
 function numberOrNull(value: number | string | null | undefined): number | null {
@@ -79,12 +81,12 @@ function numberOrZero(value: number | string | null | undefined): number {
   return numberOrNull(value) ?? 0;
 }
 
-function firstEffect(effect: EffectShotRow | EffectShotRow[] | null | undefined) {
-  if (!effect) return null;
-  return Array.isArray(effect) ? (effect[0] ?? null) : effect;
+function firstFirework(firework: FireworkRow | FireworkRow[] | null | undefined) {
+  if (!firework) return null;
+  return Array.isArray(firework) ? (firework[0] ?? null) : firework;
 }
 
-function firstVariant(variant: FireworkVariantRow | FireworkVariantRow[] | null | undefined) {
+function firstVariant(variant: FireworkRow | FireworkRow[] | null | undefined) {
   if (!variant) return null;
   return Array.isArray(variant) ? (variant[0] ?? null) : variant;
 }
@@ -100,16 +102,38 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
-function mapFirework(row: ProductWithShotsRow): AdminFireworkSummary {
-  const shots = [...(row.product_shots ?? [])].sort((a, b) => a.shot_index - b.shot_index);
-  const effects = shots
-    .map((shot) => firstEffect(shot.effect_specs))
-    .filter((effect): effect is EffectShotRow => Boolean(effect));
+function visualShots(row: CatalogueItemWithVisualRow): MultishotFireworkRow[] {
+  const directFirework = firstFirework(row.fireworks);
+  if (directFirework) {
+    return [
+      {
+        id: row.id,
+        sequence_index: 1,
+        time_offset_seconds: 0,
+        pan_degrees: 0,
+        tilt_degrees: 0,
+        caliber: directFirework.caliber ?? null,
+        firework_id: directFirework.id,
+        fireworks: directFirework,
+      } as MultishotFireworkRow,
+    ];
+  }
+  return [...(row.multishots?.multishot_fireworks ?? [])].sort(
+    (a, b) => a.sequence_index - b.sequence_index,
+  );
+}
+
+function mapFirework(row: CatalogueItemWithVisualRow): AdminFireworkSummary {
+  const shots = visualShots(row);
   const variants = shots
-    .map((shot) => firstVariant(shot.firework_variants))
-    .filter((variant): variant is FireworkVariantRow => Boolean(variant));
-  const uniqueEffects = new Map(effects.map((effect) => [effect.id, effect]));
-  const primaryEffect = effects[0] ?? null;
+    .map((shot) => firstVariant(shot.fireworks))
+    .filter((variant): variant is FireworkRow => Boolean(variant));
+  const uniqueEffects = new Map(
+    variants.flatMap((variant) => {
+      const effect = firstBaseEffect(variant.firework_effects);
+      return effect ? [[effect.id, { effect, variant }] as const] : [];
+    }),
+  );
   const primaryVariant = variants[0] ?? null;
   const primaryBaseEffect = firstBaseEffect(primaryVariant?.firework_effects);
 
@@ -118,41 +142,37 @@ function mapFirework(row: ProductWithShotsRow): AdminFireworkSummary {
     partNumber: row.part_number,
     name: row.name,
     manufacturer: row.manufacturer,
-    productKind: row.product_kind,
-    fireworkType: row.subtype,
+    productKind: row.catalogue_item_kind,
+    fireworkType: row.firework_type,
     description: row.description,
     durationSeconds: numberOrNull(row.duration_seconds),
     shotCount: shots.length,
     calibers: unique(shots.map((shot) => shot.caliber ?? '')),
-    effectNames: unique([
-      ...variants.map((variant) => variant.name),
-      ...effects.map((effect) => effect.name),
-    ]),
+    effectNames: unique(variants.map((variant) => variant.name)),
     effectTypes: unique([
       ...variants
         .map((variant) => firstBaseEffect(variant.firework_effects)?.name ?? '')
         .filter(Boolean),
-      ...effects.map((effect) => effect.type),
     ]),
-    preview: buildEffectPreview(primaryEffect?.spec_json ?? null, {
-      type: primaryBaseEffect?.name ?? primaryEffect?.type ?? row.subtype,
-      name: primaryVariant?.name ?? primaryEffect?.name ?? row.name,
+    preview: buildEffectPreview(primaryVariant?.render_overrides_json ?? null, {
+      type: primaryBaseEffect?.name ?? row.firework_type,
+      name: primaryVariant?.name ?? row.name,
     }),
     effects: [...uniqueEffects.values()]
-      .map((effect) => ({
+      .map(({ effect, variant }) => ({
         id: effect.id,
         slug: effect.slug,
         name: effect.name,
-        type: effect.type,
-        durationSeconds: numberOrZero(effect.duration_seconds),
-        heightMeters: numberOrNull(effect.height_meters),
+        type: effect.name,
+        durationSeconds: numberOrZero(variant.duration_seconds),
+        heightMeters: numberOrNull(variant.height_meters),
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     updatedAt: row.updated_at,
   };
 }
 
-function mapVariantOption(row: FireworkVariantRow): AdminFireworkVariantOption {
+function mapVariantOption(row: FireworkRow): AdminFireworkVariantOption {
   const effect = firstBaseEffect(row.firework_effects);
   return {
     id: row.id,
@@ -160,44 +180,39 @@ function mapVariantOption(row: FireworkVariantRow): AdminFireworkVariantOption {
     slug: row.slug,
     primaryColor: row.primary_color,
     baseEffectName: effect?.name ?? 'Unknown effect',
-    sourceEffectSpecId: row.source_effect_spec_id,
   };
 }
 
 function mapFireworkDetail(
-  row: ProductWithShotsRow,
+  row: CatalogueItemWithVisualRow,
   variantOptions: AdminFireworkVariantOption[],
 ): AdminFireworkDetail {
   return {
     ...mapFirework(row),
-    productMetadata: row.product_metadata ?? {},
+    productMetadata: row.metadata ?? {},
     variantOptions,
-    shots: [...(row.product_shots ?? [])]
-      .sort((a, b) => a.shot_index - b.shot_index)
-      .map((shot) => {
-        const variant = firstVariant(shot.firework_variants);
-        const baseEffect = firstBaseEffect(variant?.firework_effects);
-        const legacyEffect = firstEffect(shot.effect_specs);
-        return {
-          id: shot.id ?? '',
-          shotIndex: shot.shot_index,
-          timeOffsetSeconds: numberOrZero(shot.time_offset_seconds),
-          panDegrees: numberOrZero(shot.pan_degrees),
-          tiltDegrees: numberOrZero(shot.tilt_degrees),
-          caliber: shot.caliber,
-          notes: shot.shot_notes ?? null,
-          variantId: shot.firework_variant_id ?? variant?.id ?? null,
-          effectSpecId: shot.effect_spec_id ?? legacyEffect?.id ?? null,
-          variantName: variant?.name ?? legacyEffect?.name ?? null,
-          variantSlug: variant?.slug ?? legacyEffect?.slug ?? null,
-          primaryColor: variant?.primary_color ?? null,
-          baseEffectName: baseEffect?.name ?? legacyEffect?.type ?? null,
-        };
-      }),
+    shots: visualShots(row).map((shot) => {
+      const variant = firstVariant(shot.fireworks);
+      const baseEffect = firstBaseEffect(variant?.firework_effects);
+      return {
+        id: shot.id ?? '',
+        shotIndex: shot.sequence_index,
+        timeOffsetSeconds: numberOrZero(shot.time_offset_seconds),
+        panDegrees: numberOrZero(shot.pan_degrees),
+        tiltDegrees: numberOrZero(shot.tilt_degrees),
+        caliber: shot.caliber,
+        notes: shot.notes ?? null,
+        variantId: shot.firework_id ?? variant?.id ?? null,
+        variantName: variant?.name ?? null,
+        variantSlug: variant?.slug ?? null,
+        primaryColor: variant?.primary_color ?? null,
+        baseEffectName: baseEffect?.name ?? null,
+      };
+    }),
   };
 }
 
-/** Returns product-level fireworks joined to their shot/effect definitions. */
+/** Returns catalogue items joined to their firework or multishot definitions. */
 export async function listAdminFireworks(): Promise<AdminFireworkSummary[]> {
   if (!(await requirePermission('admin.manage_catalogue'))) return [];
 
@@ -207,14 +222,18 @@ export async function listAdminFireworks(): Promise<AdminFireworkSummary[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('products')
+    .from('catalogue_items')
     .select(
-      `id, part_number, name, manufacturer, subtype, product_kind, description, duration_seconds, updated_at,
-       product_shots (
-         shot_index,
-         caliber,
-         firework_variants (id, slug, name, primary_color, secondary_color, source_effect_spec_id, firework_effects (id, slug, name, pattern_key)),
-         effect_specs (id, slug, name, type, duration_seconds, height_meters, spec_json)
+      `id, part_number, name, manufacturer, firework_type, catalogue_item_kind, description, duration_seconds, updated_at,
+       fireworks (id, slug, name, description, primary_color, secondary_color, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects (id, slug, name, pattern_key)),
+       multishots (
+         id,
+         shot_count,
+         multishot_fireworks (
+           sequence_index,
+           caliber,
+           fireworks (id, slug, name, description, primary_color, secondary_color, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects (id, slug, name, pattern_key))
+         )
        )`,
     )
     .order('name', { ascending: true })
@@ -225,12 +244,12 @@ export async function listAdminFireworks(): Promise<AdminFireworkSummary[]> {
     return [];
   }
 
-  const mapped = ((data ?? []) as ProductWithShotsRow[]).map(mapFirework);
+  const mapped = ((data ?? []) as CatalogueItemWithVisualRow[]).map(mapFirework);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
 }
 
-/** Returns one product-level firework with editable shot sequence details. */
+/** Returns one catalogue item with editable shot sequence details. */
 export async function getAdminFireworkById(productId: string): Promise<AdminFireworkDetail | null> {
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
 
@@ -241,29 +260,34 @@ export async function getAdminFireworkById(productId: string): Promise<AdminFire
   const supabase = await getServerClient();
   const [productResult, variantsResult] = await Promise.all([
     supabase
-      .from('products')
+      .from('catalogue_items')
       .select(
-        `id, part_number, name, manufacturer, subtype, product_kind, product_metadata, description, duration_seconds, updated_at,
-         product_shots (
+        `id, part_number, name, manufacturer, firework_type, catalogue_item_kind, metadata, description, duration_seconds, updated_at,
+         fireworks (id, slug, name, description, primary_color, secondary_color, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects (id, slug, name, pattern_key)),
+         multishots (
            id,
-           shot_index,
-           time_offset_seconds,
-           pan_degrees,
-           tilt_degrees,
-           caliber,
-           shot_notes,
-           firework_variant_id,
-           effect_spec_id,
-           firework_variants (id, slug, name, primary_color, secondary_color, source_effect_spec_id, firework_effects (id, slug, name, pattern_key)),
-           effect_specs (id, slug, name, type, duration_seconds, height_meters, spec_json)
+           shot_count,
+           metadata,
+           multishot_fireworks (
+             id,
+             sequence_index,
+             time_offset_seconds,
+             pan_degrees,
+             tilt_degrees,
+             position_override_json,
+             caliber,
+             notes,
+             firework_id,
+             fireworks (id, slug, name, description, primary_color, secondary_color, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects (id, slug, name, pattern_key))
+           )
          )`,
       )
       .eq('id', productId)
       .maybeSingle(),
     supabase
-      .from('firework_variants')
+      .from('fireworks')
       .select(
-        'id, slug, name, primary_color, secondary_color, source_effect_spec_id, firework_effects (id, slug, name, pattern_key)',
+        'id, slug, name, primary_color, secondary_color, firework_effects (id, slug, name, pattern_key)',
       )
       .order('name', { ascending: true }),
   ]);
@@ -277,10 +301,11 @@ export async function getAdminFireworkById(productId: string): Promise<AdminFire
   }
   if (!productResult.data) return null;
 
-  const variantOptions = ((variantsResult.data ?? []) as FireworkVariantRow[]).map(
-    mapVariantOption,
+  const variantOptions = ((variantsResult.data ?? []) as FireworkRow[]).map(mapVariantOption);
+  const mapped = mapFireworkDetail(
+    productResult.data as CatalogueItemWithVisualRow,
+    variantOptions,
   );
-  const mapped = mapFireworkDetail(productResult.data as ProductWithShotsRow, variantOptions);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
 }

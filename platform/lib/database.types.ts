@@ -14,53 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
-      effect_specs: {
+      catalogue_items: {
         Row: {
-          confidence: number
+          catalogue_item_kind: string
           created_at: string
           description: string | null
-          duration_seconds: number
-          height_meters: number | null
+          duration_seconds: number | null
+          firework_id: string | null
+          firework_type: string | null
           id: string
+          manufacturer: string | null
+          metadata: Json
+          multishot_id: string | null
           name: string
-          shot_count: number
-          slug: string
-          source: string
-          spec_json: Json
-          type: string
+          part_number: string
           updated_at: string
         }
         Insert: {
-          confidence?: number
+          catalogue_item_kind: string
           created_at?: string
           description?: string | null
-          duration_seconds: number
-          height_meters?: number | null
+          duration_seconds?: number | null
+          firework_id?: string | null
+          firework_type?: string | null
           id?: string
+          manufacturer?: string | null
+          metadata?: Json
+          multishot_id?: string | null
           name: string
-          shot_count?: number
-          slug: string
-          source: string
-          spec_json: Json
-          type: string
+          part_number: string
           updated_at?: string
         }
         Update: {
-          confidence?: number
+          catalogue_item_kind?: string
           created_at?: string
           description?: string | null
-          duration_seconds?: number
-          height_meters?: number | null
+          duration_seconds?: number | null
+          firework_id?: string | null
+          firework_type?: string | null
           id?: string
+          manufacturer?: string | null
+          metadata?: Json
+          multishot_id?: string | null
           name?: string
-          shot_count?: number
-          slug?: string
-          source?: string
-          spec_json?: Json
-          type?: string
+          part_number?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_items_firework_id_fkey"
+            columns: ["firework_id"]
+            isOneToOne: false
+            referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_items_multishot_id_fkey"
+            columns: ["multishot_id"]
+            isOneToOne: false
+            referencedRelation: "multishots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       firework_effects: {
         Row: {
@@ -104,7 +119,7 @@ export type Database = {
         }
         Relationships: []
       }
-      firework_variants: {
+      fireworks: {
         Row: {
           caliber: string | null
           color_palette: string[]
@@ -112,7 +127,7 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
-          effect_id: string
+          firework_effect_id: string
           height_meters: number | null
           id: string
           name: string
@@ -121,7 +136,6 @@ export type Database = {
           secondary_color: string | null
           slug: string
           source: string
-          source_effect_spec_id: string | null
           updated_at: string
           variant_json: Json
         }
@@ -132,7 +146,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
-          effect_id: string
+          firework_effect_id: string
           height_meters?: number | null
           id?: string
           name: string
@@ -141,7 +155,6 @@ export type Database = {
           secondary_color?: string | null
           slug: string
           source?: string
-          source_effect_spec_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
@@ -152,7 +165,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
-          effect_id?: string
+          firework_effect_id?: string
           height_meters?: number | null
           id?: string
           name?: string
@@ -161,31 +174,102 @@ export type Database = {
           secondary_color?: string | null
           slug?: string
           source?: string
-          source_effect_spec_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
         Relationships: [
           {
             foreignKeyName: "firework_variants_effect_id_fkey"
-            columns: ["effect_id"]
+            columns: ["firework_effect_id"]
             isOneToOne: false
             referencedRelation: "firework_effects"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      generation_settings: {
+        Row: {
+          created_at: string
+          generation_mode: string
+          key: string
+          product_catalogue_fields: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          generation_mode?: string
+          key: string
+          product_catalogue_fields?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          generation_mode?: string
+          key?: string
+          product_catalogue_fields?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
           {
-            foreignKeyName: "firework_variants_source_effect_spec_id_fkey"
-            columns: ["source_effect_spec_id"]
-            isOneToOne: true
-            referencedRelation: "effect_specs"
+            foreignKeyName: "generation_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
       }
+      impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          end_reason: string | null
+          ended_at: string | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          return_token_hash: string
+          started_at: string
+          target_user_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          return_token_hash: string
+          started_at?: string
+          target_user_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          return_token_hash?: string
+          started_at?: string
+          target_user_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       import_jobs: {
         Row: {
-          approved_firework_specification_id: string | null
-          approved_product_id: string | null
+          approved_catalogue_item_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -204,8 +288,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          approved_firework_specification_id?: string | null
-          approved_product_id?: string | null
+          approved_catalogue_item_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -224,8 +307,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          approved_firework_specification_id?: string | null
-          approved_product_id?: string | null
+          approved_catalogue_item_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -245,10 +327,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "import_jobs_approved_product_id_fkey"
-            columns: ["approved_product_id"]
+            foreignKeyName: "import_jobs_approved_catalogue_item_id_fkey"
+            columns: ["approved_catalogue_item_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "catalogue_items"
             referencedColumns: ["id"]
           },
           {
@@ -292,51 +374,6 @@ export type Database = {
           },
         ]
       }
-      impersonation_sessions: {
-        Row: {
-          admin_user_id: string
-          created_at: string
-          ended_at: string | null
-          end_reason: string | null
-          expires_at: string
-          id: string
-          ip_address: string | null
-          return_token_hash: string
-          started_at: string
-          target_user_id: string
-          updated_at: string
-          user_agent: string | null
-        }
-        Insert: {
-          admin_user_id: string
-          created_at?: string
-          ended_at?: string | null
-          end_reason?: string | null
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          return_token_hash: string
-          started_at?: string
-          target_user_id: string
-          updated_at?: string
-          user_agent?: string | null
-        }
-        Update: {
-          admin_user_id?: string
-          created_at?: string
-          ended_at?: string | null
-          end_reason?: string | null
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          return_token_hash?: string
-          started_at?: string
-          target_user_id?: string
-          updated_at?: string
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       media_assets: {
         Row: {
           created_at: string
@@ -379,40 +416,98 @@ export type Database = {
         }
         Relationships: []
       }
-      generation_settings: {
+      multishot_fireworks: {
         Row: {
+          caliber: string | null
           created_at: string
-          generation_mode: string
-          key: string
-          product_catalogue_fields: Json
-          updated_at: string
-          updated_by: string | null
+          firework_id: string
+          id: string
+          multishot_id: string
+          notes: string | null
+          pan_degrees: number
+          position_override_json: Json | null
+          sequence_index: number
+          tilt_degrees: number
+          time_offset_seconds: number
         }
         Insert: {
+          caliber?: string | null
           created_at?: string
-          generation_mode?: string
-          key: string
-          product_catalogue_fields?: Json
-          updated_at?: string
-          updated_by?: string | null
+          firework_id: string
+          id?: string
+          multishot_id: string
+          notes?: string | null
+          pan_degrees?: number
+          position_override_json?: Json | null
+          sequence_index: number
+          tilt_degrees?: number
+          time_offset_seconds?: number
         }
         Update: {
+          caliber?: string | null
           created_at?: string
-          generation_mode?: string
-          key?: string
-          product_catalogue_fields?: Json
-          updated_at?: string
-          updated_by?: string | null
+          firework_id?: string
+          id?: string
+          multishot_id?: string
+          notes?: string | null
+          pan_degrees?: number
+          position_override_json?: Json | null
+          sequence_index?: number
+          tilt_degrees?: number
+          time_offset_seconds?: number
         }
         Relationships: [
           {
-            foreignKeyName: "generation_settings_updated_by_fkey"
-            columns: ["updated_by"]
+            foreignKeyName: "multishot_fireworks_firework_id_fkey"
+            columns: ["firework_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "multishot_fireworks_multishot_id_fkey"
+            columns: ["multishot_id"]
+            isOneToOne: false
+            referencedRelation: "multishots"
             referencedColumns: ["id"]
           },
         ]
+      }
+      multishots: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          id: string
+          metadata: Json
+          name: string
+          shot_count: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json
+          name: string
+          shot_count?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json
+          name?: string
+          shot_count?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       permissions: {
         Row: {
@@ -483,155 +578,10 @@ export type Database = {
             foreignKeyName: "prompt_configs_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
-      }
-      product_shots: {
-        Row: {
-          caliber: string | null
-          created_at: string | null
-          effect_spec_id: string | null
-          firework_variant_id: string | null
-          id: string
-          pan_degrees: number
-          position_override_json: Json | null
-          product_id: string
-          shot_index: number
-          shot_notes: string | null
-          tilt_degrees: number
-          time_offset_seconds: number
-        }
-        Insert: {
-          caliber?: string | null
-          created_at?: string | null
-          effect_spec_id?: string | null
-          firework_variant_id?: string | null
-          id?: string
-          pan_degrees?: number
-          position_override_json?: Json | null
-          product_id: string
-          shot_index: number
-          shot_notes?: string | null
-          tilt_degrees?: number
-          time_offset_seconds?: number
-        }
-        Update: {
-          caliber?: string | null
-          created_at?: string | null
-          effect_spec_id?: string | null
-          firework_variant_id?: string | null
-          id?: string
-          pan_degrees?: number
-          position_override_json?: Json | null
-          product_id?: string
-          shot_index?: number
-          shot_notes?: string | null
-          tilt_degrees?: number
-          time_offset_seconds?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_effect_sequences_effect_spec_id_fkey"
-            columns: ["effect_spec_id"]
-            isOneToOne: false
-            referencedRelation: "effect_specs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_effect_sequences_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_shots_firework_variant_id_fkey"
-            columns: ["firework_variant_id"]
-            isOneToOne: false
-            referencedRelation: "firework_variants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      products: {
-        Row: {
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          id: string
-          manufacturer: string | null
-          name: string
-          part_number: string
-          product_kind: string
-          product_metadata: Json
-          subtype: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          id?: string
-          manufacturer?: string | null
-          name: string
-          part_number: string
-          product_kind?: string
-          product_metadata?: Json
-          subtype?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          id?: string
-          manufacturer?: string | null
-          name?: string
-          part_number?: string
-          product_kind?: string
-          product_metadata?: Json
-          subtype?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          email: string | null
-          full_name: string | null
-          id: string
-          last_seen_at: string | null
-          phone: string | null
-          status: string
-          theme_preference: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id: string
-          last_seen_at?: string | null
-          phone?: string | null
-          status?: string
-          theme_preference?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          last_seen_at?: string | null
-          phone?: string | null
-          status?: string
-          theme_preference?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       role_permissions: {
         Row: {
@@ -740,7 +690,326 @@ export type Database = {
           },
         ]
       }
-      music_analyses: {
+      show_generation_runs: {
+        Row: {
+          analysis_json: Json | null
+          analysis_storage_path: string | null
+          audio_path: string
+          compact_payload: Json | null
+          completed_at: string | null
+          created_at: string
+          cue_count: number | null
+          cue_generation_error: string | null
+          cue_generation_status: string
+          error_message: string | null
+          id: string
+          llm_payload: Json | null
+          markdown: string | null
+          markdown_storage_path: string | null
+          personality: string
+          personality_preset: string | null
+          runner_version: string | null
+          runtime_ms: number | null
+          schema_version: string
+          show_id: string
+          source_audio_path: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_json?: Json | null
+          analysis_storage_path?: string | null
+          audio_path?: string
+          compact_payload?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          cue_count?: number | null
+          cue_generation_error?: string | null
+          cue_generation_status?: string
+          error_message?: string | null
+          id?: string
+          llm_payload?: Json | null
+          markdown?: string | null
+          markdown_storage_path?: string | null
+          personality?: string
+          personality_preset?: string | null
+          runner_version?: string | null
+          runtime_ms?: number | null
+          schema_version?: string
+          show_id: string
+          source_audio_path?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_json?: Json | null
+          analysis_storage_path?: string | null
+          audio_path?: string
+          compact_payload?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          cue_count?: number | null
+          cue_generation_error?: string | null
+          cue_generation_status?: string
+          error_message?: string | null
+          id?: string
+          llm_payload?: Json | null
+          markdown?: string | null
+          markdown_storage_path?: string | null
+          personality?: string
+          personality_preset?: string | null
+          runner_version?: string | null
+          runtime_ms?: number | null
+          schema_version?: string
+          show_id?: string
+          source_audio_path?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_analyses_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_presets: {
+        Row: {
+          budget_cents: number | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          effects_count: number
+          id: string
+          is_featured: boolean
+          mood_tags: string[]
+          preview_cues: Json
+          slug: string
+          sort_order: number
+          theme: string
+          time_of_day: string | null
+          title: string
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          id?: string
+          is_featured?: boolean
+          mood_tags?: string[]
+          preview_cues?: Json
+          slug: string
+          sort_order?: number
+          theme: string
+          time_of_day?: string | null
+          title: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          id?: string
+          is_featured?: boolean
+          mood_tags?: string[]
+          preview_cues?: Json
+          slug?: string
+          sort_order?: number
+          theme?: string
+          time_of_day?: string | null
+          title?: string
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      show_timeline_items: {
+        Row: {
+          catalogue_item_id: string
+          created_at: string
+          description: string
+          id: string
+          label: string | null
+          launch_position_index: number
+          layer: string | null
+          locked: boolean
+          position: number
+          seed_override: number | null
+          show_id: string
+          time_seconds: number | null
+          track: string | null
+          updated_at: string
+        }
+        Insert: {
+          catalogue_item_id: string
+          created_at?: string
+          description: string
+          id?: string
+          label?: string | null
+          launch_position_index?: number
+          layer?: string | null
+          locked?: boolean
+          position?: number
+          seed_override?: number | null
+          show_id: string
+          time_seconds?: number | null
+          track?: string | null
+          updated_at?: string
+        }
+        Update: {
+          catalogue_item_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          label?: string | null
+          launch_position_index?: number
+          layer?: string | null
+          locked?: boolean
+          position?: number
+          seed_override?: number | null
+          show_id?: string
+          time_seconds?: number | null
+          track?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_cues_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_timeline_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shows: {
+        Row: {
+          artist: string | null
+          audio_path: string | null
+          budget_cents: number | null
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          effects_count: number
+          firework_types: string[] | null
+          generated_cue_count: number | null
+          generation_completed_at: string | null
+          generation_error: string | null
+          generation_started_at: string | null
+          generation_status: string
+          id: string
+          launch_positions_json: Json
+          location: string | null
+          mood_tags: string[]
+          music_analysis_id: string | null
+          safety_meters: number | null
+          show_style: string
+          site_width_feet: number | null
+          slug: string
+          song: string | null
+          status: string
+          sync_percent: number | null
+          time_of_day: string | null
+          title: string
+          total_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          artist?: string | null
+          audio_path?: string | null
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          firework_types?: string[] | null
+          generated_cue_count?: number | null
+          generation_completed_at?: string | null
+          generation_error?: string | null
+          generation_started_at?: string | null
+          generation_status?: string
+          id?: string
+          launch_positions_json?: Json
+          location?: string | null
+          mood_tags?: string[]
+          music_analysis_id?: string | null
+          safety_meters?: number | null
+          show_style?: string
+          site_width_feet?: number | null
+          slug: string
+          song?: string | null
+          status?: string
+          sync_percent?: number | null
+          time_of_day?: string | null
+          title: string
+          total_cents?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          artist?: string | null
+          audio_path?: string | null
+          budget_cents?: number | null
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          effects_count?: number
+          firework_types?: string[] | null
+          generated_cue_count?: number | null
+          generation_completed_at?: string | null
+          generation_error?: string | null
+          generation_started_at?: string | null
+          generation_status?: string
+          id?: string
+          launch_positions_json?: Json
+          location?: string | null
+          mood_tags?: string[]
+          music_analysis_id?: string | null
+          safety_meters?: number | null
+          show_style?: string
+          site_width_feet?: number | null
+          slug?: string
+          song?: string | null
+          status?: string
+          sync_percent?: number | null
+          time_of_day?: string | null
+          title?: string
+          total_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shows_music_analysis_id_fkey"
+            columns: ["music_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "song_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_analyses: {
         Row: {
           analysis_json: Json | null
           audio_path: string
@@ -800,319 +1069,15 @@ export type Database = {
         }
         Relationships: []
       }
-      show_analyses: {
-        Row: {
-          analysis_json: Json | null
-          audio_path: string
-          completed_at: string | null
-          created_at: string
-          cue_count: number | null
-          cue_generation_error: string | null
-          cue_generation_status: string
-          error_message: string | null
-          id: string
-          llm_payload: Json | null
-          markdown: string | null
-          personality: string
-          runner_version: string | null
-          runtime_ms: number | null
-          schema_version: string
-          show_id: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          analysis_json?: Json | null
-          audio_path: string
-          completed_at?: string | null
-          created_at?: string
-          cue_count?: number | null
-          cue_generation_error?: string | null
-          cue_generation_status?: string
-          error_message?: string | null
-          id?: string
-          llm_payload?: Json | null
-          markdown?: string | null
-          personality?: string
-          runner_version?: string | null
-          runtime_ms?: number | null
-          schema_version?: string
-          show_id: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          analysis_json?: Json | null
-          audio_path?: string
-          completed_at?: string | null
-          created_at?: string
-          cue_count?: number | null
-          cue_generation_error?: string | null
-          cue_generation_status?: string
-          error_message?: string | null
-          id?: string
-          llm_payload?: Json | null
-          markdown?: string | null
-          personality?: string
-          runner_version?: string | null
-          runtime_ms?: number | null
-          schema_version?: string
-          show_id?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "show_analyses_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      show_cues: {
-        Row: {
-          created_at: string
-          description: string
-          id: string
-          label: string | null
-          launch_position_index: number
-          layer: string | null
-          locked: boolean
-          position: number
-          product_id: string
-          seed_override: number | null
-          show_id: string
-          time_seconds: number | null
-          track: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          id?: string
-          label?: string | null
-          launch_position_index?: number
-          layer?: string | null
-          locked?: boolean
-          position?: number
-          product_id: string
-          seed_override?: number | null
-          show_id: string
-          time_seconds?: number | null
-          track?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          id?: string
-          label?: string | null
-          launch_position_index?: number
-          layer?: string | null
-          locked?: boolean
-          position?: number
-          product_id?: string
-          seed_override?: number | null
-          show_id?: string
-          time_seconds?: number | null
-          track?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "show_cues_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "show_cues_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      show_templates: {
-        Row: {
-          budget_cents: number | null
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          effects_count: number
-          id: string
-          is_featured: boolean
-          mood_tags: string[]
-          preview_cues: Json
-          slug: string
-          sort_order: number
-          theme: string
-          time_of_day: string | null
-          title: string
-          total_cents: number
-          updated_at: string
-        }
-        Insert: {
-          budget_cents?: number | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effects_count?: number
-          id?: string
-          is_featured?: boolean
-          mood_tags?: string[]
-          preview_cues?: Json
-          slug: string
-          sort_order?: number
-          theme: string
-          time_of_day?: string | null
-          title: string
-          total_cents?: number
-          updated_at?: string
-        }
-        Update: {
-          budget_cents?: number | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effects_count?: number
-          id?: string
-          is_featured?: boolean
-          mood_tags?: string[]
-          preview_cues?: Json
-          slug?: string
-          sort_order?: number
-          theme?: string
-          time_of_day?: string | null
-          title?: string
-          total_cents?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      shows: {
-        Row: {
-          artist: string | null
-          audio_path: string | null
-          budget_cents: number | null
-          created_at: string
-          description: string | null
-          duration_seconds: number | null
-          effects_count: number
-          generated_cue_count: number | null
-          generation_completed_at: string | null
-          generation_error: string | null
-          generation_started_at: string | null
-          generation_status: string
-          id: string
-          launch_positions_json: Json
-          location: string | null
-          music_analysis_id: string | null
-          mood_tags: string[]
-          safety_meters: number | null
-          show_style: string
-          site_width_feet: number | null
-          firework_types: string[] | null
-          slug: string
-          song: string | null
-          status: string
-          sync_percent: number | null
-          time_of_day: string | null
-          title: string
-          total_cents: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          artist?: string | null
-          audio_path?: string | null
-          budget_cents?: number | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effects_count?: number
-          generated_cue_count?: number | null
-          generation_completed_at?: string | null
-          generation_error?: string | null
-          generation_started_at?: string | null
-          generation_status?: string
-          id?: string
-          launch_positions_json?: Json
-          location?: string | null
-          music_analysis_id?: string | null
-          mood_tags?: string[]
-          safety_meters?: number | null
-          show_style?: string
-          site_width_feet?: number | null
-          firework_types?: string[] | null
-          slug: string
-          song?: string | null
-          status?: string
-          sync_percent?: number | null
-          time_of_day?: string | null
-          title: string
-          total_cents?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          artist?: string | null
-          audio_path?: string | null
-          budget_cents?: number | null
-          created_at?: string
-          description?: string | null
-          duration_seconds?: number | null
-          effects_count?: number
-          generated_cue_count?: number | null
-          generation_completed_at?: string | null
-          generation_error?: string | null
-          generation_started_at?: string | null
-          generation_status?: string
-          id?: string
-          launch_positions_json?: Json
-          location?: string | null
-          music_analysis_id?: string | null
-          mood_tags?: string[]
-          safety_meters?: number | null
-          show_style?: string
-          site_width_feet?: number | null
-          firework_types?: string[] | null
-          slug?: string
-          song?: string | null
-          status?: string
-          sync_percent?: number | null
-          time_of_day?: string | null
-          title?: string
-          total_cents?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shows_music_analysis_id_fkey"
-            columns: ["music_analysis_id"]
-            isOneToOne: false
-            referencedRelation: "music_analyses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       supplier_inventory_items: {
         Row: {
           available: boolean
+          catalogue_item_id: string | null
           created_at: string
           currency: string
           id: string
           location_id: string | null
           price_cents: number | null
-          product_id: string | null
           quantity_on_hand: number
           supplier_id: string
           supplier_sku: string | null
@@ -1121,12 +1086,12 @@ export type Database = {
         }
         Insert: {
           available?: boolean
+          catalogue_item_id?: string | null
           created_at?: string
           currency?: string
           id?: string
           location_id?: string | null
           price_cents?: number | null
-          product_id?: string | null
           quantity_on_hand?: number
           supplier_id: string
           supplier_sku?: string | null
@@ -1135,12 +1100,12 @@ export type Database = {
         }
         Update: {
           available?: boolean
+          catalogue_item_id?: string | null
           created_at?: string
           currency?: string
           id?: string
           location_id?: string | null
           price_cents?: number | null
-          product_id?: string | null
           quantity_on_hand?: number
           supplier_id?: string
           supplier_sku?: string | null
@@ -1149,17 +1114,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "supplier_inventory_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "supplier_inventory_items_location_id_fkey"
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "supplier_locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "supplier_inventory_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
@@ -1314,6 +1279,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          last_seen_at: string | null
+          phone: string | null
+          status: string
+          theme_preference: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          last_seen_at?: string | null
+          phone?: string | null
+          status?: string
+          theme_preference?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_seen_at?: string | null
+          phone?: string | null
+          status?: string
+          theme_preference?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

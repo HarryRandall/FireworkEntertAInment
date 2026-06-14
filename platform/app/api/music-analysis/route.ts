@@ -132,7 +132,7 @@ export async function POST(request: Request) {
   }
 
   const { data, error } = await supabase
-    .from('music_analyses')
+    .from('song_analyses')
     .insert({
       user_id: user.id,
       audio_path: parsed.data.audioPath,

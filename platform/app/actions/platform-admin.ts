@@ -342,7 +342,7 @@ export async function updateProfileAction(
   if (Object.keys(patch).length === 0) return { ok: true };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+  const { error } = await supabase.from('users').update(patch).eq('id', userId);
   if (error) {
     console.error('[updateProfileAction] failed:', error);
     return { ok: false, error: 'Could not save changes' };
@@ -763,10 +763,9 @@ export async function updateImportDraftSpecAction(formData: FormData): Promise<v
  * Approve the current draft spec to the live catalogue.
  *
  * Requires both `admin.manage_imports` and `admin.manage_catalogue`. Creates a
- * legacy `effect_specs` bridge row, a base-effect-backed `firework_variants`
- * row, a `products` row, and a single `product_shots` row linking the product
- * to the variant. Then marks the import job complete and invalidates every
- * related cache so the next read sees the new product.
+ * base-effect-backed `fireworks` row and a supplier-facing `catalogue_items`
+ * row. Then marks the import job complete and invalidates every related cache
+ * so the next read sees the new catalogue item.
  */
 export async function approveImportJobAction(formData: FormData): Promise<void> {
   const importAdmin = await requirePermission('admin.manage_imports');
@@ -790,8 +789,8 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
 
   const supabase = createClient(await cookies());
   const baseEffectSlug = baseEffectSlugForImport(spec.spec);
-  const legacyEffectSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
-  const variantSlug = `${baseEffectSlug}-${legacyEffectSlug}`;
+  const fireworkSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
+  const variantSlug = `${baseEffectSlug}-${fireworkSlug}`;
   const fireworkSpec = spec.spec;
   const colours = collectSpecColours(fireworkSpec);
   const { data: baseEffect, error: baseEffectError } = await supabase
@@ -804,32 +803,10 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     return;
   }
 
-  const { data: effect, error: effectError } = await supabase
-    .from('effect_specs')
-    .insert({
-      slug: legacyEffectSlug,
-      name: parsed.data.name,
-      description: spec.description || null,
-      type: fireworkSpec.shellType,
-      duration_seconds: spec.durationSeconds,
-      height_meters: spec.heightMeters ?? null,
-      shot_count: 1,
-      source: 'video_inferred',
-      confidence: spec.confidence,
-      spec_json: fireworkSpec as unknown as Json,
-    })
-    .select('id')
-    .single();
-  if (effectError || !effect) {
-    console.error('[approveImportJobAction] effect spec insert failed:', effectError);
-    return;
-  }
-
   const { data: variant, error: variantError } = await supabase
-    .from('firework_variants')
+    .from('fireworks')
     .insert({
-      effect_id: baseEffect.id,
-      source_effect_spec_id: effect.id,
+      firework_effect_id: baseEffect.id,
       slug: variantSlug,
       name: parsed.data.name,
       description: spec.description || null,
@@ -851,43 +828,34 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     return;
   }
 
-  const { data: product, error: productError } = await supabase
-    .from('products')
+  const { data: catalogueItem, error: catalogueItemError } = await supabase
+    .from('catalogue_items')
     .insert({
       part_number: parsed.data.partNumber,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
-      subtype: parsed.data.fireworkType || 'Video reconstructed',
+      firework_type: parsed.data.fireworkType || 'Video reconstructed',
       duration_seconds: spec.durationSeconds,
       description: spec.description || null,
-      product_kind: productKindForImport(spec.spec, parsed.data.category, parsed.data.fireworkType),
-      product_metadata: {
+      catalogue_item_kind: 'firework',
+      firework_id: variant.id,
+      metadata: {
         category: parsed.data.category || null,
         importJobId: parsed.data.id,
         source: 'video_import',
         baseEffectSlug,
-        variantId: variant.id,
+        fireworkId: variant.id,
+        legacyProductKind: productKindForImport(
+          spec.spec,
+          parsed.data.category,
+          parsed.data.fireworkType,
+        ),
       } as Json,
     })
     .select('id')
     .single();
-  if (productError || !product) {
-    console.error('[approveImportJobAction] product insert failed:', productError);
-    return;
-  }
-
-  const { error: shotError } = await supabase.from('product_shots').insert({
-    product_id: product.id,
-    effect_spec_id: effect.id,
-    firework_variant_id: variant.id,
-    shot_index: 1,
-    time_offset_seconds: 0,
-    pan_degrees: 0,
-    tilt_degrees: 0,
-    caliber: spec.caliber ?? null,
-  });
-  if (shotError) {
-    console.error('[approveImportJobAction] product_shots insert failed:', shotError);
+  if (catalogueItemError || !catalogueItem) {
+    console.error('[approveImportJobAction] catalogue item insert failed:', catalogueItemError);
     return;
   }
 
@@ -896,8 +864,7 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     .update({
       status: 'complete',
       processing_progress: 100,
-      approved_product_id: product.id,
-      approved_firework_specification_id: null,
+      approved_catalogue_item_id: catalogueItem.id,
       completed_at: new Date().toISOString(),
       error_message: null,
     })
@@ -905,15 +872,15 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   if (jobError) console.error('[approveImportJobAction] job update failed:', jobError);
   await invalidateAdminImportsCache();
   await invalidateAdminCatalogueCache();
-  await invalidateAdminEffectsCache(effect.id);
-  await invalidateAdminFireworksCache(product.id);
+  await invalidateAdminEffectsCache(baseEffect.id);
+  await invalidateAdminFireworksCache(catalogueItem.id);
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/imports');
   revalidatePath('/admin/catalogue');
   revalidatePath('/admin/effects');
-  revalidatePath(`/admin/effects/${effect.id}`);
+  revalidatePath(`/admin/effects/${baseEffect.id}`);
   revalidatePath('/admin/fireworks');
-  revalidatePath(`/admin/fireworks/${product.id}`);
+  revalidatePath(`/admin/fireworks/${catalogueItem.id}`);
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 

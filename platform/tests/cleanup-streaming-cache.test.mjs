@@ -129,7 +129,7 @@ test('admin server lists use short TTL cache keys and mutations invalidate them'
   assert.match(rolesServer, /setCachedJson\(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS\)/);
   assert.match(
     usersServer,
-    /getAdminUserById[\s\S]*\.from\(['"]profiles['"]\)[\s\S]*\.eq\(['"]id['"], userId\)/,
+    /getAdminUserById[\s\S]*\.from\(['"]users['"]\)[\s\S]*\.eq\(['"]id['"], userId\)/,
   );
   assert.doesNotMatch(functionBody(usersServer, 'getAdminUserById'), /listAdminUsers\(/);
 

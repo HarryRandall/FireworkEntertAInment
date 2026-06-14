@@ -25,7 +25,7 @@ type BaseEffectRow = Pick<
   | 'source'
   | 'updated_at'
 > & {
-  firework_variants?: Array<{ id: string }> | null;
+  fireworks?: Array<{ id: string }> | null;
 };
 
 function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
@@ -38,7 +38,7 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
     patternKey: row.pattern_key,
     source: row.source,
     sortOrder: row.sort_order,
-    variantCount: row.firework_variants?.length ?? 0,
+    variantCount: row.fireworks?.length ?? 0,
     preview: buildEffectPreview(row.model_json, {
       type: row.pattern_key,
       name: row.name,
@@ -66,7 +66,7 @@ export async function listAdminEffects(): Promise<AdminEffectSummary[]> {
   const { data, error } = await supabase
     .from('firework_effects')
     .select(
-      'id, slug, name, description, family, pattern_key, model_json, sort_order, source, updated_at, firework_variants(id)',
+      'id, slug, name, description, family, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)',
     )
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
@@ -93,7 +93,7 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
   const { data, error } = await supabase
     .from('firework_effects')
     .select(
-      'id, slug, name, description, family, pattern_key, model_json, sort_order, source, updated_at, firework_variants(id)',
+      'id, slug, name, description, family, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)',
     )
     .eq('id', effectId)
     .maybeSingle();

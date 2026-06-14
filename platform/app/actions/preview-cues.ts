@@ -68,8 +68,8 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     MIN_PRODUCT_DURATION_SECONDS;
 
   const { data: existingCues } = await supabase
-    .from('show_cues')
-    .select('id, time_seconds, product_id, description')
+    .from('show_timeline_items')
+    .select('id, time_seconds, catalogue_item_id, description')
     .eq('show_id', parsed.data.showId)
     .eq('launch_position_index', parsed.data.launchPositionIndex);
 
@@ -82,7 +82,8 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   for (const cue of existingCues ?? []) {
     if (cue.time_seconds == null) continue;
     const otherDuration =
-      (await getProductDurationSeconds(supabase, cue.product_id)) ?? MIN_PRODUCT_DURATION_SECONDS;
+      (await getProductDurationSeconds(supabase, cue.catalogue_item_id)) ??
+      MIN_PRODUCT_DURATION_SECONDS;
     existingWindows.push({
       timeSeconds: Number(cue.time_seconds),
       durationSeconds: otherDuration,
@@ -108,19 +109,19 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   }
 
   const { data: lastCue } = await supabase
-    .from('show_cues')
+    .from('show_timeline_items')
     .select('position')
     .eq('show_id', parsed.data.showId)
     .order('position', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const { error } = await supabase.from('show_cues').insert({
+  const { error } = await supabase.from('show_timeline_items').insert({
     show_id: parsed.data.showId,
     position: (lastCue?.position ?? 0) + 1,
     time_seconds: parsed.data.timeSeconds,
     description: parsed.data.description,
-    product_id: parsed.data.productId,
+    catalogue_item_id: parsed.data.productId,
     launch_position_index: parsed.data.launchPositionIndex,
   });
 
@@ -155,7 +156,7 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
     data: { user },
   } = await supabase.auth.getUser();
   const { data: deletedCue, error } = await supabase
-    .from('show_cues')
+    .from('show_timeline_items')
     .delete()
     .eq('id', parsed.data.cueId)
     .select('show_id')

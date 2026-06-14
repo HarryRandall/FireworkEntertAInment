@@ -105,7 +105,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
 
   if (musicAnalysisId) {
     const { data: analysis, error: analysisError } = await supabase
-      .from('music_analyses')
+      .from('song_analyses')
       .select('id, audio_path')
       .eq('id', musicAnalysisId)
       .eq('user_id', user.id)

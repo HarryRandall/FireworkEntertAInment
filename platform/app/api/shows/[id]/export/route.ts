@@ -10,7 +10,7 @@ import { buildFinale3dCsv } from '@/lib/finale3d';
 function productToSourcePayload(row: {
   part_number: string;
   manufacturer: string | null;
-  subtype: string | null;
+  firework_type: string | null;
   duration_seconds: number | null;
   description: string | null;
   caliber?: string | null;
@@ -19,7 +19,7 @@ function productToSourcePayload(row: {
     partNumber: row.part_number,
     manufacturerPartNumber: row.manufacturer ?? undefined,
     size: row.caliber ?? undefined,
-    category: row.subtype ?? undefined,
+    category: row.firework_type ?? undefined,
     duration: row.duration_seconds != null ? String(row.duration_seconds) : undefined,
     vdl: row.description ?? undefined,
   } as Json;
@@ -33,8 +33,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const supabase = createClient(await cookies());
 
   const { data: cues, error: cuesError } = await supabase
-    .from('show_cues')
-    .select('time_seconds, product_id')
+    .from('show_timeline_items')
+    .select('time_seconds, catalogue_item_id')
     .eq('show_id', show.id)
     .not('time_seconds', 'is', null)
     .order('time_seconds', { ascending: true });
@@ -43,49 +43,48 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return new NextResponse('No cues found', { status: 404 });
   }
 
-  const productIds = [...new Set(cues.map((c) => c.product_id))];
+  const catalogueItemIds = [...new Set(cues.map((c) => c.catalogue_item_id))];
 
-  const { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('id, part_number, name, manufacturer, subtype, duration_seconds, description')
-    .in('id', productIds);
+  const { data: catalogueItems, error: catalogueError } = await supabase
+    .from('catalogue_items')
+    .select(
+      `id, part_number, name, manufacturer, firework_type, duration_seconds, description,
+       fireworks (caliber),
+       multishots (multishot_fireworks (sequence_index, caliber))`,
+    )
+    .in('id', catalogueItemIds);
 
-  if (productsError) {
-    return new NextResponse('Failed to fetch products', { status: 500 });
+  if (catalogueError) {
+    return new NextResponse('Failed to fetch catalogue items', { status: 500 });
   }
 
-  const productById = new Map((products ?? []).map((p) => [p.id, p]));
-
-  // Fetch the first shot's caliber for each product (shot_index=0 = smallest bore)
-  const { data: shots } = await supabase
-    .from('product_shots')
-    .select('product_id, caliber')
-    .in('product_id', productIds)
-    .order('shot_index', { ascending: true });
-
-  const caliberByProduct = new Map<string, string | null>();
-  for (const shot of shots ?? []) {
-    if (!caliberByProduct.has(shot.product_id)) {
-      caliberByProduct.set(shot.product_id, shot.caliber ?? null);
-    }
-  }
+  const catalogueItemById = new Map((catalogueItems ?? []).map((item) => [item.id, item]));
+  const firstCaliberForItem = (item: NonNullable<typeof catalogueItems>[number]) => {
+    const directFirework = Array.isArray(item.fireworks) ? item.fireworks[0] : item.fireworks;
+    if (directFirework?.caliber) return directFirework.caliber;
+    const multishot = Array.isArray(item.multishots) ? item.multishots[0] : item.multishots;
+    const shots = [...(multishot?.multishot_fireworks ?? [])].sort(
+      (a, b) => a.sequence_index - b.sequence_index,
+    );
+    return shots.find((shot) => shot.caliber)?.caliber ?? null;
+  };
 
   const csvCues = cues
-    .filter((c) => productById.has(c.product_id))
+    .filter((c) => catalogueItemById.has(c.catalogue_item_id))
     .map((c) => {
-      const product = productById.get(c.product_id)!;
+      const catalogueItem = catalogueItemById.get(c.catalogue_item_id)!;
       return {
         timeSeconds: Number(c.time_seconds),
-        effectName: product.name,
+        effectName: catalogueItem.name,
         sourcePayload: productToSourcePayload({
-          ...product,
-          caliber: caliberByProduct.get(c.product_id) ?? null,
+          ...catalogueItem,
+          caliber: firstCaliberForItem(catalogueItem),
         }),
       };
     });
 
   if (!csvCues.length) {
-    return new NextResponse('No matched products found for this show', { status: 404 });
+    return new NextResponse('No matched catalogue items found for this show', { status: 404 });
   }
 
   const csv = buildFinale3dCsv(csvCues);

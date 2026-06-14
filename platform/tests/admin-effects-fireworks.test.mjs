@@ -58,7 +58,7 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
   assert.match(effectsServer, /requirePermission\('admin\.manage_catalogue'\)/);
   assert.match(effectsServer, /setCachedJson\(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS\)/);
   assert.match(effectsServer, /\.from\('firework_effects'\)/);
-  assert.match(effectsServer, /firework_variants\(id\)/);
+  assert.match(effectsServer, /fireworks\(id\)/);
   assert.doesNotMatch(effectsServer, /\.from\('effect_specs'\)/);
   assert.match(fireworksServer, /requirePermission\('admin\.manage_catalogue'\)/);
   assert.match(fireworksServer, /setCachedJson\(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS\)/);
@@ -135,6 +135,6 @@ test('catalogue and import mutations invalidate new admin firework caches', () =
 
   assert.match(catalogue, /invalidateAdminEffectsCache/);
   assert.match(catalogue, /invalidateAdminFireworksCache/);
-  assert.match(imports, /invalidateAdminEffectsCache\(effect\.id\)/);
-  assert.match(imports, /invalidateAdminFireworksCache\(product\.id\)/);
+  assert.match(imports, /invalidateAdminEffectsCache\(baseEffect\.id\)/);
+  assert.match(imports, /invalidateAdminFireworksCache\(catalogueItem\.id\)/);
 });

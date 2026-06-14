@@ -51,7 +51,7 @@ export async function loadAnalysisState(
   musicAnalysisId: string,
 ): Promise<AnalysisJsonLoadResult> {
   const { data, error } = await supabase
-    .from('music_analyses')
+    .from('song_analyses')
     .select('analysis_json, status, error_message')
     .eq('id', musicAnalysisId)
     .maybeSingle();

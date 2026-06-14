@@ -45,9 +45,9 @@ export async function hasImpersonationCookie(): Promise<boolean> {
 
 function identityFromProfiles(
   userId: string,
-  profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'email' | 'full_name'>[],
+  users: Pick<Database['public']['Tables']['users']['Row'], 'id' | 'email' | 'full_name'>[],
 ): ImpersonationIdentity {
-  const profile = profiles.find((row) => row.id === userId);
+  const profile = users.find((row) => row.id === userId);
   return {
     id: userId,
     email: profile?.email ?? null,
@@ -73,8 +73,8 @@ async function getActiveSessionByToken(
   }
 
   const userIds = [session.admin_user_id, session.target_user_id];
-  const { data: profiles, error: profilesError } = await service
-    .from('profiles')
+  const { data: users, error: profilesError } = await service
+    .from('users')
     .select('id, email, full_name')
     .in('id', userIds);
 
@@ -84,8 +84,8 @@ async function getActiveSessionByToken(
 
   return {
     id: session.id,
-    admin: identityFromProfiles(session.admin_user_id, profiles ?? []),
-    target: identityFromProfiles(session.target_user_id, profiles ?? []),
+    admin: identityFromProfiles(session.admin_user_id, users ?? []),
+    target: identityFromProfiles(session.target_user_id, users ?? []),
     startedAt: session.started_at,
     expiresAt: session.expires_at,
   };

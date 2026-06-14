@@ -24,11 +24,11 @@ type ShowRow = Pick<
 >;
 
 type AnalysisRow = Pick<
-  Database['public']['Tables']['music_analyses']['Row'],
+  Database['public']['Tables']['song_analyses']['Row'],
   'id' | 'status' | 'created_at' | 'completed_at' | 'runtime_ms'
 >;
 
-type CueRow = Pick<Database['public']['Tables']['show_cues']['Row'], 'created_at'>;
+type CueRow = Pick<Database['public']['Tables']['show_timeline_items']['Row'], 'created_at'>;
 
 export type AdminOverviewShowMetric = {
   id: string;
@@ -140,16 +140,16 @@ export async function getAdminOverviewMetrics(): Promise<AdminOverviewMetrics> {
       .gte('created_at', sinceIso)
       .order('created_at', { ascending: false })
       .limit(2000),
-    supabase.from('show_cues').select('id', { count: 'exact', head: true }),
+    supabase.from('show_timeline_items').select('id', { count: 'exact', head: true }),
     supabase
-      .from('show_cues')
+      .from('show_timeline_items')
       .select('created_at')
       .gte('created_at', sinceIso)
       .order('created_at', { ascending: false })
       .limit(4000),
-    supabase.from('music_analyses').select('id', { count: 'exact', head: true }),
+    supabase.from('song_analyses').select('id', { count: 'exact', head: true }),
     supabase
-      .from('music_analyses')
+      .from('song_analyses')
       .select('id, status, created_at, completed_at, runtime_ms')
       .gte('created_at', sinceIso)
       .order('created_at', { ascending: false })

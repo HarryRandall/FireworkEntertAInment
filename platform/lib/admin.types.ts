@@ -99,8 +99,7 @@ export type ImportJobSummary = {
   mediaAssetId: string | null;
   selectedModel: string | null;
   processingProgress: number;
-  approvedProductId: string | null;
-  approvedFireworkSpecificationId: string | null;
+  approvedCatalogueItemId: string | null;
   rowCount: number | null;
   errorMessage: string | null;
   createdAt: string;
@@ -142,7 +141,6 @@ export type CatalogueProductSummary = {
   manufacturer: string | null;
   category: string | null;
   fireworkType: string | null;
-  fireworkSpecificationId: string | null;
   durationSeconds: number | null;
   updatedAt: string;
 };
@@ -221,7 +219,6 @@ export type AdminFireworkShot = {
   caliber: string | null;
   notes: string | null;
   variantId: string | null;
-  effectSpecId: string | null;
   variantName: string | null;
   variantSlug: string | null;
   primaryColor: string | null;
@@ -234,7 +231,6 @@ export type AdminFireworkVariantOption = {
   slug: string;
   primaryColor: string | null;
   baseEffectName: string;
-  sourceEffectSpecId: string | null;
 };
 
 export type AdminFireworkDetail = AdminFireworkSummary & {

@@ -15,35 +15,36 @@ export const MIN_PRODUCT_DURATION_SECONDS = 0.5;
 
 type AppSupabase = SupabaseClient<Database>;
 
-// Total airtime a product occupies on a tube. Prefer the pre-aggregated
-// `products.duration_seconds`; fall back to the largest shot duration from the
-// preferred firework variant or the legacy effect specification.
+// Total airtime a catalogue item occupies on a tube. Prefer the pre-aggregated
+// `catalogue_items.duration_seconds`; fall back to the linked firework or the
+// largest child firework in a multishot.
 export async function getProductDurationSeconds(
   supabase: AppSupabase,
-  productId: string,
+  catalogueItemId: string,
 ): Promise<number | null> {
-  const { data: product } = await supabase
-    .from('products')
-    .select('duration_seconds')
-    .eq('id', productId)
+  const { data: item } = await supabase
+    .from('catalogue_items')
+    .select('duration_seconds, firework_id, multishot_id, fireworks(duration_seconds)')
+    .eq('id', catalogueItemId)
     .maybeSingle();
-  if (product?.duration_seconds != null) return Number(product.duration_seconds);
+  if (item?.duration_seconds != null) return Number(item.duration_seconds);
+  const directDuration = Array.isArray(item?.fireworks)
+    ? item.fireworks[0]?.duration_seconds
+    : item?.fireworks?.duration_seconds;
+  if (directDuration != null) return Number(directDuration);
+  if (!item?.multishot_id) return null;
 
   const { data: shots } = await supabase
-    .from('product_shots')
-    .select(
-      'time_offset_seconds, firework_variants(duration_seconds), effect_specs(duration_seconds)',
-    )
-    .eq('product_id', productId);
+    .from('multishot_fireworks')
+    .select('time_offset_seconds, fireworks(duration_seconds)')
+    .eq('multishot_id', item.multishot_id);
   if (!shots || shots.length === 0) return null;
   let max = 0;
   for (const shot of shots as Array<{
     time_offset_seconds: number;
-    firework_variants: { duration_seconds: number | null } | null;
-    effect_specs: { duration_seconds: number } | null;
+    fireworks: { duration_seconds: number | null } | null;
   }>) {
-    const duration =
-      shot.firework_variants?.duration_seconds ?? shot.effect_specs?.duration_seconds ?? 0;
+    const duration = shot.fireworks?.duration_seconds ?? 0;
     const end = Number(shot.time_offset_seconds ?? 0) + Number(duration);
     if (end > max) max = end;
   }

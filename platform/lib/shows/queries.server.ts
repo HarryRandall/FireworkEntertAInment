@@ -28,23 +28,15 @@ import {
   getShowReplayCuesCacheKey,
   getUserShowsCacheKey,
 } from './cache-keys';
-import {
-  mapCue,
-  mapEffectSpecification,
-  mapFireworkVariantSpecification,
-  mapReplayCueBase,
-  mapShow,
-} from './mappers';
+import { mapCue, mapFireworkVariantSpecification, mapReplayCueBase, mapShow } from './mappers';
 import { computeShoppingListForShow } from './shopping.server';
 import { getServerClient } from './supabase';
 import {
-  EFFECT_SPEC_SELECT,
   FIREWORK_VARIANT_SELECT,
   FIREWORK_SPECS_TTL_SECONDS,
   SHOWS_TTL_SECONDS,
   SHOW_CUE_SELECT,
   SHOW_SELECT,
-  type EffectSpecProjection,
   type FireworkVariantProjection,
   type ReplayCueRow,
 } from './types';
@@ -128,7 +120,7 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('show_cues')
+    .from('show_timeline_items')
     .select(SHOW_CUE_SELECT)
     .eq('show_id', showId)
     .order('position', { ascending: true });
@@ -141,7 +133,7 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
   return mapped;
 }
 
-/** All effect specs in the catalogue. Used by admin tooling and seed scripts. */
+/** All atomic fireworks in the catalogue. Used by library previews. */
 export async function listFireworkSpecifications(): Promise<FireworkSpecification[]> {
   const cacheKey = getFireworkSpecificationsCacheKey();
   const cached = await getCachedJson<FireworkSpecification[]>(cacheKey);
@@ -149,28 +141,26 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('effect_specs')
-    .select(EFFECT_SPEC_SELECT)
+    .from('fireworks')
+    .select(FIREWORK_VARIANT_SELECT)
     .order('name', { ascending: true });
   if (error) {
     console.error('[shows.server] listFireworkSpecifications failed:', error);
     return [];
   }
-  const mapped = ((data ?? []) as EffectSpecProjection[]).map((row, i) =>
-    mapEffectSpecification(row, i),
+  const mapped = ((data ?? []) as FireworkVariantProjection[]).map((row, i) =>
+    mapFireworkVariantSpecification(row, i),
   );
   await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
   return mapped;
 }
 
 /**
- * Returns one {@link FireworkSpecification} per *product*, with the renderer
- * details filled in from the product's first product_shot.
+ * Returns one {@link FireworkSpecification} per selectable catalogue item.
  *
- * This is what the cue builder presents to the user: they pick a product, and
- * the renderer fires N shots from `product_shots`. The returned `id` is the
- * `products.id` so the cue-add form can write directly to
- * `show_cues.product_id`.
+ * Single-firework items read directly from `fireworks`. Multishots use their
+ * first child firework for prompt/render preview data, while replay expands
+ * the full sequence through `multishot_fireworks`.
  */
 export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
   const cacheKey = getFireworkProductsCacheKey();
@@ -179,14 +169,18 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('products')
+    .from('catalogue_items')
     .select(
-      `id, name, part_number, description, duration_seconds,
-       product_shots (
-         shot_index,
-         caliber,
-         firework_variants (${FIREWORK_VARIANT_SELECT}),
-         effect_specs (${EFFECT_SPEC_SELECT})
+      `id, name, part_number, description, duration_seconds, catalogue_item_kind,
+       fireworks (${FIREWORK_VARIANT_SELECT}),
+       multishots (
+         id,
+         shot_count,
+         multishot_fireworks (
+           sequence_index,
+           caliber,
+           fireworks (${FIREWORK_VARIANT_SELECT})
+         )
        )`,
     )
     .order('name', { ascending: true });
@@ -195,37 +189,40 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
     return [];
   }
 
-  type ProductRow = {
+  type CatalogueItemRow = {
     id: string;
     name: string;
     part_number: string;
     description: string | null;
     duration_seconds: number | null;
-    product_shots: Array<{
-      shot_index: number;
-      caliber: string | null;
-      firework_variants: FireworkVariantProjection | FireworkVariantProjection[] | null;
-      effect_specs: EffectSpecProjection | null;
-    }>;
+    catalogue_item_kind: string;
+    fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+    multishots: {
+      id: string;
+      shot_count: number;
+      multishot_fireworks: Array<{
+        sequence_index: number;
+        caliber: string | null;
+        fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+      }>;
+    } | null;
   };
 
   const mapped: FireworkSpecification[] = [];
-  for (const row of (data ?? []) as ProductRow[]) {
-    const shots = [...(row.product_shots ?? [])].sort((a, b) => a.shot_index - b.shot_index);
-    const primary = shots.find((s) => s.firework_variants != null || s.effect_specs != null);
+  for (const row of (data ?? []) as CatalogueItemRow[]) {
+    const directFirework = firstVariant(row.fireworks);
+    const multishotRows = [...(row.multishots?.multishot_fireworks ?? [])].sort(
+      (a, b) => a.sequence_index - b.sequence_index,
+    );
+    const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
+    const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
     if (!primary) continue;
-    const variant = firstVariant(primary.firework_variants);
-    const base = variant
-      ? mapFireworkVariantSpecification(
-          variant,
-          mapped.length,
-          primary.caliber ?? null,
-          primary.effect_specs?.spec_json ?? null,
-        )
-      : primary.effect_specs
-        ? mapEffectSpecification(primary.effect_specs, mapped.length, primary.caliber ?? null)
-        : null;
-    if (!base) continue;
+
+    const base = mapFireworkVariantSpecification(
+      primary,
+      mapped.length,
+      firstMultishotFirework?.caliber ?? null,
+    );
     mapped.push({
       ...base,
       id: row.id,
@@ -233,7 +230,10 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
       name: row.name,
       description: row.description ?? base.description,
       durationSeconds: row.duration_seconds ?? base.durationSeconds,
-      shotCount: shots.length,
+      shotCount:
+        row.catalogue_item_kind === 'multishot'
+          ? (row.multishots?.shot_count ?? multishotRows.length)
+          : 1,
     });
   }
 
@@ -244,9 +244,9 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
 /**
  * Lists time-scheduled cues expanded for replay.
  *
- * Multi-shot products fan out into one {@link ReplayCue} per shot, with each
- * shot's `timeSeconds` offset by `product_shots.time_offset_seconds`. The
- * renderer can therefore stay product-agnostic.
+ * Catalogue items that point at a single firework become one replay cue.
+ * Catalogue items that point at a multishot fan out into one replay cue per
+ * ordered `multishot_fireworks` row.
  */
 export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
   const userId = await getCurrentUserId();
@@ -258,7 +258,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
 
   const supabase = await getServerClient();
   const { data, error } = await supabase
-    .from('show_cues')
+    .from('show_timeline_items')
     .select(SHOW_CUE_SELECT)
     .eq('show_id', showId)
     .not('time_seconds', 'is', null)
@@ -270,24 +270,26 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
   }
 
   const rows = (data ?? []) as ReplayCueRow[];
-
-  // Single-shot products have one `product_shots` row at offset 0; multi-shot
-  // products have N rows we need to expand into individual replay cues so
-  // the renderer doesn't have to know the catalogue shape.
-  const productIds = [
-    ...new Set(rows.map((r) => r.product_id).filter((id): id is string => id != null)),
+  const catalogueItemIds = [
+    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
   ];
 
-  type ShotRow = {
-    product_id: string;
-    shot_index: number;
-    time_offset_seconds: number;
-    pan_degrees: number | null;
-    tilt_degrees: number | null;
-    position_override_json: unknown;
-    caliber: string | null;
-    firework_variants: FireworkVariantProjection | FireworkVariantProjection[] | null;
-    effect_specs: EffectSpecProjection | null;
+  type CatalogueFireworkRow = {
+    id: string;
+    catalogue_item_kind: string;
+    fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+    multishots: {
+      id: string;
+      multishot_fireworks: Array<{
+        sequence_index: number;
+        time_offset_seconds: number;
+        pan_degrees: number | null;
+        tilt_degrees: number | null;
+        position_override_json: unknown;
+        caliber: string | null;
+        fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+      }>;
+    } | null;
   };
 
   type ShotSpec = {
@@ -297,39 +299,63 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     positionOverride: LaunchPosition | null;
     firework: FireworkSpecification;
   };
-  const shotsByProduct = new Map<string, ShotSpec[]>();
+  const shotsByCatalogueItem = new Map<string, ShotSpec[]>();
 
-  if (productIds.length > 0) {
-    const { data: shots, error: shotsErr } = await supabase
-      .from('product_shots')
+  if (catalogueItemIds.length > 0) {
+    const { data: catalogueItems, error: catalogueErr } = await supabase
+      .from('catalogue_items')
       .select(
-        `product_id, shot_index, time_offset_seconds, pan_degrees, tilt_degrees, position_override_json, caliber, firework_variants (${FIREWORK_VARIANT_SELECT}), effect_specs (${EFFECT_SPEC_SELECT})`,
+        `id, catalogue_item_kind,
+         fireworks (${FIREWORK_VARIANT_SELECT}),
+         multishots (
+           id,
+           multishot_fireworks (
+             sequence_index,
+             time_offset_seconds,
+             pan_degrees,
+             tilt_degrees,
+             position_override_json,
+             caliber,
+             fireworks (${FIREWORK_VARIANT_SELECT})
+           )
+         )`,
       )
-      .in('product_id', productIds)
-      .order('shot_index', { ascending: true });
+      .in('id', catalogueItemIds);
 
-    if (shotsErr) {
-      console.error('[shows.server] product_shots load failed:', shotsErr);
+    if (catalogueErr) {
+      console.error('[shows.server] catalogue_items load failed:', catalogueErr);
     } else {
-      for (const shot of (shots ?? []) as ShotRow[]) {
-        const variant = firstVariant(shot.firework_variants);
-        if (!variant && !shot.effect_specs) continue;
-        const arr = shotsByProduct.get(shot.product_id) ?? [];
-        arr.push({
-          timeOffsetSeconds: Number(shot.time_offset_seconds),
-          panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
-          tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
-          positionOverride: parseShotPositionOverride(shot.position_override_json),
-          firework: variant
-            ? mapFireworkVariantSpecification(
-                variant,
-                arr.length,
-                shot.caliber ?? null,
-                shot.effect_specs?.spec_json ?? null,
-              )
-            : mapEffectSpecification(shot.effect_specs!, arr.length, shot.caliber ?? null),
-        });
-        shotsByProduct.set(shot.product_id, arr);
+      for (const item of (catalogueItems ?? []) as CatalogueFireworkRow[]) {
+        const directFirework = firstVariant(item.fireworks);
+        if (directFirework) {
+          shotsByCatalogueItem.set(item.id, [
+            {
+              timeOffsetSeconds: 0,
+              panDegrees: null,
+              tiltDegrees: null,
+              positionOverride: null,
+              firework: mapFireworkVariantSpecification(directFirework, 0),
+            },
+          ]);
+          continue;
+        }
+
+        const multishotRows = [...(item.multishots?.multishot_fireworks ?? [])].sort(
+          (a, b) => a.sequence_index - b.sequence_index,
+        );
+        const shots: ShotSpec[] = [];
+        for (const shot of multishotRows) {
+          const firework = firstVariant(shot.fireworks);
+          if (!firework) continue;
+          shots.push({
+            timeOffsetSeconds: Number(shot.time_offset_seconds),
+            panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
+            tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
+            positionOverride: parseShotPositionOverride(shot.position_override_json),
+            firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
+          });
+        }
+        if (shots.length > 0) shotsByCatalogueItem.set(item.id, shots);
       }
     }
   }
@@ -338,7 +364,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
   for (const row of rows) {
     const baseCue = mapReplayCueBase(row);
     if (!baseCue) continue;
-    const shots = shotsByProduct.get(row.product_id);
+    const shots = shotsByCatalogueItem.get(row.catalogue_item_id);
     if (!shots || shots.length === 0) continue;
     const startSeconds = Number(row.time_seconds);
     for (let i = 0; i < shots.length; i++) {

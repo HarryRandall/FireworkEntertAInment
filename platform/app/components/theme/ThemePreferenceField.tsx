@@ -3,7 +3,7 @@
 /**
  * ThemePreferenceField — segmented dark/light/system selector used on
  * the settings page under `/app`. Updates both next-themes and (via
- * the parent form) the persisted profiles.theme_preference column.
+ * the parent form) the persisted users.theme_preference column.
  */
 import { useEffect, useState } from 'react';
 import { Check, Laptop, Moon, Sun } from 'lucide-react';

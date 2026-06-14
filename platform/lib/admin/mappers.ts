@@ -21,7 +21,7 @@ import type {
 } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
 
-export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+export type ProfileRow = Database['public']['Tables']['users']['Row'];
 export type RoleRow = Database['public']['Tables']['roles']['Row'];
 export type PermissionRow = Database['public']['Tables']['permissions']['Row'];
 export type UserRoleRow = Database['public']['Tables']['user_roles']['Row'];
@@ -32,8 +32,7 @@ export type SupplierRow = Database['public']['Tables']['supplier_profiles']['Row
 export type ImportJobRow = Database['public']['Tables']['import_jobs']['Row'];
 export type ImportOutputRow = Database['public']['Tables']['import_outputs']['Row'];
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row'];
-export type ProductRow = Database['public']['Tables']['products']['Row'];
-export type ShowTemplateRow = Database['public']['Tables']['show_templates']['Row'];
+export type ShowTemplateRow = Database['public']['Tables']['show_presets']['Row'];
 
 const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user'];
 
@@ -105,8 +104,7 @@ export function mapImportJob(row: ImportJobRow): ImportJobSummary {
     mediaAssetId: row.media_asset_id,
     selectedModel: row.selected_model,
     processingProgress: row.processing_progress,
-    approvedProductId: row.approved_product_id,
-    approvedFireworkSpecificationId: row.approved_firework_specification_id,
+    approvedCatalogueItemId: row.approved_catalogue_item_id,
     rowCount: row.row_count,
     errorMessage: row.error_message,
     createdAt: row.created_at,
@@ -197,18 +195,18 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
 }
 
 /**
- * Stitch together profiles + role assignments + permission overrides into the
+ * Stitch together users + role assignments + permission overrides into the
  * AdminUser shape. Used by both the list and single-user reads to keep them
  * consistent.
  */
 export function mapAdminUsersFromRows({
-  profiles,
+  users,
   userRoles,
   roles,
   overrides,
   permissions,
 }: {
-  profiles: Pick<ProfileRow, 'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'>[];
+  users: Pick<ProfileRow, 'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'>[];
   userRoles: UserRoleRow[];
   roles: RoleRow[];
   overrides: UserPermissionOverrideRow[];
@@ -219,7 +217,7 @@ export function mapAdminUsersFromRows({
     (permissions ?? []).map((permission) => [permission.id, mapPermission(permission)]),
   );
 
-  return profiles.map((profile) => {
+  return users.map((profile) => {
     const assignedRoles = userRoles
       .filter((row) => row.user_id === profile.id)
       .map((row) => roleById.get(row.role_id)?.key)

@@ -1,7 +1,7 @@
--- Idempotent Renderer QA test shows for every auth user.
+-- Idempotent renderer QA test shows for every auth user.
 --
 -- Run after migrations and after supabase/seed-firework-designs.sql.
--- These shows are overwritten on each run so the cue timings stay stable.
+-- These shows are overwritten on each run so the timeline timings stay stable.
 
 do $$
 declare
@@ -28,11 +28,13 @@ begin
       ('wave-purple'),
       ('wave-rainbow')
   ) as required(slug)
-  left join public.effect_specs effects on effects.slug = required.slug
-  where effects.id is null;
+  left join public.catalogue_items catalogue
+    on catalogue.part_number = required.slug
+   and catalogue.catalogue_item_kind = 'firework'
+  where catalogue.id is null;
 
   if missing_slugs is not null then
-    raise exception 'Missing firework effect_specs: %. Run supabase/seed-firework-designs.sql first.', missing_slugs;
+    raise exception 'Missing firework catalogue_items: %. Run supabase/seed-firework-designs.sql first.', missing_slugs;
   end if;
 
   if not exists (select 1 from auth.users) then
@@ -44,13 +46,16 @@ begin
     from auth.users
     order by created_at
   loop
-    insert into public.profiles (id, email, full_name)
+    insert into public.users (id, email, full_name)
     values (
       demo_user.id,
       demo_user.email,
       coalesce(demo_user.raw_user_meta_data->>'full_name', 'Demo User')
     )
-    on conflict (id) do nothing;
+    on conflict (id) do update set
+      email = excluded.email,
+      full_name = excluded.full_name,
+      updated_at = now();
 
     insert into public.shows (
       user_id,
@@ -109,14 +114,14 @@ begin
       updated_at = now()
     returning id into pattern_show;
 
-    delete from public.show_cues where show_id = pattern_show;
+    delete from public.show_timeline_items where show_id = pattern_show;
 
-    insert into public.show_cues (
+    insert into public.show_timeline_items (
       show_id,
       position,
       time_seconds,
       description,
-      effect_spec_id,
+      catalogue_item_id,
       label,
       track,
       layer,
@@ -128,7 +133,7 @@ begin
       cue.position,
       cue.time_seconds,
       cue.description,
-      effects.id,
+      catalogue.id,
       cue.label,
       'qa-pattern',
       cue.layer,
@@ -142,8 +147,8 @@ begin
         (4, 9.50::numeric, 'Left mortar blue fibonacci sphere', 'fib-blue', 'Fib blue', 'fibonacci', 2104, 0),
         (5, 12.50::numeric, 'Centre mortar cyan wave', 'wave-cyan', 'Wave cyan', 'wave', 2105, 1),
         (6, 15.50::numeric, 'Right mortar red strobe', 'strobe-red', 'Strobe red', 'strobe', 2106, 2)
-    ) as cue(position, time_seconds, description, effect_slug, label, layer, seed_override, launch_position_index)
-    join public.effect_specs effects on effects.slug = cue.effect_slug;
+    ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
+    join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
 
     insert into public.shows (
       user_id,
@@ -202,14 +207,14 @@ begin
       updated_at = now()
     returning id into colour_show;
 
-    delete from public.show_cues where show_id = colour_show;
+    delete from public.show_timeline_items where show_id = colour_show;
 
-    insert into public.show_cues (
+    insert into public.show_timeline_items (
       show_id,
       position,
       time_seconds,
       description,
-      effect_spec_id,
+      catalogue_item_id,
       label,
       track,
       layer,
@@ -221,7 +226,7 @@ begin
       cue.position,
       cue.time_seconds,
       cue.description,
-      effects.id,
+      catalogue.id,
       cue.label,
       'qa-colour',
       cue.layer,
@@ -235,8 +240,8 @@ begin
         (4, 9.50::numeric, 'Random rainbow wave from left mortar', 'wave-rainbow', 'Rainbow wave', 'random', 2204, 0),
         (5, 12.50::numeric, 'Mixed strobe from centre mortar', 'strobe-mixed', 'Mixed strobe', 'mixed', 2205, 1),
         (6, 15.50::numeric, 'Mega gold bloom from right mortar', 'fib-mega', 'Mega gold', 'gold', 2206, 2)
-    ) as cue(position, time_seconds, description, effect_slug, label, layer, seed_override, launch_position_index)
-    join public.effect_specs effects on effects.slug = cue.effect_slug;
+    ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
+    join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
 
     insert into public.shows (
       user_id,
@@ -295,14 +300,14 @@ begin
       updated_at = now()
     returning id into replay_show;
 
-    delete from public.show_cues where show_id = replay_show;
+    delete from public.show_timeline_items where show_id = replay_show;
 
-    insert into public.show_cues (
+    insert into public.show_timeline_items (
       show_id,
       position,
       time_seconds,
       description,
-      effect_spec_id,
+      catalogue_item_id,
       label,
       track,
       layer,
@@ -314,7 +319,7 @@ begin
       cue.position,
       cue.time_seconds,
       cue.description,
-      effects.id,
+      catalogue.id,
       cue.label,
       'qa-replay',
       cue.layer,
@@ -327,7 +332,7 @@ begin
         (3, 4.75::numeric, 'White strobe from right mortar', 'strobe-white', 'White strobe', 'strobe', 2303, 2),
         (4, 7.25::numeric, 'Gold sphere from centre mortar', 'fib-gold', 'Gold sphere', 'replay', 2304, 1),
         (5, 10.00::numeric, 'Mega gold bloom from left mortar', 'fib-mega', 'Mega gold', 'finale', 2305, 0)
-    ) as cue(position, time_seconds, description, effect_slug, label, layer, seed_override, launch_position_index)
-    join public.effect_specs effects on effects.slug = cue.effect_slug;
+    ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
+    join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
   end loop;
 end $$;
