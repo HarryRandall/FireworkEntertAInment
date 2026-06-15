@@ -17,6 +17,8 @@ export type ParticleProps = {
   vz?: number;
   size?: number;
   shape?: number;
+  rotation?: number;
+  spin?: number;
   life?: number;
   mass?: number;
   decay?: number;
@@ -112,6 +114,8 @@ export class ParticlePool {
     p.vz = prop.vz ?? 0;
     p.size = prop.size ?? 1;
     p.shape = prop.shape ?? 0;
+    p.rotation = prop.rotation ?? 0;
+    p.spin = prop.spin ?? 0;
     p.life = life;
     p.maxLife = life;
     p.mass = prop.mass && prop.mass > 0 ? prop.mass : 1;

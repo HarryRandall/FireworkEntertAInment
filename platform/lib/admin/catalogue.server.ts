@@ -19,11 +19,18 @@ type CatalogueItemRow = {
   name: string;
   manufacturer: string | null;
   firework_type: string | null;
+  catalogue_item_kind: string;
+  firework_id: string | null;
+  multishot_id: string | null;
   duration_seconds: number | null;
   updated_at: string;
 };
 
-/** Returns up to 100 catalogue items by recency, or `[]` when unauthorised. */
+/**
+ * Returns the full catalogue (every firework and multishot in stock) ordered by
+ * name. Each row reports its kind and whether it is linked to a firework or
+ * multishot; linked rows cannot be deleted.
+ */
 export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]> {
   if (!(await requirePermission('admin.manage_catalogue'))) return [];
   const cacheKey = getAdminCatalogueCacheKey();
@@ -33,9 +40,11 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from('catalogue_items')
-    .select('id, part_number, name, manufacturer, firework_type, duration_seconds, updated_at')
-    .order('updated_at', { ascending: false })
-    .limit(100);
+    .select(
+      'id, part_number, name, manufacturer, firework_type, catalogue_item_kind, firework_id, multishot_id, duration_seconds, updated_at',
+    )
+    .order('name', { ascending: true })
+    .limit(1000);
   if (error) {
     console.error('[admin.server] listCatalogueProducts failed:', error);
     return [];
@@ -48,6 +57,8 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     category: null,
     fireworkType: row.firework_type,
     durationSeconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
+    kind: row.catalogue_item_kind,
+    linked: row.firework_id != null || row.multishot_id != null,
     updatedAt: row.updated_at,
   }));
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);

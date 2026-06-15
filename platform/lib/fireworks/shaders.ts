@@ -7,18 +7,25 @@
  */
 
 export const VERTEX_SHADER = /* glsl */ `
+uniform float glowPadding;
+uniform float whiteCoreSizePercent;
 attribute float size;
 attribute float shape;
+attribute float rotation;
 varying vec3 vColor;
 varying float vDepthFade;
 varying float vShape;
+varying float vRotation;
 varying float vZoomAtten;
-varying float vHeadGrow;
-varying float vGlowFrac;
+varying float vHeadCoreRadius;
+varying float vHeadWhiteCoreRadius;
+varying float vHeadGlowStrength;
+varying float vHeadSizeAtten;
 
 void main() {
   vColor = color;
   vShape = shape;
+  vRotation = rotation;
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   float depth = max(-mvPosition.z, 1.0);
   float linearScale = 500.0 / depth;
@@ -30,31 +37,37 @@ void main() {
   // dominant, clearly-readable orbs at any camera distance.
   float exponent = mix(0.7, 0.55, isHead);
   float distanceScale = pow(linearScale, exponent);
-  // Glow strength (encoded as shape = 2 + glow * 0.25) pads the sprite so
-  // the halo has room around a constant-size body; the fragment shader
-  // compensates the body radius by the actually-applied growth so the solid
-  // orb never changes size when glow changes, even when the sprite is
-  // clamped by the pixel cap.
-  float glowT = clamp(max(shape - 2.0, 0.0) * 4.0 / 3.0, 0.0, 1.0) * isHead;
+  float headGlowStrength = clamp(max(shape - 2.0, 0.0) * 4.0, 0.0, 3.0) * isHead;
   // Head orbs (shape >= 2) get a much higher ceiling: with the shared 96px
   // cap, zooming right in let trail squares catch up to the heads so the
   // heads read smaller than their own trail. Heads must stay dominant.
-  float maxPointSize = mix(96.0, 640.0, isHead);
+  float maxPointSize = mix(96.0, 1280.0, isHead);
   float minPointSize = mix(2.0, 4.0, isHead);
-  float baseSize = clamp(size * distanceScale, minPointSize, maxPointSize);
-  // Halo budget: an additive pixel pad driven by glow strength and camera
-  // distance only - never by head size - so a tiny head at max glow wears
-  // the same aura as a huge one. The distance exponent is slightly steeper
-  // than the body's 0.55, so the halo shrinks a touch faster on zoom-out
-  // and distant bursts resolve into clean orbs instead of stacked blur.
-  float glowPad = sqrt(glowT) * 130.0 * pow(linearScale, 0.62);
-  float pointSize = clamp(baseSize + glowPad, minPointSize, maxPointSize);
+  // Background glow size is stored in the legacy glowPadding field, but the
+  // value is now a percentage of the star core size. 200% reserves two star
+  // sizes of room on each side of the core for the broad coloured wash.
+  float backgroundGlowScale = clamp(glowPadding / 100.0, 0.0, 2.0) * isHead;
+  float maxCoreSize = maxPointSize / max(1.0 + backgroundGlowScale * 2.0, 1.0);
+  float coreSize = clamp(size * distanceScale, minPointSize, maxCoreSize);
+  float haloPad = coreSize * backgroundGlowScale;
+  float pointSize = clamp(coreSize + haloPad * 2.0, minPointSize, maxPointSize);
   gl_PointSize = pointSize;
-  vHeadGrow = pointSize / max(baseSize, 0.0001);
-  // Fraction of the sprite that is halo padding (after pixel caps). The
-  // fragment shader sizes the Gaussian falloff from this, so the aura is a
-  // fixed pixel width for a given glow strength whatever the head size.
-  vGlowFrac = (pointSize - baseSize) / max(pointSize, 0.0001);
+  // The fragment shader works in normalised sprite coordinates. Shrinking this
+  // radius as background glow room grows keeps the actual core diameter stable.
+  float headCoreRadius = coreSize / max(pointSize * 2.0, 0.0001);
+  vHeadCoreRadius = headCoreRadius;
+  // 100% fills the coloured star core. Lower values keep a smaller white-hot
+  // centre that scales with the star size.
+  float whiteCoreVisualRadius = headCoreRadius * clamp(whiteCoreSizePercent / 100.0, 0.0, 1.0);
+  vHeadWhiteCoreRadius = min(
+    whiteCoreVisualRadius,
+    headCoreRadius
+  ) * isHead;
+  vHeadGlowStrength = headGlowStrength;
+  // Larger point sprites cover more pixels, which can read as "brighter" even
+  // when the centre value is unchanged. Attenuate large heads so size edits
+  // change scale, not heat.
+  vHeadSizeAtten = mix(1.0, clamp(pow(16.0 / max(size, 1.0), 0.38), 0.58, 1.22), isHead);
   vDepthFade = smoothstep(6200.0, 800.0, -mvPosition.z);
   // Zoomed out, dense square trails overlap per pixel and additive blending
   // saturates to white; rounds get a gentler version and heads none at all
@@ -65,24 +78,53 @@ void main() {
 `;
 
 export const FRAGMENT_SHADER = /* glsl */ `
+uniform float glowPadding;
+uniform float whiteCoreBlurPercent;
+uniform float coreSoftness;
+uniform float coreBrightness;
+uniform float coreOpacityFalloff;
+uniform float glowSize;
+uniform float glowSoftness;
+uniform float glowOpacityFalloff;
+uniform float glowBlur;
+uniform float backgroundGlowOpacityFalloff;
+uniform float backgroundGlowSoftness;
 varying vec3 vColor;
 varying float vDepthFade;
 varying float vShape;
+varying float vRotation;
 varying float vZoomAtten;
-varying float vHeadGrow;
-varying float vGlowFrac;
+varying float vHeadCoreRadius;
+varying float vHeadWhiteCoreRadius;
+varying float vHeadGlowStrength;
+varying float vHeadSizeAtten;
 
 void main() {
   vec2 centered = gl_PointCoord - vec2(0.5);
-  // shape 0 = round spark, shape 1 = flat square, shape 2 = glowing head orb
+  float rotationCos = cos(vRotation);
+  float rotationSin = sin(vRotation);
+  vec2 rotated = vec2(
+    centered.x * rotationCos - centered.y * rotationSin,
+    centered.x * rotationSin + centered.y * rotationCos
+  );
+  // shape 0 = glowing disc, shape 1 = flat square, shape 1.25 = triangle, shape 2+ = glowing head orb
   float isHead = step(1.5, vShape);
-  float isSquare = step(0.5, vShape) * (1.0 - isHead);
+  float isTriangle = step(1.15, vShape) * (1.0 - step(1.5, vShape));
+  float isSquare = step(0.5, vShape) * (1.0 - isTriangle) * (1.0 - isHead);
+  float isAngular = max(isSquare, isTriangle);
   float roundDistance = length(centered);
-  float squareX = abs(centered.x);
-  float squareY = abs(centered.y);
+  float squareX = abs(rotated.x);
+  float squareY = abs(rotated.y);
   float squareDistance = max(squareX, squareY);
-  if (isSquare < 0.5 && roundDistance > 0.58) discard;
+  float triangleWidth = max((0.5 - rotated.y) * 0.5, 0.0);
+  float triangleDistance = max(
+    abs(rotated.x) - triangleWidth,
+    max(rotated.y - 0.5, -rotated.y - 0.5)
+  );
+  if (isHead > 0.5 && roundDistance > 0.5) discard;
+  if (isHead < 0.5 && isSquare < 0.5 && isTriangle < 0.5 && roundDistance > 0.58) discard;
   if (isSquare > 0.5 && squareDistance > 0.5) discard;
+  if (isTriangle > 0.5 && triangleDistance > 0.0) discard;
 
   float roundCore = 1.0 - smoothstep(0.08, 0.25, roundDistance);
   float hotInner = 1.0 - smoothstep(0.0, 0.14, roundDistance);
@@ -92,62 +134,264 @@ void main() {
   // as a "square inside a square" once additive blending stacks up, so the
   // square branch uses pure flat colour with only edge anti-aliasing.
   float squareBody = 1.0 - smoothstep(0.46, 0.5, squareDistance);
+  float triangleBody = 1.0 - smoothstep(-0.02, 0.018, triangleDistance);
 
-  // Head orb: small white-hot core, saturated coloured body, diffuse halo.
-  // One sprite per head so the core and its glow can never drift apart. Glow
-  // strength is decoded from the shape attribute (shape = 2 + glow * 0.25).
-  float headGlowStrength = max(vShape - 2.0, 0.0) * 4.0;
-  float glowT = clamp(headGlowStrength / 3.0, 0.0, 1.0);
-  // The vertex shader grows the sprite with glow strength; sampling the body
-  // in growth-compensated space (vHeadGrow is the growth actually applied
-  // after pixel caps) keeps the solid orb a constant size while the halo
-  // expands into the extra sprite area.
-  float headR = roundDistance * vHeadGrow;
-  // Crisp body with a short anti-aliased shoulder: the solid orb must stay
-  // sharply readable on its own, with all of the softness delegated to the
-  // halo term below.
-  float headCore = 1.0 - smoothstep(0.0, 0.12, headR);
-  float headBody = 1.0 - smoothstep(0.16, 0.3, headR);
-  // Diffuse halo: Gaussian falloff sized from the sprite's halo padding
-  // fraction (vGlowFrac), which the vertex shader derives from glow strength
-  // and camera distance only. That keeps the aura a constant pixel width for
-  // a given glow whatever the head size, and exp() decays to ~nothing before
-  // the 0.58 discard radius (an edge window guarantees zero there), so the
-  // glow has no visible rim.
-  float glowSigma = max(vGlowFrac * 0.42, 0.001);
-  float headGlow = exp(-(roundDistance * roundDistance) / (2.0 * glowSigma * glowSigma));
-  headGlow *= 1.0 - smoothstep(0.42, 0.56, roundDistance);
+  // Head orb: a full-opacity coloured core with a separate halo. Glow strength
+  // only multiplies the halo; it never changes the core radius or opacity.
+  float headGlowStrength = clamp(vHeadGlowStrength, 0.0, 3.0);
+  float glowT = headGlowStrength / 3.0;
+  float coreRadius = clamp(vHeadCoreRadius, 0.001, 0.5);
+  float coreEdge = max(fwidth(roundDistance) * 1.5, 0.0015);
+  float headCore = 1.0 - smoothstep(coreRadius - coreEdge, coreRadius + coreEdge, roundDistance);
+  // Exemplar-style soft core: as softness rises the falloff slides inward from
+  // the rim, turning the flat disc into a smoothly glowing orb whose centre
+  // stays hot. coreSoftness 0 reproduces the original hard disc exactly.
+  float coreSoft = clamp(coreSoftness / 100.0, 0.0, 1.0);
+  float coreGain = clamp(coreBrightness / 100.0, 0.2, 3.0);
+  float coreBlurT = pow(coreSoft, 1.12);
+  float softInner = coreRadius * mix(0.94, -0.24, coreBlurT);
+  float softCore = 1.0 - smoothstep(softInner, coreRadius + coreEdge, roundDistance);
+  softCore = pow(softCore, mix(1.0, 1.65, coreBlurT));
+  float headCoreShaped = mix(headCore, softCore, coreSoft);
+  float coreOpacityT = clamp(coreOpacityFalloff / 100.0, 0.0, 1.0);
+  float headCoreAlpha = mix(headCore, headCoreShaped, coreOpacityT);
+  float whiteCoreRadius = clamp(vHeadWhiteCoreRadius, 0.0, coreRadius);
+  float whiteCoreBlur = clamp(whiteCoreBlurPercent / 100.0, 0.0, 1.0);
+  float whiteCoreEdge = max(fwidth(roundDistance) * 1.25, 0.0015);
+  float whiteCoreBlurWidth = coreRadius * pow(whiteCoreBlur, 0.82) * 3.2;
+  float whiteCoreFeatherStart = max(whiteCoreRadius - whiteCoreBlurWidth * 0.75, 0.0);
+  float whiteCoreFeatherEnd = min(0.5, whiteCoreRadius + max(whiteCoreBlurWidth, whiteCoreEdge));
+  float whiteCoreSharpMask = 1.0 - step(whiteCoreRadius, roundDistance);
+  float whiteCoreBlurMask = 1.0 - smoothstep(whiteCoreFeatherStart, whiteCoreFeatherEnd, roundDistance);
+  float whiteCoreDissolve = mix(1.0, 0.08, pow(whiteCoreBlur, 1.1));
+  float whiteCore = step(0.0005, whiteCoreRadius) * mix(
+    whiteCoreSharpMask,
+    whiteCoreBlurMask * whiteCoreDissolve,
+    whiteCoreBlur
+  );
+  float whiteCoreColourBlur = step(0.0005, whiteCoreRadius) * whiteCoreBlur * (1.0 - whiteCore) * (1.0 - smoothstep(
+    0.0,
+    whiteCoreFeatherEnd,
+    roundDistance
+  ));
+  // Size sets the nominal white mask. Blur now actually dissipates that mask,
+  // turning it into coloured energy instead of leaving a fixed crisp dot.
+  float haloSpan = max(0.5 - coreRadius, 0.001);
+  float outsideCore = smoothstep(coreRadius - coreEdge, coreRadius + coreEdge, roundDistance);
+  // Star glow radius controls the close bloom attached to the orb; star glow
+  // softness slides the falloff from a tight ring to a diffuse bloom.
+  float glowRadiusT = clamp(glowSize / 100.0, 0.0, 1.0);
+  float glowSoftnessT = clamp(glowSoftness / 100.0, 0.0, 1.0);
+  float closeGlowRadius = min(0.5, coreRadius + haloSpan * mix(0.18, 0.96, glowRadiusT));
+  float closeGlowFalloff = mix(28.0, 0.08, pow(glowSoftnessT, 1.24));
+  float closeGlowDistance = roundDistance / max(closeGlowRadius, 0.001);
+  float headGlow = exp(-closeGlowDistance * closeGlowDistance * closeGlowFalloff);
+  headGlow *= 1.0 - smoothstep(closeGlowRadius, min(0.5, closeGlowRadius + coreEdge * 4.0), roundDistance);
+  headGlow *= mix(0.22, 1.0, outsideCore);
+  float spriteDistance = roundDistance / 0.5;
+  float glowOpacityT = clamp(glowOpacityFalloff / 100.0, 0.0, 1.0);
+  float glowEdgeStart = mix(0.98, 0.48, glowOpacityT);
+  float glowEdgeFade = 1.0 - smoothstep(glowEdgeStart, 1.0, spriteDistance);
+  headGlow *= glowEdgeFade;
+  headGlow *= glowT;
   // Halos overlap heavily mid-zoom and stack into a smear under additive
   // blending, so the halo (never the body) fades back with distance.
-  headGlow *= mix(0.4, 1.0, vZoomAtten);
-  float haloGain = 0.5 * glowT;
-  float haloAlphaGain = 0.34 * glowT;
+  headGlow *= mix(0.55, 1.0, vZoomAtten);
+  // Background glow: a broad coloured wash behind the whole star. It uses the
+  // sprite room created by the background-glow size control, so it can produce
+  // a large diffused orb without enlarging the white core.
+  float backgroundGlowSize = clamp(glowPadding / 200.0, 0.0, 1.0);
+  float backgroundRoom = smoothstep(0.0, 0.28, 0.5 - coreRadius) * smoothstep(0.0, 0.03, backgroundGlowSize);
+  float backgroundDistance = spriteDistance;
+  float backgroundBlurT = clamp(backgroundGlowSoftness / 100.0, 0.0, 1.0);
+  float backgroundFalloff = mix(30.0, 0.035, pow(backgroundBlurT, 1.32));
+  backgroundFalloff *= mix(1.0, 0.72, backgroundGlowSize);
+  float backgroundGlow = exp(-backgroundDistance * backgroundDistance * backgroundFalloff);
+  float backgroundOpacityT = clamp(backgroundGlowOpacityFalloff / 100.0, 0.0, 1.0);
+  float backgroundEdgeStart = mix(0.99, 0.34, backgroundOpacityT);
+  float backgroundEdgeFade = 1.0 - smoothstep(backgroundEdgeStart, 1.0, backgroundDistance);
+  backgroundGlow *= backgroundRoom * backgroundEdgeFade * clamp(glowBlur / 100.0, 0.0, 1.0);
+  backgroundGlow *= mix(0.55, 1.0, vZoomAtten);
 
   vec3 whiteHot = vec3(1.0, 0.94, 0.78);
-  vec3 sparkColor = mix(vColor, whiteHot, hotInner * 0.46 * (1.0 - isSquare) * (1.0 - isHead));
-  // White-hot centre is part of the glow look: at glow 0 heads stay pure
-  // saturated colour rather than blooming white.
-  sparkColor = mix(sparkColor, mix(vColor, whiteHot, headCore * (0.12 + 0.38 * glowT)), isHead);
+  vec3 sparkColor = mix(vColor, whiteHot, hotInner * 0.46 * (1.0 - isAngular) * (1.0 - isHead));
+  vec3 headSparkColor = mix(vColor, vec3(1.0), whiteCore);
+  sparkColor = mix(sparkColor, headSparkColor, isHead);
   float sparkIntensity = mix(
     roundCore * 1.0 + softHalo * 0.26 + rimSpark * 0.07,
     squareBody * 1.15,
     isSquare
   );
-  // Bare heads (glow 0) sit well below full additive brightness so they
-  // read as coloured orbs; brightness is something the glow slider buys.
-  float headBodyGain = 0.72 + 0.28 * glowT;
-  sparkIntensity = mix(sparkIntensity, headBody * headBodyGain + headGlow * haloGain, isHead);
+  sparkIntensity = mix(sparkIntensity, triangleBody * 1.08, isTriangle);
+  float headHaloIntensity = headGlow * (0.46 + headGlowStrength * 0.16) + backgroundGlow * 1.25 + whiteCoreColourBlur * 1.15;
+  sparkIntensity = mix(
+    sparkIntensity,
+    (headCoreShaped * coreGain + headHaloIntensity) * vHeadSizeAtten,
+    isHead
+  );
   float sparkAlpha = mix(roundCore * 0.82 + softHalo * 0.22, squareBody * 0.9, isSquare);
-  float headAlpha = headBody * (0.66 + 0.2 * glowT) + headGlow * haloAlphaGain;
+  sparkAlpha = mix(sparkAlpha, triangleBody * 0.86, isTriangle);
+  float headAlpha = (headCoreAlpha + headGlow * (0.22 + headGlowStrength * 0.07) + backgroundGlow * 0.72 + whiteCoreColourBlur * 0.65) * vHeadSizeAtten;
   sparkAlpha = mix(sparkAlpha, clamp(headAlpha, 0.0, 1.0), isHead);
   // Distance attenuation: full strength on dense squares, gentle on rounds,
   // none on heads so zoomed-out bursts keep their clearly visible orbs.
-  float zoomAtten = mix(mix(sqrt(vZoomAtten), vZoomAtten, isSquare), 1.0, isHead);
+  float zoomAtten = mix(mix(sqrt(vZoomAtten), vZoomAtten, isAngular), 1.0, isHead);
   float alpha = clamp(sparkAlpha * vDepthFade * zoomAtten, 0.0, 1.0);
   float intensity = sparkIntensity;
 
   if (alpha < 0.01) discard;
   gl_FragColor = vec4(sparkColor * intensity, alpha);
+}
+`;
+
+export const HEAD_BILLBOARD_VERTEX_SHADER = /* glsl */ `
+uniform float glowPadding;
+uniform float whiteCoreSizePercent;
+uniform vec2 viewport;
+attribute vec2 quadCorner;
+attribute vec3 instancePosition;
+attribute vec3 instanceColor;
+attribute float instanceSize;
+attribute float instanceShape;
+varying vec2 vSpriteCoord;
+varying vec3 vColor;
+varying float vDepthFade;
+varying float vZoomAtten;
+varying float vHeadCoreRadius;
+varying float vHeadWhiteCoreRadius;
+varying float vHeadGlowStrength;
+varying float vHeadSizeAtten;
+
+void main() {
+  vSpriteCoord = quadCorner * 0.5 + vec2(0.5);
+  vColor = instanceColor;
+  vec4 mvPosition = modelViewMatrix * vec4(instancePosition, 1.0);
+  float depth = max(-mvPosition.z, 1.0);
+  float linearScale = 500.0 / depth;
+  float distanceScale = pow(linearScale, 0.55);
+  float backgroundGlowScale = clamp(glowPadding / 100.0, 0.0, 2.0);
+  float maxCoreSize = 1280.0 / max(1.0 + backgroundGlowScale * 2.0, 1.0);
+  float coreSize = clamp(instanceSize * distanceScale, 4.0, maxCoreSize);
+  float haloPad = coreSize * backgroundGlowScale;
+  float pointSize = clamp(coreSize + haloPad * 2.0, 4.0, 1280.0);
+  float headCoreRadius = coreSize / max(pointSize * 2.0, 0.0001);
+  vHeadCoreRadius = headCoreRadius;
+  float whiteCoreVisualRadius = headCoreRadius * clamp(whiteCoreSizePercent / 100.0, 0.0, 1.0);
+  vHeadWhiteCoreRadius = min(
+    whiteCoreVisualRadius,
+    headCoreRadius
+  );
+  vHeadGlowStrength = clamp(max(instanceShape - 2.0, 0.0) * 4.0, 0.0, 3.0);
+  vHeadSizeAtten = clamp(pow(16.0 / max(instanceSize, 1.0), 0.38), 0.58, 1.22);
+  vDepthFade = smoothstep(6200.0, 800.0, -mvPosition.z);
+  vZoomAtten = pow(clamp(linearScale, 0.0, 1.0), 0.5);
+
+  vec4 clipPosition = projectionMatrix * mvPosition;
+  vec2 pixelOffset = quadCorner * pointSize * 0.5;
+  vec2 clipOffset = pixelOffset * 2.0 / max(viewport, vec2(1.0)) * clipPosition.w;
+  clipPosition.xy += clipOffset;
+  gl_Position = clipPosition;
+}
+`;
+
+export const HEAD_BILLBOARD_FRAGMENT_SHADER = /* glsl */ `
+uniform float glowPadding;
+uniform float whiteCoreBlurPercent;
+uniform float coreSoftness;
+uniform float coreBrightness;
+uniform float coreOpacityFalloff;
+uniform float glowSize;
+uniform float glowSoftness;
+uniform float glowOpacityFalloff;
+uniform float glowBlur;
+uniform float backgroundGlowOpacityFalloff;
+uniform float backgroundGlowSoftness;
+varying vec2 vSpriteCoord;
+varying vec3 vColor;
+varying float vDepthFade;
+varying float vZoomAtten;
+varying float vHeadCoreRadius;
+varying float vHeadWhiteCoreRadius;
+varying float vHeadGlowStrength;
+varying float vHeadSizeAtten;
+
+void main() {
+  vec2 centered = vSpriteCoord - vec2(0.5);
+  float roundDistance = length(centered);
+  if (roundDistance > 0.5) discard;
+
+  float headGlowStrength = clamp(vHeadGlowStrength, 0.0, 3.0);
+  float glowT = headGlowStrength / 3.0;
+  float coreRadius = clamp(vHeadCoreRadius, 0.001, 0.5);
+  float coreEdge = max(fwidth(roundDistance) * 1.5, 0.0015);
+  float headCore = 1.0 - smoothstep(coreRadius - coreEdge, coreRadius + coreEdge, roundDistance);
+  // Exemplar-style soft core (mirrors the point-sprite path): softness slides
+  // the falloff inward so the disc reads as a smoothly glowing orb.
+  float coreSoft = clamp(coreSoftness / 100.0, 0.0, 1.0);
+  float coreGain = clamp(coreBrightness / 100.0, 0.2, 3.0);
+  float coreBlurT = pow(coreSoft, 1.12);
+  float softInner = coreRadius * mix(0.94, -0.24, coreBlurT);
+  float softCore = 1.0 - smoothstep(softInner, coreRadius + coreEdge, roundDistance);
+  softCore = pow(softCore, mix(1.0, 1.65, coreBlurT));
+  float headCoreShaped = mix(headCore, softCore, coreSoft);
+  float coreOpacityT = clamp(coreOpacityFalloff / 100.0, 0.0, 1.0);
+  float headCoreAlpha = mix(headCore, headCoreShaped, coreOpacityT);
+  float whiteCoreRadius = clamp(vHeadWhiteCoreRadius, 0.0, coreRadius);
+  float whiteCoreBlur = clamp(whiteCoreBlurPercent / 100.0, 0.0, 1.0);
+  float whiteCoreEdge = max(fwidth(roundDistance) * 1.25, 0.0015);
+  float whiteCoreBlurWidth = coreRadius * pow(whiteCoreBlur, 0.82) * 3.2;
+  float whiteCoreFeatherStart = max(whiteCoreRadius - whiteCoreBlurWidth * 0.75, 0.0);
+  float whiteCoreFeatherEnd = min(0.5, whiteCoreRadius + max(whiteCoreBlurWidth, whiteCoreEdge));
+  float whiteCoreSharpMask = 1.0 - step(whiteCoreRadius, roundDistance);
+  float whiteCoreBlurMask = 1.0 - smoothstep(whiteCoreFeatherStart, whiteCoreFeatherEnd, roundDistance);
+  float whiteCoreDissolve = mix(1.0, 0.08, pow(whiteCoreBlur, 1.1));
+  float whiteCore = step(0.0005, whiteCoreRadius) * mix(
+    whiteCoreSharpMask,
+    whiteCoreBlurMask * whiteCoreDissolve,
+    whiteCoreBlur
+  );
+  float whiteCoreColourBlur = step(0.0005, whiteCoreRadius) * whiteCoreBlur * (1.0 - whiteCore) * (1.0 - smoothstep(
+    0.0,
+    whiteCoreFeatherEnd,
+    roundDistance
+  ));
+  float haloSpan = max(0.5 - coreRadius, 0.001);
+  float outsideCore = smoothstep(coreRadius - coreEdge, coreRadius + coreEdge, roundDistance);
+  float glowRadiusT = clamp(glowSize / 100.0, 0.0, 1.0);
+  float glowSoftnessT = clamp(glowSoftness / 100.0, 0.0, 1.0);
+  float closeGlowRadius = min(0.5, coreRadius + haloSpan * mix(0.18, 0.96, glowRadiusT));
+  float closeGlowFalloff = mix(28.0, 0.08, pow(glowSoftnessT, 1.24));
+  float closeGlowDistance = roundDistance / max(closeGlowRadius, 0.001);
+  float headGlow = exp(-closeGlowDistance * closeGlowDistance * closeGlowFalloff);
+  headGlow *= 1.0 - smoothstep(closeGlowRadius, min(0.5, closeGlowRadius + coreEdge * 4.0), roundDistance);
+  headGlow *= mix(0.22, 1.0, outsideCore);
+  float spriteDistance = roundDistance / 0.5;
+  float glowOpacityT = clamp(glowOpacityFalloff / 100.0, 0.0, 1.0);
+  float glowEdgeStart = mix(0.98, 0.48, glowOpacityT);
+  float glowEdgeFade = 1.0 - smoothstep(glowEdgeStart, 1.0, spriteDistance);
+  headGlow *= glowEdgeFade;
+  headGlow *= glowT;
+  headGlow *= mix(0.55, 1.0, vZoomAtten);
+  // Background glow (mirrors the point-sprite path): broad coloured wash behind
+  // the whole star, sized by the sprite room from the background-glow control.
+  float backgroundGlowSize = clamp(glowPadding / 200.0, 0.0, 1.0);
+  float backgroundRoom = smoothstep(0.0, 0.28, 0.5 - coreRadius) * smoothstep(0.0, 0.03, backgroundGlowSize);
+  float backgroundDistance = spriteDistance;
+  float backgroundBlurT = clamp(backgroundGlowSoftness / 100.0, 0.0, 1.0);
+  float backgroundFalloff = mix(30.0, 0.035, pow(backgroundBlurT, 1.32));
+  backgroundFalloff *= mix(1.0, 0.72, backgroundGlowSize);
+  float backgroundGlow = exp(-backgroundDistance * backgroundDistance * backgroundFalloff);
+  float backgroundOpacityT = clamp(backgroundGlowOpacityFalloff / 100.0, 0.0, 1.0);
+  float backgroundEdgeStart = mix(0.99, 0.34, backgroundOpacityT);
+  float backgroundEdgeFade = 1.0 - smoothstep(backgroundEdgeStart, 1.0, backgroundDistance);
+  backgroundGlow *= backgroundRoom * backgroundEdgeFade * clamp(glowBlur / 100.0, 0.0, 1.0);
+  backgroundGlow *= mix(0.55, 1.0, vZoomAtten);
+
+  float intensity = (headCoreShaped * coreGain + headGlow * (0.46 + headGlowStrength * 0.16) + backgroundGlow * 1.25 + whiteCoreColourBlur * 1.15) * vHeadSizeAtten;
+  float alpha = clamp((headCoreAlpha + headGlow * (0.22 + headGlowStrength * 0.07) + backgroundGlow * 0.72 + whiteCoreColourBlur * 0.65) * vHeadSizeAtten * vDepthFade, 0.0, 1.0);
+  if (alpha < 0.01) discard;
+  vec3 headSparkColor = mix(vColor, vec3(1.0), whiteCore);
+  gl_FragColor = vec4(headSparkColor * intensity, alpha);
 }
 `;
 

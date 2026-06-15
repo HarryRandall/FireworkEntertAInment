@@ -7,7 +7,7 @@
  * is intentionally `dynamic`-imported by parents to avoid SSR.
  */
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { Axis3d, Hand, RotateCcw, Settings, ZoomIn, ZoomOut } from 'lucide-react';
+import { Activity, Axis3d, Hand, RotateCcw, Settings, Sun, X, ZoomIn, ZoomOut } from 'lucide-react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
@@ -16,7 +16,19 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { ReplayCue } from '@/lib/show-domain';
 import { FireworksEngine } from '@/lib/fireworks/FireworksEngine';
-import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@/lib/fireworks/design';
+import type { FireworkSceneMode } from '@/lib/fireworks/World';
+import {
+  DEFAULT_LAUNCH_POSITIONS,
+  type FireworkDesign,
+  type LaunchPosition,
+} from '@/lib/fireworks/design';
+import {
+  DEFAULT_FIREWORK_HEAD_STYLE,
+  DEFAULT_FIREWORK_RENDER_TUNING,
+  type FireworkHeadStyle,
+  type FireworkRenderTuning,
+} from '@/lib/fireworks/render-tuning';
+import { Button } from '@/app/components/ui/Button';
 
 type Props = {
   cues: ReplayCue[];
@@ -29,6 +41,10 @@ type Props = {
   muted?: boolean;
   interactive?: boolean;
   controlsVisible?: boolean;
+  showFps?: boolean;
+  renderTuning?: Partial<FireworkRenderTuning>;
+  headStyle?: Partial<FireworkHeadStyle>;
+  trailWidthGuideDesign?: FireworkDesign | null;
   onReady?: () => void;
 };
 
@@ -54,6 +70,25 @@ const MAX_CAMERA_DISTANCE = 3000;
 const BLOOM_STRENGTH = 0.38;
 const BLOOM_RADIUS = 0.18;
 const BLOOM_THRESHOLD = 0.52;
+const FPS_SAMPLE_WINDOW_MS = 100;
+const FPS_HISTORY_SIZE = 80;
+const FPS_GRAPH_WIDTH = 184;
+const FPS_GRAPH_HEIGHT = 40;
+const FPS_GRAPH_MAX = 120;
+const FPS_CURVE_TENSION = 0.22;
+const FPS_SMOOTHING_FACTOR = 0.16;
+const TRAIL_WIDTH_GUIDE_RINGS = 7;
+const TRAIL_WIDTH_GUIDE_SEGMENTS = 10;
+const TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY = 0.58;
+const TRAIL_WIDTH_GUIDE_STAR_INDEX = 0;
+const GUIDE_GRAVITY = -9.82;
+const GUIDE_STAR_MIN_GRAVITY = -1.85;
+const GUIDE_STAR_MAX_GRAVITY = 0.28;
+const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
+  fibonacci: 1,
+  wave: 2,
+  strobe: 3,
+};
 
 /**
  * Pan the whole camera rig (camera + target together) up by `lift` units. Used
@@ -69,6 +104,308 @@ function liftCameraRig(
   controls.target.y += lift;
 }
 
+type FpsGraphPoint = {
+  x: number;
+  y: number;
+};
+
+function fpsSampleToY(value: number): number {
+  const clamped = Math.max(0, Math.min(FPS_GRAPH_MAX, value));
+  return FPS_GRAPH_HEIGHT - (clamped / FPS_GRAPH_MAX) * FPS_GRAPH_HEIGHT;
+}
+
+function buildFpsGraphPoints(samples: number[], currentFps: number | null): FpsGraphPoint[] {
+  const values = samples.length > 0 ? samples : currentFps == null ? [0] : [currentFps];
+  const step = FPS_GRAPH_WIDTH / (FPS_HISTORY_SIZE - 1);
+
+  return values.map((value, index) => ({
+    x: FPS_GRAPH_WIDTH - (values.length - 1 - index) * step,
+    y: fpsSampleToY(value),
+  }));
+}
+
+function buildFpsGraphPath(samples: number[], currentFps: number | null): string {
+  const points = buildFpsGraphPoints(samples, currentFps);
+  if (points.length === 1) {
+    const [{ y }] = points;
+    return `M ${(FPS_GRAPH_WIDTH - 1).toFixed(2)} ${y.toFixed(2)} L ${FPS_GRAPH_WIDTH.toFixed(
+      2,
+    )} ${y.toFixed(2)}`;
+  }
+
+  const [first] = points;
+  return points.slice(1).reduce(
+    (path, point, index) => {
+      const pointIndex = index + 1;
+      const previous = points[pointIndex - 1];
+      const beforePrevious = points[pointIndex - 2] ?? previous;
+      const afterPoint = points[pointIndex + 1] ?? point;
+      const cp1x = previous.x + (point.x - beforePrevious.x) * FPS_CURVE_TENSION;
+      const cp1y = previous.y + (point.y - beforePrevious.y) * FPS_CURVE_TENSION;
+      const cp2x = point.x - (afterPoint.x - previous.x) * FPS_CURVE_TENSION;
+      const cp2y = point.y - (afterPoint.y - previous.y) * FPS_CURVE_TENSION;
+
+      return `${path} C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(
+        2,
+      )} ${cp2y.toFixed(2)}, ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    },
+    `M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`,
+  );
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function rangeMid(range: [number, number]): number {
+  return (range[0] + range[1]) / 2;
+}
+
+function trailWidthGuideRadiusAt(design: FireworkDesign, positionPercent: number): number {
+  const width = design.burstTrail.width;
+  const t = Math.pow(clamp01(positionPercent / 100), width.curve);
+  return width.front + (width.tail - width.front) * t;
+}
+
+function fibonacciDirection(index: number, count: number): THREE.Vector3 {
+  const offset = 2 / count;
+  const inc = Math.PI * (3.0 - Math.sqrt(5.0));
+  const y = index * offset - 1 + offset / 2;
+  const r = Math.sqrt(Math.max(0, 1 - y * y));
+  const phi = ((index + 1.0) % count) * inc;
+  return new THREE.Vector3(Math.cos(phi) * r, y, Math.sin(phi) * r);
+}
+
+function burstParticleCount(design: FireworkDesign): number {
+  switch (design.geometry) {
+    case 'radial_arms':
+      return Math.max(44, Math.round(design.size * 0.46));
+    case 'falling_tail':
+      return Math.max(52, Math.round(design.size * 0.62));
+    case 'pearls':
+      return Math.max(18, Math.round(design.size * 0.18));
+    case 'ring':
+      return Math.max(72, Math.round(design.size * 0.72));
+    case 'fragment_cloud':
+      return Math.max(90, Math.round(design.size * 0.9));
+    default:
+      return Math.max(1, Math.round(design.size));
+  }
+}
+
+function buildTrailWidthGuideVelocity(design: FireworkDesign): THREE.Vector3 {
+  const speed = rangeMid(design.burst.speed);
+  if (design.geometry === 'upward_fan') return new THREE.Vector3(0, speed * 1.625, 0);
+  if (design.geometry === 'single_tail') return new THREE.Vector3(0, speed * 0.2, speed);
+
+  const count = burstParticleCount(design);
+  const index = Math.min(TRAIL_WIDTH_GUIDE_STAR_INDEX, count - 1);
+  const direction = fibonacciDirection(index, count);
+
+  switch (design.geometry) {
+    case 'ring': {
+      const angle = (index / count) * Math.PI * 2;
+      return new THREE.Vector3(Math.cos(angle) * speed, Math.sin(angle) * speed * 0.96, 0);
+    }
+    case 'crown':
+    case 'weeping': {
+      const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
+      const lift = design.geometry === 'weeping' ? 0.575 : 0.86;
+      return new THREE.Vector3(
+        (direction.x / lateral) * speed * 0.825,
+        speed * lift,
+        (direction.z / lateral) * speed * 0.825,
+      );
+    }
+    case 'radial_arms': {
+      const arms = 7;
+      const arm = index % arms;
+      const angle = (arm / arms) * Math.PI * 2;
+      const length = 0.74 + Math.floor(index / arms) / Math.max(1, count / arms);
+      return new THREE.Vector3(
+        Math.cos(angle) * speed * length,
+        speed * 0.44,
+        Math.sin(angle) * speed * length,
+      );
+    }
+    case 'falling_tail': {
+      const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
+      return new THREE.Vector3(
+        (direction.x / lateral) * speed * 0.53,
+        -speed * 0.26,
+        (direction.z / lateral) * speed * 0.53,
+      );
+    }
+    case 'pearls': {
+      const angle = (index / count) * Math.PI * 2;
+      return new THREE.Vector3(
+        Math.cos(angle) * speed * 0.59,
+        speed * 0.675,
+        Math.sin(angle) * speed * 0.59,
+      );
+    }
+    case 'fragment_cloud':
+      return direction.multiplyScalar(speed * 1.11);
+    default: {
+      const warble = PATTERN_SEED[design.pattern] === 2 ? 1.03 : 1;
+      return direction.multiplyScalar(speed * warble);
+    }
+  }
+}
+
+function guideStarGravity(design: FireworkDesign): number {
+  const gravity = clamp(
+    rangeMid(design.burst.gravity),
+    GUIDE_STAR_MIN_GRAVITY,
+    GUIDE_STAR_MAX_GRAVITY,
+  );
+  switch (design.geometry) {
+    case 'weeping':
+      return clamp(gravity * 0.52, GUIDE_STAR_MIN_GRAVITY, -0.08);
+    case 'falling_tail':
+    case 'waterfall':
+      return clamp(gravity * 0.45, GUIDE_STAR_MIN_GRAVITY, -0.05);
+    case 'pearls':
+      return clamp(gravity * 1.15, GUIDE_STAR_MIN_GRAVITY, -0.18);
+    default:
+      return gravity;
+  }
+}
+
+function shellApexSeconds(design: FireworkDesign, cue?: ReplayCue): number {
+  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const panRadians = ((cue?.shotPanDegrees ?? 0) * Math.PI) / 180;
+  const vy = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
+  return Math.max(0, vy / Math.abs(GUIDE_GRAVITY));
+}
+
+function trailWidthGuideBurstCentre(
+  design: FireworkDesign,
+  cues: ReplayCue[],
+  launchPositions: LaunchPosition[],
+): THREE.Vector3 {
+  const cue = cues[0];
+  const idx = cue?.launchPositionIndex ?? 0;
+  const basePos = launchPositions[idx] ?? DEFAULT_LAUNCH_POSITIONS[0];
+  const override = cue?.shotPositionOverride;
+  const x = basePos.x + (override?.x ?? 0);
+  const y = basePos.y + (override?.y ?? 0);
+  const z = basePos.z + (override?.z ?? 0);
+  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const panRadians = ((cue?.shotPanDegrees ?? 0) * Math.PI) / 180;
+  const tiltRadians = ((cue?.shotTiltDegrees ?? 0) * Math.PI) / 180;
+  const vx = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
+  const vz = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
+  const vy = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
+  const apexSeconds = shellApexSeconds(design, cue);
+
+  return new THREE.Vector3(
+    x + vx * apexSeconds * 100,
+    y + (vy * apexSeconds + 0.5 * GUIDE_GRAVITY * apexSeconds * apexSeconds) * 100,
+    z + vz * apexSeconds * 100,
+  );
+}
+
+function pushLine(vertices: number[], a: THREE.Vector3, b: THREE.Vector3): void {
+  vertices.push(a.x, a.y, a.z, b.x, b.y, b.z);
+}
+
+function createTrailWidthGuide(
+  design: FireworkDesign,
+  elapsed: number,
+  cues: ReplayCue[],
+  launchPositions: LaunchPosition[],
+): THREE.Group | null {
+  if (!design.burstTrail.enabled || design.burstTrail.particlesPerStar <= 0) return null;
+
+  const cue = cues[0];
+  const starAge = Math.max(0, elapsed - (cue?.timeSeconds ?? 0) - shellApexSeconds(design, cue));
+  const starLife = Math.max(0.01, rangeMid(design.burst.life));
+  const visibleAge = Math.min(starAge, starLife);
+  if (visibleAge <= 0) return null;
+
+  const velocity = buildTrailWidthGuideVelocity(design);
+  const displacement = velocity
+    .clone()
+    .multiplyScalar(visibleAge * 100)
+    .add(new THREE.Vector3(0, 0.5 * guideStarGravity(design) * visibleAge * visibleAge * 100, 0));
+  const pathLength = displacement.length();
+  if (pathLength <= 1) return null;
+
+  const direction = displacement.normalize();
+  const burstCentre = trailWidthGuideBurstCentre(design, cues, launchPositions);
+  const vertices: number[] = [];
+
+  const worldUp =
+    Math.abs(direction.y) > 0.92 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+  const right = new THREE.Vector3().crossVectors(direction, worldUp);
+  if (right.lengthSq() < 1e-5) right.set(1, 0, 0);
+  right.normalize();
+  const up = new THREE.Vector3().crossVectors(right, direction).normalize();
+  let previousRing: THREE.Vector3[] | null = null;
+
+  for (let ringIndex = 0; ringIndex < TRAIL_WIDTH_GUIDE_RINGS; ringIndex++) {
+    const progress = ringIndex / (TRAIL_WIDTH_GUIDE_RINGS - 1);
+    const oldTailPositionPercent = (1 - progress) * 100;
+    const radius = Math.max(0, trailWidthGuideRadiusAt(design, oldTailPositionPercent));
+    const centre = burstCentre.clone().addScaledVector(direction, pathLength * progress);
+    const ring = Array.from({ length: TRAIL_WIDTH_GUIDE_SEGMENTS }, (_, segmentIndex) => {
+      const angle = (segmentIndex / TRAIL_WIDTH_GUIDE_SEGMENTS) * Math.PI * 2;
+      return centre
+        .clone()
+        .addScaledVector(right, Math.cos(angle) * radius)
+        .addScaledVector(up, Math.sin(angle) * radius);
+    });
+
+    for (let segmentIndex = 0; segmentIndex < TRAIL_WIDTH_GUIDE_SEGMENTS; segmentIndex++) {
+      pushLine(vertices, ring[segmentIndex], ring[(segmentIndex + 1) % TRAIL_WIDTH_GUIDE_SEGMENTS]);
+      if (previousRing) pushLine(vertices, previousRing[segmentIndex], ring[segmentIndex]);
+    }
+
+    previousRing = ring;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  const material = new THREE.LineBasicMaterial({
+    color: 0x9eefff,
+    transparent: true,
+    opacity: TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY,
+    depthWrite: false,
+    depthTest: false,
+    toneMapped: false,
+  });
+  const lines = new THREE.LineSegments(geometry, material);
+  lines.name = 'trail-width-guide-lines';
+  lines.renderOrder = 9;
+
+  const group = new THREE.Group();
+  group.name = 'trail-width-guide';
+  group.userData.trailWidthGuide = true;
+  group.add(lines);
+  return group;
+}
+
+function disposeTrailWidthGuide(group: THREE.Group | null): void {
+  if (!group) return;
+  group.traverse((child) => {
+    const object = child as THREE.Object3D & {
+      geometry?: THREE.BufferGeometry;
+      material?: THREE.Material | THREE.Material[];
+    };
+    object.geometry?.dispose();
+    if (Array.isArray(object.material)) {
+      object.material.forEach((material) => material.dispose());
+    } else {
+      object.material?.dispose();
+    }
+  });
+}
+
 export function FireworkReplayCanvas({
   cues,
   elapsed,
@@ -77,6 +414,10 @@ export function FireworkReplayCanvas({
   muted = false,
   interactive = true,
   controlsVisible = true,
+  showFps = false,
+  renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
+  headStyle = DEFAULT_FIREWORK_HEAD_STYLE,
+  trailWidthGuideDesign = null,
   onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -86,8 +427,13 @@ export function FireworkReplayCanvas({
   const composerRef = useRef<EffectComposer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
+  const trailWidthGuideRef = useRef<THREE.Group | null>(null);
   const rafRef = useRef<number | null>(null);
   const internalElapsedRef = useRef(elapsed);
+  const showFpsRef = useRef(showFps);
+  const fpsFrameCountRef = useRef(0);
+  const fpsSampleStartedAtRef = useRef(0);
+  const fpsSmoothedRef = useRef<number | null>(null);
   const forceRenderRef = useRef(true);
   const interactionRenderUntilRef = useRef(0);
   // Current upward pan applied to keep the camera off the floor (see loop).
@@ -96,16 +442,68 @@ export function FireworkReplayCanvas({
   const [panMode, setPanMode] = useState(false);
   const [showCameraControls, setShowCameraControls] = useState(false);
   const [showViewHelper, setShowViewHelper] = useState(false);
+  const [sceneMode, setSceneMode] = useState<FireworkSceneMode>('night');
+  const [showFpsOverlay, setShowFpsOverlay] = useState(showFps);
+  const [fps, setFps] = useState<number | null>(null);
+  const [fpsSamples, setFpsSamples] = useState<number[]>([]);
   const onReadyRef = useRef(onReady);
+  const glowPadding = renderTuning.glowPadding ?? DEFAULT_FIREWORK_RENDER_TUNING.glowPadding;
+  const whiteCoreSizePercent =
+    renderTuning.whiteCoreSizePercent ?? DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent;
+  const whiteCoreBlurPercent =
+    renderTuning.whiteCoreBlurPercent ?? DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent;
+  const coreSoftness = headStyle.coreSoftness ?? DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness;
+  const coreBrightness = headStyle.coreBrightness ?? DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness;
+  const coreOpacityFalloff =
+    headStyle.coreOpacityFalloff ?? DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff;
+  const glowSize = headStyle.glowSize ?? DEFAULT_FIREWORK_HEAD_STYLE.glowSize;
+  const glowSoftness = headStyle.glowSoftness ?? DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness;
+  const glowOpacityFalloff =
+    headStyle.glowOpacityFalloff ?? DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff;
+  const glowBlur = headStyle.glowBlur ?? DEFAULT_FIREWORK_HEAD_STYLE.glowBlur;
+  const backgroundGlowOpacityFalloff =
+    headStyle.backgroundGlowOpacityFalloff ??
+    DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff;
+  const backgroundGlowSoftness =
+    headStyle.backgroundGlowSoftness ?? DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness;
 
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
 
+  useEffect(() => {
+    setShowFpsOverlay(showFps);
+  }, [showFps]);
+
+  useEffect(() => {
+    showFpsRef.current = showFpsOverlay;
+    fpsFrameCountRef.current = 0;
+    fpsSampleStartedAtRef.current = 0;
+    fpsSmoothedRef.current = null;
+    if (!showFpsOverlay) {
+      setFps(null);
+      setFpsSamples([]);
+    }
+  }, [showFpsOverlay]);
+
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
     [launchPositions],
   );
+  const trailWidthGuideKey = trailWidthGuideDesign
+    ? [
+        trailWidthGuideDesign.burstTrail.enabled ? 'on' : 'off',
+        trailWidthGuideDesign.burstTrail.particlesPerStar,
+        trailWidthGuideDesign.geometry,
+        trailWidthGuideDesign.pattern,
+        trailWidthGuideDesign.size,
+        trailWidthGuideDesign.burst.speed.join(','),
+        trailWidthGuideDesign.burst.life.join(','),
+        trailWidthGuideDesign.burstTrail.width.front,
+        trailWidthGuideDesign.burstTrail.width.tail,
+        trailWidthGuideDesign.burstTrail.width.curve,
+      ].join('|')
+    : 'none';
 
   useEffect(() => {
     showViewHelperRef.current = showViewHelper;
@@ -119,6 +517,27 @@ export function FireworkReplayCanvas({
   function renderFor(milliseconds: number) {
     interactionRenderUntilRef.current = performance.now() + milliseconds;
     forceRenderRef.current = true;
+  }
+
+  function sampleFps(now: number) {
+    if (!showFpsRef.current) return;
+    if (fpsSampleStartedAtRef.current === 0) fpsSampleStartedAtRef.current = now;
+    fpsFrameCountRef.current += 1;
+    const elapsedMs = now - fpsSampleStartedAtRef.current;
+    if (elapsedMs < FPS_SAMPLE_WINDOW_MS) return;
+
+    const measuredFps = Math.round((fpsFrameCountRef.current * 1000) / elapsedMs);
+    const previousSmoothedFps = fpsSmoothedRef.current;
+    const smoothedFps =
+      previousSmoothedFps == null
+        ? measuredFps
+        : previousSmoothedFps + (measuredFps - previousSmoothedFps) * FPS_SMOOTHING_FACTOR;
+    fpsSmoothedRef.current = smoothedFps;
+    const nextFps = Math.round(smoothedFps);
+    setFps((current) => (current === nextFps ? current : nextFps));
+    setFpsSamples((samples) => [...samples.slice(-(FPS_HISTORY_SIZE - 1)), nextFps]);
+    fpsFrameCountRef.current = 0;
+    fpsSampleStartedAtRef.current = now;
   }
 
   useEffect(() => {
@@ -207,10 +626,29 @@ export function FireworkReplayCanvas({
     controls.addEventListener('change', onControlsChange);
     controls.addEventListener('end', onControlsEnd);
 
-    const engine = new FireworksEngine(scene, launchPositions);
+    const engine = new FireworksEngine(scene, launchPositions, renderer);
     engine.attachListenerToCamera(camera);
     engine.setMuted(muted);
+    engine.setSceneMode(sceneMode);
+    engine.setRenderTuning({ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent });
+    engine.setHeadStyle({
+      coreSoftness,
+      coreBrightness,
+      coreOpacityFalloff,
+      glowSize,
+      glowSoftness,
+      glowOpacityFalloff,
+      glowBlur,
+      backgroundGlowOpacityFalloff,
+      backgroundGlowSoftness,
+    });
     engineRef.current = engine;
+    const drawingBufferSize = new THREE.Vector2();
+    function syncEngineViewport() {
+      renderer.getDrawingBufferSize(drawingBufferSize);
+      engine.setViewport(drawingBufferSize.x, drawingBufferSize.y);
+    }
+    syncEngineViewport();
     composer.render(0);
     onReadyRef.current?.();
 
@@ -247,6 +685,7 @@ export function FireworkReplayCanvas({
       // are scrubs — coalesce them to ~16Hz so rapid drag events collapse to
       // one seek instead of one per drag tick.
       const now = performance.now();
+      sampleFps(now);
       const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
       const engineMayUpdate = !isLargeJump || now - lastEngineUpdate >= 60;
       if (timelineChanged && engineMayUpdate) {
@@ -304,6 +743,7 @@ export function FireworkReplayCanvas({
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
       composer.setSize(w, h);
+      syncEngineViewport();
       forceRenderRef.current = true;
     }
     const ro = new ResizeObserver(onResize);
@@ -313,6 +753,11 @@ export function FireworkReplayCanvas({
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (trailWidthGuideRef.current) {
+        scene.remove(trailWidthGuideRef.current);
+        disposeTrailWidthGuide(trailWidthGuideRef.current);
+        trailWidthGuideRef.current = null;
+      }
       controls.removeEventListener('start', onControlsStart);
       controls.removeEventListener('change', onControlsChange);
       controls.removeEventListener('end', onControlsEnd);
@@ -340,6 +785,38 @@ export function FireworkReplayCanvas({
   }, [cues]);
 
   useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    const guide = trailWidthGuideDesign
+      ? createTrailWidthGuide(
+          trailWidthGuideDesign,
+          playbackRef?.current ?? elapsed,
+          cues,
+          launchPositions,
+        )
+      : null;
+    if (trailWidthGuideRef.current) {
+      scene.remove(trailWidthGuideRef.current);
+      disposeTrailWidthGuide(trailWidthGuideRef.current);
+      trailWidthGuideRef.current = null;
+    }
+    if (guide) {
+      scene.add(guide);
+      trailWidthGuideRef.current = guide;
+    }
+    forceRenderRef.current = true;
+
+    return () => {
+      if (!guide || trailWidthGuideRef.current !== guide) return;
+      scene.remove(guide);
+      disposeTrailWidthGuide(guide);
+      trailWidthGuideRef.current = null;
+      forceRenderRef.current = true;
+    };
+  }, [cues, elapsed, launchPositions, playbackRef, trailWidthGuideDesign, trailWidthGuideKey]);
+
+  useEffect(() => {
     engineRef.current?.setLaunchPositions(launchPositions);
     forceRenderRef.current = true;
     // positionsKey is the dependency surrogate so we don't re-fire on
@@ -350,6 +827,51 @@ export function FireworkReplayCanvas({
   useEffect(() => {
     engineRef.current?.setMuted(muted);
   }, [muted]);
+
+  useEffect(() => {
+    engineRef.current?.setSceneMode(sceneMode);
+    const scene = sceneRef.current;
+    if (scene) {
+      if (sceneMode === 'day') {
+        scene.background = new THREE.Color(0x0a3a86);
+        scene.fog = null;
+      } else {
+        scene.background = new THREE.Color(0x020409);
+        scene.fog = new THREE.FogExp2(0x05070f, 0.00012);
+      }
+    }
+    renderFor(360);
+  }, [sceneMode]);
+
+  useEffect(() => {
+    engineRef.current?.setRenderTuning({ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent });
+    forceRenderRef.current = true;
+  }, [glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent]);
+
+  useEffect(() => {
+    engineRef.current?.setHeadStyle({
+      coreSoftness,
+      coreBrightness,
+      coreOpacityFalloff,
+      glowSize,
+      glowSoftness,
+      glowOpacityFalloff,
+      glowBlur,
+      backgroundGlowOpacityFalloff,
+      backgroundGlowSoftness,
+    });
+    forceRenderRef.current = true;
+  }, [
+    coreSoftness,
+    coreBrightness,
+    coreOpacityFalloff,
+    glowSize,
+    glowSoftness,
+    glowOpacityFalloff,
+    glowBlur,
+    backgroundGlowOpacityFalloff,
+    backgroundGlowSoftness,
+  ]);
 
   useEffect(() => {
     if (controlsRef.current) controlsRef.current.enabled = interactive;
@@ -395,6 +917,9 @@ export function FireworkReplayCanvas({
   return (
     <>
       <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />
+      {showFpsOverlay ? (
+        <FpsGraph fps={fps} samples={fpsSamples} onClose={() => setShowFpsOverlay(false)} />
+      ) : null}
       {interactive ? (
         <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-1.5">
           <CanvasIconButton
@@ -428,6 +953,20 @@ export function FireworkReplayCanvas({
                 <RotateCcw size={16} strokeWidth={2} />
               </CanvasIconButton>
               <CanvasIconButton
+                onClick={() => setSceneMode((mode) => (mode === 'day' ? 'night' : 'day'))}
+                label={sceneMode === 'day' ? 'Night preview' : 'Day preview'}
+                active={sceneMode === 'day'}
+              >
+                <Sun size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton
+                onClick={() => setShowFpsOverlay((visible) => !visible)}
+                label={showFpsOverlay ? 'Hide FPS graph' : 'Show FPS graph'}
+                active={showFpsOverlay}
+              >
+                <Activity size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <CanvasIconButton
                 onClick={() => setShowViewHelper((on) => !on)}
                 label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
                 active={showViewHelper}
@@ -439,6 +978,76 @@ export function FireworkReplayCanvas({
         </div>
       ) : null}
     </>
+  );
+}
+
+function FpsGraph({
+  fps,
+  samples,
+  onClose,
+}: {
+  fps: number | null;
+  samples: number[];
+  onClose: () => void;
+}) {
+  const path = useMemo(() => buildFpsGraphPath(samples, fps), [fps, samples]);
+  const values = samples.length > 0 ? samples : fps == null ? [] : [fps];
+  const high = values.length > 0 ? Math.round(Math.max(...values)) : null;
+  const low = values.length > 0 ? Math.round(Math.min(...values)) : null;
+  const latest = fps == null ? '--' : String(fps);
+
+  return (
+    <div
+      data-testid="firework-fps-meter"
+      className="pointer-events-none absolute top-3 left-3 z-10 w-[10.667rem] font-mono text-white/85"
+      aria-label="FPS history graph"
+    >
+      <div className="relative grid grid-cols-[1.35rem_1fr_1.5rem] gap-1 rounded-md border border-white/20 bg-black/65 px-1.5 py-1 font-mono tabular-nums shadow-sm backdrop-blur-sm">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-destructive/15 hover:text-destructive pointer-events-auto absolute top-[2px] right-[2px] size-4 rounded-full bg-white/10 p-0 text-white/85 shadow-sm focus-visible:ring-white/30"
+          type="button"
+          aria-label="Close FPS graph"
+          title="Close FPS graph"
+          data-testid="firework-fps-close"
+          onClick={onClose}
+        >
+          <X size={10} strokeWidth={2} />
+        </Button>
+        <div className="flex flex-col justify-between py-0.5 text-[9px] leading-none font-semibold text-white/60">
+          <span>{high == null ? '--' : high}</span>
+          <span>{low == null ? '--' : low}</span>
+        </div>
+        <svg
+          aria-hidden="true"
+          viewBox={`0 0 ${FPS_GRAPH_WIDTH} ${FPS_GRAPH_HEIGHT}`}
+          className="h-10 w-full overflow-visible"
+          preserveAspectRatio="none"
+        >
+          <line
+            x1="0"
+            y1={FPS_GRAPH_HEIGHT * 0.5}
+            x2={FPS_GRAPH_WIDTH}
+            y2={FPS_GRAPH_HEIGHT * 0.5}
+            className="stroke-white/15"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+          <path
+            d={path}
+            className="fill-none stroke-white drop-shadow-[0_0_5px_rgba(255,255,255,0.65)]"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <div className="flex h-10 items-end justify-end pb-0.5 text-[11px] leading-none font-semibold text-white">
+          {latest}
+        </div>
+      </div>
+    </div>
   );
 }
 

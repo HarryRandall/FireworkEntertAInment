@@ -22,21 +22,32 @@ import {
 import { ParticlePool } from '@/lib/fireworks/ParticlePool';
 import { SoundHandler } from '@/lib/fireworks/SoundHandler';
 import { Lights } from '@/lib/fireworks/Lights';
-import { World } from '@/lib/fireworks/World';
+import { type FireworkSceneMode, World } from '@/lib/fireworks/World';
 import { Effects } from '@/lib/fireworks/Effects';
 import { Scheduler } from '@/lib/fireworks/Scheduler';
 import {
   FRAGMENT_SHADER,
+  HEAD_BILLBOARD_FRAGMENT_SHADER,
+  HEAD_BILLBOARD_VERTEX_SHADER,
   SMOKE_FRAGMENT_SHADER,
   SMOKE_VERTEX_SHADER,
   VERTEX_SHADER,
 } from '@/lib/fireworks/shaders';
 import { createSeededRng, mixSeed } from '@/lib/fireworks/random';
 import { HIDDEN_PARTICLE_SHAPE, type Particle } from '@/lib/fireworks/Particle';
+import {
+  DEFAULT_FIREWORK_HEAD_STYLE,
+  DEFAULT_FIREWORK_RENDER_TUNING,
+  HEAD_SPRITE_MAX_SIZE,
+  normaliseFireworkHeadStyle,
+  normaliseFireworkRenderTuning,
+  type FireworkHeadStyle,
+  type FireworkRenderTuning,
+} from '@/lib/fireworks/render-tuning';
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife,shape] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -54,7 +65,7 @@ const FIXED_DT = 1 / 60;
 // by ageing particles across each rebuilt segment.
 const SCRUB_DT = 1 / 24;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 17;
+const SNAPSHOT_STRIDE = 19;
 const MAX_SNAPSHOTS = 120;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
@@ -73,6 +84,10 @@ export class FireworksEngine {
   private geometry: THREE.BufferGeometry;
   private material: THREE.ShaderMaterial;
   private points: THREE.Points;
+  private headBillboardsEnabled: boolean;
+  private headBillboardGeometry: THREE.InstancedBufferGeometry | null = null;
+  private headBillboardMaterial: THREE.ShaderMaterial | null = null;
+  private headBillboardMesh: THREE.Mesh | null = null;
   private smokeGeometry: THREE.BufferGeometry;
   private smokeMaterial: THREE.ShaderMaterial;
   private smokePoints: THREE.Points;
@@ -81,16 +96,27 @@ export class FireworksEngine {
   private colors: Float32Array;
   private sizes: Float32Array;
   private shapes: Float32Array;
+  private rotations: Float32Array;
   private smokePositions: Float32Array;
   private smokeColors: Float32Array;
   private smokeSizes: Float32Array;
+  private headPositions: Float32Array | null = null;
+  private headColors: Float32Array | null = null;
+  private headSizes: Float32Array | null = null;
+  private headShapes: Float32Array | null = null;
   private positionAttribute: THREE.BufferAttribute;
   private colorAttribute: THREE.BufferAttribute;
   private sizeAttribute: THREE.BufferAttribute;
   private shapeAttribute: THREE.BufferAttribute;
+  private rotationAttribute: THREE.BufferAttribute;
   private smokePositionAttribute: THREE.BufferAttribute;
   private smokeColorAttribute: THREE.BufferAttribute;
   private smokeSizeAttribute: THREE.BufferAttribute;
+  private headPositionAttribute: THREE.InstancedBufferAttribute | null = null;
+  private headColorAttribute: THREE.InstancedBufferAttribute | null = null;
+  private headSizeAttribute: THREE.InstancedBufferAttribute | null = null;
+  private headShapeAttribute: THREE.InstancedBufferAttribute | null = null;
+  private viewport = new THREE.Vector2(1, 1);
 
   private elapsed = 0;
   private time = 0;
@@ -99,17 +125,39 @@ export class FireworksEngine {
   private readonly SNAPSHOT_INTERVAL = 1.0;
   private nextSnapshotAt = 0;
 
-  constructor(scene: THREE.Scene, launchPositions: LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS) {
+  constructor(
+    scene: THREE.Scene,
+    launchPositions: LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS,
+    renderer?: THREE.WebGLRenderer,
+    sceneMode: FireworkSceneMode = 'night',
+  ) {
     this.scene = scene;
     this.pool = new ParticlePool(PARTICLE_CAPACITY);
     this.sound = new SoundHandler();
     void this.sound.load();
     this.lights = new Lights(scene);
-    this.world = new World(scene, launchPositions);
+    this.world = new World(scene, launchPositions, sceneMode);
     this.effects = new Effects(this.pool, this.sound, this.lights);
     this.scheduler = new Scheduler();
+    this.headBillboardsEnabled = readMaxPointSize(renderer) < HEAD_SPRITE_MAX_SIZE;
 
     this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        glowPadding: { value: DEFAULT_FIREWORK_RENDER_TUNING.glowPadding },
+        whiteCoreSizePercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent },
+        whiteCoreBlurPercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent },
+        coreSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness },
+        coreBrightness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness },
+        coreOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff },
+        glowSize: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSize },
+        glowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness },
+        glowOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff },
+        glowBlur: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowBlur },
+        backgroundGlowOpacityFalloff: {
+          value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+        },
+        backgroundGlowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness },
+      },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
       blending: THREE.AdditiveBlending,
@@ -132,6 +180,7 @@ export class FireworksEngine {
     this.colors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.sizes = new Float32Array(PARTICLE_CAPACITY);
     this.shapes = new Float32Array(PARTICLE_CAPACITY);
+    this.rotations = new Float32Array(PARTICLE_CAPACITY);
     this.smokePositions = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeColors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeSizes = new Float32Array(PARTICLE_CAPACITY);
@@ -147,10 +196,14 @@ export class FireworksEngine {
     this.shapeAttribute = new THREE.BufferAttribute(this.shapes, 1).setUsage(
       THREE.DynamicDrawUsage,
     );
+    this.rotationAttribute = new THREE.BufferAttribute(this.rotations, 1).setUsage(
+      THREE.DynamicDrawUsage,
+    );
     this.geometry.setAttribute('position', this.positionAttribute);
     this.geometry.setAttribute('color', this.colorAttribute);
     this.geometry.setAttribute('size', this.sizeAttribute);
     this.geometry.setAttribute('shape', this.shapeAttribute);
+    this.geometry.setAttribute('rotation', this.rotationAttribute);
     this.geometry.setDrawRange(0, 0);
 
     this.smokeGeometry = new THREE.BufferGeometry();
@@ -176,6 +229,113 @@ export class FireworksEngine {
     this.points.renderOrder = 2;
     scene.add(this.smokePoints);
     scene.add(this.points);
+    if (this.headBillboardsEnabled) this.createHeadBillboards();
+  }
+
+  private createHeadBillboards(): void {
+    this.headPositions = new Float32Array(PARTICLE_CAPACITY * 3);
+    this.headColors = new Float32Array(PARTICLE_CAPACITY * 3);
+    this.headSizes = new Float32Array(PARTICLE_CAPACITY);
+    this.headShapes = new Float32Array(PARTICLE_CAPACITY);
+
+    const geometry = new THREE.InstancedBufferGeometry();
+    geometry.setAttribute(
+      'quadCorner',
+      new THREE.BufferAttribute(new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2),
+    );
+    geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    geometry.instanceCount = 0;
+
+    this.headPositionAttribute = new THREE.InstancedBufferAttribute(this.headPositions, 3).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    this.headColorAttribute = new THREE.InstancedBufferAttribute(this.headColors, 3).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    this.headSizeAttribute = new THREE.InstancedBufferAttribute(this.headSizes, 1).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    this.headShapeAttribute = new THREE.InstancedBufferAttribute(this.headShapes, 1).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    geometry.setAttribute('instancePosition', this.headPositionAttribute);
+    geometry.setAttribute('instanceColor', this.headColorAttribute);
+    geometry.setAttribute('instanceSize', this.headSizeAttribute);
+    geometry.setAttribute('instanceShape', this.headShapeAttribute);
+
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        glowPadding: { value: DEFAULT_FIREWORK_RENDER_TUNING.glowPadding },
+        whiteCoreSizePercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent },
+        whiteCoreBlurPercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent },
+        coreSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness },
+        coreBrightness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness },
+        coreOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff },
+        glowSize: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSize },
+        glowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness },
+        glowOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff },
+        glowBlur: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowBlur },
+        backgroundGlowOpacityFalloff: {
+          value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+        },
+        backgroundGlowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness },
+        viewport: { value: this.viewport },
+      },
+      vertexShader: HEAD_BILLBOARD_VERTEX_SHADER,
+      fragmentShader: HEAD_BILLBOARD_FRAGMENT_SHADER,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      vertexColors: false,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
+
+    this.headBillboardGeometry = geometry;
+    this.headBillboardMaterial = material;
+    this.headBillboardMesh = mesh;
+    this.scene.add(mesh);
+  }
+
+  setRenderTuning(tuning: Partial<FireworkRenderTuning> | null | undefined): void {
+    const next = normaliseFireworkRenderTuning(tuning);
+    this.material.uniforms.glowPadding.value = next.glowPadding;
+    this.material.uniforms.whiteCoreSizePercent.value = next.whiteCoreSizePercent;
+    this.material.uniforms.whiteCoreBlurPercent.value = next.whiteCoreBlurPercent;
+    if (this.headBillboardMaterial) {
+      this.headBillboardMaterial.uniforms.glowPadding.value = next.glowPadding;
+      this.headBillboardMaterial.uniforms.whiteCoreSizePercent.value = next.whiteCoreSizePercent;
+      this.headBillboardMaterial.uniforms.whiteCoreBlurPercent.value = next.whiteCoreBlurPercent;
+    }
+  }
+
+  /**
+   * Shape the glowing head orbs (brocade heads and star orbs): how soft the
+   * coloured core reads, how hot its centre burns, and the size/softness of the
+   * surrounding glow. Runtime/preview-only, like {@link setRenderTuning}.
+   */
+  setHeadStyle(style: Partial<FireworkHeadStyle> | null | undefined): void {
+    const next = normaliseFireworkHeadStyle(style);
+    const apply = (material: THREE.ShaderMaterial | null) => {
+      if (!material) return;
+      material.uniforms.coreSoftness.value = next.coreSoftness;
+      material.uniforms.coreBrightness.value = next.coreBrightness;
+      material.uniforms.coreOpacityFalloff.value = next.coreOpacityFalloff;
+      material.uniforms.glowSize.value = next.glowSize;
+      material.uniforms.glowSoftness.value = next.glowSoftness;
+      material.uniforms.glowOpacityFalloff.value = next.glowOpacityFalloff;
+      material.uniforms.glowBlur.value = next.glowBlur;
+      material.uniforms.backgroundGlowOpacityFalloff.value = next.backgroundGlowOpacityFalloff;
+      material.uniforms.backgroundGlowSoftness.value = next.backgroundGlowSoftness;
+    };
+    apply(this.material);
+    apply(this.headBillboardMaterial);
+  }
+
+  setViewport(width: number, height: number): void {
+    this.viewport.set(Math.max(1, width), Math.max(1, height));
   }
 
   attachListenerToCamera(camera: THREE.Camera): void {
@@ -187,6 +347,10 @@ export class FireworksEngine {
 
   setLaunchPositions(positions: LaunchPosition[]): void {
     this.world.rebuild(positions);
+  }
+
+  setSceneMode(sceneMode: FireworkSceneMode): void {
+    this.world.setSceneMode(sceneMode);
   }
 
   setMuted(muted: boolean): void {
@@ -227,6 +391,23 @@ export class FireworksEngine {
       cue.firework.renderDesign ?? compileFireworkDesign({ legacySpec: cue.firework.rawSpec }),
       cue.firework.caliber,
     );
+    // Head appearance is saved per design, so apply this firework's look as it
+    // fires. The orb uniforms are global, so in a show the most-recently fired
+    // firework's appearance wins for any orbs sharing the screen — fine for the
+    // editor preview (a single firework) and sequential shows.
+    const heads = design.stars.heads;
+    this.setRenderTuning({
+      glowPadding: heads.glowPadding,
+      whiteCoreSizePercent: heads.whiteCoreSizePercent,
+      whiteCoreBlurPercent: heads.whiteCoreBlurPercent,
+    });
+    this.setHeadStyle({
+      coreSoftness: heads.coreSoftness,
+      coreBrightness: heads.coreBrightness,
+      glowSize: heads.glowSize,
+      glowSoftness: heads.glowSoftness,
+      glowBlur: heads.glowBlur,
+    });
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const basePos = this.world.getLaunchPosition(idx);
     const override = cue.shotPositionOverride;
@@ -319,12 +500,18 @@ export class FireworksEngine {
     const colors = this.colors;
     const sizes = this.sizes;
     const shapes = this.shapes;
+    const rotations = this.rotations;
     const smokePositions = this.smokePositions;
     const smokeColors = this.smokeColors;
     const smokeSizes = this.smokeSizes;
+    const headPositions = this.headPositions;
+    const headColors = this.headColors;
+    const headSizes = this.headSizes;
+    const headShapes = this.headShapes;
     const count = this.pool.aliveCount;
     let drawCount = 0;
     let smokeDrawCount = 0;
+    let headDrawCount = 0;
     for (let slot = 0; slot < count; slot++) {
       const p = ps[live[slot]];
       if (!p.alive) continue;
@@ -332,11 +519,13 @@ export class FireworksEngine {
       // and emit their trails, but are never drawn.
       if (p.shape <= HIDDEN_PARTICLE_SHAPE) continue;
       const isStar = p.mass <= 0.0015;
+      const isHead = p.shape > 1.5;
       const isSmoke = p.mass >= 0.004 && p.mass < 0.01;
       // Subtle shimmer — enough to read as "alive" without strobing. Higher
       // amplitudes and faster frequencies caused per-particle flicker that
-      // looked like noise rather than burning chemistry.
-      const twinkle = isStar ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
+      // looked like noise rather than burning chemistry. Head orbs are exempt:
+      // they are meant to read as a steady, constant core, so they never twinkle.
+      const twinkle = isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
       const alpha = renderParticleAlpha(p) * twinkle;
       if (isSmoke) {
         const si = smokeDrawCount * 3;
@@ -351,41 +540,62 @@ export class FireworksEngine {
         smokeDrawCount++;
         continue;
       }
+      // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
+      // then settle into their pure burst colour as they cool — matches the
+      // way burning magnesium chemistry actually looks.
+      const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
+      // Brocade/head orbs keep their pure green/red; white-hot tinting made
+      // them blend into the burst centre.
+      const heat = isStar && p.shape < 1.5 ? Math.max(0, lifeRatio - 0.72) * 0.8 : 0;
+      const cool = 1 - heat;
+      const heatAdd = heat * alpha * BRIGHTNESS_BOOST;
+      const red = Math.min(
+        MAX_COLOR_INTENSITY,
+        p.color.r * alpha * BRIGHTNESS_BOOST * cool + heatAdd,
+      );
+      const green = Math.min(
+        MAX_COLOR_INTENSITY,
+        p.color.g * alpha * BRIGHTNESS_BOOST * cool + heatAdd,
+      );
+      const blue = Math.min(
+        MAX_COLOR_INTENSITY,
+        p.color.b * alpha * BRIGHTNESS_BOOST * cool + heatAdd * 0.78,
+      );
+      if (
+        this.headBillboardsEnabled &&
+        p.shape > 1.5 &&
+        headPositions &&
+        headColors &&
+        headSizes &&
+        headShapes
+      ) {
+        const hi = headDrawCount * 3;
+        headPositions[hi] = p.x;
+        headPositions[hi + 1] = p.y;
+        headPositions[hi + 2] = p.z;
+        headColors[hi] = red;
+        headColors[hi + 1] = green;
+        headColors[hi + 2] = blue;
+        headSizes[headDrawCount] = renderParticleSize(p);
+        headShapes[headDrawCount] = p.shape;
+        headDrawCount++;
+        continue;
+      }
       const pi = drawCount * 3;
       positions[pi] = p.x;
       positions[pi + 1] = p.y;
       positions[pi + 2] = p.z;
       sizes[drawCount] = renderParticleSize(p);
-      // Heat gradient: fresh stars (lifeRatio > 0.7) lean toward white-hot,
-      // then settle into their pure burst colour as they cool — matches the
-      // way burning magnesium chemistry actually looks.
-      const lifeRatio = clamp(p.life / Math.max(p.maxLife, p.life, 0.001), 0, 1);
-      // Burn-out halo: over the last quarter of a head's life, widen its glow
-      // (the shape attribute encodes glow strength as 2 + glow * 0.25) so the
-      // star glows out softly instead of vanishing.
-      const burnout = p.shape > 1.5 && lifeRatio < 0.25 ? 1 - lifeRatio / 0.25 : 0;
-      shapes[drawCount] = p.shape + burnout * 0.25;
-      // Brocade head orbs (shape 2) keep their pure green/red; white-hot
-      // tinting made them blend into the burst centre.
-      const heat = isStar && p.shape < 1.5 ? Math.max(0, lifeRatio - 0.72) * 0.8 : 0;
-      const cool = 1 - heat;
-      const heatAdd = heat * alpha * BRIGHTNESS_BOOST;
-      colors[pi] = Math.min(
-        MAX_COLOR_INTENSITY,
-        p.color.r * alpha * BRIGHTNESS_BOOST * cool + heatAdd,
-      );
-      colors[pi + 1] = Math.min(
-        MAX_COLOR_INTENSITY,
-        p.color.g * alpha * BRIGHTNESS_BOOST * cool + heatAdd,
-      );
-      colors[pi + 2] = Math.min(
-        MAX_COLOR_INTENSITY,
-        p.color.b * alpha * BRIGHTNESS_BOOST * cool + heatAdd * 0.78,
-      );
+      shapes[drawCount] = p.shape;
+      rotations[drawCount] = p.rotation;
+      colors[pi] = red;
+      colors[pi + 1] = green;
+      colors[pi + 2] = blue;
       drawCount++;
     }
     this.geometry.setDrawRange(0, drawCount);
     this.smokeGeometry.setDrawRange(0, smokeDrawCount);
+    if (this.headBillboardGeometry) this.headBillboardGeometry.instanceCount = headDrawCount;
     if (drawCount > 0) {
       const positionCount = drawCount * 3;
       this.positionAttribute.clearUpdateRanges();
@@ -403,6 +613,10 @@ export class FireworksEngine {
       this.shapeAttribute.clearUpdateRanges();
       this.shapeAttribute.addUpdateRange(0, drawCount);
       this.shapeAttribute.needsUpdate = true;
+
+      this.rotationAttribute.clearUpdateRanges();
+      this.rotationAttribute.addUpdateRange(0, drawCount);
+      this.rotationAttribute.needsUpdate = true;
     }
     if (smokeDrawCount > 0) {
       const smokePositionCount = smokeDrawCount * 3;
@@ -417,6 +631,30 @@ export class FireworksEngine {
       this.smokeSizeAttribute.clearUpdateRanges();
       this.smokeSizeAttribute.addUpdateRange(0, smokeDrawCount);
       this.smokeSizeAttribute.needsUpdate = true;
+    }
+    if (
+      headDrawCount > 0 &&
+      this.headPositionAttribute &&
+      this.headColorAttribute &&
+      this.headSizeAttribute &&
+      this.headShapeAttribute
+    ) {
+      const headPositionCount = headDrawCount * 3;
+      this.headPositionAttribute.clearUpdateRanges();
+      this.headPositionAttribute.addUpdateRange(0, headPositionCount);
+      this.headPositionAttribute.needsUpdate = true;
+
+      this.headColorAttribute.clearUpdateRanges();
+      this.headColorAttribute.addUpdateRange(0, headPositionCount);
+      this.headColorAttribute.needsUpdate = true;
+
+      this.headSizeAttribute.clearUpdateRanges();
+      this.headSizeAttribute.addUpdateRange(0, headDrawCount);
+      this.headSizeAttribute.needsUpdate = true;
+
+      this.headShapeAttribute.clearUpdateRanges();
+      this.headShapeAttribute.addUpdateRange(0, headDrawCount);
+      this.headShapeAttribute.needsUpdate = true;
     }
   }
 
@@ -458,6 +696,8 @@ export class FireworksEngine {
       state.data[o + 14] = p.drag;
       state.data[o + 15] = p.maxLife;
       state.data[o + 16] = p.shape;
+      state.data[o + 17] = p.rotation;
+      state.data[o + 18] = p.spin;
       w++;
     }
     return state;
@@ -487,6 +727,8 @@ export class FireworksEngine {
       p.drag = state.data[o + 14];
       p.maxLife = state.data[o + 15] || p.life;
       p.shape = state.data[o + 16] || 0;
+      p.rotation = state.data[o + 17] || 0;
+      p.spin = state.data[o + 18] || 0;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);
@@ -536,10 +778,13 @@ export class FireworksEngine {
   dispose(): void {
     this.scene.remove(this.smokePoints);
     this.scene.remove(this.points);
+    if (this.headBillboardMesh) this.scene.remove(this.headBillboardMesh);
     this.smokeGeometry.dispose();
     this.geometry.dispose();
+    this.headBillboardGeometry?.dispose();
     this.smokeMaterial.dispose();
     this.material.dispose();
+    this.headBillboardMaterial?.dispose();
     this.lights.dispose();
     this.world.dispose();
     if (this.camera) this.camera.remove(this.sound.listener);
@@ -578,9 +823,8 @@ function renderParticleAlpha(p: Particle): number {
   if (isFlash) peak = 0.14;
   else if (p.mass >= 0.1) peak = 0.28;
   else if (p.shape > 1.5) {
-    // Brocade heads hold full brightness for most of their life, then wink
-    // out quickly while the shader widens their halo — "glow out" rather
-    // than a long dim fade.
+    // Heads hold brightness for most of their life, then wink out quickly.
+    // The shader keeps the core opaque while this packed colour fades.
     const holdFade = Math.pow(clamp(lifeRatio / 0.18, 0, 1), 0.8);
     return clamp(0.7 * fadeIn * holdFade, 0, 0.82);
   } else if (p.shape > 0.5)
@@ -596,4 +840,12 @@ function renderParticleAlpha(p: Particle): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function readMaxPointSize(renderer?: THREE.WebGLRenderer): number {
+  if (!renderer) return HEAD_SPRITE_MAX_SIZE;
+  const gl = renderer.getContext();
+  const range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array | number[] | null;
+  const maxPointSize = range?.[1];
+  return Number.isFinite(maxPointSize) ? Number(maxPointSize) : HEAD_SPRITE_MAX_SIZE;
 }

@@ -63,6 +63,16 @@ export function getAdminFireworkCacheKey(productId: string): string {
   return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}`;
 }
 
+/** Cache key for the multishot composition list. */
+export function getAdminMultishotsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:multishots`;
+}
+
+/** Cache key for one multishot detail editor. */
+export function getAdminMultishotCacheKey(multishotId: string): string {
+  return `${ADMIN_CACHE_PREFIX}:multishots:${multishotId}`;
+}
+
 /** Cache key for the import job list. */
 export function getAdminImportsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:imports`;
@@ -124,6 +134,13 @@ export async function invalidateAdminEffectsCache(effectId?: string): Promise<vo
 export async function invalidateAdminFireworksCache(productId?: string): Promise<void> {
   const keys = [getAdminFireworksCacheKey()];
   if (productId) keys.push(getAdminFireworkCacheKey(productId));
+  await deleteCachedKeys(keys);
+}
+
+/** Invalidate multishot composition reads. */
+export async function invalidateAdminMultishotsCache(multishotId?: string): Promise<void> {
+  const keys = [getAdminMultishotsCacheKey()];
+  if (multishotId) keys.push(getAdminMultishotCacheKey(multishotId));
   await deleteCachedKeys(keys);
 }
 

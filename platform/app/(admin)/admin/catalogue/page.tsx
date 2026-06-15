@@ -15,14 +15,20 @@ import {
 } from '@/app/components/ui/DataTable';
 import { formatDuration } from '@/lib/show-domain';
 import { listCatalogueProducts } from '@/lib/admin.server';
-import { ProductFormDialog } from './ProductFormDialog';
 import { ProductRowActions } from './ProductRowActions';
+
+const KIND_LABELS: Record<string, string> = {
+  firework: 'Firework',
+  multishot: 'Multishot',
+  bundle: 'Bundle',
+  other: 'Other',
+};
 
 type PageProps = {
   searchParams: Promise<{
     q?: string;
     manufacturer?: string;
-    type?: string;
+    kind?: string;
     duration_min?: string;
     duration_max?: string;
     page?: string;
@@ -34,9 +40,10 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <div className="flex justify-end">
-        <ProductFormDialog />
-      </div>
+      <p className="text-sm text-[color:var(--color-content-subtle)]">
+        Everything in stock. Every firework and multishot appears here automatically and cannot be
+        deleted; edit stock metadata inline.
+      </p>
 
       <Suspense
         fallback={
@@ -45,7 +52,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
             <div className="min-h-0 flex-1 overflow-hidden">
               <TableSkeleton
                 rows={TABLE_PAGE_SIZE}
-                headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
+                headers={['Part', 'Item', 'Kind', 'Manufacturer', 'Duration', 'Actions']}
                 tableClassName="min-w-[960px]"
                 rowSize="relaxed"
               />
@@ -62,7 +69,7 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
 async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
   const query = (params.q ?? '').trim().toLowerCase();
   const manufacturerFilter = params.manufacturer;
-  const typeFilter = params.type;
+  const kindFilter = params.kind;
   const minDuration = params.duration_min ? Number(params.duration_min) : null;
   const maxDuration = params.duration_max ? Number(params.duration_max) : null;
   const requestedPage = Number(params.page ?? '1');
@@ -75,24 +82,22 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
     .sort()
     .map((v) => ({ value: v, label: v }));
 
-  const typeOptions = Array.from(
-    new Set(products.map((p) => p.fireworkType).filter((v): v is string => Boolean(v))),
-  )
+  const kindOptions = Array.from(new Set(products.map((p) => p.kind).filter(Boolean)))
     .sort()
-    .map((v) => ({ value: v, label: v }));
+    .map((v) => ({ value: v, label: KIND_LABELS[v] ?? v }));
 
   const filtered = products.filter((p) => {
-    const text = [p.partNumber, p.name, p.manufacturer, p.fireworkType]
+    const text = [p.partNumber, p.name, p.manufacturer, p.fireworkType, p.kind]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
     const matchesManufacturer = !manufacturerFilter || p.manufacturer === manufacturerFilter;
-    const matchesType = !typeFilter || p.fireworkType === typeFilter;
+    const matchesKind = !kindFilter || p.kind === kindFilter;
     const d = p.durationSeconds;
     const matchesMin = minDuration == null || (d != null && d >= minDuration);
     const matchesMax = maxDuration == null || (d != null && d <= maxDuration);
-    return matchesQuery && matchesManufacturer && matchesType && matchesMin && matchesMax;
+    return matchesQuery && matchesManufacturer && matchesKind && matchesMin && matchesMax;
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
@@ -107,16 +112,16 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
         searchPlaceholder="Search part #, name, manufacturer…"
         filters={[
           {
+            key: 'kind',
+            label: 'Kind',
+            type: 'select',
+            options: kindOptions,
+          },
+          {
             key: 'manufacturer',
             label: 'Manufacturer',
             type: 'select',
             options: manufacturerOptions,
-          },
-          {
-            key: 'type',
-            label: 'Type',
-            type: 'select',
-            options: typeOptions,
           },
           {
             key: 'duration',
@@ -144,9 +149,9 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
           <thead className={tableHeadClasses()}>
             <tr>
               <th className={tableHeaderCellClasses()}>Part</th>
-              <th className={tableHeaderCellClasses()}>Product</th>
+              <th className={tableHeaderCellClasses()}>Item</th>
+              <th className={tableHeaderCellClasses()}>Kind</th>
               <th className={tableHeaderCellClasses()}>Manufacturer</th>
-              <th className={tableHeaderCellClasses()}>Type</th>
               <th className={tableHeaderCellClasses()}>Duration</th>
               <th className={tableHeaderCellClasses('text-right')}>Actions</th>
             </tr>
@@ -166,18 +171,18 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                     {product.name}
                   </div>
                   {product.fireworkType ? (
-                    <div className="mt-1">
-                      <Badge solid tone="neutral">
-                        {product.fireworkType}
-                      </Badge>
+                    <div className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+                      {product.fireworkType}
                     </div>
                   ) : null}
                 </td>
-                <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
-                  {product.manufacturer || '—'}
+                <td className={tableCellClasses()}>
+                  <Badge solid tone={product.kind === 'multishot' ? 'accent' : 'neutral'}>
+                    {KIND_LABELS[product.kind] ?? product.kind}
+                  </Badge>
                 </td>
                 <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
-                  {product.fireworkType || '—'}
+                  {product.manufacturer || '—'}
                 </td>
                 <td
                   className={tableCellClasses(

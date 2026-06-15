@@ -142,6 +142,10 @@ export type CatalogueProductSummary = {
   category: string | null;
   fireworkType: string | null;
   durationSeconds: number | null;
+  /** 'firework' | 'multishot' | 'bundle' | 'other'. */
+  kind: string;
+  /** True when the row is tied to a firework or multishot (cannot be deleted). */
+  linked: boolean;
   updatedAt: string;
 };
 
@@ -185,58 +189,91 @@ export type AdminEffectDetail = AdminEffectSummary & {
   modelJson: Json;
 };
 
+/** A base effect a firework can be built on, for the firework editor selector. */
+export type AdminEffectOption = {
+  id: string;
+  slug: string;
+  name: string;
+  patternKey: string;
+  family: string;
+};
+
+/**
+ * An atomic firework: one base effect plus its colours and renderer overrides.
+ * This is the customisable unit shown in the admin Fireworks table.
+ */
 export type AdminFireworkSummary = {
   id: string;
-  partNumber: string;
+  slug: string;
   name: string;
-  manufacturer: string | null;
-  productKind: string;
-  fireworkType: string | null;
   description: string | null;
+  caliber: string | null;
   durationSeconds: number | null;
-  shotCount: number;
-  calibers: string[];
-  effectNames: string[];
-  effectTypes: string[];
+  heightMeters: number | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  colorPalette: string[];
+  effectId: string | null;
+  effectName: string | null;
+  effectSlug: string | null;
+  patternKey: string | null;
   preview: AdminEffectPreview;
-  effects: {
-    id: string;
-    slug: string;
-    name: string;
-    type: string;
-    durationSeconds: number;
-    heightMeters: number | null;
-  }[];
   updatedAt: string;
 };
 
-export type AdminFireworkShot = {
+export type AdminFireworkDetail = AdminFireworkSummary & {
+  /** Firework-level renderer overrides, design-shaped, merged over the effect. */
+  renderOverridesJson: Json;
+  /** The base effect's `model_json`, used to compose the live preview. */
+  effectModelJson: Json;
+  /** Every base effect, for the "base effect" selector. */
+  effectOptions: AdminEffectOption[];
+  /** Map of effect id to its `model_json`, so the preview updates when the base
+   *  effect changes without a round-trip. */
+  effectModels: Record<string, Json>;
+};
+
+/** A firework that can be placed inside a multishot timeline. */
+export type AdminMultishotFireworkOption = {
   id: string;
-  shotIndex: number;
+  slug: string;
+  name: string;
+  primaryColor: string | null;
+  effectName: string | null;
+};
+
+/** One placed firework inside a multishot. Appearance is locked; only timing
+ *  and aim are editable. */
+export type AdminMultishotShot = {
+  id: string;
+  sequenceIndex: number;
   timeOffsetSeconds: number;
   panDegrees: number;
   tiltDegrees: number;
+  launchPositionIndex: number;
   caliber: string | null;
   notes: string | null;
-  variantId: string | null;
-  variantName: string | null;
-  variantSlug: string | null;
+  fireworkId: string | null;
+  fireworkName: string | null;
+  fireworkSlug: string | null;
   primaryColor: string | null;
-  baseEffectName: string | null;
+  effectName: string | null;
 };
 
-export type AdminFireworkVariantOption = {
+export type AdminMultishotSummary = {
   id: string;
-  name: string;
   slug: string;
-  primaryColor: string | null;
-  baseEffectName: string;
+  name: string;
+  description: string | null;
+  durationSeconds: number | null;
+  shotCount: number;
+  preview: AdminEffectPreview;
+  updatedAt: string;
 };
 
-export type AdminFireworkDetail = AdminFireworkSummary & {
-  productMetadata: Json;
-  shots: AdminFireworkShot[];
-  variantOptions: AdminFireworkVariantOption[];
+export type AdminMultishotDetail = AdminMultishotSummary & {
+  shots: AdminMultishotShot[];
+  fireworkOptions: AdminMultishotFireworkOption[];
 };
 
 export type ShowTemplateCue = {
