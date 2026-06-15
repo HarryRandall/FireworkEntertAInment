@@ -1,9 +1,12 @@
 'use server';
 
 /**
- * Admin catalogue server actions: create / update / delete entries
- * in the `catalogue_items` table. All actions are gated by the
- * `admin.manage_catalogue` RBAC permission.
+ * Admin catalogue server actions.
+ *
+ * The catalogue lists every firework and multishot in stock. Rows are created
+ * automatically (by DB trigger) when a firework or multishot is created and
+ * cannot be deleted while linked, so only metadata edits are exposed here.
+ * Gated by the `admin.manage_catalogue` RBAC permission.
  */
 
 import { revalidatePath } from 'next/cache';
@@ -41,40 +44,10 @@ const ProductInput = z.object({
 });
 
 const UpdateProduct = ProductInput.extend({ id: z.string().uuid() });
-const DeleteProduct = z.object({ id: z.string().uuid() });
 
 export type ProductInputType = z.infer<typeof ProductInput>;
 
-/** Insert a new row in the catalogue (RBAC: `admin.manage_catalogue`). */
-export async function createProduct(input: ProductInputType): Promise<Result> {
-  if (!(await requirePermission('admin.manage_catalogue'))) {
-    return { ok: false, error: 'Not permitted.' };
-  }
-  const parsed = ProductInput.safeParse(input);
-  if (!parsed.success)
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
-
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from('catalogue_items').insert({
-    part_number: parsed.data.partNumber,
-    name: parsed.data.name,
-    manufacturer: parsed.data.manufacturer || null,
-    firework_type: parsed.data.fireworkType || null,
-    duration_seconds: parsed.data.durationSeconds,
-    catalogue_item_kind: 'other',
-  });
-  if (error) return { ok: false, error: error.message };
-  await invalidateAdminCatalogueCache();
-  await invalidateAdminEffectsCache();
-  await invalidateAdminFireworksCache();
-  await invalidateFireworkCatalogueCaches();
-  revalidatePath('/admin/catalogue');
-  revalidatePath('/admin/effects');
-  revalidatePath('/admin/fireworks');
-  return { ok: true };
-}
-
-/** Update an existing catalogue row (RBAC: `admin.manage_catalogue`). */
+/** Update catalogue metadata for an existing row (RBAC: `admin.manage_catalogue`). */
 export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promise<Result> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
@@ -94,27 +67,6 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
       duration_seconds: parsed.data.durationSeconds,
     })
     .eq('id', parsed.data.id);
-  if (error) return { ok: false, error: error.message };
-  await invalidateAdminCatalogueCache();
-  await invalidateAdminEffectsCache();
-  await invalidateAdminFireworksCache();
-  await invalidateFireworkCatalogueCaches();
-  revalidatePath('/admin/catalogue');
-  revalidatePath('/admin/effects');
-  revalidatePath('/admin/fireworks');
-  return { ok: true };
-}
-
-/** Delete a catalogue row by id (RBAC: `admin.manage_catalogue`). */
-export async function deleteProduct(input: z.infer<typeof DeleteProduct>): Promise<Result> {
-  if (!(await requirePermission('admin.manage_catalogue'))) {
-    return { ok: false, error: 'Not permitted.' };
-  }
-  const parsed = DeleteProduct.safeParse(input);
-  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
-
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from('catalogue_items').delete().eq('id', parsed.data.id);
   if (error) return { ok: false, error: error.message };
   await invalidateAdminCatalogueCache();
   await invalidateAdminEffectsCache();

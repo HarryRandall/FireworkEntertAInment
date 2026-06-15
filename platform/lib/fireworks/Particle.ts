@@ -18,6 +18,9 @@ const NOOP: Callback = () => {};
  * their trail squares.
  */
 export const HIDDEN_PARTICLE_SHAPE = -1;
+export const TRAIL_SHAPE_CIRCLE = 0;
+export const TRAIL_SHAPE_SQUARE = 1;
+export const TRAIL_SHAPE_TRIANGLE = 1.25;
 
 export class Particle {
   i = 0;
@@ -31,6 +34,8 @@ export class Particle {
   alive = false;
   size = 0;
   shape = 0;
+  rotation = 0;
+  spin = 0;
   color = new THREE.Color();
   decay = 0;
   life = 0;
@@ -59,6 +64,8 @@ export class Particle {
     this.vx = applyDragStep(this.vx, ax * dt);
     this.vy = applyDragStep(this.vy, ay * dt) + this.gravity * dt;
     this.vz = applyDragStep(this.vz, az * dt);
+
+    this.rotation += this.spin * dt;
 
     if (this.drag > 0) {
       const damping = Math.exp(-this.drag * dt);
@@ -121,6 +128,8 @@ export class Particle {
     this.mass = 1;
     this.size = 0;
     this.shape = 0;
+    this.rotation = 0;
+    this.spin = 0;
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;

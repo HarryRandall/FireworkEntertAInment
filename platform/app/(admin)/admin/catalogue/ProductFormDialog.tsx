@@ -1,10 +1,9 @@
 'use client';
 
-/** Client dialog form for creating or editing a catalogue product. */
+/** Client dialog form for editing catalogue metadata (linked rows are never created here). */
 
 import { useEffect, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
 import {
   Dialog,
   DialogClose,
@@ -18,7 +17,7 @@ import {
 import { Button } from '@/app/components/ui/Button';
 import { Input } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
-import { createProduct, updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
+import { updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
 
 type Values = ProductInputType & { id?: string };
 
@@ -46,7 +45,6 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
     initial?.durationSeconds != null ? String(initial.durationSeconds) : '',
   );
   const [isPending, startTransition] = useTransition();
-  const isEdit = Boolean(initial?.id);
 
   useEffect(() => {
     if (open) {
@@ -67,11 +65,13 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
         fireworkType,
         durationSeconds: duration === '' ? null : Number(duration),
       };
-      const result = isEdit
-        ? await updateProduct({ id: initial!.id!, ...values })
-        : await createProduct(values);
+      if (!initial?.id) {
+        toast.error('Missing catalogue item.');
+        return;
+      }
+      const result = await updateProduct({ id: initial.id, ...values });
       if (result.ok) {
-        toast.success(isEdit ? 'Product updated' : 'Product created');
+        toast.success('Catalogue item updated');
         setOpen(false);
         router.refresh();
       } else {
@@ -82,19 +82,13 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger !== undefined ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
-      ) : controlledOpen === undefined ? (
-        <DialogTrigger asChild>
-          <Button size="sm">
-            <Plus size={14} /> New product
-          </Button>
-        </DialogTrigger>
-      ) : null}
+      {trigger !== undefined ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit product' : 'New product'}</DialogTitle>
-          <DialogDescription>Catalogue product visible to show-builders.</DialogDescription>
+          <DialogTitle>Edit catalogue item</DialogTitle>
+          <DialogDescription>
+            Stock metadata only. The firework or multishot itself is edited from its own page.
+          </DialogDescription>
         </DialogHeader>
         <form
           className="space-y-3"
@@ -137,7 +131,7 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
               </Button>
             </DialogClose>
             <Button type="submit" loading={isPending}>
-              {isEdit ? 'Save changes' : 'Create product'}
+              Save changes
             </Button>
           </DialogFooter>
         </form>

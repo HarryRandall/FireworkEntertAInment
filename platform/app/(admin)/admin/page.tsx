@@ -223,14 +223,8 @@ async function AdminOverviewData() {
     },
   ];
   const generationStatuses = buildGenerationStatuses(overview);
-  const fireworkTypes = topBuckets(
-    fireworks,
-    (firework) => firework.fireworkType ?? 'Unclassified',
-  );
-  const manufacturers = topBuckets(
-    fireworks,
-    (firework) => firework.manufacturer ?? 'Unknown maker',
-  );
+  const fireworkTypes = topBuckets(fireworks, (firework) => firework.effectName ?? 'Unclassified');
+  const manufacturers = topBuckets(catalogue, (product) => product.manufacturer ?? 'Unknown maker');
   const importStatuses = topBuckets(imports, (job) => statusLabel(job.status));
   const importRows = buildImportRows(imports);
 

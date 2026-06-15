@@ -22,6 +22,7 @@ import {
   Database,
   EllipsisVertical,
   FileInput,
+  Layers,
   LayoutDashboard,
   LogOut,
   MessageSquareDot,
@@ -81,8 +82,9 @@ const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
   { href: '/admin/suppliers', label: 'Suppliers', icon: Store },
   { href: '/admin/catalogue', label: 'Catalogue', icon: Database },
-  { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },
   { href: '/admin/effects', label: 'Effects', icon: Sparkles },
+  { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },
+  { href: '/admin/multishots', label: 'Multishots', icon: Layers },
   { href: '/admin/imports', label: 'Imports', icon: FileInput },
   { href: '/admin/prompts', label: 'Prompts', icon: MessageSquareText },
 ];
