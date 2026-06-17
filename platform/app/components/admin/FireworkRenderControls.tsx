@@ -1410,10 +1410,15 @@ export function FireworkRenderControls({
    * and feed the live preview through the editor's `headStyle` / `renderTuning`
    * props. Grouped into Core and Glow so the richer set stays readable.
    */
-  function renderStarAppearance(layerKey: StarLayerKey, controlDisabled: boolean) {
+  function renderStarAppearance(
+    layerKey: StarLayerKey,
+    controlDisabled: boolean,
+    leadingControls?: ReactNode,
+  ) {
     const heads = design.stars[layerKey].head;
     return (
       <div className="space-y-2.5">
+        {leadingControls}
         <SubSection title="Core">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <CalibratedSliderField
@@ -2095,9 +2100,11 @@ export function FireworkRenderControls({
             />
           </div>
 
-          {layerKey === 'outer' && starControls ? <div>{starControls}</div> : null}
-
-          {renderStarAppearance(layerKey, controlDisabled)}
+          {renderStarAppearance(
+            layerKey,
+            controlDisabled,
+            layerKey === 'outer' ? starControls : undefined,
+          )}
 
           {renderBurstTrailControls(layerKey)}
         </div>

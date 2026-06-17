@@ -378,10 +378,11 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /setLayerBurstRangeMid\(layerKey, 'speed'/);
   assert.match(controls, /setLayerGravityUpper\(layerKey, value\)/);
   assert.match(controls, /setLayerNestedValue\(layerKey, 'head', 'size', value\)/);
-  assert.match(controls, /layerKey === 'outer' && starControls/);
+  assert.match(controls, /leadingControls\?: ReactNode/);
+  assert.match(controls, /layerKey === 'outer' \? starControls : undefined/);
   assert.match(
     controls,
-    /label="Glow strength"[\s\S]*layerKey === 'outer' && starControls[\s\S]*renderStarAppearance/,
+    /<div className="space-y-2\.5">[\s\S]*\{leadingControls\}[\s\S]*<SubSection title="Core">/,
   );
   assert.doesNotMatch(controls, /defaultExpanded=\{layerKey === 'outer'\}/);
   assert.doesNotMatch(controls, /<SubSection title="Core" defaultExpanded/);
@@ -1080,7 +1081,7 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(controls, /label="Head size"/);
   assert.match(controls, /label="Star size"/);
   assert.match(controls, /renderStarAppearance\('outer', sectionDisabled\.heads\)/);
-  assert.match(controls, /renderStarAppearance\(layerKey, controlDisabled\)/);
+  assert.match(controls, /renderStarAppearance\(\s*layerKey,\s*controlDisabled,/);
   assert.match(controls, /label="White dot size"/);
   assert.match(controls, /label="White dot blur"/);
   assert.match(controls, /label="Core blur"/);
