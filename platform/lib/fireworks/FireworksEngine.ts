@@ -15,6 +15,7 @@ import type { ReplayCue } from '@/lib/show-domain';
 import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
+  type FireworkStarLayer,
   type LaunchPosition,
   compileFireworkDesign,
   scaleDesignForCaliber,
@@ -143,20 +144,78 @@ export class FireworksEngine {
 
     this.material = new THREE.ShaderMaterial({
       uniforms: {
-        glowPadding: { value: DEFAULT_FIREWORK_RENDER_TUNING.glowPadding },
-        whiteCoreSizePercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent },
-        whiteCoreBlurPercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent },
-        coreSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness },
-        coreBrightness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness },
-        coreOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff },
-        glowSize: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSize },
-        glowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness },
-        glowOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff },
-        glowBlur: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowBlur },
-        backgroundGlowOpacityFalloff: {
-          value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+        glowPadding: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
+            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
+          ),
         },
-        backgroundGlowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness },
+        whiteCoreSizePercent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
+          ),
+        },
+        whiteCoreBlurPercent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
+          ),
+        },
+        coreSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
+          ),
+        },
+        coreBrightness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
+          ),
+        },
+        coreOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
+          ),
+        },
+        glowSize: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
+          ),
+        },
+        glowSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
+          ),
+        },
+        glowOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
+          ),
+        },
+        glowBlur: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
+          ),
+        },
+        backgroundGlowOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+          ),
+        },
+        backgroundGlowSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
+          ),
+        },
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
@@ -265,20 +324,78 @@ export class FireworksEngine {
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
-        glowPadding: { value: DEFAULT_FIREWORK_RENDER_TUNING.glowPadding },
-        whiteCoreSizePercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent },
-        whiteCoreBlurPercent: { value: DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent },
-        coreSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness },
-        coreBrightness: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness },
-        coreOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff },
-        glowSize: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSize },
-        glowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness },
-        glowOpacityFalloff: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff },
-        glowBlur: { value: DEFAULT_FIREWORK_HEAD_STYLE.glowBlur },
-        backgroundGlowOpacityFalloff: {
-          value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+        glowPadding: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
+            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
+          ),
         },
-        backgroundGlowSoftness: { value: DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness },
+        whiteCoreSizePercent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
+          ),
+        },
+        whiteCoreBlurPercent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
+            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
+          ),
+        },
+        coreSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
+          ),
+        },
+        coreBrightness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
+          ),
+        },
+        coreOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
+          ),
+        },
+        glowSize: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
+          ),
+        },
+        glowSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
+          ),
+        },
+        glowOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
+          ),
+        },
+        glowBlur: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
+            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
+          ),
+        },
+        backgroundGlowOpacityFalloff: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
+          ),
+        },
+        backgroundGlowSoftness: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
+            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
+          ),
+        },
         viewport: { value: this.viewport },
       },
       vertexShader: HEAD_BILLBOARD_VERTEX_SHADER,
@@ -301,13 +418,38 @@ export class FireworksEngine {
 
   setRenderTuning(tuning: Partial<FireworkRenderTuning> | null | undefined): void {
     const next = normaliseFireworkRenderTuning(tuning);
-    this.material.uniforms.glowPadding.value = next.glowPadding;
-    this.material.uniforms.whiteCoreSizePercent.value = next.whiteCoreSizePercent;
-    this.material.uniforms.whiteCoreBlurPercent.value = next.whiteCoreBlurPercent;
+    this.setVec2Uniform(this.material, 'glowPadding', next.glowPadding, next.glowPadding);
+    this.setVec2Uniform(
+      this.material,
+      'whiteCoreSizePercent',
+      next.whiteCoreSizePercent,
+      next.whiteCoreSizePercent,
+    );
+    this.setVec2Uniform(
+      this.material,
+      'whiteCoreBlurPercent',
+      next.whiteCoreBlurPercent,
+      next.whiteCoreBlurPercent,
+    );
     if (this.headBillboardMaterial) {
-      this.headBillboardMaterial.uniforms.glowPadding.value = next.glowPadding;
-      this.headBillboardMaterial.uniforms.whiteCoreSizePercent.value = next.whiteCoreSizePercent;
-      this.headBillboardMaterial.uniforms.whiteCoreBlurPercent.value = next.whiteCoreBlurPercent;
+      this.setVec2Uniform(
+        this.headBillboardMaterial,
+        'glowPadding',
+        next.glowPadding,
+        next.glowPadding,
+      );
+      this.setVec2Uniform(
+        this.headBillboardMaterial,
+        'whiteCoreSizePercent',
+        next.whiteCoreSizePercent,
+        next.whiteCoreSizePercent,
+      );
+      this.setVec2Uniform(
+        this.headBillboardMaterial,
+        'whiteCoreBlurPercent',
+        next.whiteCoreBlurPercent,
+        next.whiteCoreBlurPercent,
+      );
     }
   }
 
@@ -320,18 +462,102 @@ export class FireworksEngine {
     const next = normaliseFireworkHeadStyle(style);
     const apply = (material: THREE.ShaderMaterial | null) => {
       if (!material) return;
-      material.uniforms.coreSoftness.value = next.coreSoftness;
-      material.uniforms.coreBrightness.value = next.coreBrightness;
-      material.uniforms.coreOpacityFalloff.value = next.coreOpacityFalloff;
-      material.uniforms.glowSize.value = next.glowSize;
-      material.uniforms.glowSoftness.value = next.glowSoftness;
-      material.uniforms.glowOpacityFalloff.value = next.glowOpacityFalloff;
-      material.uniforms.glowBlur.value = next.glowBlur;
-      material.uniforms.backgroundGlowOpacityFalloff.value = next.backgroundGlowOpacityFalloff;
-      material.uniforms.backgroundGlowSoftness.value = next.backgroundGlowSoftness;
+      this.setVec2Uniform(material, 'coreSoftness', next.coreSoftness, next.coreSoftness);
+      this.setVec2Uniform(material, 'coreBrightness', next.coreBrightness, next.coreBrightness);
+      this.setVec2Uniform(
+        material,
+        'coreOpacityFalloff',
+        next.coreOpacityFalloff,
+        next.coreOpacityFalloff,
+      );
+      this.setVec2Uniform(material, 'glowSize', next.glowSize, next.glowSize);
+      this.setVec2Uniform(material, 'glowSoftness', next.glowSoftness, next.glowSoftness);
+      this.setVec2Uniform(
+        material,
+        'glowOpacityFalloff',
+        next.glowOpacityFalloff,
+        next.glowOpacityFalloff,
+      );
+      this.setVec2Uniform(material, 'glowBlur', next.glowBlur, next.glowBlur);
+      this.setVec2Uniform(
+        material,
+        'backgroundGlowOpacityFalloff',
+        next.backgroundGlowOpacityFalloff,
+        next.backgroundGlowOpacityFalloff,
+      );
+      this.setVec2Uniform(
+        material,
+        'backgroundGlowSoftness',
+        next.backgroundGlowSoftness,
+        next.backgroundGlowSoftness,
+      );
     };
     apply(this.material);
     apply(this.headBillboardMaterial);
+  }
+
+  setLayerHeadStyles(outer: FireworkStarLayer['head'], core: FireworkStarLayer['head']): void {
+    const apply = (material: THREE.ShaderMaterial | null) => {
+      if (!material) return;
+      this.setVec2Uniform(material, 'glowPadding', outer.glowPadding, core.glowPadding);
+      this.setVec2Uniform(
+        material,
+        'whiteCoreSizePercent',
+        outer.whiteCoreSizePercent,
+        core.whiteCoreSizePercent,
+      );
+      this.setVec2Uniform(
+        material,
+        'whiteCoreBlurPercent',
+        outer.whiteCoreBlurPercent,
+        core.whiteCoreBlurPercent,
+      );
+      this.setVec2Uniform(material, 'coreSoftness', outer.coreSoftness, core.coreSoftness);
+      this.setVec2Uniform(material, 'coreBrightness', outer.coreBrightness, core.coreBrightness);
+      this.setVec2Uniform(
+        material,
+        'coreOpacityFalloff',
+        outer.coreOpacityFalloff,
+        core.coreOpacityFalloff,
+      );
+      this.setVec2Uniform(material, 'glowSize', outer.glowSize, core.glowSize);
+      this.setVec2Uniform(material, 'glowSoftness', outer.glowSoftness, core.glowSoftness);
+      this.setVec2Uniform(
+        material,
+        'glowOpacityFalloff',
+        outer.glowOpacityFalloff,
+        core.glowOpacityFalloff,
+      );
+      this.setVec2Uniform(material, 'glowBlur', outer.glowBlur, core.glowBlur);
+      this.setVec2Uniform(
+        material,
+        'backgroundGlowOpacityFalloff',
+        outer.backgroundGlowOpacityFalloff,
+        core.backgroundGlowOpacityFalloff,
+      );
+      this.setVec2Uniform(
+        material,
+        'backgroundGlowSoftness',
+        outer.backgroundGlowSoftness,
+        core.backgroundGlowSoftness,
+      );
+    };
+    apply(this.material);
+    apply(this.headBillboardMaterial);
+  }
+
+  private setVec2Uniform(
+    material: THREE.ShaderMaterial,
+    name: string,
+    outer: number,
+    core: number,
+  ): void {
+    const value = material.uniforms[name]?.value;
+    if (value instanceof THREE.Vector2) {
+      value.set(outer, core);
+      return;
+    }
+    material.uniforms[name].value = new THREE.Vector2(outer, core);
   }
 
   setViewport(width: number, height: number): void {
@@ -355,6 +581,10 @@ export class FireworksEngine {
 
   setMuted(muted: boolean): void {
     this.sound.setMuted(muted);
+  }
+
+  resumeAudio(): void {
+    void this.sound.resume();
   }
 
   setCues(cues: ReplayCue[]): void {
@@ -391,23 +621,10 @@ export class FireworksEngine {
       cue.firework.renderDesign ?? compileFireworkDesign({ legacySpec: cue.firework.rawSpec }),
       cue.firework.caliber,
     );
-    // Head appearance is saved per design, so apply this firework's look as it
-    // fires. The orb uniforms are global, so in a show the most-recently fired
-    // firework's appearance wins for any orbs sharing the screen — fine for the
-    // editor preview (a single firework) and sequential shows.
-    const heads = design.stars.heads;
-    this.setRenderTuning({
-      glowPadding: heads.glowPadding,
-      whiteCoreSizePercent: heads.whiteCoreSizePercent,
-      whiteCoreBlurPercent: heads.whiteCoreBlurPercent,
-    });
-    this.setHeadStyle({
-      coreSoftness: heads.coreSoftness,
-      coreBrightness: heads.coreBrightness,
-      glowSize: heads.glowSize,
-      glowSoftness: heads.glowSoftness,
-      glowBlur: heads.glowBlur,
-    });
+    // Head appearance is saved per design. Outer/Core styles share the global
+    // material uniforms for a cue, while each head particle carries the style
+    // slot encoded in its shape value.
+    this.setLayerHeadStyles(design.stars.outer.head, design.stars.core.head);
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const basePos = this.world.getLaunchPosition(idx);
     const override = cue.shotPositionOverride;
@@ -427,6 +644,8 @@ export class FireworksEngine {
     );
     this.effects.fire(design, pos, {
       rng: createSeededRng(seed),
+      smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
+      liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
       audible,
       panDegrees: cue.shotPanDegrees ?? 0,
       tiltDegrees: cue.shotTiltDegrees ?? 0,
@@ -769,8 +988,11 @@ export class FireworksEngine {
   /** Test/manual trigger from a specific design + launch index. */
   fireDesign(design: FireworkDesign, launchIndex = 0): void {
     const pos = this.world.getLaunchPosition(launchIndex);
+    const seed = mixSeed('manual', this.elapsed, launchIndex);
     this.effects.fire(design, pos, {
-      rng: createSeededRng(mixSeed('manual', this.elapsed, launchIndex)),
+      rng: createSeededRng(seed),
+      smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
+      liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
       audible: true,
     });
   }

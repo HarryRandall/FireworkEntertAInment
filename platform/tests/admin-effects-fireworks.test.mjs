@@ -102,7 +102,52 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.doesNotMatch(editor, /Math\.random/);
   assert.doesNotMatch(fireworkEditor, /Math\.random/);
   assert.match(fireworkEditor, /initial-main/);
-  assert.match(fireworkEditor, /nextColorSlotIdRef/);
+  assert.match(fireworkEditor, /nextColourStopIdRef/);
+  assert.match(
+    fireworkEditor,
+    /<PanelSection title="Details" collapsible defaultExpanded=\{false\}>/,
+  );
+  assert.match(fireworkEditor, /type StarColourMode = 'solid' \| 'random' \| 'bands' \| 'stripes'/);
+  assert.match(fireworkEditor, /type StarColourAxis = 'vertical' \| 'horizontal'/);
+  assert.match(fireworkEditor, /const MAX_STAR_COLOURS = 6/);
+  assert.match(fireworkEditor, /const STAR_PATTERN_COUNT_MAX = 6/);
+  assert.match(fireworkEditor, /const STAR_COLOUR_MODE_OPTIONS = \[/);
+  assert.match(fireworkEditor, /const STAR_COLOUR_AXIS_OPTIONS = \[/);
+  assert.match(fireworkEditor, /label: 'Bottom to top'/);
+  assert.match(fireworkEditor, /function buildInitialColourStops/);
+  assert.match(fireworkEditor, /function initialColourAxis/);
+  assert.match(fireworkEditor, /function colourPatternQuestion/);
+  assert.match(fireworkEditor, /function ColourPatternBar/);
+  assert.match(fireworkEditor, /function normaliseColourShares/);
+  assert.match(fireworkEditor, /function rebalanceColourShare/);
+  assert.match(fireworkEditor, /function CompactColourInput/);
+  assert.match(fireworkEditor, /const starColourControls = \(/);
+  assert.match(fireworkEditor, /<SubSection[\s\S]*title="Colour"[\s\S]*action=\{/);
+  assert.match(fireworkEditor, /ariaLabel="Star colour pattern"/);
+  assert.match(fireworkEditor, /ariaLabel=\{colourPatternQuestion\(colourMode\)\}/);
+  assert.match(fireworkEditor, /value=\{colourAxis\}/);
+  assert.match(fireworkEditor, /<Plus size=\{16\} \/>/);
+  assert.doesNotMatch(fireworkEditor, /\{colourStops\.length\}\/\{MAX_STAR_COLOURS\}/);
+  assert.doesNotMatch(fireworkEditor, /> Add colour</);
+  assert.match(fireworkEditor, /<ColourPatternBar/);
+  assert.match(fireworkEditor, /Move colour split/);
+  assert.match(fireworkEditor, /label=\{index === 1 \? 'Accent share' : 'Share'\}/);
+  assert.match(fireworkEditor, /aria-label="Colour"[\s\S]*checked=\{colourEnabled\}/);
+  assert.match(fireworkEditor, /const outer = ensureRecord\(stars, 'outer'\)/);
+  assert.match(fireworkEditor, /outer\.color = hexToRgbObject\(mainColor\)/);
+  assert.match(fireworkEditor, /outer\.colourPattern = \{/);
+  assert.match(fireworkEditor, /mode: colourMode/);
+  assert.match(fireworkEditor, /axis: colourAxis/);
+  assert.match(fireworkEditor, /count: clampStarPatternCount\(validColourStops\.length\)/);
+  assert.match(fireworkEditor, /weight: stop\.share/);
+  assert.match(fireworkEditor, /delete core\.color/);
+  assert.match(fireworkEditor, /delete core\.colourPattern/);
+  assert.match(fireworkEditor, /starControls=\{starColourControls\}/);
+  assert.doesNotMatch(
+    fireworkEditor,
+    /ROLE_HINT|ColorRole|ColorSlot|core: 'Star Inner'|initial-core/,
+  );
+  assert.doesNotMatch(fireworkEditor, /afterBurst=\{colourSection\}/);
   assert.match(editor, /PREVIEW_COLOR/);
   assert.doesNotMatch(editor, /refineEffectDraft|specJson|linkedProducts/);
 });
@@ -129,6 +174,14 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(canvas, /import \{ Button \} from '@\/app\/components\/ui\/Button'/);
   assert.match(canvas, /showFpsRef/);
   assert.match(canvas, /showFpsOverlay/);
+  assert.match(
+    canvas,
+    /const targetElapsed = playbackRef \? playbackRef\.current : internalElapsedRef\.current/,
+  );
+  assert.match(
+    canvas,
+    /engine\.clear\(\)[\s\S]*engine\.setCues\(cues\)[\s\S]*engine\.setElapsed\(0\)/,
+  );
   assert.match(canvas, /setShowFpsOverlay\(showFps\)/);
   assert.match(canvas, /setShowFpsOverlay\(\(visible\) => !visible\)/);
   assert.match(canvas, /setShowFpsOverlay\(false\)/);
@@ -167,6 +220,10 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(effectEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   assert.match(fireworkEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
+  assert.match(effectEditor, /muted=\{!isPlaying\}/);
+  assert.match(fireworkEditor, /muted=\{!isPlaying\}/);
+  assert.match(canvas, /resumeAudio/);
+  assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);
   // The trail width-guide overlay was removed with the Motion settings sheet,
   // so the editors no longer wire it up.
   assert.doesNotMatch(effectEditor, /showTrailWidthGuide/);

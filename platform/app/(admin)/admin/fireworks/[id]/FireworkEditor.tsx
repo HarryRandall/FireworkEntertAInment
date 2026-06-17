@@ -3,11 +3,20 @@
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Pause, Play, Plus, Repeat, RotateCcw, Save, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { updateFirework } from '@/app/actions/admin-fireworks';
-import { ColorField } from '@/app/components/admin/ColorField';
 import {
   FireworkRenderControls,
+  PanelSection,
+  SubSection,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
@@ -18,6 +27,7 @@ import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/app/components/ui/toast';
 import type { AdminFireworkDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
@@ -27,13 +37,14 @@ import {
   estimateDesignDurationSeconds,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
-import { DEFAULT_FIREWORK_SPEC, hexToRgb } from '@/lib/fireworks/spec';
+import { DEFAULT_FIREWORK_SPEC, FIREWORK_COLOR_VALUES, hexToRgb } from '@/lib/fireworks/spec';
 import type { ReplayCue } from '@/lib/show-domain';
 
 type ParsedJson = { ok: true; value: JsonRecord } | { ok: false; error: string };
 
-type ColorRole = 'main' | 'mix' | 'core';
-type ColorSlot = { id: string; hex: string; role: ColorRole };
+type StarColourMode = 'solid' | 'random' | 'bands' | 'stripes';
+type StarColourAxis = 'vertical' | 'horizontal';
+type ColourStop = { id: string; hex: string; share: number };
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
@@ -45,18 +56,22 @@ const PREVIEW_START_SECONDS = 0;
 const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 const DEFAULT_ACCENT_RATIO = 0.22;
 const HEX = /^#[0-9a-fA-F]{6}$/;
+const MAX_STAR_COLOURS = 6;
+const STAR_PATTERN_COUNT_MIN = 1;
+const STAR_PATTERN_COUNT_MAX = 6;
+const DEFAULT_COLOUR_SWATCHES = FIREWORK_COLOR_VALUES;
 
-const ROLE_LABEL: Record<ColorRole, string> = {
-  main: 'Whole burst',
-  mix: 'Accent (random mix)',
-  core: 'Centre / core',
-};
+const STAR_COLOUR_MODE_OPTIONS = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'random', label: 'Random mix' },
+  { value: 'bands', label: 'Bottom to top' },
+  { value: 'stripes', label: 'Stripes' },
+];
 
-const ROLE_HINT: Record<ColorRole, string> = {
-  main: 'The main colour every star starts as.',
-  mix: 'A share of the stars fire in this colour instead, scattered randomly through the burst.',
-  core: 'Colours the inner core of the shell, for a two-tone "flower with a heart" look.',
-};
+const STAR_COLOUR_AXIS_OPTIONS = [
+  { value: 'vertical', label: 'Vertical' },
+  { value: 'horizontal', label: 'Horizontal' },
+];
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -82,6 +97,11 @@ function readRecord(parent: JsonRecord, key: string): JsonRecord {
   return isRecord(parent[key]) ? (parent[key] as JsonRecord) : {};
 }
 
+function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
+  if (!isRecord(parent[key])) parent[key] = {};
+  return parent[key] as JsonRecord;
+}
+
 function hexToRgbObject(hex: string): { r: number; g: number; b: number } {
   const [r, g, b] = hexToRgb(hex);
   return { r, g, b };
@@ -99,31 +119,318 @@ function rgbObjectToHex(value: unknown): string | null {
     .join('')}`;
 }
 
+function readInitialAccentAmount(overrides: JsonRecord): number {
+  const raw = Number(overrides.secondaryColorRatio);
+  return Number.isFinite(raw) ? Math.min(0.6, Math.max(0.05, raw)) : DEFAULT_ACCENT_RATIO;
+}
+
+function isStarColourMode(value: unknown): value is StarColourMode {
+  return value === 'solid' || value === 'random' || value === 'bands' || value === 'stripes';
+}
+
+function isStarColourAxis(value: unknown): value is StarColourAxis {
+  return value === 'vertical' || value === 'horizontal';
+}
+
+function initialColourMode(overrides: JsonRecord): StarColourMode {
+  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
+  return isStarColourMode(pattern.mode) ? pattern.mode : 'solid';
+}
+
+function initialColourAxis(overrides: JsonRecord): StarColourAxis {
+  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
+  return isStarColourAxis(pattern.axis) ? pattern.axis : 'vertical';
+}
+
+function clampStarPatternCount(value: number): number {
+  if (!Number.isFinite(value)) return 3;
+  return Math.min(STAR_PATTERN_COUNT_MAX, Math.max(STAR_PATTERN_COUNT_MIN, Math.round(value)));
+}
+
+function colourPatternQuestion(mode: StarColourMode): string {
+  if (mode === 'stripes') return 'Stripe direction';
+  if (mode === 'bands') return 'Colour direction';
+  return 'Direction';
+}
+
+function defaultAccentHex(mainColor: string | null): string {
+  const main = mainColor?.toLowerCase() ?? null;
+  return DEFAULT_COLOUR_SWATCHES.find((hex) => hex.toLowerCase() !== main) ?? '#1e7fff';
+}
+
+function nextDefaultColour(existing: ColourStop[], mainColor: string | null): string {
+  const used = new Set(existing.map((stop) => stop.hex.toLowerCase()));
+  return (
+    DEFAULT_COLOUR_SWATCHES.find((hex) => !used.has(hex.toLowerCase())) ??
+    defaultAccentHex(mainColor)
+  );
+}
+
+function normaliseColourShares(stops: ColourStop[]): ColourStop[] {
+  if (stops.length === 0) return stops;
+  if (stops.length === 1) return [{ ...stops[0], share: 100 }];
+  const total = stops.reduce((sum, stop) => sum + Math.max(0, stop.share), 0);
+  const rawShares =
+    total > 0
+      ? stops.map((stop) => (Math.max(0, stop.share) / total) * 100)
+      : stops.map(() => 100 / stops.length);
+  const rounded = rawShares.map((share) => Math.max(1, Math.round(share)));
+  let diff = 100 - rounded.reduce((sum, share) => sum + share, 0);
+  while (diff !== 0) {
+    const index =
+      diff > 0 ? rounded.indexOf(Math.max(...rounded)) : rounded.findIndex((share) => share > 1);
+    if (index < 0) break;
+    rounded[index] += diff > 0 ? 1 : -1;
+    diff += diff > 0 ? -1 : 1;
+  }
+  return stops.map((stop, index) => ({ ...stop, share: rounded[index] ?? 1 }));
+}
+
+function rebalanceColourShare(stops: ColourStop[], id: string, share: number): ColourStop[] {
+  if (stops.length <= 1) return normaliseColourShares(stops);
+  const fixedShare = Math.min(95, Math.max(1, Math.round(share)));
+  const others = stops.filter((stop) => stop.id !== id);
+  const remaining = 100 - fixedShare;
+  const otherTotal = others.reduce((sum, stop) => sum + Math.max(0, stop.share), 0);
+  const next = stops.map((stop) => {
+    if (stop.id === id) return { ...stop, share: fixedShare };
+    const share =
+      otherTotal > 0
+        ? Math.round((Math.max(0, stop.share) / otherTotal) * remaining)
+        : Math.round(remaining / others.length);
+    return { ...stop, share: Math.max(1, share) };
+  });
+  return normaliseColourShares(next);
+}
+
+function colourStopLabel(mode: StarColourMode, index: number, count: number): string {
+  if (mode === 'bands') {
+    if (count === 2) return index === 0 ? 'Bottom' : 'Top';
+    if (count === 3) return ['Bottom', 'Middle', 'Top'][index] ?? `Band ${index + 1}`;
+    return `Band ${index + 1}`;
+  }
+  if (mode === 'stripes') return `Stripe ${index + 1}`;
+  if (index === 0) return 'Star';
+  return index === 1 ? 'Star accent' : `Mix ${index + 1}`;
+}
+
+function CompactColourInput({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (hex: string) => void;
+}) {
+  const id = useId();
+  const picker = HEX.test(value) ? value.toLowerCase() : '#ffffff';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label="Colour picker"
+          className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-[color:var(--color-border-subtle)] bg-transparent disabled:cursor-not-allowed"
+          value={picker}
+          disabled={disabled}
+          onChange={(event) => onChange(event.currentTarget.value.toLowerCase())}
+        />
+        <Input
+          id={id}
+          type="text"
+          inputMode="text"
+          aria-label="Colour"
+          className="h-8 w-28 px-2 font-mono text-xs tabular-nums"
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.currentTarget.value.toLowerCase())}
+        />
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {FIREWORK_COLOR_VALUES.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            aria-label={`Use ${preset}`}
+            disabled={disabled}
+            onClick={() => onChange(preset)}
+            className={[
+              'h-5 w-5 rounded-full border border-[color:var(--color-border-subtle)] transition-transform hover:scale-110 disabled:cursor-not-allowed',
+              value.toLowerCase() === preset.toLowerCase()
+                ? 'ring-2 ring-[color:var(--color-content-emphasis)] ring-offset-1'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={{ backgroundColor: preset }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ColourPatternBar({
+  stops,
+  disabled,
+  onChange,
+}: {
+  stops: ColourStop[];
+  disabled?: boolean;
+  onChange: (stops: ColourStop[]) => void;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const normalisedStops = normaliseColourShares(stops);
+  const boundaries = normalisedStops.slice(0, -1).reduce<number[]>((acc, stop, index) => {
+    const previous = acc[index - 1] ?? 0;
+    acc.push(previous + stop.share);
+    return acc;
+  }, []);
+
+  function updateBoundary(index: number, percent: number) {
+    const minSegment = Math.min(12, Math.floor(90 / normalisedStops.length));
+    const nextBoundaries = [...boundaries];
+    const min = (nextBoundaries[index - 1] ?? 0) + minSegment;
+    const max = (nextBoundaries[index + 1] ?? 100) - minSegment;
+    nextBoundaries[index] = Math.min(max, Math.max(min, percent));
+    const nextShares = normalisedStops.map((stop, stopIndex) => {
+      const start = nextBoundaries[stopIndex - 1] ?? 0;
+      const end = nextBoundaries[stopIndex] ?? 100;
+      return { ...stop, share: Math.max(1, Math.round(end - start)) };
+    });
+    onChange(normaliseColourShares(nextShares));
+  }
+
+  function pointerPercent(clientX: number): number {
+    const rect = barRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return 0;
+    return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+  }
+
+  function beginHandleDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (disabled) return;
+    event.preventDefault();
+    event.currentTarget.focus();
+    updateBoundary(index, pointerPercent(event.clientX));
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      updateBoundary(index, pointerPercent(moveEvent.clientX));
+    };
+    const stopDragging = () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+    };
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', stopDragging, { once: true });
+  }
+
+  if (normalisedStops.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={barRef}
+        className="relative flex h-8 overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
+      >
+        {normalisedStops.map((stop) => (
+          <div
+            key={stop.id}
+            className="h-full min-w-1 transition-[width]"
+            style={{
+              width: `${stop.share}%`,
+              backgroundColor: HEX.test(stop.hex) ? stop.hex : '#ffffff',
+            }}
+          />
+        ))}
+        {boundaries.map((boundary, index) => (
+          <button
+            key={`${normalisedStops[index]?.id ?? index}-handle`}
+            type="button"
+            aria-label={`Move colour split ${index + 1}`}
+            className="focus-visible:ring-ring/60 absolute top-1/2 h-8 w-5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
+            style={{ left: `${boundary}%` }}
+            disabled={disabled}
+            onPointerDown={(event) => beginHandleDrag(index, event)}
+            onKeyDown={(event) => {
+              if (disabled) return;
+              if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                updateBoundary(index, boundary - 2);
+              }
+              if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                updateBoundary(index, boundary + 2);
+              }
+            }}
+          >
+            <span className="mx-auto block h-6 w-1.5 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.24),0_1px_4px_rgba(0,0,0,0.26)]" />
+          </button>
+        ))}
+      </div>
+      {normalisedStops.length > 1 ? (
+        <div className="flex gap-1">
+          {normalisedStops.map((stop) => (
+            <span
+              key={`${stop.id}-share`}
+              className="text-muted-foreground min-w-0 text-center font-mono text-[10px] tabular-nums"
+              style={{ width: `${stop.share}%` }}
+            >
+              {Math.round(stop.share)}%
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ReplayCanvasSkeleton() {
   return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
 }
 
-function buildInitialColorSlots(firework: AdminFireworkDetail, overrides: JsonRecord): ColorSlot[] {
-  const slots: ColorSlot[] = [
-    { id: 'initial-main', hex: firework.primaryColor ?? '#ff0043', role: 'main' },
-  ];
+function buildInitialColourStops(
+  firework: AdminFireworkDetail,
+  overrides: JsonRecord,
+): ColourStop[] {
+  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
+  const patternColours = Array.isArray(pattern.colours) ? pattern.colours : [];
+  const patternStops = patternColours
+    .map((entry, index): ColourStop | null => {
+      if (!isRecord(entry)) return null;
+      const hex = rgbObjectToHex(entry.color);
+      if (!hex) return null;
+      const share = Number(entry.weight);
+      return {
+        id: `initial-pattern-${index}`,
+        hex,
+        share: Number.isFinite(share) ? Math.max(1, Math.round(share)) : 100,
+      };
+    })
+    .filter((stop): stop is ColourStop => Boolean(stop));
+  if (patternStops.length > 0)
+    return normaliseColourShares(patternStops).slice(0, MAX_STAR_COLOURS);
+
+  const outerColor = rgbObjectToHex(
+    readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'color'),
+  );
+  const mainHex = outerColor ?? firework.primaryColor ?? '#ff0043';
+  const accentShare = Math.round(readInitialAccentAmount(overrides) * 100);
+  const stops: ColourStop[] = [{ id: 'initial-main', hex: mainHex, share: 100 }];
   const accent =
     firework.secondaryColor ??
-    firework.colorPalette.find(
-      (hex) => hex.toLowerCase() !== (firework.primaryColor ?? '').toLowerCase(),
-    ) ??
+    firework.colorPalette.find((hex) => hex.toLowerCase() !== mainHex.toLowerCase()) ??
     null;
-  if (accent) slots.push({ id: 'initial-mix', hex: accent, role: 'mix' });
+  if (accent) {
+    stops[0].share = 100 - accentShare;
+    stops.push({ id: 'initial-accent', hex: accent, share: accentShare });
+  }
 
-  const pistil = isRecord(overrides.pistil) ? overrides.pistil : null;
-  const coreHex = pistil ? rgbObjectToHex(pistil.color) : null;
-  if (coreHex) slots.push({ id: 'initial-core', hex: coreHex, role: 'core' });
-
-  return slots;
+  return normaliseColourShares(stops);
 }
 
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
   const router = useRouter();
+  const colourToggleId = useId();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
@@ -149,16 +456,19 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [heightMeters, setHeightMeters] = useState(
     firework.heightMeters == null ? '' : String(firework.heightMeters),
   );
-  const initialColorSlots = useMemo(
-    () => buildInitialColorSlots(firework, initialOverrides),
+  const initialColourStops = useMemo(
+    () => buildInitialColourStops(firework, initialOverrides),
     [firework, initialOverrides],
   );
-  const [colorSlots, setColorSlots] = useState<ColorSlot[]>(initialColorSlots);
-  const nextColorSlotIdRef = useRef(initialColorSlots.length);
-  const [accentAmount, setAccentAmount] = useState<number>(() => {
-    const raw = Number(initialOverrides.secondaryColorRatio);
-    return Number.isFinite(raw) ? Math.min(0.6, Math.max(0.05, raw)) : DEFAULT_ACCENT_RATIO;
+  const [colourStops, setColourStops] = useState<ColourStop[]>(initialColourStops);
+  const [colourMode, setColourMode] = useState<StarColourMode>(() => {
+    const initialMode = initialColourMode(initialOverrides);
+    return initialMode === 'solid' && initialColourStops.length > 1 ? 'random' : initialMode;
   });
+  const [colourAxis, setColourAxis] = useState<StarColourAxis>(() =>
+    initialColourAxis(initialOverrides),
+  );
+  const nextColourStopIdRef = useRef(initialColourStops.length);
   const [overridesText, setOverridesText] = useState(
     JSON.stringify(firework.renderOverridesJson ?? {}, null, 2),
   );
@@ -169,10 +479,20 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     [parsedOverrides],
   );
 
-  const mainColor = colorSlots.find((slot) => slot.role === 'main')?.hex ?? null;
-  const accentColor = colorSlots.find((slot) => slot.role === 'mix')?.hex ?? null;
-  const coreColor = colorSlots.find((slot) => slot.role === 'core')?.hex ?? null;
-  const usedRoles = new Set(colorSlots.map((slot) => slot.role));
+  const validColourStops = useMemo(
+    () =>
+      normaliseColourShares(colourStops.filter((stop) => HEX.test(stop.hex))).slice(
+        0,
+        MAX_STAR_COLOURS,
+      ),
+    [colourStops],
+  );
+  const mainColor = validColourStops[0]?.hex ?? null;
+  const accentColor = validColourStops[1]?.hex ?? null;
+  const accentShare = validColourStops[1]?.share ?? 0;
+  const positionalColourMode = colourMode === 'bands' || colourMode === 'stripes';
+  const colourDefaults = readRecord(overridesRecord, 'colour');
+  const colourEnabled = typeof colourDefaults.enabled === 'boolean' ? colourDefaults.enabled : true;
 
   const baseModel = useMemo(
     () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
@@ -187,32 +507,52 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () =>
       Array.from(
         new Set(
-          [mainColor, accentColor]
+          validColourStops
+            .map((stop) => stop.hex)
             .filter((hex): hex is string => Boolean(hex))
             .map((hex) => hex.toLowerCase()),
         ),
       ),
-    [mainColor, accentColor],
+    [validColourStops],
   );
 
   /** Overrides merged with the colour choices, used for both preview and save. */
   const mergedOverrides = useMemo<JsonRecord>(() => {
     const base = cloneRecord(overridesRecord);
-    if (accentColor) base.secondaryColorRatio = Number(accentAmount.toFixed(3));
+    delete base.pistil;
+    if (accentColor && colourMode === 'random')
+      base.secondaryColorRatio = Number((accentShare / 100).toFixed(3));
     else delete base.secondaryColorRatio;
 
-    if (coreColor) {
-      const pistil = isRecord(base.pistil) ? { ...base.pistil } : {};
-      pistil.enabled = true;
-      pistil.color = hexToRgbObject(coreColor);
-      base.pistil = pistil;
-    } else if (isRecord(base.pistil)) {
-      const pistil = { ...base.pistil };
-      delete pistil.color;
-      base.pistil = pistil;
+    const stars = ensureRecord(base, 'stars');
+    const outer = ensureRecord(stars, 'outer');
+    if (mainColor) outer.color = hexToRgbObject(mainColor);
+    else delete outer.color;
+    outer.colourPattern = {
+      mode: colourMode,
+      axis: colourAxis,
+      count: clampStarPatternCount(validColourStops.length),
+      colours: validColourStops.map((stop) => ({
+        color: hexToRgbObject(stop.hex),
+        weight: stop.share,
+      })),
+    };
+    if (isRecord(stars.core)) {
+      const core = { ...stars.core };
+      delete core.color;
+      delete core.colourPattern;
+      stars.core = core;
     }
     return base;
-  }, [overridesRecord, accentColor, accentAmount, coreColor]);
+  }, [
+    overridesRecord,
+    mainColor,
+    accentColor,
+    accentShare,
+    colourMode,
+    colourAxis,
+    validColourStops,
+  ]);
 
   const previewDesign = useMemo(
     () =>
@@ -228,7 +568,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   // Head-orb appearance is saved into the firework's render overrides, so the
   // sliders read from the compiled design and write straight back. A firework
   // inherits its effect's saved look and customises it from here.
-  const heads = previewDesign.stars.heads;
+  const heads = previewDesign.stars.outer.head;
   const glowPadding = heads.glowPadding;
   const whiteCoreSizePercent = heads.whiteCoreSizePercent;
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
@@ -338,28 +678,64 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setOverridesText(JSON.stringify(draft, null, 2));
   }
 
-  function updateSlotHex(id: string, hex: string) {
-    setColorSlots((slots) => slots.map((slot) => (slot.id === id ? { ...slot, hex } : slot)));
+  function setColourEnabled(value: boolean) {
+    mutateOverrides((draft) => {
+      const colour = ensureRecord(draft, 'colour');
+      colour.enabled = value;
+    });
   }
 
-  function updateSlotRole(id: string, role: ColorRole) {
-    setColorSlots((slots) => slots.map((slot) => (slot.id === id ? { ...slot, role } : slot)));
+  function updateColourStopHex(id: string, hex: string) {
+    setColourStops((stops) =>
+      stops.map((stop) => (stop.id === id ? { ...stop, hex: hex.toLowerCase() } : stop)),
+    );
   }
 
-  function removeSlot(id: string) {
-    setColorSlots((slots) => slots.filter((slot) => slot.id !== id));
+  function updateColourStopShare(id: string, share: number) {
+    setColourStops((stops) => rebalanceColourShare(stops, id, share));
+  }
+
+  function updateColourStopShares(nextStops: ColourStop[]) {
+    const shareById = new Map(nextStops.map((stop) => [stop.id, stop.share]));
+    setColourStops((stops) =>
+      normaliseColourShares(
+        stops.map((stop) => ({
+          ...stop,
+          share: shareById.get(stop.id) ?? stop.share,
+        })),
+      ),
+    );
+  }
+
+  function updateColourMode(value: string) {
+    if (!isStarColourMode(value)) return;
+    setColourMode(value);
+  }
+
+  function updateColourAxis(value: string) {
+    if (isStarColourAxis(value)) setColourAxis(value);
+  }
+
+  function removeColourStop(id: string) {
+    setColourStops((stops) => normaliseColourShares(stops.filter((stop) => stop.id !== id)));
   }
 
   function addColor() {
-    const nextRole: ColorRole | null = !usedRoles.has('mix')
-      ? 'mix'
-      : !usedRoles.has('core')
-        ? 'core'
-        : null;
-    if (!nextRole) return;
-    const id = `added-${nextColorSlotIdRef.current}`;
-    nextColorSlotIdRef.current += 1;
-    setColorSlots((slots) => [...slots, { id, hex: '#1e7fff', role: nextRole }]);
+    const id = `added-${nextColourStopIdRef.current}`;
+    nextColourStopIdRef.current += 1;
+    setColourStops((stops) => {
+      if (stops.length >= MAX_STAR_COLOURS) return stops;
+      const newShare = Math.max(10, Math.round(100 / (stops.length + 1)));
+      const next = stops.map((stop) => ({
+        ...stop,
+        share: stop.share * ((100 - newShare) / 100),
+      }));
+      return normaliseColourShares([
+        ...next,
+        { id, hex: nextDefaultColour(stops, mainColor), share: newShare },
+      ]);
+    });
+    if (colourMode === 'solid') setColourMode('random');
   }
 
   function save() {
@@ -404,7 +780,141 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     label: option.name,
     description: option.family,
   }));
-  const canAddColor = !usedRoles.has('mix') || !usedRoles.has('core');
+  const canAddColor = colourStops.length < MAX_STAR_COLOURS;
+  const starColourControls = (
+    <SubSection
+      title="Colour"
+      defaultExpanded={false}
+      action={
+        <Switch
+          id={colourToggleId}
+          aria-label="Colour"
+          checked={colourEnabled}
+          onCheckedChange={setColourEnabled}
+          disabled={!parsedOverrides.ok}
+        />
+      }
+    >
+      <div
+        className={['space-y-4 pt-1', !colourEnabled ? 'opacity-55' : ''].filter(Boolean).join(' ')}
+      >
+        <div
+          className={[
+            'grid gap-3 sm:items-end',
+            positionalColourMode
+              ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+              : 'sm:grid-cols-[minmax(0,1fr)_auto]',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <Field>
+            <FieldLabel>Pattern</FieldLabel>
+            <SelectField
+              value={colourMode}
+              onChange={updateColourMode}
+              options={STAR_COLOUR_MODE_OPTIONS}
+              ariaLabel="Star colour pattern"
+              disabled={!colourEnabled}
+            />
+          </Field>
+          {positionalColourMode ? (
+            <Field>
+              <FieldLabel>{colourPatternQuestion(colourMode)}</FieldLabel>
+              <SelectField
+                value={colourAxis}
+                onChange={updateColourAxis}
+                options={STAR_COLOUR_AXIS_OPTIONS}
+                ariaLabel={colourPatternQuestion(colourMode)}
+                disabled={!colourEnabled}
+              />
+            </Field>
+          ) : null}
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={addColor}
+              aria-label="Add colour"
+              disabled={!canAddColor || !colourEnabled}
+            >
+              <Plus size={16} />
+            </Button>
+          </div>
+        </div>
+
+        <ColourPatternBar
+          stops={validColourStops}
+          disabled={!colourEnabled || validColourStops.length <= 1}
+          onChange={updateColourStopShares}
+        />
+
+        <div className="overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)]">
+          {colourStops.map((stop, index) => {
+            const title = colourStopLabel(colourMode, index, colourStops.length);
+            return (
+              <div
+                key={stop.id}
+                className="space-y-3 border-t border-[color:var(--color-border-subtle)] p-3 first:border-t-0"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="h-5 w-5 shrink-0 rounded-full border border-[color:var(--color-border-subtle)]"
+                      style={{ backgroundColor: HEX.test(stop.hex) ? stop.hex : '#ffffff' }}
+                      aria-hidden
+                    />
+                    <span className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                      {title}
+                    </span>
+                    {colourStops.length > 1 ? (
+                      <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                        {Math.round(stop.share)}%
+                      </span>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Remove colour"
+                    className="text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+                    onClick={() => removeColourStop(stop.id)}
+                    disabled={!colourEnabled || colourStops.length <= 1}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div
+                  className={
+                    colourMode === 'random'
+                      ? 'grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]'
+                      : 'flex flex-wrap items-start gap-4'
+                  }
+                >
+                  <CompactColourInput
+                    value={stop.hex}
+                    disabled={!colourEnabled}
+                    onChange={(hex) => updateColourStopHex(stop.id, hex)}
+                  />
+                  {colourMode === 'random' ? (
+                    <SliderField
+                      label={index === 1 ? 'Accent share' : 'Share'}
+                      min={1}
+                      max={95}
+                      step={1}
+                      value={Math.round(stop.share)}
+                      formatValue={(value) => `${value}%`}
+                      disabled={!colourEnabled || colourStops.length <= 1}
+                      onChange={(value) => updateColourStopShare(stop.id, value)}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </SubSection>
+  );
 
   return (
     <div className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch">
@@ -415,7 +925,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             elapsed={elapsed}
             playbackRef={playbackRef}
             launchPositions={PREVIEW_LAUNCH_POSITIONS}
-            muted
+            muted={!isPlaying}
             interactive
             controlsVisible
             showFps
@@ -474,7 +984,10 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             min={0}
             max={previewDuration}
             step={0.05}
-            onValueChange={(next) => setPreviewTime(next[0] ?? 0)}
+            onValueChange={(next) => {
+              setIsPlaying(false);
+              setPreviewTime(next[0] ?? 0);
+            }}
             aria-label="Preview timeline"
             className="min-w-40 flex-1"
           />
@@ -495,138 +1008,67 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             </InlineAlert>
           ) : null}
 
-          <div className="space-y-4">
-            <Field>
-              <FieldLabel htmlFor="fw-name">Name</FieldLabel>
-              <Input id="fw-name" value={name} onChange={(e) => setName(e.target.value)} />
-            </Field>
-            <Field>
-              <FieldLabel>Base effect</FieldLabel>
-              <SelectField
-                value={effectId}
-                onChange={setEffectId}
-                options={effectOptions}
-                ariaLabel="Base effect"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
+          <PanelSection title="Details" collapsible defaultExpanded={false}>
+            <div className="space-y-4">
               <Field>
-                <FieldLabel htmlFor="fw-caliber">Calibre</FieldLabel>
-                <Input
-                  id="fw-caliber"
-                  placeholder="30mm"
-                  value={caliber}
-                  onChange={(e) => setCaliber(e.target.value)}
-                />
+                <FieldLabel htmlFor="fw-name">Name</FieldLabel>
+                <Input id="fw-name" value={name} onChange={(e) => setName(e.target.value)} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="fw-duration">Duration (s)</FieldLabel>
-                <Input
-                  id="fw-duration"
-                  inputMode="decimal"
-                  value={durationSeconds}
-                  onChange={(e) => setDurationSeconds(e.target.value)}
+                <FieldLabel>Base effect</FieldLabel>
+                <SelectField
+                  value={effectId}
+                  onChange={setEffectId}
+                  options={effectOptions}
+                  ariaLabel="Base effect"
                 />
               </Field>
-              <Field>
-                <FieldLabel htmlFor="fw-height">Height (m)</FieldLabel>
-                <Input
-                  id="fw-height"
-                  inputMode="decimal"
-                  value={heightMeters}
-                  onChange={(e) => setHeightMeters(e.target.value)}
-                />
-              </Field>
-            </div>
-            <Field>
-              <FieldLabel htmlFor="fw-description">Description</FieldLabel>
-              <Textarea
-                id="fw-description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Field>
-          </div>
-
-          <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-                Colour
-              </h3>
-              <Button size="sm" variant="secondary" onClick={addColor} disabled={!canAddColor}>
-                <Plus size={14} /> Add colour
-              </Button>
-            </div>
-
-            {colorSlots.map((slot) => {
-              const roleOptions = (['mix', 'core'] as ColorRole[])
-                .filter((role) => role === slot.role || !usedRoles.has(role))
-                .map((role) => ({ value: role, label: ROLE_LABEL[role] }));
-              return (
-                <div
-                  key={slot.id}
-                  className="space-y-3 rounded-lg border border-[color:var(--color-border-subtle)] p-3"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    {slot.role === 'main' ? (
-                      <span className="text-xs font-semibold text-[color:var(--color-content-emphasis)]">
-                        {ROLE_LABEL.main}
-                      </span>
-                    ) : (
-                      <div className="min-w-44">
-                        <SelectField
-                          value={slot.role}
-                          onChange={(value) => updateSlotRole(slot.id, value as ColorRole)}
-                          options={roleOptions}
-                          ariaLabel="Where this colour applies"
-                        />
-                      </div>
-                    )}
-                    {slot.role !== 'main' ? (
-                      <button
-                        type="button"
-                        aria-label="Remove colour"
-                        className="text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"
-                        onClick={() => removeSlot(slot.id)}
-                      >
-                        <X size={16} />
-                      </button>
-                    ) : null}
-                  </div>
-                  <p className="text-xs text-[color:var(--color-content-subtle)]">
-                    {ROLE_HINT[slot.role]}
-                  </p>
-                  <ColorField
-                    label="Colour"
-                    value={HEX.test(slot.hex) ? slot.hex : '#ffffff'}
-                    onChange={(hex) => updateSlotHex(slot.id, hex ?? '#ffffff')}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="fw-caliber">Calibre</FieldLabel>
+                  <Input
+                    id="fw-caliber"
+                    placeholder="30mm"
+                    value={caliber}
+                    onChange={(e) => setCaliber(e.target.value)}
                   />
-                  {slot.role === 'mix' ? (
-                    <SliderField
-                      label="Accent share"
-                      min={5}
-                      max={60}
-                      step={1}
-                      value={Math.round(accentAmount * 100)}
-                      formatValue={(value) => `${value}%`}
-                      hint="How much of the burst fires in the accent colour. 50% is an even split; 10% is the odd highlight star."
-                      onChange={(value) => setAccentAmount(value / 100)}
-                    />
-                  ) : null}
-                </div>
-              );
-            })}
-            <p className="text-xs text-[color:var(--color-content-subtle)]">
-              One colour by default. Add an accent for a random two-colour mix, or a centre colour
-              for a contrasting core.
-            </p>
-          </div>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="fw-duration">Duration (s)</FieldLabel>
+                  <Input
+                    id="fw-duration"
+                    inputMode="decimal"
+                    value={durationSeconds}
+                    onChange={(e) => setDurationSeconds(e.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="fw-height">Height (m)</FieldLabel>
+                  <Input
+                    id="fw-height"
+                    inputMode="decimal"
+                    value={heightMeters}
+                    onChange={(e) => setHeightMeters(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel htmlFor="fw-description">Description</FieldLabel>
+                <Textarea
+                  id="fw-description"
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Field>
+            </div>
+          </PanelSection>
 
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
+            starControls={starColourControls}
             mutate={mutateOverrides}
             disabled={!parsedOverrides.ok}
             showLaunch
