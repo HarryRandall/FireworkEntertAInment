@@ -97,7 +97,7 @@ export function AdminOverviewSkeleton() {
     <div className="space-y-4" aria-label="Loading admin overview">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="bg-muted inline-flex h-9 max-w-full items-center gap-1 overflow-hidden rounded-lg p-[3px]">
-          {['w-18', 'w-20', 'w-16', 'w-24', 'w-14'].map((widthClass, index) => (
+          {['w-18', 'w-20', 'w-16', 'w-24'].map((widthClass, index) => (
             <Skeleton key={index} className={cn('h-7 rounded-md', widthClass)} />
           ))}
         </div>
@@ -107,8 +107,8 @@ export function AdminOverviewSkeleton() {
       </div>
 
       <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl shadow-xs ring-1">
-        <div className="grid divide-y md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
+        <div className="grid divide-y md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
             <div key={index} className="space-y-4 p-6">
               <Skeleton className="h-4 w-28" />
               <div className="flex items-center justify-between gap-4">

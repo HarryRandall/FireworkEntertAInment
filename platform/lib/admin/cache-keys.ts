@@ -24,8 +24,8 @@ export function getAdminUsersCacheKey(): string {
 }
 
 /** Cache key for overview-only platform metrics. */
-export function getAdminOverviewCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:overview`;
+export function getAdminOverviewCacheKey(rangeKey = 'last-4-weeks'): string {
+  return `${ADMIN_CACHE_PREFIX}:overview:${rangeKey}`;
 }
 
 /** Cache key for a single admin user detail blob. */

@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  type BarShapeProps,
-} from 'recharts';
+import { CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
@@ -45,8 +36,6 @@ export type AdminOverviewBarDatum = {
   value: number;
 };
 
-const weeklyTicks = [4, 11, 18, 25];
-
 const activityChartConfig = {
   shows: {
     color: 'var(--chart-3)',
@@ -58,17 +47,7 @@ const activityChartConfig = {
   },
 } satisfies ChartConfig;
 
-const pulseChartConfig = {
-  cues: {
-    color: 'var(--chart-1)',
-    label: 'Cues',
-  },
-} satisfies ChartConfig;
-
-function formatWeek(value: number) {
-  const weekIndex = weeklyTicks.indexOf(value);
-  return weekIndex >= 0 ? `Week ${weekIndex + 1}` : '';
-}
+const pulseNumberFormatter = new Intl.NumberFormat('en-AU');
 
 function safeCatalogueRows(data: AdminOverviewBarDatum[]): AdminOverviewBarDatum[] {
   if (data.length > 0) return data;
@@ -85,48 +64,6 @@ function toneDotClass(tone: AdminOverviewStatusDatum['tone']) {
   if (tone === 'warning') return 'bg-amber-500';
   if (tone === 'danger') return 'bg-destructive';
   return 'bg-muted-foreground';
-}
-
-function GenerationPulseBarShape(props: BarShapeProps) {
-  const { height, payload, width, x, y } = props;
-  const barPayload = payload as AdminOverviewPulseDatum | undefined;
-  const barHeightValue = Number(height);
-  const barWidthValue = Number(width);
-  const xValue = Number(x);
-  const yValue = Number(y);
-  const cues = barPayload?.cues ?? 0;
-  const fill = 'var(--color-cues)';
-  const fillOpacity = cues > 0 ? Math.min(0.95, 0.35 + cues / 40) : 0.25;
-  const baselineFill = cues === 0 ? 'var(--muted-foreground)' : fill;
-  const baselineOpacity = cues === 0 ? 0.6 : fillOpacity;
-  const baselineY = yValue + barHeightValue - 2;
-  const barGap = 4;
-  const barHeight = Math.max(0, barHeightValue - barGap);
-
-  return (
-    <g>
-      <rect
-        x={xValue}
-        y={baselineY}
-        width={barWidthValue}
-        height={2}
-        rx={1}
-        fill={baselineFill}
-        fillOpacity={baselineOpacity}
-      />
-      {cues > 0 && barHeight > 0 ? (
-        <rect
-          x={xValue}
-          y={yValue}
-          width={barWidthValue}
-          height={barHeight}
-          rx={2}
-          fill={fill}
-          fillOpacity={fillOpacity}
-        />
-      ) : null}
-    </g>
-  );
 }
 
 function CatalogueRankingList({
@@ -160,6 +97,40 @@ function CatalogueRankingList({
   );
 }
 
+function GenerationPulseBars({ data }: { data: AdminOverviewPulseDatum[] }) {
+  const maxCues = Math.max(...data.map((datum) => datum.cues), 1);
+
+  return (
+    <div
+      aria-label="Cue generation by period"
+      className="flex h-36 w-full items-end gap-1"
+      role="list"
+    >
+      {data.map((datum) => {
+        const height = datum.cues > 0 ? Math.max((datum.cues / maxCues) * 100, 10) : 0;
+
+        return (
+          <div
+            aria-label={`${datum.label}: ${pulseNumberFormatter.format(datum.cues)} cues`}
+            className="group flex h-full min-w-0 flex-1 items-end"
+            key={`${datum.dayIndex}-${datum.label}`}
+            role="listitem"
+            title={`${datum.label}: ${pulseNumberFormatter.format(datum.cues)} cues`}
+          >
+            <div
+              className={cn(
+                'w-full rounded-sm transition-colors',
+                datum.cues > 0 ? 'bg-primary/75 group-hover:bg-primary' : 'bg-muted-foreground/35',
+              )}
+              style={{ height: datum.cues > 0 ? `${height}%` : '2px' }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CatalogueMixSection({ data, title }: { data: AdminOverviewBarDatum[]; title: string }) {
   return (
     <section className="min-w-0 space-y-3">
@@ -169,7 +140,30 @@ function CatalogueMixSection({ data, title }: { data: AdminOverviewBarDatum[]; t
   );
 }
 
+function buildActivityTicks(dataLength: number) {
+  if (dataLength <= 1) return [1];
+
+  const maxTickCount = 5;
+  const step = Math.max(1, Math.ceil((dataLength - 1) / (maxTickCount - 1)));
+  const ticks: number[] = [];
+
+  for (let value = 1; value <= dataLength; value += step) {
+    ticks.push(value);
+  }
+
+  if (ticks[ticks.length - 1] !== dataLength) ticks.push(dataLength);
+  return ticks;
+}
+
+function formatActivityTick(value: number | string, data: AdminOverviewActivityDatum[]) {
+  const dayIndex = Number(value);
+  if (!Number.isFinite(dayIndex)) return '';
+  return data[dayIndex - 1]?.label ?? '';
+}
+
 export function ShowActivityChart({ data }: { data: AdminOverviewActivityDatum[] }) {
+  const ticks = buildActivityTicks(data.length);
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -183,12 +177,12 @@ export function ShowActivityChart({ data }: { data: AdminOverviewActivityDatum[]
             <XAxis
               dataKey="dayIndex"
               axisLine={false}
-              domain={[1, 28]}
+              domain={[1, Math.max(data.length, 1)]}
               interval={0}
-              tickFormatter={formatWeek}
+              tickFormatter={(value) => formatActivityTick(value, data)}
               tickLine={false}
               tickMargin={14}
-              ticks={weeklyTicks}
+              ticks={ticks}
               type="number"
             />
             <YAxis
@@ -252,14 +246,16 @@ export function GenerationPulseCard({
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-end justify-between">
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl leading-none tracking-tight tabular-nums">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5">
+            <span className="shrink-0 text-2xl leading-none tracking-tight tabular-nums">
               {summaryValue.toLocaleString()}
             </span>
-            <span className="text-muted-foreground text-sm">{summaryLabel}</span>
+            <span className="text-muted-foreground min-w-0 text-sm leading-tight">
+              {summaryLabel}
+            </span>
           </div>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <div className="text-muted-foreground flex shrink-0 items-center gap-2 text-sm">
             <span className="relative flex size-2">
               {live ? (
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
@@ -275,37 +271,11 @@ export function GenerationPulseCard({
           </div>
         </div>
 
-        <ChartContainer config={pulseChartConfig} className="h-36 w-full">
-          <BarChart
-            data={data}
-            margin={{ bottom: 0, left: 0, right: 0, top: 0 }}
-            barCategoryGap={3}
-          >
-            <XAxis dataKey="dayIndex" hide />
-            <YAxis hide allowDecimals={false} domain={[0, 'dataMax + 1']} />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  hideLabel={false}
-                  labelFormatter={(_, payload) => payload[0]?.payload?.label ?? 'Cues'}
-                />
-              }
-            />
-            <Bar dataKey="cues" fill="var(--color-cues)" shape={GenerationPulseBarShape} />
-          </BarChart>
-        </ChartContainer>
+        <GenerationPulseBars data={data} />
 
-        <div className="grid grid-cols-2">
-          {statuses.map((status, index) => (
-            <div
-              key={status.label}
-              className={cn(
-                'border-border/50 flex items-center gap-3 py-3',
-                index % 2 === 0 ? 'border-r pr-5' : 'pl-5',
-                index < 2 ? 'border-b' : '',
-              )}
-            >
+        <div className="border-border/50 grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-x-5 border-t pt-2">
+          {statuses.map((status) => (
+            <div key={status.label} className="flex min-w-0 items-center gap-3 py-2">
               <span className={cn('size-2 shrink-0 rounded-full', toneDotClass(status.tone))} />
               <span className="min-w-0 flex-1 truncate text-sm">{status.label}</span>
               <span className="text-sm tabular-nums">{status.value.toLocaleString()}</span>

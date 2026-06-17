@@ -81,6 +81,8 @@ const TRAIL_WIDTH_GUIDE_RINGS = 7;
 const TRAIL_WIDTH_GUIDE_SEGMENTS = 10;
 const TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY = 0.58;
 const TRAIL_WIDTH_GUIDE_STAR_INDEX = 0;
+const TRAIL_WIDTH_GUIDE_SPREAD_SCALE = 0.035;
+const TRAIL_WIDTH_GUIDE_MAX_SPREAD = 90;
 const GUIDE_GRAVITY = -9.82;
 const GUIDE_STAR_MIN_GRAVITY = -1.85;
 const GUIDE_STAR_MAX_GRAVITY = 0.28;
@@ -165,10 +167,16 @@ function rangeMid(range: [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
-function trailWidthGuideRadiusAt(design: FireworkDesign, positionPercent: number): number {
+function trailWidthGuideRadiusAt(
+  design: FireworkDesign,
+  positionPercent: number,
+  pathLength: number,
+): number {
   const width = design.burstTrail.width;
   const t = Math.pow(clamp01(positionPercent / 100), width.curve);
-  return width.front + (width.tail - width.front) * t;
+  const angle = clamp(width.front + (width.tail - width.front) * t, 0, 60);
+  const radius = Math.tan((angle * Math.PI) / 180) * pathLength * TRAIL_WIDTH_GUIDE_SPREAD_SCALE;
+  return clamp(radius, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD);
 }
 
 function fibonacciDirection(index: number, count: number): THREE.Vector3 {
@@ -351,7 +359,7 @@ function createTrailWidthGuide(
   for (let ringIndex = 0; ringIndex < TRAIL_WIDTH_GUIDE_RINGS; ringIndex++) {
     const progress = ringIndex / (TRAIL_WIDTH_GUIDE_RINGS - 1);
     const oldTailPositionPercent = (1 - progress) * 100;
-    const radius = Math.max(0, trailWidthGuideRadiusAt(design, oldTailPositionPercent));
+    const radius = Math.max(0, trailWidthGuideRadiusAt(design, oldTailPositionPercent, pathLength));
     const centre = burstCentre.clone().addScaledVector(direction, pathLength * progress);
     const ring = Array.from({ length: TRAIL_WIDTH_GUIDE_SEGMENTS }, (_, segmentIndex) => {
       const angle = (segmentIndex / TRAIL_WIDTH_GUIDE_SEGMENTS) * Math.PI * 2;
@@ -643,6 +651,11 @@ export function FireworkReplayCanvas({
       backgroundGlowSoftness,
     });
     engineRef.current = engine;
+    function unlockAudio() {
+      engine.resumeAudio();
+    }
+    document.addEventListener('pointerdown', unlockAudio, { capture: true });
+    document.addEventListener('keydown', unlockAudio, { capture: true });
     const drawingBufferSize = new THREE.Vector2();
     function syncEngineViewport() {
       renderer.getDrawingBufferSize(drawingBufferSize);
@@ -752,6 +765,8 @@ export function FireworkReplayCanvas({
     return () => {
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointerdown', unlockAudio, { capture: true });
+      document.removeEventListener('keydown', unlockAudio, { capture: true });
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       if (trailWidthGuideRef.current) {
         scene.remove(trailWidthGuideRef.current);
@@ -780,9 +795,15 @@ export function FireworkReplayCanvas({
   }, []);
 
   useEffect(() => {
-    engineRef.current?.setCues(cues);
+    const engine = engineRef.current;
+    if (!engine) return;
+    const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
+    engine.clear();
+    engine.setCues(cues);
+    engine.setElapsed(0);
+    if (targetElapsed > 0) engine.setElapsed(targetElapsed);
     forceRenderRef.current = true;
-  }, [cues]);
+  }, [cues, playbackRef]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -826,6 +847,7 @@ export function FireworkReplayCanvas({
 
   useEffect(() => {
     engineRef.current?.setMuted(muted);
+    if (!muted) engineRef.current?.resumeAudio();
   }, [muted]);
 
   useEffect(() => {

@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
+import { createCustomStarEffect } from '@/app/actions/admin-effects';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
+import { Button } from '@/app/components/ui/Button';
 import {
   DataTableShell,
   tableCellClasses,
@@ -104,6 +106,15 @@ async function EffectsData({ params }: { params: EffectsSearchParams }) {
 
   return (
     <>
+      <div className="flex items-center justify-end">
+        <form action={createCustomStarEffect}>
+          <Button type="submit" variant="secondary" size="sm">
+            <Plus size={16} />
+            New custom effect
+          </Button>
+        </form>
+      </div>
+
       <FilterBar
         searchPlaceholder="Search name, slug, description…"
         filters={[

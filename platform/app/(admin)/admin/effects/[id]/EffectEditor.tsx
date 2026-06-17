@@ -123,7 +123,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   // read from the compiled design and write straight back into the model. The
   // canvas preview reflects the saved look, and fireworks built on this effect
   // inherit it as their starting point.
-  const heads = previewDesign.stars.heads;
+  const heads = previewDesign.stars.outer.head;
   const glowPadding = heads.glowPadding;
   const whiteCoreSizePercent = heads.whiteCoreSizePercent;
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
@@ -174,6 +174,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     }),
     [baseModel, effect, previewDesign, previewDuration],
   );
+  const previewCues = useMemo(() => [previewCue], [previewCue]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -262,11 +263,11 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
         <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
           <LazyFireworkReplayCanvas
-            cues={[previewCue]}
+            cues={previewCues}
             elapsed={elapsed}
             playbackRef={playbackRef}
             launchPositions={PREVIEW_LAUNCH_POSITIONS}
-            muted
+            muted={!isPlaying}
             interactive
             controlsVisible
             showFps
@@ -325,7 +326,10 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             min={0}
             max={previewDuration}
             step={0.05}
-            onValueChange={(next) => setPreviewTime(next[0] ?? 0)}
+            onValueChange={(next) => {
+              setIsPlaying(false);
+              setPreviewTime(next[0] ?? 0);
+            }}
             aria-label="Preview timeline"
             className="min-w-40 flex-1"
           />

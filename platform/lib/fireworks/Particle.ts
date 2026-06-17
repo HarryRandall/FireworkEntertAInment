@@ -21,6 +21,11 @@ export const HIDDEN_PARTICLE_SHAPE = -1;
 export const TRAIL_SHAPE_CIRCLE = 0;
 export const TRAIL_SHAPE_SQUARE = 1;
 export const TRAIL_SHAPE_TRIANGLE = 1.25;
+export const HEAD_STYLE_STRIDE = 1;
+
+export function headShapeValue(glowStrength: number, styleIndex: number): number {
+  return 2 + Math.max(0, styleIndex) * HEAD_STYLE_STRIDE + glowStrength * 0.25;
+}
 
 export class Particle {
   i = 0;
@@ -33,6 +38,7 @@ export class Particle {
   mass = 1;
   alive = false;
   size = 0;
+  alpha = 1;
   shape = 0;
   rotation = 0;
   spin = 0;
@@ -127,6 +133,7 @@ export class Particle {
     this.z = 0;
     this.mass = 1;
     this.size = 0;
+    this.alpha = 1;
     this.shape = 0;
     this.rotation = 0;
     this.spin = 0;

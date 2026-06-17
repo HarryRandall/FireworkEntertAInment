@@ -64,6 +64,13 @@ export class SoundHandler {
     this.muted = muted;
   }
 
+  async resume(): Promise<void> {
+    const context = this.listener.context;
+    if (context.state === 'suspended') {
+      await context.resume().catch(() => undefined);
+    }
+  }
+
   playRandomMortar(volume = 1, rng?: RandomSource): void {
     this.playRandom('mortar', volume, rng);
   }
@@ -82,6 +89,7 @@ export class SoundHandler {
 
   private playRandom(key: SoundKey, volume: number, rng?: RandomSource): void {
     if (this.muted) return;
+    void this.resume();
     const pool = this.buffers[key];
     if (!pool.length) return;
     const random = rng?.next() ?? Math.random();

@@ -18,9 +18,10 @@ const MAJOR_GRID_STEP = MINOR_GRID_STEP * 4;
 const MINOR_GRID_LINE_WIDTH = 0.3;
 const MAJOR_GRID_LINE_WIDTH = 0.55;
 const SKY_RADIUS = 30000;
-const STAR_COUNT = 620;
+const STAR_COUNT = 410;
 const STAR_RADIUS = SKY_RADIUS * 0.9;
-const STAR_MIN_HEIGHT = 0.24;
+const STAR_MIN_HEIGHT = 0.08;
+const STAR_HEIGHT_EXPONENT = 0.55;
 
 function sceneModeToDaylight(sceneMode: FireworkSceneMode): number {
   return sceneMode === 'day' ? 1 : 0;
@@ -57,19 +58,15 @@ varying float vSignedHeight;
 varying vec3 vSkyDirection;
 
 void main() {
-  // Dark-blue glow that holds almost full strength from the floor up to a low
-  // band, then fades into the black night sky above. Downward it stays blue
-  // right down to the ground with only a slight (~5%) dip at the very bottom,
-  // so the colour meets the floor softly instead of being lifted off it.
+  // Night mode stays black, with only a thin low-contrast rim so the horizon is
+  // readable without returning to a blue sky band.
   vec3 night = vec3(0.0, 0.0, 0.0);
-  vec3 horizonGlow = vec3(0.013, 0.03, 0.08);
-  // Above the band peak: gaussian fade up into black (keeps the good height).
-  float up = max(vHeight - 0.105, 0.0) / 0.075;
-  float upper = exp(-up * up);
-  // Below the peak: hold the blue down to the floor, fading only ~5% at the base.
-  float lower = mix(0.95, 1.0, smoothstep(0.0, 0.05, vHeight));
-  float band = upper * lower;
-  vec3 nightSky = mix(night, horizonGlow, band);
+  vec3 horizonRimColor = vec3(0.012, 0.014, 0.02);
+  float horizonOffset = vSignedHeight - 0.026;
+  float horizonWidth = horizonOffset > 0.0 ? 0.5 : 0.018;
+  float horizonDistance = horizonOffset / horizonWidth;
+  float horizonRim = exp(-horizonDistance * horizonDistance);
+  vec3 nightSky = mix(night, horizonRimColor, horizonRim);
   vec3 dayBelowHorizon = vec3(0.018, 0.11, 0.22);
   vec3 dayHorizon = vec3(0.12, 0.34, 0.62);
   vec3 dayMid = vec3(0.06, 0.28, 0.62);
@@ -263,9 +260,9 @@ export class World {
   }
 
   /**
-   * Scattered pinprick stars across the upper sky. Positions are seeded so they
-   * stay put across rebuilds, kept above the horizon so none sit on the ground,
-   * and drawn additively behind the fireworks.
+   * Scattered pinprick stars across the night sky. Positions are seeded so they
+   * stay put across rebuilds, sparse near the horizon, denser overhead, and
+   * drawn additively behind the fireworks.
    */
   private addStarfield(): void {
     const rng = makeStarRng(0x5eed1e);
@@ -274,18 +271,19 @@ export class World {
     const brightness = new Float32Array(STAR_COUNT);
 
     for (let i = 0; i < STAR_COUNT; i++) {
-      // Uniform `y` over a sphere gives an even spread per solid angle; clamp it
-      // above the horizon so stars never appear below the ground line.
-      const y = STAR_MIN_HEIGHT + rng() * (1 - STAR_MIN_HEIGHT);
+      // Bias the lower sky sparse while letting stars begin closer to the rim;
+      // the reduced count keeps the densest upper sky no busier than before.
+      const heightRoll = Math.pow(rng(), STAR_HEIGHT_EXPONENT);
+      const y = STAR_MIN_HEIGHT + heightRoll * (1 - STAR_MIN_HEIGHT);
       const radius = Math.sqrt(Math.max(0, 1 - y * y));
       const azimuth = rng() * Math.PI * 2;
       positions[i * 3] = Math.cos(azimuth) * radius * STAR_RADIUS;
       positions[i * 3 + 1] = y * STAR_RADIUS;
       positions[i * 3 + 2] = Math.sin(azimuth) * radius * STAR_RADIUS;
       const sizeRoll = rng();
-      // Square the roll so most stars are tiny and only a few are slightly larger.
-      sizes[i] = 0.9 + sizeRoll * sizeRoll * 1.2;
-      brightness[i] = 0.28 + rng() * 0.6;
+      // Avoid sub-pixel stars: those are the ones that shimmer most while orbiting.
+      sizes[i] = 1.05 + sizeRoll * sizeRoll * 1.05;
+      brightness[i] = 0.24 + rng() * 0.54;
     }
 
     const starGeo = new THREE.BufferGeometry();

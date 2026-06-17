@@ -4,6 +4,8 @@ import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { AdminOverviewSkeleton } from '@/app/components/app/RouteSkeletons';
 import { AnalyserWarmthControl } from './AnalyserWarmthControl';
+import { AdminOverviewTabs } from './AdminOverviewTabs';
+import { AdminOverviewToolbar } from './AdminOverviewToolbar';
 import {
   CatalogueMixChart,
   GenerationPulseCard,
@@ -16,14 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableBody,
   TableCell,
@@ -31,21 +25,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   getAdminOverviewMetrics,
   getCurrentProfile,
   listAdminEffects,
   listAdminFireworks,
-  listAdminUsers,
   listCatalogueProducts,
   listImportJobs,
   listSuppliers,
   type AdminOverviewMetrics,
 } from '@/lib/admin.server';
+import {
+  getAdminOverviewRangeWindow,
+  parseAdminOverviewRange,
+  type AdminOverviewRangeOption,
+  type AdminOverviewRangeWindow,
+} from '@/lib/admin/overview-range';
+import {
+  ADMIN_OVERVIEW_TAB_OPTIONS,
+  parseAdminOverviewTab,
+  type AdminOverviewTabKey,
+} from '@/lib/admin/overview-tabs';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 
 type RecentShow = AdminOverviewMetrics['recentShows'][number];
+
+type PageProps = {
+  searchParams: Promise<{ range?: string; tab?: string }>;
+};
 
 type TrendTone = 'danger' | 'neutral' | 'positive';
 
@@ -76,101 +84,98 @@ const shortDateFormatter = new Intl.DateTimeFormat('en-AU', {
   day: '2-digit',
   month: 'short',
 });
+const monthDateFormatter = new Intl.DateTimeFormat('en-AU', {
+  month: 'short',
+});
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
 
-export default function AdminOverviewPage() {
+type ActivityBucketGranularity = 'day' | 'month' | 'week';
+
+export default async function AdminOverviewPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const range = parseAdminOverviewRange(params.range);
+  const tab = parseAdminOverviewTab(params.tab);
+
   return (
     <div className="space-y-4">
-      <Suspense fallback={<AdminOverviewSkeleton />}>
-        <AdminOverviewData />
+      <Suspense key={range.key} fallback={<AdminOverviewSkeleton />}>
+        <AdminOverviewData range={range} tab={tab.key} />
       </Suspense>
     </div>
   );
 }
 
-async function AdminOverviewData() {
-  const [users, suppliers, imports, catalogue, fireworks, effects, overview, warmthState, profile] =
-    await Promise.all([
-      listAdminUsers(),
-      listSuppliers(),
-      listImportJobs(),
-      listCatalogueProducts(),
-      listAdminFireworks(),
-      listAdminEffects(),
-      getAdminOverviewMetrics(),
-      getAnalyserWarmthState(),
-      getCurrentProfile(),
-    ]);
-  const canManageAnalyser = profile?.permissions.includes('admin.manage_imports') ?? false;
-  const now = Date.now();
-  const last7Start = now - 7 * 24 * 60 * 60 * 1000;
-  const previous7Start = now - 14 * 24 * 60 * 60 * 1000;
+async function AdminOverviewData({
+  range,
+  tab,
+}: {
+  range: AdminOverviewRangeOption;
+  tab: AdminOverviewTabKey;
+}) {
+  return (
+    <AdminOverviewTabs tab={tab}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
+          {ADMIN_OVERVIEW_TAB_OPTIONS.map((option) => (
+            <TabsTrigger className="cursor-pointer" key={option.key} value={option.key}>
+              {option.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <AdminOverviewToolbar range={range.key} />
+      </div>
+
+      {tab === 'overview' ? <OverviewTabContent range={range} /> : null}
+      {tab === 'catalogue' ? <CatalogueTabContent /> : null}
+      {tab === 'imports' ? <ImportsTabContent /> : null}
+      {tab === 'generation' ? <GenerationTabContent range={range} /> : null}
+    </AdminOverviewTabs>
+  );
+}
+
+async function OverviewTabContent({ range }: { range: AdminOverviewRangeOption }) {
+  const rangeWindow = getAdminOverviewRangeWindow(range.key);
+  const [suppliers, imports, catalogue, fireworks, effects, overview] = await Promise.all([
+    listSuppliers(),
+    listImportJobs(),
+    listCatalogueProducts(),
+    listAdminFireworks(),
+    listAdminEffects(),
+    getAdminOverviewMetrics(range.key),
+  ]);
   const recentShows = overview.recentShows.slice(0, 5);
-  const activityData = buildActivityData(overview);
-  const pulseData: AdminOverviewPulseDatum[] = activityData.map(({ cues, dayIndex, label }) => ({
-    cues,
-    dayIndex,
-    label,
-  }));
-  const showLastWeek = countBetween(
-    overview.recentShows,
-    (show) => show.createdAt,
-    last7Start,
-    now,
-  );
-  const showPreviousWeek = countBetween(
-    overview.recentShows,
-    (show) => show.createdAt,
-    previous7Start,
-    last7Start,
-  );
-  const cueLastWeek = countBetween(
-    overview.recentShowCues,
-    (cue) => cue.createdAt,
-    last7Start,
-    now,
-  );
-  const cuePreviousWeek = countBetween(
-    overview.recentShowCues,
-    (cue) => cue.createdAt,
-    previous7Start,
-    last7Start,
-  );
-  const analysisLastWeek = countBetween(
-    overview.recentMusicAnalyses,
-    (analysis) => analysis.createdAt,
-    last7Start,
-    now,
-  );
-  const analysisPreviousWeek = countBetween(
-    overview.recentMusicAnalyses,
-    (analysis) => analysis.createdAt,
-    previous7Start,
-    last7Start,
-  );
-  const activeUsers = users.filter((user) => user.status === 'active').length;
-  const suspendedUsers = users.length - activeUsers;
-  const completeImports = imports.filter((job) => job.status === 'complete').length;
-  const needsReviewImports = imports.filter((job) => job.status === 'needs_review').length;
+  const activityData = buildActivityData(overview, rangeWindow);
+  const pulseData = buildPulseData(activityData);
   const kpis: KpiCardData[] = [
     {
       title: 'Shows created',
       value: formatNumber(overview.totalShows),
-      trend: trendFor(showLastWeek, showPreviousWeek, `${formatNumber(showLastWeek)} last week`),
+      trend: trendFor(
+        overview.totalShows,
+        overview.previousShows,
+        `${formatNumber(overview.totalShows)} ${range.metricLabel}`,
+      ),
       footer: (
         <>
-          from <span className="text-foreground">{formatNumber(showPreviousWeek)}</span> previous
-          week
+          from <span className="text-foreground">{formatNumber(overview.previousShows)}</span>{' '}
+          {range.previousLabel}
         </>
       ),
     },
     {
       title: 'Cue output',
       value: formatNumber(overview.totalShowCues),
-      trend: trendFor(cueLastWeek, cuePreviousWeek, `${formatNumber(cueLastWeek)} last week`),
+      trend: trendFor(
+        overview.totalShowCues,
+        overview.previousShowCues,
+        `${formatNumber(overview.totalShowCues)} ${range.metricLabel}`,
+      ),
       footer: (
         <>
-          from <span className="text-foreground">{formatNumber(cuePreviousWeek)}</span> previous
-          week
+          from <span className="text-foreground">{formatNumber(overview.previousShowCues)}</span>{' '}
+          {range.previousLabel}
         </>
       ),
     },
@@ -178,14 +183,15 @@ async function AdminOverviewData() {
       title: 'Music analyses',
       value: formatNumber(overview.totalMusicAnalyses),
       trend: trendFor(
-        analysisLastWeek,
-        analysisPreviousWeek,
-        `${formatNumber(analysisLastWeek)} last week`,
+        overview.totalMusicAnalyses,
+        overview.previousMusicAnalyses,
+        `${formatNumber(overview.totalMusicAnalyses)} ${range.metricLabel}`,
       ),
       footer: (
         <>
-          from <span className="text-foreground">{formatNumber(analysisPreviousWeek)}</span>{' '}
-          previous week
+          from{' '}
+          <span className="text-foreground">{formatNumber(overview.previousMusicAnalyses)}</span>{' '}
+          {range.previousLabel}
         </>
       ),
     },
@@ -204,143 +210,122 @@ async function AdminOverviewData() {
         </>
       ),
     },
-    {
-      title: 'Users',
-      value: formatNumber(users.length),
-      trend: {
-        direction: 'flat',
-        label: `${formatNumber(activeUsers)} active`,
-        tone: activeUsers > 0 ? 'positive' : 'neutral',
-      },
-      footer:
-        suspendedUsers > 0 ? (
-          <>
-            <span className="text-foreground">{formatNumber(suspendedUsers)}</span> suspended
-          </>
-        ) : (
-          'all active accounts'
-        ),
-    },
   ];
   const generationStatuses = buildGenerationStatuses(overview);
   const fireworkTypes = topBuckets(fireworks, (firework) => firework.effectName ?? 'Unclassified');
   const manufacturers = topBuckets(catalogue, (product) => product.manufacturer ?? 'Unknown maker');
   const importStatuses = topBuckets(imports, (job) => statusLabel(job.status));
-  const importRows = buildImportRows(imports);
 
   return (
-    <>
-      <Tabs defaultValue="overview" className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="catalogue">Catalogue</TabsTrigger>
-            <TabsTrigger value="imports">Imports</TabsTrigger>
-            <TabsTrigger value="generation">Generation</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-          </TabsList>
+    <TabsContent value="overview" className="flex flex-col gap-4">
+      <KpiStrip items={kpis} />
 
-          <AdminOverviewToolbar />
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-7">
+          <ShowActivityChart data={activityData} />
         </div>
+        <div className="xl:col-span-5">
+          <GenerationPulseCard
+            data={pulseData}
+            statuses={generationStatuses}
+            summaryLabel={`cues ${range.metricLabel}`}
+            summaryValue={overview.totalShowCues}
+          />
+        </div>
+      </div>
 
-        <TabsContent value="overview" className="flex flex-col gap-4">
-          <KpiStrip items={kpis} />
-
-          <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-7">
-              <ShowActivityChart data={activityData} />
-            </div>
-            <div className="xl:col-span-5">
-              <GenerationPulseCard
-                data={pulseData}
-                statuses={generationStatuses}
-                summaryLabel="cues last week"
-                summaryValue={cueLastWeek}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-7">
-              <RecentShowsCard shows={recentShows} />
-            </div>
-            <div className="xl:col-span-5 xl:col-start-8">
-              <CatalogueMixChart
-                fireworkTypes={fireworkTypes}
-                importStatuses={importStatuses}
-                manufacturers={manufacturers}
-                variant="compact"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="catalogue">
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-7">
+          <RecentShowsCard shows={recentShows} />
+        </div>
+        <div className="xl:col-span-5 xl:col-start-8">
           <CatalogueMixChart
             fireworkTypes={fireworkTypes}
             importStatuses={importStatuses}
             manufacturers={manufacturers}
+            variant="compact"
           />
-        </TabsContent>
-
-        <TabsContent value="imports">
-          <ImportPipelineCard
-            complete={completeImports}
-            needsReview={needsReviewImports}
-            rows={importRows}
-          />
-        </TabsContent>
-
-        <TabsContent value="generation" className="flex flex-col gap-4">
-          <AnalyserWarmthControl initialState={warmthState} canManage={canManageAnalyser} />
-
-          <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
-            <div className="xl:col-span-7">
-              <ShowActivityChart data={activityData} />
-            </div>
-            <div className="xl:col-span-5">
-              <GenerationPulseCard
-                data={pulseData}
-                statuses={generationStatuses}
-                summaryLabel="cues last week"
-                summaryValue={cueLastWeek}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="users">
-          <RecentShowsCard shows={recentShows} />
-        </TabsContent>
-      </Tabs>
-    </>
+        </div>
+      </div>
+    </TabsContent>
   );
 }
 
-function AdminOverviewToolbar() {
+async function CatalogueTabContent() {
+  const [imports, catalogue, fireworks] = await Promise.all([
+    listImportJobs(),
+    listCatalogueProducts(),
+    listAdminFireworks(),
+  ]);
+  const fireworkTypes = topBuckets(fireworks, (firework) => firework.effectName ?? 'Unclassified');
+  const manufacturers = topBuckets(catalogue, (product) => product.manufacturer ?? 'Unknown maker');
+  const importStatuses = topBuckets(imports, (job) => statusLabel(job.status));
+
   return (
-    <div className="flex items-center gap-2">
-      <Select defaultValue="last-4-weeks">
-        <SelectTrigger className="w-34">
-          <SelectValue placeholder="Select range" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem value="last-7-days">Last 7 days</SelectItem>
-            <SelectItem value="last-4-weeks">Last 4 weeks</SelectItem>
-            <SelectItem value="last-3-months">Last 3 months</SelectItem>
-            <SelectItem value="year-to-date">Year to date</SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
+    <TabsContent value="catalogue">
+      <CatalogueMixChart
+        fireworkTypes={fireworkTypes}
+        importStatuses={importStatuses}
+        manufacturers={manufacturers}
+      />
+    </TabsContent>
+  );
+}
+
+async function ImportsTabContent() {
+  const imports = await listImportJobs();
+  const completeImports = imports.filter((job) => job.status === 'complete').length;
+  const needsReviewImports = imports.filter((job) => job.status === 'needs_review').length;
+  const importRows = buildImportRows(imports);
+
+  return (
+    <TabsContent value="imports">
+      <ImportPipelineCard
+        complete={completeImports}
+        needsReview={needsReviewImports}
+        rows={importRows}
+      />
+    </TabsContent>
+  );
+}
+
+async function GenerationTabContent({ range }: { range: AdminOverviewRangeOption }) {
+  const rangeWindow = getAdminOverviewRangeWindow(range.key);
+  const [overview, warmthState, profile] = await Promise.all([
+    getAdminOverviewMetrics(range.key),
+    getAnalyserWarmthState(),
+    getCurrentProfile(),
+  ]);
+  const canManageAnalyser = profile?.permissions.includes('admin.manage_imports') ?? false;
+  const activityData = buildActivityData(overview, rangeWindow);
+  const pulseData = buildPulseData(activityData);
+  const generationStatuses = buildGenerationStatuses(overview);
+
+  return (
+    <TabsContent value="generation" className="flex flex-col gap-4">
+      <AnalyserWarmthControl initialState={warmthState} canManage={canManageAnalyser} />
+
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-7">
+          <ShowActivityChart data={activityData} />
+        </div>
+        <div className="xl:col-span-5">
+          <GenerationPulseCard
+            data={pulseData}
+            statuses={generationStatuses}
+            summaryLabel={`cues ${range.metricLabel}`}
+            summaryValue={overview.totalShowCues}
+          />
+        </div>
+      </div>
+    </TabsContent>
   );
 }
 
 function KpiStrip({ items }: { items: KpiCardData[] }) {
   return (
     <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl shadow-xs ring-1">
-      <div className="grid divide-y *:data-[slot=card]:rounded-none *:data-[slot=card]:shadow-none *:data-[slot=card]:ring-0 md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-5">
+      <div className="grid divide-y *:data-[slot=card]:rounded-none *:data-[slot=card]:shadow-none *:data-[slot=card]:ring-0 md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
         {items.map((item) => (
           <KpiCard key={item.title} {...item} />
         ))}
@@ -358,9 +343,15 @@ function KpiCard({ footer, title, trend, value }: KpiCardData) {
         <CardTitle className="text-sm font-normal">{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-2xl leading-none tracking-tight tabular-nums">{value}</div>
-          <Badge className={trendBadgeClass(trend.tone)}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-2xl leading-none tracking-tight whitespace-nowrap tabular-nums">
+            {value}
+          </div>
+          <Badge
+            className={`${trendBadgeClass(
+              trend.tone,
+            )} h-auto min-h-5 max-w-full shrink text-left leading-tight whitespace-normal`}
+          >
             {trend.direction === 'flat' ? null : <TrendIcon aria-hidden />}
             {trend.label}
           </Badge>
@@ -479,36 +470,114 @@ function ImportPipelineCard({
   );
 }
 
-function buildActivityData(overview: AdminOverviewMetrics): AdminOverviewActivityDatum[] {
-  const now = new Date();
-  const buckets = new Map<string, AdminOverviewActivityDatum>();
-
-  for (let i = 0; i < 28; i += 1) {
-    const date = new Date(now.getTime() - (27 - i) * 24 * 60 * 60 * 1000);
-    const key = date.toISOString().slice(0, 10);
-    buckets.set(key, {
-      analyses: 0,
-      cues: 0,
-      dayIndex: i + 1,
-      label: shortDateFormatter.format(date),
-      shows: 0,
-    });
-  }
+function buildActivityData(
+  overview: AdminOverviewMetrics,
+  rangeWindow: AdminOverviewRangeWindow,
+): AdminOverviewActivityDatum[] {
+  const buckets = buildActivityBuckets(rangeWindow);
 
   for (const show of overview.recentShows) {
-    const bucket = buckets.get(show.createdAt.slice(0, 10));
+    const bucket = findActivityBucket(buckets, show.createdAt);
     if (bucket) bucket.shows += 1;
   }
   for (const analysis of overview.recentMusicAnalyses) {
-    const bucket = buckets.get(analysis.createdAt.slice(0, 10));
+    const bucket = findActivityBucket(buckets, analysis.createdAt);
     if (bucket) bucket.analyses += 1;
   }
   for (const cue of overview.recentShowCues) {
-    const bucket = buckets.get(cue.createdAt.slice(0, 10));
+    const bucket = findActivityBucket(buckets, cue.createdAt);
     if (bucket) bucket.cues += 1;
   }
 
-  return [...buckets.values()];
+  return buckets.map((bucket) => bucket.data);
+}
+
+function buildPulseData(activityData: AdminOverviewActivityDatum[]): AdminOverviewPulseDatum[] {
+  return activityData.map(({ cues, dayIndex, label }) => ({
+    cues,
+    dayIndex,
+    label,
+  }));
+}
+
+function buildActivityBuckets(rangeWindow: AdminOverviewRangeWindow) {
+  const granularity = activityGranularity(rangeWindow);
+  const buckets: {
+    data: AdminOverviewActivityDatum;
+    endExclusive: Date;
+    start: Date;
+  }[] = [];
+  let cursor = startOfUtcDay(rangeWindow.start);
+  const lastDay = startOfUtcDay(rangeWindow.end);
+  const afterLastDay = addUtcDays(lastDay, 1);
+
+  while (cursor < afterLastDay) {
+    const next = nextActivityBucketStart(cursor, granularity, afterLastDay);
+    const endInclusive = addUtcDays(next, -1);
+    buckets.push({
+      data: {
+        analyses: 0,
+        cues: 0,
+        dayIndex: buckets.length + 1,
+        label: activityBucketLabel(cursor, endInclusive, granularity),
+        shows: 0,
+      },
+      endExclusive: next,
+      start: cursor,
+    });
+    cursor = next;
+  }
+
+  return buckets;
+}
+
+function activityGranularity(rangeWindow: AdminOverviewRangeWindow): ActivityBucketGranularity {
+  if (rangeWindow.chartDays > 120) return 'month';
+  if (rangeWindow.chartDays > 35) return 'week';
+  return 'day';
+}
+
+function nextActivityBucketStart(date: Date, granularity: ActivityBucketGranularity, maxEnd: Date) {
+  if (granularity === 'month') {
+    return minDate(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)), maxEnd);
+  }
+  if (granularity === 'week') return minDate(new Date(date.getTime() + WEEK_MS), maxEnd);
+  return minDate(addUtcDays(date, 1), maxEnd);
+}
+
+function activityBucketLabel(
+  start: Date,
+  endInclusive: Date,
+  granularity: ActivityBucketGranularity,
+) {
+  if (granularity === 'day') return shortDateFormatter.format(start);
+  if (granularity === 'month') return monthDateFormatter.format(start);
+  return `${shortDateFormatter.format(start)} - ${shortDateFormatter.format(endInclusive)}`;
+}
+
+function findActivityBucket(
+  buckets: ReturnType<typeof buildActivityBuckets>,
+  value: string,
+): AdminOverviewActivityDatum | null {
+  const date = new Date(value);
+  const time = date.getTime();
+  if (!Number.isFinite(time)) return null;
+  const bucket = buckets.find(
+    (candidate) => date >= candidate.start && date < candidate.endExclusive,
+  );
+  return bucket?.data ?? null;
+}
+
+function startOfUtcDay(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function minDate(date: Date, max: Date): Date {
+  return date < max ? date : max;
 }
 
 function buildGenerationStatuses(overview: AdminOverviewMetrics): AdminOverviewStatusDatum[] {
@@ -550,13 +619,6 @@ function topBuckets<T>(items: T[], getLabel: (item: T) => string): AdminOverview
       source,
       value,
     }));
-}
-
-function countBetween<T>(items: T[], getDate: (item: T) => string, startMs: number, endMs: number) {
-  return items.filter((item) => {
-    const time = Date.parse(getDate(item));
-    return Number.isFinite(time) && time >= startMs && time < endMs;
-  }).length;
 }
 
 function trendFor(current: number, previous: number, label: string): KpiTrend {

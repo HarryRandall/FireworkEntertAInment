@@ -69,8 +69,11 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
 test('base effect edits validate model JSON and use conflict detection', () => {
   const actions = read('app/actions/admin-effects.ts');
   const updateBody = functionBody(actions, 'updateEffect');
+  const createBody = functionBody(actions, 'createCustomStarEffect');
 
   assert.match(actions, /Model JSON must be an object/);
+  assert.match(actions, /CUSTOM_STAR_EFFECT_MODEL/);
+  assert.match(actions, /canonicaliseEffectModelJson/);
   assert.match(updateBody, /\.from\('firework_effects'\)/);
   assert.match(updateBody, /\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/);
   assert.match(updateBody, /model_json: model\.value/);
@@ -78,6 +81,13 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.match(updateBody, /invalidateAdminEffectsCache\(parsed\.data\.id\)/);
   assert.match(updateBody, /invalidateAdminFireworksCache\(\)/);
   assert.match(updateBody, /invalidateFireworkCatalogueCaches\(\)/);
+  assert.match(createBody, /\.from\('firework_effects'\)/);
+  assert.match(createBody, /\.insert\(\{/);
+  assert.match(createBody, /slug = `custom-star-\$\{Date\.now\(\)\.toString\(36\)\}`/);
+  assert.match(createBody, /pattern_key: 'custom-star'/);
+  assert.match(createBody, /source: 'manual'/);
+  assert.match(createBody, /model_json: CUSTOM_STAR_EFFECT_MODEL/);
+  assert.match(createBody, /redirect\(`\/admin\/effects\/\$\{data\.id\}`\)/);
   assert.doesNotMatch(updateBody, /effect_specs|spec_json|FireworkSpecSchema/);
 });
 
@@ -90,6 +100,9 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(page, /effect\.family/);
   assert.match(page, /effect\.patternKey/);
   assert.match(page, /effect\.variantCount/);
+  assert.match(page, /createCustomStarEffect/);
+  assert.match(page, /New custom effect/);
+  assert.match(page, /<Plus size=\{16\} \/>/);
   assert.doesNotMatch(page, /effect\.durationSeconds|effect\.heightMeters|effect\.productCount/);
   assert.match(editor, /modelJson/);
   assert.match(editor, /patternKey/);
@@ -102,7 +115,57 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.doesNotMatch(editor, /Math\.random/);
   assert.doesNotMatch(fireworkEditor, /Math\.random/);
   assert.match(fireworkEditor, /initial-main/);
-  assert.match(fireworkEditor, /nextColorSlotIdRef/);
+  assert.match(fireworkEditor, /nextColourStopIdRef/);
+  assert.match(
+    fireworkEditor,
+    /<PanelSection title="Details" collapsible defaultExpanded=\{false\}>/,
+  );
+  assert.match(fireworkEditor, /type StarColourMode = 'solid' \| 'random' \| 'bands' \| 'stripes'/);
+  assert.match(fireworkEditor, /type StarColourAxis = 'vertical' \| 'horizontal'/);
+  assert.match(fireworkEditor, /const MAX_STAR_COLOURS = 6/);
+  assert.match(fireworkEditor, /const STAR_PATTERN_COUNT_MAX = 6/);
+  assert.match(fireworkEditor, /const STAR_COLOUR_MODE_OPTIONS = \[/);
+  assert.match(fireworkEditor, /const STAR_COLOUR_AXIS_OPTIONS = \[/);
+  assert.match(fireworkEditor, /label: 'Bottom to top'/);
+  assert.match(fireworkEditor, /function buildInitialColourStops/);
+  assert.match(fireworkEditor, /function initialColourAxis/);
+  assert.match(fireworkEditor, /function colourPatternQuestion/);
+  assert.match(fireworkEditor, /function ColourPatternBar/);
+  assert.match(fireworkEditor, /function normaliseColourShares/);
+  assert.match(fireworkEditor, /function rebalanceColourShare/);
+  assert.match(fireworkEditor, /function CompactColourInput/);
+  assert.match(fireworkEditor, /const starColourControls = \(/);
+  assert.match(fireworkEditor, /<SubSection[\s\S]*title="Colour"[\s\S]*action=\{/);
+  assert.match(fireworkEditor, /ariaLabel="Star colour pattern"/);
+  assert.match(fireworkEditor, /ariaLabel=\{colourPatternQuestion\(colourMode\)\}/);
+  assert.match(fireworkEditor, /value=\{colourAxis\}/);
+  assert.match(fireworkEditor, /<Plus size=\{16\} \/>/);
+  assert.doesNotMatch(fireworkEditor, /\{colourStops\.length\}\/\{MAX_STAR_COLOURS\}/);
+  assert.doesNotMatch(fireworkEditor, /> Add colour</);
+  assert.match(fireworkEditor, /<ColourPatternBar/);
+  assert.match(fireworkEditor, /Move colour split/);
+  assert.match(fireworkEditor, /const \[draftColourStops, setDraftColourStops\]/);
+  assert.match(fireworkEditor, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(fireworkEditor, /onPointerMove=\{\(event\) => continueHandleDrag\(index, event\)\}/);
+  assert.match(fireworkEditor, /onChange\(latestStops\)/);
+  assert.doesNotMatch(fireworkEditor, /document\.addEventListener\('pointermove'/);
+  assert.match(fireworkEditor, /label=\{index === 1 \? 'Accent share' : 'Share'\}/);
+  assert.match(fireworkEditor, /aria-label="Colour"[\s\S]*checked=\{colourEnabled\}/);
+  assert.match(fireworkEditor, /const outer = ensureRecord\(stars, 'outer'\)/);
+  assert.match(fireworkEditor, /outer\.color = hexToRgbObject\(mainColor\)/);
+  assert.match(fireworkEditor, /outer\.colourPattern = \{/);
+  assert.match(fireworkEditor, /mode: colourMode/);
+  assert.match(fireworkEditor, /axis: colourAxis/);
+  assert.match(fireworkEditor, /count: clampStarPatternCount\(validColourStops\.length\)/);
+  assert.match(fireworkEditor, /weight: stop\.share/);
+  assert.match(fireworkEditor, /delete core\.color/);
+  assert.match(fireworkEditor, /delete core\.colourPattern/);
+  assert.match(fireworkEditor, /starControls=\{starColourControls\}/);
+  assert.doesNotMatch(
+    fireworkEditor,
+    /ROLE_HINT|ColorRole|ColorSlot|core: 'Star Inner'|initial-core/,
+  );
+  assert.doesNotMatch(fireworkEditor, /afterBurst=\{colourSection\}/);
   assert.match(editor, /PREVIEW_COLOR/);
   assert.doesNotMatch(editor, /refineEffectDraft|specJson|linkedProducts/);
 });
@@ -129,6 +192,14 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(canvas, /import \{ Button \} from '@\/app\/components\/ui\/Button'/);
   assert.match(canvas, /showFpsRef/);
   assert.match(canvas, /showFpsOverlay/);
+  assert.match(
+    canvas,
+    /const targetElapsed = playbackRef \? playbackRef\.current : internalElapsedRef\.current/,
+  );
+  assert.match(
+    canvas,
+    /engine\.clear\(\)[\s\S]*engine\.setCues\(cues\)[\s\S]*engine\.setElapsed\(0\)/,
+  );
   assert.match(canvas, /setShowFpsOverlay\(showFps\)/);
   assert.match(canvas, /setShowFpsOverlay\(\(visible\) => !visible\)/);
   assert.match(canvas, /setShowFpsOverlay\(false\)/);
@@ -167,6 +238,22 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(effectEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   assert.match(fireworkEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
+  assert.match(effectEditor, /muted=\{!isPlaying\}/);
+  assert.match(fireworkEditor, /muted=\{!isPlaying\}/);
+  assert.match(
+    effectEditor,
+    /const previewCues = useMemo\(\(\) => \[previewCue\], \[previewCue\]\)/,
+  );
+  assert.match(
+    fireworkEditor,
+    /const previewCues = useMemo\(\(\) => \[previewCue\], \[previewCue\]\)/,
+  );
+  assert.match(effectEditor, /cues=\{previewCues\}/);
+  assert.match(fireworkEditor, /cues=\{previewCues\}/);
+  assert.doesNotMatch(effectEditor, /cues=\{\[previewCue\]\}/);
+  assert.doesNotMatch(fireworkEditor, /cues=\{\[previewCue\]\}/);
+  assert.match(canvas, /resumeAudio/);
+  assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);
   // The trail width-guide overlay was removed with the Motion settings sheet,
   // so the editors no longer wire it up.
   assert.doesNotMatch(effectEditor, /showTrailWidthGuide/);
