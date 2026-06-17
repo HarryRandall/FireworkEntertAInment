@@ -22,6 +22,7 @@ import { toast } from '@/app/components/ui/toast';
 import type { AdminFireworkDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
+  canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
   type LaunchPosition,
@@ -75,6 +76,10 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function cloneRecord(value: JsonRecord): JsonRecord {
   return JSON.parse(JSON.stringify(value)) as JsonRecord;
+}
+
+function readRecord(parent: JsonRecord, key: string): JsonRecord {
+  return isRecord(parent[key]) ? (parent[key] as JsonRecord) : {};
 }
 
 function hexToRgbObject(hex: string): { r: number; g: number; b: number } {
@@ -173,6 +178,10 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
     [effectId, firework.effectModels, firework.effectModelJson],
   );
+  const calibrationDefaults = useMemo(() => {
+    const model = isRecord(baseModel) ? baseModel : {};
+    return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
+  }, [baseModel]);
 
   const palette = useMemo(
     () =>
@@ -225,9 +234,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
   const coreSoftness = heads.coreSoftness;
   const coreBrightness = heads.coreBrightness;
+  const coreOpacityFalloff = heads.coreOpacityFalloff;
   const glowSize = heads.glowSize;
   const glowSoftness = heads.glowSoftness;
+  const glowOpacityFalloff = heads.glowOpacityFalloff;
   const glowBlur = heads.glowBlur;
+  const backgroundGlowOpacityFalloff = heads.backgroundGlowOpacityFalloff;
+  const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
@@ -407,7 +420,17 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             controlsVisible
             showFps
             renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
-            headStyle={{ coreSoftness, coreBrightness, glowSize, glowSoftness, glowBlur }}
+            headStyle={{
+              coreSoftness,
+              coreBrightness,
+              coreOpacityFalloff,
+              glowSize,
+              glowSoftness,
+              glowOpacityFalloff,
+              glowBlur,
+              backgroundGlowOpacityFalloff,
+              backgroundGlowSoftness,
+            }}
           />
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
@@ -603,6 +626,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
             mutate={mutateOverrides}
             disabled={!parsedOverrides.ok}
             showLaunch
