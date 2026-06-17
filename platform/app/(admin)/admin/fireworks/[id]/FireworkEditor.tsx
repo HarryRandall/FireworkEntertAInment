@@ -186,6 +186,31 @@ function normaliseColourShares(stops: ColourStop[]): ColourStop[] {
   return stops.map((stop, index) => ({ ...stop, share: rounded[index] ?? 1 }));
 }
 
+function colourShareBoundaries(stops: ColourStop[]): number[] {
+  return stops.slice(0, -1).reduce<number[]>((acc, stop, index) => {
+    const previous = acc[index - 1] ?? 0;
+    acc.push(previous + stop.share);
+    return acc;
+  }, []);
+}
+
+function moveColourBoundary(stops: ColourStop[], index: number, percent: number): ColourStop[] {
+  const normalisedStops = normaliseColourShares(stops);
+  if (normalisedStops.length <= 1) return normalisedStops;
+  const boundaries = colourShareBoundaries(normalisedStops);
+  const minSegment = Math.min(12, Math.floor(90 / normalisedStops.length));
+  const nextBoundaries = [...boundaries];
+  const min = (nextBoundaries[index - 1] ?? 0) + minSegment;
+  const max = (nextBoundaries[index + 1] ?? 100) - minSegment;
+  nextBoundaries[index] = Math.min(max, Math.max(min, percent));
+  const nextShares = normalisedStops.map((stop, stopIndex) => {
+    const start = nextBoundaries[stopIndex - 1] ?? 0;
+    const end = nextBoundaries[stopIndex] ?? 100;
+    return { ...stop, share: Math.max(1, Math.round(end - start)) };
+  });
+  return normaliseColourShares(nextShares);
+}
+
 function rebalanceColourShare(stops: ColourStop[], id: string, share: number): ColourStop[] {
   if (stops.length <= 1) return normaliseColourShares(stops);
   const fixedShare = Math.min(95, Math.max(1, Math.round(share)));
@@ -282,25 +307,19 @@ function ColourPatternBar({
   onChange: (stops: ColourStop[]) => void;
 }) {
   const barRef = useRef<HTMLDivElement>(null);
-  const normalisedStops = normaliseColourShares(stops);
-  const boundaries = normalisedStops.slice(0, -1).reduce<number[]>((acc, stop, index) => {
-    const previous = acc[index - 1] ?? 0;
-    acc.push(previous + stop.share);
-    return acc;
-  }, []);
+  const dragRef = useRef<{
+    index: number;
+    latestStops: ColourStop[];
+    originStops: ColourStop[];
+    pointerId: number;
+  } | null>(null);
+  const [draftColourStops, setDraftColourStops] = useState<ColourStop[] | null>(null);
+  const [activeBoundaryIndex, setActiveBoundaryIndex] = useState<number | null>(null);
+  const normalisedStops = normaliseColourShares(draftColourStops ?? stops);
+  const boundaries = colourShareBoundaries(normalisedStops);
 
   function updateBoundary(index: number, percent: number) {
-    const minSegment = Math.min(12, Math.floor(90 / normalisedStops.length));
-    const nextBoundaries = [...boundaries];
-    const min = (nextBoundaries[index - 1] ?? 0) + minSegment;
-    const max = (nextBoundaries[index + 1] ?? 100) - minSegment;
-    nextBoundaries[index] = Math.min(max, Math.max(min, percent));
-    const nextShares = normalisedStops.map((stop, stopIndex) => {
-      const start = nextBoundaries[stopIndex - 1] ?? 0;
-      const end = nextBoundaries[stopIndex] ?? 100;
-      return { ...stop, share: Math.max(1, Math.round(end - start)) };
-    });
-    onChange(normaliseColourShares(nextShares));
+    onChange(moveColourBoundary(normalisedStops, index, percent));
   }
 
   function pointerPercent(clientX: number): number {
@@ -313,15 +332,40 @@ function ColourPatternBar({
     if (disabled) return;
     event.preventDefault();
     event.currentTarget.focus();
-    updateBoundary(index, pointerPercent(event.clientX));
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      updateBoundary(index, pointerPercent(moveEvent.clientX));
+    const originStops = normaliseColourShares(stops);
+    const latestStops = moveColourBoundary(originStops, index, pointerPercent(event.clientX));
+    dragRef.current = {
+      index,
+      latestStops,
+      originStops,
+      pointerId: event.pointerId,
     };
-    const stopDragging = () => {
-      document.removeEventListener('pointermove', handlePointerMove);
-    };
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', stopDragging, { once: true });
+    setActiveBoundaryIndex(index);
+    setDraftColourStops(latestStops);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function continueHandleDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || drag.index !== index) return;
+    event.preventDefault();
+    const latestStops = moveColourBoundary(drag.originStops, index, pointerPercent(event.clientX));
+    drag.latestStops = latestStops;
+    setDraftColourStops(latestStops);
+  }
+
+  function commitHandleDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const latestStops = drag.latestStops;
+    dragRef.current = null;
+    setActiveBoundaryIndex(null);
+    setDraftColourStops(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    onChange(latestStops);
   }
 
   if (normalisedStops.length === 0) return null;
@@ -330,12 +374,14 @@ function ColourPatternBar({
     <div className="space-y-2">
       <div
         ref={barRef}
-        className="relative flex h-8 overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
+        className="relative flex h-8 touch-none overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] select-none"
       >
         {normalisedStops.map((stop) => (
           <div
             key={stop.id}
-            className="h-full min-w-1 transition-[width]"
+            className={['h-full min-w-1', activeBoundaryIndex === null ? 'transition-[width]' : '']
+              .filter(Boolean)
+              .join(' ')}
             style={{
               width: `${stop.share}%`,
               backgroundColor: HEX.test(stop.hex) ? stop.hex : '#ffffff',
@@ -347,10 +393,14 @@ function ColourPatternBar({
             key={`${normalisedStops[index]?.id ?? index}-handle`}
             type="button"
             aria-label={`Move colour split ${index + 1}`}
-            className="focus-visible:ring-ring/60 absolute top-1/2 h-8 w-5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
+            className="focus-visible:ring-ring/60 absolute top-1/2 h-8 w-5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none rounded-full outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
             style={{ left: `${boundary}%` }}
             disabled={disabled}
             onPointerDown={(event) => beginHandleDrag(index, event)}
+            onPointerMove={(event) => continueHandleDrag(index, event)}
+            onPointerUp={commitHandleDrag}
+            onPointerCancel={commitHandleDrag}
+            onLostPointerCapture={commitHandleDrag}
             onKeyDown={(event) => {
               if (disabled) return;
               if (event.key === 'ArrowLeft') {

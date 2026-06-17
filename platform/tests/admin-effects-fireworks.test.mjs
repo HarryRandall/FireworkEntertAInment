@@ -131,6 +131,11 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.doesNotMatch(fireworkEditor, /> Add colour</);
   assert.match(fireworkEditor, /<ColourPatternBar/);
   assert.match(fireworkEditor, /Move colour split/);
+  assert.match(fireworkEditor, /const \[draftColourStops, setDraftColourStops\]/);
+  assert.match(fireworkEditor, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(fireworkEditor, /onPointerMove=\{\(event\) => continueHandleDrag\(index, event\)\}/);
+  assert.match(fireworkEditor, /onChange\(latestStops\)/);
+  assert.doesNotMatch(fireworkEditor, /document\.addEventListener\('pointermove'/);
   assert.match(fireworkEditor, /label=\{index === 1 \? 'Accent share' : 'Share'\}/);
   assert.match(fireworkEditor, /aria-label="Colour"[\s\S]*checked=\{colourEnabled\}/);
   assert.match(fireworkEditor, /const outer = ensureRecord\(stars, 'outer'\)/);
