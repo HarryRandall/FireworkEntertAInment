@@ -46,6 +46,26 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(sound, /rng\?: RandomSource/);
 });
 
+test('firework audio separates launch and burst reports', () => {
+  const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+  const controls = read('app/components/admin/FireworkRenderControls.tsx');
+
+  assert.match(design, /launch: z\.boolean\(\)\.default\(true\)/);
+  assert.match(design, /boom: z\.enum\(\['none', 'auto', 'light', 'heavy'\]\)\.default\('auto'\)/);
+  assert.match(design, /function launchSoundFromSource/);
+  assert.match(
+    design,
+    /compiled\.sound = deepMergeDesign\(compiled\.sound, \{ launch: variantLaunchSound \}\)/,
+  );
+  assert.match(effects, /options\.audible && design\.sound\.launch/);
+  assert.match(effects, /boom !== 'none'/);
+  assert.match(controls, /label="Launch report"/);
+  assert.match(controls, /sound\.launch = value/);
+  assert.match(controls, /mortar\.sound = value/);
+  assert.match(controls, /<FieldLabel>Burst report<\/FieldLabel>/);
+});
+
 test('renderer effects drive shell and trail colours from the selected design', () => {
   const effects = read('lib/fireworks/Effects.ts');
 
@@ -382,9 +402,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /layerKey === 'outer' \? starControls : undefined/);
   assert.match(
     controls,
-    /<div className="space-y-2\.5">[\s\S]*\{leadingControls\}[\s\S]*<SubSection title="Core">/,
+    /<div className="space-y-2\.5">[\s\S]*\{leadingControls\}[\s\S]*renderStarOpeningControls\(layerKey, controlDisabled\)[\s\S]*<SubSection title="Core">/,
   );
   assert.doesNotMatch(controls, /defaultExpanded=\{layerKey === 'outer'\}/);
+  assert.doesNotMatch(controls, /<SubSection title="Opening" defaultExpanded/);
   assert.doesNotMatch(controls, /<SubSection title="Core" defaultExpanded/);
   assert.doesNotMatch(controls, /<SubSection title="Particles" defaultExpanded/);
   assert.doesNotMatch(controls, /<SubSection title="Placement" defaultExpanded/);
@@ -397,6 +418,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(design, /axis: z\.enum\(\['vertical', 'horizontal'\]\)\.default\('vertical'\)/);
   assert.match(design, /\.transform\(\(value\) => Math\.min\(6, value\)\)/);
   assert.match(design, /colourPattern: StarColourPatternSchema/);
+  assert.match(design, /const StarHeadOpeningSchema/);
+  assert.match(design, /opening: StarHeadOpeningSchema/);
+  assert.match(design, /fadePercent: z\.coerce\.number\(\)\.min\(1\)\.max\(100\)\.default\(24\)/);
+  assert.match(design, /growPercent: z\.coerce\.number\(\)\.min\(1\)\.max\(100\)\.default\(22\)/);
   assert.match(design, /function legacyOuterLayerFallback/);
   assert.match(design, /parseStarLayerInput\(stars\.outer, outerFallback\)/);
   assert.match(design, /parseStarLayerInput\(stars\.core, coreLayerFallback\(outer\)\)/);
@@ -405,6 +430,14 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(effects, /if \(!layer\.enabled\) return/);
   assert.match(effects, /const styleIndex = layerKey === 'core' \? 1 : 0/);
   assert.match(effects, /this\.starColor\(design, layer, layerKey, color, i, count, rng\)/);
+  assert.match(effects, /function starOpeningProgress/);
+  assert.match(effects, /const duration = clamp\(percent \/ 100, 0\.01, 1\)/);
+  assert.match(effects, /function starOpeningColor/);
+  assert.match(effects, /function starOpeningSize/);
+  assert.match(effects, /const initialColor = starOpeningColor\(layer\.head, color, 0\)/);
+  assert.match(effects, /const initialSize = starOpeningSize\(layer\.head, sizeBudget, 0\)/);
+  assert.match(effects, /layer\.head\.opening\.colour\.enabled/);
+  assert.match(effects, /layer\.head\.opening\.size\.enabled/);
   assert.match(effects, /private starColourPatternColor/);
   assert.match(effects, /const pattern = layer\.colourPattern/);
   assert.match(effects, /function starPatternPosition/);
@@ -541,10 +574,18 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.doesNotMatch(controls, /Flicker chance|Flicker strength|Flicker life/);
   // The Motion settings sheet was removed entirely.
   assert.doesNotMatch(controls, /Motion settings|Trail motion|Width guide|SheetContent/);
-  // Head-orb appearance is a shared, grouped helper with Core/Glow dropdowns.
+  // Head-orb appearance is a shared, grouped helper with Opening/Core/Glow dropdowns.
   assert.match(controls, /function renderStarAppearance/);
+  assert.match(controls, /title="Opening"/);
   assert.match(controls, /title="Core"/);
   assert.match(controls, /title="Glow"/);
+  assert.match(controls, /label="Colour fade"/);
+  assert.match(controls, /label="Opening colour"/);
+  assert.match(controls, /label="Colour fade time"/);
+  assert.match(controls, /label="Size growth"/);
+  assert.match(controls, /label="Start size"/);
+  assert.match(controls, /label="Grow time"/);
+  assert.match(controls, /function setLayerHeadOpeningValue/);
   assert.match(controls, /label="Core blur"/);
   assert.match(controls, /label="Star glow radius"/);
   assert.match(controls, /label="Star glow blur"/);
@@ -601,7 +642,8 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(design, /shapeWeights: BurstTrailShapeWeightsSchema/);
   assert.match(design, /particleSize:[\s\S]*headScale:[\s\S]*tailScale/);
   assert.match(design, /lifetime:[\s\S]*baseSeconds:[\s\S]*afterglowSeconds/);
-  assert.match(design, /motion:[\s\S]*gravity:[\s\S]*drag:[\s\S]*spin/);
+  assert.match(design, /spacing:[\s\S]*pathSamples/);
+  assert.match(design, /motion:[\s\S]*gravity:[\s\S]*drag:[\s\S]*spin[\s\S]*swirlStrength/);
   assert.match(design, /smoke:[\s\S]*enabled:[\s\S]*particles:[\s\S]*drift:[\s\S]*height/);
   assert.doesNotMatch(smokeSchema, /colour:/);
   assert.match(design, /DEFAULT_LAUNCH_SMOKE_COLOR/);
@@ -625,11 +667,14 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /smokeRng\?: RandomSource/);
   assert.match(effects, /liftRng\?: RandomSource/);
   assert.match(effects, /this\.spawnMortarSmoke\(position, design, smokeRng\)/);
-  assert.match(
-    effects,
-    /this\.shellEffect\(p, dt, t, seed, liftColor, design, rng, liftRng, smokeRng\)/,
-  );
+  assert.match(effects, /let liftPreviousPosition: Pos \| null = null/);
+  assert.match(effects, /previousPosition = liftPreviousPosition/);
+  assert.match(effects, /this\.shellEffect\([\s\S]*previousPosition/);
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
+  assert.match(effects, /liftParticles\.spacing\.pathSamples/);
+  assert.match(effects, /function liftPathPoint/);
+  assert.match(effects, /applyLiftSwirlToShell/);
+  assert.match(effects, /liftParticles\.motion\.swirlStrength/);
   assert.match(effects, /const smokeCount =[\s\S]*smoke\.particles \/ 100/);
   assert.match(effects, /const smokeColor = DEFAULT_LAUNCH_SMOKE_COLOR/);
   assert.match(effects, /liftParticleDensityScale/);
@@ -654,6 +699,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Tail scale"/);
   assert.match(controls, /label="Afterglow"/);
   assert.match(controls, /label="Gravity"/);
+  assert.match(controls, /label="Path fill"/);
+  assert.match(controls, /label="Ascent swirl"/);
+  assert.match(controls, /label="Swirl radius"/);
+  assert.match(controls, /label="Swirl rate"/);
   assert.match(controls, /label="Max height"[\s\S]*setLaunchValue\('liftParticles', 'height'/);
   assert.match(controls, /label="Smoke particles"[\s\S]*setLaunchValue\('smoke', 'particles'/);
   assert.doesNotMatch(controls, /label="Smoke colour"|setLaunchValue\('smoke', 'colour'/);
@@ -1080,8 +1129,12 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   // shared renderStarAppearance helper, written onto each star layer's head.
   assert.match(controls, /label="Head size"/);
   assert.match(controls, /label="Star size"/);
-  assert.match(controls, /renderStarAppearance\('outer', sectionDisabled\.heads\)/);
+  assert.match(
+    controls,
+    /renderStarAppearance\('outer', sectionDisabled\.heads, undefined, false\)/,
+  );
   assert.match(controls, /renderStarAppearance\(\s*layerKey,\s*controlDisabled,/);
+  assert.match(controls, /showOpeningControls = true/);
   assert.match(controls, /label="White dot size"/);
   assert.match(controls, /label="White dot blur"/);
   assert.match(controls, /label="Core blur"/);

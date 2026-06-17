@@ -71,6 +71,21 @@ const HEAD_APPEARANCE_DEFAULTS = {
   backgroundGlowSoftness: DEFAULT_BACKGROUND_GLOW_SOFTNESS,
 } as const;
 
+const DEFAULT_STAR_OPENING_COLOUR = { r: 1, g: 0.42, b: 0.08 };
+
+const STAR_HEAD_OPENING_DEFAULTS = {
+  colour: {
+    enabled: false,
+    color: DEFAULT_STAR_OPENING_COLOUR,
+    fadePercent: 24,
+  },
+  size: {
+    enabled: false,
+    startPercent: 35,
+    growPercent: 22,
+  },
+};
+
 /** Valid burst patterns the renderer knows how to draw. */
 export const FIREWORK_PATTERNS = ['fibonacci', 'wave', 'strobe'] as const;
 export type FireworkPattern = (typeof FIREWORK_PATTERNS)[number];
@@ -200,8 +215,9 @@ const LaunchLiftParticlesSchema = z
       .object({
         curve: z.coerce.number().min(0.2).max(4).default(1),
         jitterPercent: z.coerce.number().min(0).max(100).default(35),
+        pathSamples: z.coerce.number().int().min(1).max(12).default(5),
       })
-      .default({ curve: 1, jitterPercent: 35 }),
+      .default({ curve: 1, jitterPercent: 35, pathSamples: 5 }),
     lifetime: z
       .object({
         baseSeconds: z.coerce.number().min(0.1).max(8).default(0.8),
@@ -236,6 +252,9 @@ const LaunchLiftParticlesSchema = z
         driftY: z.coerce.number().min(-2).max(2).default(-0.012),
         driftZ: z.coerce.number().min(-2).max(2).default(0),
         spin: z.coerce.number().min(0).max(8).default(0),
+        swirlStrength: z.coerce.number().min(0).max(4).default(0),
+        swirlRadius: z.coerce.number().min(0).max(90).default(0),
+        swirlRate: z.coerce.number().min(0).max(16).default(4),
       })
       .default({
         gravity: -0.09,
@@ -246,6 +265,9 @@ const LaunchLiftParticlesSchema = z
         driftY: -0.012,
         driftZ: 0,
         spin: 0,
+        swirlStrength: 0,
+        swirlRadius: 0,
+        swirlRate: 4,
       }),
   })
   .default({
@@ -256,7 +278,7 @@ const LaunchLiftParticlesSchema = z
     shapeWeights: { circle: 0, square: 100, triangle: 0 },
     particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
     frontClump: 0.55,
-    spacing: { curve: 1, jitterPercent: 35 },
+    spacing: { curve: 1, jitterPercent: 35, pathSamples: 5 },
     lifetime: { baseSeconds: 0.8, variationPercent: 35, afterglowSeconds: 0.1 },
     intensity: { brightness: 1, fadeSoftness: 1 },
     flicker: { chance: 0.08, strength: 0.8, lifetimeMultiplier: 0.45 },
@@ -269,6 +291,9 @@ const LaunchLiftParticlesSchema = z
       driftY: -0.012,
       driftZ: 0,
       spin: 0,
+      swirlStrength: 0,
+      swirlRadius: 0,
+      swirlRate: 4,
     },
   });
 
@@ -304,7 +329,7 @@ const LaunchSchema = z
       shapeWeights: { circle: 0, square: 100, triangle: 0 },
       particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
       frontClump: 0.55,
-      spacing: { curve: 1, jitterPercent: 35 },
+      spacing: { curve: 1, jitterPercent: 35, pathSamples: 5 },
       lifetime: { baseSeconds: 0.8, variationPercent: 35, afterglowSeconds: 0.1 },
       intensity: { brightness: 1, fadeSoftness: 1 },
       flicker: { chance: 0.08, strength: 0.8, lifetimeMultiplier: 0.45 },
@@ -317,6 +342,9 @@ const LaunchSchema = z
         driftY: -0.012,
         driftZ: 0,
         spin: 0,
+        swirlStrength: 0,
+        swirlRadius: 0,
+        swirlRate: 4,
       },
     },
     smoke: {
@@ -487,10 +515,34 @@ const StarBurstSchema = z
     flairColorMode: 'mixed',
   });
 
+const StarHeadOpeningSchema = z
+  .object({
+    colour: z
+      .object({
+        enabled: z.boolean().default(false),
+        color: RgbSchema.default(DEFAULT_STAR_OPENING_COLOUR),
+        /** Percentage of the star's own life used to fade from opening colour. */
+        fadePercent: z.coerce.number().min(1).max(100).default(24),
+      })
+      .default(STAR_HEAD_OPENING_DEFAULTS.colour),
+    size: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Starting size as a percentage of the layer's full star size. */
+        startPercent: z.coerce.number().min(1).max(100).default(35),
+        /** Percentage of the star's own life used to reach full size. */
+        growPercent: z.coerce.number().min(1).max(100).default(22),
+      })
+      .default(STAR_HEAD_OPENING_DEFAULTS.size),
+  })
+  .default(STAR_HEAD_OPENING_DEFAULTS);
+
 const StarHeadSchema = z
   .object({
     /** Size budget of each glowing star orb. */
     size: z.coerce.number().min(10).max(1000).default(260),
+    /** Opening colour fade and size growth, both relative to this star's life. */
+    opening: StarHeadOpeningSchema,
     /** Halo brightness multiplier, same encoding as brocade heads. */
     glowStrength: z.coerce
       .number()
@@ -564,6 +616,7 @@ const StarHeadSchema = z
   })
   .default({
     size: 260,
+    opening: STAR_HEAD_OPENING_DEFAULTS,
     glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
     ...HEAD_APPEARANCE_DEFAULTS,
   });
@@ -616,6 +669,7 @@ const StarLayerSchema = z
     },
     head: {
       size: 260,
+      opening: STAR_HEAD_OPENING_DEFAULTS,
       glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
       ...HEAD_APPEARANCE_DEFAULTS,
     },
@@ -692,9 +746,10 @@ export const FireworkDesignSchema = z.object({
     .default({ enabled: true, probability: 0.05, sound: 'crackle' }),
   sound: z
     .object({
-      boom: z.enum(['auto', 'light', 'heavy']).default('auto'),
+      launch: z.boolean().default(true),
+      boom: z.enum(['none', 'auto', 'light', 'heavy']).default('auto'),
     })
-    .default({ boom: 'auto' }),
+    .default({ launch: true, boom: 'auto' }),
   strobe: z
     .object({
       enabled: z.boolean().default(false),
@@ -755,6 +810,7 @@ export const FireworkDesignSchema = z.object({
         },
         head: {
           size: 160,
+          opening: STAR_HEAD_OPENING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
           ...HEAD_APPEARANCE_DEFAULTS,
         },
@@ -810,6 +866,7 @@ export const FireworkDesignSchema = z.object({
         },
         head: {
           size: 260,
+          opening: STAR_HEAD_OPENING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
           ...HEAD_APPEARANCE_DEFAULTS,
         },
@@ -1204,6 +1261,16 @@ function legacySmokeParticlesFromSource(source: unknown): number | null {
   return Math.min(500, Math.max(0, Math.round(raw)));
 }
 
+function launchSoundFromSource(source: unknown): boolean | null {
+  if (!isRecord(source)) return null;
+  const sound = isRecord(source.sound) ? source.sound : null;
+  if (typeof sound?.launch === 'boolean') return sound.launch;
+
+  const mortar = isRecord(source.mortar) ? source.mortar : null;
+  if (typeof mortar?.sound === 'boolean') return mortar.sound;
+  return null;
+}
+
 function legacyLiftParticlesFromSource(
   source: unknown,
 ): Partial<FireworkDesign['launch']['liftParticles']> | null {
@@ -1322,6 +1389,7 @@ function coreLayerFallback(outer: FireworkStarLayer): FireworkStarLayer {
 function normaliseFireworkDesign(design: FireworkDesign, source?: unknown): FireworkDesign {
   const topLevelBurstTrail = normaliseBurstTrail(design.burstTrail);
   const legacySmokeParticles = legacySmokeParticlesFromSource(source);
+  const launchSound = launchSoundFromSource(source);
   const legacyLiftParticles = legacyLiftParticlesFromSource(source);
   const liftParticles =
     legacyLiftParticles == null
@@ -1343,6 +1411,14 @@ function normaliseFireworkDesign(design: FireworkDesign, source?: unknown): Fire
     geometry: design.geometry === 'pistil' ? 'sphere' : design.geometry,
     size: outer.count,
     burst: outer.burst,
+    sound: {
+      ...design.sound,
+      ...(launchSound == null ? {} : { launch: launchSound }),
+    },
+    mortar: {
+      ...design.mortar,
+      ...(launchSound == null ? {} : { sound: launchSound }),
+    },
     launch: {
       ...design.launch,
       liftParticles,
@@ -1550,6 +1626,7 @@ function starsBlock(headSize: number | null): StarsLike {
         : {
             head: {
               size: headSize,
+              opening: STAR_HEAD_OPENING_DEFAULTS,
               glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
               ...HEAD_APPEARANCE_DEFAULTS,
             },
@@ -1817,7 +1894,7 @@ function fireworkSpecToDesignLike(spec: RecordLike): RecordLike | null {
       speed: shellType === 'crossette' ? 1.8 : 1.4,
       delayRatio: 0.42,
     },
-    sound: { boom: size != null && size > 240 ? 'heavy' : 'auto' },
+    sound: { launch: true, boom: size != null && size > 240 ? 'heavy' : 'auto' },
     mortar: { sound: true, smokeParticles: size != null && size > 240 ? 130 : 100 },
     launch: { smoke: { particles: size != null && size > 240 ? 130 : 100 } },
   };
@@ -1842,6 +1919,13 @@ export function compileFireworkDesign(params: {
       launch: { smoke: { particles: baseLegacySmokeParticles } },
     });
   }
+  const baseLaunchSound = launchSoundFromSource(baseDefaults);
+  if (baseLaunchSound != null) {
+    withBase = deepMergeDesign(withBase, {
+      sound: { launch: baseLaunchSound },
+      mortar: { sound: baseLaunchSound },
+    });
+  }
   // Blink-type shells (strobe, ghost) strobe by default. Express that through
   // strobe.enabled — the field the editor's Strobe toggle controls — and gate
   // the runtime blink on strobe.enabled alone (see Effects.starBehaviour). This
@@ -1858,6 +1942,11 @@ export function compileFireworkDesign(params: {
     compiled.launch = deepMergeDesign(compiled.launch, {
       smoke: { particles: variantLegacySmokeParticles },
     });
+  }
+  const variantLaunchSound = launchSoundFromSource(params.variantOverrides);
+  if (variantLaunchSound != null) {
+    compiled.sound = deepMergeDesign(compiled.sound, { launch: variantLaunchSound });
+    compiled.mortar = deepMergeDesign(compiled.mortar, { sound: variantLaunchSound });
   }
 
   if (!isRecord(compiled.trail) && typeof compiled.trailProfile === 'string') {

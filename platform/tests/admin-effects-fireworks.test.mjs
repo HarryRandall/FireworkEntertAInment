@@ -69,8 +69,11 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
 test('base effect edits validate model JSON and use conflict detection', () => {
   const actions = read('app/actions/admin-effects.ts');
   const updateBody = functionBody(actions, 'updateEffect');
+  const createBody = functionBody(actions, 'createCustomStarEffect');
 
   assert.match(actions, /Model JSON must be an object/);
+  assert.match(actions, /CUSTOM_STAR_EFFECT_MODEL/);
+  assert.match(actions, /canonicaliseEffectModelJson/);
   assert.match(updateBody, /\.from\('firework_effects'\)/);
   assert.match(updateBody, /\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/);
   assert.match(updateBody, /model_json: model\.value/);
@@ -78,6 +81,13 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.match(updateBody, /invalidateAdminEffectsCache\(parsed\.data\.id\)/);
   assert.match(updateBody, /invalidateAdminFireworksCache\(\)/);
   assert.match(updateBody, /invalidateFireworkCatalogueCaches\(\)/);
+  assert.match(createBody, /\.from\('firework_effects'\)/);
+  assert.match(createBody, /\.insert\(\{/);
+  assert.match(createBody, /slug = `custom-star-\$\{Date\.now\(\)\.toString\(36\)\}`/);
+  assert.match(createBody, /pattern_key: 'custom-star'/);
+  assert.match(createBody, /source: 'manual'/);
+  assert.match(createBody, /model_json: CUSTOM_STAR_EFFECT_MODEL/);
+  assert.match(createBody, /redirect\(`\/admin\/effects\/\$\{data\.id\}`\)/);
   assert.doesNotMatch(updateBody, /effect_specs|spec_json|FireworkSpecSchema/);
 });
 
@@ -90,6 +100,9 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(page, /effect\.family/);
   assert.match(page, /effect\.patternKey/);
   assert.match(page, /effect\.variantCount/);
+  assert.match(page, /createCustomStarEffect/);
+  assert.match(page, /New custom effect/);
+  assert.match(page, /<Plus size=\{16\} \/>/);
   assert.doesNotMatch(page, /effect\.durationSeconds|effect\.heightMeters|effect\.productCount/);
   assert.match(editor, /modelJson/);
   assert.match(editor, /patternKey/);

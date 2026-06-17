@@ -14,7 +14,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { ColorField } from '@/app/components/admin/ColorField';
 import { Button } from '@/app/components/ui/Button';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -74,6 +74,7 @@ import {
 export type JsonRecord = Record<string, unknown>;
 
 const BOOM_OPTIONS = [
+  { value: 'none', label: 'None' },
   { value: 'auto', label: 'Auto' },
   { value: 'light', label: 'Light' },
   { value: 'heavy', label: 'Heavy' },
@@ -112,6 +113,9 @@ const STAR_COUNT_MAX = 100;
 const STAR_SIZE_MIN = 10;
 const STAR_SIZE_MAX = 1000;
 const STAR_SIZE_STEP = 10;
+const STAR_OPENING_COLOUR_HEX = '#ff6b14';
+const STAR_OPENING_PERCENT_MIN = 1;
+const STAR_OPENING_PERCENT_MAX = 100;
 const TRAIL_PARTICLE_SIZE_MAX = 24;
 const TRAIL_PARTICLE_SCALE_MAX = 4;
 const TRAIL_SPREAD_ANGLE_MAX = 60;
@@ -124,6 +128,10 @@ const TRAIL_ROTATION_MAX = 8;
 const LIFT_PARTICLE_AMOUNT_MAX = 240;
 const LIFT_PARTICLE_SIZE_MAX = 180;
 const LIFT_PARTICLE_HEIGHT_MAX = 900;
+const LIFT_PATH_SAMPLES_MAX = 12;
+const LIFT_SWIRL_STRENGTH_MAX = 4;
+const LIFT_SWIRL_RADIUS_MAX = 90;
+const LIFT_SWIRL_RATE_MAX = 16;
 const LAUNCH_SMOKE_PARTICLES_MAX = 500;
 const LAUNCH_SMOKE_SIZE_MAX = 220;
 const LAUNCH_SMOKE_SPREAD_MAX = 140;
@@ -253,6 +261,11 @@ function formatRotation(value: number): string {
   return `${value.toFixed(value % 1 === 0 ? 0 : 1)}x`;
 }
 
+function formatTurns(value: number): string {
+  if (value <= 0) return 'Off';
+  return `${value.toFixed(value % 1 === 0 ? 0 : 1)} r/s`;
+}
+
 function trailBiasFromFrontClump(frontClump: number): number {
   return round2((frontClump - 0.5) * 200);
 }
@@ -367,6 +380,39 @@ function CalibratedSliderField({
   );
 }
 
+function SwitchField({
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint: ReactNode;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const id = useId();
+  return (
+    <Field>
+      <div className="flex min-h-9 items-start justify-between gap-3">
+        <div className="space-y-1">
+          <FieldLabel htmlFor={id}>{label}</FieldLabel>
+          <FieldHint>{hint}</FieldHint>
+        </div>
+        <Switch
+          id={id}
+          aria-label={label}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={onChange}
+        />
+      </div>
+    </Field>
+  );
+}
+
 function liftVelocityPresetMode(value: number): LiftVelocityMode {
   const rounded = round2(value);
   const preset = LIFT_VELOCITY_OPTIONS.find(
@@ -377,6 +423,7 @@ function liftVelocityPresetMode(value: number): LiftVelocityMode {
 
 type BurstTrail = FireworkStarLayer['burstTrail'];
 type BurstTrailStop = BurstTrail['stops'][number];
+type StarHeadOpening = FireworkStarLayer['head']['opening'];
 type TrailParticleShapeOption = (typeof TRAIL_PARTICLE_SHAPE_OPTIONS)[number]['value'];
 
 const TRAIL_PARTICLE_SHAPE_WEIGHTS: Record<
@@ -581,6 +628,7 @@ export function FireworkRenderControls({
   const strobeDefaults = readRecord(defaults, 'strobe');
   const crackleDefaults = readRecord(defaults, 'crackle');
   const soundDefaults = readRecord(defaults, 'sound');
+  const mortarDefaults = readRecord(defaults, 'mortar');
   const calibrationSource = calibrationDefaults ?? defaults;
   const calibrationStarsRecord = readRecord(calibrationSource, 'stars');
   const calibrationStars =
@@ -656,6 +704,12 @@ export function FireworkRenderControls({
   const boomValue = BOOM_OPTIONS.some((option) => option.value === soundDefaults.boom)
     ? (soundDefaults.boom as string)
     : design.sound.boom;
+  const launchSoundValue =
+    typeof soundDefaults.launch === 'boolean'
+      ? soundDefaults.launch
+      : typeof mortarDefaults.sound === 'boolean'
+        ? mortarDefaults.sound
+        : design.sound.launch;
   const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
   const sectionDisabled = {
     liftParticles: disabled || !liftParticlesEnabled,
@@ -752,6 +806,15 @@ export function FireworkRenderControls({
     });
   }
 
+  function setLaunchSoundValue(value: boolean) {
+    mutate((draft) => {
+      const sound = ensureRecord(draft, 'sound');
+      const mortar = ensureRecord(draft, 'mortar');
+      sound.launch = value;
+      mortar.sound = value;
+    });
+  }
+
   function setLaunchValue<T extends keyof FireworkDesign['launch']>(
     section: T,
     key: keyof FireworkDesign['launch'][T],
@@ -782,17 +845,29 @@ export function FireworkRenderControls({
     return (
       <Field>
         <div className="flex items-center gap-1.5">
-          <FieldLabel>Boom</FieldLabel>
-          <InfoTooltip text="Detonation sound weight when the shell opens." />
+          <FieldLabel>Burst report</FieldLabel>
+          <InfoTooltip text="Explosion sound at the top, when the shell opens." />
         </div>
         <SelectField
           value={boomValue}
           onChange={(value) => setNestedRenderValue('sound', 'boom', value)}
           options={BOOM_OPTIONS}
-          ariaLabel="Boom"
+          ariaLabel="Burst report"
           disabled={disabled}
         />
       </Field>
+    );
+  }
+
+  function renderLaunchSoundControl() {
+    return (
+      <SwitchField
+        label="Launch report"
+        checked={launchSoundValue}
+        disabled={disabled}
+        hint="Mortar lift sound when the shell leaves the tube."
+        onChange={setLaunchSoundValue}
+      />
     );
   }
 
@@ -997,6 +1072,20 @@ export function FireworkRenderControls({
                 }
               />
               <SliderField
+                label="Path fill"
+                min={1}
+                max={LIFT_PATH_SAMPLES_MAX}
+                step={1}
+                value={liftParticles.spacing.pathSamples}
+                showNumberInput
+                inputAriaLabel="Lift path fill value"
+                disabled={controlDisabled}
+                hint="Subsamples the shell path between frames so lift particles form a smoother trail."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'spacing', 'pathSamples', Math.round(value))
+                }
+              />
+              <SliderField
                 label="Spread"
                 min={0}
                 max={90}
@@ -1183,6 +1272,49 @@ export function FireworkRenderControls({
                 hint="Random movement added to lift particles."
                 onChange={(value) =>
                   setLaunchNestedValue('liftParticles', 'motion', 'turbulence', round2(value))
+                }
+              />
+              <SliderField
+                label="Ascent swirl"
+                min={0}
+                max={LIFT_SWIRL_STRENGTH_MAX}
+                step={0.05}
+                value={liftParticles.motion.swirlStrength}
+                showNumberInput
+                inputAriaLabel="Lift ascent swirl value"
+                disabled={controlDisabled}
+                hint="Curves the shell sideways as it rises, making the lift trail corkscrew."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlStrength', round2(value))
+                }
+              />
+              <SliderField
+                label="Swirl radius"
+                min={0}
+                max={LIFT_SWIRL_RADIUS_MAX}
+                step={1}
+                value={liftParticles.motion.swirlRadius}
+                showNumberInput
+                inputAriaLabel="Lift swirl radius value"
+                disabled={controlDisabled}
+                hint="Visible radius of the lift particles around the rising shell path."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlRadius', round2(value))
+                }
+              />
+              <SliderField
+                label="Swirl rate"
+                min={0}
+                max={LIFT_SWIRL_RATE_MAX}
+                step={0.1}
+                value={liftParticles.motion.swirlRate}
+                formatValue={formatTurns}
+                showNumberInput
+                inputAriaLabel="Lift swirl rate value"
+                disabled={controlDisabled}
+                hint="How fast the lift trail spins around the ascent path."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlRate', round2(value))
                 }
               />
               <SliderField
@@ -1380,6 +1512,22 @@ export function FireworkRenderControls({
     });
   }
 
+  function setLayerHeadOpeningValue(
+    layerKey: StarLayerKey,
+    section: keyof StarHeadOpening,
+    key: string,
+    value: unknown,
+  ) {
+    mutate((draft) => {
+      const stars = ensureRecord(draft, 'stars');
+      const layer = ensureRecord(stars, layerKey);
+      const head = ensureRecord(layer, 'head');
+      const opening = ensureRecord(head, 'opening');
+      const target = ensureRecord(opening, String(section));
+      target[key] = value;
+    });
+  }
+
   function setLayerBurstRangeMid(
     layerKey: StarLayerKey,
     key: 'speed' | 'gravity' | 'life',
@@ -1404,21 +1552,109 @@ export function FireworkRenderControls({
     });
   }
 
+  function renderStarOpeningControls(layerKey: StarLayerKey, controlDisabled: boolean) {
+    const opening = design.stars[layerKey].head.opening;
+    const colourEnabled = opening.colour.enabled;
+    const sizeEnabled = opening.size.enabled;
+
+    return (
+      <SubSection title="Opening">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SwitchField
+            label="Colour fade"
+            checked={colourEnabled}
+            disabled={controlDisabled}
+            hint="Starts orange, then reaches the star colour over a percentage of this star's burn time."
+            onChange={(value) => setLayerHeadOpeningValue(layerKey, 'colour', 'enabled', value)}
+          />
+          <SwitchField
+            label="Size growth"
+            checked={sizeEnabled}
+            disabled={controlDisabled}
+            hint="Starts smaller, then reaches the full star size over a percentage of this star's burn time."
+            onChange={(value) => setLayerHeadOpeningValue(layerKey, 'size', 'enabled', value)}
+          />
+          <ColorField
+            label="Opening colour"
+            value={rgbObjectToHex(opening.colour.color) ?? STAR_OPENING_COLOUR_HEX}
+            disabled={controlDisabled || !colourEnabled}
+            hint="Colour used at the instant this star opens."
+            onChange={(value) =>
+              setLayerHeadOpeningValue(
+                layerKey,
+                'colour',
+                'color',
+                hexToRgbObject(value ?? STAR_OPENING_COLOUR_HEX),
+              )
+            }
+          />
+          <SliderField
+            label="Colour fade time"
+            min={STAR_OPENING_PERCENT_MIN}
+            max={STAR_OPENING_PERCENT_MAX}
+            step={1}
+            value={opening.colour.fadePercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Colour fade time value"
+            disabled={controlDisabled || !colourEnabled}
+            hint="How much of the star's life is spent fading from the opening colour into the final colour."
+            onChange={(value) =>
+              setLayerHeadOpeningValue(layerKey, 'colour', 'fadePercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Start size"
+            min={STAR_OPENING_PERCENT_MIN}
+            max={STAR_OPENING_PERCENT_MAX}
+            step={1}
+            value={opening.size.startPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Start size value"
+            disabled={controlDisabled || !sizeEnabled}
+            hint="Star size at the instant it opens, as a percentage of the final star size."
+            onChange={(value) =>
+              setLayerHeadOpeningValue(layerKey, 'size', 'startPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Grow time"
+            min={STAR_OPENING_PERCENT_MIN}
+            max={STAR_OPENING_PERCENT_MAX}
+            step={1}
+            value={opening.size.growPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Grow time value"
+            disabled={controlDisabled || !sizeEnabled}
+            hint="How much of the star's life is spent growing to the full star size."
+            onChange={(value) =>
+              setLayerHeadOpeningValue(layerKey, 'size', 'growPercent', round2(value))
+            }
+          />
+        </div>
+      </SubSection>
+    );
+  }
+
   /**
    * Full head-orb appearance controls, shared by star layers and the brocade
    * "Heads" panel. Star values are saved on the selected layer's `head` object
    * and feed the live preview through the editor's `headStyle` / `renderTuning`
-   * props. Grouped into Core and Glow so the richer set stays readable.
+   * props. Grouped into Opening, Core, and Glow so the richer set stays readable.
    */
   function renderStarAppearance(
     layerKey: StarLayerKey,
     controlDisabled: boolean,
     leadingControls?: ReactNode,
+    showOpeningControls = true,
   ) {
     const heads = design.stars[layerKey].head;
     return (
       <div className="space-y-2.5">
         {leadingControls}
+        {showOpeningControls ? renderStarOpeningControls(layerKey, controlDisabled) : null}
         <SubSection title="Core">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <CalibratedSliderField
@@ -2167,6 +2403,7 @@ export function FireworkRenderControls({
                   'Launch speed, which sets the burst height. 15 is the normal preset.',
                 )
               : null}
+            {showLaunch ? renderLaunchSoundControl() : null}
             {showLaunch ? renderBoomControl() : null}
           </div>
         </PanelSection>
@@ -2218,7 +2455,7 @@ export function FireworkRenderControls({
                 onChange={(value) => setBrocadeValue('glowStrength', round2(value))}
               />
             </div>
-            {renderStarAppearance('outer', sectionDisabled.heads)}
+            {renderStarAppearance('outer', sectionDisabled.heads, undefined, false)}
           </div>
         </PanelSection>
       </>
@@ -2233,6 +2470,7 @@ export function FireworkRenderControls({
             {renderLiftVelocityControl(
               'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
             )}
+            {renderLaunchSoundControl()}
             {renderBoomControl()}
           </div>
         </PanelSection>

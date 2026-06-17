@@ -4,6 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import {
@@ -12,11 +13,54 @@ import {
   requirePermission,
 } from '@/lib/admin.server';
 import type { Json } from '@/lib/database.types';
+import { canonicaliseEffectModelJson } from '@/lib/fireworks/design';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
 
 const BaseEffectFamilySchema = z.enum(['aerial_burst', 'ascending', 'ground', 'noise', 'compound']);
+
+const CUSTOM_STAR_EFFECT_MODEL = canonicaliseEffectModelJson({
+  geometry: 'sphere',
+  trailProfile: 'none',
+  renderDefaults: {
+    pattern: 'fibonacci',
+    geometry: 'sphere',
+    trailProfile: 'none',
+    colour: { enabled: true },
+    color: { r: 1, g: 0.82, b: 0.42 },
+    stars: {
+      outer: {
+        enabled: true,
+        count: 1,
+        burst: {
+          speed: [1.2, 1.2],
+          gravity: [-0.04, -0.04],
+          life: [2.4, 2.4],
+          flairColorMode: 'mixed',
+        },
+        burstTrail: {
+          enabled: false,
+          preset: 'none',
+          particlesPerStar: 0,
+        },
+      },
+      core: { enabled: false },
+    },
+    launch: {
+      liftParticles: {
+        enabled: true,
+        amount: 100,
+        spacing: { pathSamples: 5 },
+        motion: {
+          swirlStrength: 0,
+          swirlRadius: 0,
+          swirlRate: 4,
+        },
+      },
+    },
+  },
+}) as Json;
 
 const EffectPatchSchema = z.object({
   id: z.string().uuid(),
@@ -91,4 +135,39 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   revalidatePath(`/admin/effects/${parsed.data.id}`);
   revalidatePath('/admin/fireworks');
   return { ok: true, updatedAt: data.updated_at };
+}
+
+/** Create a manual, editable one-star base effect and open it in the editor. */
+export async function createCustomStarEffect(): Promise<void> {
+  if (!(await requirePermission('admin.manage_catalogue'))) {
+    redirect('/admin/effects');
+  }
+
+  const supabase = createClient(await cookies());
+  const slug = `custom-star-${Date.now().toString(36)}`;
+  const { data, error } = await supabase
+    .from('firework_effects')
+    .insert({
+      slug,
+      name: 'Custom Star',
+      description: 'Manual custom star effect.',
+      family: 'aerial_burst',
+      pattern_key: 'custom-star',
+      source: 'manual',
+      sort_order: 9000,
+      model_json: CUSTOM_STAR_EFFECT_MODEL,
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? 'Could not create custom effect.');
+  }
+
+  await invalidateAdminEffectsCache(data.id);
+  await invalidateAdminFireworksCache();
+  await invalidateFireworkCatalogueCaches();
+  revalidatePath('/admin/effects');
+  revalidatePath('/admin/fireworks');
+  redirect(`/admin/effects/${data.id}`);
 }
