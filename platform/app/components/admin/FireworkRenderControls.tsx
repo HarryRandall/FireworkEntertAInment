@@ -1375,67 +1375,6 @@ export function FireworkRenderControls({
           <SubSection title="Motion">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
-                label="Gravity"
-                min={-2}
-                max={1}
-                step={0.01}
-                value={liftParticles.motion.gravity}
-                showNumberInput
-                inputAriaLabel="Lift gravity value"
-                disabled={controlDisabled}
-                hint="Vertical pull on lift particles after they spawn."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'motion', 'gravity', round2(value))
-                }
-              />
-              <SliderField
-                label="Drag"
-                min={0}
-                max={6}
-                step={0.05}
-                value={liftParticles.motion.drag}
-                showNumberInput
-                inputAriaLabel="Lift drag value"
-                disabled={controlDisabled}
-                hint="Air resistance applied to lift particles."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'motion', 'drag', round2(value))
-                }
-              />
-              <SliderField
-                label="Inherit speed"
-                min={0}
-                max={1}
-                step={0.01}
-                value={liftParticles.motion.inheritedVelocity}
-                showNumberInput
-                inputAriaLabel="Lift inherited speed value"
-                disabled={controlDisabled}
-                hint="How much of the shell's current velocity the lift particles inherit."
-                onChange={(value) =>
-                  setLaunchNestedValue(
-                    'liftParticles',
-                    'motion',
-                    'inheritedVelocity',
-                    round2(value),
-                  )
-                }
-              />
-              <SliderField
-                label="Turbulence"
-                min={0}
-                max={2}
-                step={0.01}
-                value={liftParticles.motion.turbulence}
-                showNumberInput
-                inputAriaLabel="Lift turbulence value"
-                disabled={controlDisabled}
-                hint="Random movement added to lift particles."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'motion', 'turbulence', round2(value))
-                }
-              />
-              <SliderField
                 label="Ascent swirl"
                 min={0}
                 max={LIFT_SWIRL_STRENGTH_MAX}

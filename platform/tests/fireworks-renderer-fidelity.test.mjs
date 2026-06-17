@@ -767,6 +767,8 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /const scatter = burstTrailScatterOffset\(/);
   assert.match(effects, /applyLiftSwirlToShell/);
   assert.match(effects, /liftParticles\.motion\.swirlStrength/);
+  assert.match(effects, /const headProgress = 1 - clamp\(progress, 0, 1\)/);
+  assert.match(effects, /const headAge = 1 - clamp\(age, 0, 1\)/);
   assert.match(effects, /const smokeCount =[\s\S]*smoke\.particles \/ 100/);
   assert.match(effects, /const smokeColor = DEFAULT_LAUNCH_SMOKE_COLOR/);
   assert.match(effects, /liftParticleDensityScale/);
@@ -810,7 +812,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Head scale"/);
   assert.match(controls, /label="Tail scale"/);
   assert.match(controls, /label="Afterglow"/);
-  assert.match(controls, /label="Gravity"/);
+  assert.doesNotMatch(controls, /inputAriaLabel="Lift gravity value"/);
+  assert.doesNotMatch(controls, /inputAriaLabel="Lift drag value"/);
+  assert.doesNotMatch(controls, /inputAriaLabel="Lift inherited speed value"/);
+  assert.doesNotMatch(controls, /inputAriaLabel="Lift turbulence value"/);
   assert.match(controls, /label="Path fill"/);
   assert.match(controls, /label="Ascent swirl"/);
   assert.match(controls, /label="Swirl radius"/);

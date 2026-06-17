@@ -327,7 +327,9 @@ function liftSwirlOffset(
   if (strength <= 0 && radius <= 0) return { x: 0, z: 0 };
 
   const rate = clamp(liftParticles.motion.swirlRate, 0, 16);
-  const phase = time * rate * Math.PI * 2 + progress * Math.PI * 2 + age * rate * Math.PI;
+  const headProgress = 1 - clamp(progress, 0, 1);
+  const headAge = 1 - clamp(age, 0, 1);
+  const phase = time * rate * Math.PI * 2 + headProgress * Math.PI * 2 + headAge * rate * Math.PI;
   const visibleRadius = radius * (0.22 + age * 0.78) + strength * 8;
   return {
     x: Math.cos(phase) * visibleRadius,
