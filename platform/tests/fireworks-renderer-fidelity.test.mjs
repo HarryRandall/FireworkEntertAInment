@@ -199,10 +199,9 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(effects, /Star count can be tiny[\s\S]*trigger detonation/);
   assert.match(effects, /clampStarGravity\(rangeRand\(design\.burst\.gravity, rng\)\)/);
   assert.match(effects, /starDrag\(design\)/);
-  assert.match(
-    effects,
-    /gravity: brocadeLift \? TRAIL_GRAVITY \* 0\.3 : liftParticles\.motion\.gravity/,
-  );
+  assert.match(effects, /const lockToShellPath = liftTubeRadius <= 0/);
+  assert.match(effects, /gravity: lockToShellPath[\s\S]*liftParticles\.motion\.gravity/);
+  assert.match(effects, /vx: lockToShellPath[\s\S]*\? 0/);
   assert.match(effects, /function estimateShellRiseHeight/);
   assert.match(effects, /const liftHeightPercent = clamp\(liftParticles\.height \/ 100, 0, 1\)/);
   assert.match(effects, /const liftStopY = liftOriginY \+ liftRiseHeight \* liftHeightPercent/);
@@ -211,17 +210,19 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(particle, /maxLife = 0/);
   assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
   assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
-  assert.match(engine, /SNAPSHOT_STRIDE = 19/);
-  assert.match(engine, /state\.data\[o \+ 14\] = p\.drag/);
-  assert.match(engine, /state\.data\[o \+ 15\] = p\.maxLife/);
-  assert.match(engine, /state\.data\[o \+ 16\] = p\.shape/);
-  assert.match(engine, /state\.data\[o \+ 17\] = p\.rotation/);
-  assert.match(engine, /state\.data\[o \+ 18\] = p\.spin/);
-  assert.match(engine, /p\.drag = state\.data\[o \+ 14\]/);
-  assert.match(engine, /p\.maxLife = state\.data\[o \+ 15\] \|\| p\.life/);
-  assert.match(engine, /p\.shape = state\.data\[o \+ 16\] \|\| 0/);
-  assert.match(engine, /p\.rotation = state\.data\[o \+ 17\] \|\| 0/);
-  assert.match(engine, /p\.spin = state\.data\[o \+ 18\] \|\| 0/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 20/);
+  assert.match(engine, /state\.data\[o \+ 8\] = p\.alpha/);
+  assert.match(engine, /state\.data\[o \+ 15\] = p\.drag/);
+  assert.match(engine, /state\.data\[o \+ 16\] = p\.maxLife/);
+  assert.match(engine, /state\.data\[o \+ 17\] = p\.shape/);
+  assert.match(engine, /state\.data\[o \+ 18\] = p\.rotation/);
+  assert.match(engine, /state\.data\[o \+ 19\] = p\.spin/);
+  assert.match(engine, /p\.alpha = state\.data\[o \+ 8\] \|\| 0/);
+  assert.match(engine, /p\.drag = state\.data\[o \+ 15\]/);
+  assert.match(engine, /p\.maxLife = state\.data\[o \+ 16\] \|\| p\.life/);
+  assert.match(engine, /p\.shape = state\.data\[o \+ 17\] \|\| 0/);
+  assert.match(engine, /p\.rotation = state\.data\[o \+ 18\] \|\| 0/);
+  assert.match(engine, /p\.spin = state\.data\[o \+ 19\] \|\| 0/);
 });
 
 test('renderer draws compact mixed round, square, and triangle particles', () => {
@@ -239,17 +240,20 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(pool, /p\.reset\(\);[\s\S]*return p;/);
   assert.match(pool, /p\.color\.setRGB\(1, 1, 1\)/);
   assert.match(particle, /shape = 0/);
+  assert.match(particle, /alpha = 1/);
   assert.match(particle, /rotation = 0/);
   assert.match(particle, /spin = 0/);
+  assert.match(pool, /alpha\?: number/);
   assert.match(pool, /shape\?: number/);
   assert.match(pool, /rotation\?: number/);
   assert.match(pool, /spin\?: number/);
   assert.match(pool, /p\.shape = prop\.shape \?\? 0/);
+  assert.match(pool, /p\.alpha = prop\.alpha \?\? 1/);
   assert.match(pool, /p\.rotation = prop\.rotation \?\? 0/);
   assert.match(engine, /const live = this\.pool\.aliveIndices/);
   assert.match(engine, /let drawCount = 0/);
   assert.match(engine, /renderParticleSize\(p\)/);
-  assert.match(engine, /renderParticleAlpha\(p\)/);
+  assert.match(engine, /renderParticleAlpha\(p\) \* twinkle \* clamp\(p\.alpha, 0, 1\)/);
   assert.match(engine, /shapeAttribute/);
   assert.match(engine, /rotationAttribute/);
   assert.match(engine, /this\.geometry\.setAttribute\('shape', this\.shapeAttribute\)/);
@@ -465,6 +469,7 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(effects, /function starClosingProgress/);
   assert.match(effects, /function starClosingColor/);
   assert.match(effects, /function starClosingSize/);
+  assert.match(effects, /function starClosingOpacity/);
   assert.match(effects, /private starOpeningLifeReference/);
   assert.match(effects, /private starLifeRandomness/);
   assert.match(
@@ -488,11 +493,18 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   );
   assert.match(effects, /const initialClosingSize = starClosingSize\(/);
   assert.match(effects, /const initialSize = Math\.min\(initialOpeningSize, initialClosingSize\)/);
+  assert.match(effects, /const initialAlpha = starClosingOpacity\(layer\.head, o\.life, o\.life\)/);
+  assert.match(effects, /alpha: initialAlpha/);
   assert.match(effects, /layer\.head\.opening\.colour\.enabled/);
   assert.match(effects, /layer\.head\.opening\.size\.enabled/);
   assert.match(effects, /!layer\.head\.closing\.colour\.enabled/);
   assert.match(effects, /layer\.head\.closing\.colour\.enabled/);
   assert.match(effects, /layer\.head\.closing\.size\.enabled/);
+  assert.match(effects, /const closingLifeReference = Math\.max\(0\.1, particle\.maxLife\)/);
+  assert.match(
+    effects,
+    /particle\.alpha = starClosingOpacity\(layer\.head, particle\.life, closingLifeReference\)/,
+  );
   assert.match(effects, /private starColourPatternColor/);
   assert.match(effects, /const pattern = layer\.colourPattern/);
   assert.match(effects, /function starPatternPosition/);
@@ -700,10 +712,15 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(design, /shell: LaunchShellSchema/);
   assert.match(design, /const LaunchLiftParticlesSchema = z/);
   assert.match(design, /liftParticles: LaunchLiftParticlesSchema/);
+  assert.match(design, /const LaunchShellTrailSchema = z/);
   assert.match(design, /shape: z\.enum\(LAUNCH_SHELL_SHAPES\)/);
   assert.match(design, /sizeScale: z\.coerce\.number\(\)\.min\(0\.25\)\.max\(4\)\.default\(1\)/);
   assert.match(design, /brightness: z\.coerce\.number\(\)\.min\(0\)\.max\(3\)\.default\(1\)/);
   assert.match(design, /glowStrength:[\s\S]*DEFAULT_HEAD_GLOW_STRENGTH/);
+  assert.match(design, /trail: LaunchShellTrailSchema/);
+  assert.match(design, /tubeDiameter: z\.coerce\.number\(\)\.min\(0\)\.max\(90\)\.default\(0\)/);
+  assert.match(design, /frontAngle: z\.coerce\.number\(\)\.min\(0\)\.max\(60\)\.default\(0\)/);
+  assert.match(design, /tailAngle: z\.coerce\.number\(\)\.min\(0\)\.max\(60\)\.default\(0\)/);
   assert.match(design, /height: z\.coerce[\s\S]*Math\.min\(100, value\)[\s\S]*\.default\(100\)/);
   assert.match(design, /shapeWeights: BurstTrailShapeWeightsSchema/);
   assert.match(design, /particleSize:[\s\S]*headScale:[\s\S]*tailScale/);
@@ -744,6 +761,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
   assert.match(effects, /liftParticles\.spacing\.pathSamples/);
   assert.match(effects, /function liftPathPoint/);
+  assert.match(effects, /function shellTrailSpreadAngle/);
+  assert.match(effects, /function shellTrailTubeRadius/);
+  assert.match(effects, /const lockToShellPath = liftTubeRadius <= 0/);
+  assert.match(effects, /const scatter = burstTrailScatterOffset\(/);
   assert.match(effects, /applyLiftSwirlToShell/);
   assert.match(effects, /liftParticles\.motion\.swirlStrength/);
   assert.match(effects, /const smokeCount =[\s\S]*smoke\.particles \/ 100/);
@@ -759,6 +780,19 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Shell size"[\s\S]*setLaunchValue\('shell', 'sizeScale'/);
   assert.match(controls, /label="Shell brightness"[\s\S]*setLaunchValue\('shell', 'brightness'/);
   assert.match(controls, /label="Shell glow"[\s\S]*setLaunchValue\('shell', 'glowStrength'/);
+  assert.match(controls, /title="Shell trail"/);
+  assert.match(
+    controls,
+    /label="Tube diameter"[\s\S]*max=\{SHELL_TRAIL_TUBE_DIAMETER_MAX\}[\s\S]*setLaunchNestedValue\('shell', 'trail', 'tubeDiameter'/,
+  );
+  assert.match(
+    controls,
+    /label="Front angle"[\s\S]*setLaunchNestedValue\('shell', 'trail', 'frontAngle'/,
+  );
+  assert.match(
+    controls,
+    /label="Tail angle"[\s\S]*setLaunchNestedValue\('shell', 'trail', 'tailAngle'/,
+  );
   assert.match(controls, /function renderSmokeControls/);
   assert.match(controls, /title="Lift particles"/);
   assert.match(controls, /title="Smoke"/);

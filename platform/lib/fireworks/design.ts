@@ -211,6 +211,15 @@ const BurstTrailStopSchema = z.object({
   shapeWeights: BurstTrailShapeWeightsSchema,
 });
 
+const LaunchShellTrailSchema = z
+  .object({
+    tubeDiameter: z.coerce.number().min(0).max(90).default(0),
+    frontAngle: z.coerce.number().min(0).max(60).default(0),
+    tailAngle: z.coerce.number().min(0).max(60).default(0),
+    curve: z.coerce.number().min(0.2).max(4).default(1),
+  })
+  .default({ tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 });
+
 const LaunchShellSchema = z
   .object({
     shape: z.enum(LAUNCH_SHELL_SHAPES).default('circle'),
@@ -222,12 +231,14 @@ const LaunchShellSchema = z
       .min(MIN_HEAD_GLOW_STRENGTH)
       .max(MAX_HEAD_GLOW_STRENGTH)
       .default(DEFAULT_HEAD_GLOW_STRENGTH),
+    trail: LaunchShellTrailSchema,
   })
   .default({
     shape: 'circle',
     sizeScale: 1,
     brightness: 1,
     glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+    trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },
   });
 
 const LaunchLiftParticlesSchema = z
@@ -240,7 +251,6 @@ const LaunchLiftParticlesSchema = z
       .min(0)
       .transform((value) => Math.min(100, value))
       .default(100),
-    spread: z.coerce.number().min(0).max(90).default(10),
     shapeWeights: BurstTrailShapeWeightsSchema,
     particleSize: z
       .object({
@@ -314,7 +324,6 @@ const LaunchLiftParticlesSchema = z
     enabled: true,
     amount: 100,
     height: 100,
-    spread: 10,
     shapeWeights: { circle: 0, square: 100, triangle: 0 },
     particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
     frontClump: 0.55,
@@ -367,12 +376,12 @@ const LaunchSchema = z
       sizeScale: 1,
       brightness: 1,
       glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+      trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },
     },
     liftParticles: {
       enabled: true,
       amount: 100,
       height: 100,
-      spread: 10,
       shapeWeights: { circle: 0, square: 100, triangle: 0 },
       particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
       frontClump: 0.55,
@@ -1382,6 +1391,36 @@ function legacyLiftParticlesFromSource(
   return Object.keys(next).length > 0 ? next : null;
 }
 
+function legacyShellTrailFromSource(
+  source: unknown,
+): Partial<FireworkDesign['launch']['shell']['trail']> | null {
+  if (!isRecord(source)) return null;
+  const launch = isRecord(source.launch) ? source.launch : null;
+  const shell = launch && isRecord(launch.shell) ? launch.shell : null;
+  if (shell && isRecord(shell.trail)) return null;
+
+  const liftParticles = launch && isRecord(launch.liftParticles) ? launch.liftParticles : null;
+  if (!liftParticles) return null;
+
+  const next: Partial<FireworkDesign['launch']['shell']['trail']> = {};
+  const spread = Number(liftParticles.spread);
+  if (Number.isFinite(spread)) {
+    next.tubeDiameter = Math.min(90, Math.max(0, spread));
+  }
+
+  const width = isRecord(liftParticles.width) ? liftParticles.width : null;
+  if (width) {
+    const front = Number(width.front);
+    const tail = Number(width.tail);
+    const curve = Number(width.curve);
+    if (Number.isFinite(front)) next.frontAngle = Math.min(60, Math.max(0, front));
+    if (Number.isFinite(tail)) next.tailAngle = Math.min(60, Math.max(0, tail));
+    if (Number.isFinite(curve)) next.curve = Math.min(4, Math.max(0.2, curve));
+  }
+
+  return Object.keys(next).length > 0 ? next : null;
+}
+
 function hasExplicitSectionEnabled(source: unknown, section: string): boolean {
   if (!isRecord(source)) return false;
   const sectionValue = isRecord(source[section]) ? source[section] : null;
@@ -1466,6 +1505,13 @@ function normaliseFireworkDesign(design: FireworkDesign, source?: unknown): Fire
   const legacySmokeParticles = legacySmokeParticlesFromSource(source);
   const launchSound = launchSoundFromSource(source);
   const legacyLiftParticles = legacyLiftParticlesFromSource(source);
+  const legacyShellTrail = legacyShellTrailFromSource(source);
+  const shell =
+    legacyShellTrail == null
+      ? design.launch.shell
+      : (deepMergeDesign(design.launch.shell, {
+          trail: legacyShellTrail,
+        }) as FireworkDesign['launch']['shell']);
   const liftParticles =
     legacyLiftParticles == null
       ? design.launch.liftParticles
@@ -1496,6 +1542,7 @@ function normaliseFireworkDesign(design: FireworkDesign, source?: unknown): Fire
     },
     launch: {
       ...design.launch,
+      shell,
       liftParticles,
       smoke: {
         ...design.launch.smoke,

@@ -48,7 +48,7 @@ import {
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -66,7 +66,7 @@ const FIXED_DT = 1 / 60;
 // by ageing particles across each rebuilt segment.
 const SCRUB_DT = 1 / 24;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 19;
+const SNAPSHOT_STRIDE = 20;
 const MAX_SNAPSHOTS = 120;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
@@ -746,7 +746,7 @@ export class FireworksEngine {
       // looked like noise rather than burning chemistry. Head orbs are exempt:
       // they are meant to read as a steady, constant core, so they never twinkle.
       const twinkle = isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
-      const alpha = renderParticleAlpha(p) * twinkle;
+      const alpha = renderParticleAlpha(p) * twinkle * clamp(p.alpha, 0, 1);
       if (isSmoke) {
         const si = smokeDrawCount * 3;
         const smokeTone = alpha * SMOKE_BRIGHTNESS_BOOST;
@@ -907,17 +907,18 @@ export class FireworksEngine {
       state.data[o + 5] = p.vz;
       state.data[o + 6] = p.life;
       state.data[o + 7] = p.size;
-      state.data[o + 8] = p.color.r;
-      state.data[o + 9] = p.color.g;
-      state.data[o + 10] = p.color.b;
-      state.data[o + 11] = p.mass;
-      state.data[o + 12] = p.decay;
-      state.data[o + 13] = p.gravity;
-      state.data[o + 14] = p.drag;
-      state.data[o + 15] = p.maxLife;
-      state.data[o + 16] = p.shape;
-      state.data[o + 17] = p.rotation;
-      state.data[o + 18] = p.spin;
+      state.data[o + 8] = p.alpha;
+      state.data[o + 9] = p.color.r;
+      state.data[o + 10] = p.color.g;
+      state.data[o + 11] = p.color.b;
+      state.data[o + 12] = p.mass;
+      state.data[o + 13] = p.decay;
+      state.data[o + 14] = p.gravity;
+      state.data[o + 15] = p.drag;
+      state.data[o + 16] = p.maxLife;
+      state.data[o + 17] = p.shape;
+      state.data[o + 18] = p.rotation;
+      state.data[o + 19] = p.spin;
       w++;
     }
     return state;
@@ -940,15 +941,16 @@ export class FireworksEngine {
       p.vz = state.data[o + 5];
       p.life = state.data[o + 6];
       p.size = state.data[o + 7];
-      p.color.setRGB(state.data[o + 8], state.data[o + 9], state.data[o + 10]);
-      p.mass = state.data[o + 11];
-      p.decay = state.data[o + 12];
-      p.gravity = state.data[o + 13];
-      p.drag = state.data[o + 14];
-      p.maxLife = state.data[o + 15] || p.life;
-      p.shape = state.data[o + 16] || 0;
-      p.rotation = state.data[o + 17] || 0;
-      p.spin = state.data[o + 18] || 0;
+      p.alpha = state.data[o + 8] || 0;
+      p.color.setRGB(state.data[o + 9], state.data[o + 10], state.data[o + 11]);
+      p.mass = state.data[o + 12];
+      p.decay = state.data[o + 13];
+      p.gravity = state.data[o + 14];
+      p.drag = state.data[o + 15];
+      p.maxLife = state.data[o + 16] || p.life;
+      p.shape = state.data[o + 17] || 0;
+      p.rotation = state.data[o + 18] || 0;
+      p.spin = state.data[o + 19] || 0;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);

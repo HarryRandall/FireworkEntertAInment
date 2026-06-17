@@ -16,6 +16,7 @@ export type ParticleProps = {
   vy?: number;
   vz?: number;
   size?: number;
+  alpha?: number;
   shape?: number;
   rotation?: number;
   spin?: number;
@@ -113,6 +114,7 @@ export class ParticlePool {
     p.vy = prop.vy ?? 0;
     p.vz = prop.vz ?? 0;
     p.size = prop.size ?? 1;
+    p.alpha = prop.alpha ?? 1;
     p.shape = prop.shape ?? 0;
     p.rotation = prop.rotation ?? 0;
     p.spin = prop.spin ?? 0;

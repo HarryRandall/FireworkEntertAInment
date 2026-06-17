@@ -144,6 +144,7 @@ const TRAIL_ROTATION_MAX = 8;
 const LAUNCH_SHELL_SIZE_SCALE_MIN = 0.25;
 const LAUNCH_SHELL_SIZE_SCALE_MAX = 4;
 const LAUNCH_SHELL_BRIGHTNESS_MAX = 3;
+const SHELL_TRAIL_TUBE_DIAMETER_MAX = 90;
 const LIFT_PARTICLE_AMOUNT_MAX = 240;
 const LIFT_PARTICLE_SIZE_MAX = 180;
 const LIFT_PARTICLE_HEIGHT_PERCENT_MAX = 100;
@@ -917,74 +918,126 @@ export function FireworkRenderControls({
     if (!showLaunch) return null;
 
     const shell = design.launch.shell;
+    const shellTrail = shell.trail;
 
     return (
-      <SubSection title="Shell particle" defaultExpanded>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <Field>
-            <div className="flex items-center gap-1.5">
-              <FieldLabel>Shell shape</FieldLabel>
-              <InfoTooltip text="Shape of the visible carrier particle that rises before the burst." />
-            </div>
-            <SelectField
-              value={shell.shape}
-              onChange={(value) => setLaunchValue('shell', 'shape', value as LaunchShellShape)}
-              options={LAUNCH_SHELL_SHAPE_OPTIONS}
-              ariaLabel="Shell particle shape"
+      <>
+        <SubSection title="Shell particle" defaultExpanded>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <Field>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Shell shape</FieldLabel>
+                <InfoTooltip text="Shape of the visible carrier particle that rises before the burst." />
+              </div>
+              <SelectField
+                value={shell.shape}
+                onChange={(value) => setLaunchValue('shell', 'shape', value as LaunchShellShape)}
+                options={LAUNCH_SHELL_SHAPE_OPTIONS}
+                ariaLabel="Shell particle shape"
+                disabled={disabled}
+              />
+            </Field>
+            <ColorField
+              label="Shell colour"
+              value={rgbObjectToHex(shell.colour)}
+              allowClear
               disabled={disabled}
+              hint="Leave clear to inherit the warmed launch colour."
+              onChange={(value) =>
+                setLaunchValue('shell', 'colour', value ? hexToRgbObject(value) : undefined)
+              }
             />
-          </Field>
-          <ColorField
-            label="Shell colour"
-            value={rgbObjectToHex(shell.colour)}
-            allowClear
-            disabled={disabled}
-            hint="Leave clear to inherit the warmed launch colour."
-            onChange={(value) =>
-              setLaunchValue('shell', 'colour', value ? hexToRgbObject(value) : undefined)
-            }
-          />
-          <SliderField
-            label="Shell size"
-            min={LAUNCH_SHELL_SIZE_SCALE_MIN}
-            max={LAUNCH_SHELL_SIZE_SCALE_MAX}
-            step={0.05}
-            value={shell.sizeScale}
-            formatValue={formatMultiplier}
-            showNumberInput
-            inputAriaLabel="Shell particle size value"
-            disabled={disabled}
-            hint="Size multiplier for the rising carrier particle."
-            onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
-          />
-          <SliderField
-            label="Shell brightness"
-            min={0}
-            max={LAUNCH_SHELL_BRIGHTNESS_MAX}
-            step={0.05}
-            value={shell.brightness}
-            formatValue={formatMultiplier}
-            showNumberInput
-            inputAriaLabel="Shell particle brightness value"
-            disabled={disabled}
-            hint="Colour intensity of the rising carrier particle."
-            onChange={(value) => setLaunchValue('shell', 'brightness', round2(value))}
-          />
-          <SliderField
-            label="Shell glow"
-            min={MIN_HEAD_GLOW_STRENGTH}
-            max={MAX_HEAD_GLOW_STRENGTH}
-            step={0.05}
-            value={shell.glowStrength}
-            formatValue={formatMultiplier}
-            showNumberInput
-            inputAriaLabel="Shell particle glow value"
-            disabled={disabled || shell.shape !== 'orb'}
-            hint="Halo strength for the Soft orb shape."
-            onChange={(value) => setLaunchValue('shell', 'glowStrength', round2(value))}
-          />
-        </div>
-      </SubSection>
+            <SliderField
+              label="Shell size"
+              min={LAUNCH_SHELL_SIZE_SCALE_MIN}
+              max={LAUNCH_SHELL_SIZE_SCALE_MAX}
+              step={0.05}
+              value={shell.sizeScale}
+              formatValue={formatMultiplier}
+              showNumberInput
+              inputAriaLabel="Shell particle size value"
+              disabled={disabled}
+              hint="Size multiplier for the rising carrier particle."
+              onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
+            />
+            <SliderField
+              label="Shell brightness"
+              min={0}
+              max={LAUNCH_SHELL_BRIGHTNESS_MAX}
+              step={0.05}
+              value={shell.brightness}
+              formatValue={formatMultiplier}
+              showNumberInput
+              inputAriaLabel="Shell particle brightness value"
+              disabled={disabled}
+              hint="Colour intensity of the rising carrier particle."
+              onChange={(value) => setLaunchValue('shell', 'brightness', round2(value))}
+            />
+            <SliderField
+              label="Shell glow"
+              min={MIN_HEAD_GLOW_STRENGTH}
+              max={MAX_HEAD_GLOW_STRENGTH}
+              step={0.05}
+              value={shell.glowStrength}
+              formatValue={formatMultiplier}
+              showNumberInput
+              inputAriaLabel="Shell particle glow value"
+              disabled={disabled || shell.shape !== 'orb'}
+              hint="Halo strength for the Soft orb shape."
+              onChange={(value) => setLaunchValue('shell', 'glowStrength', round2(value))}
+            />
+          </div>
+        </SubSection>
+
+        <SubSection title="Shell trail" defaultExpanded>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <SliderField
+              label="Tube diameter"
+              min={0}
+              max={SHELL_TRAIL_TUBE_DIAMETER_MAX}
+              step={1}
+              value={shellTrail.tubeDiameter}
+              showNumberInput
+              inputAriaLabel="Shell trail tube diameter value"
+              disabled={disabled}
+              hint="Maximum diameter of the rising shell trail. 0 keeps particles on the exact shell path."
+              onChange={(value) =>
+                setLaunchNestedValue('shell', 'trail', 'tubeDiameter', round2(value))
+              }
+            />
+            <SliderField
+              label="Front angle"
+              min={0}
+              max={TRAIL_SPREAD_ANGLE_MAX}
+              step={1}
+              value={shellTrail.frontAngle}
+              formatValue={formatDegrees}
+              showNumberInput
+              inputAriaLabel="Shell trail front angle value"
+              disabled={disabled}
+              hint="Spread angle near the shell head of the rising streak. The tube diameter remains the hard cap."
+              onChange={(value) =>
+                setLaunchNestedValue('shell', 'trail', 'frontAngle', round2(value))
+              }
+            />
+            <SliderField
+              label="Tail angle"
+              min={0}
+              max={TRAIL_SPREAD_ANGLE_MAX}
+              step={1}
+              value={shellTrail.tailAngle}
+              formatValue={formatDegrees}
+              showNumberInput
+              inputAriaLabel="Shell trail tail angle value"
+              disabled={disabled}
+              hint="Spread angle near the old tail of the rising streak, closer to launch. The tube diameter remains the hard cap."
+              onChange={(value) =>
+                setLaunchNestedValue('shell', 'trail', 'tailAngle', round2(value))
+              }
+            />
+          </div>
+        </SubSection>
+      </>
     );
   }
 
@@ -1201,16 +1254,6 @@ export function FireworkRenderControls({
                 onChange={(value) =>
                   setLaunchNestedValue('liftParticles', 'spacing', 'pathSamples', Math.round(value))
                 }
-              />
-              <SliderField
-                label="Spread"
-                min={0}
-                max={90}
-                step={1}
-                value={liftParticles.spread}
-                disabled={controlDisabled}
-                hint="How wide the rising particles scatter around the shell path."
-                onChange={(value) => setLaunchValue('liftParticles', 'spread', round2(value))}
               />
               <SliderField
                 label="Rise height"
