@@ -38,6 +38,7 @@ type FireOptions = {
   panDegrees?: number;
   tiltDegrees?: number;
 };
+type LaunchShell = FireworkDesign['launch']['shell'];
 type LiftParticles = FireworkDesign['launch']['liftParticles'];
 type BurstTrail = FireworkStarLayer['burstTrail'];
 
@@ -60,6 +61,7 @@ const BROCADE_TRAIL_PEACH = new THREE.Color(1, 0.84, 0.6);
 /** Brocade crown burst: hard cap on streak heads per shell. */
 const BROCADE_MAX_STREAKS = 64;
 const BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32;
+const STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS = 0.6;
 const BURST_TRAIL_SPREAD_SCALE = 0.035;
 const BURST_TRAIL_MAX_SPREAD = 90;
 /** Hot/cool ends of the named streak-trail palettes. */
@@ -83,6 +85,24 @@ function clampStarGravity(gravity: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function estimateShellRiseHeight(initialVelocityY: number, shellLife: number): number {
+  const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
+  const shellMass = 0.5;
+  const step = 1 / 60;
+  let velocityY = initialVelocityY;
+  let height = 0;
+  let elapsed = 0;
+
+  while (velocityY > 0 && elapsed < shellLife) {
+    const dragAccelerationY = (-dragK * velocityY * Math.abs(velocityY)) / shellMass;
+    velocityY = velocityY + dragAccelerationY * step - 9.82 * step;
+    height += Math.max(0, velocityY) * step * 100;
+    elapsed += step;
+  }
+
+  return Math.max(1, height);
 }
 
 function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
@@ -138,6 +158,20 @@ function resolveLaunchColor(
   return new THREE.Color(rgb.r, rgb.g, rgb.b);
 }
 
+function launchShellShapeValue(shell: LaunchShell): number {
+  switch (shell.shape) {
+    case 'orb':
+      return headShapeValue(shell.glowStrength, 0);
+    case 'square':
+      return TRAIL_SHAPE_SQUARE;
+    case 'triangle':
+      return TRAIL_SHAPE_TRIANGLE;
+    case 'circle':
+    default:
+      return TRAIL_SHAPE_CIRCLE;
+  }
+}
+
 function mixColor(
   from: THREE.Color,
   to: THREE.Color,
@@ -155,33 +189,86 @@ function applyColorMix(from: THREE.Color, to: THREE.Color, amount: number): THRE
   return new THREE.Color(mixed.r, mixed.g, mixed.b);
 }
 
-function starOpeningProgress(ageRatio: number, percent: number): number {
-  const duration = clamp(percent / 100, 0.01, 1);
-  const linear = clamp(ageRatio / duration, 0, 1);
+function starOpeningProgress(
+  elapsedSeconds: number,
+  lifeReferenceSeconds: number,
+  percent: number,
+): number {
+  const duration = Math.max(0.01, lifeReferenceSeconds * clamp(percent / 100, 0.01, 1));
+  const linear = clamp(elapsedSeconds / duration, 0, 1);
   return linear * linear * (3 - 2 * linear);
 }
 
 function starOpeningColor(
   head: FireworkStarLayer['head'],
   target: THREE.Color,
-  ageRatio: number,
+  elapsedSeconds: number,
+  lifeReferenceSeconds: number,
 ): THREE.Color {
   const opening = head.opening.colour;
   if (!opening.enabled) return target;
   const openingColor = new THREE.Color(opening.color.r, opening.color.g, opening.color.b);
-  return applyColorMix(openingColor, target, starOpeningProgress(ageRatio, opening.fadePercent));
+  return applyColorMix(
+    openingColor,
+    target,
+    starOpeningProgress(elapsedSeconds, lifeReferenceSeconds, opening.fadePercent),
+  );
 }
 
 function starOpeningSize(
   head: FireworkStarLayer['head'],
   fullSize: number,
-  ageRatio: number,
+  elapsedSeconds: number,
+  lifeReferenceSeconds: number,
 ): number {
   const opening = head.opening.size;
   if (!opening.enabled) return fullSize;
   const start = clamp(opening.startPercent / 100, 0.01, 1);
-  const progress = starOpeningProgress(ageRatio, opening.growPercent);
+  const progress = starOpeningProgress(elapsedSeconds, lifeReferenceSeconds, opening.growPercent);
   return fullSize * (start + (1 - start) * progress);
+}
+
+function starClosingProgress(
+  remainingSeconds: number,
+  lifeReferenceSeconds: number,
+  percent: number,
+): number {
+  const duration = Math.max(0.01, lifeReferenceSeconds * clamp(percent / 100, 0.01, 1));
+  const linear = 1 - clamp(remainingSeconds / duration, 0, 1);
+  return linear * linear * (3 - 2 * linear);
+}
+
+function starClosingColor(
+  head: FireworkStarLayer['head'],
+  target: THREE.Color,
+  remainingSeconds: number,
+  lifeReferenceSeconds: number,
+): THREE.Color {
+  const closing = head.closing.colour;
+  if (!closing.enabled) return target;
+  const closingColor = new THREE.Color(closing.color.r, closing.color.g, closing.color.b);
+  return applyColorMix(
+    target,
+    closingColor,
+    starClosingProgress(remainingSeconds, lifeReferenceSeconds, closing.fadePercent),
+  );
+}
+
+function starClosingSize(
+  head: FireworkStarLayer['head'],
+  fullSize: number,
+  remainingSeconds: number,
+  lifeReferenceSeconds: number,
+): number {
+  const closing = head.closing.size;
+  if (!closing.enabled) return fullSize;
+  const end = clamp(closing.endPercent / 100, 0, 1);
+  const progress = starClosingProgress(
+    remainingSeconds,
+    lifeReferenceSeconds,
+    closing.shrinkPercent,
+  );
+  return fullSize * (1 + (end - 1) * progress);
 }
 
 function isBrocadeCrown(design: FireworkDesign): boolean {
@@ -237,6 +324,8 @@ function liftPathPoint(
   liftParticles: LiftParticles,
   liftRng: RandomSource,
   time: number,
+  liftOriginY: number,
+  liftStopY: number,
 ): LiftPathPoint {
   const jitter = clamp(liftParticles.spacing.jitterPercent / 100, 0, 1);
   const progress = from
@@ -250,7 +339,9 @@ function liftPathPoint(
       }
     : to;
   const age =
-    liftParticles.height > 0 ? clamp(base.y / Math.max(1, liftParticles.height), 0, 1) : 1;
+    liftStopY > liftOriginY
+      ? clamp((base.y - liftOriginY) / Math.max(1, liftStopY - liftOriginY), 0, 1)
+      : 1;
   const swirl = liftSwirlOffset(liftParticles, age, time, progress);
   return {
     x: base.x + swirl.x,
@@ -514,11 +605,17 @@ function starPatternPosition(
 }
 
 export class Effects {
+  private audible = false;
+
   constructor(
     private pp: ParticlePool,
     private sh: SoundHandler,
     private lights: Lights,
   ) {}
+
+  setAudible(audible: boolean): void {
+    this.audible = audible;
+  }
 
   fire(design: FireworkDesign, position: Pos, options: FireOptions): void {
     const rng = options.rng;
@@ -530,6 +627,10 @@ export class Effects {
     color.setRGB(rgb.r, rgb.g, rgb.b);
     const lift = mixColor(color, LIFT_SPARK_COLOR, 0.72);
     const liftColor = new THREE.Color(lift.r, lift.g, lift.b);
+    const shell = design.launch.shell;
+    const shellColor = resolveLaunchColor(shell.colour, liftColor, rng).multiplyScalar(
+      shell.brightness,
+    );
 
     const size = design.size;
     if (design.geometry === 'upward_fan') {
@@ -546,10 +647,12 @@ export class Effects {
     const tiltRadians = ((options.tiltDegrees ?? 0) * Math.PI) / 180;
     const lateralVelocity = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
     const forwardVelocity = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
+    const verticalVelocity = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
+    const liftRiseHeight = estimateShellRiseHeight(verticalVelocity, design.shellLife);
 
     // Star count can be tiny, but the ascending carrier still needs enough
     // size budget to survive its decay until apex and trigger detonation.
-    const shellSize = Math.max(size, 110);
+    const shellSize = Math.max(size, 110) * shell.sizeScale;
     let liftPreviousPosition: Pos | null = null;
     this.pp.new({
       x: position.x,
@@ -557,15 +660,16 @@ export class Effects {
       z: position.z,
       size: shellSize,
       mass: 0.5,
-      vy: liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96),
+      vy: verticalVelocity,
       vx: lateralVelocity,
       vz: forwardVelocity,
       h: 0.9,
       s: 0.5,
       l: 0.5,
-      r: liftColor.r,
-      g: liftColor.g,
-      b: liftColor.b,
+      shape: launchShellShapeValue(shell),
+      r: shellColor.r,
+      g: shellColor.g,
+      b: shellColor.b,
       life: design.shellLife,
       decay: 10 + rng.next() * 20,
       effect: (p, dt, t) => {
@@ -580,12 +684,14 @@ export class Effects {
           rng,
           liftRng,
           smokeRng,
+          position.y,
+          liftRiseHeight,
           previousPosition,
         );
         liftPreviousPosition = { x: p.x, y: p.y, z: p.z };
       },
       condition: (p) => p.vy <= 0,
-      action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, options.audible),
+      action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, this.audible),
     });
   }
 
@@ -687,6 +793,8 @@ export class Effects {
     rng: RandomSource,
     liftRng: RandomSource,
     smokeRng: RandomSource,
+    liftOriginY: number,
+    liftRiseHeight: number,
     previousPosition: Pos | null = null,
   ): void {
     let max = 1;
@@ -705,7 +813,7 @@ export class Effects {
         max = 6 + rng.next() * 22;
         break;
       case 3:
-        particle.size = rng.next() > 0.5 ? 150 : 10;
+        particle.size = (rng.next() > 0.5 ? 150 : 10) * design.launch.shell.sizeScale;
         max = 5 + rng.next() * 14;
         vx = 2 - rng.next() * 4;
         vz = 2 - rng.next() * 4;
@@ -726,13 +834,17 @@ export class Effects {
             : 1;
     const smoke = design.launch.smoke;
     const baseCount = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY * liftTrailMultiplier));
+    const liftHeightPercent = clamp(liftParticles.height / 100, 0, 1);
+    const liftStopY = liftOriginY + liftRiseHeight * liftHeightPercent;
     const liftAge =
-      liftParticles.height > 0 ? clamp(particle.y / Math.max(1, liftParticles.height), 0, 1) : 1;
+      liftStopY > liftOriginY
+        ? clamp((particle.y - liftOriginY) / Math.max(1, liftStopY - liftOriginY), 0, 1)
+        : 1;
     const liftDensity = liftParticleDensityScale(liftParticles, liftAge);
     const liftDensityJitter =
       1 + (liftRng.next() * 2 - 1) * (liftParticles.spacing.jitterPercent / 100) * 0.25;
     const liftCount =
-      liftParticles.enabled && particle.y <= liftParticles.height
+      liftParticles.enabled && liftStopY > liftOriginY && particle.y <= liftStopY
         ? Math.max(
             0,
             Math.round(baseCount * (liftParticles.amount / 100) * liftDensity * liftDensityJitter),
@@ -768,6 +880,8 @@ export class Effects {
         liftParticles,
         liftRng,
         time,
+        liftOriginY,
+        liftStopY,
       );
 
       for (let i = 0; i < liftParticlesPerSample && liftEmitted < liftCount; i++, liftEmitted++) {
@@ -976,6 +1090,8 @@ export class Effects {
     const lifeRange = layer.burst.life;
     const count = this.burstParticleCount(design, layer);
     const styleIndex = layerKey === 'core' ? 1 : 0;
+    const openingLifeReference = this.starOpeningLifeReference(design, layer);
+    const lifeRandomness = this.starLifeRandomness(layer);
     // Stars fly with reduced drag (like brocade) so calibrated burst speeds
     // carry them into a proper sphere instead of stalling early. Rings break
     // in a randomly tilted plane so the halo reads as a 3D hoop.
@@ -990,7 +1106,7 @@ export class Effects {
         velocity.applyAxisAngle(ringAxisX, ringTilt).applyAxisAngle(ringAxisY, ringSpin);
       }
       const starColor = this.starColor(design, layer, layerKey, color, i, count, rng);
-      const life = this.starLife(design, rangeRand(lifeRange, rng), rng);
+      const life = this.starLife(design, rangeRand(lifeRange, rng), rng, lifeRandomness);
       this.spawnEffectStar({
         design,
         layer,
@@ -1007,6 +1123,7 @@ export class Effects {
         life,
         gravity: this.starGravity(design, grav, rng),
         drag: this.starDrag(design) * 0.6,
+        openingLifeReference,
         trailStarCount: count,
         split: layerKey === 'outer' && design.split.enabled,
       });
@@ -1183,12 +1300,45 @@ export class Effects {
     return rng.next() > 1 - accentRatio ? secondary : baseColor;
   }
 
-  private starLife(design: FireworkDesign, baseLife: number, rng: RandomSource): number {
+  private starLife(
+    design: FireworkDesign,
+    baseLife: number,
+    rng: RandomSource,
+    randomness: number,
+  ): number {
     switch (design.geometry) {
       case 'weeping':
       case 'falling_tail':
       case 'waterfall':
-        return baseLife * (1.25 + rng.next() * 0.35);
+        return baseLife * (1.25 + this.starLifeJitter(rng, randomness) * 0.35);
+      case 'pearls':
+        return baseLife * 0.62;
+      case 'ring':
+        return baseLife * 0.82;
+      default:
+        return baseLife;
+    }
+  }
+
+  private starLifeJitter(rng: RandomSource, randomness: number): number {
+    const amount = clamp(randomness, 0, 1);
+    if (amount <= 0) return 0.5;
+    return 0.5 + (rng.next() - 0.5) * amount;
+  }
+
+  private starLifeRandomness(layer: FireworkStarLayer): number {
+    const [a, b] = layer.burst.life;
+    const halfWidth = Math.abs(a - b) / 2;
+    return clamp(halfWidth / STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS, 0, 1);
+  }
+
+  private starOpeningLifeReference(design: FireworkDesign, layer: FireworkStarLayer): number {
+    const baseLife = Math.max(0.1, Math.max(layer.burst.life[0], layer.burst.life[1]));
+    switch (design.geometry) {
+      case 'weeping':
+      case 'falling_tail':
+      case 'waterfall':
+        return baseLife * 1.6;
       case 'pearls':
         return baseLife * 0.62;
       case 'ring':
@@ -1254,6 +1404,8 @@ export class Effects {
     headSizeScale?: number;
     /** Scales streak-square life (split fragments, comet finishes). */
     trailLifeScale?: number;
+    /** Shared layer life used so opening colour and size animate uniformly. */
+    openingLifeReference?: number;
     /** Number of sibling star paths sharing the hidden burst-trail safety cap. */
     trailStarCount?: number;
     /** Attach the crossette split condition to this star. */
@@ -1283,8 +1435,25 @@ export class Effects {
     const pathEstimate =
       Math.sqrt(o.vx * o.vx + o.vy * o.vy + o.vz * o.vz) * Math.max(0.1, o.life) * 100;
     const trailStep = trailsVisible ? clamp(pathEstimate / Math.max(1, trailBudget), 1, 42) : 42;
-    const initialColor = starOpeningColor(layer.head, color, 0);
-    const initialSize = starOpeningSize(layer.head, sizeBudget, 0);
+    const openingLifeReference = Math.max(
+      0.1,
+      o.openingLifeReference ?? this.starOpeningLifeReference(design, layer),
+    );
+    const initialOpeningColor = starOpeningColor(layer.head, color, 0, openingLifeReference);
+    const initialColor = starClosingColor(
+      layer.head,
+      initialOpeningColor,
+      o.life,
+      openingLifeReference,
+    );
+    const initialOpeningSize = starOpeningSize(layer.head, sizeBudget, 0, openingLifeReference);
+    const initialClosingSize = starClosingSize(
+      layer.head,
+      sizeBudget,
+      o.life,
+      openingLifeReference,
+    );
+    const initialSize = Math.min(initialOpeningSize, initialClosingSize);
 
     // Streak emission state, captured per star: deterministic distance credit
     // spaces particles along the path, while bias weights decide where along
@@ -1394,6 +1563,7 @@ export class Effects {
           rng,
           o.audible,
           sizeBudget,
+          openingLifeReference,
         );
         if (died) return;
         emitStreak?.(p, dt);
@@ -1416,27 +1586,65 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
     sizeBudget: number,
+    openingLifeReference: number,
   ): boolean {
     const ageRatio = particle.maxLife > 0 ? 1 - clamp(particle.life / particle.maxLife, 0, 1) : 0;
+    const elapsedSeconds = particle.maxLife > 0 ? Math.max(0, particle.maxLife - particle.life) : 0;
     let targetColor = color;
-    if (secondary && particle.maxLife > 0 && design.trailProfile !== 'blink' && ageRatio > 0.42) {
+    if (
+      secondary &&
+      !layer.head.closing.colour.enabled &&
+      particle.maxLife > 0 &&
+      design.trailProfile !== 'blink' &&
+      ageRatio > 0.42
+    ) {
       targetColor = applyColorMix(color, secondary, (ageRatio - 0.42) / 0.45);
     }
 
-    if (layer.head.opening.colour.enabled || targetColor !== color) {
-      const visibleColor = starOpeningColor(layer.head, targetColor, ageRatio);
+    if (
+      layer.head.opening.colour.enabled ||
+      layer.head.closing.colour.enabled ||
+      targetColor !== color
+    ) {
+      const openingColor = starOpeningColor(
+        layer.head,
+        targetColor,
+        elapsedSeconds,
+        openingLifeReference,
+      );
+      const visibleColor = starClosingColor(
+        layer.head,
+        openingColor,
+        particle.life,
+        openingLifeReference,
+      );
       particle.color.setRGB(visibleColor.r, visibleColor.g, visibleColor.b);
     }
 
-    const dynamicSize = starOpeningSize(layer.head, sizeBudget, ageRatio);
-    if (layer.head.opening.size.enabled) {
+    const openingSize = starOpeningSize(
+      layer.head,
+      sizeBudget,
+      elapsedSeconds,
+      openingLifeReference,
+    );
+    const closingSize = starClosingSize(
+      layer.head,
+      sizeBudget,
+      particle.life,
+      openingLifeReference,
+    );
+    const dynamicSize = Math.min(openingSize, closingSize);
+    if (layer.head.opening.size.enabled || layer.head.closing.size.enabled) {
       particle.size = dynamicSize;
     }
 
     if (design.strobe.enabled) {
       const phase = (time * design.strobe.frequencyHz + particle.i * 0.037) % 1;
       const lit = phase < design.strobe.dutyCycle;
-      const litSize = layer.head.opening.size.enabled ? dynamicSize : sizeBudget;
+      const litSize =
+        layer.head.opening.size.enabled || layer.head.closing.size.enabled
+          ? dynamicSize
+          : sizeBudget;
       particle.size = lit ? Math.max(particle.size, litSize) : litSize * 0.045;
     }
 

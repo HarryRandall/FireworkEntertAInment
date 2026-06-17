@@ -679,6 +679,7 @@ export class FireworksEngine {
   private advanceTo(target: number, audible: boolean): void {
     const dt = audible ? FIXED_DT : SCRUB_DT;
     let cursor = this.elapsed;
+    this.effects.setAudible(audible);
     while (cursor + 0.0001 < target) {
       const next = Math.min(target, cursor + dt);
       const due = this.scheduler.pop(cursor, next);
@@ -989,6 +990,7 @@ export class FireworksEngine {
   fireDesign(design: FireworkDesign, launchIndex = 0): void {
     const pos = this.world.getLaunchPosition(launchIndex);
     const seed = mixSeed('manual', this.elapsed, launchIndex);
+    this.effects.setAudible(true);
     this.effects.fire(design, pos, {
       rng: createSeededRng(seed),
       smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),

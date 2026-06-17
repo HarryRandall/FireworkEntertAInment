@@ -240,6 +240,18 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   assert.match(effectEditor, /muted=\{!isPlaying\}/);
   assert.match(fireworkEditor, /muted=\{!isPlaying\}/);
+  assert.match(
+    effectEditor,
+    /const previewCues = useMemo\(\(\) => \[previewCue\], \[previewCue\]\)/,
+  );
+  assert.match(
+    fireworkEditor,
+    /const previewCues = useMemo\(\(\) => \[previewCue\], \[previewCue\]\)/,
+  );
+  assert.match(effectEditor, /cues=\{previewCues\}/);
+  assert.match(fireworkEditor, /cues=\{previewCues\}/);
+  assert.doesNotMatch(effectEditor, /cues=\{\[previewCue\]\}/);
+  assert.doesNotMatch(fireworkEditor, /cues=\{\[previewCue\]\}/);
   assert.match(canvas, /resumeAudio/);
   assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);
   // The trail width-guide overlay was removed with the Motion settings sheet,

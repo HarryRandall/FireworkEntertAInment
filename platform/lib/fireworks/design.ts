@@ -72,6 +72,7 @@ const HEAD_APPEARANCE_DEFAULTS = {
 } as const;
 
 const DEFAULT_STAR_OPENING_COLOUR = { r: 1, g: 0.42, b: 0.08 };
+const DEFAULT_STAR_CLOSING_COLOUR = { r: 1, g: 0.84, b: 0.4 };
 
 const STAR_HEAD_OPENING_DEFAULTS = {
   colour: {
@@ -83,6 +84,19 @@ const STAR_HEAD_OPENING_DEFAULTS = {
     enabled: false,
     startPercent: 35,
     growPercent: 22,
+  },
+};
+
+const STAR_HEAD_CLOSING_DEFAULTS = {
+  colour: {
+    enabled: false,
+    color: DEFAULT_STAR_CLOSING_COLOUR,
+    fadePercent: 22,
+  },
+  size: {
+    enabled: false,
+    endPercent: 0,
+    shrinkPercent: 22,
   },
 };
 
@@ -137,6 +151,9 @@ export type BurstTrailPreset = (typeof BURST_TRAIL_PRESETS)[number];
 
 export const BURST_TRAIL_SHAPES = ['circle', 'square', 'triangle'] as const;
 export type BurstTrailShape = (typeof BURST_TRAIL_SHAPES)[number];
+
+export const LAUNCH_SHELL_SHAPES = ['circle', 'orb', 'square', 'triangle'] as const;
+export type LaunchShellShape = (typeof LAUNCH_SHELL_SHAPES)[number];
 
 export const BURST_TRAIL_MAX_STOPS = 5;
 export const BURST_TRAIL_PARTICLES_PER_STAR_MAX = 2000;
@@ -194,12 +211,35 @@ const BurstTrailStopSchema = z.object({
   shapeWeights: BurstTrailShapeWeightsSchema,
 });
 
+const LaunchShellSchema = z
+  .object({
+    shape: z.enum(LAUNCH_SHELL_SHAPES).default('circle'),
+    colour: ColorSchema.optional(),
+    sizeScale: z.coerce.number().min(0.25).max(4).default(1),
+    brightness: z.coerce.number().min(0).max(3).default(1),
+    glowStrength: z.coerce
+      .number()
+      .min(MIN_HEAD_GLOW_STRENGTH)
+      .max(MAX_HEAD_GLOW_STRENGTH)
+      .default(DEFAULT_HEAD_GLOW_STRENGTH),
+  })
+  .default({
+    shape: 'circle',
+    sizeScale: 1,
+    brightness: 1,
+    glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+  });
+
 const LaunchLiftParticlesSchema = z
   .object({
     enabled: z.boolean().default(true),
     amount: z.coerce.number().int().min(0).max(240).default(100),
     colour: ColorSchema.optional(),
-    height: z.coerce.number().min(0).max(900).default(620),
+    height: z.coerce
+      .number()
+      .min(0)
+      .transform((value) => Math.min(100, value))
+      .default(100),
     spread: z.coerce.number().min(0).max(90).default(10),
     shapeWeights: BurstTrailShapeWeightsSchema,
     particleSize: z
@@ -273,7 +313,7 @@ const LaunchLiftParticlesSchema = z
   .default({
     enabled: true,
     amount: 100,
-    height: 620,
+    height: 100,
     spread: 10,
     shapeWeights: { circle: 0, square: 100, triangle: 0 },
     particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
@@ -299,6 +339,7 @@ const LaunchLiftParticlesSchema = z
 
 const LaunchSchema = z
   .object({
+    shell: LaunchShellSchema,
     liftParticles: LaunchLiftParticlesSchema,
     smoke: z
       .object({
@@ -321,10 +362,16 @@ const LaunchSchema = z
       }),
   })
   .default({
+    shell: {
+      shape: 'circle',
+      sizeScale: 1,
+      brightness: 1,
+      glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+    },
     liftParticles: {
       enabled: true,
       amount: 100,
-      height: 620,
+      height: 100,
       spread: 10,
       shapeWeights: { circle: 0, square: 100, triangle: 0 },
       particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
@@ -537,12 +584,36 @@ const StarHeadOpeningSchema = z
   })
   .default(STAR_HEAD_OPENING_DEFAULTS);
 
+const StarHeadClosingSchema = z
+  .object({
+    colour: z
+      .object({
+        enabled: z.boolean().default(false),
+        color: RgbSchema.default(DEFAULT_STAR_CLOSING_COLOUR),
+        /** Percentage of the star's life used to fade into its closing colour. */
+        fadePercent: z.coerce.number().min(1).max(100).default(22),
+      })
+      .default(STAR_HEAD_CLOSING_DEFAULTS.colour),
+    size: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Final size as a percentage of the layer's full star size. */
+        endPercent: z.coerce.number().min(0).max(100).default(0),
+        /** Percentage of the star's life used to shrink to its final size. */
+        shrinkPercent: z.coerce.number().min(1).max(100).default(22),
+      })
+      .default(STAR_HEAD_CLOSING_DEFAULTS.size),
+  })
+  .default(STAR_HEAD_CLOSING_DEFAULTS);
+
 const StarHeadSchema = z
   .object({
     /** Size budget of each glowing star orb. */
     size: z.coerce.number().min(10).max(1000).default(260),
     /** Opening colour fade and size growth, both relative to this star's life. */
     opening: StarHeadOpeningSchema,
+    /** End-of-life colour and size controls for the star head. */
+    closing: StarHeadClosingSchema,
     /** Halo brightness multiplier, same encoding as brocade heads. */
     glowStrength: z.coerce
       .number()
@@ -617,6 +688,7 @@ const StarHeadSchema = z
   .default({
     size: 260,
     opening: STAR_HEAD_OPENING_DEFAULTS,
+    closing: STAR_HEAD_CLOSING_DEFAULTS,
     glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
     ...HEAD_APPEARANCE_DEFAULTS,
   });
@@ -670,6 +742,7 @@ const StarLayerSchema = z
     head: {
       size: 260,
       opening: STAR_HEAD_OPENING_DEFAULTS,
+      closing: STAR_HEAD_CLOSING_DEFAULTS,
       glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
       ...HEAD_APPEARANCE_DEFAULTS,
     },
@@ -811,6 +884,7 @@ export const FireworkDesignSchema = z.object({
         head: {
           size: 160,
           opening: STAR_HEAD_OPENING_DEFAULTS,
+          closing: STAR_HEAD_CLOSING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
           ...HEAD_APPEARANCE_DEFAULTS,
         },
@@ -867,6 +941,7 @@ export const FireworkDesignSchema = z.object({
         head: {
           size: 260,
           opening: STAR_HEAD_OPENING_DEFAULTS,
+          closing: STAR_HEAD_CLOSING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
           ...HEAD_APPEARANCE_DEFAULTS,
         },
@@ -1627,6 +1702,7 @@ function starsBlock(headSize: number | null): StarsLike {
             head: {
               size: headSize,
               opening: STAR_HEAD_OPENING_DEFAULTS,
+              closing: STAR_HEAD_CLOSING_DEFAULTS,
               glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
               ...HEAD_APPEARANCE_DEFAULTS,
             },

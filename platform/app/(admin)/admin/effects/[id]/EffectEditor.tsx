@@ -174,6 +174,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     }),
     [baseModel, effect, previewDesign, previewDuration],
   );
+  const previewCues = useMemo(() => [previewCue], [previewCue]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -262,7 +263,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
         <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
           <LazyFireworkReplayCanvas
-            cues={[previewCue]}
+            cues={previewCues}
             elapsed={elapsed}
             playbackRef={playbackRef}
             launchPositions={PREVIEW_LAUNCH_POSITIONS}

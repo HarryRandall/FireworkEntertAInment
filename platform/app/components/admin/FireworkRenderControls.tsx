@@ -14,7 +14,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { ColorField } from '@/app/components/admin/ColorField';
 import { Button } from '@/app/components/ui/Button';
-import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
+import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -26,6 +26,7 @@ import {
   type BurstTrailPreset,
   type FireworkDesign,
   type FireworkStarLayer,
+  type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
 import { cn } from '@/lib/utils';
@@ -105,6 +106,13 @@ const TRAIL_PARTICLE_SHAPE_OPTIONS = [
   { value: 'mixed', label: 'Mixed' },
 ] as const;
 
+const LAUNCH_SHELL_SHAPE_OPTIONS = [
+  { value: 'circle', label: 'Glowing disc' },
+  { value: 'orb', label: 'Soft orb' },
+  { value: 'square', label: 'Square' },
+  { value: 'triangle', label: 'Triangle' },
+] satisfies { value: LaunchShellShape; label: string }[];
+
 const BROCADE_SPEED_HALF_WIDTH = 0.6;
 const BROCADE_LIFE_HALF_WIDTH = 0.6;
 const BROCADE_GRAVITY_HALF_WIDTH = 0.12;
@@ -116,6 +124,14 @@ const STAR_SIZE_STEP = 10;
 const STAR_OPENING_COLOUR_HEX = '#ff6b14';
 const STAR_OPENING_PERCENT_MIN = 1;
 const STAR_OPENING_PERCENT_MAX = 100;
+const STAR_CLOSING_COLOUR_HEX = '#ffd666';
+const STAR_CLOSING_PERCENT_MIN = 1;
+const STAR_CLOSING_PERCENT_MAX = 100;
+const STAR_CLOSING_END_PERCENT_MIN = 0;
+const STAR_CLOSING_END_PERCENT_MAX = 100;
+const STAR_LIFE_MIN = 0.5;
+const STAR_LIFE_MAX = 8;
+const STAR_LIFE_VARIATION_MAX = 4;
 const TRAIL_PARTICLE_SIZE_MAX = 24;
 const TRAIL_PARTICLE_SCALE_MAX = 4;
 const TRAIL_SPREAD_ANGLE_MAX = 60;
@@ -125,9 +141,12 @@ const TRAIL_HEAD_GAP_MAX = 300;
 const TRAIL_SPACING_CURVE_MIN = 0.2;
 const TRAIL_SPACING_CURVE_MAX = 4;
 const TRAIL_ROTATION_MAX = 8;
+const LAUNCH_SHELL_SIZE_SCALE_MIN = 0.25;
+const LAUNCH_SHELL_SIZE_SCALE_MAX = 4;
+const LAUNCH_SHELL_BRIGHTNESS_MAX = 3;
 const LIFT_PARTICLE_AMOUNT_MAX = 240;
 const LIFT_PARTICLE_SIZE_MAX = 180;
-const LIFT_PARTICLE_HEIGHT_MAX = 900;
+const LIFT_PARTICLE_HEIGHT_PERCENT_MAX = 100;
 const LIFT_PATH_SAMPLES_MAX = 12;
 const LIFT_SWIRL_STRENGTH_MAX = 4;
 const LIFT_SWIRL_RADIUS_MAX = 90;
@@ -236,12 +255,34 @@ function rangeUpper(range: [number, number]): number {
   return Math.max(range[0], range[1]);
 }
 
+function rangeHalfWidth(range: [number, number]): number {
+  return Math.abs(range[1] - range[0]) / 2;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function lifeRangeFromMidAndHalfWidth(mid: number, halfWidth: number): [number, number] {
+  const safeMid = clampNumber(mid, STAR_LIFE_MIN, STAR_LIFE_MAX);
+  const safeHalfWidth = clampNumber(
+    halfWidth,
+    0,
+    Math.min(safeMid - STAR_LIFE_MIN, STAR_LIFE_MAX - safeMid),
+  );
+  return [round2(safeMid - safeHalfWidth), round2(safeMid + safeHalfWidth)];
+}
+
 function formatSeconds(value: number): string {
   return `${value.toFixed(1)}s`;
+}
+
+function formatLifeVariation(value: number): string {
+  return value <= 0 ? 'None' : `+/-${value.toFixed(1)}s`;
 }
 
 function formatPercent(value: number): string {
@@ -397,9 +438,9 @@ function SwitchField({
   return (
     <Field>
       <div className="flex min-h-9 items-start justify-between gap-3">
-        <div className="space-y-1">
+        <div className="flex items-center gap-1.5">
           <FieldLabel htmlFor={id}>{label}</FieldLabel>
-          <FieldHint>{hint}</FieldHint>
+          <InfoTooltip text={hint} />
         </div>
         <Switch
           id={id}
@@ -424,6 +465,7 @@ function liftVelocityPresetMode(value: number): LiftVelocityMode {
 type BurstTrail = FireworkStarLayer['burstTrail'];
 type BurstTrailStop = BurstTrail['stops'][number];
 type StarHeadOpening = FireworkStarLayer['head']['opening'];
+type StarHeadClosing = FireworkStarLayer['head']['closing'];
 type TrailParticleShapeOption = (typeof TRAIL_PARTICLE_SHAPE_OPTIONS)[number]['value'];
 
 const TRAIL_PARTICLE_SHAPE_WEIGHTS: Record<
@@ -871,6 +913,81 @@ export function FireworkRenderControls({
     );
   }
 
+  function renderLaunchShellControls() {
+    if (!showLaunch) return null;
+
+    const shell = design.launch.shell;
+
+    return (
+      <SubSection title="Shell particle" defaultExpanded>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Shell shape</FieldLabel>
+              <InfoTooltip text="Shape of the visible carrier particle that rises before the burst." />
+            </div>
+            <SelectField
+              value={shell.shape}
+              onChange={(value) => setLaunchValue('shell', 'shape', value as LaunchShellShape)}
+              options={LAUNCH_SHELL_SHAPE_OPTIONS}
+              ariaLabel="Shell particle shape"
+              disabled={disabled}
+            />
+          </Field>
+          <ColorField
+            label="Shell colour"
+            value={rgbObjectToHex(shell.colour)}
+            allowClear
+            disabled={disabled}
+            hint="Leave clear to inherit the warmed launch colour."
+            onChange={(value) =>
+              setLaunchValue('shell', 'colour', value ? hexToRgbObject(value) : undefined)
+            }
+          />
+          <SliderField
+            label="Shell size"
+            min={LAUNCH_SHELL_SIZE_SCALE_MIN}
+            max={LAUNCH_SHELL_SIZE_SCALE_MAX}
+            step={0.05}
+            value={shell.sizeScale}
+            formatValue={formatMultiplier}
+            showNumberInput
+            inputAriaLabel="Shell particle size value"
+            disabled={disabled}
+            hint="Size multiplier for the rising carrier particle."
+            onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
+          />
+          <SliderField
+            label="Shell brightness"
+            min={0}
+            max={LAUNCH_SHELL_BRIGHTNESS_MAX}
+            step={0.05}
+            value={shell.brightness}
+            formatValue={formatMultiplier}
+            showNumberInput
+            inputAriaLabel="Shell particle brightness value"
+            disabled={disabled}
+            hint="Colour intensity of the rising carrier particle."
+            onChange={(value) => setLaunchValue('shell', 'brightness', round2(value))}
+          />
+          <SliderField
+            label="Shell glow"
+            min={MIN_HEAD_GLOW_STRENGTH}
+            max={MAX_HEAD_GLOW_STRENGTH}
+            step={0.05}
+            value={shell.glowStrength}
+            formatValue={formatMultiplier}
+            showNumberInput
+            inputAriaLabel="Shell particle glow value"
+            disabled={disabled || shell.shape !== 'orb'}
+            hint="Halo strength for the Soft orb shape."
+            onChange={(value) => setLaunchValue('shell', 'glowStrength', round2(value))}
+          />
+        </div>
+      </SubSection>
+    );
+  }
+
   function renderLiftParticleControls() {
     if (!showLaunch) return null;
 
@@ -1096,15 +1213,16 @@ export function FireworkRenderControls({
                 onChange={(value) => setLaunchValue('liftParticles', 'spread', round2(value))}
               />
               <SliderField
-                label="Max height"
+                label="Rise height"
                 min={0}
-                max={LIFT_PARTICLE_HEIGHT_MAX}
-                step={10}
+                max={LIFT_PARTICLE_HEIGHT_PERCENT_MAX}
+                step={1}
                 value={liftParticles.height}
+                formatValue={formatPercent}
                 showNumberInput
-                inputAriaLabel="Lift max height value"
+                inputAriaLabel="Lift rise height percent value"
                 disabled={controlDisabled}
-                hint="The height where glowing lift particles stop being emitted."
+                hint="How far up the shell path lift particles climb. 0% stays at launch; 100% reaches the burst centre."
                 onChange={(value) => setLaunchValue('liftParticles', 'height', round2(value))}
               />
             </div>
@@ -1528,6 +1646,42 @@ export function FireworkRenderControls({
     });
   }
 
+  function setLayerHeadClosingValue(
+    layerKey: StarLayerKey,
+    section: keyof StarHeadClosing,
+    key: string,
+    value: unknown,
+  ) {
+    mutate((draft) => {
+      const stars = ensureRecord(draft, 'stars');
+      const layer = ensureRecord(stars, layerKey);
+      const head = ensureRecord(layer, 'head');
+      const closing = ensureRecord(head, 'closing');
+      const target = ensureRecord(closing, String(section));
+      target[key] = value;
+    });
+  }
+
+  function setLayerBurstLifeMid(layerKey: StarLayerKey, mid: number) {
+    const halfWidth = rangeHalfWidth(design.stars[layerKey].burst.life);
+    mutate((draft) => {
+      const stars = ensureRecord(draft, 'stars');
+      const layer = ensureRecord(stars, layerKey);
+      const burst = ensureRecord(layer, 'burst');
+      burst.life = lifeRangeFromMidAndHalfWidth(mid, halfWidth);
+    });
+  }
+
+  function setLayerBurstLifeHalfWidth(layerKey: StarLayerKey, halfWidth: number) {
+    const mid = rangeMid(design.stars[layerKey].burst.life);
+    mutate((draft) => {
+      const stars = ensureRecord(draft, 'stars');
+      const layer = ensureRecord(stars, layerKey);
+      const burst = ensureRecord(layer, 'burst');
+      burst.life = lifeRangeFromMidAndHalfWidth(mid, halfWidth);
+    });
+  }
+
   function setLayerBurstRangeMid(
     layerKey: StarLayerKey,
     key: 'speed' | 'gravity' | 'life',
@@ -1638,11 +1792,133 @@ export function FireworkRenderControls({
     );
   }
 
+  function renderStarClosingControls(layerKey: StarLayerKey, controlDisabled: boolean) {
+    const layer = design.stars[layerKey];
+    const closing = layer.head.closing;
+    const colourEnabled = closing.colour.enabled;
+    const sizeEnabled = closing.size.enabled;
+
+    return (
+      <SubSection title="Closing">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SliderField
+            label="Burn time"
+            min={STAR_LIFE_MIN}
+            max={STAR_LIFE_MAX}
+            step={0.1}
+            value={round2(rangeMid(layer.burst.life))}
+            formatValue={formatSeconds}
+            showNumberInput
+            inputAriaLabel="Burn time value"
+            disabled={controlDisabled}
+            hint="How long stars in this layer stay alive before the closing fade finishes."
+            onChange={(value) => setLayerBurstLifeMid(layerKey, value)}
+          />
+          <SliderField
+            label="Burn spread"
+            min={0}
+            max={STAR_LIFE_VARIATION_MAX}
+            step={0.1}
+            value={Math.min(STAR_LIFE_VARIATION_MAX, round2(rangeHalfWidth(layer.burst.life)))}
+            formatValue={formatLifeVariation}
+            showNumberInput
+            inputAriaLabel="Burn spread value"
+            disabled={controlDisabled}
+            hint="Random spread around the burn time. 0 makes every star in this layer die together."
+            onChange={(value) => setLayerBurstLifeHalfWidth(layerKey, round2(value))}
+          />
+          <SwitchField
+            label="Fade colour"
+            checked={colourEnabled}
+            disabled={controlDisabled}
+            hint="Fade each star into a chosen colour at the end instead of using the automatic late colour shift."
+            onChange={(value) => setLayerHeadClosingValue(layerKey, 'colour', 'enabled', value)}
+          />
+          <SwitchField
+            label="Size close"
+            checked={sizeEnabled}
+            disabled={controlDisabled}
+            hint="Shrink or hold each star through the final part of its burn."
+            onChange={(value) => setLayerHeadClosingValue(layerKey, 'size', 'enabled', value)}
+          />
+          {colourEnabled ? (
+            <>
+              <ColorField
+                label="Closing colour"
+                value={rgbObjectToHex(closing.colour.color) ?? STAR_CLOSING_COLOUR_HEX}
+                disabled={controlDisabled}
+                hint="Colour the star reaches as it dies."
+                onChange={(value) =>
+                  setLayerHeadClosingValue(
+                    layerKey,
+                    'colour',
+                    'color',
+                    hexToRgbObject(value ?? STAR_CLOSING_COLOUR_HEX),
+                  )
+                }
+              />
+              <SliderField
+                label="Colour close time"
+                min={STAR_CLOSING_PERCENT_MIN}
+                max={STAR_CLOSING_PERCENT_MAX}
+                step={1}
+                value={closing.colour.fadePercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Closing colour fade time value"
+                disabled={controlDisabled}
+                hint="How much of the star's life is spent fading into the closing colour."
+                onChange={(value) =>
+                  setLayerHeadClosingValue(layerKey, 'colour', 'fadePercent', round2(value))
+                }
+              />
+            </>
+          ) : null}
+          {sizeEnabled ? (
+            <>
+              <SliderField
+                label="Final size"
+                min={STAR_CLOSING_END_PERCENT_MIN}
+                max={STAR_CLOSING_END_PERCENT_MAX}
+                step={1}
+                value={closing.size.endPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Final size value"
+                disabled={controlDisabled}
+                hint="Star size at the moment it dies, as a percentage of the full star size."
+                onChange={(value) =>
+                  setLayerHeadClosingValue(layerKey, 'size', 'endPercent', round2(value))
+                }
+              />
+              <SliderField
+                label="Shrink time"
+                min={STAR_CLOSING_PERCENT_MIN}
+                max={STAR_CLOSING_PERCENT_MAX}
+                step={1}
+                value={closing.size.shrinkPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Shrink time value"
+                disabled={controlDisabled}
+                hint="How much of the star's life is spent shrinking into the final size."
+                onChange={(value) =>
+                  setLayerHeadClosingValue(layerKey, 'size', 'shrinkPercent', round2(value))
+                }
+              />
+            </>
+          ) : null}
+        </div>
+      </SubSection>
+    );
+  }
+
   /**
    * Full head-orb appearance controls, shared by star layers and the brocade
    * "Heads" panel. Star values are saved on the selected layer's `head` object
    * and feed the live preview through the editor's `headStyle` / `renderTuning`
-   * props. Grouped into Opening, Core, and Glow so the richer set stays readable.
+   * props. Grouped into Opening, Closing, Core, and Glow so the richer set stays
+   * readable.
    */
   function renderStarAppearance(
     layerKey: StarLayerKey,
@@ -1655,6 +1931,7 @@ export function FireworkRenderControls({
       <div className="space-y-2.5">
         {leadingControls}
         {showOpeningControls ? renderStarOpeningControls(layerKey, controlDisabled) : null}
+        {showOpeningControls ? renderStarClosingControls(layerKey, controlDisabled) : null}
         <SubSection title="Core">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <CalibratedSliderField
@@ -2293,16 +2570,14 @@ export function FireworkRenderControls({
             />
             <SliderField
               label="Hang time"
-              min={0.5}
-              max={8}
+              min={STAR_LIFE_MIN}
+              max={STAR_LIFE_MAX}
               step={0.1}
               value={round2(rangeMid(layer.burst.life))}
               formatValue={formatSeconds}
               disabled={controlDisabled}
               hint="How long this layer's stars burn before fading."
-              onChange={(value) =>
-                setLayerBurstRangeMid(layerKey, 'life', value, BROCADE_LIFE_HALF_WIDTH)
-              }
+              onChange={(value) => setLayerBurstLifeMid(layerKey, value)}
             />
             <SliderField
               label="Floatiness"
@@ -2352,59 +2627,62 @@ export function FireworkRenderControls({
     return (
       <>
         <PanelSection title="Burst" collapsible defaultExpanded={false}>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            {showStarCount ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {showStarCount ? (
+                <SliderField
+                  label="Streak count"
+                  min={8}
+                  max={64}
+                  step={1}
+                  value={
+                    design.brocade.streakCount ?? Math.min(64, Math.max(8, Math.round(design.size)))
+                  }
+                  disabled={disabled}
+                  hint="How many streaks the shell splits into. 20 reads as a small cake; 60 is a full display crown."
+                  onChange={setStreakCount}
+                />
+              ) : null}
               <SliderField
-                label="Streak count"
-                min={8}
-                max={64}
-                step={1}
-                value={
-                  design.brocade.streakCount ?? Math.min(64, Math.max(8, Math.round(design.size)))
-                }
+                label="Burst size"
+                min={0.5}
+                max={12}
+                step={0.1}
+                value={round2(rangeMid(design.burst.speed))}
                 disabled={disabled}
-                hint="How many streaks the shell splits into. 20 reads as a small cake; 60 is a full display crown."
-                onChange={setStreakCount}
+                hint="How far the streaks fly from the centre. 2.5 is garden-size, 4.8 is a wide display sphere, 8+ is an extra-wide crown."
+                onChange={(value) => setBurstRangeMid('speed', value, BROCADE_SPEED_HALF_WIDTH)}
               />
-            ) : null}
-            <SliderField
-              label="Burst size"
-              min={0.5}
-              max={12}
-              step={0.1}
-              value={round2(rangeMid(design.burst.speed))}
-              disabled={disabled}
-              hint="How far the streaks fly from the centre. 2.5 is garden-size, 4.8 is a wide display sphere, 8+ is an extra-wide crown."
-              onChange={(value) => setBurstRangeMid('speed', value, BROCADE_SPEED_HALF_WIDTH)}
-            />
-            <SliderField
-              label="Hang time"
-              min={0.5}
-              max={8}
-              step={0.1}
-              value={round2(rangeMid(design.burst.life))}
-              formatValue={formatSeconds}
-              disabled={disabled}
-              hint="How long the streak heads burn before fading. Trails always melt away just before their head does."
-              onChange={(value) => setBurstRangeMid('life', value, BROCADE_LIFE_HALF_WIDTH)}
-            />
-            <SliderField
-              label="Floatiness"
-              min={-1.85}
-              max={0}
-              step={0.01}
-              value={round2(rangeUpper(design.burst.gravity))}
-              disabled={disabled}
-              hint="0 keeps the stars almost perfectly flat; more negative values let them sink faster after the burst."
-              onChange={setBrocadeGravityUpper}
-            />
-            {showLaunch
-              ? renderLiftVelocityControl(
-                  'Launch speed, which sets the burst height. 15 is the normal preset.',
-                )
-              : null}
-            {showLaunch ? renderLaunchSoundControl() : null}
-            {showLaunch ? renderBoomControl() : null}
+              <SliderField
+                label="Hang time"
+                min={0.5}
+                max={8}
+                step={0.1}
+                value={round2(rangeMid(design.burst.life))}
+                formatValue={formatSeconds}
+                disabled={disabled}
+                hint="How long the streak heads burn before fading. Trails always melt away just before their head does."
+                onChange={(value) => setBurstRangeMid('life', value, BROCADE_LIFE_HALF_WIDTH)}
+              />
+              <SliderField
+                label="Floatiness"
+                min={-1.85}
+                max={0}
+                step={0.01}
+                value={round2(rangeUpper(design.burst.gravity))}
+                disabled={disabled}
+                hint="0 keeps the stars almost perfectly flat; more negative values let them sink faster after the burst."
+                onChange={setBrocadeGravityUpper}
+              />
+              {showLaunch
+                ? renderLiftVelocityControl(
+                    'Launch speed, which sets the burst height. 15 is the normal preset.',
+                  )
+                : null}
+              {showLaunch ? renderLaunchSoundControl() : null}
+              {showLaunch ? renderBoomControl() : null}
+            </div>
+            {showLaunch ? renderLaunchShellControls() : null}
           </div>
         </PanelSection>
 
@@ -2466,12 +2744,15 @@ export function FireworkRenderControls({
     <>
       {showLaunch ? (
         <PanelSection title="Launch" collapsible defaultExpanded={false}>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            {renderLiftVelocityControl(
-              'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
-            )}
-            {renderLaunchSoundControl()}
-            {renderBoomControl()}
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {renderLiftVelocityControl(
+                'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
+              )}
+              {renderLaunchSoundControl()}
+              {renderBoomControl()}
+            </div>
+            {renderLaunchShellControls()}
           </div>
         </PanelSection>
       ) : null}

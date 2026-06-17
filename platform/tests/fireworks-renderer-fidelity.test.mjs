@@ -48,6 +48,7 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
 
 test('firework audio separates launch and burst reports', () => {
   const design = read('lib/fireworks/design.ts');
+  const engine = read('lib/fireworks/FireworksEngine.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
 
@@ -57,6 +58,14 @@ test('firework audio separates launch and burst reports', () => {
   assert.match(
     design,
     /compiled\.sound = deepMergeDesign\(compiled\.sound, \{ launch: variantLaunchSound \}\)/,
+  );
+  assert.match(engine, /this\.effects\.setAudible\(audible\);/);
+  assert.match(engine, /this\.effects\.setAudible\(true\);/);
+  assert.match(effects, /private audible = false/);
+  assert.match(effects, /setAudible\(audible: boolean\): void \{\s*this\.audible = audible;\s*\}/);
+  assert.match(
+    effects,
+    /action: \(p, dt, t\) => this\.detonate\(p, dt, t, design, color, seed, rng, this\.audible\)/,
   );
   assert.match(effects, /options\.audible && design\.sound\.launch/);
   assert.match(effects, /boom !== 'none'/);
@@ -194,7 +203,9 @@ test('burst physics hang like firework stars instead of free-falling', () => {
     effects,
     /gravity: brocadeLift \? TRAIL_GRAVITY \* 0\.3 : liftParticles\.motion\.gravity/,
   );
-  assert.match(effects, /liftParticles\.height/);
+  assert.match(effects, /function estimateShellRiseHeight/);
+  assert.match(effects, /const liftHeightPercent = clamp\(liftParticles\.height \/ 100, 0, 1\)/);
+  assert.match(effects, /const liftStopY = liftOriginY \+ liftRiseHeight \* liftHeightPercent/);
   assert.match(effects, /smoke\.height/);
   assert.match(particle, /drag = 0/);
   assert.match(particle, /maxLife = 0/);
@@ -422,6 +433,23 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(design, /opening: StarHeadOpeningSchema/);
   assert.match(design, /fadePercent: z\.coerce\.number\(\)\.min\(1\)\.max\(100\)\.default\(24\)/);
   assert.match(design, /growPercent: z\.coerce\.number\(\)\.min\(1\)\.max\(100\)\.default\(22\)/);
+  assert.match(design, /const StarHeadClosingSchema/);
+  assert.match(design, /closing: StarHeadClosingSchema/);
+  assert.match(design, /endPercent: z\.coerce\.number\(\)\.min\(0\)\.max\(100\)\.default\(0\)/);
+  assert.match(design, /shrinkPercent: z\.coerce\.number\(\)\.min\(1\)\.max\(100\)\.default\(22\)/);
+  assert.match(controls, /function renderStarClosingControls/);
+  assert.match(controls, /<SubSection title="Closing">/);
+  assert.match(controls, /label="Burn time"/);
+  assert.match(controls, /label="Burn spread"/);
+  assert.match(controls, /label="Closing colour"/);
+  assert.match(controls, /function SwitchField[\s\S]*<InfoTooltip text=\{hint\} \/>/);
+  assert.doesNotMatch(controls, /<FieldHint>\{hint\}<\/FieldHint>/);
+  assert.match(
+    controls,
+    /\{colourEnabled \? \([\s\S]*label="Closing colour"[\s\S]*label="Colour close time"/,
+  );
+  assert.match(controls, /\{sizeEnabled \? \([\s\S]*label="Final size"[\s\S]*label="Shrink time"/);
+  assert.match(controls, /setLayerBurstLifeHalfWidth/);
   assert.match(design, /function legacyOuterLayerFallback/);
   assert.match(design, /parseStarLayerInput\(stars\.outer, outerFallback\)/);
   assert.match(design, /parseStarLayerInput\(stars\.core, coreLayerFallback\(outer\)\)/);
@@ -431,13 +459,40 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(effects, /const styleIndex = layerKey === 'core' \? 1 : 0/);
   assert.match(effects, /this\.starColor\(design, layer, layerKey, color, i, count, rng\)/);
   assert.match(effects, /function starOpeningProgress/);
-  assert.match(effects, /const duration = clamp\(percent \/ 100, 0\.01, 1\)/);
+  assert.match(effects, /lifeReferenceSeconds \* clamp\(percent \/ 100, 0\.01, 1\)/);
   assert.match(effects, /function starOpeningColor/);
   assert.match(effects, /function starOpeningSize/);
-  assert.match(effects, /const initialColor = starOpeningColor\(layer\.head, color, 0\)/);
-  assert.match(effects, /const initialSize = starOpeningSize\(layer\.head, sizeBudget, 0\)/);
+  assert.match(effects, /function starClosingProgress/);
+  assert.match(effects, /function starClosingColor/);
+  assert.match(effects, /function starClosingSize/);
+  assert.match(effects, /private starOpeningLifeReference/);
+  assert.match(effects, /private starLifeRandomness/);
+  assert.match(
+    effects,
+    /const openingLifeReference = this\.starOpeningLifeReference\(design, layer\)/,
+  );
+  assert.match(effects, /const lifeRandomness = this\.starLifeRandomness\(layer\)/);
+  assert.match(effects, /openingLifeReference,/);
+  assert.match(
+    effects,
+    /const elapsedSeconds =[\s\S]*Math\.max\(0, particle\.maxLife - particle\.life\)/,
+  );
+  assert.match(
+    effects,
+    /const initialOpeningColor = starOpeningColor\(layer\.head, color, 0, openingLifeReference\)/,
+  );
+  assert.match(effects, /const initialColor = starClosingColor\(/);
+  assert.match(
+    effects,
+    /const initialOpeningSize = starOpeningSize\(layer\.head, sizeBudget, 0, openingLifeReference\)/,
+  );
+  assert.match(effects, /const initialClosingSize = starClosingSize\(/);
+  assert.match(effects, /const initialSize = Math\.min\(initialOpeningSize, initialClosingSize\)/);
   assert.match(effects, /layer\.head\.opening\.colour\.enabled/);
   assert.match(effects, /layer\.head\.opening\.size\.enabled/);
+  assert.match(effects, /!layer\.head\.closing\.colour\.enabled/);
+  assert.match(effects, /layer\.head\.closing\.colour\.enabled/);
+  assert.match(effects, /layer\.head\.closing\.size\.enabled/);
   assert.match(effects, /private starColourPatternColor/);
   assert.match(effects, /const pattern = layer\.colourPattern/);
   assert.match(effects, /function starPatternPosition/);
@@ -637,8 +692,19 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   const smokeSchema = design.slice(smokeSchemaStart, smokeSchemaEnd);
 
   assert.match(design, /const LaunchSchema = z/);
+  assert.match(design, /const LaunchShellSchema = z/);
+  assert.match(
+    design,
+    /export const LAUNCH_SHELL_SHAPES = \['circle', 'orb', 'square', 'triangle'\]/,
+  );
+  assert.match(design, /shell: LaunchShellSchema/);
   assert.match(design, /const LaunchLiftParticlesSchema = z/);
   assert.match(design, /liftParticles: LaunchLiftParticlesSchema/);
+  assert.match(design, /shape: z\.enum\(LAUNCH_SHELL_SHAPES\)/);
+  assert.match(design, /sizeScale: z\.coerce\.number\(\)\.min\(0\.25\)\.max\(4\)\.default\(1\)/);
+  assert.match(design, /brightness: z\.coerce\.number\(\)\.min\(0\)\.max\(3\)\.default\(1\)/);
+  assert.match(design, /glowStrength:[\s\S]*DEFAULT_HEAD_GLOW_STRENGTH/);
+  assert.match(design, /height: z\.coerce[\s\S]*Math\.min\(100, value\)[\s\S]*\.default\(100\)/);
   assert.match(design, /shapeWeights: BurstTrailShapeWeightsSchema/);
   assert.match(design, /particleSize:[\s\S]*headScale:[\s\S]*tailScale/);
   assert.match(design, /lifetime:[\s\S]*baseSeconds:[\s\S]*afterglowSeconds/);
@@ -668,6 +734,11 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /liftRng\?: RandomSource/);
   assert.match(effects, /this\.spawnMortarSmoke\(position, design, smokeRng\)/);
   assert.match(effects, /let liftPreviousPosition: Pos \| null = null/);
+  assert.match(effects, /function launchShellShapeValue/);
+  assert.match(effects, /headShapeValue\(shell\.glowStrength, 0\)/);
+  assert.match(effects, /resolveLaunchColor\(shell\.colour, liftColor, rng\)\.multiplyScalar/);
+  assert.match(effects, /Math\.max\(size, 110\) \* shell\.sizeScale/);
+  assert.match(effects, /shape: launchShellShapeValue\(shell\)/);
   assert.match(effects, /previousPosition = liftPreviousPosition/);
   assert.match(effects, /this\.shellEffect\([\s\S]*previousPosition/);
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
@@ -681,6 +752,13 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.doesNotMatch(effects, /spawnMortarSmoke\(position, design\.mortar\.smokeParticles, rng\)/);
 
   assert.match(controls, /function renderLiftParticleControls/);
+  assert.match(controls, /function renderLaunchShellControls/);
+  assert.match(controls, /title="Shell particle"/);
+  assert.match(controls, /<FieldLabel>Shell shape<\/FieldLabel>/);
+  assert.match(controls, /label="Shell colour"[\s\S]*setLaunchValue\('shell', 'colour'/);
+  assert.match(controls, /label="Shell size"[\s\S]*setLaunchValue\('shell', 'sizeScale'/);
+  assert.match(controls, /label="Shell brightness"[\s\S]*setLaunchValue\('shell', 'brightness'/);
+  assert.match(controls, /label="Shell glow"[\s\S]*setLaunchValue\('shell', 'glowStrength'/);
   assert.match(controls, /function renderSmokeControls/);
   assert.match(controls, /title="Lift particles"/);
   assert.match(controls, /title="Smoke"/);
@@ -703,7 +781,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Ascent swirl"/);
   assert.match(controls, /label="Swirl radius"/);
   assert.match(controls, /label="Swirl rate"/);
-  assert.match(controls, /label="Max height"[\s\S]*setLaunchValue\('liftParticles', 'height'/);
+  assert.match(
+    controls,
+    /label="Rise height"[\s\S]*formatValue=\{formatPercent\}[\s\S]*setLaunchValue\('liftParticles', 'height'/,
+  );
   assert.match(controls, /label="Smoke particles"[\s\S]*setLaunchValue\('smoke', 'particles'/);
   assert.doesNotMatch(controls, /label="Smoke colour"|setLaunchValue\('smoke', 'colour'/);
   assert.match(controls, /label="Smoke size"/);
