@@ -28,16 +28,19 @@ import {
 } from '@/lib/fireworks/design';
 import { cn } from '@/lib/utils';
 import {
-  BACKGROUND_GLOW_OPACITY_FALLOFF_STEP,
-  BACKGROUND_GLOW_SOFTNESS_STEP,
-  CORE_BRIGHTNESS_STEP,
-  CORE_OPACITY_FALLOFF_STEP,
-  CORE_SOFTNESS_STEP,
-  GLOW_BLUR_STEP,
-  GLOW_OPACITY_FALLOFF_STEP,
-  GLOW_PADDING_STEP,
-  GLOW_SIZE_STEP,
-  GLOW_SOFTNESS_STEP,
+  DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
+  DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+  DEFAULT_CORE_BRIGHTNESS,
+  DEFAULT_CORE_OPACITY_FALLOFF,
+  DEFAULT_CORE_SOFTNESS,
+  DEFAULT_GLOW_BLUR,
+  DEFAULT_GLOW_OPACITY_FALLOFF,
+  DEFAULT_GLOW_PADDING,
+  DEFAULT_GLOW_SIZE,
+  DEFAULT_GLOW_SOFTNESS,
+  DEFAULT_HEAD_GLOW_STRENGTH,
+  DEFAULT_WHITE_CORE_BLUR_PERCENT,
+  DEFAULT_WHITE_CORE_SIZE_PERCENT,
   MAX_BACKGROUND_GLOW_OPACITY_FALLOFF,
   MAX_BACKGROUND_GLOW_SOFTNESS,
   MAX_CORE_BRIGHTNESS,
@@ -48,6 +51,7 @@ import {
   MAX_GLOW_PADDING,
   MAX_GLOW_SIZE,
   MAX_GLOW_SOFTNESS,
+  MAX_HEAD_GLOW_STRENGTH,
   MAX_WHITE_CORE_BLUR_PERCENT,
   MAX_WHITE_CORE_SIZE_PERCENT,
   MIN_BACKGROUND_GLOW_OPACITY_FALLOFF,
@@ -60,10 +64,9 @@ import {
   MIN_GLOW_PADDING,
   MIN_GLOW_SIZE,
   MIN_GLOW_SOFTNESS,
+  MIN_HEAD_GLOW_STRENGTH,
   MIN_WHITE_CORE_BLUR_PERCENT,
   MIN_WHITE_CORE_SIZE_PERCENT,
-  WHITE_CORE_BLUR_PERCENT_STEP,
-  WHITE_CORE_SIZE_PERCENT_STEP,
 } from '@/lib/fireworks/render-tuning';
 
 export type JsonRecord = Record<string, unknown>;
@@ -108,6 +111,76 @@ const STAR_SIZE_MIN = 10;
 const STAR_SIZE_MAX = 1000;
 const STAR_SIZE_STEP = 10;
 const TRAIL_PARTICLE_SIZE_MAX = 24;
+const CALIBRATED_APPEARANCE_MIN = 0;
+const CALIBRATED_APPEARANCE_DEFAULT = 50;
+const CALIBRATED_APPEARANCE_MAX = 100;
+const CALIBRATED_APPEARANCE_STEP = 1;
+
+const HEAD_GLOW_STRENGTH_RANGE = {
+  min: MIN_HEAD_GLOW_STRENGTH,
+  defaultValue: DEFAULT_HEAD_GLOW_STRENGTH,
+  max: MAX_HEAD_GLOW_STRENGTH,
+};
+const CORE_SOFTNESS_RANGE = {
+  min: MIN_CORE_SOFTNESS,
+  defaultValue: DEFAULT_CORE_SOFTNESS,
+  max: MAX_CORE_SOFTNESS,
+};
+const CORE_BRIGHTNESS_RANGE = {
+  min: MIN_CORE_BRIGHTNESS,
+  defaultValue: DEFAULT_CORE_BRIGHTNESS,
+  max: MAX_CORE_BRIGHTNESS,
+};
+const WHITE_CORE_SIZE_RANGE = {
+  min: MIN_WHITE_CORE_SIZE_PERCENT,
+  defaultValue: DEFAULT_WHITE_CORE_SIZE_PERCENT,
+  max: MAX_WHITE_CORE_SIZE_PERCENT,
+};
+const WHITE_CORE_BLUR_RANGE = {
+  min: MIN_WHITE_CORE_BLUR_PERCENT,
+  defaultValue: DEFAULT_WHITE_CORE_BLUR_PERCENT,
+  max: MAX_WHITE_CORE_BLUR_PERCENT,
+};
+const CORE_OPACITY_RANGE = {
+  min: MIN_CORE_OPACITY_FALLOFF,
+  defaultValue: DEFAULT_CORE_OPACITY_FALLOFF,
+  max: MAX_CORE_OPACITY_FALLOFF,
+};
+const GLOW_SIZE_RANGE = {
+  min: MIN_GLOW_SIZE,
+  defaultValue: DEFAULT_GLOW_SIZE,
+  max: MAX_GLOW_SIZE,
+};
+const GLOW_SOFTNESS_RANGE = {
+  min: MIN_GLOW_SOFTNESS,
+  defaultValue: DEFAULT_GLOW_SOFTNESS,
+  max: MAX_GLOW_SOFTNESS,
+};
+const GLOW_OPACITY_RANGE = {
+  min: MIN_GLOW_OPACITY_FALLOFF,
+  defaultValue: DEFAULT_GLOW_OPACITY_FALLOFF,
+  max: MAX_GLOW_OPACITY_FALLOFF,
+};
+const BACKGROUND_GLOW_SIZE_RANGE = {
+  min: MIN_GLOW_PADDING,
+  defaultValue: DEFAULT_GLOW_PADDING,
+  max: MAX_GLOW_PADDING,
+};
+const BACKGROUND_GLOW_STRENGTH_RANGE = {
+  min: MIN_GLOW_BLUR,
+  defaultValue: DEFAULT_GLOW_BLUR,
+  max: MAX_GLOW_BLUR,
+};
+const BACKGROUND_GLOW_SOFTNESS_RANGE = {
+  min: MIN_BACKGROUND_GLOW_SOFTNESS,
+  defaultValue: DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+  max: MAX_BACKGROUND_GLOW_SOFTNESS,
+};
+const BACKGROUND_GLOW_OPACITY_RANGE = {
+  min: MIN_BACKGROUND_GLOW_OPACITY_FALLOFF,
+  defaultValue: DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
+  max: MAX_BACKGROUND_GLOW_OPACITY_FALLOFF,
+};
 
 const LIFT_VELOCITY_OPTIONS = [
   { value: 'small', label: 'Small', velocity: 7 },
@@ -147,6 +220,85 @@ function formatSeconds(value: number): string {
 
 function formatPercent(value: number): string {
   return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
+}
+
+type CalibratedRange = {
+  min: number;
+  defaultValue: number;
+  max: number;
+};
+
+function withCalibrationDefault(range: CalibratedRange, value: unknown): CalibratedRange {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return range;
+  return {
+    ...range,
+    defaultValue: Math.min(range.max, Math.max(range.min, raw)),
+  };
+}
+
+function rawToCalibrated(value: number, range: CalibratedRange): number {
+  const bounded = Math.min(range.max, Math.max(range.min, value));
+  if (bounded <= range.defaultValue) {
+    const lowerSpan = range.defaultValue - range.min;
+    return lowerSpan <= 0
+      ? CALIBRATED_APPEARANCE_DEFAULT
+      : round2(((bounded - range.min) / lowerSpan) * CALIBRATED_APPEARANCE_DEFAULT);
+  }
+
+  const upperSpan = range.max - range.defaultValue;
+  return upperSpan <= 0
+    ? CALIBRATED_APPEARANCE_DEFAULT
+    : round2(
+        CALIBRATED_APPEARANCE_DEFAULT +
+          ((bounded - range.defaultValue) / upperSpan) * CALIBRATED_APPEARANCE_DEFAULT,
+      );
+}
+
+function calibratedToRaw(value: number, range: CalibratedRange): number {
+  const bounded = Math.min(CALIBRATED_APPEARANCE_MAX, Math.max(CALIBRATED_APPEARANCE_MIN, value));
+
+  if (bounded <= CALIBRATED_APPEARANCE_DEFAULT) {
+    return round2(
+      range.min + (bounded / CALIBRATED_APPEARANCE_DEFAULT) * (range.defaultValue - range.min),
+    );
+  }
+
+  return round2(
+    range.defaultValue +
+      ((bounded - CALIBRATED_APPEARANCE_DEFAULT) / CALIBRATED_APPEARANCE_DEFAULT) *
+        (range.max - range.defaultValue),
+  );
+}
+
+function CalibratedSliderField({
+  label,
+  value,
+  range,
+  disabled,
+  hint,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  range: CalibratedRange;
+  disabled?: boolean;
+  hint: ReactNode;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <SliderField
+      label={label}
+      min={CALIBRATED_APPEARANCE_MIN}
+      max={CALIBRATED_APPEARANCE_MAX}
+      step={CALIBRATED_APPEARANCE_STEP}
+      value={rawToCalibrated(value, range)}
+      formatValue={formatPercent}
+      disabled={disabled}
+      hint={hint}
+      onChange={(next) => onChange(calibratedToRaw(next, range))}
+    />
+  );
 }
 
 function liftVelocityPresetMode(value: number): LiftVelocityMode {
@@ -335,6 +487,11 @@ function SubSection({
 export type RenderControlsProps = {
   design: FireworkDesign;
   defaults: JsonRecord;
+  /**
+   * Saved base settings used as the 50% point for calibrated appearance sliders.
+   * If absent, the controls fall back to their renderer-safe defaults.
+   */
+  calibrationDefaults?: JsonRecord;
   mutate: (updater: (defaults: JsonRecord) => void) => void;
   disabled?: boolean;
   /** Show the Launch panel (lift velocity, smoke, boom). Firework-level. */
@@ -346,6 +503,7 @@ export type RenderControlsProps = {
 export function FireworkRenderControls({
   design,
   defaults,
+  calibrationDefaults,
   mutate,
   disabled = false,
   showLaunch = false,
@@ -360,6 +518,62 @@ export function FireworkRenderControls({
   const strobeDefaults = readRecord(defaults, 'strobe');
   const crackleDefaults = readRecord(defaults, 'crackle');
   const soundDefaults = readRecord(defaults, 'sound');
+  const calibrationSource = calibrationDefaults ?? defaults;
+  const calibrationStars = readRecord(readRecord(calibrationSource, 'stars'), 'heads');
+  const calibrationBrocade = readRecord(calibrationSource, 'brocade');
+  const headGlowStrengthRange = withCalibrationDefault(
+    HEAD_GLOW_STRENGTH_RANGE,
+    calibrationStars.glowStrength,
+  );
+  const brocadeGlowStrengthRange = withCalibrationDefault(
+    HEAD_GLOW_STRENGTH_RANGE,
+    calibrationBrocade.glowStrength,
+  );
+  const coreSoftnessRange = withCalibrationDefault(
+    CORE_SOFTNESS_RANGE,
+    calibrationStars.coreSoftness,
+  );
+  const coreBrightnessRange = withCalibrationDefault(
+    CORE_BRIGHTNESS_RANGE,
+    calibrationStars.coreBrightness,
+  );
+  const whiteCoreSizeRange = withCalibrationDefault(
+    WHITE_CORE_SIZE_RANGE,
+    calibrationStars.whiteCoreSizePercent,
+  );
+  const whiteCoreBlurRange = withCalibrationDefault(
+    WHITE_CORE_BLUR_RANGE,
+    calibrationStars.whiteCoreBlurPercent,
+  );
+  const coreOpacityRange = withCalibrationDefault(
+    CORE_OPACITY_RANGE,
+    calibrationStars.coreOpacityFalloff,
+  );
+  const glowSizeRange = withCalibrationDefault(GLOW_SIZE_RANGE, calibrationStars.glowSize);
+  const glowSoftnessRange = withCalibrationDefault(
+    GLOW_SOFTNESS_RANGE,
+    calibrationStars.glowSoftness,
+  );
+  const glowOpacityRange = withCalibrationDefault(
+    GLOW_OPACITY_RANGE,
+    calibrationStars.glowOpacityFalloff,
+  );
+  const backgroundGlowSizeRange = withCalibrationDefault(
+    BACKGROUND_GLOW_SIZE_RANGE,
+    calibrationStars.glowPadding,
+  );
+  const backgroundGlowStrengthRange = withCalibrationDefault(
+    BACKGROUND_GLOW_STRENGTH_RANGE,
+    calibrationStars.glowBlur,
+  );
+  const backgroundGlowSoftnessRange = withCalibrationDefault(
+    BACKGROUND_GLOW_SOFTNESS_RANGE,
+    calibrationStars.backgroundGlowSoftness,
+  );
+  const backgroundGlowOpacityRange = withCalibrationDefault(
+    BACKGROUND_GLOW_OPACITY_RANGE,
+    calibrationStars.backgroundGlowOpacityFalloff,
+  );
 
   const isBrocade = design.geometry === 'crown' && design.trailProfile === 'glitter';
   const burstTrail = design.burstTrail;
@@ -516,57 +730,42 @@ export function FireworkRenderControls({
       <div className="space-y-2.5">
         <SubSection title="Core" defaultExpanded>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <SliderField
+            <CalibratedSliderField
               label="Core blur"
-              min={MIN_CORE_SOFTNESS}
-              max={MAX_CORE_SOFTNESS}
-              step={CORE_SOFTNESS_STEP}
+              range={coreSoftnessRange}
               value={heads.coreSoftness}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Blur through the coloured core. 0% is a hard-edged disc; higher diffuses the centre and edge into a soft orb."
               onChange={(value) => setStarsValue('heads', 'coreSoftness', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Brightness"
-              min={MIN_CORE_BRIGHTNESS}
-              max={MAX_CORE_BRIGHTNESS}
-              step={CORE_BRIGHTNESS_STEP}
+              range={coreBrightnessRange}
               value={heads.coreBrightness}
-              formatValue={formatPercent}
               disabled={controlDisabled}
-              hint="How hot the centre burns. 100% is neutral; push higher for a bright near-white core, lower for a calmer ember."
+              hint="How hot the coloured centre burns. Lower is calmer; higher pushes toward white."
               onChange={(value) => setStarsValue('heads', 'coreBrightness', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="White dot size"
-              min={MIN_WHITE_CORE_SIZE_PERCENT}
-              max={MAX_WHITE_CORE_SIZE_PERCENT}
-              step={WHITE_CORE_SIZE_PERCENT_STEP}
+              range={whiteCoreSizeRange}
               value={heads.whiteCoreSizePercent}
-              formatValue={formatPercent}
               disabled={controlDisabled}
-              hint="Size of the white-hot centre inside each star. 0% removes it; 100% fills the coloured star core."
+              hint="Size of the white-hot centre inside each star. Lower reduces the dot; higher grows it."
               onChange={(value) => setStarsValue('heads', 'whiteCoreSizePercent', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="White dot blur"
-              min={MIN_WHITE_CORE_BLUR_PERCENT}
-              max={MAX_WHITE_CORE_BLUR_PERCENT}
-              step={WHITE_CORE_BLUR_PERCENT_STEP}
+              range={whiteCoreBlurRange}
               value={heads.whiteCoreBlurPercent}
-              formatValue={formatPercent}
               disabled={controlDisabled}
-              hint="Feathering on the white dot. 0% is crisp; higher adds a coloured blur outside the dot without enlarging the white area."
+              hint="Feathering on the white dot. 0% is crisp; higher softens it without making a tiny dot flood the whole core."
               onChange={(value) => setStarsValue('heads', 'whiteCoreBlurPercent', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Core fade"
-              min={MIN_CORE_OPACITY_FALLOFF}
-              max={MAX_CORE_OPACITY_FALLOFF}
-              step={CORE_OPACITY_FALLOFF_STEP}
+              range={coreOpacityRange}
               value={heads.coreOpacityFalloff}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Opacity falloff for the coloured core. 0% keeps the edge solid; higher fades the core into the surrounding glow."
               onChange={(value) => setStarsValue('heads', 'coreOpacityFalloff', value)}
@@ -575,79 +774,58 @@ export function FireworkRenderControls({
         </SubSection>
         <SubSection title="Glow">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <SliderField
+            <CalibratedSliderField
               label="Star glow radius"
-              min={MIN_GLOW_SIZE}
-              max={MAX_GLOW_SIZE}
-              step={GLOW_SIZE_STEP}
+              range={glowSizeRange}
               value={heads.glowSize}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Size of the coloured bloom attached to the star itself. Low hugs the core; high spreads the close glow outward."
               onChange={(value) => setStarsValue('heads', 'glowSize', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Star glow blur"
-              min={MIN_GLOW_SOFTNESS}
-              max={MAX_GLOW_SOFTNESS}
-              step={GLOW_SOFTNESS_STEP}
+              range={glowSoftnessRange}
               value={heads.glowSoftness}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Blur of the close coloured glow. Low is tight and defined; high spreads it into a much softer bloom."
               onChange={(value) => setStarsValue('heads', 'glowSoftness', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Star glow fade"
-              min={MIN_GLOW_OPACITY_FALLOFF}
-              max={MAX_GLOW_OPACITY_FALLOFF}
-              step={GLOW_OPACITY_FALLOFF_STEP}
+              range={glowOpacityRange}
               value={heads.glowOpacityFalloff}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Opacity falloff for the close star glow. Higher values fade it to transparent sooner, removing the outer ring."
               onChange={(value) => setStarsValue('heads', 'glowOpacityFalloff', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Background glow size"
-              min={MIN_GLOW_PADDING}
-              max={MAX_GLOW_PADDING}
-              step={GLOW_PADDING_STEP}
+              range={backgroundGlowSizeRange}
               value={heads.glowPadding}
-              formatValue={formatPercent}
               disabled={controlDisabled}
-              hint="Size of the large coloured wash behind each star. 100% reaches one star size; 200% reaches two star sizes."
+              hint="Size of the large coloured wash behind each star. Lower keeps it tight; higher gives it more room to bloom."
               onChange={(value) => setStarsValue('heads', 'glowPadding', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Background glow strength"
-              min={MIN_GLOW_BLUR}
-              max={MAX_GLOW_BLUR}
-              step={GLOW_BLUR_STEP}
+              range={backgroundGlowStrengthRange}
               value={heads.glowBlur}
-              formatValue={formatPercent}
               disabled={controlDisabled}
-              hint="Brightness of the large coloured wash behind each star. It stays coloured rather than turning the whole sprite white."
+              hint="Brightness of the large coloured wash behind each star. 0% removes it; higher stays coloured rather than turning the whole sprite white."
               onChange={(value) => setStarsValue('heads', 'glowBlur', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Background blur"
-              min={MIN_BACKGROUND_GLOW_SOFTNESS}
-              max={MAX_BACKGROUND_GLOW_SOFTNESS}
-              step={BACKGROUND_GLOW_SOFTNESS_STEP}
+              range={backgroundGlowSoftnessRange}
               value={heads.backgroundGlowSoftness}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Blur of the large background wash. Higher values make the glow much more diffused without changing the star size."
               onChange={(value) => setStarsValue('heads', 'backgroundGlowSoftness', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Background fade"
-              min={MIN_BACKGROUND_GLOW_OPACITY_FALLOFF}
-              max={MAX_BACKGROUND_GLOW_OPACITY_FALLOFF}
-              step={BACKGROUND_GLOW_OPACITY_FALLOFF_STEP}
+              range={backgroundGlowOpacityRange}
               value={heads.backgroundGlowOpacityFalloff}
-              formatValue={formatPercent}
               disabled={controlDisabled}
               hint="Opacity falloff for the large background wash. Higher values fade the outside to nothing before it reaches the sprite edge."
               onChange={(value) => setStarsValue('heads', 'backgroundGlowOpacityFalloff', value)}
@@ -1069,14 +1247,12 @@ export function FireworkRenderControls({
                 hint="Size budget for each glowing head. 900 matches a display shell; heads always stay bigger than their trail squares when you zoom in."
                 onChange={(value) => setBrocadeValue('headSize', value)}
               />
-              <SliderField
+              <CalibratedSliderField
                 label="Glow strength"
-                min={0}
-                max={3}
-                step={0.05}
+                range={brocadeGlowStrengthRange}
                 value={design.brocade.glowStrength}
                 disabled={sectionDisabled.heads}
-                hint="Halo brightness around each head, and how strongly the burst tints the ground light. 0 is a bare core, 1 is standard, 2+ matches the exemplar bloom."
+                hint="Halo brightness around each head, and how strongly the burst tints the ground light."
                 onChange={(value) => setBrocadeValue('glowStrength', round2(value))}
               />
             </div>
@@ -1200,14 +1376,12 @@ export function FireworkRenderControls({
               hint="Size budget for each glowing star. 250 reads as a classic display star; comets sit near 900."
               onChange={(value) => setStarsValue('heads', 'size', value)}
             />
-            <SliderField
+            <CalibratedSliderField
               label="Glow strength"
-              min={0}
-              max={3}
-              step={0.05}
+              range={headGlowStrengthRange}
               value={design.stars.heads.glowStrength}
               disabled={sectionDisabled.stars}
-              hint="Halo brightness around each star. 0 is a bare core, 1 is standard, 2+ is full display bloom."
+              hint="Halo brightness around each star."
               onChange={(value) => setStarsValue('heads', 'glowStrength', round2(value))}
             />
           </div>

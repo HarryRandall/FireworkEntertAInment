@@ -420,7 +420,14 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(controls, /label="Background blur"/);
   assert.match(controls, /label="Background fade"/);
   assert.match(controls, /label="Core fade"/);
-  assert.match(controls, /100% reaches one star size; 200% reaches two star sizes/);
+  assert.match(controls, /function CalibratedSliderField/);
+  assert.match(controls, /function rawToCalibrated/);
+  assert.match(controls, /function calibratedToRaw/);
+  assert.match(controls, /function withCalibrationDefault/);
+  assert.match(controls, /const CALIBRATED_APPEARANCE_DEFAULT = 50/);
+  assert.match(controls, /calibrationDefaults\?: JsonRecord/);
+  assert.match(controls, /const calibrationSource = calibrationDefaults \?\? defaults/);
+  assert.match(controls, /range=\{backgroundGlowSizeRange\}/);
   assert.doesNotMatch(controls, /label="Glow padding"/);
   assert.doesNotMatch(controls, /formatPixels/);
   assert.doesNotMatch(controls, /label="White core size"|label="White core blur"/);
@@ -566,10 +573,14 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   const shaders = read('lib/fireworks/shaders.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
   const canvas = read('app/components/app/FireworkReplayCanvas.tsx');
   const tuning = read('lib/fireworks/render-tuning.ts');
   const migration = read('supabase/migrations/20260610121500_brocade_admin_calibration_params.sql');
+  const calibrationMigration = read(
+    'supabase/migrations/20260617040846_calibrated_star_head_defaults.sql',
+  );
 
   // Brocade tuning lives in the design schema, not renderer constants.
   assert.match(design, /brocade: z/);
@@ -603,7 +614,7 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(shaders, /uniform float whiteCoreBlurPercent/);
   assert.match(
     shaders,
-    /float backgroundGlowScale = clamp\(glowPadding \/ 100\.0, 0\.0, 2\.0\) \* isHead/,
+    /float backgroundGlowScale = clamp\(glowPadding \/ 100\.0, 0\.0, 3\.0\) \* isHead/,
   );
   assert.match(
     shaders,
@@ -629,54 +640,104 @@ test('brocade calibration is data-driven and admin-tunable', () => {
     shaders,
     /float whiteCoreBlur = clamp\(whiteCoreBlurPercent \/ 100\.0, 0\.0, 1\.0\)/,
   );
+  assert.match(shaders, /float whiteCoreSizeT = whiteCoreRadius \/ max\(coreRadius, 0\.001\)/);
+  assert.match(shaders, /float whiteCoreStrength = smoothstep\(0\.0, 0\.08, whiteCoreSizeT\)/);
   assert.match(
     shaders,
-    /float whiteCoreBlurWidth = coreRadius \* pow\(whiteCoreBlur, 0\.82\) \* 3\.2/,
+    /float whiteCoreBlurWidth = max\(whiteCoreRadius \* 1\.85, coreRadius \* 0\.01\) \* pow\(whiteCoreBlur, 1\.05\)/,
   );
   assert.match(
     shaders,
-    /float whiteCoreFeatherStart = max\(whiteCoreRadius - whiteCoreBlurWidth \* 0\.75, 0\.0\)/,
+    /float whiteCoreFeatherStart = max\(whiteCoreRadius - whiteCoreBlurWidth \* 0\.5, 0\.0\)/,
   );
   assert.match(
     shaders,
-    /float whiteCoreFeatherEnd = min\(0\.5, whiteCoreRadius \+ max\(whiteCoreBlurWidth, whiteCoreEdge\)\)/,
+    /float whiteCoreFeatherEnd = min\(coreRadius, whiteCoreRadius \+ max\(whiteCoreBlurWidth, whiteCoreEdge\)\)/,
   );
   assert.match(shaders, /float whiteCoreSharpMask = 1\.0 - step\(whiteCoreRadius, roundDistance\)/);
   assert.match(
     shaders,
     /float whiteCoreBlurMask = 1\.0 - smoothstep\(whiteCoreFeatherStart, whiteCoreFeatherEnd, roundDistance\)/,
   );
-  assert.match(shaders, /float whiteCoreDissolve = mix\(1\.0, 0\.08, pow\(whiteCoreBlur, 1\.1\)\)/);
-  assert.match(shaders, /float whiteCore = step\(0\.0005, whiteCoreRadius\) \* mix\(/);
+  assert.match(
+    shaders,
+    /float whiteCoreDissolve = mix\(1\.0, 0\.16, pow\(whiteCoreBlur, 1\.15\)\)/,
+  );
+  assert.match(
+    shaders,
+    /float whiteCore = step\(0\.0005, whiteCoreRadius\) \* whiteCoreStrength \* mix\(/,
+  );
   assert.match(shaders, /whiteCoreBlurMask \* whiteCoreDissolve/);
   assert.match(
     shaders,
-    /float whiteCoreColourBlur = step\(0\.0005, whiteCoreRadius\) \* whiteCoreBlur \* \(1\.0 - whiteCore\)/,
+    /float whiteCoreColourBlur = step\(0\.0005, whiteCoreRadius\) \* whiteCoreStrength \* whiteCoreBlur \* \(1\.0 - whiteCore\)/,
   );
   assert.match(shaders, /whiteCoreColourBlur \* 1\.15/);
   assert.match(shaders, /whiteCoreColourBlur \* 0\.65/);
-  assert.match(shaders, /float coreBlurT = pow\(coreSoft, 1\.12\)/);
-  assert.match(shaders, /float softInner = coreRadius \* mix\(0\.94, -0\.24, coreBlurT\)/);
-  assert.match(shaders, /softCore = pow\(softCore, mix\(1\.0, 1\.65, coreBlurT\)\)/);
-  assert.match(shaders, /float coreOpacityT = clamp\(coreOpacityFalloff \/ 100\.0, 0\.0, 1\.0\)/);
-  assert.match(shaders, /float headCoreAlpha = mix\(headCore, headCoreShaped, coreOpacityT\)/);
+  assert.match(shaders, /float coreGain = clamp\(coreBrightness \/ 100\.0, 0\.0, 3\.0\)/);
   assert.match(
     shaders,
-    /float closeGlowRadius = min\(0\.5, coreRadius \+ haloSpan \* mix\(0\.18, 0\.96, glowRadiusT\)\)/,
+    /float coreSoftOverdrive = clamp\(\(coreSoftness - 100\.0\) \/ 10\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(shaders, /float coreBlurT = pow\(coreSoft, 1\.08\)/);
+  assert.match(
+    shaders,
+    /float softCoreRadius = max\(coreRadius \* mix\(0\.92, mix\(0\.56, 0\.48, coreSoftOverdrive\), coreBlurT\), 0\.001\)/,
   );
   assert.match(
     shaders,
-    /float closeGlowFalloff = mix\(28\.0, 0\.08, pow\(glowSoftnessT, 1\.24\)\)/,
+    /float softCoreFalloff = mix\(0\.45, mix\(2\.35, 2\.8, coreSoftOverdrive\), coreBlurT\)/,
+  );
+  assert.match(
+    shaders,
+    /float softCore = exp\(-pow\(roundDistance \/ softCoreRadius, 2\.0\) \* softCoreFalloff\)/,
+  );
+  assert.match(shaders, /softCore = pow\(softCore, mix\(0\.9, 1\.1, coreBlurT\)\)/);
+  assert.match(shaders, /float coreOpacityT = clamp\(coreOpacityFalloff \/ 100\.0, 0\.0, 1\.0\)/);
+  assert.match(
+    shaders,
+    /float coreOpacityOverdrive = clamp\(\(coreOpacityFalloff - 100\.0\) \/ 20\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(shaders, /float headCoreAlpha = mix\(headCore, headCoreShaped, coreOpacityT\)/);
+  assert.match(shaders, /headCoreAlpha \*= mix\(1\.0, 0\.82, coreOpacityOverdrive\)/);
+  assert.match(
+    shaders,
+    /float glowRadiusOverdrive = clamp\(\(glowSize - 100\.0\) \/ 80\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(
+    shaders,
+    /float glowSoftnessOverdrive = clamp\(\(glowSoftness - 100\.0\) \/ 100\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(
+    shaders,
+    /float closeGlowRadius = coreRadius \+ haloSpan \* mix\(0\.18, mix\(0\.96, 1\.18, glowRadiusOverdrive\), glowRadiusT\)/,
+  );
+  assert.match(
+    shaders,
+    /float closeGlowFalloff = mix\(28\.0, mix\(0\.08, 0\.018, glowSoftnessOverdrive\), pow\(glowSoftnessT, 1\.24\)\)/,
+  );
+  assert.match(shaders, /float closeGlowClipStart = min\(closeGlowRadius, 0\.5\)/);
+  assert.match(
+    shaders,
+    /float closeGlowClipEnd = min\(0\.5, closeGlowClipStart \+ coreEdge \* mix\(4\.0, 7\.0, glowRadiusOverdrive\)\)/,
   );
   assert.match(shaders, /headGlow \*= mix\(0\.22, 1\.0, outsideCore\)/);
+  assert.match(shaders, /headGlow \*= smoothstep\(0\.0, 0\.05, glowRadiusT\)/);
   assert.match(shaders, /float glowOpacityT = clamp\(glowOpacityFalloff \/ 100\.0, 0\.0, 1\.0\)/);
-  assert.match(shaders, /float glowEdgeStart = mix\(0\.98, 0\.48, glowOpacityT\)/);
+  assert.match(
+    shaders,
+    /float glowOpacityOverdrive = clamp\(\(glowOpacityFalloff - 100\.0\) \/ 100\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(
+    shaders,
+    /float glowEdgeStart = mix\(0\.98, mix\(0\.48, 0\.28, glowOpacityOverdrive\), glowOpacityT\)/,
+  );
   assert.match(
     shaders,
     /float glowEdgeFade = 1\.0 - smoothstep\(glowEdgeStart, 1\.0, spriteDistance\)/,
   );
   assert.match(shaders, /headGlow \*= glowEdgeFade/);
-  assert.match(shaders, /float backgroundGlowSize = clamp\(glowPadding \/ 200\.0, 0\.0, 1\.0\)/);
+  assert.match(shaders, /float backgroundGlowSize = clamp\(glowPadding \/ 300\.0, 0\.0, 1\.0\)/);
   assert.match(
     shaders,
     /float backgroundRoom = smoothstep\(0\.0, 0\.28, 0\.5 - coreRadius\) \* smoothstep\(0\.0, 0\.03, backgroundGlowSize\)/,
@@ -698,7 +759,14 @@ test('brocade calibration is data-driven and admin-tunable', () => {
     shaders,
     /float backgroundOpacityT = clamp\(backgroundGlowOpacityFalloff \/ 100\.0, 0\.0, 1\.0\)/,
   );
-  assert.match(shaders, /float backgroundEdgeStart = mix\(0\.99, 0\.34, backgroundOpacityT\)/);
+  assert.match(
+    shaders,
+    /float backgroundOpacityOverdrive = clamp\(\(backgroundGlowOpacityFalloff - 100\.0\) \/ 50\.0, 0\.0, 1\.0\)/,
+  );
+  assert.match(
+    shaders,
+    /float backgroundEdgeStart = mix\(0\.99, mix\(0\.34, 0\.18, backgroundOpacityOverdrive\), backgroundOpacityT\)/,
+  );
   assert.match(
     shaders,
     /float backgroundEdgeFade = 1\.0 - smoothstep\(backgroundEdgeStart, 1\.0, backgroundDistance\)/,
@@ -741,7 +809,20 @@ test('brocade calibration is data-driven and admin-tunable', () => {
     editor,
     /renderTuning=\{\{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent \}\}/,
   );
+  assert.match(editor, /coreOpacityFalloff/);
+  assert.match(editor, /glowOpacityFalloff/);
+  assert.match(editor, /backgroundGlowOpacityFalloff/);
+  assert.match(editor, /backgroundGlowSoftness/);
+  assert.match(fireworkEditor, /coreOpacityFalloff/);
+  assert.match(fireworkEditor, /glowOpacityFalloff/);
+  assert.match(fireworkEditor, /backgroundGlowOpacityFalloff/);
+  assert.match(fireworkEditor, /backgroundGlowSoftness/);
   assert.match(controls, /SliderField/);
+  assert.match(controls, /CalibratedSliderField/);
+  assert.match(controls, /range=\{headGlowStrengthRange\}/);
+  assert.match(controls, /range=\{brocadeGlowStrengthRange\}/);
+  assert.match(editor, /calibrationDefaults=\{calibrationDefaults\}/);
+  assert.match(fireworkEditor, /calibrationDefaults=\{calibrationDefaults\}/);
   assert.match(controls, /setBrocadeValue/);
   assert.match(controls, /draft\.size = value/);
   assert.match(controls, /setBrocadeGravityUpper/);
@@ -767,33 +848,57 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(controls, /setStarsValue\('heads', 'glowOpacityFalloff', value\)/);
   assert.match(controls, /setStarsValue\('heads', 'backgroundGlowSoftness', value\)/);
   assert.match(controls, /label="Background glow size"/);
-  assert.match(controls, /max=\{MAX_GLOW_PADDING\}/);
+  assert.match(controls, /range=\{backgroundGlowSizeRange\}/);
   assert.match(controls, /setStarsValue\('heads', 'glowPadding', value\)/);
   assert.match(controls, /setStarsValue\('heads', 'backgroundGlowOpacityFalloff', value\)/);
   // The granular head sliders write directly, not via removed preview-only props.
   assert.doesNotMatch(controls, /onGlowPaddingChange|onWhiteCoreSizePercentChange/);
   assert.match(controls, /formatValue=\{formatPercent\}/);
-  assert.match(tuning, /DEFAULT_CORE_SOFTNESS/);
+  assert.match(tuning, /DEFAULT_HEAD_GLOW_STRENGTH = 1\.5/);
+  assert.match(tuning, /MAX_HEAD_GLOW_STRENGTH = 3/);
   assert.match(canvas, /renderTuning\?: Partial<FireworkRenderTuning>/);
   assert.match(
     canvas,
     /engine\.setRenderTuning\(\{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent \}\)/,
   );
-  assert.match(tuning, /DEFAULT_GLOW_PADDING = 34/);
-  assert.match(tuning, /MAX_GLOW_PADDING = 200/);
+  assert.match(tuning, /DEFAULT_GLOW_PADDING = 150/);
+  assert.match(tuning, /MAX_GLOW_PADDING = 300/);
+  assert.match(tuning, /MIN_CORE_BRIGHTNESS = 0/);
+  assert.match(tuning, /DEFAULT_CORE_BRIGHTNESS = 50/);
+  assert.match(tuning, /MAX_CORE_BRIGHTNESS = 100/);
+  assert.match(tuning, /DEFAULT_GLOW_BLUR = 45/);
+  assert.match(tuning, /MAX_GLOW_BLUR = 100/);
   assert.match(tuning, /HEAD_SPRITE_MAX_SIZE = 1280/);
-  assert.match(tuning, /DEFAULT_CORE_OPACITY_FALLOFF = 65/);
-  assert.match(tuning, /DEFAULT_GLOW_OPACITY_FALLOFF = 78/);
-  assert.match(tuning, /DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF = 82/);
-  assert.match(tuning, /DEFAULT_BACKGROUND_GLOW_SOFTNESS = 72/);
-  assert.match(tuning, /DEFAULT_WHITE_CORE_SIZE_PERCENT = 100/);
-  assert.match(tuning, /MAX_WHITE_CORE_SIZE_PERCENT = 100/);
-  assert.match(tuning, /DEFAULT_WHITE_CORE_BLUR_PERCENT = 0/);
-  assert.match(tuning, /MAX_WHITE_CORE_BLUR_PERCENT = 100/);
+  assert.match(tuning, /DEFAULT_CORE_SOFTNESS = 55/);
+  assert.match(tuning, /MAX_CORE_SOFTNESS = 110/);
+  assert.match(tuning, /DEFAULT_CORE_OPACITY_FALLOFF = 60/);
+  assert.match(tuning, /MAX_CORE_OPACITY_FALLOFF = 120/);
+  assert.match(tuning, /DEFAULT_GLOW_SIZE = 90/);
+  assert.match(tuning, /MAX_GLOW_SIZE = 180/);
+  assert.match(tuning, /DEFAULT_GLOW_SOFTNESS = 100/);
+  assert.match(tuning, /MAX_GLOW_SOFTNESS = 200/);
+  assert.match(tuning, /DEFAULT_GLOW_OPACITY_FALLOFF = 100/);
+  assert.match(tuning, /MAX_GLOW_OPACITY_FALLOFF = 200/);
+  assert.match(tuning, /DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF = 75/);
+  assert.match(tuning, /MAX_BACKGROUND_GLOW_OPACITY_FALLOFF = 150/);
+  assert.match(tuning, /DEFAULT_BACKGROUND_GLOW_SOFTNESS = 50/);
+  assert.match(tuning, /DEFAULT_WHITE_CORE_SIZE_PERCENT = 20/);
+  assert.match(tuning, /MAX_WHITE_CORE_SIZE_PERCENT = 40/);
+  assert.match(tuning, /DEFAULT_WHITE_CORE_BLUR_PERCENT = 15/);
+  assert.match(tuning, /MAX_WHITE_CORE_BLUR_PERCENT = 30/);
   assert.match(migration, /'streakCount', 60/);
   assert.match(migration, /'glowStrength', 1/);
-  // Head-orb appearance is now persisted on the design (per effect / firework),
-  // so the legacy glowPadding field and the white-core params intentionally live in design.ts.
+  assert.match(calibrationMigration, /update public\.firework_effects/);
+  assert.match(calibrationMigration, /update public\.fireworks/);
+  assert.match(calibrationMigration, /- 'glowStrength'/);
+  assert.match(calibrationMigration, /- 'backgroundGlowSoftness'/);
+  assert.match(calibrationMigration, /\{renderDefaults,brocade\}/);
+  assert.match(calibrationMigration, /\{brocade\}/);
+  assert.match(calibrationMigration, /calibrated_heads/);
+  assert.match(calibrationMigration, /'glowStrength', 1\.5/);
+  assert.match(calibrationMigration, /'backgroundGlowSoftness', 50/);
+  // Head-orb appearance is saved on effect settings and can be customised on
+  // firework overrides; renderer fallbacks only cover missing or malformed data.
   assert.match(design, /glowPadding: z\.coerce/);
   assert.match(design, /whiteCoreSizePercent: z\.coerce/);
   assert.match(design, /whiteCoreBlurPercent: z\.coerce/);

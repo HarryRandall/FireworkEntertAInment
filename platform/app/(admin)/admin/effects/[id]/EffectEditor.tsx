@@ -103,6 +103,10 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         : canonicaliseEffectModelJson(effect.modelJson),
     [effect.modelJson, parsedModel],
   );
+  const calibrationDefaults = useMemo(
+    () => readRecord(canonicaliseEffectModelJson(effect.modelJson), 'renderDefaults'),
+    [effect.modelJson],
+  );
   const modelRecord = parsedModel.ok ? baseModel : {};
   const renderDefaults = readRecord(modelRecord, 'renderDefaults');
   const modelHasColour = hasConcreteRendererColor(baseModel);
@@ -125,9 +129,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
   const coreSoftness = heads.coreSoftness;
   const coreBrightness = heads.coreBrightness;
+  const coreOpacityFalloff = heads.coreOpacityFalloff;
   const glowSize = heads.glowSize;
   const glowSoftness = heads.glowSoftness;
+  const glowOpacityFalloff = heads.glowOpacityFalloff;
   const glowBlur = heads.glowBlur;
+  const backgroundGlowOpacityFalloff = heads.backgroundGlowOpacityFalloff;
+  const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
@@ -263,7 +271,17 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             controlsVisible
             showFps
             renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
-            headStyle={{ coreSoftness, coreBrightness, glowSize, glowSoftness, glowBlur }}
+            headStyle={{
+              coreSoftness,
+              coreBrightness,
+              coreOpacityFalloff,
+              glowSize,
+              glowSoftness,
+              glowOpacityFalloff,
+              glowBlur,
+              backgroundGlowOpacityFalloff,
+              backgroundGlowSoftness,
+            }}
           />
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
@@ -336,6 +354,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
             mutate={updateModelDefaults}
             disabled={!parsedModel.ok}
             showLaunch

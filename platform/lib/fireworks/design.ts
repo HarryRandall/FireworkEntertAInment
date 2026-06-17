@@ -18,6 +18,7 @@ import {
   DEFAULT_GLOW_PADDING,
   DEFAULT_GLOW_SIZE,
   DEFAULT_GLOW_SOFTNESS,
+  DEFAULT_HEAD_GLOW_STRENGTH,
   DEFAULT_WHITE_CORE_BLUR_PERCENT,
   DEFAULT_WHITE_CORE_SIZE_PERCENT,
   MAX_BACKGROUND_GLOW_OPACITY_FALLOFF,
@@ -30,6 +31,7 @@ import {
   MAX_GLOW_PADDING,
   MAX_GLOW_SIZE,
   MAX_GLOW_SOFTNESS,
+  MAX_HEAD_GLOW_STRENGTH,
   MAX_WHITE_CORE_BLUR_PERCENT,
   MAX_WHITE_CORE_SIZE_PERCENT,
   MIN_BACKGROUND_GLOW_OPACITY_FALLOFF,
@@ -42,6 +44,7 @@ import {
   MIN_GLOW_PADDING,
   MIN_GLOW_SIZE,
   MIN_GLOW_SOFTNESS,
+  MIN_HEAD_GLOW_STRENGTH,
   MIN_WHITE_CORE_BLUR_PERCENT,
   MIN_WHITE_CORE_SIZE_PERCENT,
 } from './render-tuning';
@@ -374,7 +377,11 @@ export const FireworkDesignSchema = z.object({
           /** Size budget of each glowing star orb. */
           size: z.coerce.number().min(10).max(1000).default(260),
           /** Halo brightness multiplier, same encoding as brocade heads. */
-          glowStrength: z.coerce.number().min(0).max(3).default(0.7),
+          glowStrength: z.coerce
+            .number()
+            .min(MIN_HEAD_GLOW_STRENGTH)
+            .max(MAX_HEAD_GLOW_STRENGTH)
+            .default(DEFAULT_HEAD_GLOW_STRENGTH),
           /** Background glow size around each orb, as a percentage of star size. */
           glowPadding: z.coerce
             .number()
@@ -429,7 +436,7 @@ export const FireworkDesignSchema = z.object({
             .min(MIN_GLOW_OPACITY_FALLOFF)
             .max(MAX_GLOW_OPACITY_FALLOFF)
             .default(DEFAULT_GLOW_OPACITY_FALLOFF),
-          /** Large coloured background glow strength, 0-100%. */
+          /** Large coloured background glow strength, 0-150%. */
           glowBlur: z.coerce
             .number()
             .min(MIN_GLOW_BLUR)
@@ -448,7 +455,12 @@ export const FireworkDesignSchema = z.object({
             .max(MAX_BACKGROUND_GLOW_SOFTNESS)
             .default(DEFAULT_BACKGROUND_GLOW_SOFTNESS),
         })
-        .default({ enabled: false, size: 260, glowStrength: 0.7, ...HEAD_APPEARANCE_DEFAULTS }),
+        .default({
+          enabled: false,
+          size: 260,
+          glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+          ...HEAD_APPEARANCE_DEFAULTS,
+        }),
       trail: z
         .object({
           mode: z.enum(STAR_TRAIL_MODES).default('spark'),
@@ -475,7 +487,12 @@ export const FireworkDesignSchema = z.object({
         }),
     })
     .default({
-      heads: { enabled: false, size: 260, glowStrength: 0.7, ...HEAD_APPEARANCE_DEFAULTS },
+      heads: {
+        enabled: false,
+        size: 260,
+        glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+        ...HEAD_APPEARANCE_DEFAULTS,
+      },
       trail: {
         mode: 'spark',
         step: 3.2,
@@ -505,7 +522,11 @@ export const FireworkDesignSchema = z.object({
       /** Size budget of each glowing head orb. */
       headSize: z.coerce.number().min(100).max(4000).default(900),
       /** Halo brightness multiplier; also drives scene light tinting. */
-      glowStrength: z.coerce.number().min(0).max(3).default(1),
+      glowStrength: z.coerce
+        .number()
+        .min(MIN_HEAD_GLOW_STRENGTH)
+        .max(MAX_HEAD_GLOW_STRENGTH)
+        .default(DEFAULT_HEAD_GLOW_STRENGTH),
       /** Probability a head is green rather than red. */
       greenRatio: z.coerce.number().min(0).max(1).default(0.5),
       headColors: z
@@ -527,7 +548,7 @@ export const FireworkDesignSchema = z.object({
       tubeRadius: 3.2,
       headsEnabled: true,
       headSize: 900,
-      glowStrength: 1,
+      glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
       greenRatio: 0.5,
       headColors: { green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } },
       palette: { hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } },
@@ -1037,14 +1058,22 @@ type StarsLike = {
   };
 };
 
-function starsBlock(
-  heads: [size: number, glow: number] | null,
-  trail?: Partial<StarsLike['trail']>,
-): StarsLike {
+function starsBlock(headSize: number | null, trail?: Partial<StarsLike['trail']>): StarsLike {
   return {
-    heads: heads
-      ? { enabled: true, size: heads[0], glowStrength: heads[1], ...HEAD_APPEARANCE_DEFAULTS }
-      : { enabled: false, size: 260, glowStrength: 0.7, ...HEAD_APPEARANCE_DEFAULTS },
+    heads:
+      headSize != null
+        ? {
+            enabled: true,
+            size: headSize,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          }
+        : {
+            enabled: false,
+            size: 260,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
     trail: {
       mode: 'none',
       step: 3.2,
@@ -1065,10 +1094,10 @@ function starsBlock(
 function shellTypeToStars(shellType: string | undefined): StarsLike {
   switch (shellType) {
     case 'peony':
-      return starsBlock([220, 0.55]);
+      return starsBlock(220);
     case 'crysanthemum':
     case 'chrysanthemum':
-      return starsBlock([240, 0.7], {
+      return starsBlock(240, {
         mode: 'streak',
         step: 3,
         squareSize: 0.7,
@@ -1077,7 +1106,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
       });
     case 'willow':
     case 'fallingLeaves':
-      return starsBlock([190, 0.45], {
+      return starsBlock(190, {
         mode: 'streak',
         step: 2.6,
         tubeRadius: 1.5,
@@ -1086,7 +1115,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         flicker: 0.06,
       });
     case 'horsetail':
-      return starsBlock([340, 0.8], {
+      return starsBlock(340, {
         mode: 'streak',
         step: 2.2,
         tubeRadius: 2.4,
@@ -1095,7 +1124,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         flicker: 0.05,
       });
     case 'palm':
-      return starsBlock([620, 1.1], {
+      return starsBlock(620, {
         mode: 'streak',
         step: 2.4,
         tubeRadius: 3.4,
@@ -1103,14 +1132,14 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         lifeSeconds: 1.2,
       });
     case 'ring':
-      return starsBlock([260, 0.85]);
+      return starsBlock(260);
     case 'pearls':
-      return starsBlock([430, 1]);
+      return starsBlock(430);
     case 'strobe':
     case 'ghost':
-      return starsBlock([240, 0.9]);
+      return starsBlock(240);
     case 'crossette':
-      return starsBlock([320, 0.8], {
+      return starsBlock(320, {
         mode: 'streak',
         step: 2.8,
         squareSize: 0.75,
@@ -1119,7 +1148,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
       });
     case 'comet':
     case 'tail':
-      return starsBlock([900, 1.2], {
+      return starsBlock(900, {
         mode: 'streak',
         step: 2,
         tubeRadius: 3,
@@ -1127,7 +1156,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         lifeSeconds: 1.3,
       });
     case 'mine':
-      return starsBlock([200, 0.65], {
+      return starsBlock(200, {
         mode: 'streak',
         step: 2.8,
         squareSize: 0.6,
@@ -1136,7 +1165,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
       });
     case 'pistil':
     case 'floral':
-      return starsBlock([230, 0.7], {
+      return starsBlock(230, {
         mode: 'streak',
         step: 3.2,
         tubeRadius: 1.4,
@@ -1145,7 +1174,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         colorMode: 'star',
       });
     case 'silverFish':
-      return starsBlock([170, 0.7], {
+      return starsBlock(170, {
         mode: 'streak',
         step: 2.4,
         tubeRadius: 1,
@@ -1154,7 +1183,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         colorMode: 'silver',
       });
     case 'waterfall':
-      return starsBlock([200, 0.55], {
+      return starsBlock(200, {
         mode: 'streak',
         step: 2,
         squareSize: 0.7,
@@ -1162,7 +1191,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         colorMode: 'silver',
       });
     case 'whirl':
-      return starsBlock([220, 0.9], {
+      return starsBlock(220, {
         mode: 'streak',
         step: 2.6,
         tubeRadius: 1.2,
@@ -1171,7 +1200,7 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
         colorMode: 'silver',
       });
     case 'crackle':
-      return starsBlock([120, 0.6]);
+      return starsBlock(120);
     default:
       return starsBlock(null, { mode: 'spark' });
   }

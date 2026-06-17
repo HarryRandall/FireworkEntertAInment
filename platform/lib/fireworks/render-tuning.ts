@@ -10,17 +10,22 @@ export type FireworkRenderTuning = {
   whiteCoreBlurPercent: number;
 };
 
-export const DEFAULT_GLOW_PADDING = 34;
+export const DEFAULT_HEAD_GLOW_STRENGTH = 1.5;
+export const MIN_HEAD_GLOW_STRENGTH = 0;
+export const MAX_HEAD_GLOW_STRENGTH = 3;
+export const HEAD_GLOW_STRENGTH_STEP = 0.05;
+
+export const DEFAULT_GLOW_PADDING = 150;
 export const MIN_GLOW_PADDING = 0;
-export const MAX_GLOW_PADDING = 200;
+export const MAX_GLOW_PADDING = 300;
 export const GLOW_PADDING_STEP = 1;
-export const DEFAULT_WHITE_CORE_SIZE_PERCENT = 100;
+export const DEFAULT_WHITE_CORE_SIZE_PERCENT = 20;
 export const MIN_WHITE_CORE_SIZE_PERCENT = 0;
-export const MAX_WHITE_CORE_SIZE_PERCENT = 100;
+export const MAX_WHITE_CORE_SIZE_PERCENT = 40;
 export const WHITE_CORE_SIZE_PERCENT_STEP = 1;
-export const DEFAULT_WHITE_CORE_BLUR_PERCENT = 0;
+export const DEFAULT_WHITE_CORE_BLUR_PERCENT = 15;
 export const MIN_WHITE_CORE_BLUR_PERCENT = 0;
-export const MAX_WHITE_CORE_BLUR_PERCENT = 100;
+export const MAX_WHITE_CORE_BLUR_PERCENT = 30;
 export const WHITE_CORE_BLUR_PERCENT_STEP = 1;
 export const HEAD_SPRITE_MAX_SIZE = 1280;
 
@@ -66,70 +71,70 @@ export function normaliseFireworkRenderTuning(
  * `coreSoftness` to 0 reproduces the old hard disc.
  */
 export type FireworkHeadStyle = {
-  /** 0 = hard-edged disc (legacy), 100 = fully feathered soft orb. */
+  /** Blur through the coloured core. */
   coreSoftness: number;
   /** Percent gain on the coloured core's centre intensity (how hot it burns). */
   coreBrightness: number;
-  /** 0 = opaque core edge, 100 = core alpha follows the softened falloff. */
+  /** Opacity falloff for the coloured core. */
   coreOpacityFalloff: number;
-  /** 0 = close star glow hugs the core, 100 = close star glow spreads outward. */
+  /** Close coloured bloom radius attached to the orb. */
   glowSize: number;
-  /** 0 = tight, defined close glow, 100 = softer close glow. */
+  /** Close coloured bloom softness. */
   glowSoftness: number;
-  /** 0 = close glow holds to the edge, 100 = close glow fades out early. */
+  /** Close coloured bloom edge fade. */
   glowOpacityFalloff: number;
   /**
    * Strength of the large coloured background glow. Unlike raw glow strength
    * this stays coloured and feathered instead of whitening the whole sprite.
    */
   glowBlur: number;
-  /** 0 = background glow holds to the edge, 100 = background glow fades out early. */
+  /** Large background glow edge fade. */
   backgroundGlowOpacityFalloff: number;
-  /** 0 = tight background glow, 100 = heavily diffused background glow. */
+  /** Large background glow diffusion. */
   backgroundGlowSoftness: number;
 };
 
-export const DEFAULT_CORE_SOFTNESS = 46;
+export const DEFAULT_CORE_SOFTNESS = 55;
 export const MIN_CORE_SOFTNESS = 0;
-export const MAX_CORE_SOFTNESS = 100;
+export const MAX_CORE_SOFTNESS = 110;
 export const CORE_SOFTNESS_STEP = 1;
 
-export const DEFAULT_CORE_BRIGHTNESS = 210;
-export const MIN_CORE_BRIGHTNESS = 50;
-export const MAX_CORE_BRIGHTNESS = 250;
+export const DEFAULT_CORE_BRIGHTNESS = 50;
+export const MIN_CORE_BRIGHTNESS = 0;
+export const MAX_CORE_BRIGHTNESS = 100;
 export const CORE_BRIGHTNESS_STEP = 5;
 
-export const DEFAULT_CORE_OPACITY_FALLOFF = 65;
+export const DEFAULT_CORE_OPACITY_FALLOFF = 60;
 export const MIN_CORE_OPACITY_FALLOFF = 0;
-export const MAX_CORE_OPACITY_FALLOFF = 100;
+export const MAX_CORE_OPACITY_FALLOFF = 120;
 export const CORE_OPACITY_FALLOFF_STEP = 1;
 
-export const DEFAULT_GLOW_SIZE = 100;
+export const DEFAULT_GLOW_SIZE = 90;
 export const MIN_GLOW_SIZE = 0;
-export const MAX_GLOW_SIZE = 100;
+export const MAX_GLOW_SIZE = 180;
 export const GLOW_SIZE_STEP = 1;
 
-export const DEFAULT_GLOW_SOFTNESS = 85;
+export const DEFAULT_GLOW_SOFTNESS = 100;
 export const MIN_GLOW_SOFTNESS = 0;
-export const MAX_GLOW_SOFTNESS = 100;
+export const MAX_GLOW_SOFTNESS = 200;
 export const GLOW_SOFTNESS_STEP = 1;
 
-export const DEFAULT_GLOW_OPACITY_FALLOFF = 78;
+export const DEFAULT_GLOW_OPACITY_FALLOFF = 100;
 export const MIN_GLOW_OPACITY_FALLOFF = 0;
-export const MAX_GLOW_OPACITY_FALLOFF = 100;
+export const MAX_GLOW_OPACITY_FALLOFF = 200;
 export const GLOW_OPACITY_FALLOFF_STEP = 1;
 
-export const DEFAULT_GLOW_BLUR = 98;
+export const DEFAULT_GLOW_BLUR = 45;
 export const MIN_GLOW_BLUR = 0;
 export const MAX_GLOW_BLUR = 100;
 export const GLOW_BLUR_STEP = 1;
 
-export const DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF = 82;
+export const DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF = 75;
 export const MIN_BACKGROUND_GLOW_OPACITY_FALLOFF = 0;
-export const MAX_BACKGROUND_GLOW_OPACITY_FALLOFF = 100;
+export const MAX_BACKGROUND_GLOW_OPACITY_FALLOFF = 150;
 export const BACKGROUND_GLOW_OPACITY_FALLOFF_STEP = 1;
 
-export const DEFAULT_BACKGROUND_GLOW_SOFTNESS = 72;
+export const DEFAULT_BACKGROUND_GLOW_SOFTNESS = 50;
 export const MIN_BACKGROUND_GLOW_SOFTNESS = 0;
 export const MAX_BACKGROUND_GLOW_SOFTNESS = 100;
 export const BACKGROUND_GLOW_SOFTNESS_STEP = 1;
