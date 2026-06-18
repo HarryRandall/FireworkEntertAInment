@@ -36,6 +36,11 @@ export { listSuppliers } from './suppliers.server';
 export { getImportJobDetail, listImportJobs } from './imports.server';
 export { listCatalogueProducts } from './catalogue.server';
 export { getAdminEffectById, listAdminEffects } from './effects.server';
+export {
+  getAdminStyleDefaultById,
+  listAdminStyleDefaultOptions,
+  listAdminStyleDefaults,
+} from './style-defaults.server';
 export { getAdminFireworkById, listAdminFireworks, listEffectOptions } from './fireworks.server';
 export { getMultishotById, listFireworkOptions, listMultishots } from './multishots.server';
 export {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useTransition, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/ui/tabs';
 import {
@@ -11,21 +11,34 @@ import {
 
 export function AdminOverviewTabs({
   children,
+  controls,
+  pendingFallback,
   tab,
 }: {
   children: ReactNode;
+  controls: ReactNode;
+  pendingFallback: ReactNode;
   tab?: AdminOverviewTabKey;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const selectedTab = tab ?? DEFAULT_ADMIN_OVERVIEW_TAB_KEY;
+  const serverTab = tab ?? DEFAULT_ADMIN_OVERVIEW_TAB_KEY;
+  const [selectedTab, setSelectedTab] = useState<AdminOverviewTabKey>(serverTab);
+
+  useEffect(() => {
+    setSelectedTab(serverTab);
+  }, [serverTab]);
 
   const updateTab = useCallback(
     (value: string) => {
       const nextTab = value as AdminOverviewTabKey;
       const params = new URLSearchParams(searchParams.toString());
+
+      if (nextTab === selectedTab) return;
+
+      setSelectedTab(nextTab);
 
       if (nextTab === DEFAULT_ADMIN_OVERVIEW_TAB_KEY) {
         params.delete(ADMIN_OVERVIEW_TAB_PARAM);
@@ -38,7 +51,7 @@ export function AdminOverviewTabs({
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
       });
     },
-    [pathname, router, searchParams],
+    [pathname, router, searchParams, selectedTab],
   );
 
   return (
@@ -48,7 +61,8 @@ export function AdminOverviewTabs({
       className="flex flex-col gap-4"
       data-pending={isPending || undefined}
     >
-      {children}
+      {controls}
+      {isPending ? pendingFallback : children}
     </Tabs>
   );
 }

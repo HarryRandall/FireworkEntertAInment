@@ -6,6 +6,123 @@
 --
 -- Idempotent: re-running this updates existing rows in place.
 
+create or replace function pg_temp.showcrafter_blue_sphere_design()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'colour', jsonb_build_object('enabled', true),
+    'size', 180,
+    'pattern', 'fibonacci',
+    'geometry', 'sphere',
+    'trailProfile', 'none',
+    'burst', jsonb_build_object(
+      'speed', jsonb_build_array(2.2, 3.8),
+      'gravity', jsonb_build_array(-1.3, -0.1),
+      'life', jsonb_build_array(0.6, 4.5),
+      'flairColorMode', 'mixed'
+    ),
+    'flair', jsonb_build_object('enabled', true),
+    'crackle', jsonb_build_object(
+      'enabled', false,
+      'probability', 0,
+      'sound', 'crackle'
+    ),
+    'sound', jsonb_build_object(
+      'launch', true,
+      'boom', 'light'
+    ),
+    'strobe', jsonb_build_object('enabled', false),
+    'split', jsonb_build_object('enabled', false),
+    'trail', jsonb_build_object(
+      'density', 0,
+      'length', 0.35,
+      'sparkle', 0,
+      'thickness', 0.6,
+      'streakSize', 1,
+      'streakLength', 1,
+      'streakLife', 1
+    ),
+    'burstTrail', jsonb_build_object(
+      'enabled', false,
+      'preset', 'none',
+      'particlesPerStar', 0
+    ),
+    'mortar', jsonb_build_object(
+      'sound', true,
+      'smokeParticles', 90
+    ),
+    'launch', jsonb_build_object(
+      'liftParticles', jsonb_build_object(
+        'enabled', true,
+        'amount', 100,
+        'spacing', jsonb_build_object('pathSamples', 5),
+        'motion', jsonb_build_object(
+          'swirlStrength', 0,
+          'swirlRadius', 0,
+          'swirlRate', 4
+        )
+      ),
+      'smoke', jsonb_build_object(
+        'enabled', true,
+        'particles', 90
+      )
+    ),
+    'stars', jsonb_build_object(
+      'outer', jsonb_build_object(
+        'enabled', true,
+        'count', 100,
+        'burst', jsonb_build_object(
+          'speed', jsonb_build_array(2.2, 3.8),
+          'gravity', jsonb_build_array(-1.3, -0.1),
+          'life', jsonb_build_array(0.6, 4.5),
+          'flairColorMode', 'mixed'
+        ),
+        'burstTrail', jsonb_build_object(
+          'enabled', false,
+          'preset', 'none',
+          'particlesPerStar', 0
+        )
+      ),
+      'core', jsonb_build_object('enabled', false)
+    ),
+    'brocade', jsonb_build_object('headsEnabled', false)
+  );
+$$;
+
+create or replace function pg_temp.showcrafter_blue_sphere_effect_model()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'version', 3,
+    'geometry', 'sphere',
+    'trailProfile', 'none',
+    'renderDefaults', pg_temp.showcrafter_blue_sphere_design()
+  );
+$$;
+
+create or replace function pg_temp.showcrafter_apply_firework_colour(
+  defaults jsonb,
+  colour jsonb
+)
+returns jsonb
+language sql
+immutable
+as $$
+  select case
+    when colour is null then defaults
+    else jsonb_set(
+      defaults || jsonb_build_object('color', colour),
+      '{stars,outer,color}',
+      colour,
+      true
+    )
+  end;
+$$;
+
 insert into public.firework_effects (
   slug,
   name,
@@ -22,7 +139,7 @@ insert into public.firework_effects (
     'Round radial renderer seed pattern.',
     'aerial_burst',
     'fibonacci',
-    '{"pattern":"fibonacci"}'::jsonb,
+    pg_temp.showcrafter_blue_sphere_effect_model(),
     'manual',
     910
   ),
@@ -31,8 +148,8 @@ insert into public.firework_effects (
     'Renderer Wave',
     'Sinusoidal renderer seed pattern.',
     'aerial_burst',
-    'wave',
-    '{"pattern":"wave"}'::jsonb,
+    'fibonacci',
+    pg_temp.showcrafter_blue_sphere_effect_model(),
     'manual',
     920
   ),
@@ -41,8 +158,8 @@ insert into public.firework_effects (
     'Renderer Strobe',
     'Flickering renderer seed pattern.',
     'aerial_burst',
-    'strobe',
-    '{"pattern":"strobe"}'::jsonb,
+    'fibonacci',
+    pg_temp.showcrafter_blue_sphere_effect_model(),
     'manual',
     930
   )
@@ -67,110 +184,59 @@ with seed_fireworks (
   height_meters,
   primary_color,
   color_palette,
-  render_overrides_json
+  renderer_colour_json
 ) as (
   values
     -- Fibonacci-sphere bursts: round, even radial patterns.
     ('fib-gold', 'renderer-fibonacci', 'Gold Sphere', 'Round gold burst with strobing flair and crackle.',
       'shell', 6.0::numeric, 1, 220::numeric, '#f7c94b', array['gold', 'white']::text[],
-      '{"size":220,"pattern":"fibonacci","color":{"r":1.0,"g":0.78,"b":0.21},
-        "burst":{"speed":[2,4],"gravity":[-1.6,-0.2],"life":[0.8,5.5],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.06,"sound":"crackle"},
-        "sound":{"boom":"auto"},"mortar":{"smokeParticles":120,"sound":true}}'::jsonb),
+      '{"r":1.0,"g":0.78,"b":0.21}'::jsonb),
 
     ('fib-red', 'renderer-fibonacci', 'Red Sphere', 'Round red burst, classic chrysanthemum feel.',
       'shell', 6.0::numeric, 1, 220::numeric, '#ff0d2e', array['red']::text[],
-      '{"size":200,"pattern":"fibonacci","color":{"r":1.0,"g":0.05,"b":0.18},
-        "burst":{"speed":[2,3.6],"gravity":[-1.5,-0.2],"life":[0.7,5.0],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.05,"sound":"lightBoom"},
-        "sound":{"boom":"auto"},"mortar":{"smokeParticles":110,"sound":true}}'::jsonb),
+      '{"r":1.0,"g":0.05,"b":0.18}'::jsonb),
 
     ('fib-blue', 'renderer-fibonacci', 'Blue Sphere', 'Cool blue radial burst with light flair.',
       'shell', 5.5::numeric, 1, 200::numeric, '#2e80ff', array['blue', 'white']::text[],
-      '{"size":180,"pattern":"fibonacci","color":{"r":0.18,"g":0.5,"b":1.0},
-        "burst":{"speed":[2.2,3.8],"gravity":[-1.3,-0.1],"life":[0.6,4.5],"flairColorMode":"mixed"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":false,"probability":0,"sound":"crackle"},
-        "sound":{"boom":"light"},"mortar":{"smokeParticles":90,"sound":true}}'::jsonb),
+      '{"r":0.18,"g":0.5,"b":1.0}'::jsonb),
 
     ('fib-green', 'renderer-fibonacci', 'Green Sphere', 'Vivid green chrysanthemum with light glitter trails.',
       'shell', 5.6::numeric, 1, 200::numeric, '#2eff52', array['green', 'gold']::text[],
-      '{"size":180,"pattern":"fibonacci","color":{"r":0.18,"g":1.0,"b":0.32},
-        "burst":{"speed":[2,3.6],"gravity":[-1.4,-0.2],"life":[0.6,4.6],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.04,"sound":"crackle"},
-        "sound":{"boom":"light"},"mortar":{"smokeParticles":95,"sound":true}}'::jsonb),
+      '{"r":0.18,"g":1.0,"b":0.32}'::jsonb),
 
     ('fib-mega', 'renderer-fibonacci', 'Mega Gold Bloom', 'Huge gold bloom with heavy boom and rich crackle.',
       'shell', 7.5::numeric, 1, 260::numeric, '#f7c94b', array['gold', 'crackle']::text[],
-      '{"size":340,"pattern":"fibonacci","color":{"r":1.0,"g":0.78,"b":0.21},
-        "burst":{"speed":[2.5,4.5],"gravity":[-2.0,-0.2],"life":[1.0,6.0],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.08,"sound":"heavyBoom"},
-        "sound":{"boom":"heavy"},"mortar":{"smokeParticles":160,"sound":true}}'::jsonb),
+      '{"r":1.0,"g":0.78,"b":0.21}'::jsonb),
 
     -- Wave bursts: sinusoidal stars that swirl while ascending.
     ('wave-rainbow', 'renderer-wave', 'Rainbow Wave', 'Sine-wave burst with mixed flair colours.',
       'shell', 6.5::numeric, 1, 220::numeric, null, array['rainbow', 'mixed']::text[],
-      '{"size":220,"pattern":"wave","color":"random",
-        "burst":{"speed":[2,4],"gravity":[-1.4,-0.1],"life":[0.7,5.2],"flairColorMode":"mixed"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.05,"sound":"lightBoom"},
-        "sound":{"boom":"auto"},"mortar":{"smokeParticles":110,"sound":true}}'::jsonb),
+      '"random"'::jsonb),
 
     ('wave-purple', 'renderer-wave', 'Purple Wave', 'Slow swirling purple stars with crackle ends.',
       'shell', 6.0::numeric, 1, 200::numeric, '#e60aff', array['purple', 'gold']::text[],
-      '{"size":180,"pattern":"wave","color":{"r":0.9,"g":0.04,"b":1.0},
-        "burst":{"speed":[1.8,3.2],"gravity":[-1.2,-0.1],"life":[0.8,5.0],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.06,"sound":"crackle"},
-        "sound":{"boom":"light"},"mortar":{"smokeParticles":95,"sound":true}}'::jsonb),
+      '{"r":0.9,"g":0.04,"b":1.0}'::jsonb),
 
     ('wave-cyan', 'renderer-wave', 'Cyan Wave', 'Bright cyan stars with sweeping wave trajectories.',
       'shell', 6.0::numeric, 1, 210::numeric, '#2ef2ff', array['cyan', 'white']::text[],
-      '{"size":200,"pattern":"wave","color":{"r":0.18,"g":0.95,"b":1.0},
-        "burst":{"speed":[2.2,3.8],"gravity":[-1.4,-0.1],"life":[0.7,4.8],"flairColorMode":"mixed"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":false,"probability":0,"sound":"crackle"},
-        "sound":{"boom":"auto"},"mortar":{"smokeParticles":100,"sound":true}}'::jsonb),
+      '{"r":0.18,"g":0.95,"b":1.0}'::jsonb),
 
     -- Strobe bursts: flickering size and colour, heavier sound.
     ('strobe-white', 'renderer-strobe', 'White Strobe', 'Heavy strobing white shell with deep boom.',
       'shell', 5.5::numeric, 1, 220::numeric, '#ffffff', array['white']::text[],
-      '{"size":260,"pattern":"strobe","color":{"r":1.0,"g":1.0,"b":1.0},
-        "burst":{"speed":[2,3.5],"gravity":[-1.6,-0.3],"life":[0.6,5.0],
-          "flairSizeStrobe":[10,150],"flairColorMode":"mixed"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.07,"sound":"heavyBoom"},
-        "sound":{"boom":"heavy"},"mortar":{"smokeParticles":140,"sound":true}}'::jsonb),
+      '{"r":1.0,"g":1.0,"b":1.0}'::jsonb),
 
     ('strobe-red', 'renderer-strobe', 'Red Strobe', 'Aggressive red strobe with pulsing brightness.',
       'shell', 5.2::numeric, 1, 210::numeric, '#ff0d2e', array['red', 'white']::text[],
-      '{"size":230,"pattern":"strobe","color":{"r":1.0,"g":0.05,"b":0.18},
-        "burst":{"speed":[2,3.4],"gravity":[-1.6,-0.3],"life":[0.5,4.5],
-          "flairSizeStrobe":[10,150],"flairColorMode":"bombColor"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.07,"sound":"heavyBoom"},
-        "sound":{"boom":"heavy"},"mortar":{"smokeParticles":130,"sound":true}}'::jsonb),
+      '{"r":1.0,"g":0.05,"b":0.18}'::jsonb),
 
     ('strobe-mixed', 'renderer-strobe', 'Mixed Strobe', 'Random-colour strobing storm with crackle.',
       'shell', 5.8::numeric, 1, 220::numeric, null, array['mixed', 'white']::text[],
-      '{"size":280,"pattern":"strobe","color":"random",
-        "burst":{"speed":[2.2,4],"gravity":[-1.8,-0.2],"life":[0.7,5.5],
-          "flairSizeStrobe":[10,150],"flairColorMode":"mixed"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":true,"probability":0.08,"sound":"heavyBoom"},
-        "sound":{"boom":"heavy"},"mortar":{"smokeParticles":140,"sound":true}}'::jsonb),
+      '"random"'::jsonb),
 
     ('fib-mini', 'renderer-fibonacci', 'Mini Sphere', 'Small fast bloom for quick volleys.',
       'shell', 3.5::numeric, 1, 140::numeric, null, array['mixed']::text[],
-      '{"size":80,"pattern":"fibonacci","color":"random",
-        "burst":{"speed":[1.6,3],"gravity":[-1.2,-0.1],"life":[0.4,3.0],"flairColorMode":"random"},
-        "flair":{"enabled":true},
-        "crackle":{"enabled":false,"probability":0,"sound":"crackle"},
-        "sound":{"boom":"light"},"mortar":{"smokeParticles":60,"sound":true}}'::jsonb)
+      '"random"'::jsonb)
 ),
 upserted_fireworks as (
   insert into public.fireworks (
@@ -201,7 +267,10 @@ upserted_fireworks as (
       'shotCount', seed.shot_count,
       'seed', 'firework-designs'
     ),
-    seed.render_overrides_json,
+    pg_temp.showcrafter_apply_firework_colour(
+      pg_temp.showcrafter_blue_sphere_design(),
+      seed.renderer_colour_json
+    ),
     'manual',
     1
   from seed_fireworks seed

@@ -13,6 +13,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { updateFirework } from '@/app/actions/admin-fireworks';
+import { createStyleDefault } from '@/app/actions/admin-style-defaults';
 import {
   FireworkRenderControls,
   PanelSection,
@@ -24,12 +25,12 @@ import { Card } from '@/app/components/ui/Card';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
+import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/app/components/ui/toast';
-import type { AdminFireworkDetail } from '@/lib/admin.types';
+import type { AdminFireworkDetail, AdminStyleDefaultOption } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
@@ -37,6 +38,16 @@ import {
   estimateDesignDurationSeconds,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
+import {
+  FIREWORK_STYLE_DEFAULT_KINDS,
+  extractStyleDefaultsFromDesign,
+  NO_STYLE_DEFAULT_VALUE,
+  emptyStyleDefaultIdMap,
+  orderedStyleDefaultValues,
+  removeStyleDefaultOverridesFromRecord,
+  styleDefaultKindLabel,
+  type FireworkStyleDefaultKind,
+} from '@/lib/fireworks/style-defaults';
 import { DEFAULT_FIREWORK_SPEC, FIREWORK_COLOR_VALUES, hexToRgb } from '@/lib/fireworks/spec';
 import type { ReplayCue } from '@/lib/show-domain';
 
@@ -87,6 +98,50 @@ function parseJsonObject(text: string): ParsedJson {
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function styleDefaultOptions(
+  options: AdminStyleDefaultOption[],
+  selected: AdminStyleDefaultOption | null,
+): SelectOption[] {
+  const seen = new Set<string>();
+  const source = selected ? [selected, ...options] : options;
+  return [
+    { value: NO_STYLE_DEFAULT_VALUE, label: 'None' },
+    ...source
+      .filter((option) => {
+        if (seen.has(option.id)) return false;
+        seen.add(option.id);
+        return true;
+      })
+      .map((option) => ({
+        value: option.id,
+        label: option.name,
+        description: option.description ?? undefined,
+      })),
+  ];
+}
+
+function findStyleDefault(
+  id: string,
+  options: AdminStyleDefaultOption[],
+  fallback: AdminStyleDefaultOption | null,
+): AdminStyleDefaultOption | null {
+  if (id === NO_STYLE_DEFAULT_VALUE) return null;
+  return options.find((option) => option.id === id) ?? (fallback?.id === id ? fallback : null);
+}
+
+function initialStyleDefaultIds(
+  firework: AdminFireworkDetail,
+): Record<FireworkStyleDefaultKind, string> {
+  const ids = emptyStyleDefaultIdMap();
+  for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
+    ids[kind] =
+      firework.styleDefaultIds[kind] ?? firework.fireworkStyleDefaultLinks[kind]?.id ?? ids[kind];
+  }
+  ids.star = firework.starStyleDefaultId ?? ids.star;
+  ids.trail = firework.trailStyleDefaultId ?? ids.trail;
+  return ids;
 }
 
 function cloneRecord(value: JsonRecord): JsonRecord {
@@ -499,6 +554,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [effectId, setEffectId] = useState(
     firework.effectId ?? firework.effectOptions[0]?.id ?? '',
   );
+  const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(firework));
   const [caliber, setCaliber] = useState(firework.caliber ?? '');
   const [durationSeconds, setDurationSeconds] = useState(
     firework.durationSeconds == null ? '' : String(firework.durationSeconds),
@@ -548,6 +604,21 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
     [effectId, firework.effectModels, firework.effectModelJson],
   );
+  const selectedEffectStyleDefaults = useMemo(
+    () => firework.effectStyleDefaultLinksByEffect[effectId] ?? firework.effectStyleDefaultLinks,
+    [effectId, firework.effectStyleDefaultLinks, firework.effectStyleDefaultLinksByEffect],
+  );
+  const selectedFireworkStyleDefaults = useMemo(() => {
+    const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
+    for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
+      selected[kind] = findStyleDefault(
+        styleDefaultIds[kind],
+        firework.styleDefaults[kind],
+        firework.fireworkStyleDefaultLinks[kind] ?? null,
+      );
+    }
+    return selected;
+  }, [firework.fireworkStyleDefaultLinks, firework.styleDefaults, styleDefaultIds]);
   const calibrationDefaults = useMemo(() => {
     const model = isRecord(baseModel) ? baseModel : {};
     return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
@@ -608,11 +679,24 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () =>
       compileFireworkDesign({
         baseModel,
+        effectStyleDefaults: orderedStyleDefaultValues(selectedEffectStyleDefaults).map(
+          (item) => item?.defaultsJson,
+        ),
+        fireworkStyleDefaults: orderedStyleDefaultValues(selectedFireworkStyleDefaults).map(
+          (item) => item?.defaultsJson,
+        ),
         variantOverrides: mergedOverrides,
         primaryColor: mainColor,
         colorPalette: palette.length ? palette : null,
       }),
-    [baseModel, mergedOverrides, mainColor, palette],
+    [
+      baseModel,
+      mergedOverrides,
+      mainColor,
+      palette,
+      selectedEffectStyleDefaults,
+      selectedFireworkStyleDefaults,
+    ],
   );
 
   // Head-orb appearance is saved into the firework's render overrides, so the
@@ -789,6 +873,33 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     if (colourMode === 'solid') setColourMode('random');
   }
 
+  function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
+    mutateOverrides((draft) => {
+      removeStyleDefaultOverridesFromRecord(draft, kind);
+    });
+  }
+
+  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind) {
+    setError(null);
+    startTransition(async () => {
+      const result = await createStyleDefault({
+        kind,
+        name: `${name || firework.name} ${styleDefaultKindLabel(kind).toLowerCase()} style`,
+        description: `Created from ${name || firework.name}.`,
+        defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
+      });
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setStyleDefaultIds((current) => ({ ...current, [kind]: result.id }));
+      toast.success('Style default created');
+      router.refresh();
+    });
+  }
+
   function save() {
     setError(null);
     if (!parsedOverrides.ok) {
@@ -815,6 +926,16 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         primaryColor: mainColor,
         secondaryColor: accentColor,
         colorPalette: palette,
+        starStyleDefaultId:
+          styleDefaultIds.star === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.star,
+        trailStyleDefaultId:
+          styleDefaultIds.trail === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.trail,
+        styleDefaultIds: Object.fromEntries(
+          FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
+            kind,
+            styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
+          ]),
+        ),
         renderOverridesJson: JSON.stringify(mergedOverrides, null, 2),
       });
       if (!result.ok) {
@@ -1112,6 +1233,57 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
                   onChange={(e) => setDescription(e.target.value)}
                 />
               </Field>
+            </div>
+          </PanelSection>
+
+          <PanelSection title="Style defaults" collapsible defaultExpanded={false}>
+            <div className="space-y-4">
+              {FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => {
+                const inherited = selectedEffectStyleDefaults[kind] ?? null;
+                return (
+                  <div
+                    key={kind}
+                    className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-4 first:border-t-0 first:pt-0"
+                  >
+                    <Field>
+                      <FieldLabel>{styleDefaultKindLabel(kind)} style</FieldLabel>
+                      <SelectField
+                        value={styleDefaultIds[kind]}
+                        onChange={(value) =>
+                          setStyleDefaultIds((current) => ({ ...current, [kind]: value }))
+                        }
+                        options={styleDefaultOptions(
+                          firework.styleDefaults[kind],
+                          firework.fireworkStyleDefaultLinks[kind] ?? null,
+                        )}
+                        ariaLabel={`${styleDefaultKindLabel(kind)} style default`}
+                        disabled={!parsedOverrides.ok}
+                      />
+                      {inherited ? (
+                        <p className="text-muted-foreground text-xs">Effect: {inherited.name}</p>
+                      ) : null}
+                    </Field>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => saveCurrentStyleAsDefault(kind)}
+                        disabled={!parsedOverrides.ok || (kind === 'star' && !mainColor)}
+                      >
+                        Save as new default
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resetLocalStyleDefaults(kind)}
+                        disabled={!parsedOverrides.ok}
+                      >
+                        Reset local overrides
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </PanelSection>
 

@@ -22,7 +22,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v7'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v9'/);
   assert.match(showDomain, /rawSpec: unknown/);
   assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
   assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);
@@ -35,7 +35,14 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
 
   assert.match(engine, /createSeededRng/);
   assert.match(engine, /mixSeed/);
+  assert.match(engine, /const isBackwardSeek = delta < -0\.0001/);
+  assert.match(engine, /this\.seekTo\(next, \{ useSnapshots: false \}\)/);
   assert.match(engine, /this\.seekTo\(next\)/);
+  assert.match(
+    engine,
+    /private seekTo\(target: number, options: \{ useSnapshots\?: boolean \} = \{\}\): void/,
+  );
+  assert.match(engine, /options\.useSnapshots === false \? null : this\.findSnapshot\(target\)/);
   assert.match(engine, /this\.advanceTo\(target, false\)/);
   assert.match(engine, /const SCRUB_DT = 1 \/ 24/);
   assert.match(engine, /poolHasLiveCallbackParticles/);
@@ -210,8 +217,9 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(particle, /maxLife = 0/);
   assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
   assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
-  assert.match(engine, /SNAPSHOT_STRIDE = 20/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 21/);
   assert.match(engine, /state\.data\[o \+ 8\] = p\.alpha/);
+  assert.match(engine, /state\.data\[o \+ 20\] = p\.fadeIn \? 1 : 0/);
   assert.match(engine, /state\.data\[o \+ 15\] = p\.drag/);
   assert.match(engine, /state\.data\[o \+ 16\] = p\.maxLife/);
   assert.match(engine, /state\.data\[o \+ 17\] = p\.shape/);
@@ -247,8 +255,10 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(pool, /shape\?: number/);
   assert.match(pool, /rotation\?: number/);
   assert.match(pool, /spin\?: number/);
+  assert.match(pool, /fadeIn\?: boolean/);
   assert.match(pool, /p\.shape = prop\.shape \?\? 0/);
   assert.match(pool, /p\.alpha = prop\.alpha \?\? 1/);
+  assert.match(pool, /p\.fadeIn = prop\.fadeIn \?\? true/);
   assert.match(pool, /p\.rotation = prop\.rotation \?\? 0/);
   assert.match(engine, /const live = this\.pool\.aliveIndices/);
   assert.match(engine, /let drawCount = 0/);
@@ -322,7 +332,12 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /function disposeTrailWidthGuide\(group: THREE\.Group \| null\): void/);
   assert.match(canvas, /scene\.add\(guide\)/);
   assert.match(canvas, /scene\.remove\(guide\)/);
-  assert.match(canvas, /playbackRef\?\.[\s\S]*current \?\? elapsed/);
+  assert.match(canvas, /playbackRef \? playbackRef\.current : internalElapsedRef\.current/);
+  assert.match(canvas, /const isBackwardSeek =[\s\S]*targetElapsed < renderedElapsed - 0\.0001/);
+  assert.match(
+    canvas,
+    /const engineMayUpdate = isBackwardSeek \|\| !isLargeJump \|\| now - lastEngineUpdate >= 60/,
+  );
   assert.match(canvas, /MIN_CAMERA_HEIGHT = 24/);
   assert.match(canvas, /ORBIT_FLOOR_OVERSHOOT = 0\.35/);
   assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ ORBIT_FLOOR_OVERSHOOT/);
@@ -360,7 +375,7 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(engine, /BRIGHTNESS_BOOST = 1\.55/);
   assert.match(engine, /MAX_COLOR_INTENSITY = 1\.75/);
   assert.match(engine, /peak = 0\.14/);
-  assert.match(engine, /fadeIn = p\.mass <= 0\.003/);
+  assert.match(engine, /fadeIn = p\.fadeIn && p\.mass <= 0\.003/);
   assert.match(engine, /isSmoke/);
   assert.match(engine, /clamp\(peak \* fadeIn \* fade, 0, 0\.82\)/);
   assert.match(engine, /tickPhysics\(next - cursor\)/);
@@ -383,7 +398,10 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(effects, /p\.color\.setRGB\(nextTone\.r, nextTone\.g, nextTone\.b\)/);
   assert.match(effects, /p\.size = burstTrailParticleSizeAt\(particleAge, headSize, tailSize\)/);
   assert.doesNotMatch(effects, /clusterCount/);
-  assert.match(effects, /const lifePercent = clamp\(trail\.lifetime\.percent \/ 100, 0\.01, 1\)/);
+  assert.match(effects, /const lifeMultiplier = clamp\(trail\.lifetime\.percent, 0, 2\)/);
+  assert.match(effects, /Math\.max\(0, headRemainingLife\) \*/);
+  assert.match(effects, /function burstTrailWideTailAlpha/);
+  assert.match(effects, /p\.alpha = burstTrailWideTailAlpha\(trail, spreadPosition\)/);
   assert.doesNotMatch(effects, /dynamicLifeCeiling|fixedLifeCeiling/);
   assert.match(effects, /mass: 0\.006/);
   assert.match(effects, /mass: 0\.002/);
@@ -606,7 +624,10 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(design, /particleSize: \{ base: 1\.2, headScale: 1, tailScale: 0\.35/);
   assert.match(design, /placement: \{ headGapPercent: 60 \}/);
   assert.match(design, /spacing: \{ curve: 1, jitterPercent: 18 \}/);
-  assert.match(design, /lifetime: \{[\s\S]*mode: 'dynamic'[\s\S]*percent: 18[\s\S]*baseSeconds: 8/);
+  assert.match(
+    design,
+    /lifetime: \{[\s\S]*mode: 'dynamic'[\s\S]*percent: 0\.18[\s\S]*baseSeconds: 8/,
+  );
   assert.match(design, /spin: 0/);
   assert.match(
     design,

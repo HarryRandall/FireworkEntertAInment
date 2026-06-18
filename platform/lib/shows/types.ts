@@ -11,6 +11,8 @@ import type { ShoppingListItem } from '@/lib/show-domain';
 export type ShowRow = Database['public']['Tables']['shows']['Row'];
 export type ShowCueRow = Database['public']['Tables']['show_timeline_items']['Row'];
 export type FireworkEffectRow = Database['public']['Tables']['firework_effects']['Row'];
+export type FireworkStyleDefaultRow =
+  Database['public']['Tables']['firework_style_defaults']['Row'];
 export type FireworkVariantRow = Database['public']['Tables']['fireworks']['Row'];
 
 /** Subset of `shows` columns the UI actually consumes. Keep in sync with {@link SHOW_SELECT}. */
@@ -58,7 +60,21 @@ export type ShowCueProjection = Pick<
 export type FireworkEffectProjection = Pick<
   FireworkEffectRow,
   'id' | 'slug' | 'name' | 'pattern_key' | 'model_json'
+> & {
+  star_style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
+  trail_style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
+  style_default_links: FireworkStyleDefaultLinkProjection[] | null;
+};
+
+export type FireworkStyleDefaultProjection = Pick<
+  FireworkStyleDefaultRow,
+  'id' | 'kind' | 'name' | 'defaults_json'
 >;
+
+export type FireworkStyleDefaultLinkProjection = {
+  kind: string;
+  style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
+};
 
 export type FireworkVariantProjection = Pick<
   FireworkVariantRow,
@@ -76,6 +92,9 @@ export type FireworkVariantProjection = Pick<
   | 'variant_json'
 > & {
   firework_effects: FireworkEffectProjection | FireworkEffectProjection[] | null;
+  star_style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
+  trail_style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
+  style_default_links: FireworkStyleDefaultLinkProjection[] | null;
 };
 
 /** Replay-time row alias — same shape as the authoring projection today. */
@@ -88,7 +107,7 @@ export type ShoppingListComputation = {
 };
 
 /** Cache namespace for everything in this module. Bump the version on schema-affecting changes. */
-export const CACHE_PREFIX = 'shows:v7';
+export const CACHE_PREFIX = 'shows:v9';
 /** TTL for show/cue/shopping reads. Short so mutations don't need to wait for invalidation propagation. */
 export const SHOWS_TTL_SECONDS = 60;
 /** TTL for the firework catalogue lookups — they rarely change. */
@@ -99,6 +118,6 @@ export const SHOW_SELECT =
 export const SHOW_CUE_SELECT =
   'id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index';
 export const FIREWORK_VARIANT_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, firework_effects(id, slug, name, pattern_key, model_json)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, star_style_default:firework_style_defaults!fireworks_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!fireworks_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_style_default_links(kind, style_default:firework_style_defaults!firework_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)), firework_effects(id, slug, name, pattern_key, model_json, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_effect_style_default_links(kind, style_default:firework_style_defaults!firework_effect_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)))';
 export const SHOW_CUES_WITH_PRODUCT_SELECT =
   'catalogue_item_id, catalogue_items(id, name, part_number, manufacturer)';
