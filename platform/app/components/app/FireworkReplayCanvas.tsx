@@ -81,8 +81,9 @@ const TRAIL_WIDTH_GUIDE_RINGS = 7;
 const TRAIL_WIDTH_GUIDE_SEGMENTS = 10;
 const TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY = 0.58;
 const TRAIL_WIDTH_GUIDE_STAR_INDEX = 0;
-const TRAIL_WIDTH_GUIDE_SPREAD_SCALE = 0.035;
-const TRAIL_WIDTH_GUIDE_MAX_SPREAD = 90;
+const TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE = 80;
+const TRAIL_WIDTH_GUIDE_SPREAD_SCALE = 0.055;
+const TRAIL_WIDTH_GUIDE_MAX_SPREAD = 180;
 const GUIDE_GRAVITY = -9.82;
 const GUIDE_STAR_MIN_GRAVITY = -1.85;
 const GUIDE_STAR_MAX_GRAVITY = 0.28;
@@ -170,12 +171,22 @@ function rangeMid(range: [number, number]): number {
 function trailWidthGuideRadiusAt(
   design: FireworkDesign,
   positionPercent: number,
-  pathLength: number,
+  distanceBehindHead: number,
+  visibleTrailLength: number,
 ): number {
   const width = design.burstTrail.width;
   const t = Math.pow(clamp01(positionPercent / 100), width.curve);
-  const angle = clamp(width.front + (width.tail - width.front) * t, 0, 60);
-  const radius = Math.tan((angle * Math.PI) / 180) * pathLength * TRAIL_WIDTH_GUIDE_SPREAD_SCALE;
+  const tailAngle = clamp(width.tail, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE);
+  const frontAngle = clamp(width.front, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE);
+  const frontDistance = Math.max(0, visibleTrailLength - distanceBehindHead);
+  const tailRadius =
+    Math.tan((tailAngle * Math.PI) / 180) *
+    distanceBehindHead *
+    TRAIL_WIDTH_GUIDE_SPREAD_SCALE *
+    (1 - t);
+  const frontRadius =
+    Math.tan((frontAngle * Math.PI) / 180) * frontDistance * TRAIL_WIDTH_GUIDE_SPREAD_SCALE * t;
+  const radius = tailRadius + frontRadius;
   return clamp(radius, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD);
 }
 
@@ -358,8 +369,11 @@ function createTrailWidthGuide(
 
   for (let ringIndex = 0; ringIndex < TRAIL_WIDTH_GUIDE_RINGS; ringIndex++) {
     const progress = ringIndex / (TRAIL_WIDTH_GUIDE_RINGS - 1);
-    const oldTailPositionPercent = (1 - progress) * 100;
-    const radius = Math.max(0, trailWidthGuideRadiusAt(design, oldTailPositionPercent, pathLength));
+    const distanceBehindHead = pathLength * (1 - progress);
+    const radius = Math.max(
+      0,
+      trailWidthGuideRadiusAt(design, progress * 100, distanceBehindHead, pathLength),
+    );
     const centre = burstCentre.clone().addScaledVector(direction, pathLength * progress);
     const ring = Array.from({ length: TRAIL_WIDTH_GUIDE_SEGMENTS }, (_, segmentIndex) => {
       const angle = (segmentIndex / TRAIL_WIDTH_GUIDE_SEGMENTS) * Math.PI * 2;
@@ -691,7 +705,10 @@ export function FireworkReplayCanvas({
       const comp = composerRef.current;
       const sc = sceneRef.current;
       if (!eng || !cam || !rend || !comp || !sc) return;
-      const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
+      const targetElapsed = Math.max(
+        0,
+        playbackRef ? playbackRef.current : internalElapsedRef.current,
+      );
       const delta = Math.abs(targetElapsed - renderedElapsed);
       const timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
       // Small deltas (normal playback) flow through every frame. Large deltas
@@ -700,7 +717,9 @@ export function FireworkReplayCanvas({
       const now = performance.now();
       sampleFps(now);
       const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
-      const engineMayUpdate = !isLargeJump || now - lastEngineUpdate >= 60;
+      const isBackwardSeek =
+        !Number.isNaN(renderedElapsed) && targetElapsed < renderedElapsed - 0.0001;
+      const engineMayUpdate = isBackwardSeek || !isLargeJump || now - lastEngineUpdate >= 60;
       if (timelineChanged && engineMayUpdate) {
         eng.setElapsed(targetElapsed);
         renderedElapsed = targetElapsed;

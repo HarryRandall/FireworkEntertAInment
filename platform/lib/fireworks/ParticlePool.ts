@@ -17,6 +17,7 @@ export type ParticleProps = {
   vz?: number;
   size?: number;
   alpha?: number;
+  fadeIn?: boolean;
   shape?: number;
   rotation?: number;
   spin?: number;
@@ -115,6 +116,7 @@ export class ParticlePool {
     p.vz = prop.vz ?? 0;
     p.size = prop.size ?? 1;
     p.alpha = prop.alpha ?? 1;
+    p.fadeIn = prop.fadeIn ?? true;
     p.shape = prop.shape ?? 0;
     p.rotation = prop.rotation ?? 0;
     p.spin = prop.spin ?? 0;

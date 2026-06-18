@@ -5,19 +5,35 @@ import { useRouter } from 'next/navigation';
 import { Pause, Play, Repeat, RotateCcw, Save } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { updateEffect } from '@/app/actions/admin-effects';
-import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
+import { createStyleDefault } from '@/app/actions/admin-style-defaults';
+import {
+  FireworkRenderControls,
+  PanelSection,
+} from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
+import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { Slider } from '@/components/ui/slider';
 import { toast } from '@/app/components/ui/toast';
-import type { AdminEffectDetail } from '@/lib/admin.types';
+import type { AdminEffectDetail, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
+import {
+  FIREWORK_STYLE_DEFAULT_KINDS,
+  extractStyleDefaultsFromDesign,
+  NO_STYLE_DEFAULT_VALUE,
+  emptyStyleDefaultIdMap,
+  orderedStyleDefaultValues,
+  removeStyleDefaultOverridesFromRecord,
+  styleDefaultKindLabel,
+  type FireworkStyleDefaultKind,
+} from '@/lib/fireworks/style-defaults';
 import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
 import type { ReplayCue } from '@/lib/show-domain';
 
@@ -77,6 +93,49 @@ function hasConcreteRendererColor(value: unknown): boolean {
   return color !== undefined && color !== 'random';
 }
 
+function styleDefaultOptions(
+  options: AdminStyleDefaultOption[],
+  selected: AdminStyleDefaultOption | null,
+): SelectOption[] {
+  const seen = new Set<string>();
+  const source = selected ? [selected, ...options] : options;
+  return [
+    { value: NO_STYLE_DEFAULT_VALUE, label: 'None' },
+    ...source
+      .filter((option) => {
+        if (seen.has(option.id)) return false;
+        seen.add(option.id);
+        return true;
+      })
+      .map((option) => ({
+        value: option.id,
+        label: option.name,
+        description: option.description ?? undefined,
+      })),
+  ];
+}
+
+function findStyleDefault(
+  id: string,
+  options: AdminStyleDefaultOption[],
+  fallback: AdminStyleDefaultOption | null,
+): AdminStyleDefaultOption | null {
+  if (id === NO_STYLE_DEFAULT_VALUE) return null;
+  return options.find((option) => option.id === id) ?? (fallback?.id === id ? fallback : null);
+}
+
+function initialStyleDefaultIds(
+  effect: AdminEffectDetail,
+): Record<FireworkStyleDefaultKind, string> {
+  const ids = emptyStyleDefaultIdMap();
+  for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
+    ids[kind] = effect.styleDefaultIds[kind] ?? effect.styleDefaultLinks[kind]?.id ?? ids[kind];
+  }
+  ids.star = effect.starStyleDefaultId ?? ids.star;
+  ids.trail = effect.trailStyleDefaultId ?? ids.trail;
+  return ids;
+}
+
 function ReplayCanvasSkeleton() {
   return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
 }
@@ -90,6 +149,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [modelText, setModelText] = useState(() =>
     JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2),
   );
+  const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(effect));
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
@@ -109,14 +169,28 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   );
   const modelRecord = parsedModel.ok ? baseModel : {};
   const renderDefaults = readRecord(modelRecord, 'renderDefaults');
+  const selectedStyleDefaults = useMemo(() => {
+    const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
+    for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
+      selected[kind] = findStyleDefault(
+        styleDefaultIds[kind],
+        effect.styleDefaults[kind],
+        effect.styleDefaultLinks[kind] ?? null,
+      );
+    }
+    return selected;
+  }, [effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
   const modelHasColour = hasConcreteRendererColor(baseModel);
   const previewDesign = useMemo(
     () =>
       compileFireworkDesign({
         baseModel,
+        effectStyleDefaults: orderedStyleDefaultValues(selectedStyleDefaults).map(
+          (item) => item?.defaultsJson,
+        ),
         primaryColor: modelHasColour ? null : PREVIEW_COLOR,
       }),
-    [baseModel, modelHasColour],
+    [baseModel, modelHasColour, selectedStyleDefaults],
   );
 
   // Head-orb appearance is saved on the effect's renderDefaults, so the sliders
@@ -222,6 +296,33 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setModelText(JSON.stringify(draft, null, 2));
   }
 
+  function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
+    updateModelDefaults((defaults) => {
+      removeStyleDefaultOverridesFromRecord(defaults, kind);
+    });
+  }
+
+  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind) {
+    setError(null);
+    startTransition(async () => {
+      const result = await createStyleDefault({
+        kind,
+        name: `${effect.name} ${styleDefaultKindLabel(kind).toLowerCase()} style`,
+        description: `Created from ${effect.name}.`,
+        defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
+      });
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setStyleDefaultIds((current) => ({ ...current, [kind]: result.id }));
+      toast.success('Style default created');
+      router.refresh();
+    });
+  }
+
   function saveEffect() {
     setError(null);
     if (!parsedModel.ok) {
@@ -243,6 +344,16 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         family: effect.family as 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound',
         patternKey: effect.patternKey,
         sortOrder: effect.sortOrder,
+        starStyleDefaultId:
+          styleDefaultIds.star === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.star,
+        trailStyleDefaultId:
+          styleDefaultIds.trail === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.trail,
+        styleDefaultIds: Object.fromEntries(
+          FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
+            kind,
+            styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
+          ]),
+        ),
         modelJson: canonicalModelText,
       });
 
@@ -354,6 +465,51 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
               {error}
             </InlineAlert>
           ) : null}
+
+          <PanelSection title="Style defaults" collapsible defaultExpanded={false}>
+            <div className="space-y-4">
+              {FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => (
+                <div
+                  key={kind}
+                  className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-4 first:border-t-0 first:pt-0"
+                >
+                  <Field>
+                    <FieldLabel>{styleDefaultKindLabel(kind)} style</FieldLabel>
+                    <SelectField
+                      value={styleDefaultIds[kind]}
+                      onChange={(value) =>
+                        setStyleDefaultIds((current) => ({ ...current, [kind]: value }))
+                      }
+                      options={styleDefaultOptions(
+                        effect.styleDefaults[kind],
+                        effect.styleDefaultLinks[kind] ?? null,
+                      )}
+                      ariaLabel={`${styleDefaultKindLabel(kind)} style default`}
+                      disabled={!parsedModel.ok}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => saveCurrentStyleAsDefault(kind)}
+                      disabled={!parsedModel.ok}
+                    >
+                      Save as new default
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => resetLocalStyleDefaults(kind)}
+                      disabled={!parsedModel.ok}
+                    >
+                      Reset local overrides
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </PanelSection>
 
           <FireworkRenderControls
             design={previewDesign}

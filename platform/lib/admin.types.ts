@@ -1,4 +1,5 @@
 import type { Json } from '@/lib/database.types';
+import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
 
 /**
  * Shared admin / RBAC domain types.
@@ -155,6 +156,36 @@ export type AdminEffectPreview = {
   pattern: string | null;
 };
 
+export type AdminStyleDefaultOption = {
+  id: string;
+  kind: FireworkStyleDefaultKind;
+  name: string;
+  description: string | null;
+  defaultsJson: Json;
+};
+
+export type AdminStyleDefaultOptions = {
+  [Kind in FireworkStyleDefaultKind]: AdminStyleDefaultOption[];
+};
+
+export type AdminStyleDefaultLinkMap = Partial<
+  Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>
+>;
+
+export type AdminStyleDefaultIdMap = Partial<Record<FireworkStyleDefaultKind, string | null>>;
+
+export type AdminStyleDefaultSummary = AdminStyleDefaultOption & {
+  slug: string;
+  sortOrder: number;
+  isArchived: boolean;
+  linkedEffectCount: number;
+  linkedFireworkCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminStyleDefaultDetail = AdminStyleDefaultSummary;
+
 export type AdminLinkedProduct = {
   id: string;
   partNumber: string;
@@ -181,12 +212,19 @@ export type AdminEffectSummary = {
   source: string;
   sortOrder: number;
   variantCount: number;
+  starStyleDefaultId: string | null;
+  trailStyleDefaultId: string | null;
+  styleDefaultIds: AdminStyleDefaultIdMap;
   preview: AdminEffectPreview;
   updatedAt: string;
 };
 
 export type AdminEffectDetail = AdminEffectSummary & {
   modelJson: Json;
+  starStyleDefault: AdminStyleDefaultOption | null;
+  trailStyleDefault: AdminStyleDefaultOption | null;
+  styleDefaultLinks: AdminStyleDefaultLinkMap;
+  styleDefaults: AdminStyleDefaultOptions;
 };
 
 /** A base effect a firework can be built on, for the firework editor selector. */
@@ -217,6 +255,9 @@ export type AdminFireworkSummary = {
   effectName: string | null;
   effectSlug: string | null;
   patternKey: string | null;
+  starStyleDefaultId: string | null;
+  trailStyleDefaultId: string | null;
+  styleDefaultIds: AdminStyleDefaultIdMap;
   preview: AdminEffectPreview;
   updatedAt: string;
 };
@@ -226,11 +267,21 @@ export type AdminFireworkDetail = AdminFireworkSummary & {
   renderOverridesJson: Json;
   /** The base effect's `model_json`, used to compose the live preview. */
   effectModelJson: Json;
+  effectStarStyleDefault: AdminStyleDefaultOption | null;
+  effectTrailStyleDefault: AdminStyleDefaultOption | null;
+  fireworkStarStyleDefault: AdminStyleDefaultOption | null;
+  fireworkTrailStyleDefault: AdminStyleDefaultOption | null;
+  effectStyleDefaultLinks: AdminStyleDefaultLinkMap;
+  fireworkStyleDefaultLinks: AdminStyleDefaultLinkMap;
+  styleDefaults: AdminStyleDefaultOptions;
   /** Every base effect, for the "base effect" selector. */
   effectOptions: AdminEffectOption[];
   /** Map of effect id to its `model_json`, so the preview updates when the base
    *  effect changes without a round-trip. */
   effectModels: Record<string, Json>;
+  effectStarStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
+  effectTrailStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
+  effectStyleDefaultLinksByEffect: Record<string, AdminStyleDefaultLinkMap>;
 };
 
 /** A firework that can be placed inside a multishot timeline. */

@@ -53,6 +53,16 @@ export function getAdminEffectCacheKey(effectId: string): string {
   return `${ADMIN_CACHE_PREFIX}:effects:${effectId}`;
 }
 
+/** Cache key for reusable firework star/trail defaults. */
+export function getAdminStyleDefaultsCacheKey(): string {
+  return `${ADMIN_CACHE_PREFIX}:style-defaults`;
+}
+
+/** Cache key for one reusable firework star/trail default. */
+export function getAdminStyleDefaultCacheKey(defaultId: string): string {
+  return `${ADMIN_CACHE_PREFIX}:style-defaults:${defaultId}`;
+}
+
 /** Cache key for product-level fireworks joined to their effect shots. */
 export function getAdminFireworksCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:fireworks`;
@@ -127,6 +137,13 @@ export async function invalidateAdminCatalogueCache(): Promise<void> {
 export async function invalidateAdminEffectsCache(effectId?: string): Promise<void> {
   const keys = [getAdminEffectsCacheKey()];
   if (effectId) keys.push(getAdminEffectCacheKey(effectId));
+  await deleteCachedKeys(keys);
+}
+
+/** Invalidate reusable firework style defaults. */
+export async function invalidateAdminStyleDefaultsCache(defaultId?: string): Promise<void> {
+  const keys = [getAdminStyleDefaultsCacheKey()];
+  if (defaultId) keys.push(getAdminStyleDefaultCacheKey(defaultId));
   await deleteCachedKeys(keys);
 }
 

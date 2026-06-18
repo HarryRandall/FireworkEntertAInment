@@ -125,6 +125,7 @@ const STAR_OPENING_COLOUR_HEX = '#ff6b14';
 const STAR_OPENING_PERCENT_MIN = 1;
 const STAR_OPENING_PERCENT_MAX = 100;
 const STAR_CLOSING_COLOUR_HEX = '#ffd666';
+const TRAIL_CLOSING_COLOUR_HEX = '#ff5714';
 const STAR_CLOSING_PERCENT_MIN = 1;
 const STAR_CLOSING_PERCENT_MAX = 100;
 const STAR_CLOSING_END_PERCENT_MIN = 0;
@@ -134,7 +135,10 @@ const STAR_LIFE_MAX = 8;
 const STAR_LIFE_VARIATION_MAX = 4;
 const TRAIL_PARTICLE_SIZE_MAX = 24;
 const TRAIL_PARTICLE_SCALE_MAX = 4;
-const TRAIL_SPREAD_ANGLE_MAX = 60;
+const TRAIL_PARTICLE_LIFE_MAX = 2;
+const TRAIL_OPENING_BRIGHTNESS_MAX = 300;
+const SHELL_TRAIL_SPREAD_ANGLE_MAX = 60;
+const TRAIL_SPREAD_ANGLE_MAX = 80;
 const TRAIL_BIAS_MIN = -100;
 const TRAIL_BIAS_MAX = 100;
 const TRAIL_HEAD_GAP_MAX = 300;
@@ -467,6 +471,8 @@ type BurstTrail = FireworkStarLayer['burstTrail'];
 type BurstTrailStop = BurstTrail['stops'][number];
 type StarHeadOpening = FireworkStarLayer['head']['opening'];
 type StarHeadClosing = FireworkStarLayer['head']['closing'];
+type BurstTrailOpening = BurstTrail['opening'];
+type BurstTrailClosing = BurstTrail['closing'];
 type TrailParticleShapeOption = (typeof TRAIL_PARTICLE_SHAPE_OPTIONS)[number]['value'];
 
 const TRAIL_PARTICLE_SHAPE_WEIGHTS: Record<
@@ -643,6 +649,17 @@ export type RenderControlsProps = {
   showLaunch?: boolean;
   /** Show the star / streak count controls. Firework-level. */
   showStarCount?: boolean;
+  /** Limit the editor to one reusable style-default surface. */
+  controlScope?:
+    | 'full'
+    | 'star'
+    | 'trail'
+    | 'launch'
+    | 'smoke'
+    | 'strobe'
+    | 'crackle'
+    | 'split'
+    | 'sound';
 };
 
 export function FireworkRenderControls({
@@ -655,6 +672,7 @@ export function FireworkRenderControls({
   starControls,
   showLaunch = false,
   showStarCount = false,
+  controlScope = 'full',
 }: RenderControlsProps) {
   const outerTrailsToggleId = useId();
   const coreTrailsToggleId = useId();
@@ -1008,7 +1026,7 @@ export function FireworkRenderControls({
             <SliderField
               label="Front angle"
               min={0}
-              max={TRAIL_SPREAD_ANGLE_MAX}
+              max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
               step={1}
               value={shellTrail.frontAngle}
               formatValue={formatDegrees}
@@ -1023,7 +1041,7 @@ export function FireworkRenderControls({
             <SliderField
               label="Tail angle"
               min={0}
-              max={TRAIL_SPREAD_ANGLE_MAX}
+              max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
               step={1}
               value={shellTrail.tailAngle}
               formatValue={formatDegrees}
@@ -2096,6 +2114,42 @@ export function FireworkRenderControls({
     }));
   }
 
+  function setBurstTrailOpeningValue(
+    layerKey: StarLayerKey | undefined,
+    section: keyof BurstTrailOpening,
+    key: string,
+    value: unknown,
+  ) {
+    patchBurstTrail(layerKey, (trail) => ({
+      ...trail,
+      opening: {
+        ...trail.opening,
+        [section]: {
+          ...trail.opening[section],
+          [key]: value,
+        },
+      },
+    }));
+  }
+
+  function setBurstTrailClosingValue(
+    layerKey: StarLayerKey | undefined,
+    section: keyof BurstTrailClosing,
+    key: string,
+    value: unknown,
+  ) {
+    patchBurstTrail(layerKey, (trail) => ({
+      ...trail,
+      closing: {
+        ...trail.closing,
+        [section]: {
+          ...trail.closing[section],
+          [key]: value,
+        },
+      },
+    }));
+  }
+
   function setTrailBias(layerKey: StarLayerKey | undefined, value: number) {
     patchBurstTrail(layerKey, (trail) => ({
       ...trail,
@@ -2109,6 +2163,258 @@ export function FireworkRenderControls({
       brocade.streakCount = value;
       draft.size = value;
     });
+  }
+
+  function renderBurstTrailOpeningControls(layerKey: StarLayerKey | undefined) {
+    const trail = currentBurstTrail(layerKey);
+    const opening = trail.opening;
+    const trailsEnabled = trail.enabled;
+    const controlDisabled =
+      disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
+
+    return (
+      <SubSection title="Opening">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SliderField
+            label="Start particles"
+            min={0}
+            max={100}
+            step={1}
+            value={opening.visibility.particlesPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Trail opening start particles value"
+            disabled={controlDisabled}
+            hint="Percentage of the trail particle budget visible at the centre before the ramp reaches full amount."
+            onChange={(value) =>
+              setBurstTrailOpeningValue(layerKey, 'visibility', 'particlesPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Ramp time"
+            min={STAR_OPENING_PERCENT_MIN}
+            max={STAR_OPENING_PERCENT_MAX}
+            step={1}
+            value={opening.visibility.revealPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Trail opening ramp time value"
+            disabled={controlDisabled}
+            hint="How much of the star path is used to ramp particles, brightness, and size up to full."
+            onChange={(value) =>
+              setBurstTrailOpeningValue(layerKey, 'visibility', 'revealPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Start brightness"
+            min={0}
+            max={TRAIL_OPENING_BRIGHTNESS_MAX}
+            step={1}
+            value={opening.visibility.brightnessPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Trail opening start brightness value"
+            disabled={controlDisabled}
+            hint="Brightness at the centre. 100% reaches normal trail brightness immediately."
+            onChange={(value) =>
+              setBurstTrailOpeningValue(layerKey, 'visibility', 'brightnessPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Start size"
+            min={STAR_OPENING_PERCENT_MIN}
+            max={STAR_OPENING_PERCENT_MAX}
+            step={1}
+            value={opening.size.startPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Trail opening start size value"
+            disabled={controlDisabled}
+            hint="Trail particle size at the centre, as a percentage of normal trail size."
+            onChange={(value) =>
+              setBurstTrailOpeningValue(layerKey, 'size', 'startPercent', round2(value))
+            }
+          />
+        </div>
+      </SubSection>
+    );
+  }
+
+  function renderBurstTrailClosingControls(layerKey: StarLayerKey | undefined) {
+    const trail = currentBurstTrail(layerKey);
+    const closing = trail.closing;
+    const trailsEnabled = trail.enabled;
+    const controlDisabled =
+      disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
+    const colourEnabled = closing.colour.enabled;
+    const sizeEnabled = closing.size.enabled;
+    const spreadFadeEnabled = closing.spreadFade.enabled;
+
+    return (
+      <SubSection title="Closing">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SliderField
+            label="Particle life"
+            min={0}
+            max={TRAIL_PARTICLE_LIFE_MAX}
+            step={0.05}
+            value={trail.lifetime.percent}
+            formatValue={formatMultiplier}
+            showNumberInput
+            inputAriaLabel="Particle life value"
+            disabled={controlDisabled}
+            hint="Multiplier of the current star's remaining life. 1x dies with that star; 2x lasts twice as long."
+            onChange={(value) =>
+              setBurstTrailNested(layerKey, 'lifetime', 'percent', round2(value))
+            }
+          />
+          <SliderField
+            label="Life random"
+            min={0}
+            max={100}
+            step={1}
+            value={trail.lifetime.variationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Life random value"
+            disabled={controlDisabled}
+            hint="Seeded variation in each particle's individual life. Replay stays deterministic."
+            onChange={(value) =>
+              setBurstTrailNested(layerKey, 'lifetime', 'variationPercent', round2(value))
+            }
+          />
+          <SwitchField
+            label="Fade colour"
+            checked={colourEnabled}
+            disabled={controlDisabled}
+            hint="Fade each trail particle into a chosen colour at the end of its burn."
+            onChange={(value) => setBurstTrailClosingValue(layerKey, 'colour', 'enabled', value)}
+          />
+          <SwitchField
+            label="Size close"
+            checked={sizeEnabled}
+            disabled={controlDisabled}
+            hint="Shrink or hold each trail particle through the final part of its burn."
+            onChange={(value) => setBurstTrailClosingValue(layerKey, 'size', 'enabled', value)}
+          />
+          <SwitchField
+            label="Wide tail fade"
+            checked={spreadFadeEnabled}
+            disabled={controlDisabled}
+            hint="Fade the far tail when the tail angle gets very wide."
+            onChange={(value) =>
+              setBurstTrailClosingValue(layerKey, 'spreadFade', 'enabled', value)
+            }
+          />
+          {colourEnabled ? (
+            <>
+              <ColorField
+                label="Closing colour"
+                value={rgbObjectToHex(closing.colour.color) ?? TRAIL_CLOSING_COLOUR_HEX}
+                disabled={controlDisabled}
+                hint="Colour each trail particle reaches as it dies."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(
+                    layerKey,
+                    'colour',
+                    'color',
+                    hexToRgbObject(value ?? TRAIL_CLOSING_COLOUR_HEX),
+                  )
+                }
+              />
+              <SliderField
+                label="Colour close time"
+                min={STAR_CLOSING_PERCENT_MIN}
+                max={STAR_CLOSING_PERCENT_MAX}
+                step={1}
+                value={closing.colour.fadePercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Trail closing colour fade time value"
+                disabled={controlDisabled}
+                hint="Percentage of the star life used after each trail particle appears to fade into the closing colour."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(layerKey, 'colour', 'fadePercent', round2(value))
+                }
+              />
+            </>
+          ) : null}
+          {spreadFadeEnabled ? (
+            <>
+              <SliderField
+                label="Fade angle"
+                min={0}
+                max={TRAIL_SPREAD_ANGLE_MAX}
+                step={1}
+                value={closing.spreadFade.startAngle}
+                formatValue={formatDegrees}
+                showNumberInput
+                inputAriaLabel="Wide tail fade angle value"
+                disabled={controlDisabled}
+                hint="Tail angle where the far tail starts fading."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(layerKey, 'spreadFade', 'startAngle', round2(value))
+                }
+              />
+              <SliderField
+                label="Tail opacity"
+                min={0}
+                max={100}
+                step={1}
+                value={closing.spreadFade.endOpacityPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Wide tail opacity value"
+                disabled={controlDisabled}
+                hint="Opacity of the far tail when the tail angle is at maximum spread."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(
+                    layerKey,
+                    'spreadFade',
+                    'endOpacityPercent',
+                    round2(value),
+                  )
+                }
+              />
+            </>
+          ) : null}
+          {sizeEnabled ? (
+            <>
+              <SliderField
+                label="Final size"
+                min={STAR_CLOSING_END_PERCENT_MIN}
+                max={STAR_CLOSING_END_PERCENT_MAX}
+                step={1}
+                value={closing.size.endPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Trail closing final size value"
+                disabled={controlDisabled}
+                hint="Trail particle size at the moment it dies, as a percentage of normal size."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(layerKey, 'size', 'endPercent', round2(value))
+                }
+              />
+              <SliderField
+                label="Shrink time"
+                min={STAR_CLOSING_PERCENT_MIN}
+                max={STAR_CLOSING_PERCENT_MAX}
+                step={1}
+                value={closing.size.shrinkPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Trail closing shrink time value"
+                disabled={controlDisabled}
+                hint="Percentage of the star life used after each trail particle appears to shrink into the final size."
+                onChange={(value) =>
+                  setBurstTrailClosingValue(layerKey, 'size', 'shrinkPercent', round2(value))
+                }
+              />
+            </>
+          ) : null}
+        </div>
+      </SubSection>
+    );
   }
 
   function renderBurstTrailControls(layerKey?: StarLayerKey) {
@@ -2128,6 +2434,7 @@ export function FireworkRenderControls({
       burstTrail.stops.length > 0 ? burstTrail.stops : makeBurstTrailPreset(fallbackPreset).stops;
     const particleShape = shapeOptionFromStops(editableStops);
     const trailBias = trailBiasFromFrontClump(burstTrail.frontClump);
+    const showTrailPresetSelect = controlScope !== 'trail';
 
     function resetToPreset() {
       setBurstTrailPreset(layerKey, fallbackPreset);
@@ -2175,20 +2482,27 @@ export function FireworkRenderControls({
         }
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <Field>
-              <div className="flex items-center gap-1.5">
-                <FieldLabel>Trail style</FieldLabel>
-                <InfoTooltip text="Presets seed the unified burst trail model. Any numeric edit switches the trail to Custom." />
-              </div>
-              <SelectField
-                value={burstTrail.preset}
-                onChange={(value) => setBurstTrailPreset(layerKey, value as BurstTrailPreset)}
-                options={TRAIL_PRESET_OPTIONS}
-                ariaLabel="Trail style"
-                disabled={controlDisabled}
-              />
-            </Field>
+          <div
+            className={cn(
+              'grid gap-x-6 gap-y-4',
+              showTrailPresetSelect ? 'grid-cols-2' : 'grid-cols-1',
+            )}
+          >
+            {showTrailPresetSelect ? (
+              <Field>
+                <div className="flex items-center gap-1.5">
+                  <FieldLabel>Trail style</FieldLabel>
+                  <InfoTooltip text="Presets seed the unified burst trail model. Any numeric edit switches the trail to Custom." />
+                </div>
+                <SelectField
+                  value={burstTrail.preset}
+                  onChange={(value) => setBurstTrailPreset(layerKey, value as BurstTrailPreset)}
+                  options={TRAIL_PRESET_OPTIONS}
+                  ariaLabel="Trail style"
+                  disabled={controlDisabled}
+                />
+              </Field>
+            ) : null}
             <Field>
               <div className="flex items-center gap-1.5">
                 <FieldLabel>Trail colour</FieldLabel>
@@ -2308,6 +2622,9 @@ export function FireworkRenderControls({
             </div>
           </SubSection>
 
+          {renderBurstTrailOpeningControls(layerKey)}
+          {renderBurstTrailClosingControls(layerKey)}
+
           <SubSection title="Placement">
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
@@ -2391,36 +2708,6 @@ export function FireworkRenderControls({
                 disabled={controlDisabled}
                 hint="Spread angle around the old tail end. 0 degrees keeps the tail tight; higher values leave a wider tail."
                 onChange={(value) => setBurstTrailNested(layerKey, 'width', 'tail', round2(value))}
-              />
-              <SliderField
-                label="Particle life"
-                min={1}
-                max={100}
-                step={1}
-                value={burstTrail.lifetime.percent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Particle life value"
-                disabled={controlDisabled}
-                hint="How long each trail particle lives, as a percentage of the star's total flight. Early particles can fade out while later particles keep appearing."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'lifetime', 'percent', round2(value))
-                }
-              />
-              <SliderField
-                label="Life random"
-                min={0}
-                max={100}
-                step={1}
-                value={burstTrail.lifetime.variationPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Life random value"
-                disabled={controlDisabled}
-                hint="Seeded variation in each particle's individual life. Replay stays deterministic."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'lifetime', 'variationPercent', round2(value))
-                }
               />
             </div>
           </SubSection>
@@ -2599,11 +2886,185 @@ export function FireworkRenderControls({
             layerKey === 'outer' ? starControls : undefined,
           )}
 
-          {renderBurstTrailControls(layerKey)}
+          {controlScope === 'star' ? null : renderBurstTrailControls(layerKey)}
         </div>
       </PanelSection>
     );
   }
+
+  if (controlScope === 'trail') {
+    return <>{renderBurstTrailControls()}</>;
+  }
+
+  if (controlScope === 'star') {
+    return (
+      <>
+        {renderStarLayerControls('outer', 'Star')}
+        {renderStarLayerControls('core', 'Star Inner')}
+      </>
+    );
+  }
+
+  function renderLaunchControls(includeLiftParticles = false) {
+    return (
+      <>
+        <PanelSection title="Launch" collapsible defaultExpanded={false}>
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {renderLiftVelocityControl(
+                'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
+              )}
+            </div>
+            {renderLaunchShellControls()}
+          </div>
+        </PanelSection>
+
+        {includeLiftParticles ? renderLiftParticleControls() : null}
+      </>
+    );
+  }
+
+  function renderSoundControls() {
+    return (
+      <PanelSection title="Sound" collapsible defaultExpanded={false}>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          {renderLaunchSoundControl()}
+          {renderBoomControl()}
+        </div>
+      </PanelSection>
+    );
+  }
+
+  function renderStrobeControls() {
+    return (
+      <PanelSection
+        title="Strobe"
+        collapsible
+        defaultExpanded={controlScope === 'strobe'}
+        inactive={!strobeEnabled}
+        titleAccessory={<InfoTooltip text="Stars blink rapidly instead of burning steadily." />}
+        action={
+          <Switch
+            id={strobeToggleId}
+            aria-label="Strobe"
+            checked={strobeEnabled}
+            onCheckedChange={(value) => setNestedRenderValue('strobe', 'enabled', value)}
+            disabled={disabled}
+          />
+        }
+      >
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SliderField
+            label="Blink rate"
+            min={2}
+            max={28}
+            step={0.5}
+            value={design.strobe.frequencyHz}
+            disabled={sectionDisabled.strobe}
+            hint="Flashes per second."
+            onChange={(value) => setNestedRenderValue('strobe', 'frequencyHz', value)}
+          />
+          <SliderField
+            label="Blink duty"
+            min={0.1}
+            max={0.9}
+            step={0.05}
+            value={design.strobe.dutyCycle}
+            disabled={sectionDisabled.strobe}
+            hint="Fraction of each blink the star spends lit."
+            onChange={(value) => setNestedRenderValue('strobe', 'dutyCycle', round2(value))}
+          />
+        </div>
+      </PanelSection>
+    );
+  }
+
+  function renderCrackleControls() {
+    return (
+      <PanelSection
+        title="Crackle"
+        collapsible
+        defaultExpanded={controlScope === 'crackle'}
+        inactive={!crackleEnabled}
+        titleAccessory={
+          <InfoTooltip text="Stars pop into crackling silver fragments as they die." />
+        }
+        action={
+          <Switch
+            id={crackleToggleId}
+            aria-label="Crackle"
+            checked={crackleEnabled}
+            onCheckedChange={(value) => setNestedRenderValue('crackle', 'enabled', value)}
+            disabled={disabled}
+          />
+        }
+      >
+        <SliderField
+          label="Crackle probability"
+          min={0}
+          max={1}
+          step={0.01}
+          value={design.crackle.probability}
+          disabled={sectionDisabled.crackle}
+          hint="Per-frame chance a dying star pops. 0.05 is a gentle fizz; 0.3 is a full dragon-egg cloud."
+          onChange={(value) => setNestedRenderValue('crackle', 'probability', round2(value))}
+        />
+      </PanelSection>
+    );
+  }
+
+  function renderSplitControls() {
+    if (!showSplitControls && controlScope !== 'split') return null;
+
+    return (
+      <PanelSection
+        title="Split"
+        collapsible
+        defaultExpanded={controlScope === 'split'}
+        inactive={!design.split.enabled}
+        titleAccessory={<InfoTooltip text="Crossette stars split into smaller fragments." />}
+        action={
+          <Switch
+            id={splitToggleId}
+            aria-label="Split"
+            checked={design.split.enabled}
+            onCheckedChange={(value) => setNestedRenderValue('split', 'enabled', value)}
+            disabled={disabled}
+          />
+        }
+      >
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SliderField
+            label="Split fragments"
+            min={2}
+            max={8}
+            step={1}
+            value={design.split.fragments}
+            disabled={sectionDisabled.split}
+            hint="How many pieces each crossette star splits into."
+            onChange={(value) => setNestedRenderValue('split', 'fragments', value)}
+          />
+          <SliderField
+            label="Split speed"
+            min={0.4}
+            max={4}
+            step={0.05}
+            value={design.split.speed}
+            disabled={sectionDisabled.split}
+            hint="How hard the fragments kick away from the split."
+            onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
+          />
+        </div>
+      </PanelSection>
+    );
+  }
+
+  if (controlScope === 'launch') return <>{renderLaunchControls(true)}</>;
+  if (controlScope === 'smoke') return <>{renderSmokeControls()}</>;
+  if (controlScope === 'strobe') return <>{renderStrobeControls()}</>;
+  if (controlScope === 'crackle') return <>{renderCrackleControls()}</>;
+  if (controlScope === 'split') return <>{renderSplitControls()}</>;
+  if (controlScope === 'sound') return <>{renderSoundControls()}</>;
 
   if (isBrocade) {
     return (
@@ -2724,20 +3185,7 @@ export function FireworkRenderControls({
 
   return (
     <>
-      {showLaunch ? (
-        <PanelSection title="Launch" collapsible defaultExpanded={false}>
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {renderLiftVelocityControl(
-                'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
-              )}
-              {renderLaunchSoundControl()}
-              {renderBoomControl()}
-            </div>
-            {renderLaunchShellControls()}
-          </div>
-        </PanelSection>
-      ) : null}
+      {showLaunch ? renderLaunchControls() : null}
 
       {afterBurst}
 
@@ -2749,117 +3197,13 @@ export function FireworkRenderControls({
 
       {renderStarLayerControls('core', 'Star Inner')}
 
-      <PanelSection
-        title="Strobe"
-        collapsible
-        defaultExpanded={false}
-        inactive={!strobeEnabled}
-        titleAccessory={<InfoTooltip text="Stars blink rapidly instead of burning steadily." />}
-        action={
-          <Switch
-            id={strobeToggleId}
-            aria-label="Strobe"
-            checked={strobeEnabled}
-            onCheckedChange={(value) => setNestedRenderValue('strobe', 'enabled', value)}
-            disabled={disabled}
-          />
-        }
-      >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <SliderField
-            label="Blink rate"
-            min={2}
-            max={28}
-            step={0.5}
-            value={design.strobe.frequencyHz}
-            disabled={sectionDisabled.strobe}
-            hint="Flashes per second."
-            onChange={(value) => setNestedRenderValue('strobe', 'frequencyHz', value)}
-          />
-          <SliderField
-            label="Blink duty"
-            min={0.1}
-            max={0.9}
-            step={0.05}
-            value={design.strobe.dutyCycle}
-            disabled={sectionDisabled.strobe}
-            hint="Fraction of each blink the star spends lit."
-            onChange={(value) => setNestedRenderValue('strobe', 'dutyCycle', round2(value))}
-          />
-        </div>
-      </PanelSection>
+      {showLaunch ? renderSoundControls() : null}
 
-      <PanelSection
-        title="Crackle"
-        collapsible
-        defaultExpanded={false}
-        inactive={!crackleEnabled}
-        titleAccessory={
-          <InfoTooltip text="Stars pop into crackling silver fragments as they die." />
-        }
-        action={
-          <Switch
-            id={crackleToggleId}
-            aria-label="Crackle"
-            checked={crackleEnabled}
-            onCheckedChange={(value) => setNestedRenderValue('crackle', 'enabled', value)}
-            disabled={disabled}
-          />
-        }
-      >
-        <SliderField
-          label="Crackle probability"
-          min={0}
-          max={1}
-          step={0.01}
-          value={design.crackle.probability}
-          disabled={sectionDisabled.crackle}
-          hint="Per-frame chance a dying star pops. 0.05 is a gentle fizz; 0.3 is a full dragon-egg cloud."
-          onChange={(value) => setNestedRenderValue('crackle', 'probability', round2(value))}
-        />
-      </PanelSection>
+      {renderStrobeControls()}
 
-      {showSplitControls ? (
-        <PanelSection
-          title="Split"
-          collapsible
-          defaultExpanded={false}
-          inactive={!design.split.enabled}
-          titleAccessory={<InfoTooltip text="Crossette stars split into smaller fragments." />}
-          action={
-            <Switch
-              id={splitToggleId}
-              aria-label="Split"
-              checked={design.split.enabled}
-              onCheckedChange={(value) => setNestedRenderValue('split', 'enabled', value)}
-              disabled={disabled}
-            />
-          }
-        >
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <SliderField
-              label="Split fragments"
-              min={2}
-              max={8}
-              step={1}
-              value={design.split.fragments}
-              disabled={sectionDisabled.split}
-              hint="How many pieces each crossette star splits into."
-              onChange={(value) => setNestedRenderValue('split', 'fragments', value)}
-            />
-            <SliderField
-              label="Split speed"
-              min={0.4}
-              max={4}
-              step={0.05}
-              value={design.split.speed}
-              disabled={sectionDisabled.split}
-              hint="How hard the fragments kick away from the split."
-              onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
-            />
-          </div>
-        </PanelSection>
-      ) : null}
+      {renderCrackleControls()}
+
+      {renderSplitControls()}
     </>
   );
 }

@@ -73,6 +73,7 @@ const HEAD_APPEARANCE_DEFAULTS = {
 
 const DEFAULT_STAR_OPENING_COLOUR = { r: 1, g: 0.42, b: 0.08 };
 const DEFAULT_STAR_CLOSING_COLOUR = { r: 1, g: 0.84, b: 0.4 };
+const DEFAULT_TRAIL_CLOSING_COLOUR = { r: 1, g: 0.34, b: 0.08 };
 
 const STAR_HEAD_OPENING_DEFAULTS = {
   colour: {
@@ -97,6 +98,35 @@ const STAR_HEAD_CLOSING_DEFAULTS = {
     enabled: false,
     endPercent: 0,
     shrinkPercent: 22,
+  },
+};
+
+const TRAIL_OPENING_DEFAULTS = {
+  size: {
+    startPercent: 100,
+  },
+  visibility: {
+    brightnessPercent: 100,
+    particlesPercent: 100,
+    revealPercent: 24,
+  },
+};
+
+const TRAIL_CLOSING_DEFAULTS = {
+  colour: {
+    enabled: false,
+    color: DEFAULT_TRAIL_CLOSING_COLOUR,
+    fadePercent: 22,
+  },
+  size: {
+    enabled: false,
+    endPercent: 0,
+    shrinkPercent: 22,
+  },
+  spreadFade: {
+    enabled: true,
+    startAngle: 60,
+    endOpacityPercent: 12,
   },
 };
 
@@ -210,6 +240,58 @@ const BurstTrailStopSchema = z.object({
   sizeVariation: z.coerce.number().min(0).max(100).default(25),
   shapeWeights: BurstTrailShapeWeightsSchema,
 });
+
+const TrailOpeningSchema = z
+  .object({
+    size: z
+      .object({
+        /** Size at the beginning of the burst path, as a percentage of normal trail size. */
+        startPercent: z.coerce.number().min(1).max(100).default(100),
+      })
+      .default(TRAIL_OPENING_DEFAULTS.size),
+    visibility: z
+      .object({
+        /** Brightness at the beginning of the burst path, as a percentage of normal brightness. */
+        brightnessPercent: z.coerce.number().min(0).max(300).default(100),
+        /** Percentage of the per-star trail budget visible at the beginning of the burst path. */
+        particlesPercent: z.coerce.number().min(0).max(100).default(100),
+        /** Percentage of the star path used to ramp size, brightness, and count to normal. */
+        revealPercent: z.coerce.number().min(1).max(100).default(24),
+      })
+      .default(TRAIL_OPENING_DEFAULTS.visibility),
+  })
+  .default(TRAIL_OPENING_DEFAULTS);
+
+const TrailClosingSchema = z
+  .object({
+    colour: z
+      .object({
+        enabled: z.boolean().default(false),
+        color: RgbSchema.default(DEFAULT_TRAIL_CLOSING_COLOUR),
+        /** Percentage of each trail particle's life used to fade into closing colour. */
+        fadePercent: z.coerce.number().min(1).max(100).default(22),
+      })
+      .default(TRAIL_CLOSING_DEFAULTS.colour),
+    size: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** Final size as a percentage of the trail particle's normal size. */
+        endPercent: z.coerce.number().min(0).max(100).default(0),
+        /** Percentage of each trail particle's life used to shrink to final size. */
+        shrinkPercent: z.coerce.number().min(1).max(100).default(22),
+      })
+      .default(TRAIL_CLOSING_DEFAULTS.size),
+    spreadFade: z
+      .object({
+        /** Fade the far tail when the tail spread angle exceeds this many degrees. */
+        enabled: z.boolean().default(true),
+        startAngle: z.coerce.number().min(0).max(80).default(60),
+        /** Opacity reached at the far tail when the tail angle is at its maximum. */
+        endOpacityPercent: z.coerce.number().min(0).max(100).default(12),
+      })
+      .default(TRAIL_CLOSING_DEFAULTS.spreadFade),
+  })
+  .default(TRAIL_CLOSING_DEFAULTS);
 
 const LaunchShellTrailSchema = z
   .object({
@@ -429,8 +511,8 @@ const BurstTrailSchema = z
     frontClump: z.coerce.number().min(0).max(1).default(0.45),
     width: z
       .object({
-        front: z.coerce.number().min(0).max(60).default(1.4),
-        tail: z.coerce.number().min(0).max(60).default(1.4),
+        front: z.coerce.number().min(0).max(80).default(1.4),
+        tail: z.coerce.number().min(0).max(80).default(1.4),
         curve: z.coerce.number().min(0.2).max(4).default(1),
       })
       .default({ front: 1.4, tail: 1.4, curve: 1 }),
@@ -442,6 +524,8 @@ const BurstTrailSchema = z
         variationPercent: z.coerce.number().min(0).max(100).default(8),
       })
       .default({ base: 1.2, headScale: 1, tailScale: 0.35, variationPercent: 8 }),
+    opening: TrailOpeningSchema,
+    closing: TrailClosingSchema,
     placement: z
       .object({
         headGapPercent: z.coerce.number().min(0).max(300).default(60),
@@ -456,14 +540,18 @@ const BurstTrailSchema = z
     lifetime: z
       .object({
         mode: z.enum(BURST_TRAIL_FADE_MODES).default('dynamic'),
-        percent: z.coerce.number().min(1).max(100).default(18),
+        percent: z.coerce
+          .number()
+          .min(0)
+          .transform((value) => round2(Math.min(2, value > 2 ? value / 100 : value)))
+          .default(0.18),
         baseSeconds: z.coerce.number().min(0.05).max(8).default(0.9),
         variationPercent: z.coerce.number().min(0).max(100).default(30),
         afterglowSeconds: z.coerce.number().min(0).max(6).default(0.35),
       })
       .default({
         mode: 'dynamic',
-        percent: 18,
+        percent: 0.18,
         baseSeconds: 0.9,
         variationPercent: 30,
         afterglowSeconds: 0.35,
@@ -517,11 +605,13 @@ const BurstTrailSchema = z
     frontClump: 0.55,
     width: { front: 20, tail: 0, curve: 1 },
     particleSize: { base: 1.2, headScale: 1, tailScale: 0.35, variationPercent: 8 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 60 },
     spacing: { curve: 1, jitterPercent: 18 },
     lifetime: {
       mode: 'dynamic',
-      percent: 18,
+      percent: 0.18,
       baseSeconds: 8,
       variationPercent: 30,
       afterglowSeconds: 0.15,
@@ -617,6 +707,8 @@ const StarHeadClosingSchema = z
 
 const StarHeadSchema = z
   .object({
+    /** Render the star head sprite. Trails can still use the star path when this is false. */
+    visible: z.boolean().default(true),
     /** Size budget of each glowing star orb. */
     size: z.coerce.number().min(10).max(1000).default(260),
     /** Opening colour fade and size growth, both relative to this star's life. */
@@ -695,6 +787,7 @@ const StarHeadSchema = z
       .default(DEFAULT_BACKGROUND_GLOW_SOFTNESS),
   })
   .default({
+    visible: true,
     size: 260,
     opening: STAR_HEAD_OPENING_DEFAULTS,
     closing: STAR_HEAD_CLOSING_DEFAULTS,
@@ -749,6 +842,7 @@ const StarLayerSchema = z
       flairColorMode: 'mixed',
     },
     head: {
+      visible: true,
       size: 260,
       opening: STAR_HEAD_OPENING_DEFAULTS,
       closing: STAR_HEAD_CLOSING_DEFAULTS,
@@ -770,11 +864,13 @@ const StarLayerSchema = z
       frontClump: 0.35,
       width: { front: 1.1, tail: 2.1, curve: 1.15 },
       particleSize: { base: 0.65, headScale: 1, tailScale: 0.45, variationPercent: 55 },
+      opening: TRAIL_OPENING_DEFAULTS,
+      closing: TRAIL_CLOSING_DEFAULTS,
       placement: { headGapPercent: 35 },
       spacing: { curve: 1, jitterPercent: 55 },
       lifetime: {
         mode: 'dynamic',
-        percent: 14,
+        percent: 0.14,
         baseSeconds: 0.82,
         variationPercent: 55,
         afterglowSeconds: 0.1,
@@ -891,6 +987,7 @@ export const FireworkDesignSchema = z.object({
           flairColorMode: 'mixed',
         },
         head: {
+          visible: true,
           size: 160,
           opening: STAR_HEAD_OPENING_DEFAULTS,
           closing: STAR_HEAD_CLOSING_DEFAULTS,
@@ -912,11 +1009,13 @@ export const FireworkDesignSchema = z.object({
           frontClump: 0,
           width: { front: 0, tail: 0, curve: 1 },
           particleSize: { base: 0.6, headScale: 1, tailScale: 0.6, variationPercent: 0 },
+          opening: TRAIL_OPENING_DEFAULTS,
+          closing: TRAIL_CLOSING_DEFAULTS,
           placement: { headGapPercent: 0 },
           spacing: { curve: 1, jitterPercent: 0 },
           lifetime: {
             mode: 'dynamic',
-            percent: 10,
+            percent: 0.1,
             baseSeconds: 0.4,
             variationPercent: 20,
             afterglowSeconds: 0,
@@ -948,6 +1047,7 @@ export const FireworkDesignSchema = z.object({
           flairColorMode: 'mixed',
         },
         head: {
+          visible: true,
           size: 260,
           opening: STAR_HEAD_OPENING_DEFAULTS,
           closing: STAR_HEAD_CLOSING_DEFAULTS,
@@ -1021,6 +1121,10 @@ function isRecord(value: unknown): value is RecordLike {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isBurstTrailPreset(value: unknown): value is BurstTrailPreset {
+  return typeof value === 'string' && (BURST_TRAIL_PRESETS as readonly string[]).includes(value);
+}
+
 function deepMergeDesign(base: unknown, override: unknown): unknown {
   if (!isRecord(base)) return override;
   if (!isRecord(override)) return base;
@@ -1059,11 +1163,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0,
     width: { front: 0, tail: 0, curve: 1 },
     particleSize: { base: 0.6, headScale: 1, tailScale: 0.6, variationPercent: 0 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 0 },
     spacing: { curve: 1, jitterPercent: 0 },
     lifetime: {
       mode: 'dynamic',
-      percent: 10,
+      percent: 0.1,
       baseSeconds: 0.4,
       variationPercent: 20,
       afterglowSeconds: 0,
@@ -1094,11 +1200,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.35,
     width: { front: 1.1, tail: 2.1, curve: 1.15 },
     particleSize: { base: 0.65, headScale: 1, tailScale: 0.45, variationPercent: 55 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 35 },
     spacing: { curve: 1, jitterPercent: 55 },
     lifetime: {
       mode: 'dynamic',
-      percent: 14,
+      percent: 0.14,
       baseSeconds: 0.82,
       variationPercent: 55,
       afterglowSeconds: 0.1,
@@ -1130,11 +1238,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.55,
     width: { front: 1.35, tail: 1.35, curve: 1 },
     particleSize: { base: 0.95, headScale: 1, tailScale: 0.55, variationPercent: 28 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 45 },
     spacing: { curve: 1, jitterPercent: 22 },
     lifetime: {
       mode: 'dynamic',
-      percent: 18,
+      percent: 0.18,
       baseSeconds: 1,
       variationPercent: 28,
       afterglowSeconds: 0.12,
@@ -1166,11 +1276,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.46,
     width: { front: 1.15, tail: 2.2, curve: 1.6 },
     particleSize: { base: 0.82, headScale: 1, tailScale: 0.45, variationPercent: 34 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 55 },
     spacing: { curve: 1.35, jitterPercent: 24 },
     lifetime: {
       mode: 'dynamic',
-      percent: 32,
+      percent: 0.32,
       baseSeconds: 2.25,
       variationPercent: 34,
       afterglowSeconds: 0.2,
@@ -1202,11 +1314,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.68,
     width: { front: 2.6, tail: 0.8, curve: 0.72 },
     particleSize: { base: 1.05, headScale: 1.15, tailScale: 0.35, variationPercent: 20 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 70 },
     spacing: { curve: 1.25, jitterPercent: 18 },
     lifetime: {
       mode: 'dynamic',
-      percent: 22,
+      percent: 0.22,
       baseSeconds: 1.25,
       variationPercent: 24,
       afterglowSeconds: 0.14,
@@ -1238,11 +1352,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.72,
     width: { front: 3.2, tail: 2.7, curve: 0.86 },
     particleSize: { base: 1, headScale: 1.12, tailScale: 0.45, variationPercent: 18 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 70 },
     spacing: { curve: 1.4, jitterPercent: 15 },
     lifetime: {
       mode: 'dynamic',
-      percent: 24,
+      percent: 0.24,
       baseSeconds: 1.45,
       variationPercent: 22,
       afterglowSeconds: 0.16,
@@ -1275,11 +1391,13 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     frontClump: 0.55,
     width: { front: 20, tail: 0, curve: 1 },
     particleSize: { base: 1.2, headScale: 1, tailScale: 0.35, variationPercent: 8 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 60 },
     spacing: { curve: 1, jitterPercent: 18 },
     lifetime: {
       mode: 'dynamic',
-      percent: 18,
+      percent: 0.18,
       baseSeconds: 8,
       variationPercent: 30,
       afterglowSeconds: 0.15,
@@ -1439,6 +1557,42 @@ function normaliseBurstTrail(trail: BurstTrail): BurstTrail {
     version: 2,
     stops: normaliseBurstTrailStops(merged.stops.length > 0 ? merged.stops : presetDefaults.stops),
   };
+}
+
+function hydrateBurstTrailFragment(fragment: RecordLike): BurstTrail {
+  const preset = isBurstTrailPreset(fragment.preset) ? fragment.preset : 'custom';
+  return normaliseBurstTrail(deepMergeDesign(makeBurstTrailPreset(preset), fragment) as BurstTrail);
+}
+
+export function hydrateBurstTrailDefaults(source: unknown): unknown {
+  if (!isRecord(source)) return source;
+
+  let hydrated: RecordLike | null = null;
+  const write = (key: string, value: unknown) => {
+    hydrated ??= { ...source };
+    hydrated[key] = value;
+  };
+
+  if (isRecord(source.burstTrail)) {
+    write('burstTrail', hydrateBurstTrailFragment(source.burstTrail));
+  }
+
+  const stars = isRecord(source.stars) ? source.stars : null;
+  if (stars) {
+    let hydratedStars: RecordLike | null = null;
+    for (const layerKey of ['outer', 'core'] as const) {
+      const layer = isRecord(stars[layerKey]) ? stars[layerKey] : null;
+      if (!layer || !isRecord(layer.burstTrail)) continue;
+      hydratedStars ??= { ...stars };
+      hydratedStars[layerKey] = {
+        ...layer,
+        burstTrail: hydrateBurstTrailFragment(layer.burstTrail),
+      };
+    }
+    if (hydratedStars) write('stars', hydratedStars);
+  }
+
+  return hydrated ?? source;
 }
 
 function normaliseStarLayer(layer: FireworkStarLayer): FireworkStarLayer {
@@ -1747,6 +1901,7 @@ function starsBlock(headSize: number | null): StarsLike {
         ? {}
         : {
             head: {
+              visible: true,
               size: headSize,
               opening: STAR_HEAD_OPENING_DEFAULTS,
               closing: STAR_HEAD_CLOSING_DEFAULTS,
@@ -1957,6 +2112,41 @@ function extractBaseDefaults(baseModel: unknown): unknown {
   return canonicaliseEffectModelJson(baseModel).renderDefaults;
 }
 
+function mergeDefaultFragments(fragments: readonly unknown[] | undefined): unknown {
+  if (!fragments?.length) return {};
+  return fragments.reduce<unknown>(
+    (merged, fragment) => deepMergeDesign(merged, hydrateBurstTrailDefaults(fragment)),
+    {},
+  );
+}
+
+function burstTrailOverrideKind(source: unknown): 'topLevel' | 'outer' | null {
+  if (!isRecord(source)) return null;
+
+  let kind: 'topLevel' | 'outer' | null = isRecord(source.burstTrail) ? 'topLevel' : null;
+  const stars = sourceStars(source);
+  const outer = isRecord(stars.outer) ? stars.outer : null;
+  if (outer && isRecord(outer.burstTrail)) kind = 'outer';
+  return kind;
+}
+
+function lastBurstTrailOverrideKind(sources: readonly unknown[]): 'topLevel' | 'outer' | null {
+  return sources.reduce<'topLevel' | 'outer' | null>(
+    (latest, source) => burstTrailOverrideKind(source) ?? latest,
+    null,
+  );
+}
+
+function syncTopLevelBurstTrailToOuterStar(compiled: RecordLike, sources: readonly unknown[]) {
+  if (lastBurstTrailOverrideKind(sources) !== 'topLevel' || !isRecord(compiled.burstTrail)) return;
+
+  const stars = isRecord(compiled.stars) ? { ...compiled.stars } : {};
+  const outer = isRecord(stars.outer) ? { ...stars.outer } : {};
+  outer.burstTrail = compiled.burstTrail;
+  stars.outer = outer;
+  compiled.stars = stars;
+}
+
 function fireworkSpecToDesignLike(spec: RecordLike): RecordLike | null {
   if (typeof spec.shellType !== 'string') return null;
   const spreadSize = typeof spec.spreadSize === 'number' ? spec.spreadSize : null;
@@ -2025,6 +2215,8 @@ function fireworkSpecToDesignLike(spec: RecordLike): RecordLike | null {
 
 export function compileFireworkDesign(params: {
   baseModel?: unknown;
+  effectStyleDefaults?: readonly unknown[];
+  fireworkStyleDefaults?: readonly unknown[];
   variantOverrides?: unknown;
   primaryColor?: string | null;
   colorPalette?: string[] | null;
@@ -2033,9 +2225,21 @@ export function compileFireworkDesign(params: {
   const legacyDesignLike = isRecord(params.legacySpec)
     ? (fireworkSpecToDesignLike(params.legacySpec) ?? params.legacySpec)
     : params.legacySpec;
-  const baseDefaults = extractBaseDefaults(params.baseModel);
+  const baseDefaults = hydrateBurstTrailDefaults(extractBaseDefaults(params.baseModel));
+  const effectStyleDefaults = mergeDefaultFragments(params.effectStyleDefaults);
+  const fireworkStyleDefaults = mergeDefaultFragments(params.fireworkStyleDefaults);
+  const variantOverrides = hydrateBurstTrailDefaults(params.variantOverrides);
+  const burstTrailOverrideSources = [
+    ...(params.effectStyleDefaults ?? []),
+    baseDefaults,
+    ...(params.fireworkStyleDefaults ?? []),
+    variantOverrides,
+  ];
   const legacyOrDefault = legacyDesignLike ?? DEFAULT_DESIGN;
-  let withBase = deepMergeDesign(legacyOrDefault, baseDefaults);
+  let withBase = deepMergeDesign(
+    deepMergeDesign(legacyOrDefault, effectStyleDefaults),
+    baseDefaults,
+  );
   const baseLegacySmokeParticles = legacySmokeParticlesFromSource(baseDefaults);
   if (baseLegacySmokeParticles != null) {
     withBase = deepMergeDesign(withBase, {
@@ -2058,15 +2262,18 @@ export function compileFireworkDesign(params: {
     const strobeRecord = isRecord(withBase.strobe) ? withBase.strobe : {};
     withBase = { ...withBase, strobe: { ...strobeRecord, enabled: true } };
   }
-  const withVariant = deepMergeDesign(withBase, params.variantOverrides);
+  const withVariant = deepMergeDesign(
+    deepMergeDesign(withBase, fireworkStyleDefaults),
+    variantOverrides,
+  );
   const compiled = isRecord(withVariant) ? { ...withVariant } : {};
-  const variantLegacySmokeParticles = legacySmokeParticlesFromSource(params.variantOverrides);
+  const variantLegacySmokeParticles = legacySmokeParticlesFromSource(variantOverrides);
   if (variantLegacySmokeParticles != null) {
     compiled.launch = deepMergeDesign(compiled.launch, {
       smoke: { particles: variantLegacySmokeParticles },
     });
   }
-  const variantLaunchSound = launchSoundFromSource(params.variantOverrides);
+  const variantLaunchSound = launchSoundFromSource(variantOverrides);
   if (variantLaunchSound != null) {
     compiled.sound = deepMergeDesign(compiled.sound, { launch: variantLaunchSound });
     compiled.mortar = deepMergeDesign(compiled.mortar, { sound: variantLaunchSound });
@@ -2078,8 +2285,9 @@ export function compileFireworkDesign(params: {
 
   const legacyBurstTrail = inferBurstTrailFromLegacy(compiled);
   compiled.burstTrail = isRecord(compiled.burstTrail)
-    ? deepMergeDesign(legacyBurstTrail, compiled.burstTrail)
+    ? deepMergeDesign(legacyBurstTrail, hydrateBurstTrailFragment(compiled.burstTrail))
     : legacyBurstTrail;
+  syncTopLevelBurstTrailToOuterStar(compiled, burstTrailOverrideSources);
 
   const colourSettings = isRecord(compiled.colour) ? compiled.colour : {};
   const colourEnabled = colourSettings.enabled !== false;
@@ -2191,14 +2399,14 @@ export function estimateDesignDurationSeconds(design: FireworkDesign): number {
   // room for the last squares' staggered fade.
   const streakTail = Math.max(
     0,
-    ...layers.map((layer) =>
-      layer.burstTrail.enabled && layer.burstTrail.particlesPerStar > 0
-        ? (Math.max(layer.burst.life[0], layer.burst.life[1]) *
-            (layer.burstTrail.lifetime.percent / 100) +
-            layer.burstTrail.lifetime.afterglowSeconds) *
-          1.1
-        : 0,
-    ),
+    ...layers.map((layer) => {
+      if (!layer.burstTrail.enabled || layer.burstTrail.particlesPerStar <= 0) return 0;
+      const multiplier = Math.min(2, Math.max(0, layer.burstTrail.lifetime.percent));
+      const randomBoost =
+        1 + Math.min(1, Math.max(0, layer.burstTrail.lifetime.variationPercent / 100));
+      const maxTrailLife = multiplier * randomBoost;
+      return Math.max(layer.burst.life[0], layer.burst.life[1]) * Math.max(0, maxTrailLife - 1);
+    }),
   );
   return liftTime + burstLife * starLifeMultiplier + Math.max(trailTail, streakTail);
 }
