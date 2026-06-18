@@ -48,7 +48,7 @@ import {
 
 type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin,fadeIn] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -66,7 +66,7 @@ const FIXED_DT = 1 / 60;
 // by ageing particles across each rebuilt segment.
 const SCRUB_DT = 1 / 24;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 20;
+const SNAPSHOT_STRIDE = 21;
 const MAX_SNAPSHOTS = 120;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
@@ -601,7 +601,12 @@ export class FireworksEngine {
   setElapsed(target: number): void {
     const next = Math.max(0, target);
     const delta = next - this.elapsed;
-    if (delta < -0.0001 || delta > LARGE_JUMP_SECONDS) {
+    const isBackwardSeek = delta < -0.0001;
+    if (isBackwardSeek) {
+      this.seekTo(next, { useSnapshots: false });
+      return;
+    }
+    if (delta > LARGE_JUMP_SECONDS) {
       this.seekTo(next);
       return;
     }
@@ -653,8 +658,8 @@ export class FireworksEngine {
   }
 
   /** Seek using nearest snapshot if available, otherwise full rebuild. */
-  private seekTo(target: number): void {
-    const snap = this.findSnapshot(target);
+  private seekTo(target: number, options: { useSnapshots?: boolean } = {}): void {
+    const snap = options.useSnapshots === false ? null : this.findSnapshot(target);
     if (snap && snap.time <= target) {
       this.restoreSnapshot(snap.state);
       this.elapsed = snap.time;
@@ -919,6 +924,7 @@ export class FireworksEngine {
       state.data[o + 17] = p.shape;
       state.data[o + 18] = p.rotation;
       state.data[o + 19] = p.spin;
+      state.data[o + 20] = p.fadeIn ? 1 : 0;
       w++;
     }
     return state;
@@ -951,6 +957,7 @@ export class FireworksEngine {
       p.shape = state.data[o + 17] || 0;
       p.rotation = state.data[o + 18] || 0;
       p.spin = state.data[o + 19] || 0;
+      p.fadeIn = state.data[o + 20] !== 0;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);
@@ -1039,7 +1046,7 @@ function renderParticleAlpha(p: Particle): number {
   const maxLife = Math.max(p.maxLife, p.life, 0.001);
   const lifeRatio = clamp(p.life / maxLife, 0, 1);
   const ageRatio = 1 - lifeRatio;
-  const fadeIn = p.mass <= 0.003 ? clamp(ageRatio * 18, 0, 1) : 1;
+  const fadeIn = p.fadeIn && p.mass <= 0.003 ? clamp(ageRatio * 18, 0, 1) : 1;
   const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
   const isSmoke = p.mass >= 0.004 && p.mass < 0.01;
   if (isSmoke) {

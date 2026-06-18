@@ -2,7 +2,7 @@
 
 import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { AdminOverviewSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminOverviewContentSkeleton } from '@/app/components/app/RouteSkeletons';
 import { AnalyserWarmthControl } from './AnalyserWarmthControl';
 import { AdminOverviewTabs } from './AdminOverviewTabs';
 import { AdminOverviewToolbar } from './AdminOverviewToolbar';
@@ -99,14 +99,12 @@ export default async function AdminOverviewPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
-      <Suspense key={range.key} fallback={<AdminOverviewSkeleton />}>
-        <AdminOverviewData range={range} tab={tab.key} />
-      </Suspense>
+      <AdminOverviewData range={range} tab={tab.key} />
     </div>
   );
 }
 
-async function AdminOverviewData({
+function AdminOverviewData({
   range,
   tab,
 }: {
@@ -114,24 +112,48 @@ async function AdminOverviewData({
   tab: AdminOverviewTabKey;
 }) {
   return (
-    <AdminOverviewTabs tab={tab}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
-          {ADMIN_OVERVIEW_TAB_OPTIONS.map((option) => (
-            <TabsTrigger className="cursor-pointer" key={option.key} value={option.key}>
-              {option.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <AdminOverviewTabs
+      controls={<AdminOverviewTabControls range={range} />}
+      pendingFallback={<AdminOverviewContentSkeleton />}
+      tab={tab}
+    >
+      <Suspense key={`${range.key}:${tab}`} fallback={<AdminOverviewContentSkeleton tab={tab} />}>
+        <AdminOverviewTabContent range={range} tab={tab} />
+      </Suspense>
+    </AdminOverviewTabs>
+  );
+}
 
-        <AdminOverviewToolbar range={range.key} />
-      </div>
+function AdminOverviewTabControls({ range }: { range: AdminOverviewRangeOption }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1">
+        {ADMIN_OVERVIEW_TAB_OPTIONS.map((option) => (
+          <TabsTrigger className="cursor-pointer" key={option.key} value={option.key}>
+            {option.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
+      <AdminOverviewToolbar range={range.key} />
+    </div>
+  );
+}
+
+async function AdminOverviewTabContent({
+  range,
+  tab,
+}: {
+  range: AdminOverviewRangeOption;
+  tab: AdminOverviewTabKey;
+}) {
+  return (
+    <>
       {tab === 'overview' ? <OverviewTabContent range={range} /> : null}
       {tab === 'catalogue' ? <CatalogueTabContent /> : null}
       {tab === 'imports' ? <ImportsTabContent /> : null}
       {tab === 'generation' ? <GenerationTabContent range={range} /> : null}
-    </AdminOverviewTabs>
+    </>
   );
 }
 

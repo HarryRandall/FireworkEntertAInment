@@ -10,15 +10,28 @@ import { createClient } from '@/utils/supabase/server';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
+  invalidateAdminStyleDefaultsCache,
   requirePermission,
 } from '@/lib/admin.server';
+import { isMissingStyleDefaultSchemaError } from '@/lib/admin/style-default-schema';
+import {
+  normaliseStyleDefaultAssignments,
+  replaceEffectStyleDefaultLinks,
+  validateStyleDefaultAssignments,
+} from '@/lib/admin/style-default-assignments';
 import type { Json } from '@/lib/database.types';
 import { canonicaliseEffectModelJson } from '@/lib/fireworks/design';
+import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
 
 const BaseEffectFamilySchema = z.enum(['aerial_burst', 'ascending', 'ground', 'noise', 'compound']);
+const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
+const StyleDefaultAssignmentsSchema = z.partialRecord(
+  StyleDefaultKindSchema,
+  z.string().uuid().nullable(),
+);
 
 const CUSTOM_STAR_EFFECT_MODEL = canonicaliseEffectModelJson({
   geometry: 'sphere',
@@ -70,6 +83,9 @@ const EffectPatchSchema = z.object({
   family: BaseEffectFamilySchema,
   patternKey: z.string().trim().min(1).max(80),
   sortOrder: z.coerce.number().int().min(0).max(10_000),
+  starStyleDefaultId: z.string().uuid().optional().nullable(),
+  trailStyleDefaultId: z.string().uuid().optional().nullable(),
+  styleDefaultIds: StyleDefaultAssignmentsSchema.optional().nullable(),
   modelJson: z.string().trim().min(2).max(100_000),
 });
 
@@ -105,21 +121,51 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   if (!model.ok) return { ok: false, error: model.error };
 
   const supabase = createClient(await cookies());
-  const { data, error } = await supabase
+  const assignments = normaliseStyleDefaultAssignments({
+    styleDefaultIds: parsed.data.styleDefaultIds,
+    starStyleDefaultId: parsed.data.starStyleDefaultId,
+    trailStyleDefaultId: parsed.data.trailStyleDefaultId,
+  });
+  const validatedAssignments = await validateStyleDefaultAssignments(supabase, assignments);
+  if (!validatedAssignments.ok) return validatedAssignments;
+
+  const patch = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    family: parsed.data.family,
+    pattern_key: parsed.data.patternKey,
+    sort_order: parsed.data.sortOrder,
+    star_style_default_id: assignments.star,
+    trail_style_default_id: assignments.trail,
+    model_json: model.value,
+  };
+  const fallbackPatch = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    family: parsed.data.family,
+    pattern_key: parsed.data.patternKey,
+    sort_order: parsed.data.sortOrder,
+    model_json: model.value,
+  };
+  let result = await supabase
     .from('firework_effects')
-    .update({
-      name: parsed.data.name,
-      description: parsed.data.description || null,
-      family: parsed.data.family,
-      pattern_key: parsed.data.patternKey,
-      sort_order: parsed.data.sortOrder,
-      model_json: model.value,
-    })
+    .update(patch)
     .eq('id', parsed.data.id)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
     .select('updated_at')
     .maybeSingle();
 
+  if (isMissingStyleDefaultSchemaError(result.error)) {
+    result = await supabase
+      .from('firework_effects')
+      .update(fallbackPatch)
+      .eq('id', parsed.data.id)
+      .eq('updated_at', parsed.data.expectedUpdatedAt)
+      .select('updated_at')
+      .maybeSingle();
+  }
+
+  const { data, error } = result;
   if (error) return { ok: false, error: error.message };
   if (!data) {
     return {
@@ -128,11 +174,16 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     };
   }
 
+  const linksResult = await replaceEffectStyleDefaultLinks(supabase, parsed.data.id, assignments);
+  if (!linksResult.ok) return { ok: false, error: linksResult.error };
+
   await invalidateAdminEffectsCache(parsed.data.id);
   await invalidateAdminFireworksCache();
+  await invalidateAdminStyleDefaultsCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${parsed.data.id}`);
+  revalidatePath('/admin/effects?tab=defaults');
   revalidatePath('/admin/fireworks');
   return { ok: true, updatedAt: data.updated_at };
 }

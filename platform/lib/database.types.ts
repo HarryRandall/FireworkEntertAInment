@@ -77,6 +77,45 @@ export type Database = {
           },
         ]
       }
+      firework_effect_style_default_links: {
+        Row: {
+          created_at: string
+          firework_effect_id: string
+          kind: string
+          style_default_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          firework_effect_id: string
+          kind: string
+          style_default_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          firework_effect_id?: string
+          kind?: string
+          style_default_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_effect_style_default_links_firework_effect_id_fkey"
+            columns: ["firework_effect_id"]
+            isOneToOne: false
+            referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_effect_style_default_links_style_default_id_fkey"
+            columns: ["style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       firework_effects: {
         Row: {
           created_at: string
@@ -89,6 +128,8 @@ export type Database = {
           slug: string
           sort_order: number
           source: string
+          star_style_default_id: string | null
+          trail_style_default_id: string | null
           updated_at: string
         }
         Insert: {
@@ -102,6 +143,8 @@ export type Database = {
           slug: string
           sort_order?: number
           source?: string
+          star_style_default_id?: string | null
+          trail_style_default_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -115,6 +158,101 @@ export type Database = {
           slug?: string
           sort_order?: number
           source?: string
+          star_style_default_id?: string | null
+          trail_style_default_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_effects_star_style_default_id_fkey"
+            columns: ["star_style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_effects_trail_style_default_id_fkey"
+            columns: ["trail_style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firework_style_default_links: {
+        Row: {
+          created_at: string
+          firework_id: string
+          kind: string
+          style_default_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          firework_id: string
+          kind: string
+          style_default_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          firework_id?: string
+          kind?: string
+          style_default_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_style_default_links_firework_id_fkey"
+            columns: ["firework_id"]
+            isOneToOne: false
+            referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_style_default_links_style_default_id_fkey"
+            columns: ["style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firework_style_defaults: {
+        Row: {
+          created_at: string
+          defaults_json: Json
+          description: string | null
+          id: string
+          is_archived: boolean
+          kind: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          defaults_json?: Json
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          kind: string
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          defaults_json?: Json
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          kind?: string
+          name?: string
+          slug?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -136,6 +274,8 @@ export type Database = {
           secondary_color: string | null
           slug: string
           source: string
+          star_style_default_id: string | null
+          trail_style_default_id: string | null
           updated_at: string
           variant_json: Json
         }
@@ -155,6 +295,8 @@ export type Database = {
           secondary_color?: string | null
           slug: string
           source?: string
+          star_style_default_id?: string | null
+          trail_style_default_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
@@ -174,6 +316,8 @@ export type Database = {
           secondary_color?: string | null
           slug?: string
           source?: string
+          star_style_default_id?: string | null
+          trail_style_default_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
@@ -183,6 +327,20 @@ export type Database = {
             columns: ["firework_effect_id"]
             isOneToOne: false
             referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fireworks_star_style_default_id_fkey"
+            columns: ["star_style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fireworks_trail_style_default_id_fkey"
+            columns: ["trail_style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
             referencedColumns: ["id"]
           },
         ]

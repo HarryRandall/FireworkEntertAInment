@@ -95,17 +95,44 @@ export function LibraryCardsSkeleton() {
 export function AdminOverviewSkeleton() {
   return (
     <div className="space-y-4" aria-label="Loading admin overview">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="bg-muted inline-flex h-9 max-w-full items-center gap-1 overflow-hidden rounded-lg p-[3px]">
-          {['w-18', 'w-20', 'w-16', 'w-24'].map((widthClass, index) => (
-            <Skeleton key={index} className={cn('h-7 rounded-md', widthClass)} />
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-36 rounded-md" />
-        </div>
-      </div>
+      <AdminOverviewControlsSkeleton />
+      <AdminOverviewContentSkeleton />
+    </div>
+  );
+}
 
+type AdminOverviewSkeletonTab = 'catalogue' | 'generation' | 'imports' | 'overview';
+
+/** Content-only skeleton for async `/admin` overview tab panels. */
+export function AdminOverviewContentSkeleton({
+  tab = 'overview',
+}: {
+  tab?: AdminOverviewSkeletonTab;
+}) {
+  if (tab === 'catalogue') return <AdminOverviewCatalogueContentSkeleton />;
+  if (tab === 'imports') return <AdminOverviewImportsContentSkeleton />;
+  if (tab === 'generation') return <AdminOverviewGenerationContentSkeleton />;
+  return <AdminOverviewDashboardContentSkeleton />;
+}
+
+function AdminOverviewControlsSkeleton() {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-muted inline-flex h-9 max-w-full items-center gap-1 overflow-hidden rounded-lg p-[3px]">
+        {['w-18', 'w-20', 'w-16', 'w-24'].map((widthClass, index) => (
+          <Skeleton key={index} className={cn('h-7 rounded-md', widthClass)} />
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-9 w-36 rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+function AdminOverviewDashboardContentSkeleton() {
+  return (
+    <div className="space-y-4" aria-label="Loading admin overview content">
       <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl shadow-xs ring-1">
         <div className="grid divide-y md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -132,6 +159,88 @@ export function AdminOverviewSkeleton() {
           className="xl:col-span-5 xl:col-start-8"
           chartClassName="h-64"
         />
+      </div>
+    </div>
+  );
+}
+
+function AdminOverviewCatalogueContentSkeleton() {
+  return (
+    <div className="flex-1 text-sm outline-none" aria-label="Loading catalogue overview">
+      <div className="bg-card ring-foreground/10 rounded-xl py-6 shadow-xs ring-1">
+        <div className="mb-5 px-6">
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div className="grid gap-6 px-6 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, sectionIndex) => (
+            <div key={sectionIndex} className="min-w-0 space-y-3">
+              <Skeleton className="h-4 w-20" />
+              {Array.from({ length: 5 }).map((_, rowIndex) => (
+                <div key={rowIndex} className="space-y-1.5">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                    <Skeleton className="h-4 w-36 max-w-full" />
+                    <Skeleton className="h-4 w-10" />
+                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminOverviewImportsContentSkeleton() {
+  return (
+    <div className="flex-1 text-sm outline-none" aria-label="Loading import pipeline">
+      <div className="bg-card ring-foreground/10 rounded-xl py-6 shadow-xs ring-1">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 px-6">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-44" />
+        </div>
+        <div className="px-6">
+          <div className="grid grid-cols-[minmax(0,1fr)_6rem_6rem] gap-4 border-b pb-3">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="ml-auto h-4 w-10" />
+            <Skeleton className="ml-auto h-4 w-12" />
+          </div>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-[minmax(0,1fr)_6rem_6rem] gap-4 border-b py-4 last:border-b-0"
+            >
+              <Skeleton className="h-4 w-28 max-w-full" />
+              <Skeleton className="ml-auto h-4 w-8" />
+              <Skeleton className="ml-auto h-4 w-10" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminOverviewGenerationContentSkeleton() {
+  return (
+    <div
+      className="flex flex-1 flex-col gap-4 text-sm outline-none"
+      aria-label="Loading generation overview"
+    >
+      <div className="bg-card ring-foreground/10 rounded-xl p-5 shadow-xs ring-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-4 w-64 max-w-full" />
+          </div>
+          <Skeleton className="h-10 w-32 rounded-full" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
+        <AdminOverviewPanelSkeleton className="xl:col-span-7" chartClassName="h-72" />
+        <AdminOverviewPanelSkeleton className="xl:col-span-5" chartClassName="h-36" compact />
       </div>
     </div>
   );

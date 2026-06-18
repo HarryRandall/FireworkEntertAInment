@@ -63,8 +63,10 @@ const BROCADE_TRAIL_PEACH = new THREE.Color(1, 0.84, 0.6);
 const BROCADE_MAX_STREAKS = 64;
 const BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32;
 const STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS = 0.6;
-const BURST_TRAIL_SPREAD_SCALE = 0.035;
-const BURST_TRAIL_MAX_SPREAD = 90;
+const SHELL_TRAIL_SPREAD_SCALE = 0.035;
+const BURST_TRAIL_MAX_SPREAD_ANGLE = 80;
+const BURST_TRAIL_SPREAD_SCALE = 0.055;
+const BURST_TRAIL_MAX_SPREAD = 180;
 /** Hot/cool ends of the named streak-trail palettes. */
 const GOLD_TRAIL_HOT = new THREE.Color(1, 0.9, 0.62);
 const GOLD_TRAIL_COOL = new THREE.Color(1, 0.45, 0.15);
@@ -440,20 +442,24 @@ function sampleBurstTrailStop(trail: BurstTrail, positionPercent: number) {
   };
 }
 
-function burstTrailSpreadAngle(trail: BurstTrail, positionPercent: number): number {
-  const width = trail.width;
-  const t = Math.pow(clamp(positionPercent / 100, 0, 1), width.curve);
-  return width.front + (width.tail - width.front) * t;
+function burstTrailEndpointRadius(angle: number, referenceDistance: number): number {
+  const degrees = clamp(angle, 0, BURST_TRAIL_MAX_SPREAD_ANGLE);
+  if (degrees <= 0 || referenceDistance <= 0) return 0;
+  return Math.tan((degrees * Math.PI) / 180) * referenceDistance * BURST_TRAIL_SPREAD_SCALE;
 }
 
 function burstTrailSpreadRadius(
   trail: BurstTrail,
   positionPercent: number,
-  pathEstimate: number,
+  distanceBehindHead: number,
+  visibleTrailLength: number,
 ): number {
-  const angle = clamp(burstTrailSpreadAngle(trail, positionPercent), 0, 60);
-  if (angle <= 0 || pathEstimate <= 0) return 0;
-  const radius = Math.tan((angle * Math.PI) / 180) * pathEstimate * BURST_TRAIL_SPREAD_SCALE;
+  const width = trail.width;
+  const t = Math.pow(clamp(positionPercent / 100, 0, 1), width.curve);
+  const frontDistance = Math.max(0, visibleTrailLength - distanceBehindHead);
+  const tailRadius = burstTrailEndpointRadius(width.tail, distanceBehindHead) * (1 - t);
+  const frontRadius = burstTrailEndpointRadius(width.front, frontDistance) * t;
+  const radius = tailRadius + frontRadius;
   return clamp(radius, 0, BURST_TRAIL_MAX_SPREAD);
 }
 
@@ -466,7 +472,7 @@ function shellTrailTubeRadius(shellTrail: ShellTrail, age: number, liftRiseHeigh
   const maxRadius = clamp(shellTrail.tubeDiameter, 0, 90) / 2;
   const angle = clamp(shellTrailSpreadAngle(shellTrail, age), 0, 60);
   if (maxRadius <= 0 || angle <= 0 || liftRiseHeight <= 0) return 0;
-  const radius = Math.tan((angle * Math.PI) / 180) * liftRiseHeight * BURST_TRAIL_SPREAD_SCALE;
+  const radius = Math.tan((angle * Math.PI) / 180) * liftRiseHeight * SHELL_TRAIL_SPREAD_SCALE;
   return clamp(radius, 0, maxRadius);
 }
 
@@ -510,24 +516,146 @@ function burstTrailParticleSizeAt(age: number, headSize: number, tailSize: numbe
   return Math.max(0.01, headSize + (tailSize - headSize) * t);
 }
 
+function burstTrailOpeningProgress(age: number, percent: number): number {
+  const duration = clamp(percent / 100, 0.01, 1);
+  return clamp(age / duration, 0, 1);
+}
+
+function burstTrailClosingProgress(
+  elapsedSeconds: number,
+  lifeReferenceSeconds: number,
+  percent: number,
+): number {
+  const duration = Math.max(
+    0.01,
+    Math.max(0.01, lifeReferenceSeconds) * clamp(percent / 100, 0.01, 1),
+  );
+  return clamp(elapsedSeconds / duration, 0, 1);
+}
+
+function burstTrailOpeningRevealProgress(pathAge: number, trail: BurstTrail): number {
+  return burstTrailOpeningProgress(pathAge, trail.opening.visibility.revealPercent);
+}
+
+function burstTrailPathSizeScaleAt(pathAge: number, trail: BurstTrail): number {
+  const start = clamp(trail.opening.size.startPercent / 100, 0.01, 1);
+  const progress = burstTrailOpeningRevealProgress(pathAge, trail);
+  return start + (1 - start) * progress;
+}
+
+function burstTrailLifecycleSizeAt(
+  pathAge: number,
+  closingElapsedSeconds: number,
+  closingLifeReferenceSeconds: number,
+  baseSize: number,
+  trail: BurstTrail,
+): number {
+  let scale = 1;
+  scale *= burstTrailPathSizeScaleAt(pathAge, trail);
+
+  const closing = trail.closing.size;
+  if (closing.enabled) {
+    const end = clamp(closing.endPercent / 100, 0, 1);
+    const progress = burstTrailClosingProgress(
+      closingElapsedSeconds,
+      closingLifeReferenceSeconds,
+      closing.shrinkPercent,
+    );
+    scale *= 1 + (end - 1) * progress;
+  }
+
+  return Math.max(0.01, baseSize * scale);
+}
+
+function burstTrailOpeningBrightnessAt(pathAge: number, trail: BurstTrail): number {
+  const start = clamp(trail.opening.visibility.brightnessPercent / 100, 0, 3);
+  const progress = burstTrailOpeningRevealProgress(pathAge, trail);
+  return start + (1 - start) * progress;
+}
+
+function burstTrailOpeningParticleVisibility(pathAge: number, trail: BurstTrail): number {
+  const start = clamp(trail.opening.visibility.particlesPercent / 100, 0, 1);
+  const progress = burstTrailOpeningRevealProgress(pathAge, trail);
+  return start + (1 - start) * progress;
+}
+
+function burstTrailWideTailAlpha(trail: BurstTrail, positionPercent: number): number {
+  const fade = trail.closing.spreadFade;
+  if (!fade.enabled) return 1;
+
+  const startAngle = clamp(fade.startAngle, 0, BURST_TRAIL_MAX_SPREAD_ANGLE);
+  const tailAngle = clamp(trail.width.tail, 0, BURST_TRAIL_MAX_SPREAD_ANGLE);
+  if (tailAngle <= startAngle) return 1;
+
+  const angleRange = Math.max(1, BURST_TRAIL_MAX_SPREAD_ANGLE - startAngle);
+  const angleFade = clamp((tailAngle - startAngle) / angleRange, 0, 1);
+  const tailAmount = Math.pow(1 - clamp(positionPercent / 100, 0, 1), 0.75);
+  const endAlpha = clamp(fade.endOpacityPercent / 100, 0, 1);
+  return clamp(1 - angleFade * tailAmount * (1 - endAlpha), endAlpha, 1);
+}
+
+function mixTrailColor(
+  from: { r: number; g: number; b: number },
+  to: { r: number; g: number; b: number },
+  amount: number,
+): { r: number; g: number; b: number } {
+  const t = clamp(amount, 0, 1);
+  return {
+    r: from.r + (to.r - from.r) * t,
+    g: from.g + (to.g - from.g) * t,
+    b: from.b + (to.b - from.b) * t,
+  };
+}
+
 function burstTrailParticleColorAt(
   age: number,
+  pathAge: number,
   hot: THREE.Color,
   cool: THREE.Color,
   brightness: number,
   fadeSoftness: number,
   flickerMix: number,
+  trail?: BurstTrail,
+  closingElapsedSeconds = 0,
+  closingLifeReferenceSeconds = 1,
 ): { r: number; g: number; b: number } {
   const toneMix = Math.pow(clamp(age, 0, 1), clamp(fadeSoftness, 0.2, 4));
   const baseR = hot.r + (cool.r - hot.r) * toneMix;
   const baseG = hot.g + (cool.g - hot.g) * toneMix;
   const baseB = hot.b + (cool.b - hot.b) * toneMix;
   const sparkle = flickerMix * (1 - toneMix);
-  return {
+  let tone = {
     r: (baseR + (HOT_SPARK_COLOR.r - baseR) * sparkle) * brightness,
     g: (baseG + (HOT_SPARK_COLOR.g - baseG) * sparkle) * brightness,
     b: (baseB + (HOT_SPARK_COLOR.b - baseB) * sparkle) * brightness,
   };
+  if (!trail) return tone;
+
+  const closing = trail.closing.colour;
+  if (closing.enabled) {
+    tone = mixTrailColor(
+      tone,
+      {
+        r: closing.color.r * brightness,
+        g: closing.color.g * brightness,
+        b: closing.color.b * brightness,
+      },
+      burstTrailClosingProgress(
+        closingElapsedSeconds,
+        closingLifeReferenceSeconds,
+        closing.fadePercent,
+      ),
+    );
+  }
+
+  const openingBrightness = burstTrailOpeningBrightnessAt(pathAge, trail);
+  tone = {
+    r: tone.r * openingBrightness,
+    g: tone.g * openingBrightness,
+    b: tone.b * openingBrightness,
+  };
+
+  return tone;
 }
 
 function burstTrailHeadGapOffset(
@@ -548,15 +676,12 @@ function burstTrailHeadGapOffset(
   };
 }
 
-function burstTrailScatterOffset(
+function burstTrailScatterVector(
   headVx: number,
   headVy: number,
   headVz: number,
-  radius: number,
   rng: RandomSource,
 ): { x: number; y: number; z: number } {
-  if (radius <= 0) return { x: 0, y: 0, z: 0 };
-
   const speed = Math.sqrt(headVx * headVx + headVy * headVy + headVz * headVz);
   const dx = speed > 0.0001 ? headVx / speed : 0;
   const dy = speed > 0.0001 ? headVy / speed : 1;
@@ -576,7 +701,7 @@ function burstTrailScatterOffset(
   const outY = rightZ * dx - rightX * dz;
   const outZ = rightX * dy - rightY * dx;
   const theta = rng.next() * Math.PI * 2;
-  const distance = Math.sqrt(rng.next()) * radius;
+  const distance = Math.sqrt(rng.next());
   const cos = Math.cos(theta) * distance;
   const sin = Math.sin(theta) * distance;
   return {
@@ -584,6 +709,28 @@ function burstTrailScatterOffset(
     y: rightY * cos + outY * sin,
     z: rightZ * cos + outZ * sin,
   };
+}
+
+function scaleTrailScatter(
+  vector: { x: number; y: number; z: number },
+  radius: number,
+): { x: number; y: number; z: number } {
+  if (radius <= 0) return { x: 0, y: 0, z: 0 };
+  return {
+    x: vector.x * radius,
+    y: vector.y * radius,
+    z: vector.z * radius,
+  };
+}
+
+function burstTrailScatterOffset(
+  headVx: number,
+  headVy: number,
+  headVz: number,
+  radius: number,
+  rng: RandomSource,
+): { x: number; y: number; z: number } {
+  return scaleTrailScatter(burstTrailScatterVector(headVx, headVy, headVz, rng), radius);
 }
 
 function chooseBurstTrailShape(
@@ -961,6 +1108,7 @@ export class Effects {
           : new THREE.Color(sparkColor.r * 0.46, sparkColor.g * 0.38, sparkColor.b * 0.28);
         const sparkTone = burstTrailParticleColorAt(
           0,
+          0,
           sparkColor,
           coolSparkColor,
           liftParticles.intensity.brightness,
@@ -1030,6 +1178,7 @@ export class Effects {
             : (p) => {
                 const particleAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
                 const nextTone = burstTrailParticleColorAt(
+                  particleAge,
                   particleAge,
                   sparkColor,
                   coolSparkColor,
@@ -1474,7 +1623,7 @@ export class Effects {
 
     const glow = clamp(layer.head.glowStrength, 0, 3);
     const headShape = headShapeValue(glow, o.styleIndex ?? 0);
-    const particleShape = layer.enabled ? headShape : HIDDEN_PARTICLE_SHAPE;
+    const particleShape = layer.head.visible === false ? HIDDEN_PARTICLE_SHAPE : headShape;
     const sizeBudget = Math.max(40, layer.head.size * (o.headSizeScale ?? 1));
     const wantsSplit = o.split === true;
     const splitDelay = o.life * design.split.delayRatio;
@@ -1540,13 +1689,18 @@ export class Effects {
               layer.burstTrail,
               Math.max(0, headAge - ((1 - progress) * dt) / maxLife),
             );
+            const spreadPositionPercent = progress * 100;
+            const initialDistanceBehindHead = segment * (1 - progress);
             trailParticles += this.emitBurstTrailParticle(
               sampleX,
               sampleY,
               sampleZ,
               sampleAge,
+              spreadPositionPercent,
+              initialDistanceBehindHead,
               (1 - progress) * dt,
               maxLife,
+              Math.max(0, p.life),
               p.vx,
               p.vy,
               p.vz,
@@ -1554,7 +1708,6 @@ export class Effects {
               palette.hot,
               palette.cool,
               trailLifeScale,
-              pathEstimate,
               trailStep,
               trailBudget - trailParticles,
               rng,
@@ -1701,7 +1854,7 @@ export class Effects {
 
   /**
    * Shared unified burst-trail emitter. It samples the editable trail endpoints
-   * from fresh head-end (0%) to old tail-end (100%). The per-star budget is
+   * from old tail-end (0%) to fresh head-end (100%). The per-star budget is
    * spent by travelled distance; head/tail balance changes placement, not count.
    */
   private emitBurstTrailParticle(
@@ -1709,8 +1862,11 @@ export class Effects {
     y: number,
     z: number,
     headAge: number,
+    spreadPositionPercent: number,
+    initialDistanceBehindHead: number,
     ageOffset: number,
-    headMaxLife: number,
+    headLifeReference: number,
+    headRemainingLife: number,
     headVx: number,
     headVy: number,
     headVz: number,
@@ -1718,16 +1874,14 @@ export class Effects {
     hot: THREE.Color,
     cool: THREE.Color,
     trailLifeScale: number,
-    pathEstimate: number,
     averageGap: number,
     maxRemaining: number,
     rng: RandomSource,
   ): number {
     if (maxRemaining <= 0) return 0;
-    const position = clamp(headAge, 0, 1) * 100;
-    const stop = sampleBurstTrailStop(trail, position);
+    const pathPosition = clamp(headAge, 0, 1) * 100;
+    const stop = sampleBurstTrailStop(trail, pathPosition);
     if (!stop || stop.density <= 0) return 0;
-    const spread = burstTrailSpreadRadius(trail, position, pathEstimate);
     const lifeScale = trailLifeScale;
     const motion = trail.motion;
     const shape = chooseBurstTrailShape(stop.shapeWeights, rng);
@@ -1743,28 +1897,61 @@ export class Effects {
     const tailSize = pixelBase * trail.particleSize.tailScale;
     const lifeVariation = trail.lifetime.variationPercent / 100;
     const lifeJitter = 1 + (rng.next() * 2 - 1) * lifeVariation;
-    const lifePercent = clamp(trail.lifetime.percent / 100, 0.01, 1);
+    const lifeMultiplier = clamp(trail.lifetime.percent, 0, 2);
     const life =
-      (headMaxLife * lifePercent + trail.lifetime.afterglowSeconds) *
+      Math.max(0, headRemainingLife) *
+      lifeMultiplier *
       Math.max(0.05, lifeJitter) *
       lifeScale *
       (flicker ? trail.flicker.lifetimeMultiplier : 1);
     if (life <= 0.015) return 0;
     const agedLife = life - ageOffset;
     if (agedLife <= 0.015) return 0;
+    const pathAge = clamp(headAge, 0, 1);
     const age = clamp(ageOffset / life, 0, 1);
+    const closingLifeReference = Math.max(0.01, headLifeReference);
+    const closingElapsedSeconds = Math.max(0, ageOffset);
+    const initialSpreadPosition = clamp(spreadPositionPercent, 0, 100);
+    const inherited = motion.inheritedVelocity;
+    const turbulence = motion.turbulence;
+    const headSpeed = Math.sqrt(headVx * headVx + headVy * headVy + headVz * headVz);
+    const relativeHeadSpeed = headSpeed * clamp(1 - inherited, 0, 1);
+    const visibleTrailLength = Math.max(initialDistanceBehindHead, life * relativeHeadSpeed * 100);
+    const spreadVector = burstTrailScatterVector(headVx, headVy, headVz, rng);
+    const initialSpread = scaleTrailScatter(
+      spreadVector,
+      burstTrailSpreadRadius(
+        trail,
+        initialSpreadPosition,
+        initialDistanceBehindHead,
+        visibleTrailLength,
+      ),
+    );
+    let currentSpreadX = initialSpread.x;
+    let currentSpreadY = initialSpread.y;
+    let currentSpreadZ = initialSpread.z;
+    const visibleFraction = burstTrailOpeningParticleVisibility(pathAge, trail);
+    if (visibleFraction < 1 && rng.next() > visibleFraction) return 0;
     const agedSize = burstTrailParticleSizeAt(age, headSize, tailSize);
+    const visibleSize = burstTrailLifecycleSizeAt(
+      pathAge,
+      closingElapsedSeconds,
+      closingLifeReference,
+      agedSize,
+      trail,
+    );
     const tone = burstTrailParticleColorAt(
       age,
+      pathAge,
       hot,
       cool,
       trail.intensity.brightness,
       trail.intensity.fadeSoftness,
       flickerMix,
+      trail,
+      closingElapsedSeconds,
+      closingLifeReference,
     );
-    const inherited = motion.inheritedVelocity;
-    const turbulence = motion.turbulence;
-    const scatter = burstTrailScatterOffset(headVx, headVy, headVz, spread, rng);
     const headGap = burstTrailHeadGapOffset(
       headVx,
       headVy,
@@ -1772,16 +1959,20 @@ export class Effects {
       averageGap,
       trail.placement.headGapPercent,
     );
+    const spreadBirthAge = age;
     const spin = clamp(motion.spin, 0, 8);
+    const initialAlpha = burstTrailWideTailAlpha(trail, initialSpreadPosition);
     const particle = this.pp.new({
-      x: x + headGap.x + scatter.x,
-      y: y + headGap.y + scatter.y,
-      z: z + headGap.z + scatter.z,
+      x: x + headGap.x + currentSpreadX,
+      y: y + headGap.y + currentSpreadY,
+      z: z + headGap.z + currentSpreadZ,
       mass: 0.002,
       gravity: motion.gravity,
       drag: motion.drag,
-      size: agedSize,
+      size: visibleSize,
       shape: burstTrailShapeValue(shape),
+      alpha: initialAlpha,
+      fadeIn: false,
       rotation: spin > 0 ? rng.next() * Math.PI * 2 : 0,
       spin: spin > 0 ? (rng.next() - 0.5) * spin * 2 : 0,
       vx: headVx * inherited + motion.driftX + (rng.next() - 0.5) * turbulence,
@@ -1797,16 +1988,47 @@ export class Effects {
       decay: 0,
       effect: (p) => {
         const particleAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;
+        const spreadProgress = clamp(
+          (particleAge - spreadBirthAge) / Math.max(0.001, 1 - spreadBirthAge),
+          0,
+          1,
+        );
+        const spreadPosition = initialSpreadPosition * (1 - spreadProgress);
+        p.alpha = burstTrailWideTailAlpha(trail, spreadPosition);
+        const elapsedSinceBirth = Math.max(0, particleAge - spreadBirthAge) * life;
+        const distanceBehindHead =
+          initialDistanceBehindHead + elapsedSinceBirth * relativeHeadSpeed * 100;
+        const nextSpread = scaleTrailScatter(
+          spreadVector,
+          burstTrailSpreadRadius(trail, spreadPosition, distanceBehindHead, visibleTrailLength),
+        );
+        p.x += nextSpread.x - currentSpreadX;
+        p.y += nextSpread.y - currentSpreadY;
+        p.z += nextSpread.z - currentSpreadZ;
+        currentSpreadX = nextSpread.x;
+        currentSpreadY = nextSpread.y;
+        currentSpreadZ = nextSpread.z;
         const nextTone = burstTrailParticleColorAt(
           particleAge,
+          pathAge,
           hot,
           cool,
           trail.intensity.brightness,
           trail.intensity.fadeSoftness,
           flickerMix,
+          trail,
+          Math.max(0, particleAge * life),
+          closingLifeReference,
         );
         p.color.setRGB(nextTone.r, nextTone.g, nextTone.b);
         p.size = burstTrailParticleSizeAt(particleAge, headSize, tailSize);
+        p.size = burstTrailLifecycleSizeAt(
+          pathAge,
+          Math.max(0, particleAge * life),
+          closingLifeReference,
+          p.size,
+          trail,
+        );
       },
     });
     particle.maxLife = life;
@@ -1944,13 +2166,18 @@ export class Effects {
                   brocadeTrail,
                   Math.max(0, headAge - ((1 - progress) * dt) / maxLife),
                 );
+                const spreadPositionPercent = progress * 100;
+                const initialDistanceBehindHead = segment * (1 - progress);
                 trailParticles += this.emitBurstTrailParticle(
                   sampleX,
                   sampleY,
                   sampleZ,
                   sampleAge,
+                  spreadPositionPercent,
+                  initialDistanceBehindHead,
                   (1 - progress) * dt,
                   maxLife,
+                  Math.max(0, p.life),
                   p.vx,
                   p.vy,
                   p.vz,
@@ -1966,7 +2193,6 @@ export class Effects {
                     brocade.palette.ember.b,
                   ),
                   1,
-                  pathEstimate,
                   trailStep,
                   trailBudget - trailParticles,
                   rng,

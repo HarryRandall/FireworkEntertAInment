@@ -23,7 +23,7 @@ test('admin overview range selector is URL-backed', () => {
   assert.match(page, /parseAdminOverviewTab\(params\.tab\)/);
   assert.match(page, /getAdminOverviewMetrics\(range\.key\)/);
   assert.match(page, /<AdminOverviewToolbar range=\{range\.key\} \/>/);
-  assert.match(page, /<AdminOverviewTabs tab=\{tab\}>/);
+  assert.match(page, /<AdminOverviewTabs[\s\S]*tab=\{tab\}[\s\S]*>/);
   assert.match(page, /className="cursor-pointer"/);
 
   assert.match(toolbar, /useSearchParams/);

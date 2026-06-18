@@ -11,9 +11,17 @@ import {
   invalidateAdminCatalogueCache,
   invalidateAdminFireworksCache,
   invalidateAdminMultishotsCache,
+  invalidateAdminStyleDefaultsCache,
   requirePermission,
 } from '@/lib/admin.server';
+import { isMissingStyleDefaultSchemaError } from '@/lib/admin/style-default-schema';
+import {
+  normaliseStyleDefaultAssignments,
+  replaceFireworkStyleDefaultLinks,
+  validateStyleDefaultAssignments,
+} from '@/lib/admin/style-default-assignments';
 import type { Json } from '@/lib/database.types';
+import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -24,6 +32,11 @@ const HexColor = z
   .trim()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Colours must be 6-digit hex like #ff0043.')
   .transform((value) => value.toLowerCase());
+const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
+const StyleDefaultAssignmentsSchema = z.partialRecord(
+  StyleDefaultKindSchema,
+  z.string().uuid().nullable(),
+);
 
 const CreateFireworkSchema = z.object({
   name: z.string().trim().min(1).max(180),
@@ -41,6 +54,9 @@ const UpdateFireworkSchema = z.object({
   primaryColor: HexColor.optional().nullable(),
   secondaryColor: HexColor.optional().nullable(),
   colorPalette: z.array(HexColor).max(12).optional(),
+  starStyleDefaultId: z.string().uuid().optional().nullable(),
+  trailStyleDefaultId: z.string().uuid().optional().nullable(),
+  styleDefaultIds: StyleDefaultAssignmentsSchema.optional().nullable(),
   renderOverridesJson: z.string().trim().min(2).max(100_000),
 });
 
@@ -73,6 +89,7 @@ async function refresh(fireworkId?: string) {
   await invalidateAdminFireworksCache(fireworkId);
   await invalidateAdminMultishotsCache();
   await invalidateAdminCatalogueCache();
+  await invalidateAdminStyleDefaultsCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/fireworks');
   if (fireworkId) revalidatePath(`/admin/fireworks/${fireworkId}`);
@@ -125,24 +142,52 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
   if (!overrides.ok) return { ok: false, error: overrides.error };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from('fireworks')
-    .update({
-      name: parsed.data.name,
-      description: parsed.data.description || null,
-      firework_effect_id: parsed.data.fireworkEffectId,
-      caliber: parsed.data.caliber || null,
-      duration_seconds: parsed.data.durationSeconds ?? null,
-      height_meters: parsed.data.heightMeters ?? null,
-      primary_color: parsed.data.primaryColor || null,
-      secondary_color: parsed.data.secondaryColor || null,
-      color_palette: parsed.data.colorPalette ?? [],
-      render_overrides_json: overrides.value,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', parsed.data.id);
+  const assignments = normaliseStyleDefaultAssignments({
+    styleDefaultIds: parsed.data.styleDefaultIds,
+    starStyleDefaultId: parsed.data.starStyleDefaultId,
+    trailStyleDefaultId: parsed.data.trailStyleDefaultId,
+  });
+  const validatedAssignments = await validateStyleDefaultAssignments(supabase, assignments);
+  if (!validatedAssignments.ok) return validatedAssignments;
 
+  const patch = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    firework_effect_id: parsed.data.fireworkEffectId,
+    caliber: parsed.data.caliber || null,
+    duration_seconds: parsed.data.durationSeconds ?? null,
+    height_meters: parsed.data.heightMeters ?? null,
+    primary_color: parsed.data.primaryColor || null,
+    secondary_color: parsed.data.secondaryColor || null,
+    color_palette: parsed.data.colorPalette ?? [],
+    star_style_default_id: assignments.star,
+    trail_style_default_id: assignments.trail,
+    render_overrides_json: overrides.value,
+    updated_at: new Date().toISOString(),
+  };
+  const fallbackPatch = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    firework_effect_id: parsed.data.fireworkEffectId,
+    caliber: parsed.data.caliber || null,
+    duration_seconds: parsed.data.durationSeconds ?? null,
+    height_meters: parsed.data.heightMeters ?? null,
+    primary_color: parsed.data.primaryColor || null,
+    secondary_color: parsed.data.secondaryColor || null,
+    color_palette: parsed.data.colorPalette ?? [],
+    render_overrides_json: overrides.value,
+    updated_at: patch.updated_at,
+  };
+  let result = await supabase.from('fireworks').update(patch).eq('id', parsed.data.id);
+
+  if (isMissingStyleDefaultSchemaError(result.error)) {
+    result = await supabase.from('fireworks').update(fallbackPatch).eq('id', parsed.data.id);
+  }
+
+  const { error } = result;
   if (error) return { ok: false, error: error.message };
+  const linksResult = await replaceFireworkStyleDefaultLinks(supabase, parsed.data.id, assignments);
+  if (!linksResult.ok) return { ok: false, error: linksResult.error };
   await refresh(parsed.data.id);
   return { ok: true };
 }

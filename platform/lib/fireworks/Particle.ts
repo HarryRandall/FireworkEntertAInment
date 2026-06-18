@@ -39,6 +39,7 @@ export class Particle {
   alive = false;
   size = 0;
   alpha = 1;
+  fadeIn = true;
   shape = 0;
   rotation = 0;
   spin = 0;
@@ -134,6 +135,7 @@ export class Particle {
     this.mass = 1;
     this.size = 0;
     this.alpha = 1;
+    this.fadeIn = true;
     this.shape = 0;
     this.rotation = 0;
     this.spin = 0;
