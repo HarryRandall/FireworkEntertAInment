@@ -103,7 +103,7 @@ test('resolved render designs merge linked defaults in kind order before local o
   assert.match(design, /deepMergeDesign\(merged, hydrateBurstTrailDefaults\(fragment\)\)/);
   assert.match(
     design,
-    /deepMergeDesign\(\s*deepMergeDesign\(legacyOrDefault, effectStyleDefaults\),\s*baseDefaults\s*\)/,
+    /deepMergeDesign\(\s*deepMergeDesign\(legacyOrDefault, effectStyleDefaults\),\s*baseDefaults,?\s*\)/,
   );
   assert.match(
     design,
