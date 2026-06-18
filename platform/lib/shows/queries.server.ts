@@ -58,6 +58,25 @@ function parseShotPositionOverride(input: unknown): LaunchPosition | null {
   return { x, y, z };
 }
 
+/**
+ * Reads the per-shot launch tube the admin multishot editor persists into
+ * `position_override_json` as `{ launchPositionIndex }`. Returns `null` when
+ * absent so callers can fall back to the parent cue's tube. Mirrors the clamp
+ * in `admin/multishots.server.ts` `launchPositionFromOverride`.
+ */
+function parseShotLaunchPositionIndex(input: unknown): number | null {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return null;
+  const raw = (input as Record<string, unknown>).launchPositionIndex;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(2, Math.floor(n)));
+}
+
+function finiteOrZero(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 /** Returns every show owned by the current user, sorted by `updated_at` desc. */
 export async function listShowsForCurrentUser(): Promise<Show[]> {
   const userId = await getCurrentUserId();
@@ -297,6 +316,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     panDegrees: number | null;
     tiltDegrees: number | null;
     positionOverride: LaunchPosition | null;
+    launchPositionIndex: number | null;
     firework: FireworkSpecification;
   };
   const shotsByCatalogueItem = new Map<string, ShotSpec[]>();
@@ -334,6 +354,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
               panDegrees: null,
               tiltDegrees: null,
               positionOverride: null,
+              launchPositionIndex: null,
               firework: mapFireworkVariantSpecification(directFirework, 0),
             },
           ]);
@@ -348,10 +369,11 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
           const firework = firstVariant(shot.fireworks);
           if (!firework) continue;
           shots.push({
-            timeOffsetSeconds: Number(shot.time_offset_seconds),
+            timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
             panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
             tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
             positionOverride: parseShotPositionOverride(shot.position_override_json),
+            launchPositionIndex: parseShotLaunchPositionIndex(shot.position_override_json),
             firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
           });
         }
@@ -366,7 +388,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     if (!baseCue) continue;
     const shots = shotsByCatalogueItem.get(row.catalogue_item_id);
     if (!shots || shots.length === 0) continue;
-    const startSeconds = Number(row.time_seconds);
+    const startSeconds = finiteOrZero(row.time_seconds);
     for (let i = 0; i < shots.length; i++) {
       expanded.push({
         ...baseCue,
@@ -374,6 +396,9 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
         // suffix with `-shot-<index>` so the renderer can dedupe correctly.
         id: shots.length === 1 ? baseCue.id : `${baseCue.id}-shot-${i}`,
         timeSeconds: startSeconds + shots[i].timeOffsetSeconds,
+        // Each multishot shot can fire from its own tube; fall back to the
+        // parent cue's tube when the shot doesn't override it.
+        launchPositionIndex: shots[i].launchPositionIndex ?? baseCue.launchPositionIndex,
         firework: shots[i].firework,
         shotPanDegrees: shots[i].panDegrees,
         shotTiltDegrees: shots[i].tiltDegrees,

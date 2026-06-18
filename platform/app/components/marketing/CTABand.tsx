@@ -1,55 +1,68 @@
 /**
- * CTABand - full-width call-to-action band rendered near the bottom
- * of marketing pages. Renders a single primary CTA, paired with the
- * site Footer for end-of-page conversion sections.
+ * CTABand — full-width call-to-action band rendered near the bottom of
+ * marketing pages. Light, doodle-framed, with a primary action and an
+ * optional secondary link. Shared across the marketing site.
  */
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Container } from '@/app/components/ui/Container';
+import { Reveal } from './Reveal';
+import { Doodle, Star4 } from './landing/decor';
 
 type CTABandProps = {
   title: string;
   description: string;
   primaryHref: string;
   primaryLabel: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
 };
 
-export function CTABand({ title, description, primaryHref, primaryLabel }: CTABandProps) {
+export function CTABand({
+  title,
+  description,
+  primaryHref,
+  primaryLabel,
+  secondaryHref,
+  secondaryLabel,
+}: CTABandProps) {
   return (
-    <section className="py-24">
-      <Container>
-        <div className="border-outline-variant/20 bg-surface-container-high relative isolate overflow-hidden rounded-3xl border p-12 text-center md:p-24">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,color-mix(in_srgb,var(--color-primary)_25%,transparent),transparent_55%),radial-gradient(circle_at_75%_80%,color-mix(in_srgb,var(--color-tertiary)_18%,transparent),transparent_60%)]"
-          />
-          <div
-            aria-hidden
-            className="cta-rainbow-wash pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[34rem] w-[min(62rem,120%)] -translate-x-1/2 -translate-y-1/2"
-          />
-          <div aria-hidden className="noise-overlay -z-10" />
-          <div
-            aria-hidden
-            className="bg-primary/10 pointer-events-none absolute -top-1/2 left-1/2 -z-10 h-[800px] w-[800px] -translate-x-1/2 rounded-full blur-3xl"
-          />
-
-          <div className="relative z-10 mx-auto max-w-2xl space-y-6">
-            <span className="border-primary/30 bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold tracking-[0.2em] uppercase">
-              <span className="bg-primary inline-block h-1.5 w-1.5 rounded-full" />
-              Ready when you are
-            </span>
-            <h2 className="text-on-surface text-4xl font-bold tracking-tight md:text-6xl">
-              {title}
-            </h2>
-            <p className="text-on-surface-variant text-lg">{description}</p>
-            <div className="pt-4">
-              <Button href={primaryHref} size="lg">
-                {primaryLabel}
-                <ArrowRight size={18} />
-              </Button>
-            </div>
-          </div>
-        </div>
+    <section className="bg-background border-outline-variant/60 relative overflow-hidden border-t py-24">
+      <Doodle
+        name="fire"
+        width={180}
+        bob
+        className="absolute bottom-[10%] left-[6%] hidden opacity-90 lg:block"
+      />
+      <Doodle
+        name="burst"
+        width={170}
+        bob
+        className="absolute top-[12%] right-[6%] hidden opacity-90 lg:block"
+      />
+      <Container className="relative z-[2] mx-auto max-w-[720px] text-center">
+        <Star4 size={24} style={{ margin: '0 auto 18px' }} />
+        <Reveal>
+          <h2 className="text-on-surface m-0 text-[clamp(34px,5.6vw,64px)] leading-none font-extrabold tracking-[-0.035em]">
+            {title}
+          </h2>
+        </Reveal>
+        <Reveal delay={0.08}>
+          <p className="text-on-surface-variant mx-auto mt-5 max-w-[520px] text-lg leading-relaxed">
+            {description}
+          </p>
+        </Reveal>
+        <Reveal delay={0.16} className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button href={primaryHref} size="lg">
+            {primaryLabel}
+            <ArrowRight size={16} />
+          </Button>
+          {secondaryHref ? (
+            <Button href={secondaryHref} size="lg" variant="secondary">
+              {secondaryLabel}
+            </Button>
+          ) : null}
+        </Reveal>
       </Container>
     </section>
   );

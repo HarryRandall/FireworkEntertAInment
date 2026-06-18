@@ -167,6 +167,12 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
     return { ok: false, error: 'Could not remove that firework cue.' };
   }
 
+  // No row came back means nothing matched (wrong id or blocked by RLS); don't
+  // tell the user it was removed when it wasn't.
+  if (!deletedCue) {
+    return { ok: false, error: 'Could not find that cue to remove.' };
+  }
+
   if (user && deletedCue?.show_id) {
     await syncShowDerivedFieldsForUser(user.id, {
       showId: deletedCue.show_id,

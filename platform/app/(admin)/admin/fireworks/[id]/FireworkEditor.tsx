@@ -22,6 +22,7 @@ import {
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
@@ -303,53 +304,8 @@ function CompactColourInput({
   disabled?: boolean;
   onChange: (hex: string) => void;
 }) {
-  const id = useId();
   const picker = HEX.test(value) ? value.toLowerCase() : '#ffffff';
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          aria-label="Colour picker"
-          className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-[color:var(--color-border-subtle)] bg-transparent disabled:cursor-not-allowed"
-          value={picker}
-          disabled={disabled}
-          onChange={(event) => onChange(event.currentTarget.value.toLowerCase())}
-        />
-        <Input
-          id={id}
-          type="text"
-          inputMode="text"
-          aria-label="Colour"
-          className="h-8 w-28 px-2 font-mono text-xs tabular-nums"
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(event.currentTarget.value.toLowerCase())}
-        />
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {FIREWORK_COLOR_VALUES.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            aria-label={`Use ${preset}`}
-            disabled={disabled}
-            onClick={() => onChange(preset)}
-            className={[
-              'h-5 w-5 rounded-full border border-[color:var(--color-border-subtle)] transition-transform hover:scale-110 disabled:cursor-not-allowed',
-              value.toLowerCase() === preset.toLowerCase()
-                ? 'ring-2 ring-[color:var(--color-content-emphasis)] ring-offset-1'
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{ backgroundColor: preset }}
-          />
-        ))}
-      </div>
-    </div>
-  );
+  return <ColorPicker label="Colour" value={picker} disabled={disabled} onChange={onChange} />;
 }
 
 function ColourPatternBar({

@@ -4,11 +4,12 @@
 
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
-import { Mail, Lock, User, CheckCircle, ArrowLeft, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
-import { FormError } from '../components/FormError';
+import { AuthShell } from '../components/AuthShell';
+import { FormError } from '@/app/components/ui/FormError';
 
 type Step = 'email' | 'details' | 'confirm';
 
@@ -229,24 +230,5 @@ export default function SignupPage() {
         </>
       )}
     </AuthShell>
-  );
-}
-
-function AuthShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg-muted)] px-4 py-12">
-      <Link
-        href="/"
-        className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
-      >
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-          <Sparkles size={14} strokeWidth={2.2} />
-        </span>
-        ShowCrafter
-      </Link>
-      <div className="w-full max-w-sm space-y-6 rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-8 shadow-[var(--shadow-card)]">
-        {children}
-      </div>
-    </div>
   );
 }

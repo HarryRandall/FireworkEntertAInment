@@ -8,7 +8,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-background text-on-surface flex min-h-screen flex-col">
       <MarketingNavBar />
-      <main className="flex-grow pt-16">{children}</main>
+      <main className="flex-grow">{children}</main>
       <MarketingFooter />
     </div>
   );

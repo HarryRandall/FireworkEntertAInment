@@ -15,6 +15,11 @@ export const MIN_PRODUCT_DURATION_SECONDS = 0.5;
 
 type AppSupabase = SupabaseClient<Database>;
 
+function finiteOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 // Total airtime a catalogue item occupies on a tube. Prefer the pre-aggregated
 // `catalogue_items.duration_seconds`; fall back to the linked firework or the
 // largest child firework in a multishot.
@@ -27,11 +32,11 @@ export async function getProductDurationSeconds(
     .select('duration_seconds, firework_id, multishot_id, fireworks(duration_seconds)')
     .eq('id', catalogueItemId)
     .maybeSingle();
-  if (item?.duration_seconds != null) return Number(item.duration_seconds);
-  const directDuration = Array.isArray(item?.fireworks)
-    ? item.fireworks[0]?.duration_seconds
-    : item?.fireworks?.duration_seconds;
-  if (directDuration != null) return Number(directDuration);
+  const itemDuration = finiteOrNull(item?.duration_seconds);
+  if (itemDuration != null) return itemDuration;
+  const directRow = Array.isArray(item?.fireworks) ? item.fireworks[0] : item?.fireworks;
+  const directDuration = finiteOrNull(directRow?.duration_seconds);
+  if (directDuration != null) return directDuration;
   if (!item?.multishot_id) return null;
 
   const { data: shots } = await supabase
@@ -44,8 +49,10 @@ export async function getProductDurationSeconds(
     time_offset_seconds: number;
     fireworks: { duration_seconds: number | null } | null;
   }>) {
-    const duration = shot.fireworks?.duration_seconds ?? 0;
-    const end = Number(shot.time_offset_seconds ?? 0) + Number(duration);
+    // A child with an unknown duration still occupies the tube; assume the
+    // minimum rather than 0 so we never under-estimate multishot airtime.
+    const duration = finiteOrNull(shot.fireworks?.duration_seconds) ?? MIN_PRODUCT_DURATION_SECONDS;
+    const end = (finiteOrNull(shot.time_offset_seconds) ?? 0) + duration;
     if (end > max) max = end;
   }
   return max;
@@ -64,12 +71,16 @@ export function findTubeOverlap<T extends CueWindow>(
   candidate: CueWindow,
   existing: T[],
 ): T | null {
+  // Coerce non-finite durations to the minimum so a bad value can't silently
+  // disable overlap detection (NaN comparisons are always false).
   const candStart = candidate.timeSeconds;
-  const candEnd = candStart + candidate.durationSeconds;
+  const candEnd =
+    candStart + (finiteOrNull(candidate.durationSeconds) ?? MIN_PRODUCT_DURATION_SECONDS);
   for (const other of existing) {
     if (other.launchPositionIndex !== candidate.launchPositionIndex) continue;
     const otherStart = other.timeSeconds;
-    const otherEnd = otherStart + other.durationSeconds;
+    const otherEnd =
+      otherStart + (finiteOrNull(other.durationSeconds) ?? MIN_PRODUCT_DURATION_SECONDS);
     if (candStart < otherEnd && otherStart < candEnd) return other;
   }
   return null;

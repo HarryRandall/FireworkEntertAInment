@@ -4,7 +4,7 @@
 /*
  ---break---
  */
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
 
 /*
  * ShowCrafter design tokens - aligned to the shadcn dashboard reference palette.
@@ -290,6 +290,276 @@ body {
   mix-blend-mode: soft-light;
 }
 
+/* ============================================================
+   Marketing landing page — decorative effects (prefix: lp-)
+   Type-forward green-accent homepage. Used only under (marketing).
+   ============================================================ */
+
+/* Marker highlight behind a word (the 'look here' device) */
+.lp-mark {
+  position: relative;
+  white-space: nowrap;
+}
+.lp-mark > span {
+  position: relative;
+  z-index: 1;
+}
+.lp-mark::before {
+  content: '';
+  position: absolute;
+  left: -0.1em;
+  right: -0.1em;
+  top: 0.08em;
+  bottom: 0.04em;
+  background: var(--hl);
+  opacity: 0.34;
+  border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
+  transform: rotate(-1.4deg);
+  z-index: 0;
+}
+
+/* Doodle illustrations — one variant visible per theme (data-theme from next-themes) */
+.lp-doodle {
+  max-width: 100%;
+  height: auto;
+}
+.lp-doodle-light {
+  display: block;
+}
+.lp-doodle-dark {
+  display: none;
+}
+[data-theme='dark'] .lp-doodle-light,
+.dark .lp-doodle-light {
+  display: none !important;
+}
+[data-theme='dark'] .lp-doodle-dark,
+.dark .lp-doodle-dark {
+  display: block !important;
+}
+.lp-doodle-bob {
+  animation: lp-doodle-bob 6s ease-in-out infinite;
+}
+@keyframes lp-doodle-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-9px) rotate(-1deg);
+  }
+}
+
+/* Sparkle twinkle */
+.lp-spark-float {
+  animation: lp-spark-twinkle 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes lp-spark-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12) rotate(18deg);
+  }
+}
+
+/* Night-sky preview panel + glass tiles + starfield */
+.lp-sky-panel {
+  position: relative;
+  background: radial-gradient(130% 120% at 50% 8%, #16161c 0%, #0a0a0d 56%, #050507 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 40px 80px -36px rgba(10, 10, 16, 0.55),
+    0 2px 6px rgba(10, 10, 16, 0.2);
+}
+.lp-sky-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lp-glass-tile {
+  background: rgba(20, 20, 26, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+}
+.lp-starfield {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.45), transparent 50%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255, 255, 255, 0.33), transparent 50%),
+    radial-gradient(1px 1px at 40% 80%, rgba(255, 255, 255, 0.4), transparent 50%),
+    radial-gradient(1px 1px at 85% 25%, rgba(255, 255, 255, 0.33), transparent 50%),
+    radial-gradient(1px 1px at 30% 50%, rgba(255, 255, 255, 0.27), transparent 50%);
+}
+
+/* Live dot */
+.lp-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--hl);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--hl) 70%, transparent);
+  animation: lp-live-pulse 1.8s ease-out infinite;
+}
+@keyframes lp-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--hl) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* Logo marquee */
+.lp-marquee {
+  display: flex;
+  gap: 64px;
+  width: max-content;
+  animation: lp-marquee 32s linear infinite;
+}
+.lp-marquee-mask {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+@keyframes lp-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Equaliser bars */
+.lp-eq-bar {
+  animation: lp-eq-bounce 1.1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+@keyframes lp-eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Hover lift */
+.lp-hover-lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Nav pill + hover mega-menu */
+.lp-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-content-subtle);
+  text-decoration: none;
+  padding: 8px 13px;
+  border: none;
+  border-radius: 9999px;
+  background: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.lp-nav-pill:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-content-emphasis);
+}
+.lp-nav-pill svg {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-menu {
+  position: relative;
+}
+.lp-menu:hover .lp-nav-pill svg,
+.lp-menu:focus-within .lp-nav-pill svg {
+  transform: rotate(180deg);
+}
+.lp-menu-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  min-width: 320px;
+  background: var(--card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card-hover);
+  padding: 8px;
+  margin-top: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.17s ease,
+    transform 0.17s ease;
+  z-index: 80;
+}
+.lp-menu-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -14px;
+  height: 14px;
+}
+.lp-menu:hover .lp-menu-panel,
+.lp-menu:focus-within .lp-menu-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.lp-menu-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 11px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background-color 0.14s;
+}
+.lp-menu-item:hover {
+  background: var(--color-bg-muted);
+}
+.lp-menu-item__ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--hl-soft);
+  color: var(--hl-ink);
+}
+
 /* New-show wizard: step panel enter animation */
 @keyframes step-panel-in {
   from {
@@ -477,6 +747,14 @@ body {
  */
 @theme inline {
   --font-heading: var(--font-sans);
+  --color-hl: var(--hl);
+  --color-hl-soft: var(--hl-soft);
+  --color-hl-ink: var(--hl-ink);
+  --color-show-gold: var(--show-gold);
+  --color-show-green: var(--show-green);
+  --color-show-violet: var(--show-violet);
+  --color-show-sky: var(--show-sky);
+  --color-show-rose: var(--show-rose);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -523,7 +801,7 @@ body {
   --card-foreground: #24242a;
   --popover: #ffffff;
   --popover-foreground: #24242a;
-  --primary: #09090b;
+  --primary: #0e9d6a;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f6;
   --secondary-foreground: #24242a;
@@ -534,7 +812,17 @@ body {
   --destructive: #dc2626;
   --border: #e5e5ea;
   --input: #d9d9e2;
-  --ring: #b9bbc6;
+  --ring: #15bd8b;
+
+  /* Brand highlight (marker green) + per-show palette accents */
+  --hl: #15bd8b;
+  --hl-soft: #d7f3e9;
+  --hl-ink: #0a7d57;
+  --show-gold: #efb93f;
+  --show-green: #2ec487;
+  --show-violet: #8f7be8;
+  --show-sky: #38bdf8;
+  --show-rose: #fb7185;
   --chart-1: #09090b;
   --chart-2: #747680;
   --chart-3: #9b9da7;
@@ -559,8 +847,8 @@ body {
   --card-foreground: oklch(0.985 0 0);
   --popover: #09090b;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: #09090b;
+  --primary: #1fd093;
+  --primary-foreground: #053024;
   --secondary: #171719;
   --secondary-foreground: oklch(0.985 0 0);
   --muted: #171719;
@@ -570,7 +858,17 @@ body {
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --ring: #2ee0a3;
+
+  /* Brand highlight (marker green) + per-show palette accents */
+  --hl: #2ee0a3;
+  --hl-soft: #0f3026;
+  --hl-ink: #46e7b0;
+  --show-gold: #efb93f;
+  --show-green: #2ec487;
+  --show-violet: #8f7be8;
+  --show-sky: #38bdf8;
+  --show-rose: #fb7185;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -694,4 +992,41 @@ body {
 [data-sonner-toast][data-type='info'].cn-toast {
   border-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- Auth split-screen illustration ----------
+ * Theme is applied via the `data-theme` attribute (next-themes), so the
+ * Tailwind `dark:` variant (.dark only) does not fire here. Drive the panel
+ * tint and the SVG treatment from the attribute instead. The artwork is dark
+ * line-art on a white ground: in dark mode we invert its lightness (keeping
+ * hues via hue-rotate) and screen-blend it onto a dark panel. */
+.auth-art-panel {
+  background-image: linear-gradient(to bottom right, #eef2fb, #ffffff 45%, #edf6f0);
+}
+
+[data-theme='dark'] .auth-art-panel,
+.dark .auth-art-panel {
+  background-image: linear-gradient(to bottom right, #0c1119, #070709 45%, #0a100d);
+}
+
+.auth-art-svg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.auth-art-svg svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* The artwork has a transparent background, so the panel colour shows through.
+   In dark mode the line-art is too dark to read, so invert its lightness while
+   preserving hues. */
+[data-theme='dark'] .auth-art-svg svg,
+.dark .auth-art-svg svg {
+  filter: invert(1) hue-rotate(180deg);
 }

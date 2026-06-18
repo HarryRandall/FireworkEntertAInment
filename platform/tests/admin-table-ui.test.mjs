@@ -7,9 +7,11 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 
+// The effects page is intentionally omitted: its dataset is small enough to
+// load once and filter entirely on the client (see EffectsBrowser), so it does
+// not use server-side TablePagination like the other admin list pages.
 const adminListPages = [
   'app/(admin)/admin/catalogue/page.tsx',
-  'app/(admin)/admin/effects/page.tsx',
   'app/(admin)/admin/fireworks/page.tsx',
   'app/(admin)/admin/suppliers/page.tsx',
   'app/(admin)/admin/users/page.tsx',

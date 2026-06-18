@@ -113,8 +113,11 @@ export function planCuesFast(params: {
     const picked = pickProduct(singlePool, slot, hints, singleCursor);
     singleCursor += 1;
     cues.push(toCue(slot, picked, describeCue(slot, picked, picked.isMultiShot)));
+    // A tube stays busy for the shell's full airtime (matching the manual cue
+    // overlap rule), with SINGLE_TUBE_GAP_SECONDS as a floor for very short
+    // shells. Reserving only the floor let long singles overlap on one tube.
     tubeBusyUntil[slot.tube] =
-      slot.time + (picked.isMultiShot ? picked.durationSeconds : SINGLE_TUBE_GAP_SECONDS);
+      slot.time + Math.max(picked.durationSeconds, SINGLE_TUBE_GAP_SECONDS);
     if (picked.isMultiShot) lastMultiStart = slot.time;
   }
 

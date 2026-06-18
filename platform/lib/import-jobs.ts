@@ -152,7 +152,11 @@ function coerceShellType(value: unknown, fallback: unknown): ShellType {
   };
   const aliased = aliases[normalized];
   if (aliased) return aliased;
-  return SHELL_TYPES.includes(value as ShellType) ? (value as ShellType) : 'crysanthemum';
+  // Match against the canonical list using the normalised form so spaced or
+  // differently-cased camelCase types (e.g. "silver fish", "Falling Leaves")
+  // still resolve instead of silently collapsing to crysanthemum.
+  const direct = SHELL_TYPES.find((shell) => shell.toLowerCase() === normalized);
+  return direct ?? 'crysanthemum';
 }
 
 function coerceGlitter(value: unknown, fallback: GlitterKind): GlitterKind {

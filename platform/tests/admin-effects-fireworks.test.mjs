@@ -93,17 +93,21 @@ test('base effect edits validate model JSON and use conflict detection', () => {
 
 test('admin effects UI is wired to base effect fields', () => {
   const page = read('app/(admin)/admin/effects/page.tsx');
+  const browser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
   const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
   const design = read('lib/fireworks/design.ts');
 
-  assert.match(page, /effect\.family/);
-  assert.match(page, /effect\.patternKey/);
-  assert.match(page, /effect\.variantCount/);
-  assert.match(page, /createCustomStarEffect/);
-  assert.match(page, /New custom effect/);
-  assert.match(page, /<Plus size=\{16\} \/>/);
-  assert.doesNotMatch(page, /effect\.durationSeconds|effect\.heightMeters|effect\.productCount/);
+  assert.match(page, /listAdminEffects/);
+  assert.match(page, /listAdminStyleDefaults/);
+  assert.match(page, /<EffectsBrowser/);
+  assert.match(browser, /effect\.family/);
+  assert.match(browser, /effect\.patternKey/);
+  assert.match(browser, /effect\.variantCount/);
+  assert.match(browser, /createCustomStarEffect/);
+  assert.match(browser, /New custom effect/);
+  assert.match(browser, /<Plus size=\{16\} \/>/);
+  assert.doesNotMatch(browser, /effect\.durationSeconds|effect\.heightMeters|effect\.productCount/);
   assert.match(editor, /modelJson/);
   assert.match(editor, /patternKey/);
   assert.match(editor, /FireworkReplayCanvas/);

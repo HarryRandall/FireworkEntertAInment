@@ -5,9 +5,10 @@ export default function AdminEffectsLoading() {
   return (
     <AdminTableRouteSkeleton
       searchPlaceholder="Search name, slug, description..."
-      headers={['Preview', 'Effect', 'Family', 'Pattern', 'Source', 'Variants', 'Updated', 'Open']}
-      tableClassName="min-w-[1080px]"
+      headers={['Effect', 'Family', 'Pattern', 'Source', 'Variants', 'Updated', '']}
+      tableClassName="min-w-[920px]"
       rows={12}
+      hasAction
       ariaLabel="Loading effects"
     />
   );

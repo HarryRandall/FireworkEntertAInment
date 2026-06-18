@@ -1,21 +1,13 @@
-'use client';
-
 /**
- * Hero - full-bleed hero section on the public landing page. Lazy-
- * loads HeroCanvas (`ssr: false`) for the WebGL background and falls
- * back to a static gradient when reduced motion is preferred.
+ * Hero — type-forward landing hero. A big marker-highlighted headline
+ * framed by hand-drawn firework doodles, with the primary "create a show"
+ * action, a secondary "see how it works" link, and a social-proof row.
  */
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { PlayCircle, Sparkles } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Button } from '@/app/components/ui/Button';
-
-const HeroCanvas = dynamic(() => import('./HeroCanvas'), {
-  ssr: false,
-  loading: () => null,
-});
+import { Reveal } from './Reveal';
+import { Avatar, Doodle, Mark, Sparkle, Star4 } from './landing/decor';
 
 type HeroProps = {
   title: string;
@@ -27,6 +19,13 @@ type HeroProps = {
   secondaryLabel?: string;
 };
 
+const PROOF_AVATARS: { name: string; tone: string }[] = [
+  { name: 'Mia R', tone: '#efb93f' },
+  { name: 'Tom K', tone: '#15bd8b' },
+  { name: 'Ada P', tone: '#8f7be8' },
+  { name: 'Jo L', tone: '#fb7185' },
+];
+
 export function Hero({
   title,
   highlight,
@@ -36,85 +35,83 @@ export function Hero({
   secondaryHref,
   secondaryLabel,
 }: HeroProps) {
-  const reduce = useReducedMotion();
-  const [showCanvas, setShowCanvas] = useState(false);
-
-  useEffect(() => {
-    if (reduce) {
-      setShowCanvas(false);
-      return;
-    }
-
-    const scheduleCanvas = () => setShowCanvas(true);
-    const idleId = window.requestIdleCallback?.(scheduleCanvas, {
-      timeout: 1200,
-    });
-    const timeoutId = idleId ? undefined : window.setTimeout(scheduleCanvas, 250);
-
-    return () => {
-      if (idleId) window.cancelIdleCallback?.(idleId);
-      if (timeoutId) window.clearTimeout(timeoutId);
-    };
-  }, [reduce]);
-
-  const fadeUp = (delay = 0) =>
-    reduce
-      ? {}
-      : {
-          initial: { opacity: 1, y: 24 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] as const },
-        };
-
   return (
-    <section className="bg-background relative isolate overflow-hidden pt-28 pb-20 lg:pt-36 lg:pb-28">
-      {/* WebGL canvas - full-bleed behind the copy. */}
+    <section className="relative overflow-hidden pt-18 pb-20 lg:pt-24">
+      {/* atmospheric wash behind the headline */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        {showCanvas ? <HeroCanvas /> : null}
-        {/* Vignette + base gradient - paints before R3F mounts and softens edges. */}
-        <div className="hero-rainbow-wash absolute top-[44%] left-1/2 h-[34rem] w-[min(82rem,112vw)] -translate-x-1/2 -translate-y-1/2" />
+        <div className="hero-rainbow-wash absolute top-[42%] left-1/2 h-[30rem] w-[min(70rem,110vw)] -translate-x-1/2 -translate-y-1/2" />
         <div aria-hidden className="noise-overlay" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--color-background)_75%)]" />
-        <div className="from-background absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t to-transparent" />
       </div>
 
-      <Container className="relative z-10 flex flex-col items-center text-center">
-        <motion.div
-          {...fadeUp(0)}
-          className="border-outline-variant/30 bg-surface-container/40 text-primary mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold tracking-[0.18em] uppercase backdrop-blur-md"
-        >
-          <Sparkles size={14} strokeWidth={2} />
-          AI choreography · powered by ICON Pyrotechnics
-        </motion.div>
+      {/* flanking doodles steer the eye toward the headline */}
+      <Doodle
+        name="fire"
+        width={230}
+        bob
+        className="absolute bottom-[12%] left-[2.5%] z-[1] hidden lg:block"
+      />
+      <Doodle
+        name="burst"
+        width={210}
+        bob
+        className="absolute top-[14%] right-[2%] z-[1] hidden lg:block"
+      />
 
-        <motion.h1
-          {...fadeUp(0.05)}
-          className="text-on-surface max-w-5xl text-5xl leading-[1.02] font-extrabold tracking-tight md:text-7xl lg:text-[88px]"
-        >
-          {title} <span>{highlight}</span>
-        </motion.h1>
+      <Container className="relative z-[2] mx-auto max-w-[880px] text-center">
+        <Reveal className="mb-6 inline-flex items-center gap-2">
+          <Sparkle size={16} float={false} />
+          <span className="text-on-surface-variant text-xs font-semibold tracking-[0.18em] uppercase">
+            AI fireworks choreography
+          </span>
+        </Reveal>
 
-        <motion.p
-          {...fadeUp(0.15)}
-          className="text-on-surface-variant mt-8 max-w-2xl text-lg leading-relaxed md:text-xl"
-        >
-          {subtitle}
-        </motion.p>
+        <Reveal delay={0.08}>
+          <h1 className="text-on-surface relative m-0 text-[clamp(46px,7vw,90px)] leading-[0.97] font-extrabold tracking-[-0.035em]">
+            {title}
+            <br />
+            <Mark>{highlight}</Mark>
+            <Star4 size={24} style={{ position: 'absolute', top: -6, right: '14%' }} />
+          </h1>
+        </Reveal>
 
-        <motion.div
-          {...fadeUp(0.25)}
-          className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
-        >
+        <Reveal delay={0.16}>
+          <p className="text-on-surface-variant mx-auto mt-6 max-w-[520px] text-lg leading-relaxed">
+            {subtitle}
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.24} className="mt-8 flex flex-wrap justify-center gap-3">
           <Button href={primaryHref} size="lg">
             {primaryLabel}
+            <ArrowRight size={16} />
           </Button>
           {secondaryHref ? (
             <Button href={secondaryHref} size="lg" variant="secondary">
+              <Play size={18} />
               {secondaryLabel}
-              <PlayCircle size={20} />
             </Button>
           ) : null}
-        </motion.div>
+        </Reveal>
+
+        <Reveal
+          delay={0.32}
+          className="mt-8 inline-flex flex-wrap items-center justify-center gap-3.5"
+        >
+          <div className="flex">
+            {PROOF_AVATARS.map((a, i) => (
+              <span
+                key={a.name}
+                className="rounded-full shadow-[0_0_0_2px_var(--background)]"
+                style={{ marginLeft: i ? -10 : 0 }}
+              >
+                <Avatar name={a.name} tone={a.tone} />
+              </span>
+            ))}
+          </div>
+          <span className="text-on-surface-variant text-sm">
+            <strong className="text-on-surface tabular-nums">12,400+</strong> shows choreographed
+          </span>
+        </Reveal>
       </Container>
     </section>
   );

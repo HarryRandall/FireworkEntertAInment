@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { data: cues, error: cuesError } = await supabase
     .from('show_timeline_items')
-    .select('time_seconds, catalogue_item_id')
+    .select('time_seconds, catalogue_item_id, launch_position_index')
     .eq('show_id', show.id)
     .not('time_seconds', 'is', null)
     .order('time_seconds', { ascending: true });
@@ -76,6 +76,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       return {
         timeSeconds: Number(c.time_seconds),
         effectName: catalogueItem.name,
+        launchPositionIndex: c.launch_position_index ?? 0,
         sourcePayload: productToSourcePayload({
           ...catalogueItem,
           caliber: firstCaliberForItem(catalogueItem),
