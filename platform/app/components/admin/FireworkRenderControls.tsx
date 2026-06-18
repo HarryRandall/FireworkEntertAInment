@@ -19,7 +19,6 @@ import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Switch } from '@/components/ui/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   BURST_TRAIL_PARTICLES_PER_STAR_MAX,
   makeBurstTrailPreset,
@@ -596,13 +595,20 @@ export function SubSection({
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)]">
+    <div
+      className={cn(
+        'overflow-hidden rounded-lg border transition-colors',
+        expanded
+          ? 'border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)]'
+          : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)]/40',
+      )}
+    >
       <div className="relative">
         <button
           type="button"
           aria-expanded={expanded}
           aria-controls={contentId}
-          className="focus-visible:ring-ring/50 flex min-h-14 w-full items-center gap-2 px-3 text-left transition-colors outline-none hover:bg-[color:var(--color-bg-surface)] focus-visible:ring-2"
+          className="focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left transition-colors outline-none hover:bg-[color:var(--color-bg-subtle)]/60 focus-visible:ring-2"
           onClick={() => setExpanded((value) => !value)}
         >
           <ChevronDown
@@ -612,7 +618,7 @@ export function SubSection({
             )}
             aria-hidden
           />
-          <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+          <span className="text-[13px] font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
             {title}
           </span>
         </button>
@@ -623,7 +629,42 @@ export function SubSection({
         ) : null}
       </div>
       {expanded ? (
-        <div id={contentId} className="px-3 pt-1 pb-3.5">
+        <div
+          id={contentId}
+          className="border-t border-[color:var(--color-border-subtle)] px-3 pt-3 pb-3.5"
+        >
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Inline "Advanced" disclosure used to hide the long tail of fine-tuning
+ * sliders so each section shows only its few common controls by default.
+ * Renders full-width inside a two-column control grid.
+ */
+function AdvancedControls({ children }: { children: ReactNode }) {
+  const contentId = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="col-span-full">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={contentId}
+        onClick={() => setOpen((value) => !value)}
+        className="focus-visible:ring-ring/50 -ml-1 inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-xs font-medium text-[color:var(--color-content-subtle)] transition-colors outline-none hover:text-[color:var(--color-content-emphasis)] focus-visible:ring-2"
+      >
+        <ChevronDown
+          className={cn('size-3.5 shrink-0 transition-transform', !open && '-rotate-90')}
+          aria-hidden
+        />
+        {open ? 'Hide advanced' : 'Advanced'}
+      </button>
+      {open ? (
+        <div id={contentId} className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
           {children}
         </div>
       ) : null}
@@ -813,33 +854,34 @@ export function FireworkRenderControls({
             <FieldLabel>Lift velocity</FieldLabel>
             <InfoTooltip text={hint} />
           </div>
-          <ToggleGroup
-            type="single"
-            value={selectedMode}
-            variant="outline"
-            size="sm"
-            disabled={disabled}
+          <div
+            role="radiogroup"
             aria-label="Lift velocity"
-            className="grid w-full grid-cols-2 sm:grid-cols-4"
-            onValueChange={(value) => {
-              if (!value) return;
-              setLiftVelocityMode(value as LiftVelocityMode);
-            }}
+            className="grid w-full grid-cols-4 gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/50 p-1"
           >
-            {LIFT_VELOCITY_OPTIONS.map((option) => (
-              <ToggleGroupItem
-                key={option.value}
-                value={option.value}
-                aria-label={`Lift velocity ${option.label.toLowerCase()}`}
-                className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary min-w-0 px-2 text-xs"
-              >
-                <span>{option.label}</span>
-                {option.velocity == null ? null : (
-                  <span className="font-mono text-[10px] tabular-nums">{option.velocity}</span>
-                )}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            {LIFT_VELOCITY_OPTIONS.map((option) => {
+              const active = selectedMode === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`Lift velocity ${option.label.toLowerCase()}`}
+                  disabled={disabled}
+                  onClick={() => setLiftVelocityMode(option.value)}
+                  className={cn(
+                    'focus-visible:ring-ring/50 flex h-8 min-w-0 items-center justify-center rounded-md px-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50',
+                    active
+                      ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
+                      : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
         </Field>
         {selectedMode === 'custom' ? (
           <SliderField
@@ -1146,71 +1188,83 @@ export function FireworkRenderControls({
                   setLaunchNestedValue('liftParticles', 'particleSize', 'base', round2(value))
                 }
               />
-              <SliderField
-                label="Head scale"
-                min={0}
-                max={TRAIL_PARTICLE_SCALE_MAX}
-                step={0.05}
-                value={liftParticles.particleSize.headScale}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Lift head scale value"
-                disabled={controlDisabled}
-                hint="Size multiplier when each particle first appears near the rising shell."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'particleSize', 'headScale', round2(value))
-                }
-              />
-              <SliderField
-                label="Tail scale"
-                min={0}
-                max={TRAIL_PARTICLE_SCALE_MAX}
-                step={0.05}
-                value={liftParticles.particleSize.tailScale}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Lift tail scale value"
-                disabled={controlDisabled}
-                hint="Size multiplier as each particle ages into the lift tail."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'particleSize', 'tailScale', round2(value))
-                }
-              />
-              <SliderField
-                label="Size random"
-                min={0}
-                max={100}
-                step={1}
-                value={liftParticles.particleSize.variationPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Lift size random value"
-                disabled={controlDisabled}
-                hint="Seeded size variation so the lift trail does not look uniform."
-                onChange={(value) =>
-                  setLaunchNestedValue(
-                    'liftParticles',
-                    'particleSize',
-                    'variationPercent',
-                    round2(value),
-                  )
-                }
-              />
-              <SliderField
-                label="Rotation"
-                min={0}
-                max={TRAIL_ROTATION_MAX}
-                step={0.1}
-                value={liftParticles.motion.spin}
-                formatValue={formatRotation}
-                showNumberInput
-                inputAriaLabel="Lift rotation value"
-                disabled={controlDisabled}
-                hint="0 keeps every particle locked in place. Higher values spin particles as they fade."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'motion', 'spin', round2(value))
-                }
-              />
+              <AdvancedControls>
+                <SliderField
+                  label="Head scale"
+                  min={0}
+                  max={TRAIL_PARTICLE_SCALE_MAX}
+                  step={0.05}
+                  value={liftParticles.particleSize.headScale}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift head scale value"
+                  disabled={controlDisabled}
+                  hint="Size multiplier when each particle first appears near the rising shell."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'particleSize',
+                      'headScale',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Tail scale"
+                  min={0}
+                  max={TRAIL_PARTICLE_SCALE_MAX}
+                  step={0.05}
+                  value={liftParticles.particleSize.tailScale}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift tail scale value"
+                  disabled={controlDisabled}
+                  hint="Size multiplier as each particle ages into the lift tail."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'particleSize',
+                      'tailScale',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Size random"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={liftParticles.particleSize.variationPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Lift size random value"
+                  disabled={controlDisabled}
+                  hint="Seeded size variation so the lift trail does not look uniform."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'particleSize',
+                      'variationPercent',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Rotation"
+                  min={0}
+                  max={TRAIL_ROTATION_MAX}
+                  step={0.1}
+                  value={liftParticles.motion.spin}
+                  formatValue={formatRotation}
+                  showNumberInput
+                  inputAriaLabel="Lift rotation value"
+                  disabled={controlDisabled}
+                  hint="0 keeps every particle locked in place. Higher values spin particles as they fade."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'motion', 'spin', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 
@@ -1230,50 +1284,6 @@ export function FireworkRenderControls({
                 }
               />
               <SliderField
-                label="Spacing curve"
-                min={TRAIL_SPACING_CURVE_MIN}
-                max={TRAIL_SPACING_CURVE_MAX}
-                step={0.05}
-                value={liftParticles.spacing.curve}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Lift spacing curve value"
-                disabled={controlDisabled}
-                hint="Curves where particles are spent along the launch path."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'spacing', 'curve', round2(value))
-                }
-              />
-              <SliderField
-                label="Gap random"
-                min={0}
-                max={100}
-                step={1}
-                value={liftParticles.spacing.jitterPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Lift gap random value"
-                disabled={controlDisabled}
-                hint="Seeded irregularity in lift-particle spacing."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'spacing', 'jitterPercent', round2(value))
-                }
-              />
-              <SliderField
-                label="Path fill"
-                min={1}
-                max={LIFT_PATH_SAMPLES_MAX}
-                step={1}
-                value={liftParticles.spacing.pathSamples}
-                showNumberInput
-                inputAriaLabel="Lift path fill value"
-                disabled={controlDisabled}
-                hint="Subsamples the shell path between frames so lift particles form a smoother trail."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'spacing', 'pathSamples', Math.round(value))
-                }
-              />
-              <SliderField
                 label="Rise height"
                 min={0}
                 max={LIFT_PARTICLE_HEIGHT_PERCENT_MAX}
@@ -1286,6 +1296,57 @@ export function FireworkRenderControls({
                 hint="How far up the shell path lift particles climb. 0% stays at launch; 100% reaches the burst centre."
                 onChange={(value) => setLaunchValue('liftParticles', 'height', round2(value))}
               />
+              <AdvancedControls>
+                <SliderField
+                  label="Spacing curve"
+                  min={TRAIL_SPACING_CURVE_MIN}
+                  max={TRAIL_SPACING_CURVE_MAX}
+                  step={0.05}
+                  value={liftParticles.spacing.curve}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift spacing curve value"
+                  disabled={controlDisabled}
+                  hint="Curves where particles are spent along the launch path."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'spacing', 'curve', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Gap random"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={liftParticles.spacing.jitterPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Lift gap random value"
+                  disabled={controlDisabled}
+                  hint="Seeded irregularity in lift-particle spacing."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'spacing', 'jitterPercent', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Path fill"
+                  min={1}
+                  max={LIFT_PATH_SAMPLES_MAX}
+                  step={1}
+                  value={liftParticles.spacing.pathSamples}
+                  showNumberInput
+                  inputAriaLabel="Lift path fill value"
+                  disabled={controlDisabled}
+                  hint="Subsamples the shell path between frames so lift particles form a smoother trail."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'spacing',
+                      'pathSamples',
+                      Math.round(value),
+                    )
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 
@@ -1307,46 +1368,6 @@ export function FireworkRenderControls({
                 }
               />
               <SliderField
-                label="Life random"
-                min={0}
-                max={100}
-                step={1}
-                value={liftParticles.lifetime.variationPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Lift life random value"
-                disabled={controlDisabled}
-                hint="Seeded variation in each particle's lifetime."
-                onChange={(value) =>
-                  setLaunchNestedValue(
-                    'liftParticles',
-                    'lifetime',
-                    'variationPercent',
-                    round2(value),
-                  )
-                }
-              />
-              <SliderField
-                label="Afterglow"
-                min={0}
-                max={6}
-                step={0.05}
-                value={liftParticles.lifetime.afterglowSeconds}
-                formatValue={formatSeconds}
-                showNumberInput
-                inputAriaLabel="Lift afterglow value"
-                disabled={controlDisabled}
-                hint="Extra glow time added after the main particle life."
-                onChange={(value) =>
-                  setLaunchNestedValue(
-                    'liftParticles',
-                    'lifetime',
-                    'afterglowSeconds',
-                    round2(value),
-                  )
-                }
-              />
-              <SliderField
                 label="Brightness"
                 min={0}
                 max={3}
@@ -1360,33 +1381,80 @@ export function FireworkRenderControls({
                   setLaunchNestedValue('liftParticles', 'intensity', 'brightness', round2(value))
                 }
               />
-              <SliderField
-                label="Fade softness"
-                min={0.2}
-                max={4}
-                step={0.05}
-                value={liftParticles.intensity.fadeSoftness}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Lift fade softness value"
-                disabled={controlDisabled}
-                hint="How gently lift particles cool into their tail."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'intensity', 'fadeSoftness', round2(value))
-                }
-              />
-              <SliderField
-                label="Flicker"
-                min={0}
-                max={1}
-                step={0.01}
-                value={liftParticles.flicker.chance}
-                disabled={controlDisabled}
-                hint="Chance each lift particle twinkles white-hot."
-                onChange={(value) =>
-                  setLaunchNestedValue('liftParticles', 'flicker', 'chance', round2(value))
-                }
-              />
+              <AdvancedControls>
+                <SliderField
+                  label="Life random"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={liftParticles.lifetime.variationPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Lift life random value"
+                  disabled={controlDisabled}
+                  hint="Seeded variation in each particle's lifetime."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'lifetime',
+                      'variationPercent',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Afterglow"
+                  min={0}
+                  max={6}
+                  step={0.05}
+                  value={liftParticles.lifetime.afterglowSeconds}
+                  formatValue={formatSeconds}
+                  showNumberInput
+                  inputAriaLabel="Lift afterglow value"
+                  disabled={controlDisabled}
+                  hint="Extra glow time added after the main particle life."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'lifetime',
+                      'afterglowSeconds',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Fade softness"
+                  min={0.2}
+                  max={4}
+                  step={0.05}
+                  value={liftParticles.intensity.fadeSoftness}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift fade softness value"
+                  disabled={controlDisabled}
+                  hint="How gently lift particles cool into their tail."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'intensity',
+                      'fadeSoftness',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Flicker"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={liftParticles.flicker.chance}
+                  disabled={controlDisabled}
+                  hint="Chance each lift particle twinkles white-hot."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'flicker', 'chance', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 
@@ -2561,64 +2629,68 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'particleSize', 'base', round2(value))
                 }
               />
-              <SliderField
-                label="Head scale"
-                min={0}
-                max={TRAIL_PARTICLE_SCALE_MAX}
-                step={0.05}
-                value={burstTrail.particleSize.headScale}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Head scale value"
-                disabled={controlDisabled}
-                hint="Size multiplier when each trail particle first appears near the star head."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'particleSize', 'headScale', round2(value))
-                }
-              />
-              <SliderField
-                label="Tail scale"
-                min={0}
-                max={TRAIL_PARTICLE_SCALE_MAX}
-                step={0.05}
-                value={burstTrail.particleSize.tailScale}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Tail scale value"
-                disabled={controlDisabled}
-                hint="Size multiplier as each particle ages into the old tail."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'particleSize', 'tailScale', round2(value))
-                }
-              />
-              <SliderField
-                label="Size random"
-                min={0}
-                max={100}
-                step={1}
-                value={burstTrail.particleSize.variationPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Size random value"
-                disabled={controlDisabled}
-                hint="Seeded size variation. Replay stays deterministic, but particles do not all match exactly."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'particleSize', 'variationPercent', round2(value))
-                }
-              />
-              <SliderField
-                label="Rotation"
-                min={0}
-                max={TRAIL_ROTATION_MAX}
-                step={0.1}
-                value={burstTrail.motion.spin}
-                formatValue={formatRotation}
-                showNumberInput
-                inputAriaLabel="Rotation value"
-                disabled={controlDisabled}
-                hint="0 keeps every particle locked in place. Higher values randomise the starting angle and spin the particles while they fade."
-                onChange={(value) => setBurstTrailNested(layerKey, 'motion', 'spin', round2(value))}
-              />
+              <AdvancedControls>
+                <SliderField
+                  label="Head scale"
+                  min={0}
+                  max={TRAIL_PARTICLE_SCALE_MAX}
+                  step={0.05}
+                  value={burstTrail.particleSize.headScale}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Head scale value"
+                  disabled={controlDisabled}
+                  hint="Size multiplier when each trail particle first appears near the star head."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'particleSize', 'headScale', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Tail scale"
+                  min={0}
+                  max={TRAIL_PARTICLE_SCALE_MAX}
+                  step={0.05}
+                  value={burstTrail.particleSize.tailScale}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Tail scale value"
+                  disabled={controlDisabled}
+                  hint="Size multiplier as each particle ages into the old tail."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'particleSize', 'tailScale', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Size random"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={burstTrail.particleSize.variationPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Size random value"
+                  disabled={controlDisabled}
+                  hint="Seeded size variation. Replay stays deterministic, but particles do not all match exactly."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'particleSize', 'variationPercent', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Rotation"
+                  min={0}
+                  max={TRAIL_ROTATION_MAX}
+                  step={0.1}
+                  value={burstTrail.motion.spin}
+                  formatValue={formatRotation}
+                  showNumberInput
+                  inputAriaLabel="Rotation value"
+                  disabled={controlDisabled}
+                  hint="0 keeps every particle locked in place. Higher values randomise the starting angle and spin the particles while they fade."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'motion', 'spin', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 
@@ -2638,77 +2710,83 @@ export function FireworkRenderControls({
                 hint="Where the total particle budget lands along each star path. This redistributes placement without changing the amount."
                 onChange={(value) => setTrailBias(layerKey, round2(value))}
               />
-              <SliderField
-                label="Spacing curve"
-                min={TRAIL_SPACING_CURVE_MIN}
-                max={TRAIL_SPACING_CURVE_MAX}
-                step={0.05}
-                value={burstTrail.spacing.curve}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Spacing curve value"
-                disabled={controlDisabled}
-                hint="Curves where particles are spent along the path. 1x is linear; higher values make the balance fall off more exponentially toward the selected end."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'spacing', 'curve', round2(value))
-                }
-              />
-              <SliderField
-                label="Gap random"
-                min={0}
-                max={100}
-                step={1}
-                value={burstTrail.spacing.jitterPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Gap random value"
-                disabled={controlDisabled}
-                hint="Seeded randomness inside each spacing gap. 0% is even spacing; higher values make the trail more irregular."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'spacing', 'jitterPercent', round2(value))
-                }
-              />
-              <SliderField
-                label="Head gap"
-                min={0}
-                max={TRAIL_HEAD_GAP_MAX}
-                step={1}
-                value={burstTrail.placement.headGapPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Head gap value"
-                disabled={controlDisabled}
-                hint="How far newly generated particles start behind the star head. 0% can overlap the star; particles are never pushed in front."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'placement', 'headGapPercent', round2(value))
-                }
-              />
-              <SliderField
-                label="Front angle"
-                min={0}
-                max={TRAIL_SPREAD_ANGLE_MAX}
-                step={1}
-                value={burstTrail.width.front}
-                formatValue={formatDegrees}
-                showNumberInput
-                inputAriaLabel="Front angle value"
-                disabled={controlDisabled}
-                hint="Spread angle around the fresh head end of the trail. Higher values scatter particles wider around the current star path."
-                onChange={(value) => setBurstTrailNested(layerKey, 'width', 'front', round2(value))}
-              />
-              <SliderField
-                label="Tail angle"
-                min={0}
-                max={TRAIL_SPREAD_ANGLE_MAX}
-                step={1}
-                value={burstTrail.width.tail}
-                formatValue={formatDegrees}
-                showNumberInput
-                inputAriaLabel="Tail angle value"
-                disabled={controlDisabled}
-                hint="Spread angle around the old tail end. 0 degrees keeps the tail tight; higher values leave a wider tail."
-                onChange={(value) => setBurstTrailNested(layerKey, 'width', 'tail', round2(value))}
-              />
+              <AdvancedControls>
+                <SliderField
+                  label="Spacing curve"
+                  min={TRAIL_SPACING_CURVE_MIN}
+                  max={TRAIL_SPACING_CURVE_MAX}
+                  step={0.05}
+                  value={burstTrail.spacing.curve}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Spacing curve value"
+                  disabled={controlDisabled}
+                  hint="Curves where particles are spent along the path. 1x is linear; higher values make the balance fall off more exponentially toward the selected end."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'spacing', 'curve', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Gap random"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={burstTrail.spacing.jitterPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Gap random value"
+                  disabled={controlDisabled}
+                  hint="Seeded randomness inside each spacing gap. 0% is even spacing; higher values make the trail more irregular."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'spacing', 'jitterPercent', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Head gap"
+                  min={0}
+                  max={TRAIL_HEAD_GAP_MAX}
+                  step={1}
+                  value={burstTrail.placement.headGapPercent}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Head gap value"
+                  disabled={controlDisabled}
+                  hint="How far newly generated particles start behind the star head. 0% can overlap the star; particles are never pushed in front."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'placement', 'headGapPercent', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Front angle"
+                  min={0}
+                  max={TRAIL_SPREAD_ANGLE_MAX}
+                  step={1}
+                  value={burstTrail.width.front}
+                  formatValue={formatDegrees}
+                  showNumberInput
+                  inputAriaLabel="Front angle value"
+                  disabled={controlDisabled}
+                  hint="Spread angle around the fresh head end of the trail. Higher values scatter particles wider around the current star path."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'width', 'front', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Tail angle"
+                  min={0}
+                  max={TRAIL_SPREAD_ANGLE_MAX}
+                  step={1}
+                  value={burstTrail.width.tail}
+                  formatValue={formatDegrees}
+                  showNumberInput
+                  inputAriaLabel="Tail angle value"
+                  disabled={controlDisabled}
+                  hint="Spread angle around the old tail end. 0 degrees keeps the tail tight; higher values leave a wider tail."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'width', 'tail', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 
@@ -2727,33 +2805,35 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'intensity', 'brightness', round2(value))
                 }
               />
-              <SliderField
-                label="Fade softness"
-                min={0.2}
-                max={4}
-                step={0.05}
-                value={burstTrail.intensity.fadeSoftness}
-                formatValue={formatMultiplier}
-                showNumberInput
-                inputAriaLabel="Fade softness value"
-                disabled={controlDisabled}
-                hint="How gently each particle cools from its hot colour into the tail colour."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'intensity', 'fadeSoftness', round2(value))
-                }
-              />
-              <SliderField
-                label="Flicker"
-                min={0}
-                max={1}
-                step={0.01}
-                value={burstTrail.flicker.chance}
-                disabled={controlDisabled}
-                hint="Chance each particle twinkles white-hot, for a glittering, crackly trail. 0 is steady."
-                onChange={(value) =>
-                  setBurstTrailNested(layerKey, 'flicker', 'chance', round2(value))
-                }
-              />
+              <AdvancedControls>
+                <SliderField
+                  label="Fade softness"
+                  min={0.2}
+                  max={4}
+                  step={0.05}
+                  value={burstTrail.intensity.fadeSoftness}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Fade softness value"
+                  disabled={controlDisabled}
+                  hint="How gently each particle cools from its hot colour into the tail colour."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'intensity', 'fadeSoftness', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Flicker"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={burstTrail.flicker.chance}
+                  disabled={controlDisabled}
+                  hint="Chance each particle twinkles white-hot, for a glittering, crackly trail. 0 is steady."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'flicker', 'chance', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
 

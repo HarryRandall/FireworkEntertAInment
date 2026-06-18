@@ -157,27 +157,26 @@ test('admin actions validate and persist generalised style-default assignments',
 });
 
 test('style default admin UI exposes every kind without the black accent badge', () => {
-  const effectsPage = read('app/(admin)/admin/effects/page.tsx');
+  const effectsBrowser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
   const defaultsEditor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
 
-  assert.match(effectsPage, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
-  assert.match(effectsPage, /function EffectsViewSelector/);
-  assert.match(effectsPage, /function StyleDefaultCreateAction/);
-  assert.match(effectsPage, /name="kind"/);
-  assert.match(effectsPage, /Add new/);
+  assert.match(effectsBrowser, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
+  assert.match(effectsBrowser, /function StyleDefaultCreateAction/);
+  assert.match(effectsBrowser, /name="kind"/);
+  assert.match(effectsBrowser, /Add new/);
   assert.doesNotMatch(
-    effectsPage,
+    effectsBrowser,
     /New \{styleDefaultKindLabel\(kind\)\.toLowerCase\(\)\} default/,
   );
-  assert.match(effectsPage, /styleDefaultBadgeTone/);
-  assert.doesNotMatch(effectsPage, /tone=\{styleDefault\.kind === 'star' \? 'accent' : 'sky'\}/);
-  assert.match(effectsPage, /formatEffectFamily\(effect\.family\)/);
-  assert.doesNotMatch(effectsPage, /tone="accent" solid icon=\{Sparkles\}/);
-  assert.match(effectsPage, /Linked effects/);
-  assert.match(effectsPage, /Linked fireworks/);
+  assert.match(effectsBrowser, /styleDefaultBadgeTone/);
+  assert.doesNotMatch(effectsBrowser, /tone=\{styleDefault\.kind === 'star' \? 'accent' : 'sky'\}/);
+  assert.match(effectsBrowser, /formatEffectFamily\(effect\.family\)/);
+  assert.doesNotMatch(effectsBrowser, /tone="accent" solid icon=\{Sparkles\}/);
+  assert.match(effectsBrowser, /Linked effects/);
+  assert.match(effectsBrowser, /Linked fireworks/);
 
   assert.match(defaultsEditor, /const KIND_OPTIONS = FIREWORK_STYLE_DEFAULT_KINDS\.map/);
   assert.match(defaultsEditor, /controlScope=\{kind\}/);

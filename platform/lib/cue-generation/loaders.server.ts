@@ -56,7 +56,7 @@ export async function loadAnalysisState(
     .eq('id', musicAnalysisId)
     .maybeSingle();
   if (error) {
-    console.error('[cue-generation] loadAnalysisJson failed:', error);
+    console.error('[cue-generation] loadAnalysisState failed:', error);
     return { status: 'missing', analysis: null };
   }
   if (!data) return { status: 'missing', analysis: null };
@@ -66,15 +66,6 @@ export async function loadAnalysisState(
   if (data.status !== 'completed') return { status: 'running', analysis: null };
   if (!data.analysis_json) return { status: 'empty', analysis: null };
   return { status: 'completed', analysis: data.analysis_json as unknown as AnalyserResult };
-}
-
-/** Loads the completed analyser JSON, or `null` if the analysis isn't ready. */
-export async function loadAnalysisJson(
-  supabase: AppSupabase,
-  musicAnalysisId: string,
-): Promise<AnalyserResult | null> {
-  const result = await loadAnalysisState(supabase, musicAnalysisId);
-  return result.status === 'completed' ? result.analysis : null;
 }
 
 /**

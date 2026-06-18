@@ -24,7 +24,9 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
           <Info className="size-3" aria-hidden />
         </button>
       </TooltipTrigger>
-      <TooltipContent>{text}</TooltipContent>
+      <TooltipContent collisionPadding={12} className="max-w-[15rem] leading-snug">
+        {text}
+      </TooltipContent>
     </Tooltip>
   );
 }

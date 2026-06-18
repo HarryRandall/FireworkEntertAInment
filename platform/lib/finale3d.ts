@@ -21,6 +21,8 @@ type SourcePayload = {
 export type Finale3dCueInput = {
   timeSeconds: number;
   effectName: string;
+  /** Tube the cue fires from; maps deterministically to a Finale position name. */
+  launchPositionIndex: number;
   sourcePayload: Json | null;
 };
 
@@ -82,7 +84,13 @@ export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
 
   for (const cue of cues) {
     const p = parsePayload(cue.sourcePayload);
-    const pos = POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+    // Map the cue's actual tube to a fixed position name. A firing script must
+    // be deterministic, so never randomise this. Out-of-range indices wrap.
+    const positionIndex =
+      Number.isInteger(cue.launchPositionIndex) && cue.launchPositionIndex >= 0
+        ? cue.launchPositionIndex % POSITIONS.length
+        : 0;
+    const pos = POSITIONS[positionIndex];
     const row = [
       'FIRING_DATA_ROW',
       '',

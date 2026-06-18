@@ -80,7 +80,13 @@ export function buildCueSlots(
   const tempoBpm = clampTempo(analysis?.tempo_bpm ?? 120);
 
   // 1. Beat times: prefer AI's, fall back to synthetic from tempo if sparse.
-  let beats = (analysis?.beat_times ?? []).slice().sort((a, b) => a - b);
+  //    Keep only finite beats inside the song, sorted, with exact duplicates
+  //    removed, so a stray analyser value can't place cues before 0 or past the
+  //    end of the song.
+  const cleanedBeats = (analysis?.beat_times ?? [])
+    .filter((t) => Number.isFinite(t) && t >= 0 && t < songDuration)
+    .sort((a, b) => a - b);
+  let beats = cleanedBeats.filter((t, i) => i === 0 || t !== cleanedBeats[i - 1]);
   const lastBeat = beats.length ? beats[beats.length - 1] : 0;
   const needsSynth = beats.length < 20 || lastBeat < songDuration * 0.75;
   if (needsSynth) {

@@ -167,30 +167,3 @@ export function hexToRgb(hex: FireworkColor | string): [number, number, number] 
   if (Number.isNaN(int)) return [1, 1, 1];
   return [((int >> 16) & 0xff) / 255, ((int >> 8) & 0xff) / 255, (int & 0xff) / 255];
 }
-
-export function pickPrimaryColor(spec: FireworkSpec, rng: () => number): string {
-  if (spec.outerColor) return spec.outerColor;
-  if (spec.colorPalette?.length) {
-    return spec.colorPalette[Math.floor(rng() * spec.colorPalette.length)] ?? spec.colorPalette[0];
-  }
-  const c = spec.color;
-  if (c === 'random') {
-    const palette = FIREWORK_COLOR_VALUES.filter((color) => color !== FIREWORK_COLORS.White);
-    return palette[Math.floor(rng() * palette.length)] ?? FIREWORK_COLORS.Gold;
-  }
-  if (Array.isArray(c)) return c[Math.floor(rng() * 2)] ?? c[0];
-  return c;
-}
-
-export const GLITTER_PROFILES: Record<
-  GlitterKind,
-  { sparkFreq: number; sparkSpeed: number; sparkLifeMs: number; sparkLifeVariation: number }
-> = {
-  none: { sparkFreq: 0, sparkSpeed: 0, sparkLifeMs: 0, sparkLifeVariation: 0 },
-  light: { sparkFreq: 400, sparkSpeed: 0.3, sparkLifeMs: 300, sparkLifeVariation: 2 },
-  medium: { sparkFreq: 200, sparkSpeed: 0.44, sparkLifeMs: 700, sparkLifeVariation: 2 },
-  heavy: { sparkFreq: 80, sparkSpeed: 0.8, sparkLifeMs: 1400, sparkLifeVariation: 2 },
-  thick: { sparkFreq: 16, sparkSpeed: 1.6, sparkLifeMs: 1400, sparkLifeVariation: 3 },
-  streamer: { sparkFreq: 32, sparkSpeed: 1.05, sparkLifeMs: 620, sparkLifeVariation: 2 },
-  willow: { sparkFreq: 120, sparkSpeed: 0.34, sparkLifeMs: 1400, sparkLifeVariation: 3.8 },
-};

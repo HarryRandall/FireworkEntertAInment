@@ -8,7 +8,7 @@ import { Mail, CheckCircle, Sparkles } from 'lucide-react';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
-import { FormError } from '../components/FormError';
+import { FormError } from '@/app/components/ui/FormError';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');

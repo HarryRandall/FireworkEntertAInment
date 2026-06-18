@@ -1,23 +1,18 @@
 /**
- * Footer — site-wide footer rendered across all marketing routes via
- * the marketing layout. Link columns are defined in-module; update
- * here when adding new marketing pages.
+ * Footer — site-wide footer rendered across all marketing routes via the
+ * marketing layout. Brand blurb on the left, link columns on the right.
  */
 import Link from 'next/link';
 import { Sparkles } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 
-type FooterLink = { href: string; label: string };
-
-const COLUMNS: { heading: string; links: FooterLink[] }[] = [
+const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: 'Product',
     links: [
-      { href: '/how-it-works', label: 'How it works' },
       { href: '/features', label: 'Features' },
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/shows/new', label: 'Create a show' },
       { href: '/pricing', label: 'Pricing' },
+      { href: '/how-it-works', label: 'How it works' },
       { href: '/changelog', label: 'Changelog' },
     ],
   },
@@ -31,79 +26,55 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
     ],
   },
   {
-    heading: 'Resources',
-    links: [
-      { href: '/docs', label: 'Documentation' },
-      { href: '/tutorials', label: 'Tutorials' },
-      { href: '/vendors', label: 'Vendor catalogue' },
-      { href: '/safety', label: 'Safety guide' },
-      { href: '/status', label: 'Status' },
-    ],
-  },
-  {
     heading: 'Legal',
     links: [
       { href: '/privacy', label: 'Privacy' },
       { href: '/terms', label: 'Terms' },
-      { href: '/cookies', label: 'Cookies' },
       { href: '/licences', label: 'Licences' },
+      { href: '/safety', label: 'Safety' },
     ],
   },
 ];
 
 export function MarketingFooter() {
   return (
-    <footer className="bg-surface-container-lowest relative mt-auto w-full pt-20 pb-10">
-      <div className="neon-divider absolute inset-x-0 top-0" />
-      <Container>
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
-          <div className="md:col-span-4">
-            <Link
-              href="/"
-              className="group text-on-surface inline-flex items-center gap-2 text-xl font-semibold tracking-tighter"
-            >
-              <span className="bg-primary/15 text-primary inline-flex h-7 w-7 items-center justify-center rounded-full">
-                <Sparkles size={14} strokeWidth={2} />
-              </span>
-              Show<span className="text-primary">Crafter</span>
-            </Link>
-            <p className="text-on-surface-variant mt-4 max-w-sm text-sm leading-relaxed">
-              AI choreography for real consumer fireworks. Built with ICON Pyrotechnics — pick a
-              song, set a budget, light up the sky.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 md:col-span-8 md:grid-cols-4">
-            {COLUMNS.map((col) => (
-              <div key={col.heading}>
-                <h4 className="text-primary mb-4 text-xs font-bold tracking-[0.2em] uppercase">
-                  {col.heading}
-                </h4>
-                <ul className="space-y-2.5">
-                  {col.links.map((l) => (
-                    <li key={l.label}>
-                      <Link
-                        href={l.href}
-                        className="text-on-surface-variant hover:text-primary text-sm transition-colors"
-                      >
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-outline-variant/15 mt-14 flex flex-col items-center justify-between gap-3 border-t pt-8 md:flex-row">
-          <p className="text-on-surface-variant/60 text-xs tracking-widest uppercase">
-            &copy; 2026 ShowCrafter AI · ICON Pyrotechnics International
-          </p>
-          <p className="text-on-surface-variant/40 text-xs tracking-widest uppercase">
-            Designed for the night sky
+    <footer className="bg-background border-outline-variant/60 mt-auto w-full border-t pt-14 pb-10">
+      <Container className="flex flex-wrap justify-between gap-12">
+        <div className="max-w-[280px]">
+          <Link
+            href="/"
+            className="text-on-surface flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]"
+          >
+            <span className="brand-logo-mark h-[30px] w-[30px] rounded-[9px]">
+              <Sparkles size={16} strokeWidth={2} />
+            </span>
+            ShowCrafter
+          </Link>
+          <p className="text-on-surface-variant mt-4 text-[13px] leading-relaxed">
+            AI-choreographed pyromusical shows, in partnership with ICON Pyrotechnics International.
           </p>
         </div>
+
+        <div className="flex flex-wrap gap-14">
+          {COLUMNS.map((col) => (
+            <div key={col.heading}>
+              <div className="text-on-surface mb-3 text-xs font-semibold">{col.heading}</div>
+              {col.links.map((l) => (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  className="text-on-surface-variant hover:text-on-surface block py-1.5 text-[13px]"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Container>
+      <Container className="border-outline-variant/60 text-on-surface-variant/70 mt-11 border-t pt-6 text-xs">
+        &copy; 2026 Firework EntertAInment. Always follow your state and local fireworks
+        regulations.
       </Container>
     </footer>
   );

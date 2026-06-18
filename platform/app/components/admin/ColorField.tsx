@@ -1,16 +1,15 @@
 'use client';
 
-/** Hex colour input with a native picker, text entry, and quick preset swatches. */
-import { useId } from 'react';
+/** Labelled colour field built on the modern ColorPicker, with optional "inherit" clear. */
 import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { FIREWORK_COLOR_VALUES } from '@/lib/fireworks/spec';
 import { cn } from '@/lib/utils';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
-function normalise(value: string): string {
-  const trimmed = value.trim();
+function normalise(value: string | null): string {
+  const trimmed = (value ?? '').trim();
   return HEX.test(trimmed) ? trimmed.toLowerCase() : '#ffffff';
 }
 
@@ -29,43 +28,40 @@ export function ColorField({
   hint?: string;
   allowClear?: boolean;
 }) {
-  const id = useId();
-  const current = value ?? '';
-  const picker = normalise(current || '#ffffff');
+  const hasValue = value != null && value.trim() !== '';
 
   return (
     <Field>
       <div className="flex items-center gap-1.5">
-        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+        <FieldLabel>{label}</FieldLabel>
         {hint ? <InfoTooltip text={hint} /> : null}
       </div>
       <div className="flex items-center gap-2">
-        <input
-          type="color"
-          aria-label={`${label} picker`}
-          className="h-9 w-9 shrink-0 cursor-pointer rounded-md border border-[color:var(--color-border-subtle)] bg-transparent disabled:cursor-not-allowed"
-          value={picker}
-          disabled={disabled}
-          onChange={(event) => onChange(event.currentTarget.value.toLowerCase())}
-        />
-        <input
-          id={id}
-          type="text"
-          inputMode="text"
-          placeholder={allowClear ? 'Inherit from effect' : '#ff0043'}
-          className="h-9 w-28 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-2 font-mono text-sm text-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed"
-          value={current}
-          disabled={disabled}
-          onChange={(event) => {
-            const next = event.currentTarget.value;
-            if (next.trim() === '') {
-              onChange(allowClear ? null : '#ffffff');
-            } else {
-              onChange(next.toLowerCase());
-            }
-          }}
-        />
-        {allowClear && value ? (
+        {allowClear && !hasValue ? (
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={`Set ${label}`}
+            onClick={() => onChange('#ffffff')}
+            className={cn(
+              'focus-visible:ring-ring/50 inline-flex h-9 items-center gap-2 rounded-lg border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] pr-3 pl-1.5 text-xs text-[color:var(--color-content-subtle)] shadow-xs transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
+            )}
+          >
+            <span
+              className="h-6 w-6 shrink-0 rounded-md bg-[linear-gradient(135deg,transparent_45%,var(--color-border-emphasis)_45%,var(--color-border-emphasis)_55%,transparent_55%)] ring-1 ring-black/10 ring-inset"
+              aria-hidden
+            />
+            Inherit from effect
+          </button>
+        ) : (
+          <ColorPicker
+            label={label}
+            value={normalise(value)}
+            disabled={disabled}
+            onChange={(hex) => onChange(hex)}
+          />
+        )}
+        {allowClear && hasValue ? (
           <button
             type="button"
             className="text-xs text-[color:var(--color-content-subtle)] underline-offset-2 hover:underline disabled:opacity-50"
@@ -75,24 +71,6 @@ export function ColorField({
             Clear
           </button>
         ) : null}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {FIREWORK_COLOR_VALUES.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            aria-label={`Use ${preset}`}
-            disabled={disabled}
-            onClick={() => onChange(preset)}
-            className={cn(
-              'h-5 w-5 rounded-full border border-[color:var(--color-border-subtle)] transition-transform hover:scale-110 disabled:cursor-not-allowed',
-              value?.toLowerCase() === preset.toLowerCase()
-                ? 'ring-2 ring-[color:var(--color-content-emphasis)] ring-offset-1'
-                : '',
-            )}
-            style={{ backgroundColor: preset }}
-          />
-        ))}
       </div>
     </Field>
   );

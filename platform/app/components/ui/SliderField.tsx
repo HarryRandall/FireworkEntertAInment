@@ -54,10 +54,12 @@ export function SliderField({
   }
 
   return (
-    <Field>
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="flex items-center gap-1.5">
-          <FieldLabel htmlFor={id}>{label}</FieldLabel>
+    <Field className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <FieldLabel htmlFor={id} className="truncate text-xs">
+            {label}
+          </FieldLabel>
           {hint ? <InfoTooltip text={hint} /> : null}
         </div>
         {showNumberInput ? (
@@ -72,7 +74,7 @@ export function SliderField({
             aria-label={
               inputAriaLabel ?? (typeof label === 'string' ? `${label} value` : undefined)
             }
-            className="h-8 w-16 [appearance:textfield] px-2 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="h-7 w-14 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             onFocus={(event) => event.currentTarget.select()}
             onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
             onBlur={(event) => {
@@ -80,7 +82,9 @@ export function SliderField({
             }}
           />
         ) : (
-          <span className="text-muted-foreground font-mono text-xs tabular-nums">{display}</span>
+          <span className="rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
+            {display}
+          </span>
         )}
       </div>
       <Slider
@@ -92,6 +96,7 @@ export function SliderField({
         disabled={disabled}
         onValueChange={(next) => onChange(next[0] ?? value)}
         aria-label={typeof label === 'string' ? label : undefined}
+        className="py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
       />
     </Field>
   );

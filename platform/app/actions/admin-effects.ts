@@ -189,10 +189,20 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
 }
 
 /** Create a manual, editable one-star base effect and open it in the editor. */
-export async function createCustomStarEffect(): Promise<void> {
+export async function createCustomStarEffect(formData?: FormData): Promise<void> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     redirect('/admin/effects');
   }
+
+  const familyInput = formData?.get('family');
+  const family = BaseEffectFamilySchema.catch('aerial_burst').parse(
+    typeof familyInput === 'string' ? familyInput : 'aerial_burst',
+  );
+  const nameInput = formData?.get('name');
+  const name =
+    typeof nameInput === 'string' && nameInput.trim()
+      ? nameInput.trim().slice(0, 180)
+      : 'Custom Star';
 
   const supabase = createClient(await cookies());
   const slug = `custom-star-${Date.now().toString(36)}`;
@@ -200,9 +210,9 @@ export async function createCustomStarEffect(): Promise<void> {
     .from('firework_effects')
     .insert({
       slug,
-      name: 'Custom Star',
+      name,
       description: 'Manual custom star effect.',
-      family: 'aerial_burst',
+      family,
       pattern_key: 'custom-star',
       source: 'manual',
       sort_order: 9000,
