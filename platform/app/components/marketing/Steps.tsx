@@ -8,7 +8,8 @@ import { Music4, ShoppingBag, ShieldCheck, SlidersHorizontal, Wand2 } from 'luci
 import type { LucideIcon } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Reveal } from './Reveal';
-import { Doodle, Eyebrow } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Eyebrow } from './landing/decor';
 import { BudgetMock, ChoreoMock, FireMock, ShopMock, SongMock } from './landing/Mockups';
 
 type Step = {

@@ -5,7 +5,8 @@
 import { Star } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Reveal } from './Reveal';
-import { Avatar, Doodle, Eyebrow } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Avatar, Eyebrow } from './landing/decor';
 
 const QUOTES = [
   {

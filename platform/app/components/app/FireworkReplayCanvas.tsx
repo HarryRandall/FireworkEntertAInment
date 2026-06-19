@@ -40,6 +40,7 @@ type Props = {
   launchPositions?: LaunchPosition[];
   muted?: boolean;
   interactive?: boolean;
+  allowWheelZoom?: boolean;
   controlsVisible?: boolean;
   showFps?: boolean;
   renderTuning?: Partial<FireworkRenderTuning>;
@@ -435,6 +436,7 @@ export function FireworkReplayCanvas({
   launchPositions = DEFAULT_LAUNCH_POSITIONS,
   muted = false,
   interactive = true,
+  allowWheelZoom = true,
   controlsVisible = true,
   showFps = false,
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
@@ -461,6 +463,7 @@ export function FireworkReplayCanvas({
   // Current upward pan applied to keep the camera off the floor (see loop).
   const floorLiftRef = useRef(0);
   const showViewHelperRef = useRef(false);
+  const hasReportedReadyRef = useRef(false);
   const [panMode, setPanMode] = useState(false);
   const [showCameraControls, setShowCameraControls] = useState(false);
   const [showViewHelper, setShowViewHelper] = useState(false);
@@ -627,6 +630,7 @@ export function FireworkReplayCanvas({
     controls.target.copy(DEFAULT_CAMERA_TARGET);
     controls.enableDamping = false;
     controls.enablePan = true;
+    controls.enableZoom = allowWheelZoom;
     controls.screenSpacePanning = true;
     controls.minDistance = MIN_CAMERA_DISTANCE;
     controls.maxDistance = MAX_CAMERA_DISTANCE;
@@ -677,7 +681,6 @@ export function FireworkReplayCanvas({
     }
     syncEngineViewport();
     composer.render(0);
-    onReadyRef.current?.();
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
     // Keep the axis helper below the camera settings button when enabled.
@@ -814,6 +817,16 @@ export function FireworkReplayCanvas({
   }, []);
 
   useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.enableZoom = allowWheelZoom;
+  }, [allowWheelZoom]);
+
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.enabled = interactive;
+  }, [interactive]);
+
+  useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
     const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
@@ -821,6 +834,11 @@ export function FireworkReplayCanvas({
     engine.setCues(cues);
     engine.setElapsed(0);
     if (targetElapsed > 0) engine.setElapsed(targetElapsed);
+    composerRef.current?.render(0);
+    if (!hasReportedReadyRef.current) {
+      hasReportedReadyRef.current = true;
+      onReadyRef.current?.();
+    }
     forceRenderRef.current = true;
   }, [cues, playbackRef]);
 
