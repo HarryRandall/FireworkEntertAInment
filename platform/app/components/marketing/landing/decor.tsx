@@ -5,9 +5,7 @@
  * Pure presentational components shared across the landing sections.
  */
 import type { CSSProperties, ReactNode } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 /* ---------- Eyebrow (small uppercase label above section titles) ---------- */
 export function Eyebrow({ children }: { children: ReactNode }) {
@@ -138,68 +136,6 @@ export function Avatar({ name, tone = 'var(--show-gold)' }: { name: string; tone
       }}
     >
       {initials}
-    </span>
-  );
-}
-
-/* ---------- Doodle illustration (hand-drawn SVG, theme-aware) ----------
- * Each doodle ships as a light and a dark SVG. The dark variant recolours the
- * near-black ink to a light ink and flips paper fills to a dark surface, so the
- * marker-style illustrations read cleanly on both themes. Both variants are
- * vector, so they stay crisp at any size. */
-const DOODLE_META: Record<string, { aspect: number; alt: string }> = {
-  fire: { aspect: 297.72 / 384.58, alt: 'Doodle of a firework mortar shooting colourful sparks' },
-  burst: { aspect: 261.29 / 275.02, alt: 'Doodle of a celebratory firework bouquet' },
-  play: { aspect: 160.24 / 145.53, alt: 'Doodle of a play button with a firework sprout' },
-  retry: { aspect: 301.68 / 300.29, alt: 'Doodle of circular retry arrows' },
-  fountain: { aspect: 183.54 / 257.23, alt: 'Doodle of a colourful firework fountain' },
-  willow: { aspect: 213.46 / 177.45, alt: 'Doodle of a framed willow firework show' },
-};
-
-export function Doodle({
-  name,
-  width,
-  bob = false,
-  priority = false,
-  className,
-  style,
-}: {
-  name: keyof typeof DOODLE_META;
-  width: number;
-  bob?: boolean;
-  priority?: boolean;
-  className?: string;
-  style?: CSSProperties;
-}) {
-  const meta = DOODLE_META[name];
-  const height = Math.round(width * meta.aspect);
-  const imgClass = 'lp-doodle pointer-events-none h-auto w-full select-none';
-  return (
-    <span
-      className={cn('relative inline-block', bob && 'lp-doodle-bob', className)}
-      style={{ width, ...style }}
-    >
-      <Image
-        src={`/images/landing/doodles/${name}.svg`}
-        alt={meta.alt}
-        width={width}
-        height={height}
-        priority={priority}
-        draggable={false}
-        unoptimized
-        className={cn(imgClass, 'lp-doodle-light')}
-      />
-      <Image
-        src={`/images/landing/doodles/${name}-dark.svg`}
-        alt=""
-        aria-hidden="true"
-        width={width}
-        height={height}
-        priority={priority}
-        draggable={false}
-        unoptimized
-        className={cn(imgClass, 'lp-doodle-dark')}
-      />
     </span>
   );
 }

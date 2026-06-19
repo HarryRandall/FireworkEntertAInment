@@ -7,7 +7,8 @@ import { ArrowRight, Play } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Button } from '@/app/components/ui/Button';
 import { Reveal } from './Reveal';
-import { Avatar, Doodle, Mark, Sparkle, Star4 } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Avatar, Mark, Sparkle, Star4 } from './landing/decor';
 
 type HeroProps = {
   title: string;

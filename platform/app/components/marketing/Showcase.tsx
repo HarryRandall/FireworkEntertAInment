@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Reveal } from './Reveal';
-import { Doodle, Eyebrow, ShowCard, Star4 } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Eyebrow, ShowCard, Star4 } from './landing/decor';
 import { ShowPreviewPanel } from './landing/ShowPreviewPanel';
 
 const GALLERY = [

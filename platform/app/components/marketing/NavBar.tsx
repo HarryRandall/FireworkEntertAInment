@@ -79,12 +79,12 @@ const FLAT_LINKS: { href: string; label: string }[] = [
   { href: '/vendors', label: 'Vendors' },
 ];
 
-function NavMenu({ label, items }: { label: string; items: MenuItem[] }) {
+function NavMenu({ label, href, items }: { label: string; href: string; items: MenuItem[] }) {
   return (
     <div className="lp-menu">
-      <button type="button" className="lp-nav-pill">
+      <Link href={href} className="lp-nav-pill">
         {label} <ChevronDown size={13} strokeWidth={2.2} />
-      </button>
+      </Link>
       <div className="lp-menu-panel" role="menu">
         {items.map((it) => (
           <Link key={`${label}-${it.t}`} href={it.href} className="lp-menu-item" role="menuitem">
@@ -145,8 +145,8 @@ export function MarketingNavBar() {
         </Link>
 
         <div className="hidden items-center gap-0.5 lg:flex">
-          <NavMenu label="How it works" items={HOW_ITEMS} />
-          <NavMenu label="Features" items={FEATURE_ITEMS} />
+          <NavMenu label="How it works" href="/how-it-works" items={HOW_ITEMS} />
+          <NavMenu label="Features" href="/features" items={FEATURE_ITEMS} />
           <Link href="/pricing" className="lp-nav-pill">
             Pricing
           </Link>
@@ -158,15 +158,15 @@ export function MarketingNavBar() {
         <div className="hidden items-center gap-2.5 lg:flex">
           <ThemeToggle />
           {authenticated ? (
-            <Button href="/dashboard" size="sm">
+            <Button href="/dashboard" size="sm" className="lp-nav-auth-button">
               Dashboard
             </Button>
           ) : (
             <>
-              <Link href="/login" className="lp-nav-pill px-1.5">
+              <Link href="/login" className="lp-nav-auth-link">
                 Log in
               </Link>
-              <Button href="/signup" size="sm">
+              <Button href="/signup" size="sm" className="lp-nav-auth-button">
                 Sign up free
               </Button>
             </>

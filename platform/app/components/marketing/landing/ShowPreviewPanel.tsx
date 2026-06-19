@@ -8,7 +8,8 @@
  *
  * The canvas is the production fireworks engine (`FireworkReplayCanvas`),
  * driven by a self-contained demo show (`DEMO_SHOW_CUES`) on a looping
- * clock. It is mounted lazily and only animates while on-screen.
+ * clock. It is mounted immediately so fast scrolling never leaves a blank
+ * preview frame.
  */
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
@@ -29,6 +30,8 @@ type ShowPreviewPanelProps = {
 };
 
 const DURATION = DEMO_SHOW_DURATION_SECONDS;
+const POSTER_TIME_SECONDS = 4;
+const DISPLAY_UPDATE_INTERVAL_MS = 180;
 
 function formatClock(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -44,16 +47,20 @@ export function ShowPreviewPanel({
   palette = ['var(--show-gold)', 'var(--show-green)', 'var(--show-violet)'],
 }: ShowPreviewPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const elapsedRef = useRef(0);
+  const elapsedRef = useRef(POSTER_TIME_SECONDS);
+  const playbackRef = useRef(POSTER_TIME_SECONDS);
   const startedAtRef = useRef<number | null>(null);
   const playheadStartRef = useRef(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const lastDisplayUpdateRef = useRef(0);
+  const [elapsed, setElapsed] = useState(POSTER_TIME_SECONDS);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [isInView, setIsInView] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     elapsedRef.current = elapsed;
+    playbackRef.current = elapsed;
   }, [elapsed]);
 
   useEffect(() => {
@@ -68,27 +75,36 @@ export function ShowPreviewPanel({
   useEffect(() => {
     const element = containerRef.current;
     if (!element || typeof IntersectionObserver === 'undefined') {
-      setIsVisible(true);
+      setIsInView(true);
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
-      { rootMargin: '120px', threshold: 0.05 },
+      ([entry]) => {
+        setIsInView(Boolean(entry?.isIntersecting));
+      },
+      { threshold: 0 },
     );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
-  const active = isPlaying && isVisible && !reducedMotion;
+  const active = isCanvasReady && isInView && !isUserPaused && !reducedMotion;
+  const previewStatus = reducedMotion ? 'Static rendered preview' : 'Live rendered preview';
 
   useEffect(() => {
     if (!active) {
       startedAtRef.current = null;
+      setElapsed((current) =>
+        Math.abs(current - elapsedRef.current) < 0.01 ? current : elapsedRef.current,
+      );
       return;
     }
     let frame = 0;
     startedAtRef.current = performance.now();
     playheadStartRef.current = elapsedRef.current >= DURATION ? 0 : elapsedRef.current;
+    elapsedRef.current = playheadStartRef.current;
+    playbackRef.current = playheadStartRef.current;
+    lastDisplayUpdateRef.current = 0;
 
     function tick(now: number) {
       if (startedAtRef.current == null) return;
@@ -96,9 +112,17 @@ export function ShowPreviewPanel({
       if (next >= DURATION) {
         startedAtRef.current = now;
         playheadStartRef.current = 0;
+        elapsedRef.current = 0;
+        playbackRef.current = 0;
+        lastDisplayUpdateRef.current = now;
         setElapsed(0);
       } else {
-        setElapsed(next);
+        elapsedRef.current = next;
+        playbackRef.current = next;
+        if (now - lastDisplayUpdateRef.current >= DISPLAY_UPDATE_INTERVAL_MS) {
+          lastDisplayUpdateRef.current = now;
+          setElapsed(next);
+        }
       }
       frame = requestAnimationFrame(tick);
     }
@@ -106,30 +130,39 @@ export function ShowPreviewPanel({
     return () => cancelAnimationFrame(frame);
   }, [active]);
 
+  const showCanvas = !reducedMotion;
   return (
     <div ref={containerRef} className="lp-sky-panel" style={{ height }}>
-      {isVisible ? (
-        <div className="lp-sky-canvas cursor-grab active:cursor-grabbing">
+      <div className="lp-starfield" />
+
+      {showCanvas ? (
+        <div
+          className={[
+            'lp-sky-canvas',
+            isCanvasReady ? 'lp-sky-canvas--ready' : 'lp-sky-canvas--loading',
+          ].join(' ')}
+        >
           <FireworkReplayCanvas
             cues={DEMO_SHOW_CUES}
             elapsed={elapsed}
-            interactive
+            playbackRef={playbackRef}
+            interactive={false}
+            allowWheelZoom={false}
             controlsVisible={false}
             muted
+            onReady={() => setIsCanvasReady(true)}
           />
         </div>
-      ) : (
-        <div className="lp-starfield" />
-      )}
+      ) : null}
 
       {/* top-left: live title */}
       <div className="lp-glass-tile absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5">
         <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
-          <span className="lp-live-dot" /> LIVE PREVIEW
+          <span className="lp-live-dot" /> 3D PREVIEW
         </div>
         <div className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-white">{title}</div>
         <div className="text-xs text-white/60">{theme}</div>
-        <div className="mt-1 text-[11px] text-white/40">Drag to look around</div>
+        <div className="mt-1 text-[11px] text-white/40">{previewStatus}</div>
       </div>
 
       {/* top-right: music meta */}
@@ -144,13 +177,21 @@ export function ShowPreviewPanel({
         <button
           type="button"
           onClick={() => {
-            if (elapsedRef.current >= DURATION) setElapsed(0);
-            setIsPlaying((playing) => !playing);
+            if (reducedMotion) return;
+            if (elapsedRef.current >= DURATION) {
+              elapsedRef.current = 0;
+              playbackRef.current = 0;
+              setElapsed(0);
+            } else if (active) {
+              setElapsed(elapsedRef.current);
+            }
+            setIsUserPaused((paused) => !paused);
           }}
-          aria-label={isPlaying ? 'Pause live preview' : 'Play live preview'}
-          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#09090b] transition-transform active:scale-95"
+          aria-label={active ? 'Pause live preview' : 'Play live preview'}
+          disabled={reducedMotion}
+          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#09090b] transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPlaying ? (
+          {active ? (
             <Pause size={16} fill="currentColor" strokeWidth={0} />
           ) : (
             <Play size={16} fill="currentColor" strokeWidth={0} />

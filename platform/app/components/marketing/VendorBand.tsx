@@ -5,7 +5,8 @@
  */
 import { Container } from '@/app/components/ui/Container';
 import { Reveal } from './Reveal';
-import { Doodle, Eyebrow } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Eyebrow } from './landing/decor';
 
 const STATS: [string, string][] = [
   ['342', 'products in stock'],

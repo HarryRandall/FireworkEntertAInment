@@ -318,24 +318,45 @@ body {
   z-index: 0;
 }
 
-/* Doodle illustrations — one variant visible per theme (data-theme from next-themes) */
+/* Doodle illustrations, inlined from SVG source assets and driven by CSS vars. */
 .lp-doodle {
   max-width: 100%;
-  height: auto;
+  --lp-doodle-ink: #272626;
+  --lp-doodle-ink-soft: #4c4b4c;
+  --lp-doodle-ink-muted: #afabaa;
+  --lp-doodle-ink-highlight: #edeeee;
+  --lp-doodle-paper: #fefdfc;
+  --lp-doodle-white: #ffffff;
+  --lp-doodle-blue: #3061b7;
+  --lp-doodle-blue-bright: #38a8eb;
+  --lp-doodle-green: #7cbd7a;
+  --lp-doodle-teal: #12ae7c;
+  --lp-doodle-red: #c74f4a;
+  --lp-doodle-rose: #e5559d;
+  --lp-doodle-gold: #e9bb89;
+  --lp-doodle-violet: #8f5fd3;
+  --lp-doodle-violet-soft: #baaddf;
 }
-.lp-doodle-light {
+[data-theme='dark'] .lp-doodle,
+.dark .lp-doodle {
+  --lp-doodle-ink: #ececec;
+  --lp-doodle-ink-soft: #ececec;
+  --lp-doodle-ink-highlight: #ececec;
+  --lp-doodle-paper: #050507;
+}
+[data-theme='dark'] .lp-doodle-fire,
+[data-theme='dark'] .lp-doodle-play,
+.dark .lp-doodle-fire,
+.dark .lp-doodle-play {
+  --lp-doodle-white: var(--lp-doodle-paper);
+}
+.lp-doodle-svg {
   display: block;
-}
-.lp-doodle-dark {
-  display: none;
-}
-[data-theme='dark'] .lp-doodle-light,
-.dark .lp-doodle-light {
-  display: none !important;
-}
-[data-theme='dark'] .lp-doodle-dark,
-.dark .lp-doodle-dark {
-  display: block !important;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
 }
 .lp-doodle-bob {
   animation: lp-doodle-bob 6s ease-in-out infinite;
@@ -384,6 +405,15 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.lp-sky-canvas--loading {
+  opacity: 0;
+}
+.lp-sky-canvas--ready {
+  opacity: 1;
 }
 .lp-glass-tile {
   background: rgba(20, 20, 26, 0.62);
@@ -396,6 +426,7 @@ body {
 .lp-starfield {
   position: absolute;
   inset: 0;
+  z-index: 0;
   opacity: 0.7;
   background-image:
     radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.45), transparent 50%),
@@ -472,16 +503,18 @@ body {
 /* Nav pill + hover mega-menu */
 .lp-nav-pill {
   display: inline-flex;
+  min-height: 38px;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   color: var(--color-content-subtle);
   text-decoration: none;
-  padding: 8px 13px;
+  padding: 0 16px;
   border: none;
-  border-radius: 9999px;
+  border-radius: 14px;
   background: none;
   white-space: nowrap;
   cursor: pointer;
@@ -493,14 +526,39 @@ body {
   background: var(--color-bg-subtle);
   color: var(--color-content-emphasis);
 }
+.lp-nav-auth-link {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  padding: 0 18px;
+  color: var(--color-content-subtle);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.lp-nav-auth-link:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-content-emphasis);
+}
+.lp-nav-auth-button {
+  min-height: 38px;
+  border-radius: 14px;
+  padding-inline: 18px;
+}
 .lp-nav-pill svg {
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .lp-menu {
   position: relative;
 }
-.lp-menu:hover .lp-nav-pill svg,
-.lp-menu:focus-within .lp-nav-pill svg {
+.lp-menu:hover .lp-nav-pill svg {
   transform: rotate(180deg);
 }
 .lp-menu-panel {
@@ -530,8 +588,7 @@ body {
   top: -14px;
   height: 14px;
 }
-.lp-menu:hover .lp-menu-panel,
-.lp-menu:focus-within .lp-menu-panel {
+.lp-menu:hover .lp-menu-panel {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);

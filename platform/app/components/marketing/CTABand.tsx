@@ -7,7 +7,8 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Container } from '@/app/components/ui/Container';
 import { Reveal } from './Reveal';
-import { Doodle, Star4 } from './landing/decor';
+import { Doodle } from './landing/Doodle';
+import { Star4 } from './landing/decor';
 
 type CTABandProps = {
   title: string;
