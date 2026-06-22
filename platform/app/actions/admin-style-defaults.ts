@@ -20,8 +20,11 @@ import {
   styleDefaultKindLabel,
 } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import type { AdminStyleDefaultOption } from '@/lib/admin.types';
 
-type CreateResult = { ok: true; id: string } | { ok: false; error: string };
+type CreateResult =
+  | { ok: true; id: string; styleDefault: AdminStyleDefaultOption }
+  | { ok: false; error: string };
 type UpdateResult = { ok: true; updatedAt: string } | { ok: false; error: string };
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -113,7 +116,17 @@ export async function createStyleDefault(
   if (!data) return { ok: false, error: 'Could not create style default.' };
 
   await refresh(data.id);
-  return { ok: true, id: data.id };
+  return {
+    ok: true,
+    id: data.id,
+    styleDefault: {
+      id: data.id,
+      kind: parsed.data.kind,
+      name: parsed.data.name,
+      description: parsed.data.description || null,
+      defaultsJson: defaults.value,
+    },
+  };
 }
 
 export async function createStyleDefaultFromKind(formData: FormData): Promise<void> {

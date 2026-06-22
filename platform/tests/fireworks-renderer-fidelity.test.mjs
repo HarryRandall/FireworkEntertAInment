@@ -427,6 +427,12 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /const coreEnabled = design\.stars\.core\.enabled/);
   assert.match(controls, /renderStarLayerControls\('outer', 'Star'\)/);
   assert.match(controls, /renderStarLayerControls\('core', 'Star Inner'\)/);
+  assert.match(
+    controls,
+    /const starControlsAlwaysOpen = controlScope === 'star' \|\| controlScope === 'starInner'/,
+  );
+  assert.match(controls, /collapsible=\{!starControlsAlwaysOpen\}/);
+  assert.match(controls, /defaultExpanded=\{[\s\S]*starControlsAlwaysOpen/);
   assert.match(controls, /setLayerValue\(layerKey, 'enabled', value\)/);
   assert.match(controls, /setLayerBurstRangeMid\(layerKey, 'speed'/);
   assert.match(controls, /setLayerGravityUpper\(layerKey, value\)/);
@@ -440,6 +446,7 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.doesNotMatch(controls, /defaultExpanded=\{layerKey === 'outer'\}/);
   assert.doesNotMatch(controls, /<SubSection title="Opening" defaultExpanded/);
   assert.doesNotMatch(controls, /<SubSection title="Core" defaultExpanded/);
+  assert.doesNotMatch(controls, /subsectionsCollapsible|collapsible=\{subsectionsCollapsible\}/);
   assert.doesNotMatch(controls, /<SubSection title="Particles" defaultExpanded/);
   assert.doesNotMatch(controls, /<SubSection title="Placement" defaultExpanded/);
   assert.match(controls, /renderBurstTrailControls\(layerKey\)/);
@@ -447,6 +454,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /aria-label=\{`Show \$\{title\.toLowerCase\(\)\}`\}/);
   assert.match(design, /outer: StarLayerSchema/);
   assert.match(design, /core: StarLayerSchema/);
+  assert.match(design, /core: StarLayerSchema\.default\(\{[\s\S]*enabled: true/);
+  assert.match(design, /core: StarLayerSchema\.parse\(\{ enabled: true \}\)/);
+  assert.match(design, /enabled: outer\.enabled/);
+  assert.match(design, /core: \{ enabled: headSize != null \}/);
   assert.match(design, /const StarColourPatternSchema/);
   assert.match(design, /axis: z\.enum\(\['vertical', 'horizontal'\]\)\.default\('vertical'\)/);
   assert.match(design, /\.transform\(\(value\) => Math\.min\(6, value\)\)/);
@@ -889,7 +900,8 @@ test('effect editor canonicalises render defaults for shared controls', () => {
     controls,
     /const LIFT_VELOCITY_OPTIONS = \[[\s\S]*velocity: 7[\s\S]*velocity: 15[\s\S]*velocity: 20[\s\S]*value: 'custom'/,
   );
-  assert.match(controls, /<ToggleGroup[\s\S]*aria-label="Lift velocity"/);
+  assert.match(controls, /role="radiogroup"[\s\S]*aria-label="Lift velocity"/);
+  assert.match(controls, /role="radio"[\s\S]*aria-checked=\{active\}/);
   assert.match(
     controls,
     /<PanelSection title="Launch" collapsible defaultExpanded=\{false\}>[\s\S]*renderLiftVelocityControl\([\s\S]*renderBoomControl\(\)[\s\S]*<\/PanelSection>/,
@@ -909,7 +921,10 @@ test('effect editor canonicalises render defaults for shared controls', () => {
     controls,
     /label="Star size"[\s\S]*min=\{STAR_SIZE_MIN\}[\s\S]*max=\{STAR_SIZE_MAX\}/,
   );
-  assert.match(design, /size: z\.coerce\.number\(\)\.min\(10\)\.max\(1000\)\.default\(260\)/);
+  assert.match(
+    design,
+    /const DEFAULT_STAR_HEAD_SIZE = 360[\s\S]*size: z\.coerce\.number\(\)\.min\(10\)\.max\(1000\)\.default\(DEFAULT_STAR_HEAD_SIZE\)/,
+  );
   assert.doesNotMatch(`${editor}\n${controls}\n${design}`, /MIN_RENDER_SIZE|Math\.max\(20/);
 });
 

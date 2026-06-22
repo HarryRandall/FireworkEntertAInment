@@ -7,7 +7,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  createContext,
   useEffect,
+  useContext,
   useRef,
   useState,
   type CSSProperties,
@@ -98,6 +100,14 @@ type Breadcrumb = {
   label: string;
   href?: string;
 };
+
+const AdminBreadcrumbOverrideContext = createContext<(breadcrumb: Breadcrumb | null) => void>(
+  () => {},
+);
+
+export function useAdminBreadcrumbOverride() {
+  return useContext(AdminBreadcrumbOverrideContext);
+}
 
 function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
   return (
@@ -366,13 +376,17 @@ export function AdminShell({
   const router = useRouter();
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [breadcrumbOverride, setBreadcrumbOverride] = useState<Breadcrumb | null>(null);
   const effectivePath = pendingHref ?? pathname;
   const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
     useSidebarPreference({
       initialCollapsed: initialSidebarCollapsed,
       hasInitialCookie: hasInitialSidebarCollapsedCookie,
     });
-  const breadcrumbs = getAdminBreadcrumbs(effectivePath);
+  const baseBreadcrumbs = getAdminBreadcrumbs(effectivePath);
+  const breadcrumbs = breadcrumbOverride
+    ? [...baseBreadcrumbs, breadcrumbOverride]
+    : baseBreadcrumbs;
   const displayName = profile.fullName || profile.email || 'Admin';
   const profileSummary: ProfileSummary = {
     displayName,
@@ -441,12 +455,14 @@ export function AdminShell({
         />
       </Sidebar>
 
-      <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
-        <ShellTopBar breadcrumbs={breadcrumbs} />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
-          {children}
-        </main>
-      </SidebarInset>
+      <AdminBreadcrumbOverrideContext.Provider value={setBreadcrumbOverride}>
+        <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
+          <ShellTopBar breadcrumbs={breadcrumbs} />
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+            {children}
+          </main>
+        </SidebarInset>
+      </AdminBreadcrumbOverrideContext.Provider>
     </SidebarProvider>
   );
 }

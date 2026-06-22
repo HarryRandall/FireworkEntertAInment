@@ -8,6 +8,7 @@ import {
   getAdminEffectCacheKey,
   getAdminEffectsCacheKey,
 } from './cache-keys';
+import { listEffectEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from './current-user.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
@@ -110,6 +111,7 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
       split: [],
       sound: [],
     },
+    history: [],
   };
 }
 
@@ -212,6 +214,10 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
   });
   const linkMap = await loadEffectStyleDefaultLinkMap(supabase, [row.id]);
   const styleDefaultLinks = { ...legacyLinks, ...(linkMap[row.id] ?? {}) };
+  const [styleDefaults, history] = await Promise.all([
+    listAdminStyleDefaultOptions(),
+    listEffectEditorVersions(supabase, row.id),
+  ]);
   const mapped = {
     ...mapBaseEffectDetail(row),
     starStyleDefault: styleDefaultLinks.star ?? null,
@@ -220,7 +226,8 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
     trailStyleDefaultId: styleDefaultLinks.trail?.id ?? row.trail_style_default_id ?? null,
     styleDefaultLinks,
     styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
-    styleDefaults: await listAdminStyleDefaultOptions(),
+    styleDefaults,
+    history,
   };
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;

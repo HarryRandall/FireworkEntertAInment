@@ -9,7 +9,7 @@ import {
 import { isMissingStyleDefaultSchemaError } from './style-default-schema';
 
 type Supabase = SupabaseClient<Database>;
-type AssignmentMap = Record<FireworkStyleDefaultKind, string | null>;
+export type StyleDefaultAssignmentMap = Record<FireworkStyleDefaultKind, string | null>;
 
 type ValidationResult = { ok: true } | { ok: false; error: string };
 
@@ -17,10 +17,10 @@ export function normaliseStyleDefaultAssignments(input: {
   styleDefaultIds?: StyleDefaultIdMap | null;
   starStyleDefaultId?: string | null;
   trailStyleDefaultId?: string | null;
-}): AssignmentMap {
+}): StyleDefaultAssignmentMap {
   const assignments = Object.fromEntries(
     FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [kind, null]),
-  ) as AssignmentMap;
+  ) as StyleDefaultAssignmentMap;
 
   assignments.star = input.starStyleDefaultId ?? null;
   assignments.trail = input.trailStyleDefaultId ?? null;
@@ -36,7 +36,7 @@ export function normaliseStyleDefaultAssignments(input: {
 
 export async function validateStyleDefaultAssignments(
   supabase: Supabase,
-  assignments: AssignmentMap,
+  assignments: StyleDefaultAssignmentMap,
 ): Promise<ValidationResult> {
   const selected = FIREWORK_STYLE_DEFAULT_KINDS.flatMap((kind) => {
     const id = assignments[kind];
@@ -69,12 +69,46 @@ export async function validateStyleDefaultAssignments(
   return { ok: true };
 }
 
+export async function filterValidStyleDefaultAssignments(
+  supabase: Supabase,
+  assignments: StyleDefaultAssignmentMap,
+): Promise<StyleDefaultAssignmentMap> {
+  const selected = FIREWORK_STYLE_DEFAULT_KINDS.flatMap((kind) => {
+    const id = assignments[kind];
+    return id ? [{ kind, id }] : [];
+  });
+  const filtered = Object.fromEntries(
+    FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [kind, null]),
+  ) as StyleDefaultAssignmentMap;
+  if (selected.length === 0) return filtered;
+
+  const { data, error } = await supabase
+    .from('firework_style_defaults')
+    .select('id, kind')
+    .in(
+      'id',
+      selected.map((item) => item.id),
+    );
+
+  if (error) {
+    if (isMissingStyleDefaultSchemaError(error)) return filtered;
+    throw new Error(error.message);
+  }
+
+  const kindById = new Map((data ?? []).map((row) => [row.id, row.kind]));
+  for (const item of selected) {
+    if (kindById.get(item.id) === item.kind) filtered[item.kind] = item.id;
+  }
+
+  return filtered;
+}
+
 async function replaceStyleDefaultLinks(
   supabase: Supabase,
   table: 'firework_effect_style_default_links' | 'firework_style_default_links',
   ownerColumn: 'firework_effect_id' | 'firework_id',
   ownerId: string,
-  assignments: AssignmentMap,
+  assignments: StyleDefaultAssignmentMap,
 ): Promise<ValidationResult> {
   const deleteResult =
     table === 'firework_effect_style_default_links'
@@ -126,7 +160,7 @@ async function replaceStyleDefaultLinks(
 export function replaceEffectStyleDefaultLinks(
   supabase: Supabase,
   effectId: string,
-  assignments: AssignmentMap,
+  assignments: StyleDefaultAssignmentMap,
 ): Promise<ValidationResult> {
   return replaceStyleDefaultLinks(
     supabase,
@@ -140,7 +174,7 @@ export function replaceEffectStyleDefaultLinks(
 export function replaceFireworkStyleDefaultLinks(
   supabase: Supabase,
   fireworkId: string,
-  assignments: AssignmentMap,
+  assignments: StyleDefaultAssignmentMap,
 ): Promise<ValidationResult> {
   return replaceStyleDefaultLinks(
     supabase,

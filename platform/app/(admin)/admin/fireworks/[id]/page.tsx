@@ -14,7 +14,7 @@ export default async function AdminFireworkDetailPage({ params }: PageProps) {
   if (!firework) notFound();
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-8">
+    <div className="-mx-6 -my-6 flex h-[calc(100svh-3.5rem)] min-h-0 flex-1 sm:-mx-8 md:h-[calc(100svh-4.5rem)] lg:-mx-10">
       <FireworkEditor firework={firework} />
     </div>
   );

@@ -81,6 +81,7 @@ type ColorPickerProps = {
   /** Show the hex value beside the swatch on the trigger. */
   showValue?: boolean;
   className?: string;
+  swatchClassName?: string;
 };
 
 export function ColorPicker({
@@ -91,6 +92,7 @@ export function ColorPicker({
   label = 'Colour',
   showValue = true,
   className,
+  swatchClassName,
 }: ColorPickerProps) {
   const hex = normaliseHex(value);
   // Track hue locally so dragging through greys/black keeps a stable hue.
@@ -125,7 +127,10 @@ export function ColorPicker({
         )}
       >
         <span
-          className="h-6 w-6 shrink-0 rounded-md ring-1 ring-black/10 ring-inset"
+          className={cn(
+            'h-6 w-6 shrink-0 rounded-md ring-1 ring-black/10 ring-inset',
+            swatchClassName,
+          )}
           style={{ backgroundColor: hex }}
           aria-hidden
         />

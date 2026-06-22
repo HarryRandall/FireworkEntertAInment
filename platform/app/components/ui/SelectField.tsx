@@ -1,7 +1,7 @@
 'use client';
 
 /** SelectField — styled wrapper around the shadcn Select primitive — use for all dropdowns inside forms. */
-import { useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Select,
   SelectContent,
@@ -49,11 +49,6 @@ export function SelectField({
   const [internal, setInternal] = useState(defaultValue ?? '');
   const current = isControlled ? value! : internal;
 
-  const selected = useMemo(
-    () => options.find((option) => option.value === current),
-    [current, options],
-  );
-
   const handleChange = (next: string) => {
     if (!isControlled) setInternal(next);
     onChange?.(next);
@@ -74,7 +69,7 @@ export function SelectField({
           )}
         >
           {iconLeft ? <span className="text-muted-foreground">{iconLeft}</span> : null}
-          <SelectValue placeholder={placeholder}>{selected?.label}</SelectValue>
+          <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent
           align="start"
