@@ -2,7 +2,21 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Pause, Play, Plus, Repeat, RotateCcw, Save, X } from 'lucide-react';
+import {
+  Braces,
+  CircleDot,
+  Cloud,
+  History,
+  Palette,
+  Plus,
+  Rocket,
+  SlidersHorizontal,
+  Sparkles,
+  Volume2,
+  Wind,
+  X,
+  Zap,
+} from 'lucide-react';
 import {
   useEffect,
   useId,
@@ -12,31 +26,48 @@ import {
   useTransition,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { updateFirework } from '@/app/actions/admin-fireworks';
+import { restoreFireworkEditorVersion, updateFirework } from '@/app/actions/admin-fireworks';
 import { createStyleDefault } from '@/app/actions/admin-style-defaults';
 import {
+  EditorHistoryPanel,
+  JsonReadOnlyPanel,
+} from '@/app/components/admin/EditorInspectorPanels';
+import {
+  EditorStyleDefaultControls,
+  EditorTrailPanel,
+} from '@/app/components/admin/EditorSectionPanels';
+import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/app/components/admin/FireworkEditorShell';
+import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
+import {
   FireworkRenderControls,
-  PanelSection,
-  SubSection,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
 import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/app/components/ui/toast';
-import type { AdminFireworkDetail, AdminStyleDefaultOption } from '@/lib/admin.types';
+import type {
+  AdminEditorVersion,
+  AdminFireworkDetail,
+  AdminStyleDefaultOption,
+} from '@/lib/admin.types';
+import { parseFireworkEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
+  type FireworkStarLayer,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
@@ -57,6 +88,10 @@ type ParsedJson = { ok: true; value: JsonRecord } | { ok: false; error: string }
 type StarColourMode = 'solid' | 'random' | 'bands' | 'stripes';
 type StarColourAxis = 'vertical' | 'horizontal';
 type ColourStop = { id: string; hex: string; share: number };
+type BurstTrail = FireworkStarLayer['burstTrail'];
+type LocalStyleDefaultOptions = Partial<
+  Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
+>;
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
@@ -108,7 +143,7 @@ function styleDefaultOptions(
   const seen = new Set<string>();
   const source = selected ? [selected, ...options] : options;
   return [
-    { value: NO_STYLE_DEFAULT_VALUE, label: 'None' },
+    { value: NO_STYLE_DEFAULT_VALUE, label: 'Custom' },
     ...source
       .filter((option) => {
         if (seen.has(option.id)) return false;
@@ -127,9 +162,14 @@ function findStyleDefault(
   id: string,
   options: AdminStyleDefaultOption[],
   fallback: AdminStyleDefaultOption | null,
+  localOptions: AdminStyleDefaultOption[] = [],
 ): AdminStyleDefaultOption | null {
   if (id === NO_STYLE_DEFAULT_VALUE) return null;
-  return options.find((option) => option.id === id) ?? (fallback?.id === id ? fallback : null);
+  return (
+    localOptions.find((option) => option.id === id) ??
+    options.find((option) => option.id === id) ??
+    (fallback?.id === id ? fallback : null)
+  );
 }
 
 function initialStyleDefaultIds(
@@ -305,7 +345,17 @@ function CompactColourInput({
   onChange: (hex: string) => void;
 }) {
   const picker = HEX.test(value) ? value.toLowerCase() : '#ffffff';
-  return <ColorPicker label="Colour" value={picker} disabled={disabled} onChange={onChange} />;
+  return (
+    <ColorPicker
+      label="Colour"
+      value={picker}
+      disabled={disabled}
+      showValue={false}
+      className="h-8 w-8 justify-center rounded-full border-0 bg-transparent p-0 shadow-none hover:border-transparent"
+      swatchClassName="h-7 w-7 rounded-full"
+      onChange={onChange}
+    />
+  );
 }
 
 function ColourPatternBar({
@@ -491,6 +541,7 @@ function buildInitialColourStops(
 
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
   const router = useRouter();
+  const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const colourToggleId = useId();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -511,6 +562,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     firework.effectId ?? firework.effectOptions[0]?.id ?? '',
   );
   const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(firework));
+  const [createdStyleDefaults, setCreatedStyleDefaults] = useState<LocalStyleDefaultOptions>({});
   const [caliber, setCaliber] = useState(firework.caliber ?? '');
   const [durationSeconds, setDurationSeconds] = useState(
     firework.durationSeconds == null ? '' : String(firework.durationSeconds),
@@ -534,6 +586,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [overridesText, setOverridesText] = useState(
     JSON.stringify(firework.renderOverridesJson ?? {}, null, 2),
   );
+  const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(firework.updatedAt);
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('colour');
+  const [previewVersion, setPreviewVersion] = useState<AdminEditorVersion | null>(null);
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
 
   const parsedOverrides = useMemo(() => parseJsonObject(overridesText), [overridesText]);
   const overridesRecord = useMemo<JsonRecord>(
@@ -571,10 +628,16 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         styleDefaultIds[kind],
         firework.styleDefaults[kind],
         firework.fireworkStyleDefaultLinks[kind] ?? null,
+        createdStyleDefaults[kind] ?? [],
       );
     }
     return selected;
-  }, [firework.fireworkStyleDefaultLinks, firework.styleDefaults, styleDefaultIds]);
+  }, [
+    createdStyleDefaults,
+    firework.fireworkStyleDefaultLinks,
+    firework.styleDefaults,
+    styleDefaultIds,
+  ]);
   const calibrationDefaults = useMemo(() => {
     const model = isRecord(baseModel) ? baseModel : {};
     return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
@@ -630,6 +693,73 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     colourAxis,
     validColourStops,
   ]);
+  const saveStyleDefaultIds = useMemo(
+    () =>
+      Object.fromEntries(
+        FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
+          kind,
+          styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
+        ]),
+      ),
+    [styleDefaultIds],
+  );
+  const currentSignature = useMemo(
+    () =>
+      JSON.stringify({
+        name,
+        description,
+        effectId,
+        caliber,
+        durationSeconds,
+        heightMeters,
+        primaryColor: mainColor,
+        secondaryColor: accentColor,
+        colorPalette: palette,
+        styleDefaultIds: saveStyleDefaultIds,
+        renderOverridesJson: mergedOverrides,
+      }),
+    [
+      accentColor,
+      caliber,
+      description,
+      durationSeconds,
+      effectId,
+      heightMeters,
+      mainColor,
+      mergedOverrides,
+      name,
+      palette,
+      saveStyleDefaultIds,
+    ],
+  );
+  const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    if (savedSignature === null) setSavedSignature(currentSignature);
+  }, [currentSignature, savedSignature]);
+
+  useEffect(() => {
+    setName(firework.name);
+    setDescription(firework.description ?? '');
+    setEffectId(firework.effectId ?? firework.effectOptions[0]?.id ?? '');
+    setStyleDefaultIds(initialStyleDefaultIds(firework));
+    setCreatedStyleDefaults({});
+    setCaliber(firework.caliber ?? '');
+    setDurationSeconds(firework.durationSeconds == null ? '' : String(firework.durationSeconds));
+    setHeightMeters(firework.heightMeters == null ? '' : String(firework.heightMeters));
+    setColourStops(initialColourStops);
+    setColourMode(() => {
+      const initialMode = initialColourMode(initialOverrides);
+      return initialMode === 'solid' && initialColourStops.length > 1 ? 'random' : initialMode;
+    });
+    setColourAxis(initialColourAxis(initialOverrides));
+    nextColourStopIdRef.current = initialColourStops.length;
+    setOverridesText(JSON.stringify(firework.renderOverridesJson ?? {}, null, 2));
+    setLastSavedUpdatedAt(firework.updatedAt);
+    setPreviewVersion(null);
+    setRestoringVersionId(null);
+    setSavedSignature(null);
+  }, [firework, initialColourStops, initialOverrides]);
 
   const previewDesign = useMemo(
     () =>
@@ -676,8 +806,22 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
     return Math.max(4, Math.ceil(estimated * 2) / 2);
   }, [previewDesign]);
+  const previewTicks = useMemo(
+    () =>
+      estimatePreviewTicks({
+        design: previewDesign,
+        cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
+        previewDuration,
+      }),
+    [previewDesign, previewDuration],
+  );
 
   const selectedEffect = firework.effectOptions.find((option) => option.id === effectId) ?? null;
+
+  useEffect(() => {
+    setAdminBreadcrumb({ label: name || firework.name });
+    return () => setAdminBreadcrumb(null);
+  }, [firework.name, name, setAdminBreadcrumb]);
 
   const previewCue = useMemo<ReplayCue>(
     () => ({
@@ -745,7 +889,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         startedAtRef.current = now - next * 1000;
       }
       playbackRef.current = next;
-      if (now - lastUiUpdate > 90) {
+      if (now - lastUiUpdate > 32) {
         setElapsed(next);
         lastUiUpdate = now;
       }
@@ -850,9 +994,15 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         return;
       }
 
+      setCreatedStyleDefaults((current) => ({
+        ...current,
+        [kind]: [
+          result.styleDefault,
+          ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
+        ],
+      }));
       setStyleDefaultIds((current) => ({ ...current, [kind]: result.id }));
-      toast.success('Style default created');
-      router.refresh();
+      toast.success('Style default created and selected');
     });
   }
 
@@ -873,6 +1023,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     startTransition(async () => {
       const result = await updateFirework({
         id: firework.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
         name,
         description,
         fireworkEffectId: effectId,
@@ -886,21 +1037,72 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           styleDefaultIds.star === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.star,
         trailStyleDefaultId:
           styleDefaultIds.trail === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.trail,
-        styleDefaultIds: Object.fromEntries(
-          FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
-            kind,
-            styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
-          ]),
-        ),
+        styleDefaultIds: saveStyleDefaultIds,
         renderOverridesJson: JSON.stringify(mergedOverrides, null, 2),
       });
       if (!result.ok) {
         setError(result.error);
         return;
       }
+      setLastSavedUpdatedAt(result.updatedAt);
+      setSavedSignature(currentSignature);
       toast.success('Firework saved');
       router.refresh();
     });
+  }
+
+  function revertLocalChanges() {
+    setName(firework.name);
+    setDescription(firework.description ?? '');
+    setEffectId(firework.effectId ?? firework.effectOptions[0]?.id ?? '');
+    setStyleDefaultIds(initialStyleDefaultIds(firework));
+    setCaliber(firework.caliber ?? '');
+    setDurationSeconds(firework.durationSeconds == null ? '' : String(firework.durationSeconds));
+    setHeightMeters(firework.heightMeters == null ? '' : String(firework.heightMeters));
+    setColourStops(initialColourStops);
+    setColourMode(() => {
+      const initialMode = initialColourMode(initialOverrides);
+      return initialMode === 'solid' && initialColourStops.length > 1 ? 'random' : initialMode;
+    });
+    setColourAxis(initialColourAxis(initialOverrides));
+    nextColourStopIdRef.current = initialColourStops.length;
+    setOverridesText(JSON.stringify(firework.renderOverridesJson ?? {}, null, 2));
+    setPreviewVersion(null);
+    setError(null);
+    setSavedSignature(null);
+  }
+
+  function restoreVersion(version: AdminEditorVersion) {
+    setError(null);
+    setRestoringVersionId(version.id);
+    startTransition(async () => {
+      const result = await restoreFireworkEditorVersion({
+        fireworkId: firework.id,
+        versionId: version.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
+      });
+      setRestoringVersionId(null);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setLastSavedUpdatedAt(result.updatedAt);
+      setPreviewVersion(null);
+      setSavedSignature(null);
+      toast.success('Version restored');
+      router.refresh();
+    });
+  }
+
+  function updateBurstTrail(updater: (trail: BurstTrail) => BurstTrail, custom = true) {
+    const next = updater(JSON.parse(JSON.stringify(previewDesign.burstTrail)) as BurstTrail);
+    mutateOverrides((draft) => {
+      draft.burstTrail = custom ? { ...next, preset: 'custom' } : next;
+    });
+  }
+
+  function setBurstTrail(next: BurstTrail, custom = true) {
+    updateBurstTrail(() => next, custom);
   }
 
   const effectOptions = firework.effectOptions.map((option) => ({
@@ -910,10 +1112,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }));
   const canAddColor = colourStops.length < MAX_STAR_COLOURS;
   const starColourControls = (
-    <SubSection
-      title="Colour"
-      defaultExpanded={false}
-      action={
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <FieldLabel htmlFor={colourToggleId}>Colour</FieldLabel>
+          <p className="mt-1 text-sm leading-relaxed text-[color:var(--color-content-muted)]">
+            Use saved star colours for this firework.
+          </p>
+        </div>
         <Switch
           id={colourToggleId}
           aria-label="Colour"
@@ -921,54 +1127,77 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           onCheckedChange={setColourEnabled}
           disabled={!parsedOverrides.ok}
         />
-      }
-    >
-      <div
-        className={['space-y-4 pt-1', !colourEnabled ? 'opacity-55' : ''].filter(Boolean).join(' ')}
-      >
-        <div
-          className={[
-            'grid gap-3 sm:items-end',
-            positionalColourMode
-              ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
-              : 'sm:grid-cols-[minmax(0,1fr)_auto]',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        >
+      </div>
+      <div className={['space-y-6', !colourEnabled ? 'opacity-55' : ''].filter(Boolean).join(' ')}>
+        <div className="space-y-4">
           <Field>
             <FieldLabel>Pattern</FieldLabel>
-            <SelectField
-              value={colourMode}
-              onChange={updateColourMode}
-              options={STAR_COLOUR_MODE_OPTIONS}
-              ariaLabel="Star colour pattern"
-              disabled={!colourEnabled}
-            />
+            <div
+              role="radiogroup"
+              aria-label="Star colour pattern"
+              className="grid grid-cols-4 gap-1 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-1"
+            >
+              {STAR_COLOUR_MODE_OPTIONS.map((option) => {
+                const selected = colourMode === option.value;
+                const label =
+                  option.value === 'random'
+                    ? 'Random'
+                    : option.value === 'bands'
+                      ? 'Bands'
+                      : option.label;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={!colourEnabled}
+                    onClick={() => updateColourMode(option.value)}
+                    className={[
+                      'min-h-9 rounded-md px-2 text-sm font-medium transition',
+                      selected
+                        ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
+                        : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                    ].join(' ')}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           {positionalColourMode ? (
             <Field>
               <FieldLabel>{colourPatternQuestion(colourMode)}</FieldLabel>
-              <SelectField
-                value={colourAxis}
-                onChange={updateColourAxis}
-                options={STAR_COLOUR_AXIS_OPTIONS}
-                ariaLabel={colourPatternQuestion(colourMode)}
-                disabled={!colourEnabled}
-              />
+              <div
+                role="radiogroup"
+                aria-label={colourPatternQuestion(colourMode)}
+                className="grid grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-1"
+              >
+                {STAR_COLOUR_AXIS_OPTIONS.map((option) => {
+                  const selected = colourAxis === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={!colourEnabled}
+                      onClick={() => updateColourAxis(option.value)}
+                      className={[
+                        'min-h-9 rounded-md px-2 text-sm font-medium transition',
+                        selected
+                          ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
+                          : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                      ].join(' ')}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </Field>
           ) : null}
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={addColor}
-              aria-label="Add colour"
-              disabled={!canAddColor || !colourEnabled}
-            >
-              <Plus size={16} />
-            </Button>
-          </div>
         </div>
 
         <ColourPatternBar
@@ -987,10 +1216,10 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="h-5 w-5 shrink-0 rounded-full border border-[color:var(--color-border-subtle)]"
-                      style={{ backgroundColor: HEX.test(stop.hex) ? stop.hex : '#ffffff' }}
-                      aria-hidden
+                    <CompactColourInput
+                      value={stop.hex}
+                      disabled={!colourEnabled}
+                      onChange={(hex) => updateColourStopHex(stop.id, hex)}
                     />
                     <span className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
                       {title}
@@ -1011,262 +1240,440 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
                     <X size={16} />
                   </button>
                 </div>
-                <div
-                  className={
-                    colourMode === 'random'
-                      ? 'grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]'
-                      : 'flex flex-wrap items-start gap-4'
-                  }
-                >
-                  <CompactColourInput
-                    value={stop.hex}
-                    disabled={!colourEnabled}
-                    onChange={(hex) => updateColourStopHex(stop.id, hex)}
-                  />
-                  {colourMode === 'random' ? (
-                    <SliderField
-                      label={index === 1 ? 'Accent share' : 'Share'}
-                      min={1}
-                      max={95}
-                      step={1}
-                      value={Math.round(stop.share)}
-                      formatValue={(value) => `${value}%`}
-                      disabled={!colourEnabled || colourStops.length <= 1}
-                      onChange={(value) => updateColourStopShare(stop.id, value)}
-                    />
-                  ) : null}
-                </div>
               </div>
             );
           })}
         </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={addColor}
+          className="w-fit"
+          disabled={!canAddColor || !colourEnabled}
+        >
+          <Plus size={16} />
+          Add colour
+        </Button>
+
+        {colourMode === 'random' && colourStops.length === 2 ? (
+          <div className="border-t border-[color:var(--color-border-subtle)] pt-5">
+            <SliderField
+              label="Accent share"
+              min={1}
+              max={95}
+              step={1}
+              value={Math.round(colourStops[1]?.share ?? 0)}
+              formatValue={(value) => `${value}%`}
+              disabled={!colourEnabled}
+              onChange={(value) => {
+                const accent = colourStops[1];
+                if (accent) updateColourStopShare(accent.id, value);
+              }}
+            />
+          </div>
+        ) : null}
+
+        {colourMode === 'random' && colourStops.length > 2 ? (
+          <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-5">
+            {colourStops.map((stop, index) => (
+              <SliderField
+                key={stop.id}
+                label={
+                  index === 1
+                    ? 'Accent share'
+                    : `${colourStopLabel(colourMode, index, colourStops.length)} share`
+                }
+                min={1}
+                max={95}
+                step={1}
+                value={Math.round(stop.share)}
+                formatValue={(value) => `${value}%`}
+                disabled={!colourEnabled || colourStops.length <= 1}
+                onChange={(value) => updateColourStopShare(stop.id, value)}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
-    </SubSection>
+    </div>
   );
 
-  return (
-    <div className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch">
-      <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
-        <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
-          <LazyFireworkReplayCanvas
-            cues={previewCues}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            launchPositions={PREVIEW_LAUNCH_POSITIONS}
-            muted={!isPlaying}
-            interactive
-            controlsVisible
-            showFps
-            renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
-            headStyle={{
-              coreSoftness,
-              coreBrightness,
-              coreOpacityFalloff,
-              glowSize,
-              glowSoftness,
-              glowOpacityFalloff,
-              glowBlur,
-              backgroundGlowOpacityFalloff,
-              backgroundGlowSoftness,
-            }}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
-                  setPreviewTime(PREVIEW_START_SECONDS);
-                }
-                setIsPlaying((playing) => !playing);
-              }}
-              aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-            >
-              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                setIsPlaying(false);
-                setPreviewTime(PREVIEW_START_SECONDS);
-              }}
-              aria-label="Reset preview"
-            >
-              <RotateCcw size={16} />
-            </Button>
-            <Button
-              variant={isLooping ? 'primary' : 'secondary'}
-              size="icon"
-              onClick={() => setIsLooping((looping) => !looping)}
-              aria-pressed={isLooping}
-              aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
-            >
-              <Repeat size={16} />
-            </Button>
-          </div>
-          <Slider
-            value={[Math.min(elapsed, previewDuration)]}
-            min={0}
-            max={previewDuration}
-            step={0.05}
-            onValueChange={(next) => {
-              setIsPlaying(false);
-              setPreviewTime(next[0] ?? 0);
-            }}
-            aria-label="Preview timeline"
-            className="min-w-40 flex-1"
-          />
-          <div className="font-mono text-sm text-[color:var(--color-content-subtle)] tabular-nums">
-            {elapsed.toFixed(1)}s / {previewDuration.toFixed(1)}s
-          </div>
-        </div>
-      </Card>
-
-      <Card
-        radius="lg"
-        className="flex w-full min-w-0 flex-col p-0 xl:w-[460px] xl:shrink-0 xl:self-stretch"
+  const previewSnapshot = previewVersion
+    ? parseFireworkEditorSnapshot(previewVersion.snapshotJson)
+    : null;
+  const previewNotice = previewVersion ? (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--hl)] bg-black/60 p-3 text-sm text-white shadow-lg">
+      <div className="min-w-0">
+        <p className="font-semibold">Viewing earlier version</p>
+        <p className="truncate text-white/68">
+          {previewSnapshot?.name ?? previewVersion.summary} by {previewVersion.createdByLabel}
+        </p>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="border-white/15 bg-white/8 text-white hover:bg-white/14 hover:text-white"
+        onClick={() => setPreviewVersion(null)}
       >
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 pb-8">
-          {error ? (
-            <InlineAlert tone="danger" title="Could not save">
-              {error}
-            </InlineAlert>
-          ) : null}
+        Live version
+      </Button>
+    </div>
+  ) : null;
+  const preview = (
+    <LazyFireworkReplayCanvas
+      cues={previewCues}
+      elapsed={elapsed}
+      playbackRef={playbackRef}
+      launchPositions={PREVIEW_LAUNCH_POSITIONS}
+      muted={!isPlaying}
+      interactive
+      controlsVisible
+      showFps
+      renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
+      headStyle={{
+        coreSoftness,
+        coreBrightness,
+        coreOpacityFalloff,
+        glowSize,
+        glowSoftness,
+        glowOpacityFalloff,
+        glowBlur,
+        backgroundGlowOpacityFalloff,
+        backgroundGlowSoftness,
+      }}
+    />
+  );
+  const transport = (
+    <EditorPreviewTransport
+      elapsed={elapsed}
+      duration={previewDuration}
+      isPlaying={isPlaying}
+      isLooping={isLooping}
+      ticks={previewTicks}
+      onPlayPause={() => {
+        if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
+          setPreviewTime(PREVIEW_START_SECONDS);
+        }
+        setIsPlaying((playing) => !playing);
+      }}
+      onReset={() => {
+        setIsPlaying(false);
+        setPreviewTime(PREVIEW_START_SECONDS);
+      }}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onScrub={(seconds) => {
+        setIsPlaying(false);
+        setPreviewTime(seconds);
+      }}
+    />
+  );
+  function renderStyleDefaultControls(kind: FireworkStyleDefaultKind) {
+    const inherited = selectedEffectStyleDefaults[kind] ?? null;
+    return (
+      <EditorStyleDefaultControls
+        label={`${styleDefaultKindLabel(kind)} style`}
+        value={styleDefaultIds[kind]}
+        onChange={(value) => setStyleDefaultIds((current) => ({ ...current, [kind]: value }))}
+        options={styleDefaultOptions(
+          firework.styleDefaults[kind],
+          selectedFireworkStyleDefaults[kind] ?? firework.fireworkStyleDefaultLinks[kind] ?? null,
+        )}
+        inheritedLabel={inherited ? `Effect default: ${inherited.name}` : null}
+        disabled={!parsedOverrides.ok}
+        saveDisabled={kind === 'star' && !mainColor}
+        onSave={() => saveCurrentStyleAsDefault(kind)}
+        onReset={() => resetLocalStyleDefaults(kind)}
+      />
+    );
+  }
 
-          <PanelSection title="Details" collapsible defaultExpanded={false}>
-            <div className="space-y-4">
-              <Field>
-                <FieldLabel htmlFor="fw-name">Name</FieldLabel>
-                <Input id="fw-name" value={name} onChange={(e) => setName(e.target.value)} />
-              </Field>
-              <Field>
-                <FieldLabel>Base effect</FieldLabel>
-                <SelectField
-                  value={effectId}
-                  onChange={setEffectId}
-                  options={effectOptions}
-                  ariaLabel="Base effect"
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel htmlFor="fw-caliber">Calibre</FieldLabel>
-                  <Input
-                    id="fw-caliber"
-                    placeholder="30mm"
-                    value={caliber}
-                    onChange={(e) => setCaliber(e.target.value)}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="fw-duration">Duration (s)</FieldLabel>
-                  <Input
-                    id="fw-duration"
-                    inputMode="decimal"
-                    value={durationSeconds}
-                    onChange={(e) => setDurationSeconds(e.target.value)}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="fw-height">Height (m)</FieldLabel>
-                  <Input
-                    id="fw-height"
-                    inputMode="decimal"
-                    value={heightMeters}
-                    onChange={(e) => setHeightMeters(e.target.value)}
-                  />
-                </Field>
-              </div>
-              <Field>
-                <FieldLabel htmlFor="fw-description">Description</FieldLabel>
-                <Textarea
-                  id="fw-description"
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </Field>
-            </div>
-          </PanelSection>
-
-          <PanelSection title="Style defaults" collapsible defaultExpanded={false}>
-            <div className="space-y-4">
-              {FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => {
-                const inherited = selectedEffectStyleDefaults[kind] ?? null;
-                return (
-                  <div
-                    key={kind}
-                    className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-4 first:border-t-0 first:pt-0"
-                  >
-                    <Field>
-                      <FieldLabel>{styleDefaultKindLabel(kind)} style</FieldLabel>
-                      <SelectField
-                        value={styleDefaultIds[kind]}
-                        onChange={(value) =>
-                          setStyleDefaultIds((current) => ({ ...current, [kind]: value }))
-                        }
-                        options={styleDefaultOptions(
-                          firework.styleDefaults[kind],
-                          firework.fireworkStyleDefaultLinks[kind] ?? null,
-                        )}
-                        ariaLabel={`${styleDefaultKindLabel(kind)} style default`}
-                        disabled={!parsedOverrides.ok}
-                      />
-                      {inherited ? (
-                        <p className="text-muted-foreground text-xs">Effect: {inherited.name}</p>
-                      ) : null}
-                    </Field>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => saveCurrentStyleAsDefault(kind)}
-                        disabled={!parsedOverrides.ok || (kind === 'star' && !mainColor)}
-                      >
-                        Save as new default
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => resetLocalStyleDefaults(kind)}
-                        disabled={!parsedOverrides.ok}
-                      >
-                        Reset local overrides
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </PanelSection>
-
+  const detailsContent = (
+    <div className="space-y-4">
+      <Field>
+        <FieldLabel htmlFor="fw-name">Name</FieldLabel>
+        <Input id="fw-name" value={name} onChange={(e) => setName(e.target.value)} />
+      </Field>
+      <Field>
+        <FieldLabel>Base effect</FieldLabel>
+        <SelectField
+          value={effectId}
+          onChange={setEffectId}
+          options={effectOptions}
+          ariaLabel="Base effect"
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field>
+          <FieldLabel htmlFor="fw-caliber">Calibre</FieldLabel>
+          <Input
+            id="fw-caliber"
+            placeholder="30mm"
+            value={caliber}
+            onChange={(e) => setCaliber(e.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="fw-duration">Duration (s)</FieldLabel>
+          <Input
+            id="fw-duration"
+            inputMode="decimal"
+            value={durationSeconds}
+            onChange={(e) => setDurationSeconds(e.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="fw-height">Height (m)</FieldLabel>
+          <Input
+            id="fw-height"
+            inputMode="decimal"
+            value={heightMeters}
+            onChange={(e) => setHeightMeters(e.target.value)}
+          />
+        </Field>
+      </div>
+      <Field>
+        <FieldLabel htmlFor="fw-description">Description</FieldLabel>
+        <Textarea
+          id="fw-description"
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </Field>
+    </div>
+  );
+  const tabs: FireworkEditorShellTab[] = [
+    {
+      id: 'details',
+      label: 'Details',
+      icon: SlidersHorizontal,
+      eyebrow: 'Catalogue',
+      title: 'Details',
+      description: 'Name, base effect and physical specs for this firework.',
+      content: detailsContent,
+    },
+    {
+      id: 'colour',
+      label: 'Colour',
+      icon: Palette,
+      eyebrow: 'Appearance',
+      title: 'Colour',
+      description: 'How the stars are coloured across the burst.',
+      content: starColourControls,
+    },
+    {
+      id: 'star',
+      label: 'Star',
+      icon: Sparkles,
+      eyebrow: 'Appearance',
+      title: 'Star & glow',
+      description: 'Size, life and the glow around each burning star.',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            starControls={starColourControls}
+            mutate={mutateOverrides}
+            disabled={!parsedOverrides.ok}
+            showStarCount
+            controlScope="star"
+          />
+          {renderStyleDefaultControls('star')}
+        </div>
+      ),
+    },
+    {
+      id: 'star-inner',
+      label: 'Star Inner',
+      icon: CircleDot,
+      eyebrow: 'Appearance',
+      title: 'Star Inner',
+      description: 'The smaller core burst inside the main star break.',
+      content: (
+        <FireworkRenderControls
+          design={previewDesign}
+          defaults={overridesRecord}
+          calibrationDefaults={calibrationDefaults}
+          mutate={mutateOverrides}
+          disabled={!parsedOverrides.ok}
+          showStarCount
+          controlScope="starInner"
+        />
+      ),
+    },
+    {
+      id: 'trail',
+      label: 'Trail',
+      icon: Wind,
+      eyebrow: 'Appearance',
+      title: 'Trail',
+      description: 'The brocade streaks that hang behind each star.',
+      content: (
+        <div className="space-y-5">
+          <EditorTrailPanel
+            trail={previewDesign.burstTrail}
+            disabled={!parsedOverrides.ok}
+            onChange={setBurstTrail}
+          />
+          {renderStyleDefaultControls('trail')}
+        </div>
+      ),
+    },
+    {
+      id: 'launch',
+      label: 'Launch',
+      icon: Rocket,
+      eyebrow: 'Ascent',
+      title: 'Launch',
+      description: 'How the shell rises before it bursts.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
             mutate={mutateOverrides}
             disabled={!parsedOverrides.ok}
             showLaunch
-            showStarCount
+            controlScope="launch"
           />
+          {renderStyleDefaultControls('launch')}
         </div>
-
-        <div className="border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-          <Button
-            className="w-full"
-            onClick={save}
-            loading={isPending}
+      ),
+    },
+    {
+      id: 'fx',
+      label: 'FX',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Spark effects',
+      description: 'Optional strobe, crackle and split-shell effects.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutateOverrides}
             disabled={!parsedOverrides.ok}
-          >
-            <Save size={16} />
-            Save firework
-          </Button>
+            controlScope="strobe"
+          />
+          {renderStyleDefaultControls('strobe')}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutateOverrides}
+            disabled={!parsedOverrides.ok}
+            controlScope="crackle"
+          />
+          {renderStyleDefaultControls('crackle')}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutateOverrides}
+            disabled={!parsedOverrides.ok}
+            controlScope="split"
+          />
+          {renderStyleDefaultControls('split')}
         </div>
-      </Card>
-    </div>
+      ),
+    },
+    {
+      id: 'smoke',
+      label: 'Smoke',
+      icon: Cloud,
+      eyebrow: 'Atmosphere',
+      title: 'Smoke',
+      description: 'Launch smoke that lingers after the lift.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutateOverrides}
+            disabled={!parsedOverrides.ok}
+            controlScope="smoke"
+          />
+          {renderStyleDefaultControls('smoke')}
+        </div>
+      ),
+    },
+    {
+      id: 'sound',
+      label: 'Sound',
+      icon: Volume2,
+      eyebrow: 'Audio',
+      title: 'Sound',
+      description: 'The report heard on launch and at the burst.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutateOverrides}
+            disabled={!parsedOverrides.ok}
+            controlScope="sound"
+          />
+          {renderStyleDefaultControls('sound')}
+        </div>
+      ),
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: History,
+      eyebrow: 'Versions',
+      title: 'Version history',
+      content: (
+        <EditorHistoryPanel
+          versions={firework.history}
+          selectedVersionId={previewVersion?.id ?? null}
+          restoringVersionId={restoringVersionId}
+          onPreview={setPreviewVersion}
+          onClearPreview={() => setPreviewVersion(null)}
+          onRestore={restoreVersion}
+        />
+      ),
+    },
+    {
+      id: 'json',
+      label: 'JSON',
+      icon: Braces,
+      eyebrow: 'Advanced',
+      title: 'Render overrides JSON',
+      content: (
+        <JsonReadOnlyPanel
+          label="Read-only v1 view of the firework render_overrides_json payload."
+          value={mergedOverrides as Json}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <FireworkEditorShell
+      title={name || firework.name}
+      chips={[{ label: 'Calibre', value: caliber.trim() || firework.caliber, icon: CircleDot }]}
+      dirty={isDirty}
+      saving={isPending}
+      saveLabel="Save"
+      saveDisabled={!parsedOverrides.ok || isPending}
+      revertDisabled={!isDirty || isPending}
+      onSave={save}
+      onRevert={revertLocalChanges}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      tabs={tabs}
+      preview={preview}
+      transport={transport}
+      error={error}
+      previewNotice={previewNotice}
+    />
   );
 }

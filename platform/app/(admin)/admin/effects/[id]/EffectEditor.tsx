@@ -2,26 +2,55 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Pause, Play, Repeat, RotateCcw, Save } from 'lucide-react';
+import {
+  Braces,
+  CircleDot,
+  Cloud,
+  History,
+  Rocket,
+  SlidersHorizontal,
+  Sparkles,
+  Volume2,
+  Wind,
+  Zap,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { updateEffect } from '@/app/actions/admin-effects';
+import { restoreEffectEditorVersion, updateEffect } from '@/app/actions/admin-effects';
 import { createStyleDefault } from '@/app/actions/admin-style-defaults';
 import {
-  FireworkRenderControls,
-  PanelSection,
-} from '@/app/components/admin/FireworkRenderControls';
+  EditorHistoryPanel,
+  JsonReadOnlyPanel,
+} from '@/app/components/admin/EditorInspectorPanels';
+import {
+  EditorStyleDefaultControls,
+  EditorTrailPanel,
+} from '@/app/components/admin/EditorSectionPanels';
+import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/app/components/admin/FireworkEditorShell';
+import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
+import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/app/components/ui/Feedback';
+import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
-import { Slider } from '@/components/ui/slider';
 import { toast } from '@/app/components/ui/toast';
-import type { AdminEffectDetail, AdminStyleDefaultOption } from '@/lib/admin.types';
+import type {
+  AdminEditorVersion,
+  AdminEffectDetail,
+  AdminStyleDefaultOption,
+} from '@/lib/admin.types';
+import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
+  type FireworkStarLayer,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
@@ -39,6 +68,11 @@ import type { ReplayCue } from '@/lib/show-domain';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type JsonRecord = Record<string, unknown>;
+type BaseEffectFamily = 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound';
+type BurstTrail = FireworkStarLayer['burstTrail'];
+type LocalStyleDefaultOptions = Partial<
+  Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
+>;
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
@@ -53,6 +87,26 @@ const PREVIEW_COLOR = '#22d3ee';
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
 const PREVIEW_START_SECONDS = 0;
 const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
+const FAMILY_OPTIONS: SelectOption[] = [
+  { value: 'aerial_burst', label: 'Aerial burst' },
+  { value: 'ascending', label: 'Ascending' },
+  { value: 'ground', label: 'Ground' },
+  { value: 'noise', label: 'Noise' },
+  { value: 'compound', label: 'Compound' },
+];
+
+function normaliseFamily(value: string): BaseEffectFamily {
+  if (
+    value === 'aerial_burst' ||
+    value === 'ascending' ||
+    value === 'ground' ||
+    value === 'noise' ||
+    value === 'compound'
+  ) {
+    return value;
+  }
+  return 'aerial_burst';
+}
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -100,7 +154,7 @@ function styleDefaultOptions(
   const seen = new Set<string>();
   const source = selected ? [selected, ...options] : options;
   return [
-    { value: NO_STYLE_DEFAULT_VALUE, label: 'None' },
+    { value: NO_STYLE_DEFAULT_VALUE, label: 'Custom' },
     ...source
       .filter((option) => {
         if (seen.has(option.id)) return false;
@@ -119,9 +173,14 @@ function findStyleDefault(
   id: string,
   options: AdminStyleDefaultOption[],
   fallback: AdminStyleDefaultOption | null,
+  localOptions: AdminStyleDefaultOption[] = [],
 ): AdminStyleDefaultOption | null {
   if (id === NO_STYLE_DEFAULT_VALUE) return null;
-  return options.find((option) => option.id === id) ?? (fallback?.id === id ? fallback : null);
+  return (
+    localOptions.find((option) => option.id === id) ??
+    options.find((option) => option.id === id) ??
+    (fallback?.id === id ? fallback : null)
+  );
 }
 
 function initialStyleDefaultIds(
@@ -142,15 +201,26 @@ function ReplayCanvasSkeleton() {
 
 export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const router = useRouter();
+  const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
+  const [name, setName] = useState(effect.name);
+  const [description, setDescription] = useState(effect.description ?? '');
+  const [family, setFamily] = useState<BaseEffectFamily>(() => normaliseFamily(effect.family));
+  const [patternKey, setPatternKey] = useState(effect.patternKey);
+  const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
   const [modelText, setModelText] = useState(() =>
     JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2),
   );
   const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(effect));
+  const [createdStyleDefaults, setCreatedStyleDefaults] = useState<LocalStyleDefaultOptions>({});
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('details');
+  const [previewVersion, setPreviewVersion] = useState<AdminEditorVersion | null>(null);
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
@@ -176,11 +246,71 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         styleDefaultIds[kind],
         effect.styleDefaults[kind],
         effect.styleDefaultLinks[kind] ?? null,
+        createdStyleDefaults[kind] ?? [],
       );
     }
     return selected;
-  }, [effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
+  }, [createdStyleDefaults, effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
+  const saveStyleDefaultIds = useMemo(
+    () =>
+      Object.fromEntries(
+        FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
+          kind,
+          styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
+        ]),
+      ),
+    [styleDefaultIds],
+  );
+  const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
+  const currentSignature = useMemo(
+    () =>
+      JSON.stringify({
+        name,
+        description,
+        family,
+        patternKey,
+        sortOrder: sortOrderNumber,
+        styleDefaultIds: saveStyleDefaultIds,
+        modelJson: parsedModel.ok ? baseModel : modelText,
+      }),
+    [
+      baseModel,
+      description,
+      family,
+      modelText,
+      name,
+      parsedModel.ok,
+      patternKey,
+      saveStyleDefaultIds,
+      sortOrderNumber,
+    ],
+  );
+  const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    if (savedSignature === null) setSavedSignature(currentSignature);
+  }, [currentSignature, savedSignature]);
+
+  useEffect(() => {
+    setName(effect.name);
+    setDescription(effect.description ?? '');
+    setFamily(normaliseFamily(effect.family));
+    setPatternKey(effect.patternKey);
+    setSortOrder(String(effect.sortOrder));
+    setModelText(JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2));
+    setStyleDefaultIds(initialStyleDefaultIds(effect));
+    setCreatedStyleDefaults({});
+    setLastSavedUpdatedAt(effect.updatedAt);
+    setPreviewVersion(null);
+    setRestoringVersionId(null);
+    setSavedSignature(null);
+  }, [effect]);
   const modelHasColour = hasConcreteRendererColor(baseModel);
+
+  useEffect(() => {
+    setAdminBreadcrumb({ label: name || effect.name });
+    return () => setAdminBreadcrumb(null);
+  }, [effect.name, name, setAdminBreadcrumb]);
   const previewDesign = useMemo(
     () =>
       compileFireworkDesign({
@@ -215,21 +345,30 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
     return Math.max(4, Math.ceil(estimated * 2) / 2);
   }, [previewDesign]);
+  const previewTicks = useMemo(
+    () =>
+      estimatePreviewTicks({
+        design: previewDesign,
+        cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
+        previewDuration,
+      }),
+    [previewDesign, previewDuration],
+  );
 
   const previewCue = useMemo<ReplayCue>(
     () => ({
       id: `${effect.id}-base-preview`,
       position: 1,
       timeSeconds: PREVIEW_CUE_TIME_SECONDS,
-      description: effect.description || effect.name,
+      description: description || name,
       productId: effect.id,
       launchPositionIndex: 0,
       firework: {
         id: effect.id,
         slug: effect.slug,
-        name: effect.name,
-        description: effect.description ?? null,
-        sortOrder: effect.sortOrder,
+        name,
+        description: description || null,
+        sortOrder: sortOrderNumber,
         durationSeconds: previewDuration,
         heightMeters: null,
         caliber: null,
@@ -240,13 +379,23 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         baseEffect: {
           id: effect.id,
           slug: effect.slug,
-          name: effect.name,
-          patternKey: effect.patternKey,
+          name,
+          patternKey,
         },
         variant: null,
       },
     }),
-    [baseModel, effect, previewDesign, previewDuration],
+    [
+      baseModel,
+      description,
+      effect.id,
+      effect.slug,
+      name,
+      patternKey,
+      previewDesign,
+      previewDuration,
+      sortOrderNumber,
+    ],
   );
   const previewCues = useMemo(() => [previewCue], [previewCue]);
 
@@ -270,7 +419,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         startedAtRef.current = now - next * 1000;
       }
       playbackRef.current = next;
-      if (now - lastUiUpdate > 90) {
+      if (now - lastUiUpdate > 32) {
         setElapsed(next);
         lastUiUpdate = now;
       }
@@ -317,9 +466,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         return;
       }
 
+      setCreatedStyleDefaults((current) => ({
+        ...current,
+        [kind]: [
+          result.styleDefault,
+          ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
+        ],
+      }));
       setStyleDefaultIds((current) => ({ ...current, [kind]: result.id }));
-      toast.success('Style default created');
-      router.refresh();
+      toast.success('Style default created and selected');
     });
   }
 
@@ -339,21 +494,16 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       const result = await updateEffect({
         id: effect.id,
         expectedUpdatedAt: lastSavedUpdatedAt,
-        name: effect.name,
-        description: effect.description ?? '',
-        family: effect.family as 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound',
-        patternKey: effect.patternKey,
-        sortOrder: effect.sortOrder,
+        name,
+        description,
+        family,
+        patternKey,
+        sortOrder: sortOrderNumber,
         starStyleDefaultId:
           styleDefaultIds.star === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.star,
         trailStyleDefaultId:
           styleDefaultIds.trail === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.trail,
-        styleDefaultIds: Object.fromEntries(
-          FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
-            kind,
-            styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
-          ]),
-        ),
+        styleDefaultIds: saveStyleDefaultIds,
         modelJson: canonicalModelText,
       });
 
@@ -364,153 +514,267 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
 
       setLastSavedUpdatedAt(result.updatedAt);
       setModelText(canonicalModelText);
+      setSavedSignature(currentSignature);
       toast.success('Effect saved');
       router.refresh();
     });
   }
 
-  return (
-    <div className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch">
-      <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
-        <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
-          <LazyFireworkReplayCanvas
-            cues={previewCues}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            launchPositions={PREVIEW_LAUNCH_POSITIONS}
-            muted={!isPlaying}
-            interactive
-            controlsVisible
-            showFps
-            renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
-            headStyle={{
-              coreSoftness,
-              coreBrightness,
-              coreOpacityFalloff,
-              glowSize,
-              glowSoftness,
-              glowOpacityFalloff,
-              glowBlur,
-              backgroundGlowOpacityFalloff,
-              backgroundGlowSoftness,
-            }}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
-                  setPreviewTime(PREVIEW_START_SECONDS);
-                }
-                setIsPlaying((playing) => !playing);
-              }}
-              aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-            >
-              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                setIsPlaying(false);
-                setPreviewTime(PREVIEW_START_SECONDS);
-              }}
-              aria-label="Reset preview"
-            >
-              <RotateCcw size={16} />
-            </Button>
-            <Button
-              variant={isLooping ? 'primary' : 'secondary'}
-              size="icon"
-              onClick={() => setIsLooping((looping) => !looping)}
-              aria-pressed={isLooping}
-              aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
-            >
-              <Repeat size={16} />
-            </Button>
-          </div>
-          <Slider
-            value={[Math.min(elapsed, previewDuration)]}
-            min={0}
-            max={previewDuration}
-            step={0.05}
-            onValueChange={(next) => {
-              setIsPlaying(false);
-              setPreviewTime(next[0] ?? 0);
-            }}
-            aria-label="Preview timeline"
-            className="min-w-40 flex-1"
-          />
-          <div className="font-mono text-sm text-[color:var(--color-content-subtle)] tabular-nums">
-            {elapsed.toFixed(1)}s / {previewDuration.toFixed(1)}s
-          </div>
-        </div>
-      </Card>
+  function revertLocalChanges() {
+    setName(effect.name);
+    setDescription(effect.description ?? '');
+    setFamily(normaliseFamily(effect.family));
+    setPatternKey(effect.patternKey);
+    setSortOrder(String(effect.sortOrder));
+    setModelText(JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2));
+    setStyleDefaultIds(initialStyleDefaultIds(effect));
+    setPreviewVersion(null);
+    setError(null);
+    setSavedSignature(null);
+  }
 
-      <Card
-        radius="lg"
-        className="flex w-full min-w-0 flex-col p-0 xl:w-[440px] xl:shrink-0 xl:self-stretch"
+  function restoreVersion(version: AdminEditorVersion) {
+    setError(null);
+    setRestoringVersionId(version.id);
+    startTransition(async () => {
+      const result = await restoreEffectEditorVersion({
+        effectId: effect.id,
+        versionId: version.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
+      });
+      setRestoringVersionId(null);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setLastSavedUpdatedAt(result.updatedAt);
+      setPreviewVersion(null);
+      setSavedSignature(null);
+      toast.success('Version restored');
+      router.refresh();
+    });
+  }
+
+  function updateBurstTrail(updater: (trail: BurstTrail) => BurstTrail, custom = true) {
+    const next = updater(JSON.parse(JSON.stringify(previewDesign.burstTrail)) as BurstTrail);
+    updateModelDefaults((defaults) => {
+      defaults.burstTrail = custom ? { ...next, preset: 'custom' } : next;
+    });
+  }
+
+  function setBurstTrail(next: BurstTrail, custom = true) {
+    updateBurstTrail(() => next, custom);
+  }
+
+  const previewSnapshot = previewVersion
+    ? parseEffectEditorSnapshot(previewVersion.snapshotJson)
+    : null;
+  const previewNotice = previewVersion ? (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--hl)] bg-black/60 p-3 text-sm text-white shadow-lg">
+      <div className="min-w-0">
+        <p className="font-semibold">Viewing earlier version</p>
+        <p className="truncate text-white/68">
+          {previewSnapshot?.name ?? previewVersion.summary} by {previewVersion.createdByLabel}
+        </p>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="border-white/15 bg-white/8 text-white hover:bg-white/14 hover:text-white"
+        onClick={() => setPreviewVersion(null)}
       >
-        <div className="border-b border-[color:var(--color-border-subtle)] p-6 pb-4">
-          <h2 className="text-base font-semibold text-[color:var(--color-content-emphasis)]">
-            {effect.name}
-          </h2>
+        Live version
+      </Button>
+    </div>
+  ) : null;
+  const preview = (
+    <LazyFireworkReplayCanvas
+      cues={previewCues}
+      elapsed={elapsed}
+      playbackRef={playbackRef}
+      launchPositions={PREVIEW_LAUNCH_POSITIONS}
+      muted={!isPlaying}
+      interactive
+      controlsVisible
+      showFps
+      renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
+      headStyle={{
+        coreSoftness,
+        coreBrightness,
+        coreOpacityFalloff,
+        glowSize,
+        glowSoftness,
+        glowOpacityFalloff,
+        glowBlur,
+        backgroundGlowOpacityFalloff,
+        backgroundGlowSoftness,
+      }}
+    />
+  );
+  const transport = (
+    <EditorPreviewTransport
+      elapsed={elapsed}
+      duration={previewDuration}
+      isPlaying={isPlaying}
+      isLooping={isLooping}
+      ticks={previewTicks}
+      onPlayPause={() => {
+        if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
+          setPreviewTime(PREVIEW_START_SECONDS);
+        }
+        setIsPlaying((playing) => !playing);
+      }}
+      onReset={() => {
+        setIsPlaying(false);
+        setPreviewTime(PREVIEW_START_SECONDS);
+      }}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onScrub={(seconds) => {
+        setIsPlaying(false);
+        setPreviewTime(seconds);
+      }}
+    />
+  );
+  const detailsContent = (
+    <div className="space-y-4">
+      <Field>
+        <FieldLabel htmlFor="fx-name">Name</FieldLabel>
+        <Input id="fx-name" value={name} onChange={(event) => setName(event.target.value)} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="fx-description">Description</FieldLabel>
+        <Textarea
+          id="fx-description"
+          rows={3}
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field>
+          <FieldLabel>Family</FieldLabel>
+          <SelectField
+            value={family}
+            onChange={(value) => setFamily(normaliseFamily(value))}
+            options={FAMILY_OPTIONS}
+            ariaLabel="Effect family"
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="fx-pattern">Pattern key</FieldLabel>
+          <Input
+            id="fx-pattern"
+            value={patternKey}
+            onChange={(event) => setPatternKey(event.target.value)}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="fx-sort">Sort order</FieldLabel>
+          <Input
+            id="fx-sort"
+            inputMode="numeric"
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          />
+        </Field>
+      </div>
+    </div>
+  );
+  function renderStyleDefaultControls(kind: FireworkStyleDefaultKind) {
+    return (
+      <EditorStyleDefaultControls
+        label={`${styleDefaultKindLabel(kind)} style`}
+        value={styleDefaultIds[kind]}
+        onChange={(value) => setStyleDefaultIds((current) => ({ ...current, [kind]: value }))}
+        options={styleDefaultOptions(
+          effect.styleDefaults[kind],
+          selectedStyleDefaults[kind] ?? effect.styleDefaultLinks[kind] ?? null,
+        )}
+        disabled={!parsedModel.ok}
+        onSave={() => saveCurrentStyleAsDefault(kind)}
+        onReset={() => resetLocalStyleDefaults(kind)}
+      />
+    );
+  }
+
+  const tabs: FireworkEditorShellTab[] = [
+    {
+      id: 'details',
+      label: 'Details',
+      icon: SlidersHorizontal,
+      eyebrow: 'Catalogue',
+      title: 'Details',
+      description: 'Name, effect family and renderer key for this base effect.',
+      content: detailsContent,
+    },
+    {
+      id: 'star',
+      label: 'Star',
+      icon: Sparkles,
+      eyebrow: 'Appearance',
+      title: 'Star & glow',
+      description: 'Size, life and the glow around each burning star.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
+            disabled={!parsedModel.ok}
+            showStarCount
+            controlScope="star"
+          />
+          {renderStyleDefaultControls('star')}
         </div>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 pb-8">
-          {error ? (
-            <InlineAlert tone="danger" title="Could not save">
-              {error}
-            </InlineAlert>
-          ) : null}
-
-          <PanelSection title="Style defaults" collapsible defaultExpanded={false}>
-            <div className="space-y-4">
-              {FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => (
-                <div
-                  key={kind}
-                  className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-4 first:border-t-0 first:pt-0"
-                >
-                  <Field>
-                    <FieldLabel>{styleDefaultKindLabel(kind)} style</FieldLabel>
-                    <SelectField
-                      value={styleDefaultIds[kind]}
-                      onChange={(value) =>
-                        setStyleDefaultIds((current) => ({ ...current, [kind]: value }))
-                      }
-                      options={styleDefaultOptions(
-                        effect.styleDefaults[kind],
-                        effect.styleDefaultLinks[kind] ?? null,
-                      )}
-                      ariaLabel={`${styleDefaultKindLabel(kind)} style default`}
-                      disabled={!parsedModel.ok}
-                    />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => saveCurrentStyleAsDefault(kind)}
-                      disabled={!parsedModel.ok}
-                    >
-                      Save as new default
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => resetLocalStyleDefaults(kind)}
-                      disabled={!parsedModel.ok}
-                    >
-                      Reset local overrides
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </PanelSection>
-
+      ),
+    },
+    {
+      id: 'star-inner',
+      label: 'Star Inner',
+      icon: CircleDot,
+      eyebrow: 'Appearance',
+      title: 'Star Inner',
+      description: 'The smaller core burst inside the main star break.',
+      content: (
+        <FireworkRenderControls
+          design={previewDesign}
+          defaults={renderDefaults}
+          calibrationDefaults={calibrationDefaults}
+          mutate={updateModelDefaults}
+          disabled={!parsedModel.ok}
+          showStarCount
+          controlScope="starInner"
+        />
+      ),
+    },
+    {
+      id: 'trail',
+      label: 'Trail',
+      icon: Wind,
+      eyebrow: 'Appearance',
+      title: 'Trail',
+      description: 'The brocade streaks that hang behind each star.',
+      content: (
+        <div className="space-y-5">
+          <EditorTrailPanel
+            trail={previewDesign.burstTrail}
+            disabled={!parsedModel.ok}
+            onChange={setBurstTrail}
+          />
+          {renderStyleDefaultControls('trail')}
+        </div>
+      ),
+    },
+    {
+      id: 'launch',
+      label: 'Launch',
+      icon: Rocket,
+      eyebrow: 'Ascent',
+      title: 'Launch',
+      description: 'How the shell rises before it bursts.',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
@@ -518,22 +782,142 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             mutate={updateModelDefaults}
             disabled={!parsedModel.ok}
             showLaunch
-            showStarCount
+            controlScope="launch"
           />
+          {renderStyleDefaultControls('launch')}
         </div>
-
-        <div className="border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-          <Button
-            className="w-full"
-            onClick={saveEffect}
-            loading={isPending}
+      ),
+    },
+    {
+      id: 'fx',
+      label: 'FX',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Spark effects',
+      description: 'Optional strobe, crackle and split-shell effects.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
             disabled={!parsedModel.ok}
-          >
-            <Save size={16} />
-            Save effect
-          </Button>
+            controlScope="strobe"
+          />
+          {renderStyleDefaultControls('strobe')}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
+            disabled={!parsedModel.ok}
+            controlScope="crackle"
+          />
+          {renderStyleDefaultControls('crackle')}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
+            disabled={!parsedModel.ok}
+            controlScope="split"
+          />
+          {renderStyleDefaultControls('split')}
         </div>
-      </Card>
-    </div>
+      ),
+    },
+    {
+      id: 'smoke',
+      label: 'Smoke',
+      icon: Cloud,
+      eyebrow: 'Atmosphere',
+      title: 'Smoke',
+      description: 'Launch smoke that lingers after the lift.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
+            disabled={!parsedModel.ok}
+            controlScope="smoke"
+          />
+          {renderStyleDefaultControls('smoke')}
+        </div>
+      ),
+    },
+    {
+      id: 'sound',
+      label: 'Sound',
+      icon: Volume2,
+      eyebrow: 'Audio',
+      title: 'Sound',
+      description: 'The report heard on launch and at the burst.',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={updateModelDefaults}
+            disabled={!parsedModel.ok}
+            controlScope="sound"
+          />
+          {renderStyleDefaultControls('sound')}
+        </div>
+      ),
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: History,
+      eyebrow: 'Versions',
+      title: 'Version history',
+      content: (
+        <EditorHistoryPanel
+          versions={effect.history}
+          selectedVersionId={previewVersion?.id ?? null}
+          restoringVersionId={restoringVersionId}
+          onPreview={setPreviewVersion}
+          onClearPreview={() => setPreviewVersion(null)}
+          onRestore={restoreVersion}
+        />
+      ),
+    },
+    {
+      id: 'json',
+      label: 'JSON',
+      icon: Braces,
+      eyebrow: 'Advanced',
+      title: 'Canonical model JSON',
+      content: (
+        <JsonReadOnlyPanel
+          label="Read-only v1 view of the canonical firework_effects.model_json payload."
+          value={baseModel as Json}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <FireworkEditorShell
+      title={name || effect.name}
+      dirty={isDirty}
+      saving={isPending}
+      saveLabel="Save"
+      saveDisabled={!parsedModel.ok || isPending}
+      revertDisabled={!isDirty || isPending}
+      onSave={saveEffect}
+      onRevert={revertLocalChanges}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      tabs={tabs}
+      preview={preview}
+      transport={transport}
+      error={error}
+      previewNotice={previewNotice}
+    />
   );
 }

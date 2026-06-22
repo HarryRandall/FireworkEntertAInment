@@ -156,6 +156,24 @@ export type AdminEffectPreview = {
   pattern: string | null;
 };
 
+export type AdminEditorVersionTargetKind = 'firework' | 'effect';
+export type AdminEditorVersionAction = 'update' | 'restore';
+
+export type AdminEditorVersion = {
+  id: string;
+  targetKind: AdminEditorVersionTargetKind;
+  fireworkId: string | null;
+  fireworkEffectId: string | null;
+  action: AdminEditorVersionAction;
+  summary: string;
+  snapshotJson: Json;
+  previousSnapshotJson: Json | null;
+  changesJson: Json;
+  createdBy: string | null;
+  createdByLabel: string;
+  createdAt: string;
+};
+
 export type AdminStyleDefaultOption = {
   id: string;
   kind: FireworkStyleDefaultKind;
@@ -225,6 +243,7 @@ export type AdminEffectDetail = AdminEffectSummary & {
   trailStyleDefault: AdminStyleDefaultOption | null;
   styleDefaultLinks: AdminStyleDefaultLinkMap;
   styleDefaults: AdminStyleDefaultOptions;
+  history: AdminEditorVersion[];
 };
 
 /** A base effect a firework can be built on, for the firework editor selector. */
@@ -282,6 +301,7 @@ export type AdminFireworkDetail = AdminFireworkSummary & {
   effectStarStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
   effectTrailStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
   effectStyleDefaultLinksByEffect: Record<string, AdminStyleDefaultLinkMap>;
+  history: AdminEditorVersion[];
 };
 
 /** A firework that can be placed inside a multishot timeline. */

@@ -15,6 +15,7 @@ import {
   getAdminFireworkCacheKey,
   getAdminFireworksCacheKey,
 } from './cache-keys';
+import { listFireworkEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from './current-user.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
@@ -364,6 +365,10 @@ export async function getAdminFireworkById(
     ...legacyFireworkLinks,
     ...(fireworkLinkMap[row.id] ?? {}),
   };
+  const [styleDefaults, history] = await Promise.all([
+    listAdminStyleDefaultOptions(),
+    listFireworkEditorVersions(supabase, row.id),
+  ]);
   const detail: AdminFireworkDetail = {
     ...mapSummary(row, effectStyleDefaultLinks, fireworkStyleDefaultLinks),
     renderOverridesJson: row.render_overrides_json ?? {},
@@ -374,12 +379,13 @@ export async function getAdminFireworkById(
     fireworkTrailStyleDefault: fireworkStyleDefaultLinks.trail ?? null,
     effectStyleDefaultLinks,
     fireworkStyleDefaultLinks,
-    styleDefaults: await listAdminStyleDefaultOptions(),
+    styleDefaults,
     effectOptions: effectData.options,
     effectModels: effectData.models,
     effectStarStyleDefaults: effectData.starStyleDefaults,
     effectTrailStyleDefaults: effectData.trailStyleDefaults,
     effectStyleDefaultLinksByEffect: effectData.styleDefaultLinksByEffect,
+    history,
   };
   await setCachedJson(cacheKey, detail, ADMIN_CACHE_TTL_SECONDS);
   return detail;

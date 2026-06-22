@@ -112,6 +112,9 @@ const LAUNCH_SHELL_SHAPE_OPTIONS = [
   { value: 'triangle', label: 'Triangle' },
 ] satisfies { value: LaunchShellShape; label: string }[];
 
+const CONTROL_GRID_CLASS =
+  'grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-x-6 gap-y-4';
+
 const BROCADE_SPEED_HALF_WIDTH = 0.6;
 const BROCADE_LIFE_HALF_WIDTH = 0.6;
 const BROCADE_GRAVITY_HALF_WIDTH = 0.12;
@@ -643,7 +646,7 @@ export function SubSection({
 /**
  * Inline "Advanced" disclosure used to hide the long tail of fine-tuning
  * sliders so each section shows only its few common controls by default.
- * Renders full-width inside a two-column control grid.
+ * Renders full-width inside the compact control grid.
  */
 function AdvancedControls({ children }: { children: ReactNode }) {
   const contentId = useId();
@@ -664,7 +667,7 @@ function AdvancedControls({ children }: { children: ReactNode }) {
         {open ? 'Hide advanced' : 'Advanced'}
       </button>
       {open ? (
-        <div id={contentId} className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+        <div id={contentId} className={cn('mt-3', CONTROL_GRID_CLASS)}>
           {children}
         </div>
       ) : null}
@@ -694,6 +697,7 @@ export type RenderControlsProps = {
   controlScope?:
     | 'full'
     | 'star'
+    | 'starInner'
     | 'trail'
     | 'launch'
     | 'smoke'
@@ -983,7 +987,7 @@ export function FireworkRenderControls({
     return (
       <>
         <SubSection title="Shell particle" defaultExpanded>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
             <Field>
               <div className="flex items-center gap-1.5">
                 <FieldLabel>Shell shape</FieldLabel>
@@ -1050,7 +1054,7 @@ export function FireworkRenderControls({
         </SubSection>
 
         <SubSection title="Shell trail" defaultExpanded>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
             <SliderField
               label="Tube diameter"
               min={0}
@@ -1134,7 +1138,7 @@ export function FireworkRenderControls({
       >
         <div className="space-y-4">
           <SubSection title="Particles">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Amount"
                 min={0}
@@ -1269,7 +1273,7 @@ export function FireworkRenderControls({
           </SubSection>
 
           <SubSection title="Placement">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Head-tail balance"
                 min={TRAIL_BIAS_MIN}
@@ -1351,7 +1355,7 @@ export function FireworkRenderControls({
           </SubSection>
 
           <SubSection title="Life and glow">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Particle life"
                 min={0.1}
@@ -1459,7 +1463,7 @@ export function FireworkRenderControls({
           </SubSection>
 
           <SubSection title="Motion">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Ascent swirl"
                 min={0}
@@ -1553,9 +1557,102 @@ export function FireworkRenderControls({
   }
 
   function renderSmokeControls() {
-    if (!showLaunch) return null;
+    if (!showLaunch && controlScope !== 'smoke') return null;
 
     const smoke = design.launch.smoke;
+    const smokeContent = (
+      <div className={CONTROL_GRID_CLASS}>
+        <SliderField
+          label="Smoke particles"
+          min={0}
+          max={LAUNCH_SMOKE_PARTICLES_MAX}
+          step={10}
+          value={smoke.particles}
+          showNumberInput
+          inputAriaLabel="Smoke particles value"
+          disabled={sectionDisabled.smoke}
+          hint="Smoke spawned at launch and mixed into the rising trail."
+          onChange={(value) => setLaunchValue('smoke', 'particles', Math.round(value))}
+        />
+        <SliderField
+          label="Smoke size"
+          min={4}
+          max={LAUNCH_SMOKE_SIZE_MAX}
+          step={1}
+          value={smoke.size}
+          showNumberInput
+          inputAriaLabel="Smoke size value"
+          disabled={sectionDisabled.smoke}
+          hint="Size of each smoke puff."
+          onChange={(value) => setLaunchValue('smoke', 'size', round2(value))}
+        />
+        <SliderField
+          label="Smoke life"
+          min={0.2}
+          max={12}
+          step={0.1}
+          value={smoke.lifeSeconds}
+          formatValue={formatSeconds}
+          showNumberInput
+          inputAriaLabel="Smoke life value"
+          disabled={sectionDisabled.smoke}
+          hint="How long smoke remains visible before it fades."
+          onChange={(value) => setLaunchValue('smoke', 'lifeSeconds', round2(value))}
+        />
+        <SliderField
+          label="Smoke spread"
+          min={0}
+          max={LAUNCH_SMOKE_SPREAD_MAX}
+          step={1}
+          value={smoke.spread}
+          showNumberInput
+          inputAriaLabel="Smoke spread value"
+          disabled={sectionDisabled.smoke}
+          hint="How far smoke spreads from the launch point and shell path."
+          onChange={(value) => setLaunchValue('smoke', 'spread', round2(value))}
+        />
+        <SliderField
+          label="Smoke drift"
+          min={0}
+          max={LAUNCH_SMOKE_DRIFT_MAX}
+          step={0.05}
+          value={smoke.drift}
+          formatValue={formatMultiplier}
+          showNumberInput
+          inputAriaLabel="Smoke drift value"
+          disabled={sectionDisabled.smoke}
+          hint="How much smoke curls sideways as it rises."
+          onChange={(value) => setLaunchValue('smoke', 'drift', round2(value))}
+        />
+        <SliderField
+          label="Rise height"
+          min={0}
+          max={LAUNCH_SMOKE_HEIGHT_MAX}
+          step={10}
+          value={smoke.height}
+          showNumberInput
+          inputAriaLabel="Smoke rise height value"
+          disabled={sectionDisabled.smoke}
+          hint="The height where rising smoke stops being emitted."
+          onChange={(value) => setLaunchValue('smoke', 'height', round2(value))}
+        />
+      </div>
+    );
+
+    if (controlScope === 'smoke') {
+      return (
+        <div className="space-y-4">
+          <SwitchField
+            label="Smoke"
+            checked={smokeEnabled}
+            disabled={disabled}
+            hint="Launch smoke from the mortar and rising shell path."
+            onChange={(value) => setLaunchValue('smoke', 'enabled', value)}
+          />
+          <div className={cn(!smokeEnabled && 'opacity-55')}>{smokeContent}</div>
+        </div>
+      );
+    }
 
     return (
       <PanelSection
@@ -1574,82 +1671,7 @@ export function FireworkRenderControls({
           />
         }
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <SliderField
-            label="Smoke particles"
-            min={0}
-            max={LAUNCH_SMOKE_PARTICLES_MAX}
-            step={10}
-            value={smoke.particles}
-            showNumberInput
-            inputAriaLabel="Smoke particles value"
-            disabled={sectionDisabled.smoke}
-            hint="Smoke spawned at launch and mixed into the rising trail."
-            onChange={(value) => setLaunchValue('smoke', 'particles', Math.round(value))}
-          />
-          <SliderField
-            label="Smoke size"
-            min={4}
-            max={LAUNCH_SMOKE_SIZE_MAX}
-            step={1}
-            value={smoke.size}
-            showNumberInput
-            inputAriaLabel="Smoke size value"
-            disabled={sectionDisabled.smoke}
-            hint="Size of each smoke puff."
-            onChange={(value) => setLaunchValue('smoke', 'size', round2(value))}
-          />
-          <SliderField
-            label="Smoke life"
-            min={0.2}
-            max={12}
-            step={0.1}
-            value={smoke.lifeSeconds}
-            formatValue={formatSeconds}
-            showNumberInput
-            inputAriaLabel="Smoke life value"
-            disabled={sectionDisabled.smoke}
-            hint="How long smoke remains visible before it fades."
-            onChange={(value) => setLaunchValue('smoke', 'lifeSeconds', round2(value))}
-          />
-          <SliderField
-            label="Smoke spread"
-            min={0}
-            max={LAUNCH_SMOKE_SPREAD_MAX}
-            step={1}
-            value={smoke.spread}
-            showNumberInput
-            inputAriaLabel="Smoke spread value"
-            disabled={sectionDisabled.smoke}
-            hint="How far smoke spreads from the launch point and shell path."
-            onChange={(value) => setLaunchValue('smoke', 'spread', round2(value))}
-          />
-          <SliderField
-            label="Smoke drift"
-            min={0}
-            max={LAUNCH_SMOKE_DRIFT_MAX}
-            step={0.05}
-            value={smoke.drift}
-            formatValue={formatMultiplier}
-            showNumberInput
-            inputAriaLabel="Smoke drift value"
-            disabled={sectionDisabled.smoke}
-            hint="How much smoke curls sideways as it rises."
-            onChange={(value) => setLaunchValue('smoke', 'drift', round2(value))}
-          />
-          <SliderField
-            label="Rise height"
-            min={0}
-            max={LAUNCH_SMOKE_HEIGHT_MAX}
-            step={10}
-            value={smoke.height}
-            showNumberInput
-            inputAriaLabel="Smoke rise height value"
-            disabled={sectionDisabled.smoke}
-            hint="The height where rising smoke stops being emitted."
-            onChange={(value) => setLaunchValue('smoke', 'height', round2(value))}
-          />
-        </div>
+        {smokeContent}
       </PanelSection>
     );
   }
@@ -2857,12 +2879,13 @@ export function FireworkRenderControls({
     const controlDisabled = sectionDisabled[layerKey];
     const toggleId = layerKey === 'outer' ? outerToggleId : coreToggleId;
     const isInnerLayer = layerKey === 'core';
+    const starControlsAlwaysOpen = controlScope === 'star' || controlScope === 'starInner';
 
     return (
       <PanelSection
         title={title}
-        collapsible
-        defaultExpanded={false}
+        collapsible={!starControlsAlwaysOpen}
+        defaultExpanded={starControlsAlwaysOpen}
         inactive={!layer.enabled}
         titleAccessory={
           <InfoTooltip text={`${title} has its own burst, head, colour, and trail settings.`} />
@@ -2977,26 +3000,36 @@ export function FireworkRenderControls({
   }
 
   if (controlScope === 'star') {
-    return (
-      <>
-        {renderStarLayerControls('outer', 'Star')}
-        {renderStarLayerControls('core', 'Star Inner')}
-      </>
-    );
+    return <>{renderStarLayerControls('outer', 'Star')}</>;
+  }
+
+  if (controlScope === 'starInner') {
+    return <>{renderStarLayerControls('core', 'Star Inner')}</>;
   }
 
   function renderLaunchControls(includeLiftParticles = false) {
+    const launchContent = (
+      <div className="space-y-5">
+        {renderLiftVelocityControl(
+          'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
+        )}
+        {renderLaunchShellControls()}
+      </div>
+    );
+
+    if (controlScope === 'launch') {
+      return (
+        <div className="space-y-5">
+          {launchContent}
+          {includeLiftParticles ? renderLiftParticleControls() : null}
+        </div>
+      );
+    }
+
     return (
       <>
         <PanelSection title="Launch" collapsible defaultExpanded={false}>
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {renderLiftVelocityControl(
-                'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
-              )}
-            </div>
-            {renderLaunchShellControls()}
-          </div>
+          {launchContent}
         </PanelSection>
 
         {includeLiftParticles ? renderLiftParticleControls() : null}
@@ -3005,12 +3038,20 @@ export function FireworkRenderControls({
   }
 
   function renderSoundControls() {
+    const soundContent = (
+      <div className={CONTROL_GRID_CLASS}>
+        {renderLaunchSoundControl()}
+        {renderBoomControl()}
+      </div>
+    );
+
+    if (controlScope === 'sound') {
+      return soundContent;
+    }
+
     return (
       <PanelSection title="Sound" collapsible defaultExpanded={false}>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          {renderLaunchSoundControl()}
-          {renderBoomControl()}
-        </div>
+        {soundContent}
       </PanelSection>
     );
   }

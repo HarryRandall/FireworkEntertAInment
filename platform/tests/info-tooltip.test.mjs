@@ -13,7 +13,11 @@ test('info tooltip uses the shadcn icon and tooltip behaviour', () => {
   assert.match(source, /import \{ Info \} from 'lucide-react'/);
   assert.match(source, /<TooltipTrigger asChild>/);
   assert.match(source, /<Info className="size-3" aria-hidden \/>/);
-  assert.match(source, /<TooltipContent>\{text\}<\/TooltipContent>/);
+  assert.match(
+    source,
+    /<TooltipContent collisionPadding=\{12\} className="max-w-\[15rem\] leading-snug">/,
+  );
+  assert.match(source, /\{text\}[\s\S]*<\/TooltipContent>/);
   assert.doesNotMatch(source, /cursor-help/);
   assert.doesNotMatch(source, /hover:text-foreground/);
   assert.doesNotMatch(source, /text-\[9px\]/);

@@ -179,6 +179,73 @@ export type Database = {
           },
         ]
       }
+      firework_editor_versions: {
+        Row: {
+          action: string
+          changes_json: Json
+          created_at: string
+          created_by: string | null
+          created_by_label: string
+          firework_effect_id: string | null
+          firework_id: string | null
+          id: string
+          previous_snapshot_json: Json | null
+          snapshot_json: Json
+          summary: string
+          target_kind: string
+        }
+        Insert: {
+          action: string
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_label: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          id?: string
+          previous_snapshot_json?: Json | null
+          snapshot_json: Json
+          summary: string
+          target_kind: string
+        }
+        Update: {
+          action?: string
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_label?: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          id?: string
+          previous_snapshot_json?: Json | null
+          snapshot_json?: Json
+          summary?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_editor_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_editor_versions_firework_effect_id_fkey"
+            columns: ["firework_effect_id"]
+            isOneToOne: false
+            referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_editor_versions_firework_id_fkey"
+            columns: ["firework_id"]
+            isOneToOne: false
+            referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       firework_style_default_links: {
         Row: {
           created_at: string

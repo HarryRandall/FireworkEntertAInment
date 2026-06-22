@@ -2,23 +2,41 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Archive, Pause, Play, Repeat, RotateCcw, Save } from 'lucide-react';
+import {
+  Archive,
+  Braces,
+  Cloud,
+  Rocket,
+  SlidersHorizontal,
+  Sparkles,
+  Volume2,
+  Wind,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { archiveStyleDefault, updateStyleDefault } from '@/app/actions/admin-style-defaults';
+import { JsonReadOnlyPanel } from '@/app/components/admin/EditorInspectorPanels';
+import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/app/components/admin/FireworkEditorShell';
+import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import {
   FireworkRenderControls,
   PanelSection,
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
-import { Slider } from '@/components/ui/slider';
 import { toast } from '@/app/components/ui/toast';
 import type { AdminStyleDefaultDetail } from '@/lib/admin.types';
+import type { Json } from '@/lib/database.types';
 import {
   compileFireworkDesign,
   estimateDesignDurationSeconds,
@@ -63,6 +81,17 @@ const TRAIL_PREVIEW_STAR_OPTIONS = [
   { value: 'custom', label: 'Custom star' },
 ];
 
+const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
+  star: Sparkles,
+  trail: Wind,
+  launch: Rocket,
+  smoke: Cloud,
+  strobe: Zap,
+  crackle: Zap,
+  split: Sparkles,
+  sound: Volume2,
+};
+
 function ReplayCanvasSkeleton() {
   return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
 }
@@ -100,6 +129,7 @@ function compileStyleDefaultPreviewDesign(
 
 export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleDefaultDetail }) {
   const router = useRouter();
+  const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
@@ -121,6 +151,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       2,
     ),
   );
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(styleDefault.kind);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
@@ -146,12 +178,67 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       ),
     [kind, parsedDefaults, styleDefault.defaultsJson, trailPreviewStarDefaults],
   );
+  const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
+  const currentSignature = useMemo(
+    () =>
+      JSON.stringify({
+        name,
+        description,
+        kind,
+        sortOrder: sortOrderNumber,
+        isArchived,
+        defaultsJson: parsedDefaults.ok
+          ? normaliseStyleDefaultJson(kind, parsedDefaults.value)
+          : defaultsText,
+      }),
+    [defaultsText, description, isArchived, kind, name, parsedDefaults, sortOrderNumber],
+  );
+  const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    if (savedSignature === null) setSavedSignature(currentSignature);
+  }, [currentSignature, savedSignature]);
+
+  useEffect(() => {
+    setName(styleDefault.name);
+    setDescription(styleDefault.description ?? '');
+    setKind(styleDefault.kind);
+    setSortOrder(String(styleDefault.sortOrder));
+    setIsArchived(styleDefault.isArchived);
+    setLastSavedUpdatedAt(styleDefault.updatedAt);
+    setTrailPreviewStarMode('none');
+    setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
+    setDefaultsText(
+      JSON.stringify(
+        normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
+        null,
+        2,
+      ),
+    );
+    setActiveTab(styleDefault.kind);
+    setError(null);
+    setSavedSignature(null);
+  }, [styleDefault]);
+
+  useEffect(() => {
+    setAdminBreadcrumb({ label: name || styleDefault.name });
+    return () => setAdminBreadcrumb(null);
+  }, [name, setAdminBreadcrumb, styleDefault.name]);
 
   const heads = previewDesign.stars.outer.head;
   const previewDuration = useMemo(() => {
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
     return Math.max(4, Math.ceil(estimated * 2) / 2);
   }, [previewDesign]);
+  const previewTicks = useMemo(
+    () =>
+      estimatePreviewTicks({
+        design: previewDesign,
+        cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
+        previewDuration,
+      }),
+    [previewDesign, previewDuration],
+  );
 
   const previewCue = useMemo<ReplayCue>(
     () => ({
@@ -210,7 +297,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         startedAtRef.current = now - next * 1000;
       }
       playbackRef.current = next;
-      if (now - lastUiUpdate > 90) {
+      if (now - lastUiUpdate > 32) {
         setElapsed(next);
         lastUiUpdate = now;
       }
@@ -287,7 +374,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         name,
         description,
         kind,
-        sortOrder: Number(sortOrder),
+        sortOrder: sortOrderNumber,
         isArchived,
         defaultsJson: defaultsText,
       });
@@ -296,6 +383,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         return;
       }
       setLastSavedUpdatedAt(result.updatedAt);
+      setSavedSignature(currentSignature);
       toast.success('Style default saved');
       router.refresh();
     });
@@ -310,214 +398,250 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         return;
       }
       setIsArchived(true);
+      setSavedSignature(null);
       toast.success('Style default archived');
       router.refresh();
     });
   }
 
-  return (
-    <div className="flex flex-col gap-5 xl:h-[calc(100vh-6.5rem)] xl:flex-row xl:items-stretch">
-      <Card radius="lg" className="flex min-w-0 flex-1 flex-col overflow-hidden p-0">
-        <div className="relative h-[min(62vw,560px)] min-h-[360px] bg-[#05070d] xl:h-auto xl:min-h-0 xl:flex-1">
-          <LazyFireworkReplayCanvas
-            cues={previewCues}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            launchPositions={PREVIEW_LAUNCH_POSITIONS}
-            muted={!isPlaying}
-            interactive
-            controlsVisible
-            showFps
-            renderTuning={{
-              glowPadding: heads.glowPadding,
-              whiteCoreSizePercent: heads.whiteCoreSizePercent,
-              whiteCoreBlurPercent: heads.whiteCoreBlurPercent,
-            }}
-            headStyle={{
-              coreSoftness: heads.coreSoftness,
-              coreBrightness: heads.coreBrightness,
-              coreOpacityFalloff: heads.coreOpacityFalloff,
-              glowSize: heads.glowSize,
-              glowSoftness: heads.glowSoftness,
-              glowOpacityFalloff: heads.glowOpacityFalloff,
-              glowBlur: heads.glowBlur,
-              backgroundGlowOpacityFalloff: heads.backgroundGlowOpacityFalloff,
-              backgroundGlowSoftness: heads.backgroundGlowSoftness,
-            }}
+  function revertLocalChanges() {
+    setName(styleDefault.name);
+    setDescription(styleDefault.description ?? '');
+    setKind(styleDefault.kind);
+    setSortOrder(String(styleDefault.sortOrder));
+    setIsArchived(styleDefault.isArchived);
+    setTrailPreviewStarMode('none');
+    setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
+    setDefaultsText(
+      JSON.stringify(
+        normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
+        null,
+        2,
+      ),
+    );
+    setActiveTab(styleDefault.kind);
+    setError(null);
+    setSavedSignature(null);
+  }
+
+  const preview = (
+    <LazyFireworkReplayCanvas
+      cues={previewCues}
+      elapsed={elapsed}
+      playbackRef={playbackRef}
+      launchPositions={PREVIEW_LAUNCH_POSITIONS}
+      muted={!isPlaying}
+      interactive
+      controlsVisible
+      showFps
+      renderTuning={{
+        glowPadding: heads.glowPadding,
+        whiteCoreSizePercent: heads.whiteCoreSizePercent,
+        whiteCoreBlurPercent: heads.whiteCoreBlurPercent,
+      }}
+      headStyle={{
+        coreSoftness: heads.coreSoftness,
+        coreBrightness: heads.coreBrightness,
+        coreOpacityFalloff: heads.coreOpacityFalloff,
+        glowSize: heads.glowSize,
+        glowSoftness: heads.glowSoftness,
+        glowOpacityFalloff: heads.glowOpacityFalloff,
+        glowBlur: heads.glowBlur,
+        backgroundGlowOpacityFalloff: heads.backgroundGlowOpacityFalloff,
+        backgroundGlowSoftness: heads.backgroundGlowSoftness,
+      }}
+    />
+  );
+
+  const transport = (
+    <EditorPreviewTransport
+      elapsed={elapsed}
+      duration={previewDuration}
+      isPlaying={isPlaying}
+      isLooping={isLooping}
+      ticks={previewTicks}
+      onPlayPause={() => {
+        if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
+          setPreviewTime(PREVIEW_START_SECONDS);
+        }
+        setIsPlaying((playing) => !playing);
+      }}
+      onReset={() => {
+        setIsPlaying(false);
+        setPreviewTime(PREVIEW_START_SECONDS);
+      }}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onScrub={(seconds) => {
+        setIsPlaying(false);
+        setPreviewTime(seconds);
+      }}
+    />
+  );
+
+  const detailsContent = (
+    <div className="space-y-5">
+      <div className="space-y-4">
+        <Field>
+          <FieldLabel htmlFor="style-name">Name</FieldLabel>
+          <Input id="style-name" value={name} onChange={(event) => setName(event.target.value)} />
+        </Field>
+        <Field>
+          <FieldLabel>Kind</FieldLabel>
+          <SelectField
+            value={kind}
+            onChange={changeKind}
+            options={KIND_OPTIONS}
+            ariaLabel="Style default kind"
           />
-        </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
-                  setPreviewTime(PREVIEW_START_SECONDS);
-                }
-                setIsPlaying((playing) => !playing);
-              }}
-              aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-            >
-              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            </Button>
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                setIsPlaying(false);
-                setPreviewTime(PREVIEW_START_SECONDS);
-              }}
-              aria-label="Reset preview"
-            >
-              <RotateCcw size={16} />
-            </Button>
-            <Button
-              variant={isLooping ? 'primary' : 'secondary'}
-              size="icon"
-              onClick={() => setIsLooping((looping) => !looping)}
-              aria-pressed={isLooping}
-              aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
-            >
-              <Repeat size={16} />
-            </Button>
-          </div>
-          <Slider
-            value={[Math.min(elapsed, previewDuration)]}
-            min={0}
-            max={previewDuration}
-            step={0.05}
-            onValueChange={(next) => {
-              setIsPlaying(false);
-              setPreviewTime(next[0] ?? 0);
-            }}
-            aria-label="Preview timeline"
-            className="min-w-40 flex-1"
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="style-sort">Sort order</FieldLabel>
+          <Input
+            id="style-sort"
+            inputMode="numeric"
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
           />
-          <div className="font-mono text-sm text-[color:var(--color-content-subtle)] tabular-nums">
-            {elapsed.toFixed(1)}s / {previewDuration.toFixed(1)}s
-          </div>
-        </div>
-      </Card>
-
-      <Card
-        radius="lg"
-        className="flex w-full min-w-0 flex-col p-0 xl:w-[440px] xl:shrink-0 xl:self-stretch"
-      >
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 pb-8">
-          {error ? (
-            <InlineAlert tone="danger" title="Could not save">
-              {error}
-            </InlineAlert>
-          ) : null}
-
-          <PanelSection title="Details" collapsible defaultExpanded={false}>
-            <div className="space-y-4">
-              <Field>
-                <FieldLabel htmlFor="style-name">Name</FieldLabel>
-                <Input
-                  id="style-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel>Kind</FieldLabel>
-                <SelectField
-                  value={kind}
-                  onChange={changeKind}
-                  options={KIND_OPTIONS}
-                  ariaLabel="Style default kind"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="style-sort">Sort order</FieldLabel>
-                <Input
-                  id="style-sort"
-                  inputMode="numeric"
-                  value={sortOrder}
-                  onChange={(event) => setSortOrder(event.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="style-description">Description</FieldLabel>
-                <Textarea
-                  id="style-description"
-                  rows={2}
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                />
-              </Field>
-            </div>
-          </PanelSection>
-
-          {kind === 'trail' ? (
-            <PanelSection
-              title="Preview"
-              titleAccessory={
-                <InfoTooltip text="Adds an optional star only for judging this trail in the preview. The saved default still contains only the trail settings." />
-              }
-              collapsible
-              defaultExpanded={false}
-            >
-              <div className="space-y-5">
-                <Field>
-                  <FieldLabel>Preview star</FieldLabel>
-                  <SelectField
-                    value={trailPreviewStarMode}
-                    onChange={changeTrailPreviewStarMode}
-                    options={TRAIL_PREVIEW_STAR_OPTIONS}
-                    ariaLabel="Preview star"
-                  />
-                </Field>
-                {trailPreviewStarMode === 'custom' ? (
-                  <FireworkRenderControls
-                    design={previewDesign}
-                    defaults={customTrailPreviewStarDefaults}
-                    calibrationDefaults={customTrailPreviewStarDefaults}
-                    mutate={mutateTrailPreviewStarDefaults}
-                    disabled={!parsedDefaults.ok}
-                    showStarCount
-                    controlScope="star"
-                  />
-                ) : null}
-              </div>
-            </PanelSection>
-          ) : null}
-
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={defaultsRecord}
-            calibrationDefaults={defaultsRecord}
-            mutate={mutateDefaults}
-            disabled={!parsedDefaults.ok}
-            showStarCount={kind === 'star'}
-            showLaunch={kind === 'launch' || kind === 'smoke'}
-            controlScope={kind}
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="style-description">Description</FieldLabel>
+          <Textarea
+            id="style-description"
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
           />
-        </div>
+        </Field>
+      </div>
 
-        <div className="grid gap-3 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4 sm:grid-cols-[1fr_auto]">
+      <PanelSection title="Archive" collapsible defaultExpanded={false}>
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed text-[color:var(--color-content-muted)]">
+            Archive this default when it should no longer be offered for new assignments.
+          </p>
           <Button
-            className="w-full"
-            onClick={save}
-            loading={isPending}
-            disabled={!parsedDefaults.ok}
-          >
-            <Save size={16} />
-            Save default
-          </Button>
-          <Button
-            variant="secondary"
+            variant="destructive"
             onClick={archiveDefault}
             loading={isPending}
             disabled={isArchived}
           >
             <Archive size={16} />
-            Archive
+            {isArchived ? 'Archived' : 'Archive default'}
           </Button>
         </div>
-      </Card>
+      </PanelSection>
     </div>
+  );
+
+  const kindControls = (
+    <div className="space-y-5">
+      {kind === 'trail' ? (
+        <PanelSection
+          title="Preview star"
+          titleAccessory={
+            <InfoTooltip text="Adds an optional star only for judging this trail in the preview. The saved default still contains only the trail settings." />
+          }
+          collapsible
+          defaultExpanded={false}
+        >
+          <div className="space-y-5">
+            <Field>
+              <FieldLabel>Preview star</FieldLabel>
+              <SelectField
+                value={trailPreviewStarMode}
+                onChange={changeTrailPreviewStarMode}
+                options={TRAIL_PREVIEW_STAR_OPTIONS}
+                ariaLabel="Preview star"
+              />
+            </Field>
+            {trailPreviewStarMode === 'custom' ? (
+              <FireworkRenderControls
+                design={previewDesign}
+                defaults={customTrailPreviewStarDefaults}
+                calibrationDefaults={customTrailPreviewStarDefaults}
+                mutate={mutateTrailPreviewStarDefaults}
+                disabled={!parsedDefaults.ok}
+                showStarCount
+                controlScope="star"
+              />
+            ) : null}
+          </div>
+        </PanelSection>
+      ) : null}
+
+      <FireworkRenderControls
+        design={previewDesign}
+        defaults={defaultsRecord}
+        calibrationDefaults={defaultsRecord}
+        mutate={mutateDefaults}
+        disabled={!parsedDefaults.ok}
+        showStarCount={kind === 'star'}
+        showLaunch={kind === 'launch'}
+        controlScope={kind}
+      />
+    </div>
+  );
+
+  const jsonValue = (
+    parsedDefaults.ok
+      ? normaliseStyleDefaultJson(kind, parsedDefaults.value)
+      : { error: parsedDefaults.error }
+  ) as Json;
+  const kindLabel = styleDefaultKindLabel(kind);
+  const tabs: FireworkEditorShellTab[] = [
+    {
+      id: 'details',
+      label: 'Details',
+      icon: SlidersHorizontal,
+      eyebrow: 'Style default',
+      title: 'Details',
+      description: 'Name, kind and catalogue ordering for this reusable style.',
+      content: detailsContent,
+    },
+    {
+      id: kind,
+      label: kindLabel,
+      icon: KIND_ICON[kind],
+      eyebrow: 'Defaults',
+      title: `${kindLabel} defaults`,
+      description: `Reusable ${kindLabel.toLowerCase()} settings applied before local editor overrides.`,
+      content: kindControls,
+    },
+    {
+      id: 'json',
+      label: 'JSON',
+      icon: Braces,
+      eyebrow: 'Advanced',
+      title: 'Defaults JSON',
+      content: (
+        <JsonReadOnlyPanel
+          label="Read-only view of the firework_style_defaults.defaults_json payload."
+          value={jsonValue}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <FireworkEditorShell
+      title={name || styleDefault.name}
+      chips={[
+        { label: 'Kind', value: kindLabel, icon: KIND_ICON[kind] },
+        { label: 'Status', value: isArchived ? 'Archived' : null, icon: Archive },
+      ]}
+      dirty={isDirty}
+      saving={isPending}
+      saveLabel="Save"
+      saveDisabled={!parsedDefaults.ok || isPending}
+      revertDisabled={!isDirty || isPending}
+      onSave={save}
+      onRevert={revertLocalChanges}
+      activeTab={activeTab}
+      onActiveTabChange={setActiveTab}
+      tabs={tabs}
+      preview={preview}
+      transport={transport}
+      error={error}
+    />
   );
 }

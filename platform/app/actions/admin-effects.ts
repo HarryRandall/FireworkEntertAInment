@@ -13,11 +13,18 @@ import {
   invalidateAdminStyleDefaultsCache,
   requirePermission,
 } from '@/lib/admin.server';
-import { isMissingStyleDefaultSchemaError } from '@/lib/admin/style-default-schema';
+import type { CurrentProfile } from '@/lib/admin.types';
+import { makeEffectEditorSnapshot, parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import {
+  isMissingEditorVersionSchemaError,
+  isMissingStyleDefaultSchemaError,
+} from '@/lib/admin/style-default-schema';
+import {
+  filterValidStyleDefaultAssignments,
   normaliseStyleDefaultAssignments,
   replaceEffectStyleDefaultLinks,
   validateStyleDefaultAssignments,
+  type StyleDefaultAssignmentMap,
 } from '@/lib/admin/style-default-assignments';
 import type { Json } from '@/lib/database.types';
 import { canonicaliseEffectModelJson } from '@/lib/fireworks/design';
@@ -25,6 +32,7 @@ import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
+type ActionSupabase = ReturnType<typeof createClient>;
 
 const BaseEffectFamilySchema = z.enum(['aerial_burst', 'ascending', 'ground', 'noise', 'compound']);
 const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
@@ -89,6 +97,12 @@ const EffectPatchSchema = z.object({
   modelJson: z.string().trim().min(2).max(100_000),
 });
 
+const RestoreEffectVersionSchema = z.object({
+  effectId: z.string().uuid(),
+  versionId: z.string().uuid(),
+  expectedUpdatedAt: z.string().trim().min(1),
+});
+
 function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input.';
 }
@@ -108,9 +122,145 @@ function parseModelJson(text: string): { ok: true; value: Json } | { ok: false; 
   return { ok: true, value: parsed as Json };
 }
 
+function adminLabel(profile: CurrentProfile): string {
+  return profile.fullName || profile.email || 'Platform admin';
+}
+
+function assignmentsFromRows(
+  base: StyleDefaultAssignmentMap,
+  rows: Array<{ kind: string; style_default_id: string | null }>,
+): StyleDefaultAssignmentMap {
+  const assignments = { ...base };
+  for (const row of rows) {
+    if (
+      FIREWORK_STYLE_DEFAULT_KINDS.includes(
+        row.kind as (typeof FIREWORK_STYLE_DEFAULT_KINDS)[number],
+      )
+    ) {
+      assignments[row.kind as keyof StyleDefaultAssignmentMap] = row.style_default_id;
+    }
+  }
+  return assignments;
+}
+
+function readSnapshotRecord(value: Json | null): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function fieldChanges(previousSnapshot: Json | null, nextSnapshot: Json, fields: string[]): Json {
+  const previous = readSnapshotRecord(previousSnapshot);
+  const next = readSnapshotRecord(nextSnapshot);
+  const changes: Record<string, Json> = {};
+  for (const field of fields) {
+    const before = previous[field];
+    const after = next[field];
+    if (JSON.stringify(before) === JSON.stringify(after)) continue;
+    changes[field] = { before: (before ?? null) as Json, after: (after ?? null) as Json };
+  }
+  return changes;
+}
+
+function summariseEffectChanges(changesJson: Json): string {
+  const labels: Record<string, string> = {
+    name: 'name',
+    description: 'description',
+    family: 'family',
+    patternKey: 'pattern',
+    sortOrder: 'sort order',
+    styleDefaultIds: 'style defaults',
+    modelJson: 'model JSON',
+  };
+  const fields = Object.keys(readSnapshotRecord(changesJson));
+  if (fields.length === 0) return 'Saved without visible field changes';
+  const visible = fields.slice(0, 3).map((field) => labels[field] ?? field);
+  const extra = fields.length > visible.length ? ` +${fields.length - visible.length}` : '';
+  return `Updated ${visible.join(', ')}${extra}`;
+}
+
+async function loadEffectEditorSnapshot(
+  supabase: ActionSupabase,
+  effectId: string,
+): Promise<{ ok: true; snapshot: Json | null } | { ok: false; error: string }> {
+  const { data, error } = await supabase
+    .from('firework_effects')
+    .select(
+      'id, name, description, family, pattern_key, sort_order, model_json, star_style_default_id, trail_style_default_id, updated_at',
+    )
+    .eq('id', effectId)
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: true, snapshot: null };
+
+  let assignments = normaliseStyleDefaultAssignments({
+    starStyleDefaultId: data.star_style_default_id,
+    trailStyleDefaultId: data.trail_style_default_id,
+  });
+  const linkResult = await supabase
+    .from('firework_effect_style_default_links')
+    .select('kind, style_default_id')
+    .eq('firework_effect_id', effectId);
+  if (linkResult.error) {
+    if (!isMissingStyleDefaultSchemaError(linkResult.error)) {
+      return { ok: false, error: linkResult.error.message };
+    }
+  } else {
+    assignments = assignmentsFromRows(assignments, linkResult.data ?? []);
+  }
+
+  return {
+    ok: true,
+    snapshot: makeEffectEditorSnapshot({
+      kind: 'effect',
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      family: data.family,
+      patternKey: data.pattern_key,
+      sortOrder: data.sort_order,
+      styleDefaultIds: assignments,
+      modelJson: data.model_json ?? {},
+      updatedAt: data.updated_at,
+    }),
+  };
+}
+
+async function recordEffectVersion(
+  supabase: ActionSupabase,
+  input: {
+    effectId: string;
+    action: 'update' | 'restore';
+    summary: string;
+    snapshotJson: Json;
+    previousSnapshotJson: Json | null;
+    changesJson: Json;
+    profile: CurrentProfile;
+  },
+): Promise<Result | null> {
+  const { error } = await supabase.from('firework_editor_versions').insert({
+    target_kind: 'effect',
+    firework_effect_id: input.effectId,
+    action: input.action,
+    summary: input.summary,
+    snapshot_json: input.snapshotJson,
+    previous_snapshot_json: input.previousSnapshotJson,
+    changes_json: input.changesJson,
+    created_by: input.profile.id,
+    created_by_label: adminLabel(input.profile),
+  });
+  if (error) {
+    if (isMissingEditorVersionSchemaError(error)) return null;
+    return { ok: false, error: error.message };
+  }
+  return null;
+}
+
 /** Persist one base effect with optimistic conflict detection. */
 export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Promise<Result> {
-  if (!(await requirePermission('admin.manage_catalogue'))) {
+  const profile = await requirePermission('admin.manage_catalogue');
+  if (!profile) {
     return { ok: false, error: 'Not permitted.' };
   }
 
@@ -128,6 +278,8 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   });
   const validatedAssignments = await validateStyleDefaultAssignments(supabase, assignments);
   if (!validatedAssignments.ok) return validatedAssignments;
+  const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.id);
+  if (!previousSnapshot.ok) return previousSnapshot;
 
   const patch = {
     name: parsed.data.name,
@@ -177,12 +329,178 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   const linksResult = await replaceEffectStyleDefaultLinks(supabase, parsed.data.id, assignments);
   if (!linksResult.ok) return { ok: false, error: linksResult.error };
 
+  const snapshotJson = makeEffectEditorSnapshot({
+    kind: 'effect',
+    id: parsed.data.id,
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    family: parsed.data.family,
+    patternKey: parsed.data.patternKey,
+    sortOrder: parsed.data.sortOrder,
+    styleDefaultIds: assignments,
+    modelJson: model.value,
+    updatedAt: data.updated_at,
+  });
+  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
+    'name',
+    'description',
+    'family',
+    'patternKey',
+    'sortOrder',
+    'styleDefaultIds',
+    'modelJson',
+  ]);
+  const versionResult = await recordEffectVersion(supabase, {
+    effectId: parsed.data.id,
+    action: 'update',
+    summary: summariseEffectChanges(changesJson),
+    snapshotJson,
+    previousSnapshotJson: previousSnapshot.snapshot,
+    changesJson,
+    profile,
+  });
+  if (versionResult) return versionResult;
+
   await invalidateAdminEffectsCache(parsed.data.id);
   await invalidateAdminFireworksCache();
   await invalidateAdminStyleDefaultsCache();
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${parsed.data.id}`);
+  revalidatePath('/admin/effects?tab=defaults');
+  revalidatePath('/admin/fireworks');
+  return { ok: true, updatedAt: data.updated_at };
+}
+
+export async function restoreEffectEditorVersion(
+  input: z.infer<typeof RestoreEffectVersionSchema>,
+): Promise<Result> {
+  const profile = await requirePermission('admin.manage_catalogue');
+  if (!profile) return { ok: false, error: 'Not permitted.' };
+
+  const parsed = RestoreEffectVersionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+
+  const supabase = createClient(await cookies());
+  const { data: version, error: versionError } = await supabase
+    .from('firework_editor_versions')
+    .select('id, snapshot_json, created_by_label, created_at')
+    .eq('id', parsed.data.versionId)
+    .eq('target_kind', 'effect')
+    .eq('firework_effect_id', parsed.data.effectId)
+    .maybeSingle();
+  if (versionError) {
+    if (isMissingEditorVersionSchemaError(versionError)) {
+      return { ok: false, error: 'Version history is not available yet.' };
+    }
+    return { ok: false, error: versionError.message };
+  }
+  if (!version) return { ok: false, error: 'That version could not be found.' };
+
+  const snapshot = parseEffectEditorSnapshot(version.snapshot_json);
+  if (!snapshot || snapshot.id !== parsed.data.effectId) {
+    return { ok: false, error: 'That version cannot be restored.' };
+  }
+
+  const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.effectId);
+  if (!previousSnapshot.ok) return previousSnapshot;
+
+  let assignments: StyleDefaultAssignmentMap;
+  try {
+    assignments = await filterValidStyleDefaultAssignments(
+      supabase,
+      normaliseStyleDefaultAssignments({ styleDefaultIds: snapshot.styleDefaultIds }),
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Could not validate style defaults.',
+    };
+  }
+
+  const patch = {
+    name: snapshot.name,
+    description: snapshot.description,
+    family: snapshot.family,
+    pattern_key: snapshot.patternKey,
+    sort_order: snapshot.sortOrder,
+    star_style_default_id: assignments.star,
+    trail_style_default_id: assignments.trail,
+    model_json: snapshot.modelJson,
+  };
+  const fallbackPatch = {
+    name: snapshot.name,
+    description: snapshot.description,
+    family: snapshot.family,
+    pattern_key: snapshot.patternKey,
+    sort_order: snapshot.sortOrder,
+    model_json: snapshot.modelJson,
+  };
+  let result = await supabase
+    .from('firework_effects')
+    .update(patch)
+    .eq('id', parsed.data.effectId)
+    .eq('updated_at', parsed.data.expectedUpdatedAt)
+    .select('updated_at')
+    .maybeSingle();
+
+  if (isMissingStyleDefaultSchemaError(result.error)) {
+    result = await supabase
+      .from('firework_effects')
+      .update(fallbackPatch)
+      .eq('id', parsed.data.effectId)
+      .eq('updated_at', parsed.data.expectedUpdatedAt)
+      .select('updated_at')
+      .maybeSingle();
+  }
+
+  const { data, error } = result;
+  if (error) return { ok: false, error: error.message };
+  if (!data) {
+    return {
+      ok: false,
+      error: 'This effect changed in another session. Refresh before restoring.',
+    };
+  }
+
+  const linksResult = await replaceEffectStyleDefaultLinks(
+    supabase,
+    parsed.data.effectId,
+    assignments,
+  );
+  if (!linksResult.ok) return { ok: false, error: linksResult.error };
+
+  const snapshotJson = makeEffectEditorSnapshot({
+    ...snapshot,
+    styleDefaultIds: assignments,
+    updatedAt: data.updated_at,
+  });
+  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
+    'name',
+    'description',
+    'family',
+    'patternKey',
+    'sortOrder',
+    'styleDefaultIds',
+    'modelJson',
+  ]);
+  const versionResult = await recordEffectVersion(supabase, {
+    effectId: parsed.data.effectId,
+    action: 'restore',
+    summary: `Restored version from ${version.created_by_label}`,
+    snapshotJson,
+    previousSnapshotJson: previousSnapshot.snapshot,
+    changesJson,
+    profile,
+  });
+  if (versionResult) return versionResult;
+
+  await invalidateAdminEffectsCache(parsed.data.effectId);
+  await invalidateAdminFireworksCache();
+  await invalidateAdminStyleDefaultsCache();
+  await invalidateFireworkCatalogueCaches();
+  revalidatePath('/admin/effects');
+  revalidatePath(`/admin/effects/${parsed.data.effectId}`);
   revalidatePath('/admin/effects?tab=defaults');
   revalidatePath('/admin/fireworks');
   return { ok: true, updatedAt: data.updated_at };

@@ -131,6 +131,8 @@ test('admin actions validate and persist generalised style-default assignments',
   const assignmentHelpers = read('lib/admin/style-default-assignments.ts');
 
   assert.match(styleActions, /z\.enum\(FIREWORK_STYLE_DEFAULT_KINDS\)/);
+  assert.match(styleActions, /styleDefault: AdminStyleDefaultOption/);
+  assert.match(styleActions, /styleDefault: \{/);
   assert.match(styleActions, /INITIAL_STYLE_DEFAULT_JSON\[parsedKind\]/);
   assert.match(styleActions, /styleDefaultKindLabel\(parsedKind\)\.toLowerCase\(\)/);
   assert.match(styleActions, /is_archived: true/);
@@ -161,6 +163,8 @@ test('style default admin UI exposes every kind without the black accent badge',
   const defaultsEditor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const sectionPanels = read('app/components/admin/EditorSectionPanels.tsx');
+  const selectField = read('app/components/ui/SelectField.tsx');
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
 
   assert.match(effectsBrowser, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
@@ -179,8 +183,14 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(effectsBrowser, /Linked fireworks/);
 
   assert.match(defaultsEditor, /const KIND_OPTIONS = FIREWORK_STYLE_DEFAULT_KINDS\.map/);
+  assert.match(defaultsEditor, /FireworkEditorShell/);
+  assert.match(defaultsEditor, /EditorPreviewTransport/);
+  assert.match(defaultsEditor, /estimatePreviewTicks/);
+  assert.match(defaultsEditor, /JsonReadOnlyPanel/);
+  assert.match(defaultsEditor, /id: kind/);
+  assert.match(defaultsEditor, /icon: KIND_ICON\[kind\]/);
   assert.match(defaultsEditor, /controlScope=\{kind\}/);
-  assert.match(defaultsEditor, /showLaunch=\{kind === 'launch' \|\| kind === 'smoke'\}/);
+  assert.match(defaultsEditor, /showLaunch=\{kind === 'launch'\}/);
   assert.match(defaultsEditor, /type TrailPreviewStarMode = 'none' \| 'default' \| 'custom'/);
   assert.match(defaultsEditor, /useState<TrailPreviewStarMode>\('none'\)/);
   assert.match(
@@ -188,24 +198,48 @@ test('style default admin UI exposes every kind without the black accent badge',
     /InfoTooltip text="Adds an optional star only for judging this trail in the preview/,
   );
   assert.match(defaultsEditor, /controlScope="star"/);
+  assert.match(defaultsEditor, /Archive default/);
+  assert.doesNotMatch(defaultsEditor, /id: 'star'|id: 'trail'|id: 'launch'|id: 'fx'/);
 
-  assert.match(effectEditor, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
-  assert.match(effectEditor, /Save as new default/);
-  assert.match(effectEditor, /Reset local overrides/);
+  assert.match(effectEditor, /EditorStyleDefaultControls/);
+  for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
+    assert.match(effectEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
+  }
+  assert.doesNotMatch(effectEditor, /id: 'defaults'/);
+  assert.doesNotMatch(effectEditor, /PanelSection title="Style defaults"/);
   assert.match(effectEditor, /removeStyleDefaultOverridesFromRecord/);
-  assert.match(fireworkEditor, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
-  assert.match(fireworkEditor, /Effect: \{inherited\.name\}/);
+  assert.match(effectEditor, /createdStyleDefaults/);
+  assert.match(effectEditor, /result\.styleDefault/);
+  assert.match(effectEditor, /Style default created and selected/);
+  assert.match(fireworkEditor, /EditorStyleDefaultControls/);
+  for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
+    assert.match(fireworkEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
+  }
+  assert.match(fireworkEditor, /Effect default: \$\{inherited\.name\}/);
+  assert.doesNotMatch(fireworkEditor, /PanelSection title="Style defaults"/);
+  assert.match(fireworkEditor, /createdStyleDefaults/);
+  assert.match(fireworkEditor, /result\.styleDefault/);
+  assert.match(fireworkEditor, /Style default created and selected/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedEffectStyleDefaults\)/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedFireworkStyleDefaults\)/);
+  assert.match(sectionPanels, /Save new default/);
+  assert.match(sectionPanels, /Clear edits/);
+  assert.match(selectField, /<SelectValue placeholder=\{placeholder\} \/>/);
+  assert.doesNotMatch(
+    selectField,
+    /<SelectValue placeholder=\{placeholder\}>\{selected\?\.label\}/,
+  );
 
   assert.match(controls, /\| 'launch'/);
   assert.match(controls, /\| 'smoke'/);
+  assert.match(controls, /\| 'starInner'/);
   assert.match(controls, /\| 'strobe'/);
   assert.match(controls, /\| 'crackle'/);
   assert.match(controls, /\| 'split'/);
   assert.match(controls, /\| 'sound'/);
   assert.match(controls, /if \(controlScope === 'launch'\)/);
   assert.match(controls, /if \(controlScope === 'smoke'\)/);
+  assert.match(controls, /if \(controlScope === 'starInner'\)/);
   assert.match(controls, /if \(controlScope === 'sound'\)/);
 });
 

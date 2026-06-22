@@ -71,6 +71,8 @@ const HEAD_APPEARANCE_DEFAULTS = {
   backgroundGlowSoftness: DEFAULT_BACKGROUND_GLOW_SOFTNESS,
 } as const;
 
+const DEFAULT_STAR_HEAD_SIZE = 360;
+const DEFAULT_STAR_INNER_HEAD_SIZE = Math.round(DEFAULT_STAR_HEAD_SIZE * 0.62);
 const DEFAULT_STAR_OPENING_COLOUR = { r: 1, g: 0.42, b: 0.08 };
 const DEFAULT_STAR_CLOSING_COLOUR = { r: 1, g: 0.84, b: 0.4 };
 const DEFAULT_TRAIL_CLOSING_COLOUR = { r: 1, g: 0.34, b: 0.08 };
@@ -710,7 +712,7 @@ const StarHeadSchema = z
     /** Render the star head sprite. Trails can still use the star path when this is false. */
     visible: z.boolean().default(true),
     /** Size budget of each glowing star orb. */
-    size: z.coerce.number().min(10).max(1000).default(260),
+    size: z.coerce.number().min(10).max(1000).default(DEFAULT_STAR_HEAD_SIZE),
     /** Opening colour fade and size growth, both relative to this star's life. */
     opening: StarHeadOpeningSchema,
     /** End-of-life colour and size controls for the star head. */
@@ -788,7 +790,7 @@ const StarHeadSchema = z
   })
   .default({
     visible: true,
-    size: 260,
+    size: DEFAULT_STAR_HEAD_SIZE,
     opening: STAR_HEAD_OPENING_DEFAULTS,
     closing: STAR_HEAD_CLOSING_DEFAULTS,
     glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
@@ -843,7 +845,7 @@ const StarLayerSchema = z
     },
     head: {
       visible: true,
-      size: 260,
+      size: DEFAULT_STAR_HEAD_SIZE,
       opening: STAR_HEAD_OPENING_DEFAULTS,
       closing: STAR_HEAD_CLOSING_DEFAULTS,
       glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
@@ -971,14 +973,15 @@ export const FireworkDesignSchema = z.object({
   launch: LaunchSchema,
   /**
    * Layered star calibration for non-brocade effects. `outer` is the main
-   * burst. `core` is an optional inner burst, off by default, with the same
-   * count, physics, head appearance, colour, and trail model as the outer layer.
+   * burst. `core` is the inner burst, active by default for star-based effects,
+   * with the same count, physics, head appearance, colour, and trail model as
+   * the outer layer.
    */
   stars: z
     .object({
       outer: StarLayerSchema,
       core: StarLayerSchema.default({
-        enabled: false,
+        enabled: true,
         count: 38,
         burst: {
           speed: [0.8, 1.8],
@@ -988,7 +991,7 @@ export const FireworkDesignSchema = z.object({
         },
         head: {
           visible: true,
-          size: 160,
+          size: DEFAULT_STAR_INNER_HEAD_SIZE,
           opening: STAR_HEAD_OPENING_DEFAULTS,
           closing: STAR_HEAD_CLOSING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
@@ -1048,14 +1051,14 @@ export const FireworkDesignSchema = z.object({
         },
         head: {
           visible: true,
-          size: 260,
+          size: DEFAULT_STAR_HEAD_SIZE,
           opening: STAR_HEAD_OPENING_DEFAULTS,
           closing: STAR_HEAD_CLOSING_DEFAULTS,
           glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
           ...HEAD_APPEARANCE_DEFAULTS,
         },
       }),
-      core: StarLayerSchema.parse({ enabled: false }),
+      core: StarLayerSchema.parse({ enabled: true }),
     }),
   /**
    * Brocade crown calibration. Only read when the design is a brocade crown
@@ -1634,7 +1637,7 @@ function coreLayerFallback(outer: FireworkStarLayer): FireworkStarLayer {
   const coreSpeedMid = Math.max(0.5, speedMid * 0.48);
   return normaliseStarLayer(
     StarLayerSchema.parse({
-      enabled: false,
+      enabled: outer.enabled,
       count: Math.max(1, Math.round(outer.count * 0.38)),
       color: outer.color,
       burst: {
@@ -1910,7 +1913,7 @@ function starsBlock(headSize: number | null): StarsLike {
             },
           }),
     },
-    core: { enabled: false },
+    core: { enabled: headSize != null },
   };
 }
 

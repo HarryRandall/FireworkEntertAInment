@@ -6,6 +6,7 @@ type SupabaseErrorLike = {
 };
 
 const MISSING_STYLE_DEFAULT_SCHEMA_CODES = new Set(['42P01', '42703', 'PGRST200', 'PGRST204']);
+const MISSING_EDITOR_VERSION_SCHEMA_CODES = new Set(['42P01', 'PGRST205']);
 
 function errorText(error: unknown): string {
   if (!error || typeof error !== 'object') return String(error ?? '');
@@ -38,5 +39,21 @@ export function isMissingStyleDefaultSchemaError(error: unknown): boolean {
       text.includes('could not find') ||
       text.includes('does not exist') ||
       text.includes('relationship'))
+  );
+}
+
+export function isMissingEditorVersionSchemaError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const supabaseError = error as SupabaseErrorLike;
+  if (supabaseError.code && MISSING_EDITOR_VERSION_SCHEMA_CODES.has(supabaseError.code)) {
+    return true;
+  }
+
+  const text = errorText(error).toLowerCase();
+  return (
+    text.includes('firework_editor_versions') &&
+    (text.includes('schema cache') ||
+      text.includes('could not find') ||
+      text.includes('does not exist'))
   );
 }
