@@ -262,10 +262,13 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(routeSkeletons, /lg:grid-cols-\[60px\]/);
   assert.match(routeSkeletons, /Array\.from\(\{ length: 8 \}\)/);
   assert.match(routeSkeletons, /Array\.from\(\{ length: 2 \}\)/);
+  assert.match(routeSkeletons, /bg-\[color:var\(--color-bg-emphasis\)\] dark:bg-white\/10/);
   assert.match(
     routeSkeletons,
     /hidden h-px w-full shrink-0 bg-\[color:var\(--color-border-subtle\)\] lg:block/,
   );
+  assert.doesNotMatch(shell, /from-black\/82/);
+  assert.doesNotMatch(shell, /h-40 bg-gradient-to-b/);
   assert.match(fireworkEditor, /initial-main/);
   assert.match(fireworkEditor, /nextColourStopIdRef/);
   assert.doesNotMatch(

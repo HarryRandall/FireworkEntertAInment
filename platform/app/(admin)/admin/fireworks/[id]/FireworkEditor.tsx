@@ -435,7 +435,7 @@ function ColourPatternBar({
     <div className="space-y-2">
       <div
         ref={barRef}
-        className="relative flex h-8 touch-none overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] select-none"
+        className="relative flex h-8 touch-none overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] select-none"
       >
         {normalisedStops.map((stop) => (
           <div
