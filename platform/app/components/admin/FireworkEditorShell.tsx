@@ -251,7 +251,6 @@ export function FireworkEditorShell({
         )}
       >
         <section className="relative min-h-[520px] min-w-0 overflow-hidden bg-[#05070d] text-white lg:min-h-0">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-40 bg-gradient-to-b from-black/82 via-black/42 to-transparent" />
           <div className="absolute inset-0 z-0">{preview}</div>
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-4 sm:p-5">
@@ -329,7 +328,7 @@ export function FireworkEditorShell({
 
         <aside
           className={cn(
-            'grid min-h-0 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] lg:grid-cols-[minmax(0,1fr)_60px] lg:border-t-0 lg:border-l',
+            'grid min-h-0 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] lg:grid-cols-[minmax(0,1fr)_60px] lg:border-t-0 lg:border-l',
             inspectorCollapsed && 'lg:grid-cols-[60px]',
           )}
         >
@@ -380,7 +379,7 @@ export function FireworkEditorShell({
                   aria-label="Collapse editor controls"
                   title="Collapse controls"
                   onClick={() => setInspectorCollapsed(true)}
-                  className="focus-visible:ring-ring/55 hidden size-[30px] shrink-0 place-items-center rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] text-[color:var(--color-content-muted)] transition hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:outline-none lg:grid"
+                  className="focus-visible:ring-ring/55 hidden size-[30px] shrink-0 place-items-center rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-muted)] transition hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:outline-none lg:grid"
                 >
                   <PanelRightClose size={15} />
                 </button>

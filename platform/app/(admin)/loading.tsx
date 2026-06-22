@@ -2,6 +2,7 @@
 
 /** Loading skeleton for admin routes. */
 
+import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   AdminEffectEditorSkeleton,
@@ -15,6 +16,14 @@ import {
   AdminUserDetailSkeleton,
 } from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
+
+function AdminEditorLoadingFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="-mx-6 -my-6 flex h-[calc(100svh-3.5rem)] min-h-0 flex-1 sm:-mx-8 md:h-[calc(100svh-4.5rem)] lg:-mx-10">
+      {children}
+    </div>
+  );
+}
 
 export default function AdminLoading() {
   const pathname = usePathname();
@@ -75,7 +84,11 @@ export default function AdminLoading() {
   }
 
   if (/^\/admin\/fireworks\/[^/]+\/?$/.test(currentPathname)) {
-    return <AdminFireworkEditorSkeleton />;
+    return (
+      <AdminEditorLoadingFrame>
+        <AdminFireworkEditorSkeleton />
+      </AdminEditorLoadingFrame>
+    );
   }
 
   if (/^\/admin\/fireworks\/?$/.test(currentPathname)) {
@@ -101,7 +114,11 @@ export default function AdminLoading() {
   }
 
   if (/^\/admin\/effects\/[^/]+\/?$/.test(currentPathname)) {
-    return <AdminEffectEditorSkeleton />;
+    return (
+      <AdminEditorLoadingFrame>
+        <AdminEffectEditorSkeleton />
+      </AdminEditorLoadingFrame>
+    );
   }
 
   if (/^\/admin\/effects\/?$/.test(currentPathname)) {
