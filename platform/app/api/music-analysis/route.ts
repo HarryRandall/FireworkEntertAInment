@@ -7,6 +7,13 @@ import { createClient } from '@/utils/supabase/server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { markGenerationStatus } from '@/lib/cue-generation/loaders.server';
+import {
+  musicAnalysisReservationKey,
+  refundAiCreditReservation,
+  reserveAiCredits,
+  settleAiCreditReservation,
+  showGenerationReservationKey,
+} from '@/lib/ai-credits.server';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -23,8 +30,8 @@ const ALLOWED_AUDIO_TYPES = new Set([
 const BodySchema = z.object({
   audioPath: z.string().trim().min(1).max(300),
   originalFilename: z.string().trim().max(180).optional(),
-  contentType: z.string().trim().max(120).optional(),
-  sizeBytes: z.coerce.number().int().min(1).max(MAX_AUDIO_BYTES).optional(),
+  contentType: z.string().trim().min(1).max(120),
+  sizeBytes: z.coerce.number().int().min(1).max(MAX_AUDIO_BYTES),
 });
 
 function isUserAudioPath(path: string, userId: string): boolean {
@@ -32,6 +39,46 @@ function isUserAudioPath(path: string, userId: string): boolean {
 }
 
 type AppSupabaseClient = ReturnType<typeof createClient>;
+type AudioObjectMetadata = {
+  contentType: string;
+  sizeBytes: number;
+};
+
+async function getUploadedAudioMetadata(params: {
+  supabase: AppSupabaseClient;
+  audioPath: string;
+  userId: string;
+}): Promise<AudioObjectMetadata | null> {
+  const fileName = params.audioPath.slice(params.userId.length + 1);
+  if (!fileName || fileName.includes('/')) return null;
+
+  const { data, error } = await params.supabase.storage.from('audio').list(params.userId, {
+    limit: 100,
+    search: fileName,
+  });
+  if (error) {
+    console.error('[api/music-analysis] storage metadata lookup failed:', error);
+    return null;
+  }
+
+  const object = (data ?? []).find((item) => item.name === fileName);
+  const metadata = object?.metadata as Record<string, unknown> | undefined;
+  const sizeBytes =
+    typeof metadata?.size === 'number'
+      ? metadata.size
+      : typeof metadata?.size === 'string'
+        ? Number(metadata.size)
+        : NaN;
+  const contentType =
+    typeof metadata?.mimetype === 'string'
+      ? metadata.mimetype
+      : typeof metadata?.contentType === 'string'
+        ? metadata.contentType
+        : '';
+
+  if (!object || !Number.isFinite(sizeBytes) || !contentType) return null;
+  return { contentType, sizeBytes };
+}
 
 async function listRunningShowsForAnalysis(params: {
   supabase: AppSupabaseClient;
@@ -89,6 +136,11 @@ async function markLinkedShowGenerationFailed(params: {
       generation_error: message,
       generation_completed_at: new Date().toISOString(),
     });
+    await refundAiCreditReservation(params.supabase, {
+      userId: params.userId,
+      reservationKey: showGenerationReservationKey(show.id),
+      metadata: { reason: message },
+    });
   }
 }
 
@@ -124,31 +176,85 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (parsed.data.contentType && !ALLOWED_AUDIO_TYPES.has(parsed.data.contentType)) {
+  if (!ALLOWED_AUDIO_TYPES.has(parsed.data.contentType)) {
+    return NextResponse.json(
+      { ok: false, error: 'Unsupported audio format. Use MP3, WAV, AAC, or M4A.' },
+      { status: 400 },
+    );
+  }
+  const storedAudio = await getUploadedAudioMetadata({
+    supabase,
+    userId: user.id,
+    audioPath: parsed.data.audioPath,
+  });
+  if (!storedAudio) {
+    return NextResponse.json(
+      { ok: false, error: 'Uploaded audio file was not found.' },
+      { status: 400 },
+    );
+  }
+  if (storedAudio.sizeBytes > MAX_AUDIO_BYTES || parsed.data.sizeBytes > MAX_AUDIO_BYTES) {
+    return NextResponse.json(
+      { ok: false, error: 'Audio must be 50MB or smaller.' },
+      { status: 400 },
+    );
+  }
+  if (!ALLOWED_AUDIO_TYPES.has(storedAudio.contentType)) {
     return NextResponse.json(
       { ok: false, error: 'Unsupported audio format. Use MP3, WAV, AAC, or M4A.' },
       { status: 400 },
     );
   }
 
+  const analysisId = crypto.randomUUID();
+  const reservationKey = musicAnalysisReservationKey(analysisId);
+  const reservation = await reserveAiCredits(supabase, {
+    userId: user.id,
+    actionKey: 'music_analysis',
+    referenceType: 'song_analyses',
+    referenceId: analysisId,
+    reservationKey,
+    metadata: {
+      contentType: storedAudio.contentType,
+      originalFilename: parsed.data.originalFilename ?? null,
+      sizeBytes: storedAudio.sizeBytes,
+    },
+  });
+
+  if (!reservation.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: reservation.error ?? 'You do not have enough AI credits to analyse this track.',
+      },
+      { status: 402 },
+    );
+  }
+
   const { data, error } = await supabase
     .from('song_analyses')
     .insert({
+      id: analysisId,
       user_id: user.id,
       audio_path: parsed.data.audioPath,
       original_filename: parsed.data.originalFilename || null,
-      content_type: parsed.data.contentType || null,
-      size_bytes: parsed.data.sizeBytes ?? null,
+      content_type: storedAudio.contentType,
+      size_bytes: storedAudio.sizeBytes,
       personality: 'balanced',
       status: 'running',
       runner_version: 'modal-librosa-2',
-      schema_version: '1.3.0',
+      schema_version: '1.4.0',
     })
     .select('id')
     .single();
 
   if (error || !data) {
     console.error('[api/music-analysis] insert failed:', error);
+    await refundAiCreditReservation(supabase, {
+      userId: user.id,
+      reservationKey,
+      metadata: { reason: 'Could not prepare music analysis.' },
+    });
     return NextResponse.json(
       { ok: false, error: 'Could not prepare music analysis.' },
       { status: 500 },
@@ -164,6 +270,11 @@ export async function POST(request: Request) {
     });
     if (!result.ok) {
       console.error('[api/music-analysis] background analysis failed:', result.error);
+      await refundAiCreditReservation(supabase, {
+        userId: user.id,
+        reservationKey,
+        metadata: { reason: result.error },
+      });
       await markLinkedShowGenerationFailed({
         supabase,
         userId: user.id,
@@ -172,6 +283,11 @@ export async function POST(request: Request) {
       });
       return;
     }
+    await settleAiCreditReservation(supabase, {
+      userId: user.id,
+      reservationKey,
+      metadata: { runner: 'modal-librosa-2' },
+    });
     await resumeCueGenerationForCompletedAnalysis({
       supabase,
       userId: user.id,

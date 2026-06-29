@@ -20,7 +20,7 @@ export default async function AdminRouteGroupLayout({ children }: { children: Re
     measureServerTask('admin-layout:getActiveImpersonation', () => getActiveImpersonation()),
     cookies(),
   ]);
-  if (!profile) redirect('/dashboard');
+  if (!profile) redirect('/home');
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,
   );

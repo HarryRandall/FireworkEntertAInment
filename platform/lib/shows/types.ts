@@ -42,6 +42,7 @@ export type ShowProjection = Pick<
   | 'generation_started_at'
   | 'generation_completed_at'
   | 'launch_positions_json'
+  | 'cover_shader'
   | 'updated_at'
 >;
 
@@ -55,6 +56,7 @@ export type ShowCueProjection = Pick<
   | 'catalogue_item_id'
   | 'seed_override'
   | 'launch_position_index'
+  | 'emphasis'
 >;
 
 export type FireworkEffectProjection = Pick<
@@ -107,16 +109,16 @@ export type ShoppingListComputation = {
 };
 
 /** Cache namespace for everything in this module. Bump the version on schema-affecting changes. */
-export const CACHE_PREFIX = 'shows:v9';
+export const CACHE_PREFIX = 'shows:v10';
 /** TTL for show/cue/shopping reads. Short so mutations don't need to wait for invalidation propagation. */
 export const SHOWS_TTL_SECONDS = 60;
 /** TTL for the firework catalogue lookups — they rarely change. */
 export const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 
 export const SHOW_SELECT =
-  'id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, music_analysis_id, generation_status, generation_error, generated_cue_count, generation_started_at, generation_completed_at, launch_positions_json, updated_at';
+  'id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, music_analysis_id, generation_status, generation_error, generated_cue_count, generation_started_at, generation_completed_at, launch_positions_json, cover_shader, updated_at';
 export const SHOW_CUE_SELECT =
-  'id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index';
+  'id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index, emphasis';
 export const FIREWORK_VARIANT_SELECT =
   'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, star_style_default:firework_style_defaults!fireworks_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!fireworks_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_style_default_links(kind, style_default:firework_style_defaults!firework_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)), firework_effects(id, slug, name, pattern_key, model_json, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_effect_style_default_links(kind, style_default:firework_style_defaults!firework_effect_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)))';
 export const SHOW_CUES_WITH_PRODUCT_SELECT =

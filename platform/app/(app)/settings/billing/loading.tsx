@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function BillingSettingsLoading() {
   return (
-    <div className="space-y-6" aria-label="Loading billing">
-      {Array.from({ length: 3 }).map((_, cardIndex) => (
+    <div className="space-y-4" aria-label="Loading billing">
+      {Array.from({ length: 2 }).map((_, cardIndex) => (
         <Card key={cardIndex}>
           <CardHeader>
             <Skeleton className="h-5 w-32" />

@@ -10,6 +10,8 @@ import { z } from 'zod';
 import {
   DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
   DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+  DEFAULT_BRIGHTNESS_HOLD_EXPONENT,
+  DEFAULT_BRIGHTNESS_HOLD_PERCENT,
   DEFAULT_CORE_BRIGHTNESS,
   DEFAULT_CORE_OPACITY_FALLOFF,
   DEFAULT_CORE_SOFTNESS,
@@ -23,6 +25,8 @@ import {
   DEFAULT_WHITE_CORE_SIZE_PERCENT,
   MAX_BACKGROUND_GLOW_OPACITY_FALLOFF,
   MAX_BACKGROUND_GLOW_SOFTNESS,
+  MAX_BRIGHTNESS_HOLD_EXPONENT,
+  MAX_BRIGHTNESS_HOLD_PERCENT,
   MAX_CORE_BRIGHTNESS,
   MAX_CORE_OPACITY_FALLOFF,
   MAX_CORE_SOFTNESS,
@@ -36,6 +40,8 @@ import {
   MAX_WHITE_CORE_SIZE_PERCENT,
   MIN_BACKGROUND_GLOW_OPACITY_FALLOFF,
   MIN_BACKGROUND_GLOW_SOFTNESS,
+  MIN_BRIGHTNESS_HOLD_EXPONENT,
+  MIN_BRIGHTNESS_HOLD_PERCENT,
   MIN_CORE_BRIGHTNESS,
   MIN_CORE_OPACITY_FALLOFF,
   MIN_CORE_SOFTNESS,
@@ -69,6 +75,8 @@ const HEAD_APPEARANCE_DEFAULTS = {
   glowBlur: DEFAULT_GLOW_BLUR,
   backgroundGlowOpacityFalloff: DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
   backgroundGlowSoftness: DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+  brightnessHoldPercent: DEFAULT_BRIGHTNESS_HOLD_PERCENT,
+  brightnessHoldExponent: DEFAULT_BRIGHTNESS_HOLD_EXPONENT,
 } as const;
 
 const DEFAULT_STAR_HEAD_SIZE = 360;
@@ -152,6 +160,13 @@ export const FIREWORK_GEOMETRIES = [
   'fish',
   'waterfall',
   'whirl',
+  // New geometries for the expanded effect catalogue.
+  // bowtie: two opposed lobes fired in a flat plane (cross / figure-eight shell).
+  // roman_candle: ground-launched repeated star ejection, not an aerial burst.
+  // fountain: ground-origin steady glitter spray, no mortar burst.
+  'bowtie',
+  'roman_candle',
+  'fountain',
 ] as const;
 export type FireworkGeometry = (typeof FIREWORK_GEOMETRIES)[number];
 
@@ -787,6 +802,18 @@ const StarHeadSchema = z
       .min(MIN_BACKGROUND_GLOW_SOFTNESS)
       .max(MAX_BACKGROUND_GLOW_SOFTNESS)
       .default(DEFAULT_BACKGROUND_GLOW_SOFTNESS),
+    /** Percent of life the head holds full brightness before fading. */
+    brightnessHoldPercent: z.coerce
+      .number()
+      .min(MIN_BRIGHTNESS_HOLD_PERCENT)
+      .max(MAX_BRIGHTNESS_HOLD_PERCENT)
+      .default(DEFAULT_BRIGHTNESS_HOLD_PERCENT),
+    /** Exponent shaping the post-hold fade (higher = sharper wink-out). */
+    brightnessHoldExponent: z.coerce
+      .number()
+      .min(MIN_BRIGHTNESS_HOLD_EXPONENT)
+      .max(MAX_BRIGHTNESS_HOLD_EXPONENT)
+      .default(DEFAULT_BRIGHTNESS_HOLD_EXPONENT),
   })
   .default({
     visible: true,
@@ -1199,26 +1226,26 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     enabled: true,
     preset: 'sparkDust',
     colourMode: 'star',
-    particlesPerStar: 24,
+    particlesPerStar: 40,
     frontClump: 0.35,
-    width: { front: 1.1, tail: 2.1, curve: 1.15 },
-    particleSize: { base: 0.65, headScale: 1, tailScale: 0.45, variationPercent: 55 },
+    width: { front: 1.4, tail: 2.5, curve: 1.15 },
+    particleSize: { base: 0.7, headScale: 1, tailScale: 0.45, variationPercent: 55 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 35 },
     spacing: { curve: 1, jitterPercent: 55 },
     lifetime: {
       mode: 'dynamic',
-      percent: 0.14,
-      baseSeconds: 0.82,
+      percent: 0.16,
+      baseSeconds: 1.1,
       variationPercent: 55,
-      afterglowSeconds: 0.1,
+      afterglowSeconds: 0.18,
     },
-    intensity: { brightness: 0.72, fadeSoftness: 1.3 },
+    intensity: { brightness: 0.92, fadeSoftness: 1.3 },
     flicker: { chance: 0.22, strength: 0.75, lifetimeMultiplier: 0.45 },
     motion: {
       gravity: -0.035,
-      drag: 2.4,
+      drag: 2.2,
       inheritedVelocity: 0.02,
       turbulence: 0.2,
       driftX: 0,
@@ -1227,9 +1254,9 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
       spin: 0,
     },
     stops: [
-      burstTrailStop(0, 1.05, 0.74, 55, { circle: 76, square: 16, triangle: 8 }),
-      burstTrailStop(55, 0.55, 0.55, 60, { circle: 82, square: 12, triangle: 6 }),
-      burstTrailStop(100, 0.16, 0.32, 70, { circle: 90, square: 8, triangle: 2 }),
+      burstTrailStop(0, 1.1, 0.78, 55, { circle: 76, square: 16, triangle: 8 }),
+      burstTrailStop(55, 0.6, 0.58, 60, { circle: 82, square: 12, triangle: 6 }),
+      burstTrailStop(100, 0.18, 0.34, 70, { circle: 90, square: 8, triangle: 2 }),
     ],
   },
   solidStreaks: {
@@ -1237,26 +1264,26 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     enabled: true,
     preset: 'solidStreaks',
     colourMode: 'gold',
-    particlesPerStar: 84,
+    particlesPerStar: 104,
     frontClump: 0.55,
-    width: { front: 1.35, tail: 1.35, curve: 1 },
-    particleSize: { base: 0.95, headScale: 1, tailScale: 0.55, variationPercent: 28 },
+    width: { front: 2.4, tail: 2.4, curve: 1 },
+    particleSize: { base: 1.0, headScale: 1, tailScale: 0.55, variationPercent: 28 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 45 },
     spacing: { curve: 1, jitterPercent: 22 },
     lifetime: {
       mode: 'dynamic',
-      percent: 0.18,
-      baseSeconds: 1,
+      percent: 0.22,
+      baseSeconds: 1.5,
       variationPercent: 28,
-      afterglowSeconds: 0.12,
+      afterglowSeconds: 0.3,
     },
-    intensity: { brightness: 1, fadeSoftness: 1 },
+    intensity: { brightness: 1.1, fadeSoftness: 1 },
     flicker: { chance: 0.08, strength: 0.9, lifetimeMultiplier: 0.45 },
     motion: {
-      gravity: -0.014,
-      drag: 1.6,
+      gravity: -0.018,
+      drag: 1.4,
       inheritedVelocity: 0.02,
       turbulence: 0.045,
       driftX: 0,
@@ -1265,9 +1292,9 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
       spin: 0,
     },
     stops: [
-      burstTrailStop(0, 1.45, 1, 28, { circle: 4, square: 88, triangle: 8 }),
-      burstTrailStop(32, 1.1, 0.86, 30, { circle: 5, square: 86, triangle: 9 }),
-      burstTrailStop(100, 0.32, 0.48, 34, { circle: 8, square: 84, triangle: 8 }),
+      burstTrailStop(0, 1.5, 1.05, 28, { circle: 4, square: 88, triangle: 8 }),
+      burstTrailStop(32, 1.15, 0.9, 30, { circle: 5, square: 86, triangle: 9 }),
+      burstTrailStop(100, 0.34, 0.5, 34, { circle: 8, square: 84, triangle: 8 }),
     ],
   },
   willowHang: {
@@ -1275,26 +1302,26 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     enabled: true,
     preset: 'willowHang',
     colourMode: 'gold',
-    particlesPerStar: 72,
+    particlesPerStar: 92,
     frontClump: 0.46,
-    width: { front: 1.15, tail: 2.2, curve: 1.6 },
-    particleSize: { base: 0.82, headScale: 1, tailScale: 0.45, variationPercent: 34 },
+    width: { front: 1.4, tail: 2.8, curve: 1.6 },
+    particleSize: { base: 0.86, headScale: 1, tailScale: 0.45, variationPercent: 34 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 55 },
     spacing: { curve: 1.35, jitterPercent: 24 },
     lifetime: {
       mode: 'dynamic',
-      percent: 0.32,
-      baseSeconds: 2.25,
+      percent: 0.34,
+      baseSeconds: 2.6,
       variationPercent: 34,
-      afterglowSeconds: 0.2,
+      afterglowSeconds: 0.4,
     },
-    intensity: { brightness: 0.9, fadeSoftness: 1.8 },
+    intensity: { brightness: 0.95, fadeSoftness: 1.6 },
     flicker: { chance: 0.06, strength: 0.55, lifetimeMultiplier: 0.5 },
     motion: {
       gravity: -0.12,
-      drag: 0.85,
+      drag: 0.8,
       inheritedVelocity: 0.015,
       turbulence: 0.06,
       driftX: 0,
@@ -1303,9 +1330,9 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
       spin: 0,
     },
     stops: [
-      burstTrailStop(0, 1.2, 0.86, 30, { circle: 8, square: 84, triangle: 8 }),
-      burstTrailStop(48, 0.88, 0.72, 36, { circle: 12, square: 78, triangle: 10 }),
-      burstTrailStop(100, 0.28, 0.38, 42, { circle: 22, square: 68, triangle: 10 }),
+      burstTrailStop(0, 1.25, 0.9, 30, { circle: 8, square: 84, triangle: 8 }),
+      burstTrailStop(48, 0.92, 0.75, 36, { circle: 12, square: 78, triangle: 10 }),
+      burstTrailStop(100, 0.3, 0.4, 42, { circle: 22, square: 68, triangle: 10 }),
     ],
   },
   cometTail: {
@@ -1313,22 +1340,22 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     enabled: true,
     preset: 'cometTail',
     colourMode: 'starFade',
-    particlesPerStar: 96,
+    particlesPerStar: 112,
     frontClump: 0.68,
-    width: { front: 2.6, tail: 0.8, curve: 0.72 },
-    particleSize: { base: 1.05, headScale: 1.15, tailScale: 0.35, variationPercent: 20 },
+    width: { front: 3.0, tail: 0.9, curve: 0.72 },
+    particleSize: { base: 1.1, headScale: 1.15, tailScale: 0.35, variationPercent: 20 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,
     placement: { headGapPercent: 70 },
     spacing: { curve: 1.25, jitterPercent: 18 },
     lifetime: {
       mode: 'dynamic',
-      percent: 0.22,
-      baseSeconds: 1.25,
+      percent: 0.24,
+      baseSeconds: 1.5,
       variationPercent: 24,
-      afterglowSeconds: 0.14,
+      afterglowSeconds: 0.25,
     },
-    intensity: { brightness: 1.15, fadeSoftness: 0.9 },
+    intensity: { brightness: 1.2, fadeSoftness: 0.9 },
     flicker: { chance: 0.04, strength: 0.65, lifetimeMultiplier: 0.45 },
     motion: {
       gravity: -0.028,
@@ -1341,9 +1368,9 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
       spin: 0,
     },
     stops: [
-      burstTrailStop(0, 1.65, 1.28, 20, { circle: 6, square: 84, triangle: 10 }),
-      burstTrailStop(42, 0.92, 0.86, 24, { circle: 8, square: 80, triangle: 12 }),
-      burstTrailStop(100, 0.22, 0.42, 32, { circle: 18, square: 72, triangle: 10 }),
+      burstTrailStop(0, 1.7, 1.35, 20, { circle: 6, square: 84, triangle: 10 }),
+      burstTrailStop(42, 0.95, 0.9, 24, { circle: 8, square: 80, triangle: 12 }),
+      burstTrailStop(100, 0.24, 0.44, 32, { circle: 18, square: 72, triangle: 10 }),
     ],
   },
   denseBrocade: {
@@ -1808,6 +1835,7 @@ function shellTypeToPattern(shellType: string | undefined): FireworkPattern {
     case 'whirl':
       return 'strobe';
     case 'brocade':
+    case 'kamuro':
     case 'palm':
     case 'floral':
     case 'fallingLeaves':
@@ -1818,6 +1846,8 @@ function shellTypeToPattern(shellType: string | undefined): FireworkPattern {
     case 'mine':
     case 'pearls':
     case 'waterfall':
+    case 'roman_candle':
+    case 'fountain':
       return 'wave';
     default:
       return 'fibonacci';
@@ -1828,11 +1858,21 @@ function shellTypeToGeometry(shellType: string | undefined): FireworkGeometry {
   switch (shellType) {
     case 'brocade':
       return 'crown';
+    case 'kamuro':
+      // Kamuro reads as a dense falling umbrella of metallic streaks, same
+      // drooping geometry as willow but tuned hotter and longer-lived.
+      return 'weeping';
     case 'palm':
       return 'radial_arms';
     case 'ring':
+    case 'saturn':
+      // Saturn shell = a ring with a central pistil orb; the core star layer
+      // supplies the central orb, the ring geometry supplies the halo.
       return 'ring';
     case 'crossette':
+    case 'double_break':
+      // Double-break reuses the crossette split machinery with a longer delay
+      // and larger fragments so the shell reads as two successive breaks.
       return 'split_cross';
     case 'fallingLeaves':
     case 'horsetail':
@@ -1854,7 +1894,17 @@ function shellTypeToGeometry(shellType: string | undefined): FireworkGeometry {
       return 'waterfall';
     case 'whirl':
       return 'whirl';
+    case 'bowtie':
+      // Bow-tie / cross shell: two opposed lobes in a flat plane.
+      return 'bowtie';
+    case 'roman_candle':
+      return 'roman_candle';
+    case 'fountain':
+      return 'fountain';
     default:
+      // peony, chrysanthemum, nishiki, diadem, pistil, strobe, ghost, floral
+      // all render as a spherical burst; pistil/diadem/nishiki get their inner
+      // core layer from the star layer config rather than a new geometry.
       return 'sphere';
   }
 }
@@ -1864,17 +1914,22 @@ function glitterToTrailProfile(
   shellType: string | undefined,
 ): FireworkTrailProfile {
   if (shellType === 'strobe' || shellType === 'ghost') return 'blink';
-  if (shellType === 'crossette') return 'fragmenting';
+  if (shellType === 'crossette' || shellType === 'double_break') return 'fragmenting';
   if (shellType === 'crackle') return 'crackle';
-  if (shellType === 'brocade') return 'glitter';
+  if (shellType === 'brocade' || shellType === 'kamuro') return 'glitter';
   if (shellType === 'pearls') return 'pearls';
   if (shellType === 'silverFish') return 'fish';
   if (shellType === 'waterfall') return 'waterfall';
   if (shellType === 'whirl') return 'whirl';
+  if (shellType === 'fountain') return 'glitter';
+  if (shellType === 'roman_candle') return 'thick_tail';
   if (shellType === 'willow' || shellType === 'fallingLeaves' || shellType === 'horsetail') {
     return 'long_hang';
   }
   if (shellType === 'palm' || shellType === 'comet' || shellType === 'tail') return 'thick_tail';
+  // saturn keeps a clean ring (no star trails); the central orb is a head, not a trail.
+  if (shellType === 'saturn' || shellType === 'ring') return 'none';
+  if (shellType === 'bowtie') return 'spark';
 
   switch (glitter) {
     case 'none':
@@ -1931,12 +1986,41 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
     case 'willow':
     case 'fallingLeaves':
       return starsBlock(190);
+    case 'kamuro':
+      // Kamuro: hot metallic heads that carry long falling streaks.
+      return starsBlock(210);
     case 'horsetail':
       return starsBlock(340);
     case 'palm':
       return starsBlock(620);
     case 'ring':
       return starsBlock(260);
+    case 'saturn':
+      // Ring halo + a large central pistil orb via the core layer.
+      return {
+        outer: {
+          enabled: true,
+          head: {
+            visible: true,
+            size: 260,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+        },
+        core: {
+          enabled: true,
+          head: {
+            visible: true,
+            size: 520,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: 1.4,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+        },
+      };
     case 'pearls':
       return starsBlock(430);
     case 'strobe':
@@ -1944,20 +2028,56 @@ function shellTypeToStars(shellType: string | undefined): StarsLike {
       return starsBlock(240);
     case 'crossette':
       return starsBlock(320);
+    case 'double_break':
+      return starsBlock(260);
+    case 'bowtie':
+      return starsBlock(300);
     case 'comet':
     case 'tail':
       return starsBlock(900);
     case 'mine':
       return starsBlock(200);
     case 'pistil':
+    case 'nishiki':
+    case 'diadem':
     case 'floral':
-      return starsBlock(230);
+      // Layered sphere: coloured outer stars + a contrasting glowing core.
+      return {
+        outer: {
+          enabled: true,
+          head: {
+            visible: true,
+            size: 230,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+        },
+        core: {
+          enabled: true,
+          head: {
+            visible: true,
+            size: 360,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: 1.3,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+        },
+      };
     case 'silverFish':
       return starsBlock(170);
     case 'waterfall':
       return starsBlock(200);
     case 'whirl':
       return starsBlock(220);
+    case 'roman_candle':
+      // Repeated large ascending stars from a ground tube.
+      return starsBlock(420);
+    case 'fountain':
+      // Small bright glitter sparks in a steady ground spray.
+      return starsBlock(130);
     case 'crackle':
       return starsBlock(120);
     default:
@@ -2364,6 +2484,46 @@ export function scaleDesignForCaliber(
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core },
+  };
+}
+
+/**
+ * Per-cue render emphasis (schema 1.4.0). Climaxes, drops and finale beats get
+ * visibly bigger and brighter shells without changing the underlying product:
+ * more stars (capped at {@link MAX_STAR_COUNT}), faster/wider bursts, and a
+ * higher launch. `size` drives the burst flash in `Lights`, so scaling it also
+ * brightens the flash for free.
+ */
+const EMPHASIS_SCALE: Record<'normal' | 'accent' | 'peak', number> = {
+  normal: 1.0,
+  accent: 1.2,
+  peak: 1.5,
+};
+
+export function scaleDesignForEmphasis(
+  design: FireworkDesign,
+  emphasis: 'normal' | 'accent' | 'peak' | null | undefined,
+): FireworkDesign {
+  if (!emphasis || emphasis === 'normal') return design;
+  const scale = EMPHASIS_SCALE[emphasis];
+  const scaleLayer = (layer: FireworkStarLayer): FireworkStarLayer => ({
+    ...layer,
+    count: Math.round(Math.max(1, Math.min(MAX_STAR_COUNT, layer.count * scale))),
+    burst: {
+      ...layer.burst,
+      speed: [layer.burst.speed[0] * scale, layer.burst.speed[1] * scale],
+    },
+  });
+  const outer = scaleLayer(design.stars.outer);
+  const core = scaleLayer(design.stars.core);
+  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  return {
+    ...design,
+    size: outer.count,
+    burst: outer.burst,
+    burstTrail: outer.burstTrail,
+    stars: { outer, core },
+    liftVelocity: liftVelocity * scale,
   };
 }
 

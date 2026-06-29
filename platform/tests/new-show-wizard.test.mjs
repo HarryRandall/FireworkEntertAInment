@@ -7,6 +7,11 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const page = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
+const choiceCards = readFileSync(join(root, 'app/(app)/shows/new/_components/cards.tsx'), 'utf8');
+const audioUpload = readFileSync(
+  join(root, 'app/(app)/shows/new/_components/AudioUpload.tsx'),
+  'utf8',
+);
 
 test('new show wizard only creates a draft from an explicit Generate click', () => {
   // The form's onSubmit advances the wizard but must never call createShowAction.
@@ -30,7 +35,7 @@ test('new show wizard uploads audio before final submit', () => {
   assert.doesNotMatch(page, /data\.set\('audio', audioFile\)/);
 });
 
-test('new show wizard can prefill a prompt without bypassing the wizard', () => {
+test('new show wizard can prefill a prompt and continue to soundtrack', () => {
   assert.match(page, /useSearchParams/);
   assert.match(page, /searchParams\.get\('prompt'\)/);
   assert.match(page, /setDescription\(prompt\.slice\(0, 2000\)\)/);
@@ -40,7 +45,9 @@ test('new show wizard can prefill a prompt without bypassing the wizard', () => 
   const promptEffectEnd = page.indexOf('}, [searchParams]);', promptEffectStart);
   assert.notEqual(promptEffectEnd, -1, 'prompt prefill effect must be dependency-scoped');
   const promptEffect = page.slice(promptEffectStart, promptEffectEnd);
-  assert.doesNotMatch(promptEffect, /setStepIndex/);
+  assert.match(promptEffect, /setStepIndex\(\(index\) => \(index === 0 \? 1 : index\)\)/);
+  assert.doesNotMatch(promptEffect, /createShowAction/);
+  assert.doesNotMatch(promptEffect, /triggerGenerate/);
 });
 
 test('new show wizard moves ready uploaded music into the AI brief step', () => {
@@ -83,4 +90,30 @@ test('new show page avoids redundant chrome', () => {
   assert.doesNotMatch(page, /breadcrumbs=\{/);
   assert.doesNotMatch(page, /Draft details/);
   assert.doesNotMatch(page, /sticky bottom/);
+});
+
+test('new show choice cards stay visible before hover', () => {
+  assert.match(choiceCards, /border-2 bg-\[color:var\(--color-bg-elevated\)\]/);
+  assert.match(choiceCards, /selected \|\| multi/);
+  assert.match(choiceCards, /\? 'border-\[color:var\(--color-content-emphasis\)\]'/);
+  assert.doesNotMatch(choiceCards, /ring-ring\/30/);
+  assert.doesNotMatch(choiceCards, /bg-\[color:var\(--color-bg-subtle\)\]\/55/);
+  assert.doesNotMatch(
+    choiceCards,
+    /border-\[color:var\(--color-border-subtle\)\] hover:border-\[color:var\(--color-border-default\)\] hover:bg-\[color:var\(--color-bg-subtle\)\]\/50/,
+  );
+
+  assert.match(page, /border-2 bg-\[color:var\(--color-bg-elevated\)\]/);
+  assert.match(
+    page,
+    /soundtrackMode === 'none'\s+\? 'border-\[color:var\(--color-content-emphasis\)\]'/,
+  );
+});
+
+test('new show audio drop zone uses the bright card surface', () => {
+  assert.match(audioUpload, /border-2 border-dashed/);
+  assert.match(audioUpload, /bg-\[color:var\(--color-bg-elevated\)\]/);
+  assert.match(audioUpload, /hover:border-\[color:var\(--color-content-emphasis\)\]\/40/);
+  assert.doesNotMatch(audioUpload, /bg-\[color:var\(--color-bg-subtle\)\]\/40/);
+  assert.doesNotMatch(audioUpload, /hover:bg-\[color:var\(--color-bg-subtle\)\]/);
 });

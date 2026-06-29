@@ -111,7 +111,7 @@ export function AudioUpload({
   }
 
   return (
-    <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/40 p-6 text-center transition-colors hover:border-[color:var(--color-content-emphasis)]/45 hover:bg-[color:var(--color-bg-subtle)]">
+    <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] hover:border-[color:var(--color-content-emphasis)]/40 hover:shadow-md active:scale-[0.99]">
       <CloudUpload
         size={28}
         strokeWidth={1.5}

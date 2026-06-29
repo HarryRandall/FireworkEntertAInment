@@ -7,6 +7,8 @@ import {
   clearPersistedGenerationStart,
   resolveGenerationStartedAt,
 } from '@/lib/generation-progress-storage';
+import { randomShaderCover, type ShaderCover as ShaderCoverConfig } from '@/lib/shader-cover';
+import { ShaderCover } from './ShaderCover';
 import styles from './GeneratingShowAnimation.module.css';
 
 type GeneratingStatus = 'running' | 'completed' | 'failed';
@@ -19,6 +21,10 @@ type GeneratingShowAnimationProps = {
   startedAt?: string | null;
   /** When true, the analyser container is warmed up so the run is fast. */
   isWarm?: boolean;
+  /** Persisted visual identity for the show, rendered behind the progress card. */
+  coverShader?: ShaderCoverConfig | null;
+  /** Generate a fresh cover once per browser page load when no saved cover is supplied. */
+  randomiseCoverOnLoad?: boolean;
   /**
    * Stable key (typically the show slug) used to persist the start time in
    * sessionStorage so the bar resumes where it was after a refresh.
@@ -31,14 +37,14 @@ type ProgressUi = { percent: number; stageLabel: string };
 type ProgressPoint = { elapsedSeconds: number; progress: number };
 
 const STAGES: Stage[] = [
-  { label: 'Reading the brief', minProgress: 0 },
-  { label: 'Decoding the music', minProgress: 0.1 },
-  { label: 'Mapping song structure', minProgress: 0.22 },
-  { label: 'Selecting fireworks', minProgress: 0.36 },
-  { label: 'Timing cues to the beat', minProgress: 0.52 },
-  { label: 'Checking tube overlap', minProgress: 0.7 },
-  { label: 'Polishing the timeline', minProgress: 0.82 },
-  { label: 'Almost ready', minProgress: 0.9 },
+  { label: 'Catching the mood', minProgress: 0 },
+  { label: 'Tracing the soundtrack', minProgress: 0.1 },
+  { label: 'Sketching the skyline', minProgress: 0.22 },
+  { label: 'Casting colour bursts', minProgress: 0.36 },
+  { label: 'Locking cues to the beat', minProgress: 0.52 },
+  { label: 'Balancing the launch lanes', minProgress: 0.7 },
+  { label: 'Tuning the finale', minProgress: 0.82 },
+  { label: 'Ready for first light', minProgress: 0.9 },
 ];
 
 const COLD_PROGRESS_POINTS: ProgressPoint[] = [
@@ -101,14 +107,25 @@ export function GeneratingShowAnimation({
   pollIntervalMs = 2500,
   startedAt,
   isWarm = false,
+  coverShader,
+  randomiseCoverOnLoad = false,
   persistKey,
 }: GeneratingShowAnimationProps) {
   const router = useRouter();
   const progressFillRef = useRef<HTMLDivElement>(null);
+  const [generatedCover, setGeneratedCover] = useState<ShaderCoverConfig | null>(null);
   const [progressUi, setProgressUi] = useState<ProgressUi>(() => ({
     percent: status === 'completed' ? 100 : 0,
     stageLabel: status === 'completed' ? 'Show ready' : STAGES[0].label,
   }));
+
+  useEffect(() => {
+    if (!randomiseCoverOnLoad || coverShader) {
+      setGeneratedCover(null);
+      return;
+    }
+    setGeneratedCover(randomShaderCover());
+  }, [coverShader, randomiseCoverOnLoad]);
 
   useEffect(() => {
     const fallbackStartedAt = startedAt ? Date.parse(startedAt) : Date.now();
@@ -154,10 +171,19 @@ export function GeneratingShowAnimation({
     if (status === 'completed') clearPersistedGenerationStart(persistKey);
   }, [status, persistKey]);
 
-  const hint = isWarm ? 'Usually takes 20 to 30 seconds.' : 'Usually takes 1 to 2 minutes.';
+  const activeCover = coverShader ?? generatedCover;
+  const hint = isWarm ? 'Fast lane is open.' : 'Building a pyromusical timeline.';
 
   return (
-    <section aria-label="Generating show" className={cn(styles.stage, className)}>
+    <section
+      aria-label="Generating show"
+      className={cn(styles.stage, activeCover && styles.hasCover, className)}
+    >
+      {activeCover ? (
+        <div className={styles.shaderLayer} aria-hidden="true">
+          <ShaderCover cover={activeCover} />
+        </div>
+      ) : null}
       <div className={styles.container} aria-hidden="true" />
       <div className={styles.horizon} aria-hidden="true" />
       <span className={cn(styles.burst, styles.burstA)} aria-hidden="true" />
@@ -166,8 +192,9 @@ export function GeneratingShowAnimation({
       <div className={styles.overlay}>
         <div className={styles.card}>
           <div className={styles.panelTop}>
-            <p className={styles.eyebrow}>Generating show</p>
-            {showTitle ? <h1 className={styles.title}>{showTitle}</h1> : null}
+            <p className={styles.eyebrow}>ShowCrafter live</p>
+            <h1 className={styles.title}>Choreographing the sky</h1>
+            {showTitle ? <p className={styles.showTitle}>{showTitle}</p> : null}
             <div className={styles.stageLabelWrap} aria-live="polite">
               <p key={progressUi.stageLabel} className={styles.stageLabel}>
                 {progressUi.stageLabel}
@@ -188,7 +215,7 @@ export function GeneratingShowAnimation({
           </div>
           <div className={styles.panelBottom}>
             <p className={styles.progressMeta}>
-              <span className={styles.percent}>{progressUi.percent}%</span>
+              <span className={styles.percent}>{progressUi.percent}% mapped</span>
               <span className={styles.hint}>{hint}</span>
             </p>
           </div>

@@ -1,6 +1,6 @@
 /** Billing settings page for early-access plan and future subscription management. */
 
-import { CheckCircle2, CreditCard, FileText, Infinity, ReceiptText, Sparkles } from 'lucide-react';
+import { CheckCircle2, FileText, ReceiptText, Sparkles } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,31 +21,10 @@ import {
 } from '@/components/ui/table';
 
 const PLAN_FEATURES = [
-  'Unlimited show creation',
+  'Full preview access',
   'Music analysis and cue generation',
   'Catalogue access and shopping lists',
   'Show previews and exports',
-];
-
-const SUMMARY_CARDS = [
-  {
-    title: 'Current plan',
-    value: 'Early access',
-    detail: 'Full preview access',
-    icon: Sparkles,
-  },
-  {
-    title: 'Usage',
-    value: 'Unlimited',
-    detail: 'No preview caps',
-    icon: Infinity,
-  },
-  {
-    title: 'Next invoice',
-    value: '$0.00',
-    detail: 'Nothing due',
-    icon: ReceiptText,
-  },
 ];
 
 const INVOICE_ROWS = [
@@ -58,6 +37,21 @@ const INVOICE_ROWS = [
 ];
 
 export default function BillingSettingsPage() {
+  const summaryCards = [
+    {
+      title: 'Current plan',
+      value: 'Early access',
+      detail: 'Full preview access',
+      icon: Sparkles,
+    },
+    {
+      title: 'Next invoice',
+      value: '$0.00',
+      detail: 'Nothing due',
+      icon: ReceiptText,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
@@ -90,8 +84,8 @@ export default function BillingSettingsPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:col-span-6 lg:grid-cols-1">
-            {SUMMARY_CARDS.map((item) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:col-span-6 lg:grid-cols-1">
+            {summaryCards.map((item) => {
               const Icon = item.icon;
               return (
                 <Card
@@ -117,70 +111,46 @@ export default function BillingSettingsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card>
-          <CardHeader className="has-data-[slot=card-action]:grid-cols-1 md:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-            <CardTitle>Invoices</CardTitle>
-            <CardDescription>
-              Invoices and receipts will appear here once paid plans launch.
-            </CardDescription>
-            <CardAction className="col-start-1 row-start-auto justify-self-start md:col-start-2 md:row-span-2 md:row-start-1 md:justify-self-end">
-              <Button type="button" variant="outline" size="sm" disabled>
-                <FileText />
-                Download
-              </Button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table className="**:data-[slot='table-cell']:px-6 **:data-[slot='table-head']:px-6">
-              <TableHeader className="border-t">
-                <TableRow>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+      <Card>
+        <CardHeader className="has-data-[slot=card-action]:grid-cols-1 md:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+          <CardTitle>Invoices</CardTitle>
+          <CardDescription>
+            Invoices and receipts will appear here once paid plans launch.
+          </CardDescription>
+          <CardAction className="col-start-1 row-start-auto justify-self-start md:col-start-2 md:row-span-2 md:row-start-1 md:justify-self-end">
+            <Button type="button" variant="outline" size="sm" disabled>
+              <FileText />
+              Download
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table className="**:data-[slot='table-cell']:px-6 **:data-[slot='table-head']:px-6">
+            <TableHeader className="border-t">
+              <TableRow>
+                <TableHead>Period</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {INVOICE_ROWS.map((row) => (
+                <TableRow key={row.period} className="hover:bg-muted/45">
+                  <TableCell className="font-medium">{row.period}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.date}</TableCell>
+                  <TableCell>
+                    <Badge solid tone="success">
+                      {row.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">{row.amount}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {INVOICE_ROWS.map((row) => (
-                  <TableRow key={row.period} className="hover:bg-muted/45">
-                    <TableCell className="font-medium">{row.period}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.date}</TableCell>
-                    <TableCell>
-                      <Badge solid tone="success">
-                        {row.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.amount}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment method</CardTitle>
-            <CardDescription>No payment method is required during preview.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 p-6">
-            <div className="flex items-start gap-3">
-              <span className="border-border bg-background text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border">
-                <CreditCard size={17} />
-              </span>
-              <div>
-                <p className="text-foreground text-sm font-medium">No card on file</p>
-                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  Card management will unlock before paid subscriptions are available.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

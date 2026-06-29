@@ -28,6 +28,7 @@ import {
   type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
+import { clearNestedStarBurstTrails } from '@/lib/fireworks/style-defaults';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
@@ -2150,6 +2151,7 @@ export function FireworkRenderControls({
     mutate((draft) => {
       if (!layerKey) {
         draft.burstTrail = next;
+        clearNestedStarBurstTrails(draft);
         return;
       }
       const stars = ensureRecord(draft, 'stars');
@@ -2556,7 +2558,7 @@ export function FireworkRenderControls({
       <PanelSection
         title={title}
         collapsible
-        defaultExpanded={false}
+        defaultExpanded={controlScope === 'trail'}
         inactive={!trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false)}
         titleAccessory={
           <InfoTooltip text="Master switch for burst trail particles behind the star paths." />

@@ -35,6 +35,15 @@ export class Scheduler {
     for (const sc of this.cues) sc.fired = false;
   }
 
+  /** Latest cue time, or 0 when there are no cues. */
+  lastCueTime(): number {
+    let max = 0;
+    for (const sc of this.cues) {
+      if (sc.cue.timeSeconds > max) max = sc.cue.timeSeconds;
+    }
+    return max;
+  }
+
   /**
    * Returns cues that should fire in (prev, now], marking them fired.
    */

@@ -311,11 +311,11 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /label="Accent share"/);
   assert.match(fireworkEditor, /aria-label="Colour"[\s\S]*checked=\{colourEnabled\}/);
   assert.match(fireworkEditor, /const outer = ensureRecord\(stars, 'outer'\)/);
-  assert.match(fireworkEditor, /outer\.color = hexToRgbObject\(mainColor\)/);
+  assert.match(fireworkEditor, /outer\.color = hexToRgbObject\(colour\.mainColor\)/);
   assert.match(fireworkEditor, /outer\.colourPattern = \{/);
-  assert.match(fireworkEditor, /mode: colourMode/);
-  assert.match(fireworkEditor, /axis: colourAxis/);
-  assert.match(fireworkEditor, /count: clampStarPatternCount\(validColourStops\.length\)/);
+  assert.match(fireworkEditor, /mode: colour\.colourMode/);
+  assert.match(fireworkEditor, /axis: colour\.colourAxis/);
+  assert.match(fireworkEditor, /count: clampStarPatternCount\(colour\.validColourStops\.length\)/);
   assert.match(fireworkEditor, /weight: stop\.share/);
   assert.match(fireworkEditor, /delete core\.color/);
   assert.match(fireworkEditor, /delete core\.colourPattern/);
@@ -378,7 +378,7 @@ test('admin replay previews opt into FPS diagnostics', () => {
   );
   assert.match(
     canvas,
-    /engine\.clear\(\)[\s\S]*engine\.setCues\(cues\)[\s\S]*engine\.setElapsed\(0\)/,
+    /engine\.clear\(\)[\s\S]*engine\.setCues\(cues,[\s\S]*engine\.setElapsed\(0\)/,
   );
   assert.match(canvas, /setShowFpsOverlay\(showFps\)/);
   assert.match(canvas, /setShowFpsOverlay\(\(visible\) => !visible\)/);
@@ -477,6 +477,21 @@ test('base effects seed default variants for missing effect families', () => {
   assert.match(expansion, /public\.firework_variants/);
 });
 
+test('catalogue reseed preserves retained editor links and history', () => {
+  const migration = read(
+    'supabase/migrations/20260629043858_reseed_firework_catalogue_from_scratch.sql',
+  );
+  const generator = read('scripts/seed/generate-firework-catalogue-migration.mjs');
+
+  for (const source of [migration, generator]) {
+    assert.doesNotMatch(source, /delete from public\.firework_style_default_links/);
+    assert.doesNotMatch(source, /delete from public\.firework_effect_style_default_links/);
+    assert.doesNotMatch(source, /delete from public\.firework_editor_versions/);
+  }
+  assert.match(generator, /existingReseedMigration/);
+  assert.match(migration, /retained style-default links and editor/);
+});
+
 test('catalogue and import mutations invalidate new admin firework caches', () => {
   const catalogue = read('app/actions/admin-catalogue.ts');
   const imports = read('app/actions/platform-admin.ts');
@@ -484,5 +499,5 @@ test('catalogue and import mutations invalidate new admin firework caches', () =
   assert.match(catalogue, /invalidateAdminEffectsCache/);
   assert.match(catalogue, /invalidateAdminFireworksCache/);
   assert.match(imports, /invalidateAdminEffectsCache\(baseEffect\.id\)/);
-  assert.match(imports, /invalidateAdminFireworksCache\(catalogueItem\.id\)/);
+  assert.match(imports, /invalidateAdminFireworksCache\(variant\.id\)/);
 });

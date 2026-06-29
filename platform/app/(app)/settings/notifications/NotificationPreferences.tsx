@@ -143,21 +143,22 @@ function PreferenceSwitch({
   return (
     <label
       htmlFor={id}
-      className="group hover:bg-muted/45 grid cursor-pointer grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-4 px-6 py-4 transition-colors"
+      className="group hover:bg-muted/45 grid cursor-pointer grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 transition-colors sm:px-5"
     >
-      <span className="border-border bg-background text-muted-foreground group-hover:text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border shadow-xs">
-        <Icon size={17} />
+      <span className="border-border bg-background text-muted-foreground group-hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border shadow-xs">
+        <Icon size={15} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-foreground text-sm font-medium">{option.title}</span>
         </span>
-        <span className="text-muted-foreground mt-1 block text-sm leading-relaxed">
+        <span className="text-muted-foreground mt-0.5 block text-sm leading-normal">
           {option.body}
         </span>
       </span>
       <Switch
         id={id}
+        size="sm"
         checked={checked}
         onCheckedChange={onCheckedChange}
         aria-label={option.title}
@@ -197,7 +198,7 @@ export function NotificationPreferences() {
   };
 
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
         <CardDescription>Choose which updates you want to receive.</CardDescription>
@@ -220,7 +221,7 @@ export function NotificationPreferences() {
           ))}
         </div>
 
-        <div className="border-border grid gap-4 border-t px-6 py-5 sm:grid-cols-2">
+        <div className="border-border grid gap-3 border-t px-4 py-4 sm:grid-cols-2 sm:px-5">
           <div className="space-y-2">
             <label htmlFor="digestCadence" className="text-foreground text-sm font-medium">
               Digest cadence
@@ -234,7 +235,7 @@ export function NotificationPreferences() {
                 }))
               }
             >
-              <SelectTrigger id="digestCadence" className="w-full">
+              <SelectTrigger id="digestCadence" size="sm" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -260,7 +261,7 @@ export function NotificationPreferences() {
                 }))
               }
             >
-              <SelectTrigger id="quietHours" className="w-full">
+              <SelectTrigger id="quietHours" size="sm" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">

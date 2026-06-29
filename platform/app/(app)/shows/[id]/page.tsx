@@ -1,13 +1,12 @@
-/** Show detail landing page (the overview tab for a single show). */
+/** Legacy show detail URL, redirected to the canonical preview tab. */
 
-import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
-import { ShowPreviewRedirect } from './ShowPreviewRedirect';
+import { redirect } from 'next/navigation';
 
-export default function ShowIndexPage() {
-  return (
-    <>
-      <ShowPreviewRedirect />
-      <ReplayPanelSkeleton />
-    </>
-  );
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function ShowIndexPage({ params }: PageProps) {
+  const { id } = await params;
+  redirect(`/shows/${encodeURIComponent(id)}/preview`);
 }

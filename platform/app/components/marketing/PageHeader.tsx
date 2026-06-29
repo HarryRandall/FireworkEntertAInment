@@ -27,14 +27,6 @@ export function PageHeader({
 
   return (
     <section className="border-outline-variant/15 bg-background relative isolate overflow-hidden border-b pt-28 pb-20 lg:pt-32 lg:pb-24">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,color-mix(in_srgb,var(--color-primary)_14%,transparent),transparent_60%)]"
-      />
-      <div
-        aria-hidden
-        className="via-primary/40 pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent to-transparent"
-      />
       <Container className={`relative z-10 flex flex-col ${alignClass}`}>
         {eyebrow ? (
           <span className="border-outline-variant/30 bg-surface-container/40 text-primary mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold tracking-[0.18em] uppercase backdrop-blur-md">
@@ -47,9 +39,7 @@ export function PageHeader({
           {highlight ? (
             <>
               {' '}
-              <span className="from-primary-fixed via-primary to-primary-container bg-gradient-to-br bg-clip-text text-transparent">
-                {highlight}
-              </span>
+              <span className="text-primary">{highlight}</span>
             </>
           ) : null}
         </h1>

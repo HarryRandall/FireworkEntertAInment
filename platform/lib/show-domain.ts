@@ -9,6 +9,7 @@
 
 import type { FireworkSpec } from '@/lib/fireworks/spec';
 import type { FireworkDesign, LaunchPosition } from '@/lib/fireworks/design';
+import type { ShaderCover } from '@/lib/shader-cover';
 
 export type ShowStatus = 'draft' | 'complete';
 export type ShowGenerationStatus = 'idle' | 'running' | 'completed' | 'failed';
@@ -38,6 +39,8 @@ export type Show = {
   generationStartedAt: string | null;
   generationCompletedAt: string | null;
   launchPositions: LaunchPosition[];
+  /** Saved shader "visual identity" for this show; null for older shows. */
+  coverShader: ShaderCover | null;
   updatedAt: string;
 };
 
@@ -49,6 +52,8 @@ export type ShowCue = {
   productId: string;
   seedOverride?: number | null;
   launchPositionIndex: number;
+  /** Per-cue render emphasis (schema 1.4.0); defaults to 'normal'. */
+  emphasis?: 'normal' | 'accent' | 'peak';
 };
 
 export type FireworkSpecification = {

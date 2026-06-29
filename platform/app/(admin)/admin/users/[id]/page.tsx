@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Coins } from 'lucide-react';
 import {
   AdminUserActivitySkeleton,
   AdminUserPermissionsSkeleton,
@@ -20,8 +20,14 @@ import {
   listRolePermissionMatrix,
   listRoles,
 } from '@/lib/admin.server';
+import {
+  getAiCreditSummaryForUser,
+  signedAiCreditAmount,
+  type AiCreditTransactionSummary,
+} from '@/lib/ai-credits.server';
 import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
 import type { PermissionOverrideOption } from './AddPermissionOverrideDialog';
+import { GrantAiCreditsForm } from './GrantAiCreditsForm';
 import {
   PermissionExceptionsPanel,
   type PermissionExceptionState,
@@ -49,6 +55,30 @@ function formatDate(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
+const creditFormatter = new Intl.NumberFormat('en-AU');
+
+function formatCredits(value: number) {
+  return creditFormatter.format(value);
+}
+
+function formatCreditDelta(transaction: AiCreditTransactionSummary) {
+  const amount = signedAiCreditAmount(transaction);
+  if (amount === 0) return `${formatCredits(transaction.amount)} reserved`;
+  return `${amount > 0 ? '+' : '-'}${formatCredits(Math.abs(amount))}`;
+}
+
+function creditDeltaClass(transaction: AiCreditTransactionSummary) {
+  const amount = signedAiCreditAmount(transaction);
+  if (amount > 0) return 'text-[color:var(--color-status-success)]';
+  if (amount < 0) return 'text-[color:var(--color-content-emphasis)]';
+  return 'text-[color:var(--color-content-subtle)]';
+}
+
+function usagePercent(used: number, limit: number) {
+  if (limit <= 0) return 0;
+  return Math.min(100, Math.max(0, (used / limit) * 100));
+}
+
 export default async function AdminUserDetailPage({ params }: PageProps) {
   const { id } = await params;
   const [user, currentProfile] = await Promise.all([getAdminUserById(id), getCurrentProfile()]);
@@ -61,6 +91,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
     user.status === 'active' &&
     user.id !== currentProfile.id,
   );
+  const canManageBilling = Boolean(currentProfile?.permissions.includes('admin.manage_billing'));
 
   return (
     <div className="space-y-8">
@@ -100,12 +131,14 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         />
       </header>
 
-      <Suspense fallback={<AdminUserActivitySkeleton />}>
-        <AdminUserActivity userId={user.id} />
-      </Suspense>
+      {canManageBilling ? <AdminUserAiCreditsCard userId={user.id} /> : null}
 
       <Suspense fallback={<AdminUserRoleSkeleton />}>
         <AdminUserRoleCard user={user} />
+      </Suspense>
+
+      <Suspense fallback={<AdminUserActivitySkeleton />}>
+        <AdminUserActivity userId={user.id} />
       </Suspense>
 
       <Suspense fallback={<AdminUserPermissionsSkeleton />}>
@@ -116,6 +149,99 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         Last updated {formatDate(user.updatedAt)}
       </p>
     </div>
+  );
+}
+
+async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
+  const summary = await getAiCreditSummaryForUser(userId);
+  const creditPool = Math.max(summary.totalGranted, summary.includedCredits, summary.balance);
+  const committedCredits = summary.totalSpent + summary.reserved;
+
+  return (
+    <Card elevation="low" radius="lg" className="p-5">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="border-border bg-background text-muted-foreground flex size-8 items-center justify-center rounded-lg border">
+              <Coins size={16} />
+            </span>
+            <div>
+              <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+                AI credits
+              </h2>
+              <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+                Credit balance, recent spend, and manual grants for this user.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section className="mb-5 grid gap-3 md:grid-cols-4">
+        <StatTile label="Available" value={formatCredits(summary.available)} />
+        <StatTile label="Balance" value={formatCredits(summary.balance)} />
+        <StatTile label="Spent" value={formatCredits(summary.totalSpent)} />
+        <StatTile label="Reserved" value={formatCredits(summary.reserved)} />
+      </section>
+
+      <div className="mb-5 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium text-[color:var(--color-content-subtle)]">
+            Spend against granted credits
+          </p>
+          <p className="font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums">
+            {formatCredits(committedCredits)} spent or reserved
+          </p>
+        </div>
+        <div
+          aria-hidden
+          className="h-1.5 overflow-hidden rounded-full bg-[color:var(--color-border-subtle)]"
+        >
+          <div
+            className="h-full rounded-full bg-[color:var(--color-primary)]"
+            style={{ width: `${usagePercent(committedCredits, creditPool)}%` }}
+          />
+        </div>
+      </div>
+
+      <GrantAiCreditsForm userId={userId} />
+
+      <div className="mt-5 border-t border-[color:var(--color-border-subtle)] pt-4">
+        <h3 className="mb-2 text-xs font-semibold tracking-wide text-[color:var(--color-content-subtle)] uppercase">
+          Recent spend
+        </h3>
+        {summary.recentTransactions.length > 0 ? (
+          <div className="divide-y divide-[color:var(--color-border-subtle)]">
+            {summary.recentTransactions.slice(0, 5).map((transaction) => (
+              <div
+                key={transaction.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-[color:var(--color-content-emphasis)]">
+                    {transaction.label}
+                  </p>
+                  <p className="text-xs text-[color:var(--color-content-subtle)]">
+                    {new Date(transaction.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <span
+                  className={`font-mono text-sm font-semibold tabular-nums ${creditDeltaClass(
+                    transaction,
+                  )}`}
+                >
+                  {formatCreditDelta(transaction)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[color:var(--color-content-subtle)]">
+            No AI usage activity has been recorded yet.
+          </p>
+        )}
+      </div>
+    </Card>
   );
 }
 

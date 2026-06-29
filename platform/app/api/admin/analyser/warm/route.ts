@@ -6,8 +6,8 @@ import { refreshAnalyserWarmth } from '@/lib/analyser-warmth.server';
 export const dynamic = 'force-dynamic';
 
 function isAuthorised(request: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return true;
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  if (!cronSecret) return process.env.NODE_ENV === 'development';
   return request.headers.get('authorization') === `Bearer ${cronSecret}`;
 }
 

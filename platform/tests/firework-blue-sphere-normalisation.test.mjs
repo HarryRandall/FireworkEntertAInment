@@ -36,17 +36,11 @@ test('migration normalises effects and fireworks while preserving colour', () =>
   }
 });
 
-test('renderer seed stores only colour differences from Blue Sphere', () => {
+test('legacy renderer seed is retired in favour of catalogue migrations', () => {
   const seed = read('supabase/seed-firework-designs.sql');
-  const seedRows = seed.slice(
-    seed.indexOf('with seed_fireworks'),
-    seed.indexOf('upserted_fireworks as'),
-  );
 
-  assert.match(seed, /renderer_colour_json/);
-  assert.match(seed, /pg_temp\.showcrafter_apply_firework_colour\(/);
-  assert.match(seed, /seed\.renderer_colour_json/);
-  assert.match(seed, /pg_temp\.showcrafter_blue_sphere_effect_model\(\)/);
-
-  assert.doesNotMatch(seedRows, /"pattern"|"burst"|"crackle"|"strobe"|flairSizeStrobe|heavyBoom/);
+  assert.match(seed, /Deprecated compatibility stub/);
+  assert.match(seed, /lib\/fireworks\/effect-catalogue\.ts/);
+  assert.doesNotMatch(seed, /insert into public\.fireworks/);
+  assert.doesNotMatch(seed, /'fib-[^']+'/);
 });

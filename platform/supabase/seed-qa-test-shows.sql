@@ -1,6 +1,6 @@
 -- Idempotent renderer QA test shows for every auth user.
 --
--- Run after migrations and after supabase/seed-firework-designs.sql.
+-- Run after migrations have seeded the current firework catalogue.
 -- These shows are overwritten on each run so the timeline timings stay stable.
 
 do $$
@@ -15,18 +15,18 @@ begin
   into missing_slugs
   from (
     values
-      ('fib-blue'),
-      ('fib-gold'),
-      ('fib-green'),
-      ('fib-mega'),
-      ('fib-mini'),
-      ('fib-red'),
-      ('strobe-mixed'),
-      ('strobe-red'),
-      ('strobe-white'),
-      ('wave-cyan'),
-      ('wave-purple'),
-      ('wave-rainbow')
+      ('peony-azure'),
+      ('peony-default'),
+      ('saturn-default'),
+      ('brocade-default'),
+      ('mine-default'),
+      ('peony-crimson'),
+      ('strobe-azure'),
+      ('strobe-crimson'),
+      ('strobe-default'),
+      ('whirl-azure'),
+      ('whirl-crimson'),
+      ('whirl-default')
   ) as required(slug)
   left join public.catalogue_items catalogue
     on catalogue.part_number = required.slug
@@ -34,7 +34,7 @@ begin
   where catalogue.id is null;
 
   if missing_slugs is not null then
-    raise exception 'Missing firework catalogue_items: %. Run supabase/seed-firework-designs.sql first.', missing_slugs;
+    raise exception 'Missing firework catalogue_items: %. Run the firework catalogue migrations first.', missing_slugs;
   end if;
 
   if not exists (select 1 from auth.users) then
@@ -91,7 +91,7 @@ begin
       35,
       'Night',
       'Renderer test grid',
-      'Fibonacci, wave, and strobe cues across left, centre, and right mortars.',
+      'Peony, whirl, and strobe cues across left, centre, and right mortars.',
       array['QA', 'Pattern check', 'Renderer test'],
       '[{"x":-220,"y":0,"z":0},{"x":0,"y":0,"z":0},{"x":220,"y":0,"z":0}]'::jsonb
     )
@@ -141,12 +141,12 @@ begin
       cue.launch_position_index
     from (
       values
-        (1, 0.50::numeric, 'Left mortar fibonacci gold sphere', 'fib-gold', 'Fib gold', 'fibonacci', 2101, 0),
-        (2, 3.50::numeric, 'Centre mortar purple wave', 'wave-purple', 'Wave purple', 'wave', 2102, 1),
-        (3, 6.50::numeric, 'Right mortar white strobe', 'strobe-white', 'Strobe white', 'strobe', 2103, 2),
-        (4, 9.50::numeric, 'Left mortar blue fibonacci sphere', 'fib-blue', 'Fib blue', 'fibonacci', 2104, 0),
-        (5, 12.50::numeric, 'Centre mortar cyan wave', 'wave-cyan', 'Wave cyan', 'wave', 2105, 1),
-        (6, 15.50::numeric, 'Right mortar red strobe', 'strobe-red', 'Strobe red', 'strobe', 2106, 2)
+        (1, 0.50::numeric, 'Left mortar gold peony', 'peony-default', 'Gold peony', 'peony', 2101, 0),
+        (2, 3.50::numeric, 'Centre mortar crimson whirl', 'whirl-crimson', 'Crimson whirl', 'whirl', 2102, 1),
+        (3, 6.50::numeric, 'Right mortar white strobe', 'strobe-default', 'Strobe white', 'strobe', 2103, 2),
+        (4, 9.50::numeric, 'Left mortar azure peony', 'peony-azure', 'Azure peony', 'peony', 2104, 0),
+        (5, 12.50::numeric, 'Centre mortar azure whirl', 'whirl-azure', 'Azure whirl', 'whirl', 2105, 1),
+        (6, 15.50::numeric, 'Right mortar red strobe', 'strobe-crimson', 'Strobe red', 'strobe', 2106, 2)
     ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
     join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
 
@@ -234,12 +234,12 @@ begin
       cue.launch_position_index
     from (
       values
-        (1, 0.50::numeric, 'Red sphere from left mortar', 'fib-red', 'Red sphere', 'red', 2201, 0),
-        (2, 3.50::numeric, 'Green sphere from centre mortar', 'fib-green', 'Green sphere', 'green', 2202, 1),
-        (3, 6.50::numeric, 'Blue sphere from right mortar', 'fib-blue', 'Blue sphere', 'blue', 2203, 2),
-        (4, 9.50::numeric, 'Random rainbow wave from left mortar', 'wave-rainbow', 'Rainbow wave', 'random', 2204, 0),
-        (5, 12.50::numeric, 'Mixed strobe from centre mortar', 'strobe-mixed', 'Mixed strobe', 'mixed', 2205, 1),
-        (6, 15.50::numeric, 'Mega gold bloom from right mortar', 'fib-mega', 'Mega gold', 'gold', 2206, 2)
+        (1, 0.50::numeric, 'Red sphere from left mortar', 'peony-crimson', 'Red sphere', 'red', 2201, 0),
+        (2, 3.50::numeric, 'Saturn ring from centre mortar', 'saturn-default', 'Saturn ring', 'ring', 2202, 1),
+        (3, 6.50::numeric, 'Azure peony from right mortar', 'peony-azure', 'Azure peony', 'blue', 2203, 2),
+        (4, 9.50::numeric, 'Whirl from left mortar', 'whirl-default', 'Whirl', 'whirl', 2204, 0),
+        (5, 12.50::numeric, 'Mixed strobe from centre mortar', 'strobe-azure', 'Mixed strobe', 'mixed', 2205, 1),
+        (6, 15.50::numeric, 'Mega gold bloom from right mortar', 'brocade-default', 'Mega gold', 'gold', 2206, 2)
     ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
     join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
 
@@ -327,11 +327,11 @@ begin
       cue.launch_position_index
     from (
       values
-        (1, 0.75::numeric, 'Small fast bloom from left mortar', 'fib-mini', 'Mini sphere', 'quick', 2301, 0),
-        (2, 2.75::numeric, 'Cyan wave from centre mortar', 'wave-cyan', 'Cyan wave', 'wave', 2302, 1),
-        (3, 4.75::numeric, 'White strobe from right mortar', 'strobe-white', 'White strobe', 'strobe', 2303, 2),
-        (4, 7.25::numeric, 'Gold sphere from centre mortar', 'fib-gold', 'Gold sphere', 'replay', 2304, 1),
-        (5, 10.00::numeric, 'Mega gold bloom from left mortar', 'fib-mega', 'Mega gold', 'finale', 2305, 0)
+        (1, 0.75::numeric, 'Small fast bloom from left mortar', 'mine-default', 'Mini sphere', 'quick', 2301, 0),
+        (2, 2.75::numeric, 'Azure whirl from centre mortar', 'whirl-azure', 'Azure whirl', 'whirl', 2302, 1),
+        (3, 4.75::numeric, 'White strobe from right mortar', 'strobe-default', 'White strobe', 'strobe', 2303, 2),
+        (4, 7.25::numeric, 'Gold sphere from centre mortar', 'peony-default', 'Gold sphere', 'replay', 2304, 1),
+        (5, 10.00::numeric, 'Mega gold bloom from left mortar', 'brocade-default', 'Mega gold', 'finale', 2305, 0)
     ) as cue(position, time_seconds, description, firework_slug, label, layer, seed_override, launch_position_index)
     join public.catalogue_items catalogue on catalogue.part_number = cue.firework_slug;
   end loop;

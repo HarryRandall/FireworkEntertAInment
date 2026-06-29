@@ -277,6 +277,88 @@ body {
   mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
 }
 
+/* Prompt hero surface - soft firework-colour gradient backdrop with no card
+   box. Built from the per-show palette tokens so it stays on-brand and reads
+   as a pastel wash in light mode and a richer bloom in dark mode. */
+.prompt-hero-surface {
+  position: relative;
+  isolation: isolate;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      110% 130% at 12% 0%,
+      color-mix(in srgb, var(--show-rose) 24%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      110% 130% at 100% 18%,
+      color-mix(in srgb, var(--show-violet) 28%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      140% 140% at 50% 125%,
+      color-mix(in srgb, var(--show-sky) 24%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      120% 140% at 88% 100%,
+      color-mix(in srgb, var(--show-gold) 22%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      120% 140% at 0% 100%,
+      color-mix(in srgb, var(--show-green) 20%, transparent),
+      transparent 58%
+    );
+}
+
+.prompt-hero-glow {
+  position: absolute;
+  inset: 0 -10% -25% -10%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(55px);
+  opacity: 0.7;
+  background:
+    radial-gradient(
+      45% 55% at 30% 35%,
+      color-mix(in srgb, var(--show-green, #2ec487) 70%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      50% 60% at 72% 60%,
+      color-mix(in srgb, #34d399 60%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      40% 50% at 50% 80%,
+      color-mix(in srgb, #1f9d6b 55%, transparent),
+      transparent 70%
+    );
+  background-size: 200% 200%;
+  animation: prompt-hero-glow-shift 12s ease-in-out infinite;
+}
+
+@keyframes prompt-hero-glow-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-hero-glow {
+    animation: none;
+  }
+}
+
 .noise-overlay {
   position: absolute;
   inset: 0;
@@ -627,6 +709,15 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* New-show wizard: shared route backdrop, matching the compact prompt screen
+   without putting decorative colour inside every individual step. */
+.new-show-wizard-screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--background);
 }
 
 /* Lightweight route progress (kept, restyled minimal) */

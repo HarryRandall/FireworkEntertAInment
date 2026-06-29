@@ -291,31 +291,13 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     trail_style_default_id: assignments.trail,
     model_json: model.value,
   };
-  const fallbackPatch = {
-    name: parsed.data.name,
-    description: parsed.data.description || null,
-    family: parsed.data.family,
-    pattern_key: parsed.data.patternKey,
-    sort_order: parsed.data.sortOrder,
-    model_json: model.value,
-  };
-  let result = await supabase
+  const result = await supabase
     .from('firework_effects')
     .update(patch)
     .eq('id', parsed.data.id)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
     .select('updated_at')
     .maybeSingle();
-
-  if (isMissingStyleDefaultSchemaError(result.error)) {
-    result = await supabase
-      .from('firework_effects')
-      .update(fallbackPatch)
-      .eq('id', parsed.data.id)
-      .eq('updated_at', parsed.data.expectedUpdatedAt)
-      .select('updated_at')
-      .maybeSingle();
-  }
 
   const { data, error } = result;
   if (error) return { ok: false, error: error.message };

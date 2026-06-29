@@ -67,7 +67,7 @@ export async function RecentSecurityActivity() {
   ];
 
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
         <CardTitle>Recent activity</CardTitle>
         <CardDescription>A snapshot of your account&apos;s security events.</CardDescription>
@@ -77,13 +77,13 @@ export async function RecentSecurityActivity() {
           {rows.map((row) => {
             const Icon = row.icon;
             return (
-              <div key={row.label} className="flex items-center gap-3 px-5 py-4">
-                <span className="border-border bg-background text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border">
-                  <Icon size={16} strokeWidth={1.85} />
+              <div key={row.label} className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
+                <span className="border-border bg-background text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md border">
+                  <Icon size={15} strokeWidth={1.85} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-foreground text-sm font-medium">{row.label}</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
+                  <p className="text-muted-foreground mt-0.5 text-sm">
                     <span className="font-mono tabular-nums">{row.value}</span>
                     {row.hint ? <span className="ml-2 text-xs">{row.hint}</span> : null}
                   </p>

@@ -41,21 +41,22 @@ export function ChoiceCard({
       aria-checked={selected}
       onClick={onClick}
       className={cn(
-        'focus-visible:ring-ring/50 relative flex min-h-[5.5rem] flex-col justify-center gap-1 rounded-xl border p-4 text-left transition-colors focus:outline-none focus-visible:ring-3 sm:p-5',
+        'focus-visible:ring-ring/50 relative flex min-h-[5.5rem] w-full flex-col justify-center gap-1 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99] sm:p-5',
         selected
-          ? 'border-[color:var(--color-content-emphasis)]/60 bg-[color:var(--color-bg-subtle)]'
-          : 'border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-default)] hover:bg-[color:var(--color-bg-subtle)]/50',
+          ? 'border-[color:var(--color-content-emphasis)]'
+          : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
         className,
       )}
     >
-      {multi ? (
+      {selected || multi ? (
         <span
           aria-hidden="true"
           className={cn(
-            'absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-md border transition-colors',
+            'absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center border transition-colors',
+            multi ? 'rounded-md' : 'rounded-full',
             selected
-              ? 'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]'
-              : 'border-[color:var(--color-border-default)]',
+              ? 'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm'
+              : 'border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)]/80',
           )}
         >
           {selected ? <Check size={12} strokeWidth={3} /> : null}

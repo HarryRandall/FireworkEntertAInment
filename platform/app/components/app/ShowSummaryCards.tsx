@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type CSSProperties } from 'react';
-import { ArrowRight, Heart, Play, ShieldCheck, WandSparkles } from 'lucide-react';
+import { ArrowRight, Dices, Heart, Play, ShieldCheck } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
-import { Input } from '@/app/components/ui/Input';
+import { Textarea } from '@/app/components/ui/Input';
+import { CueModelSelect } from '@/app/components/app/CueModelSelect';
+import { RANDOM_BRIEFS } from '@/app/(app)/shows/new/constants';
+import { FALLBACK_CUE_MODEL } from '@/lib/cue-models';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 import type { ShowSummaryCard, TemplateSummaryCard, VisualPalette } from '@/lib/show-summary';
 import { cn } from '@/lib/utils';
@@ -34,95 +37,6 @@ export function PaletteStrip({ palette, className, orientation = 'vertical' }: P
       style={{ background: gradientForPalette(palette, orientation) }}
     />
   );
-}
-
-export function PaletteDots({
-  palette,
-  className,
-}: {
-  palette: VisualPalette;
-  className?: string;
-}) {
-  return (
-    <span className={cn('flex items-center gap-1.5', className)} aria-label="Show palette">
-      {palette.hex.map((colour, index) => (
-        <span
-          key={`${colour}-${index}`}
-          aria-hidden
-          className="h-2.5 w-2.5 rounded-full ring-1 ring-white/20"
-          style={{ backgroundColor: colour }}
-        />
-      ))}
-    </span>
-  );
-}
-
-export function EnergyWaveform({
-  values,
-  palette,
-  className,
-  height = 42,
-}: {
-  values: number[];
-  palette: VisualPalette;
-  className?: string;
-  height?: number;
-}) {
-  const buckets = values.length > 0 ? values : Array.from({ length: 48 }, () => 0.22);
-  const barWidth = 3.5;
-  const gap = 2.25;
-  const width = buckets.length * (barWidth + gap);
-
-  return (
-    <svg
-      className={cn('h-11 w-full overflow-visible', className)}
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      role="img"
-      aria-label="Show energy preview"
-    >
-      {buckets.map((value, index) => {
-        const clamped = Math.max(0.08, Math.min(1, value));
-        const barHeight = 5 + clamped * (height - 7);
-        const y = height - barHeight;
-        const fill =
-          index > buckets.length * 0.82
-            ? palette.hex[2]
-            : clamped > 0.68
-              ? palette.hex[2]
-              : clamped > 0.38
-                ? palette.hex[0]
-                : 'var(--color-content-muted)';
-
-        return (
-          <rect
-            key={index}
-            x={index * (barWidth + gap)}
-            y={y}
-            width={barWidth}
-            height={barHeight}
-            rx={1.75}
-            fill={fill}
-            opacity={clamped > 0.38 ? 0.92 : 0.55}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-function formatEditedAt(iso: string) {
-  const edited = new Date(iso);
-  const diffMs = Date.now() - edited.getTime();
-  if (!Number.isFinite(diffMs) || diffMs < 0) return 'just now';
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} d ago`;
-  return edited.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function showMeta(show: ShowSummaryCard) {
@@ -186,72 +100,6 @@ export function ShowSummaryRow({
   );
 }
 
-export function JumpBackInHero({ show }: { show: ShowSummaryCard }) {
-  return (
-    <Card radius="xl" className="overflow-hidden p-0">
-      <div className="p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
-              Jump back in
-            </p>
-            <h2 className="mt-2 truncate text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-              {show.title}
-            </h2>
-            <p className="mt-1 truncate text-sm text-[color:var(--color-content-subtle)]">
-              {[
-                show.songTitle ?? 'Untitled track',
-                show.style,
-                `edited ${formatEditedAt(show.lastEditedAt)}`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          </div>
-          <PaletteDots palette={show.palette} />
-        </div>
-
-        <div className="mt-6">
-          <EnergyWaveform values={show.energySeries} palette={show.palette} height={44} />
-        </div>
-
-        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <span>
-              <strong className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
-                {formatDuration(show.lengthSeconds)}
-              </strong>{' '}
-              <span className="text-[color:var(--color-content-subtle)]">length</span>
-            </span>
-            <span>
-              <strong className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
-                {show.cueCount}
-              </strong>{' '}
-              <span className="text-[color:var(--color-content-subtle)]">cues</span>
-            </span>
-            <span>
-              <strong className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
-                {formatBudget(show.totalCostCents)}
-              </strong>{' '}
-              <span className="text-[color:var(--color-content-subtle)]">cost</span>
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button href={`/shows/${show.slug}/preview?autoplay=1`} variant="secondary" size="sm">
-              <Play size={14} />
-              Preview
-            </Button>
-            <Button href={`/shows/${show.slug}/preview?cueDialog=ai`} variant="secondary" size="sm">
-              <WandSparkles size={14} />
-              Refine
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 export function TemplateSummaryCardView({
   template,
   className,
@@ -310,84 +158,81 @@ export function TemplateSummaryCardView({
     </Link>
   );
 }
-const PROMPT_SUGGESTIONS = [
-  {
-    label: 'Birthday party',
-    value: 'A colourful birthday show with playful bursts and a bright gold finale.',
-  },
-  {
-    label: 'Wedding finale',
-    value: 'An elegant wedding finale with white, silver, and soft pink fireworks.',
-  },
-  {
-    label: "New year's eve",
-    value: "A high-energy New year's eve show with a huge countdown finale.",
-  },
-  {
-    label: 'Surprise me',
-    value: 'A cinematic show with a calm opening, rising colour, and a massive finale.',
-  },
-];
 
-export function PromptHero({ className }: { className?: string }) {
+type PromptHeroProps = {
+  className?: string;
+};
+
+export function PromptHero({ className }: PromptHeroProps) {
   const [prompt, setPrompt] = useState('');
+  const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
   const router = useRouter();
 
+  const goToWizard = () => {
+    const trimmed = prompt.trim();
+    const params = new URLSearchParams();
+    if (trimmed) params.set('prompt', trimmed);
+    params.set('model', selectedCueModel);
+    const query = params.toString();
+    router.push(query ? `/shows/new?${query}` : '/shows/new');
+  };
+
+  /** Dice: replace the whole brief with a random ready-made example. */
+  const rollDice = () => {
+    const options = RANDOM_BRIEFS.filter((brief) => brief !== prompt.trim());
+    const pool = options.length > 0 ? options : RANDOM_BRIEFS;
+    setPrompt(pool[Math.floor(Math.random() * pool.length)]);
+  };
+
   return (
-    <Card radius="xl" className={cn('p-5 sm:p-6', className)}>
-      <form
-        className="mx-auto max-w-2xl space-y-5 text-center"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const trimmed = prompt.trim();
-          router.push(trimmed ? `/shows/new?prompt=${encodeURIComponent(trimmed)}` : '/shows/new');
-        }}
-      >
-        <div className="flex justify-center gap-1.5" aria-hidden>
-          {['#EFB93F', '#C9CDD3', '#2EC487', '#8F7BE8'].map((colour) => (
-            <span
-              key={colour}
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: colour }}
+    <section className={cn('relative isolate mx-auto w-full max-w-3xl py-10', className)}>
+      <div className="prompt-hero-glow" aria-hidden />
+      <h2 className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+        Create any firework show you can imagine
+      </h2>
+      <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
+        <Textarea
+          name="prompt"
+          rows={2}
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+              event.preventDefault();
+              goToWizard();
+            }
+          }}
+          placeholder="Describe your show, or hit the dice to randomise."
+          aria-label="Show prompt"
+          className="h-28 resize-none rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
+        />
+        <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CueModelSelect
+              value={selectedCueModel}
+              onChange={setSelectedCueModel}
+              className="sm:w-[164px]"
             />
-          ))}
+            <div className="flex items-center gap-2.5">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={rollDice}
+                aria-label="Randomise the brief"
+                title="Randomise the brief"
+                className="h-9 w-9 rounded-full px-0"
+              >
+                <Dices size={16} />
+              </Button>
+              <Button type="button" onClick={goToWizard} className="h-9 rounded-full px-4 text-sm">
+                Continue
+                <ArrowRight size={15} />
+              </Button>
+            </div>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-            Create your first show
-          </h2>
-          <p className="mt-2 text-sm text-[color:var(--color-content-subtle)]">
-            Describe it in a sentence. We will choreograph the fireworks, sync them to your song,
-            and price it.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder="A golden show over water with a huge finale..."
-            aria-label="Show prompt"
-            className="h-11"
-          />
-          <Button type="submit" className="h-11 shrink-0">
-            Create
-            <ArrowRight size={15} />
-          </Button>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          {PROMPT_SUGGESTIONS.map((suggestion) => (
-            <button
-              key={suggestion.label}
-              type="button"
-              onClick={() => setPrompt(suggestion.value)}
-              className="focus-visible:ring-ring/50 rounded-md border border-[color:var(--color-border-subtle)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-3"
-            >
-              {suggestion.label}
-            </button>
-          ))}
-        </div>
-      </form>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -417,13 +262,15 @@ export function SafetyFooter() {
 export function EmptyShowsPanel({
   templates,
   includeSafety = true,
+  includePromptHero = true,
 }: {
   templates: TemplateSummaryCard[];
   includeSafety?: boolean;
+  includePromptHero?: boolean;
 }) {
   return (
     <div className="space-y-6">
-      <PromptHero />
+      {includePromptHero ? <PromptHero /> : null}
       {templates.length > 0 ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">

@@ -1,55 +1,184 @@
 ---
-description: Require row-level security policies on every new public-schema table introduced by a Supabase migration.
+description: Require safe RLS, grants, storage policies, and RPC permissions for every Supabase migration.
 globs:
   - "platform/supabase/migrations/**/*.sql"
 alwaysApply: false
 ---
 
-# Supabase RLS — required on every new table
+# Supabase RLS And Migration Safety
 
-Every `CREATE TABLE` in `public` that lives in a Supabase migration MUST also:
+Every migration that creates or exposes data in Supabase must handle access
+control in the same file. Do not rely on a follow-up migration to make a table,
+RPC, view, or storage path safe.
 
-1. `ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;`
-2. Include AT LEAST one `CREATE POLICY ... ON <table>` covering `SELECT`. Add separate policies for `INSERT` / `UPDATE` / `DELETE` (or one combined `FOR ALL`) as needed.
+## Required For New Public Tables
 
-This is non-negotiable. The product_effect_sequences table shipped with RLS enabled but no policies, which silently returned zero rows to the SSR client and caused multi-shot fireworks to fire only one shot in the preview. We do not want that class of bug again.
+Every `CREATE TABLE` in `public` must also include:
 
-## Standard patterns in this codebase
+1. `ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;`
+2. At least one `CREATE POLICY ... FOR SELECT` policy, or a `FOR ALL` policy
+   that covers reads.
+3. Write policies for every intended write path.
+4. Explicit `GRANT` statements when the table must be reachable through the
+   Supabase Data API by `anon` or `authenticated`.
 
-- **Catalogue / shared reference data** (e.g. `effect_specs`, `catalogue_products`, `product_effect_sequences`): authenticated users can read; only the `admin.manage_catalogue` permission can write.
+RLS controls rows after the table is reachable. It does not replace Data API
+grants.
 
-  ```sql
-  ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
+## Standard Policy Patterns
 
-  CREATE POLICY <table>_select_authenticated
-    ON public.<table>
-    FOR SELECT
-    USING (auth.uid() IS NOT NULL);
+Use `TO authenticated` / `TO anon` instead of `auth.role()` checks. Treat
+`TO authenticated` as authentication only; it is not authorisation unless it is
+paired with an ownership or permission predicate.
 
-  CREATE POLICY <table>_admin_write
-    ON public.<table>
-    FOR ALL
-    USING (public.has_permission(auth.uid(), 'admin.manage_catalogue'))
-    WITH CHECK (public.has_permission(auth.uid(), 'admin.manage_catalogue'));
-  ```
+### Per-user data
 
-- **Per-user data** (e.g. `shows`, `show_cues`, `shopping_list_items`): scope by `auth.uid()` against the owning user/show.
+```sql
+alter table public.<table> enable row level security;
 
-  ```sql
-  CREATE POLICY <table>_owner_all
-    ON public.<table>
-    FOR ALL
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
-  ```
+create policy <table>_select_own
+  on public.<table>
+  for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
 
-## Review checklist
+create policy <table>_insert_own
+  on public.<table>
+  for insert
+  to authenticated
+  with check ((select auth.uid()) = user_id);
+
+create policy <table>_update_own
+  on public.<table>
+  for update
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+```
+
+Use this shape for owner-scoped tables such as `shows`, `song_analyses`,
+`shopping_list_items`, `ai_credit_accounts`, and `ai_credit_transactions`.
+
+### Show-owned child rows
+
+```sql
+create policy <table>_select_via_show
+  on public.<table>
+  for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.shows s
+      where s.id = <table>.show_id
+        and s.user_id = (select auth.uid())
+    )
+  );
+```
+
+Use this for tables like `show_timeline_items` that inherit ownership through
+`shows`.
+
+### Admin-managed reference data
+
+```sql
+create policy <table>_select_authenticated
+  on public.<table>
+  for select
+  to authenticated
+  using (true);
+
+create policy <table>_admin_modify
+  on public.<table>
+  for all
+  to authenticated
+  using (public.current_user_has_permission('admin.manage_catalogue'))
+  with check (public.current_user_has_permission('admin.manage_catalogue'));
+```
+
+Use permission checks for admin tables. Current permission keys include
+`admin.view`, `admin.manage_users`, `admin.manage_billing`,
+`admin.impersonate_users`, `admin.manage_suppliers`, `admin.manage_catalogue`,
+`admin.manage_imports`, and `admin.manage_prompts`.
+
+### Public browse data
+
+Anonymous `SELECT` is intentional only when the data is public product or
+template content. Current examples:
+
+- `show_presets`
+- `catalogue_items`
+- `fireworks`
+- `multishots`
+- `multishot_fireworks`
+
+When allowing anonymous reads:
+
+```sql
+grant select on public.<table> to anon;
+
+-- Intentionally public: explain the browse surface that needs this.
+create policy <table>_select_anyone
+  on public.<table>
+  for select
+  to anon, authenticated
+  using (true);
+```
+
+Add a SQL comment explaining the public surface, for example `/catalogue`,
+`/library`, or `/home` template browsing.
+
+## Security-definer RPCs
+
+`SECURITY DEFINER` bypasses RLS. Use it only when the function is deliberately
+the access boundary.
+
+Every security-definer function must:
+
+- Set a fixed `search_path`.
+- Check `auth.uid()` or `public.current_user_has_permission(...)` inside the
+  function body.
+- Be idempotent when it writes user-facing state.
+- Revoke execute from `public`.
+- Grant execute only to the exact role that needs it.
+- Have a focused test for allowed and denied paths.
+
+The AI credit RPCs and `replace_show_timeline_items` are examples of functions
+that need explicit grants and caller checks. Never add `SECURITY DEFINER` just
+to silence a permission error.
+
+## Views
+
+Views bypass RLS by default. In Postgres 15+, create exposed views with
+`WITH (security_invoker = true)`. Otherwise keep views out of exposed schemas or
+revoke access from `anon` and `authenticated`.
+
+## Storage
+
+Storage policies live on `storage.objects`, not the app table.
+
+- The `audio` bucket is private and owner-scoped by the first path segment,
+  `<user id>/...`.
+- The `audio` bucket should keep the 50 MB limit and MP3, WAV, AAC, M4A MIME
+  allow-list aligned with `/api/music-analysis`.
+- The `import-videos` bucket is admin-only and is used by queued import jobs.
+- Upsert-style storage writes need `INSERT`, `SELECT`, and `UPDATE`.
+
+## Review Checklist
 
 When reviewing a migration PR, confirm:
 
-- [ ] Every new table has `ENABLE ROW LEVEL SECURITY`.
-- [ ] Every new table has at least one `CREATE POLICY ... FOR SELECT` (or a `FOR ALL` policy that covers it).
-- [ ] Write paths are gated by an explicit permission check or ownership check.
-- [ ] The migration filename version (the prefix before the first `_`) is unique across the `platform/supabase/migrations/` directory.
-
-If a table is intentionally meant to be queryable by anonymous users, document why in a SQL comment immediately above the policy.
+- [ ] New public tables enable RLS.
+- [ ] New public tables have read policies and intended write policies.
+- [ ] Ownership checks use `(select auth.uid())`, not user-editable metadata.
+- [ ] Permission checks use `public.current_user_has_permission(...)`.
+- [ ] Anonymous `SELECT` has a clear SQL comment explaining the public surface.
+- [ ] Data API grants match the intended `anon` / `authenticated` access.
+- [ ] Storage bucket and object policies are updated when storage behaviour
+      changes.
+- [ ] Security-definer functions revoke `public` execute and grant only the
+      required role.
+- [ ] `platform/lib/database.types.ts` is regenerated when schema changes.
+- [ ] Tests cover any changed access path or RPC behaviour.
+- [ ] The migration filename prefix is unique across
+      `platform/supabase/migrations/`.

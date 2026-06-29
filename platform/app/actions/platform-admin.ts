@@ -348,7 +348,7 @@ export async function updateProfileAction(
     return { ok: false, error: 'Could not save changes' };
   }
   revalidatePath('/settings/profile');
-  revalidatePath('/dashboard');
+  revalidatePath('/home');
   return { ok: true };
 }
 
@@ -873,14 +873,14 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
   await invalidateAdminImportsCache();
   await invalidateAdminCatalogueCache();
   await invalidateAdminEffectsCache(baseEffect.id);
-  await invalidateAdminFireworksCache(catalogueItem.id);
+  await invalidateAdminFireworksCache(variant.id);
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/imports');
   revalidatePath('/admin/catalogue');
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${baseEffect.id}`);
   revalidatePath('/admin/fireworks');
-  revalidatePath(`/admin/fireworks/${catalogueItem.id}`);
+  revalidatePath(`/admin/fireworks/${variant.id}`);
   revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 

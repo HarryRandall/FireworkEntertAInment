@@ -24,6 +24,8 @@ import {
   Download,
   EllipsisVertical,
   Gauge,
+  Home,
+  LogIn,
   LogOut,
   MessageSquareDot,
   Music4,
@@ -91,25 +93,31 @@ type AppNavLink = {
 };
 
 const APP_LINKS: AppNavLink[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: Gauge },
+  { href: '/home', label: 'Home', icon: Home },
   { href: '/shows', label: 'My shows', icon: Music4 },
   { href: '/library', label: 'Explore', icon: Star },
   { href: '/catalogue', label: 'Catalogue', icon: Box },
   { href: '/exports', label: 'Exports', icon: Download },
-  { href: '/safety', label: 'Safety', icon: TriangleAlert },
+  { href: '/safety', label: 'Safety', icon: TriangleAlert, permission: 'admin.view' },
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
+
+// Browse-only nav shown to unauthenticated guests; creation/private routes
+// are gated by middleware and intentionally absent here.
+const GUEST_NAV_HREFS = new Set(['/home', '/library', '/catalogue']);
 
 const SETTINGS_LINKS: AppNavLink[] = [
   { href: '/settings/profile', label: 'Personal details', icon: UserRound },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings/billing', label: 'Billing', icon: CreditCard },
+  { href: '/settings/usage', label: 'Usage', icon: Gauge },
   { href: '/settings/security', label: 'Security', icon: ShieldCheck },
 ];
 
 const SETTINGS_BREADCRUMB_LABELS: Record<string, string> = {
   '/settings': 'Settings',
   '/settings/profile': 'Profile',
+  '/settings/usage': 'Usage',
   '/settings/notifications': 'Notifications',
   '/settings/billing': 'Billing',
   '/settings/security': 'Security',
@@ -134,6 +142,7 @@ const SHOW_SUBPAGE_LABELS: Record<string, string> = {
 type ShellBreadcrumb = {
   label: string;
   href?: string;
+  icon?: LucideIcon;
 };
 
 type AppShellProps = {
@@ -141,6 +150,7 @@ type AppShellProps = {
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
   impersonation?: ActiveImpersonation | null;
+  aiUsage?: SidebarAiUsage | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
   initialFeaturedTemplateDismissedUntil?: number | null;
@@ -149,6 +159,21 @@ type AppShellProps = {
 type ProfileSummary = {
   displayName: string;
   secondaryLine: string;
+};
+
+type SidebarAiUsage = {
+  balance: number;
+  available: number;
+  reserved: number;
+  includedCredits: number;
+  hourlyLimit: number;
+  weeklyLimit: number;
+  hourlyUsed: number;
+  weeklyUsed: number;
+  hourlyRemaining: number;
+  weeklyRemaining: number;
+  totalGranted: number;
+  totalSpent: number;
 };
 
 function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -206,7 +231,7 @@ function SidebarBrand() {
           className="group-data-[collapsible=icon]:justify-center"
         >
           <Link
-            href="/dashboard"
+            href="/home"
             prefetch
             onClick={() => {
               if (isMobile) setOpenMobile(false);
@@ -317,7 +342,7 @@ function SidebarPrimaryAction({
 function BackToAppItem({ onNavigate }: { onNavigate: (href: string) => void }) {
   return (
     <SidebarNavItem
-      link={{ href: '/dashboard', label: 'Back to app', icon: ArrowLeft }}
+      link={{ href: '/home', label: 'Back to app', icon: ArrowLeft }}
       active={false}
       onNavigate={onNavigate}
     />
@@ -501,6 +526,7 @@ function ProfileMenuButton({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              variant="destructive"
               onSelect={(event) => {
                 event.preventDefault();
                 void onSignOut();
@@ -516,14 +542,73 @@ function ProfileMenuButton({
   );
 }
 
+function sidebarUsagePercent(used: number, limit: number) {
+  if (limit <= 0) return 0;
+  return Math.min(100, Math.max(0, (used / limit) * 100));
+}
+
+function SidebarAiUsageMeter({ usage }: { usage: SidebarAiUsage | null | undefined }) {
+  if (!usage) return null;
+
+  const hourlyUsed = usage.hourlyUsed + usage.reserved;
+  const weeklyUsed = usage.weeklyUsed + usage.reserved;
+
+  return (
+    <Link
+      href="/settings/usage"
+      prefetch
+      className="border-sidebar-border/75 hover:border-sidebar-border focus-visible:ring-sidebar-ring rounded-lg border px-2.5 py-2 transition-colors group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2"
+    >
+      <div className="mb-2 flex items-center">
+        <span className="text-sidebar-foreground/70 text-[11px] font-semibold tracking-wide uppercase">
+          AI usage
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        <SidebarLimitProgress label="Hourly" used={hourlyUsed} limit={usage.hourlyLimit} />
+        <SidebarLimitProgress label="Weekly" used={weeklyUsed} limit={usage.weeklyLimit} />
+      </div>
+    </Link>
+  );
+}
+
+function SidebarLimitProgress({
+  label,
+  used,
+  limit,
+}: {
+  label: string;
+  used: number;
+  limit: number;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-sidebar-foreground/55 text-[11px]">{label}</span>
+        <span className="text-sidebar-foreground/55 font-mono text-[11px] tabular-nums">
+          {used}/{limit}
+        </span>
+      </div>
+      <div aria-hidden className="bg-sidebar-border/60 h-1 overflow-hidden rounded-full">
+        <div
+          className="bg-sidebar-primary h-full rounded-full"
+          style={{ width: `${sidebarUsagePercent(used, limit)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function AppSidebarFooter({
   profile,
   impersonation,
+  aiUsage,
   inSettings,
   onSignOut,
 }: {
   profile: ProfileSummary;
   impersonation?: ActiveImpersonation | null;
+  aiUsage?: SidebarAiUsage | null;
   inSettings: boolean;
   onSignOut: () => Promise<void>;
 }) {
@@ -537,7 +622,51 @@ function AppSidebarFooter({
       {impersonation ? (
         <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
       ) : null}
+      {!inSettings ? <SidebarAiUsageMeter usage={aiUsage} /> : null}
       {!inSettings ? <ProfileMenuButton profile={profile} onSignOut={onSignOut} /> : null}
+    </SidebarFooter>
+  );
+}
+
+function SidebarGuestFooter() {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <SidebarFooter>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild tooltip="Sign in">
+            <Link
+              href="/login"
+              prefetch
+              onClick={() => {
+                if (isMobile) setOpenMobile(false);
+              }}
+            >
+              <LogIn size={16} strokeWidth={2} />
+              <span>Sign in</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            tooltip="Create account"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground data-active:bg-primary data-active:text-primary-foreground"
+          >
+            <Link
+              href="/signup"
+              prefetch
+              onClick={() => {
+                if (isMobile) setOpenMobile(false);
+              }}
+            >
+              <PlusCircle size={16} strokeWidth={2} />
+              <span>Create account</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
     </SidebarFooter>
   );
 }
@@ -551,23 +680,27 @@ function formatPathSegment(segment: string) {
 function getSettingsBreadcrumbs(pathname: string): ShellBreadcrumb[] {
   const current = SETTINGS_BREADCRUMB_LABELS[pathname] ?? 'Settings';
   return [
-    { label: 'Settings', href: current === 'Settings' ? undefined : '/settings/profile' },
+    {
+      label: 'Settings',
+      href: current === 'Settings' ? undefined : '/settings/profile',
+      icon: UserRound,
+    },
     ...(current === 'Settings' ? [] : [{ label: current }]),
   ];
 }
 
 function getShowBreadcrumbs(segments: string[]): ShellBreadcrumb[] {
   if (segments[1] === 'new') {
-    return [{ label: 'My shows', href: '/shows' }, { label: 'New show' }];
+    return [{ label: 'My shows', href: '/shows', icon: Music4 }, { label: 'New show' }];
   }
 
   if (!segments[1]) {
-    return [{ label: 'My shows' }];
+    return [{ label: 'My shows', icon: Music4 }];
   }
 
   const showHref = `/shows/${segments[1]}`;
   return [
-    { label: 'My shows', href: '/shows' },
+    { label: 'My shows', href: '/shows', icon: Music4 },
     {
       label: formatPathSegment(segments[1]),
       href: segments[2] ? showHref : undefined,
@@ -583,45 +716,60 @@ function getShowBreadcrumbs(segments: string[]): ShellBreadcrumb[] {
 }
 
 function getAppBreadcrumbs(pathname: string | null): ShellBreadcrumb[] {
-  const normalisedPath = (pathname ?? '/dashboard').replace(/\/+$/, '') || '/dashboard';
-  if (normalisedPath === '/dashboard') return [{ label: 'Dashboard' }];
+  const normalisedPath = (pathname ?? '/home').replace(/\/+$/, '') || '/home';
+  if (normalisedPath === '/home') return [{ label: 'Home', icon: Home }];
   if (normalisedPath.startsWith('/settings')) return getSettingsBreadcrumbs(normalisedPath);
 
   const segments = normalisedPath.split('/').filter(Boolean);
   if (segments[0] === 'shows') return getShowBreadcrumbs(segments);
   if (segments[0] === 'library') {
     return [
-      { label: 'Explore', href: segments[1] ? '/library' : undefined },
+      { label: 'Explore', href: segments[1] ? '/library' : undefined, icon: Star },
       ...(segments[1] ? [{ label: formatPathSegment(segments[1]) }] : []),
     ];
   }
 
-  const staticLabel = APP_LINKS.find((link) => link.href === `/${segments[0]}`)?.label;
-  return [{ label: staticLabel ?? formatPathSegment(segments[0] ?? 'Workspace') }];
+  const staticLink = APP_LINKS.find((link) => link.href === `/${segments[0]}`);
+  return [
+    {
+      label: staticLink?.label ?? formatPathSegment(segments[0] ?? 'Workspace'),
+      icon: staticLink?.icon,
+    },
+  ];
+}
+
+function isHomePath(pathname: string | null) {
+  return ((pathname ?? '/home').replace(/\/+$/, '') || '/home') === '/home';
 }
 
 function ShellBreadcrumbs({ breadcrumbs }: { breadcrumbs: ShellBreadcrumb[] }) {
-  const crumbs = breadcrumbs.length > 0 ? breadcrumbs : [{ label: 'Dashboard' }];
+  const crumbs = breadcrumbs.length > 0 ? breadcrumbs : [{ label: 'Home' }];
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
       {crumbs.map((crumb, index) => {
         const isLast = index === crumbs.length - 1;
+        const Icon = crumb.icon;
         return (
           <span key={index} className="flex min-w-0 items-center gap-1">
             {crumb.href && !isLast ? (
               <Link
                 href={crumb.href}
                 prefetch
-                className="text-muted-foreground hover:text-foreground truncate transition-colors"
+                className="text-muted-foreground hover:text-foreground inline-flex min-w-0 items-center gap-1.5 transition-colors"
               >
-                {crumb.label}
+                {Icon ? <Icon aria-hidden size={15} strokeWidth={2} className="shrink-0" /> : null}
+                <span className="truncate">{crumb.label}</span>
               </Link>
             ) : (
               <span
-                className={cn('truncate', isLast ? 'text-foreground' : 'text-muted-foreground')}
+                className={cn(
+                  'inline-flex min-w-0 items-center gap-1.5',
+                  isLast ? 'text-foreground' : 'text-muted-foreground',
+                )}
               >
-                {crumb.label}
+                {Icon ? <Icon aria-hidden size={15} strokeWidth={2} className="shrink-0" /> : null}
+                <span className="truncate">{crumb.label}</span>
               </span>
             )}
             {!isLast ? (
@@ -635,6 +783,10 @@ function ShellBreadcrumbs({ breadcrumbs }: { breadcrumbs: ShellBreadcrumb[] }) {
 }
 
 function ShellTopBar({ pathname }: { pathname: string | null }) {
+  if (isHomePath(pathname)) {
+    return null;
+  }
+
   const breadcrumbs = getAppBreadcrumbs(pathname);
 
   return (
@@ -657,6 +809,7 @@ export function AppShell({
   children,
   profile,
   impersonation,
+  aiUsage,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
   initialFeaturedTemplateDismissedUntil = null,
@@ -677,6 +830,7 @@ export function AppShell({
     });
 
   const permissions = new Set(profile?.permissions ?? []);
+  const isGuest = !profile;
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };
@@ -686,9 +840,10 @@ export function AppShell({
     }
     return link;
   });
-  const visibleLinks = workspaceLinks.filter(
-    (link) => !link.permission || permissions.has(link.permission),
-  );
+  const visibleLinks = workspaceLinks.filter((link) => {
+    if (isGuest && !GUEST_NAV_HREFS.has(link.href)) return false;
+    return !link.permission || permissions.has(link.permission);
+  });
   const navLinks = inSettings ? SETTINGS_LINKS : visibleLinks;
 
   const displayName = profile?.fullName || profile?.email || 'Account';
@@ -718,6 +873,7 @@ export function AppShell({
   }, [featuredTemplateDismissedUntil]);
 
   useEffect(() => {
+    if (isGuest) return;
     let active = true;
 
     async function loadWorkspaceSummary() {
@@ -739,7 +895,7 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, [pathname, isGuest]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -836,12 +992,17 @@ export function AppShell({
           )}
         </SidebarContent>
 
-        <AppSidebarFooter
-          profile={profileSummary}
-          impersonation={impersonation}
-          inSettings={inSettings}
-          onSignOut={handleSignOut}
-        />
+        {isGuest ? (
+          <SidebarGuestFooter />
+        ) : (
+          <AppSidebarFooter
+            profile={profileSummary}
+            impersonation={impersonation}
+            aiUsage={aiUsage}
+            inSettings={inSettings}
+            onSignOut={handleSignOut}
+          />
+        )}
       </Sidebar>
 
       <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">

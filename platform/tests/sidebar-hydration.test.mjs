@@ -29,7 +29,12 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
 
   assert.match(appSource, /getAppBreadcrumbs/);
   assert.match(appSource, /formatPathSegment/);
-  assert.match(appSource, /normalisedPath === '\/dashboard'\) return \[\{ label: 'Dashboard' \}\]/);
+  assert.match(
+    appSource,
+    /normalisedPath === '\/home'\) return \[\{ label: 'Home', icon: Home \}\]/,
+  );
+  assert.match(appSource, /icon\?: LucideIcon/);
+  assert.match(appSource, /icon: staticLink\?\.icon/);
   assert.doesNotMatch(appSource, /label: 'Workspace'/);
   assert.match(appSource, /SidebarPrimaryAction/);
   assert.match(appSource, /label: 'My shows'/);

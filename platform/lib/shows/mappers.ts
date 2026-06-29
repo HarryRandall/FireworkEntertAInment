@@ -4,6 +4,7 @@
  */
 import { parseLaunchPositions } from '@/lib/fireworks/design';
 import { compileFireworkDesign } from '@/lib/fireworks/design';
+import { parseShaderCover } from '@/lib/shader-cover';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   isFireworkStyleDefaultKind,
@@ -53,8 +54,14 @@ export function mapShow(row: ShowProjection): Show {
     generationStartedAt: row.generation_started_at,
     generationCompletedAt: row.generation_completed_at,
     launchPositions: parseLaunchPositions(row.launch_positions_json),
+    coverShader: parseShaderCover(row.cover_shader),
     updatedAt: row.updated_at,
   };
+}
+
+/** Coerce a stored emphasis value to the validated union, defaulting to 'normal'. */
+function normaliseEmphasis(value: string | null | undefined): 'normal' | 'accent' | 'peak' {
+  return value === 'accent' || value === 'peak' ? value : 'normal';
 }
 
 /**
@@ -73,6 +80,7 @@ export function mapCue(row: ShowCueProjection): ShowCue {
       0,
       Math.min(2, Math.floor(Number(row.launch_position_index ?? 0))),
     ),
+    emphasis: normaliseEmphasis(row.emphasis),
   };
 }
 

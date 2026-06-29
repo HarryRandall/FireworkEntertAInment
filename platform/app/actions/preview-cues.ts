@@ -16,6 +16,12 @@ import {
   findTubeOverlap,
   getProductDurationSeconds,
 } from '@/lib/cue-overlap.server';
+import {
+  refundAiCreditReservation,
+  reserveAiCredits,
+  settleAiCreditReservation,
+  showRefinementReservationKey,
+} from '@/lib/ai-credits.server';
 
 export type CueActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -29,6 +35,10 @@ const AddCueSchema = z.object({
     .max(60 * 60),
   description: z.string().trim().min(1).max(180),
   launchPositionIndex: z.coerce.number().int().min(0).max(2).default(0),
+  emphasis: z.enum(['normal', 'accent', 'peak']).default('normal'),
+  aiCreditAction: z.enum(['show_refinement']).optional(),
+  aiCreditReferenceId: z.string().uuid().optional(),
+  refinementPrompt: z.string().trim().max(1000).optional(),
 });
 
 function formatSeconds(value: number): string {
@@ -49,6 +59,10 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     timeSeconds: formData.get('timeSeconds'),
     description: formData.get('description'),
     launchPositionIndex: formData.get('launchPositionIndex') ?? 0,
+    emphasis: formData.get('emphasis') ?? 'normal',
+    aiCreditAction: formData.get('aiCreditAction') || undefined,
+    aiCreditReferenceId: formData.get('aiCreditReferenceId') || undefined,
+    refinementPrompt: formData.get('refinementPrompt') || undefined,
   });
 
   if (!parsed.success) {
@@ -116,6 +130,39 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     .limit(1)
     .maybeSingle();
 
+  const isAiRefinement = parsed.data.aiCreditAction === 'show_refinement';
+  let refinementReservationKey: string | null = null;
+  if (isAiRefinement) {
+    if (!user) return { ok: false, error: 'Sign in to refine this show.' };
+    if (!parsed.data.aiCreditReferenceId) {
+      return { ok: false, error: 'Could not identify this refinement.' };
+    }
+
+    refinementReservationKey = showRefinementReservationKey(parsed.data.aiCreditReferenceId);
+    const reservation = await reserveAiCredits(supabase, {
+      userId: user.id,
+      actionKey: 'show_refinement',
+      referenceType: 'show_refinements',
+      referenceId: parsed.data.aiCreditReferenceId,
+      reservationKey: refinementReservationKey,
+      metadata: {
+        description: parsed.data.description,
+        productId: parsed.data.productId,
+        prompt: parsed.data.refinementPrompt ?? null,
+        showId: parsed.data.showId,
+        showSlug: parsed.data.showSlug,
+        timeSeconds: parsed.data.timeSeconds,
+      },
+    });
+
+    if (!reservation.ok) {
+      return {
+        ok: false,
+        error: reservation.error ?? 'You do not have enough AI credits to refine this show.',
+      };
+    }
+  }
+
   const { error } = await supabase.from('show_timeline_items').insert({
     show_id: parsed.data.showId,
     position: (lastCue?.position ?? 0) + 1,
@@ -123,11 +170,38 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     description: parsed.data.description,
     catalogue_item_id: parsed.data.productId,
     launch_position_index: parsed.data.launchPositionIndex,
+    emphasis: parsed.data.emphasis,
   });
 
   if (error) {
     console.error('[addPreviewCueAction] insert failed:', error);
+    if (refinementReservationKey && user) {
+      await refundAiCreditReservation(supabase, {
+        userId: user.id,
+        reservationKey: refinementReservationKey,
+        metadata: {
+          reason: 'cue_insert_failed',
+          showId: parsed.data.showId,
+          showSlug: parsed.data.showSlug,
+        },
+      });
+    }
     return { ok: false, error: 'Could not add that firework cue.' };
+  }
+
+  if (refinementReservationKey && user) {
+    const settled = await settleAiCreditReservation(supabase, {
+      userId: user.id,
+      reservationKey: refinementReservationKey,
+      metadata: {
+        cueDescription: parsed.data.description,
+        productId: parsed.data.productId,
+        showId: parsed.data.showId,
+        showSlug: parsed.data.showSlug,
+      },
+    });
+    if (!settled.ok)
+      console.error('[addPreviewCueAction] credit settlement failed:', settled.error);
   }
 
   if (user) {

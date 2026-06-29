@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { PanelRightClose, Pause, Play, Repeat, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { PreviewFullscreenBackdrop } from '@/app/components/admin/previewFullscreen';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { InlineAlert } from '@/app/components/ui/Feedback';
@@ -39,6 +40,7 @@ export function EditorPreviewTransport({
   onReset,
   onLoopToggle,
   onScrub,
+  onScrubEnd,
 }: {
   elapsed: number;
   duration: number;
@@ -49,13 +51,28 @@ export function EditorPreviewTransport({
   onReset: () => void;
   onLoopToggle: () => void;
   onScrub: (seconds: number) => void;
+  onScrubEnd?: () => void;
 }) {
   const safeDuration = Math.max(0.1, duration);
-  const safeElapsed = Math.min(safeDuration, Math.max(0, elapsed));
+  // The transport owns the slider thumb so a fast drag does not re-render the
+  // whole editor on every input event. `localElapsed` tracks the pointer at
+  // full rate while the parent's heavyweight `elapsed` state is coalesced; the
+  // sync effect keeps it in step with playback when a drag is not in flight.
+  const scrubbingRef = useRef(false);
+  const [localElapsed, setLocalElapsed] = useState(elapsed);
+  useEffect(() => {
+    if (!scrubbingRef.current) setLocalElapsed(elapsed);
+  }, [elapsed]);
+  const safeElapsed = Math.min(safeDuration, Math.max(0, localElapsed));
   const progress = (safeElapsed / safeDuration) * 100;
   const visibleTicks = ticks.filter(
     (tick) => tick.timeSeconds > 0 && tick.timeSeconds < safeDuration,
   );
+
+  function commitScrub() {
+    scrubbingRef.current = false;
+    onScrubEnd?.();
+  }
 
   function tickKey(tick: EditorPreviewTick) {
     return `${tick.label}-${tick.timeSeconds}`;
@@ -115,7 +132,14 @@ export function EditorPreviewTransport({
           max={safeDuration}
           step={0.05}
           value={safeElapsed}
-          onChange={(event) => onScrub(Number(event.currentTarget.value))}
+          onChange={(event) => {
+            scrubbingRef.current = true;
+            const seconds = Number(event.currentTarget.value);
+            setLocalElapsed(seconds);
+            onScrub(seconds);
+          }}
+          onPointerUp={commitScrub}
+          onKeyUp={commitScrub}
           aria-label="Preview timeline"
           className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 focus:outline-none"
         />
@@ -167,6 +191,8 @@ type FireworkEditorShellProps = {
   transport: ReactNode;
   error?: string | null;
   previewNotice?: ReactNode;
+  fullscreen?: boolean;
+  onExitFullscreen?: () => void;
 };
 
 export function FireworkEditorShell({
@@ -188,6 +214,8 @@ export function FireworkEditorShell({
   transport,
   error,
   previewNotice,
+  fullscreen,
+  onExitFullscreen,
 }: FireworkEditorShellProps) {
   const [inspectorCollapsed, setInspectorCollapsed] = useState(true);
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
@@ -250,80 +278,93 @@ export function FireworkEditorShell({
           inspectorCollapsed && 'lg:grid-cols-[minmax(0,1fr)_60px]',
         )}
       >
-        <section className="relative min-h-[520px] min-w-0 overflow-hidden bg-[#05070d] text-white lg:min-h-0">
+        <section
+          className={cn(
+            'min-w-0 overflow-hidden bg-[#05070d] text-white',
+            fullscreen
+              ? 'fixed inset-[5vmin] z-[100] rounded-2xl border border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
+              : 'relative min-h-[520px] lg:min-h-0',
+          )}
+        >
           <div className="absolute inset-0 z-0">{preview}</div>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-4 sm:p-5">
-            <div
-              className={cn(
-                'flex flex-wrap items-start gap-3 pr-16 sm:pr-[4.5rem]',
-                hasMetadata ? 'justify-between' : 'justify-end',
-              )}
-            >
-              {hasMetadata ? (
-                <div
-                  className="pointer-events-auto flex min-w-0 flex-wrap items-center gap-2"
-                  aria-label={dirty ? `${title} has unsaved changes` : title}
-                >
-                  {visibleChips.map((chip) => {
-                    const Icon = chip.icon;
-                    return (
-                      <span
-                        key={chip.label}
-                        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/14 bg-white/9 px-2.5 text-xs font-semibold text-white/88 shadow-[inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-md"
-                        aria-label={`${chip.label} ${chip.value}`}
-                      >
-                        {Icon ? (
-                          <Icon size={13} className="shrink-0 text-white/58" aria-hidden />
-                        ) : (
-                          <span className="text-xs font-medium text-white/46">{chip.label}</span>
-                        )}
-                        <span className="font-mono tabular-nums">{chip.value}</span>
-                      </span>
-                    );
-                  })}
-                  {palette.length > 0 ? (
-                    <span className="flex h-7 items-center gap-1.5" aria-label="Palette">
-                      {palette.slice(0, 6).map((colour, index) => (
+          {!fullscreen ? (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-4 sm:p-5">
+              <div
+                className={cn(
+                  'flex flex-wrap items-start gap-3 pr-16 sm:pr-[4.5rem]',
+                  hasMetadata ? 'justify-between' : 'justify-end',
+                )}
+              >
+                {hasMetadata ? (
+                  <div
+                    className="pointer-events-auto flex min-w-0 flex-wrap items-center gap-2"
+                    aria-label={dirty ? `${title} has unsaved changes` : title}
+                  >
+                    {visibleChips.map((chip) => {
+                      const Icon = chip.icon;
+                      return (
                         <span
-                          key={`${colour}-${index}`}
-                          className="size-3.5 rounded-full border border-white/30 shadow-[0_0_12px_rgba(255,255,255,.12)]"
-                          style={{ backgroundColor: colour }}
-                          aria-hidden
-                        />
-                      ))}
-                    </span>
-                  ) : null}
-                  {subtitle ? <span className="sr-only">{subtitle}</span> : null}
+                          key={chip.label}
+                          className="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/14 bg-white/9 px-2.5 text-xs font-semibold text-white/88 shadow-[inset_0_1px_0_rgba(255,255,255,.08)] backdrop-blur-md"
+                          aria-label={`${chip.label} ${chip.value}`}
+                        >
+                          {Icon ? (
+                            <Icon size={13} className="shrink-0 text-white/58" aria-hidden />
+                          ) : (
+                            <span className="text-xs font-medium text-white/46">{chip.label}</span>
+                          )}
+                          <span className="font-mono tabular-nums">{chip.value}</span>
+                        </span>
+                      );
+                    })}
+                    {palette.length > 0 ? (
+                      <span className="flex h-7 items-center gap-1.5" aria-label="Palette">
+                        {palette.slice(0, 6).map((colour, index) => (
+                          <span
+                            key={`${colour}-${index}`}
+                            className="size-3.5 rounded-full border border-white/30 shadow-[0_0_12px_rgba(255,255,255,.12)]"
+                            style={{ backgroundColor: colour }}
+                            aria-hidden
+                          />
+                        ))}
+                      </span>
+                    ) : null}
+                    {subtitle ? <span className="sr-only">{subtitle}</span> : null}
+                  </div>
+                ) : null}
+                <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    className="h-9 rounded-[10px] border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
+                    disabled={revertDisabled || saving}
+                    onClick={onRevert}
+                  >
+                    <Undo2 size={14} />
+                    Revert
+                  </Button>
+                  <Button
+                    loading={saving}
+                    disabled={saveDisabled}
+                    onClick={onSave}
+                    className="h-9 rounded-[10px] bg-[color:var(--hl)] px-4 text-xs font-semibold text-[#05231a] hover:bg-[color:var(--hl)]/85"
+                  >
+                    <Save size={14} />
+                    {saveLabel}
+                  </Button>
                 </div>
-              ) : null}
-              <div className="pointer-events-auto flex shrink-0 items-center gap-2">
-                <Button
-                  variant="secondary"
-                  className="h-9 rounded-[10px] border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
-                  disabled={revertDisabled || saving}
-                  onClick={onRevert}
-                >
-                  <Undo2 size={14} />
-                  Revert
-                </Button>
-                <Button
-                  loading={saving}
-                  disabled={saveDisabled}
-                  onClick={onSave}
-                  className="h-9 rounded-[10px] bg-[color:var(--hl)] px-4 text-xs font-semibold text-[#05231a] hover:bg-[color:var(--hl)]/85"
-                >
-                  <Save size={14} />
-                  {saveLabel}
-                </Button>
               </div>
+              {previewNotice ? <div className="pointer-events-auto">{previewNotice}</div> : null}
             </div>
-            {previewNotice ? <div className="pointer-events-auto">{previewNotice}</div> : null}
-          </div>
+          ) : null}
 
           <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30">
             <div className="pointer-events-auto">{transport}</div>
           </div>
+
+          {fullscreen && onExitFullscreen ? (
+            <PreviewFullscreenBackdrop onExit={onExitFullscreen} />
+          ) : null}
         </section>
 
         <aside

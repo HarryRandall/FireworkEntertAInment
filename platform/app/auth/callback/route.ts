@@ -5,9 +5,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
 function getSafeNextPath(nextPath: string | null) {
-  return nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')
-    ? nextPath
-    : '/dashboard';
+  return nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/home';
 }
 
 export async function GET(request: Request) {

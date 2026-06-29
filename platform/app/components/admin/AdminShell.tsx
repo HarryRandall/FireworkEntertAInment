@@ -195,7 +195,7 @@ function SidebarNavItem({
 function BackToAppItem({ onNavigate }: { onNavigate: (href: string) => void }) {
   return (
     <SidebarNavItem
-      link={{ href: '/dashboard', label: 'Back to app', icon: ArrowLeft }}
+      link={{ href: '/home', label: 'Back to app', icon: ArrowLeft }}
       active={false}
       onNavigate={onNavigate}
     />

@@ -30,11 +30,17 @@ async function ShowPreviewReplay(props: PageProps) {
   if (!show) notFound();
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
 
-  const [cues, specifications, audioUrl] = await Promise.all([
+  // Stream the heavy replay data (cues, catalogue, audio URL) into the client
+  // viewer as a promise rather than awaiting it here. The viewer mounts the 3D
+  // canvas immediately with no fireworks, shows a loading bar while this
+  // resolves, and only reveals the timeline slider once the data has landed and
+  // the engine is ready. The show row itself is awaited so notFound/redirect
+  // still run on the server before anything renders.
+  const replayDataPromise = Promise.all([
     listReplayCuesForShow(show.id),
     listFireworkProducts(),
     getAudioSignedUrl(show.audioPath),
-  ]);
+  ]).then(([cues, specifications, audioUrl]) => ({ cues, specifications, audioUrl }));
 
   return (
     <FireworkReplayViewer
@@ -43,10 +49,8 @@ async function ShowPreviewReplay(props: PageProps) {
       showName={show.title}
       durationSeconds={show.durationSeconds}
       totalCents={show.totalCents}
-      cues={cues}
-      specifications={specifications}
       launchPositions={show.launchPositions}
-      audioUrl={audioUrl}
+      replayDataPromise={replayDataPromise}
     />
   );
 }

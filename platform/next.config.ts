@@ -10,15 +10,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '250mb',
     },
   },
-  async redirects() {
-    return [
-      {
-        source: '/supabase-example',
-        destination: '/dev/supabase-example',
-        permanent: true,
-      },
-    ];
-  },
 };
 
 export default nextConfig;

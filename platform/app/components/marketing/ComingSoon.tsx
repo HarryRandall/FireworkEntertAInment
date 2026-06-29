@@ -20,14 +20,6 @@ export function ComingSoon({
 }: ComingSoonProps) {
   return (
     <section className="bg-background relative isolate flex min-h-[80vh] items-center overflow-hidden py-24">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--color-primary)_12%,transparent),transparent_65%)]"
-      />
-      <div
-        aria-hidden
-        className="bg-primary/10 pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-      />
       <Container className="relative z-10 flex flex-col items-center text-center">
         <span className="border-primary/30 bg-primary/10 text-primary mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold tracking-[0.2em] uppercase">
           <Sparkles size={14} strokeWidth={2} />

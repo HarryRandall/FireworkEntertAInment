@@ -41,7 +41,7 @@ test('package and root README expose platform-local quality commands', () => {
 
 test('app and admin routes have granular loading coverage and streaming boundaries', () => {
   for (const path of [
-    'app/(app)/dashboard/loading.tsx',
+    'app/(app)/home/loading.tsx',
     'app/(app)/library/loading.tsx',
     'app/(app)/settings/loading.tsx',
     'app/(app)/shows/[id]/loading.tsx',
@@ -61,7 +61,7 @@ test('app and admin routes have granular loading coverage and streaming boundari
   }
 
   for (const path of [
-    'app/(app)/dashboard/page.tsx',
+    'app/(app)/home/page.tsx',
     'app/(app)/library/page.tsx',
     'app/(app)/shows/[id]/preview/page.tsx',
     'app/(app)/shows/[id]/shopping-list/page.tsx',

@@ -12,6 +12,7 @@
   display: flex;
   flex: 1 1 auto;
   min-height: 100%;
+  height: 100%;
   overflow: hidden;
   border-radius: 16px;
   background: linear-gradient(180deg, #03050b 0%, #0b1226 100%);
@@ -28,6 +29,25 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+}
+
+.shaderLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--color-bg-default);
+}
+
+.hasCover {
+  background: var(--color-bg-default);
+}
+
+.hasCover .container {
+  z-index: 1;
+  opacity: 0.22;
+  mix-blend-mode: screen;
 }
 
 /* Far + near starfield layers. */
@@ -77,7 +97,7 @@
   inset-inline: 0;
   bottom: -16%;
   height: 60%;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
   background: radial-gradient(
     60% 60% at 50% 100%,
@@ -91,7 +111,7 @@
 /* Soft distant firework bursts, staggered around the card. */
 .burst {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   width: 240px;
   height: 240px;
   border-radius: 50%;
@@ -177,7 +197,7 @@
 
 .card {
   position: relative;
-  max-width: 34rem;
+  max-width: 42rem;
   width: 100%;
   text-align: center;
   display: flex;
@@ -189,6 +209,15 @@
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
   color: var(--color-content-default);
+}
+
+.hasCover .card {
+  border-color: rgba(245, 247, 250, 0.2);
+  background: rgba(5, 7, 13, 0.64);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #f5f7fa;
 }
 
 .panelTop {
@@ -229,14 +258,35 @@
   color: var(--color-accent);
 }
 
+.hasCover .eyebrow {
+  color: #00e5ff;
+}
+
 .title {
-  font-size: clamp(1.6rem, 3.6vw, 2.25rem);
+  font-size: clamp(1.9rem, 4vw, 3rem);
   font-weight: 800;
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   line-height: 1.15;
   margin: 0;
   color: var(--color-content-emphasis);
   word-break: break-word;
+}
+
+.hasCover .title {
+  color: #f5f7fa;
+}
+
+.showTitle {
+  margin: 0.85rem 0 0;
+  color: var(--color-content-subtle);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.hasCover .showTitle {
+  color: rgba(245, 247, 250, 0.74);
 }
 
 .stageLabelWrap {
@@ -261,6 +311,10 @@
   font-variant-numeric: tabular-nums;
   will-change: transform, opacity;
   animation: stage-slide-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hasCover .stageLabel {
+  color: rgba(245, 247, 250, 0.82);
 }
 
 @keyframes stage-slide-in {
@@ -313,6 +367,14 @@
 .hint {
   color: var(--color-content-muted);
   font-size: 0.8125rem;
+}
+
+.hasCover .hint {
+  color: rgba(245, 247, 250, 0.62);
+}
+
+.hasCover .percent {
+  color: #f5f7fa;
 }
 
 /* === Light theme ======================================================== */

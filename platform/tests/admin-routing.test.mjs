@@ -25,7 +25,7 @@ test('admin shell has its own navigation and back-to-app route', () => {
 });
 
 test('global dashboard no longer renders admin and supplier promo cards', () => {
-  const dashboard = readFileSync(join(root, 'app/(app)/dashboard/page.tsx'), 'utf8');
+  const dashboard = readFileSync(join(root, 'app/(app)/home/page.tsx'), 'utf8');
   assert.doesNotMatch(dashboard, /Admin console/);
   assert.doesNotMatch(dashboard, /Supplier workspace/);
 });

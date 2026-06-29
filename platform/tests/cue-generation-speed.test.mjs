@@ -7,6 +7,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const openrouter = readFileSync(join(root, 'lib/openrouter.server.ts'), 'utf8');
+const cueModels = readFileSync(join(root, 'lib/cue-models.ts'), 'utf8');
 const beatGrid = readFileSync(join(root, 'lib/beat-grid.server.ts'), 'utf8');
 const prompt = readFileSync(join(root, 'lib/cue-generation/prompt.ts'), 'utf8');
 const fastPlanner = readFileSync(join(root, 'lib/cue-generation/fast-planner.ts'), 'utf8');
@@ -15,11 +16,12 @@ const promptConfigs = readFileSync(join(root, 'lib/prompt-configs.server.ts'), '
 const schemas = readFileSync(join(root, 'lib/cue-generation/schemas.ts'), 'utf8');
 const envExample = readFileSync(join(root, '.env.example'), 'utf8');
 
-test('cue generation defaults to the faster OpenRouter model while keeping env override', () => {
+test('cue generation defaults to GPT-4.1 Mini via OpenRouter while keeping env override', () => {
   assert.match(
     openrouter,
-    /DEFAULT_CUE_MODEL = process\.env\.OPENROUTER_CUE_MODEL \?\? 'openai\/gpt-4\.1-mini'/,
+    /DEFAULT_CUE_MODEL = process\.env\.OPENROUTER_CUE_MODEL \?\? FALLBACK_CUE_MODEL/,
   );
+  assert.match(cueModels, /FALLBACK_CUE_MODEL = 'openai\/gpt-4\.1-mini'/);
   assert.match(envExample, /defaults to openai\/gpt-4\.1-mini/);
 });
 
@@ -38,7 +40,7 @@ test('cue generation defaults to local fast planning instead of waiting on OpenR
 test('cue slot target and response cap stay reduced', () => {
   assert.match(beatGrid, /const TARGET_SLOTS = 160;/);
   assert.match(beatGrid, /const MAX_TARGET_SLOTS = 220;/);
-  assert.match(prompt, /Constraints: cues\.length 1–360/);
+  assert.match(prompt, /Constraints: cues\.length 1-360/);
   assert.match(schemas, /z\.array\(AssignmentSchema\)\.min\(1\)\.max\(360\)/);
   assert.doesNotMatch(beatGrid, /const TARGET_SLOTS = 240;/);
   assert.doesNotMatch(schemas, /\.max\(640\)/);
@@ -65,5 +67,5 @@ test('cue generation emits server timing logs for the critical stages', () => {
   assert.match(runner, /fastPlanMs:/);
   assert.match(runner, /llmMs:/);
   assert.match(runner, /totalMs:/);
-  assert.match(runner, /max_tokens: 5000/);
+  assert.match(runner, /max_tokens: 8000/);
 });

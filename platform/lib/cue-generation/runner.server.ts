@@ -13,7 +13,7 @@ import 'server-only';
 
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/database.types';
+import type { Database, Json } from '@/lib/database.types';
 import { buildCueSlots, type CueSlot } from '@/lib/beat-grid.server';
 import {
   MIN_PRODUCT_DURATION_SECONDS,
@@ -25,6 +25,12 @@ import type { GenerationMode } from '@/lib/prompt-configs';
 import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
+import {
+  refundAiCreditReservation,
+  settleAiCreditReservation,
+  showGenerationReservationKey,
+} from '@/lib/ai-credits.server';
+import { normaliseCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import {
   loadAnalysisState,
@@ -45,6 +51,7 @@ import { SHOW_STYLES, isShowStyleKey, type ShowStyleKey } from './show-styles';
 import {
   GenerationResponseSchema,
   type Assignment,
+  type CueEmphasis,
   type GenerateCuesResult,
   type ShowBriefRow,
 } from './schemas';
@@ -59,6 +66,7 @@ type ReconstructedCue = {
   description: string;
   slotIndex: number;
   intensity: number;
+  emphasis: CueEmphasis;
 };
 
 function elapsedMs(start: number): number {
@@ -80,13 +88,14 @@ export async function generateCuesForShow(params: {
   userId: string;
   showId: string;
   musicAnalysisId: string | null;
+  selectedCueModel?: string | null;
 }): Promise<GenerateCuesResult> {
-  const { supabase, userId, showId, musicAnalysisId } = params;
-  const model = DEFAULT_CUE_MODEL;
+  const { supabase, userId, showId, musicAnalysisId, selectedCueModel } = params;
+  const creditReservationKey = showGenerationReservationKey(showId);
+  let model = normaliseCueModel(selectedCueModel, DEFAULT_CUE_MODEL);
   const generationSettings = await getShowCueGenerationSettings();
-  // The show's style (picked in the wizard) overrides the global setting:
-  // 'beat_test' runs the deterministic beat planner, every other style runs
-  // the LLM with the fast planner as an automatic rescue path.
+  // The global setting decides fast vs LLM for normal styles. The dedicated
+  // beat-test style remains a deterministic override for QA.
   let generationMode: GenerationMode | 'beat' = generationSettings.generationMode;
   let showStyle: ShowStyleKey | null = null;
   /** Launch positions the site supports (capped by `shows.site_width_feet`). */
@@ -134,6 +143,32 @@ export async function generateCuesForShow(params: {
       ...extra,
     });
   };
+  const refundGenerationCredits = async (reason: string) => {
+    const result = await refundAiCreditReservation(supabase, {
+      userId,
+      reservationKey: creditReservationKey,
+      metadata: { reason },
+    });
+    if (!result.ok && result.error !== 'Credit reservation was not found.') {
+      console.error('[cue-generation] credit refund failed:', result.error);
+    }
+  };
+  const settleGenerationCredits = async () => {
+    const result = await settleAiCreditReservation(supabase, {
+      userId,
+      reservationKey: creditReservationKey,
+      metadata: {
+        acceptedCount,
+        generationMode,
+        model,
+        promptBytes,
+        rawResponseBytes,
+      },
+    });
+    if (!result.ok && result.error !== 'Credit reservation was not found.') {
+      console.error('[cue-generation] credit settlement failed:', result.error);
+    }
+  };
 
   await markGenerationStatus(supabase, userId, showId, {
     generation_status: 'running',
@@ -160,9 +195,10 @@ export async function generateCuesForShow(params: {
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
+    model = normaliseCueModel(brief.selected_cue_model ?? selectedCueModel, DEFAULT_CUE_MODEL);
     showStyle = isShowStyleKey(brief.show_style) ? brief.show_style : null;
-    if (showStyle) {
-      generationMode = SHOW_STYLES[showStyle].engine === 'beat' ? 'beat' : 'llm';
+    if (showStyle && SHOW_STYLES[showStyle].engine === 'beat') {
+      generationMode = 'beat';
     }
     maxTubes = launchPositionsForWidth(brief.site_width_feet);
     if (musicAnalysisId) {
@@ -221,6 +257,7 @@ export async function generateCuesForShow(params: {
       generation_error: message,
       generation_completed_at: new Date().toISOString(),
     });
+    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
     return { ok: false, error: message };
   }
@@ -308,8 +345,8 @@ export async function generateCuesForShow(params: {
       const client = getOpenRouterClient();
       const completion = await client.chat.completions.create({
         model,
-        temperature: 0.45,
-        max_tokens: 5000,
+        temperature: 0.7,
+        max_tokens: 8000,
         // `json_object` is the widely-supported structured-output mode on
         // OpenRouter. `json_schema` is OpenAI-only.
         response_format: { type: 'json_object' },
@@ -385,6 +422,7 @@ export async function generateCuesForShow(params: {
           description: a.description,
           slotIndex: slot.index,
           intensity: slot.intensity,
+          emphasis: a.emphasis ?? slot.emphasis,
         });
       }
 
@@ -441,46 +479,51 @@ export async function generateCuesForShow(params: {
       generation_error: message,
       generation_completed_at: new Date().toISOString(),
     });
+    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
     return { ok: false, error: message };
   }
 
-  // === Stage 5: replace existing show_timeline_items with the new set =====
+  // === Stage 5: transactionally replace show_timeline_items ================
   const dbStart = performance.now();
-  const { error: deleteError } = await supabase
-    .from('show_timeline_items')
-    .delete()
-    .eq('show_id', showId);
-  if (deleteError) {
-    const message = `Could not clear existing cues: ${deleteError.message}`;
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
-    timings.dbWriteMs = elapsedMs(dbStart);
-    logTimings('failed', { error: message });
-    return { ok: false, error: message };
-  }
-
   const rows = accepted.map((cue, i) => ({
-    show_id: showId,
     position: i + 1,
     time_seconds: cue.timeSeconds,
     description: cue.description,
     catalogue_item_id: cue.productId,
     launch_position_index: cue.tube,
+    emphasis: cue.emphasis,
   }));
 
-  const { error: insertError } = await supabase.from('show_timeline_items').insert(rows);
-  if (insertError) {
-    const message = `Could not insert generated cues: ${insertError.message}`;
+  const { data: replacedCount, error: replaceError } = await supabase.rpc(
+    'replace_show_timeline_items',
+    {
+      p_show_id: showId,
+      p_user_id: userId,
+      p_items: rows as Json,
+    },
+  );
+  if (replaceError) {
+    const message = `Could not replace generated cues: ${replaceError.message}`;
     await markGenerationStatus(supabase, userId, showId, {
       generation_status: 'failed',
       generation_error: message,
       generation_completed_at: new Date().toISOString(),
     });
     timings.dbWriteMs = elapsedMs(dbStart);
+    await refundGenerationCredits(message);
+    logTimings('failed', { error: message });
+    return { ok: false, error: message };
+  }
+  if (replacedCount !== rows.length) {
+    const message = `Cue replacement wrote ${replacedCount ?? 0} of ${rows.length} cues.`;
+    await markGenerationStatus(supabase, userId, showId, {
+      generation_status: 'failed',
+      generation_error: message,
+      generation_completed_at: new Date().toISOString(),
+    });
+    timings.dbWriteMs = elapsedMs(dbStart);
+    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
     return { ok: false, error: message };
   }
@@ -500,6 +543,7 @@ export async function generateCuesForShow(params: {
   revalidatePath(`/shows/${brief.slug}`);
   revalidatePath(`/shows/${brief.slug}/preview`);
   timings.dbWriteMs = elapsedMs(dbStart);
+  await settleGenerationCredits();
   logTimings('completed');
 
   return { ok: true, cueCount: accepted.length };

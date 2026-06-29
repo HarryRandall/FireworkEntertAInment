@@ -7,17 +7,28 @@
  * seek cheap when many cards are visible.
  */
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Heart, Pause, Play, RotateCcw } from 'lucide-react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Heart, Maximize, Minimize, Pause, Play, RotateCcw } from 'lucide-react';
 import type { ShowTemplate, ShowTemplateCue } from '@/lib/admin.types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
+import { Slider } from '@/components/ui/slider';
 
 type TemplateReplayPreviewProps = {
   template: ShowTemplate;
   specifications: FireworkSpecification[];
   mode?: 'card' | 'detail';
   isCardHovered?: boolean;
+  /** Override the card-mode container classes (e.g. for a portrait cover). */
+  cardClassName?: string;
+  /** Hide the built-in like/budget badge and bottom accent strip in card mode. */
+  showCardOverlays?: boolean;
+  /**
+   * Card mode only: skip the dark default background and the idle skeleton,
+   * and only mount/play the heavy 3D canvas while hovered. Lets the parent
+   * render a lightweight poster behind the preview for the idle state.
+   */
+  lazyHoverMount?: boolean;
 };
 
 const FIREWORK_SLUG_ALIASES: Record<string, string> = {
@@ -30,10 +41,16 @@ const FIREWORK_SLUG_ALIASES: Record<string, string> = {
 
 // Card previews only simulate this window — keeps initial seek fast.
 const CARD_PREVIEW_SECONDS = 10;
+// Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
+// fast scrub does not re-render the preview on every input event. The engine
+// ref and the display state still update at full input rate.
+const SCRUB_COMMIT_INTERVAL_MS = 67;
 
 function ReplayCanvasSkeleton() {
+  // Calm, static "empty firework scene" — no pulse, so a quick sweep across many
+  // cards shows the night-sky backdrop instantly without flashing.
   return (
-    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle_at_50%_88%,rgba(120,150,210,0.12),transparent_45%),linear-gradient(180deg,#05070d,#0b1020)]" />
   );
 }
 
@@ -44,6 +61,8 @@ const LazyFireworkReplayCanvas = dynamic(
     loading: () => <ReplayCanvasSkeleton />,
   },
 );
+const MemoizedFireworkReplayCanvas = memo(LazyFireworkReplayCanvas);
+MemoizedFireworkReplayCanvas.displayName = 'MemoizedFireworkReplayCanvas';
 
 function posterTimeFor(slug: string, cues: ShowTemplateCue[]): number {
   if (cues.length === 0) return 0;
@@ -86,6 +105,9 @@ export function TemplateReplayPreview({
   specifications,
   mode = 'card',
   isCardHovered = false,
+  cardClassName,
+  showCardOverlays = true,
+  lazyHoverMount = false,
 }: TemplateReplayPreviewProps) {
   const isDetail = mode === 'detail';
 
@@ -108,16 +130,30 @@ export function TemplateReplayPreview({
   );
   const hoverStartTime = useMemo(() => hoverStartTimeFor(visibleCues), [visibleCues]);
   const [elapsed, setElapsed] = useState(posterTime);
+  const [displayElapsed, setDisplayElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVisible, setIsVisible] = useState(isDetail);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const elapsedRef = useRef(elapsed);
+  const lastScrubCommitRef = useRef(0);
+  const pendingScrubRef = useRef<number | null>(null);
   const hoverStartTimeRef = useRef(hoverStartTime);
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
   const detailAutoplayRef = useRef(false);
   const active = isDetail ? isPlaying : isCardHovered;
   const playbackRate = isDetail ? 1 : 1.15;
+
+  const setPlayhead = useCallback(
+    (seconds: number) => {
+      const next = Math.max(0, Math.min(duration, seconds));
+      elapsedRef.current = next;
+      setDisplayElapsed(next);
+      setElapsed(next);
+    },
+    [duration],
+  );
 
   const cues = useMemo(() => {
     const specBySlug = new Map(specifications.map((spec) => [spec.slug, spec]));
@@ -126,10 +162,6 @@ export function TemplateReplayPreview({
       .filter((cue): cue is ReplayCue => Boolean(cue))
       .sort((a, b) => a.timeSeconds - b.timeSeconds);
   }, [specifications, visibleCues]);
-
-  useEffect(() => {
-    elapsedRef.current = elapsed;
-  }, [elapsed]);
 
   useEffect(() => {
     if (isDetail || isVisible) return;
@@ -157,8 +189,8 @@ export function TemplateReplayPreview({
 
   useEffect(() => {
     if (isDetail) return;
-    setElapsed(isCardHovered ? hoverStartTime : posterTime);
-  }, [hoverStartTime, isCardHovered, isDetail, posterTime]);
+    setPlayhead(isCardHovered ? hoverStartTime : posterTime);
+  }, [hoverStartTime, isCardHovered, isDetail, posterTime, setPlayhead]);
 
   useEffect(() => {
     detailAutoplayRef.current = false;
@@ -171,13 +203,13 @@ export function TemplateReplayPreview({
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
-      setElapsed(hoverStartTimeRef.current);
+      setPlayhead(hoverStartTimeRef.current);
       setIsPlaying(false);
       return;
     }
-    setElapsed(0);
+    setPlayhead(0);
     setIsPlaying(true);
-  }, [isDetail, cues.length]);
+  }, [isDetail, cues.length, setPlayhead]);
 
   useEffect(() => {
     if (!active || cues.length === 0) return;
@@ -190,15 +222,19 @@ export function TemplateReplayPreview({
       const next = playheadStart.current + ((now - startedAt.current) / 1000) * playbackRate;
       if (next >= duration) {
         if (isDetail) {
+          elapsedRef.current = duration;
+          setDisplayElapsed(duration);
           setElapsed(duration);
           setIsPlaying(false);
           return;
         }
         startedAt.current = now;
         playheadStart.current = 0;
+        elapsedRef.current = 0;
         setElapsed(0);
       } else {
-        setElapsed(next);
+        elapsedRef.current = next;
+        if (isDetail) setDisplayElapsed(next);
       }
       frame = requestAnimationFrame(tick);
     }
@@ -207,17 +243,55 @@ export function TemplateReplayPreview({
     return () => cancelAnimationFrame(frame);
   }, [active, cues.length, duration, isDetail, playbackRate]);
 
+  function scrubTo(seconds: number) {
+    const next = Math.max(0, Math.min(duration, seconds));
+    elapsedRef.current = next;
+    setDisplayElapsed(next);
+    pendingScrubRef.current = next;
+    const now = performance.now();
+    if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
+      lastScrubCommitRef.current = now;
+      setElapsed(next);
+    }
+  }
+
+  function commitScrub() {
+    const pending = pendingScrubRef.current;
+    if (pending == null) return;
+    pendingScrubRef.current = null;
+    lastScrubCommitRef.current = 0;
+    setPlayhead(pending);
+  }
+
   function togglePlayback() {
-    if (elapsed >= duration) setElapsed(0);
+    if (elapsedRef.current >= duration) setPlayhead(0);
     setIsPlaying((playing) => !playing);
   }
 
   function restart() {
     setIsPlaying(false);
-    setElapsed(0);
+    setPlayhead(0);
   }
 
-  const shouldMountCanvas = isDetail || isVisible || isCardHovered;
+  function toggleFullscreen() {
+    const element = containerRef.current;
+    if (!element) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void element.requestFullscreen?.();
+    }
+  }
+
+  useEffect(() => {
+    if (!isDetail) return;
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, [isDetail]);
+
+  const shouldMountCanvas =
+    isDetail || (lazyHoverMount ? isCardHovered : isVisible || isCardHovered);
 
   return (
     <div
@@ -225,27 +299,40 @@ export function TemplateReplayPreview({
       className={
         isDetail
           ? 'border-outline-variant/15 relative overflow-hidden rounded-xl border bg-black'
-          : 'relative h-44 overflow-hidden'
+          : (cardClassName ?? 'relative h-44 overflow-hidden')
       }
-      style={isDetail ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
+      style={isDetail || lazyHoverMount ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
     >
-      <div className={isDetail ? 'relative h-[min(62vh,620px)] min-h-[420px]' : 'relative h-full'}>
+      <div
+        className={
+          isDetail
+            ? isFullscreen
+              ? 'relative h-screen w-screen'
+              : 'relative aspect-video w-full'
+            : 'relative h-full'
+        }
+      >
         {shouldMountCanvas ? (
-          <LazyFireworkReplayCanvas
+          <MemoizedFireworkReplayCanvas
             cues={cues}
             elapsed={elapsed}
+            playbackRef={elapsedRef}
             interactive={isDetail}
             muted={isDetail ? !isPlaying : true}
+            maxDevicePixelRatio={1}
+            primeSnapshots={isDetail}
+            showLoadingBar={isDetail}
+            loadingBarPosition="center"
           />
-        ) : (
+        ) : lazyHoverMount ? null : (
           <ReplayCanvasSkeleton />
         )}
       </div>
       {isDetail ? (
         <>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-36 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
-          <div className="absolute right-4 bottom-4 left-4 z-20">
-            <div className="rounded-xl border border-white/15 bg-black/60 px-3 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md sm:rounded-full sm:px-4">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 z-20">
+            <div className="border-t border-white/12 bg-black/70 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md sm:px-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2">
                   <button
@@ -268,28 +355,35 @@ export function TemplateReplayPreview({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex justify-between font-mono text-[11px] text-white/75 tabular-nums">
-                    <span>{formatDuration(elapsed)}</span>
+                    <span>{formatDuration(displayElapsed)}</span>
                     <span>{formatDuration(duration)}</span>
                   </div>
-                  <input
-                    type="range"
+                  <Slider
                     min={0}
                     max={duration}
                     step={0.05}
-                    value={elapsed}
-                    onChange={(event) => {
+                    value={[displayElapsed]}
+                    onValueChange={([next]) => {
                       setIsPlaying(false);
-                      setElapsed(Number(event.target.value));
+                      scrubTo(next);
                     }}
-                    className="h-1.5 w-full cursor-pointer accent-white"
+                    onValueCommit={commitScrub}
                     aria-label="Template preview timeline"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                  className="focus-glow-action flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all hover:bg-white/12 focus:outline-none focus-visible:outline-none active:scale-[0.98]"
+                >
+                  {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
+                </button>
               </div>
             </div>
           </div>
         </>
-      ) : (
+      ) : !showCardOverlays ? null : (
         <>
           <div className="pointer-events-none absolute top-3 right-3 z-10 rounded-lg border border-white/15 bg-black/45 px-2.5 py-1.5 text-right text-xs text-white shadow-sm backdrop-blur transition-all duration-200 group-hover:-translate-y-1 group-hover:opacity-0 group-focus-visible:-translate-y-1 group-focus-visible:opacity-0">
             <span className="inline-flex items-center justify-end gap-1">

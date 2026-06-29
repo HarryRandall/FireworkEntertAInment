@@ -18,6 +18,7 @@ platform/supabase/.temp/
 .idea/
 # Local IDE MCP config may contain access tokens
 .cursor/mcp.json
+.cursor/settings.json
 .mcp.json
 *.swp
 *.swo
@@ -45,6 +46,10 @@ tsconfig.tsbuildinfo
 # Logs
 *.log
 logs/
+
+# Local scratch directories
+.tmp*/
+.tmp_*/
 
 # Data & models (large files)
 *.h5

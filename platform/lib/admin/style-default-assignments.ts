@@ -115,7 +115,6 @@ async function replaceStyleDefaultLinks(
       ? await supabase.from(table).delete().eq('firework_effect_id', ownerId)
       : await supabase.from(table).delete().eq('firework_id', ownerId);
   if (deleteResult.error) {
-    if (isMissingStyleDefaultSchemaError(deleteResult.error)) return { ok: true };
     return { ok: false, error: deleteResult.error.message };
   }
 
@@ -150,7 +149,6 @@ async function replaceStyleDefaultLinks(
           })),
         );
   if (insertResult.error) {
-    if (isMissingStyleDefaultSchemaError(insertResult.error)) return { ok: true };
     return { ok: false, error: insertResult.error.message };
   }
 

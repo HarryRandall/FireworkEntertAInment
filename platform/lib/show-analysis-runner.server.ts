@@ -19,7 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 
-const ANALYSER_SCHEMA_VERSION = '1.3.0';
+const ANALYSER_SCHEMA_VERSION = '1.4.0';
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
 
