@@ -52,6 +52,7 @@ export function planCuesOnBeats(params: {
       description: `Beat ${i + 1}: ${product.name} pops exactly on the beat.`.slice(0, 180),
       slotIndex: i,
       intensity: 0.5,
+      emphasis: 'normal',
     });
   }
 

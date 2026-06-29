@@ -1,0 +1,62 @@
+---
+description: ShowCrafter UI and design-system rules for app, admin, marketing, and shared component work.
+globs:
+  - "platform/app/**/*.tsx"
+  - "platform/app/**/*.ts"
+  - "platform/app/**/*.css"
+  - "platform/components/ui/**/*.tsx"
+  - "platform/lib/shader-cover.ts"
+alwaysApply: false
+---
+
+# ShowCrafter UI Rules
+
+Before UI work, read the local design-system skill:
+
+- `.agents/skills/showcrafter-design-system/SKILL.md`
+- `.claude/skills/showcrafter-design-system/SKILL.md`
+
+## Product Feel
+
+ShowCrafter should feel like a precise creative tool for planning real
+pyromusical shows. Keep app and admin screens dense, calm, scannable, and
+work-focused. Avoid cheap neon, crypto dashboards, oversized marketing cards in
+tool surfaces, and ember/burnt-orange palettes.
+
+## Components
+
+- Prefer `platform/app/components/ui` primitives for product UI.
+- Generated Radix/shadcn primitives live in `platform/components/ui`; use them
+  when extending the generated layer.
+- Use `cn()` from `@/lib/utils`.
+- Use `platform/app/globals.css` tokens.
+- `platform/app/components/ui/styles.ts` is a legacy shared-class bridge. Prefer
+  variants on primitives over adding more route-level class strings there.
+- Use lucide icons for icon buttons when available.
+- Keep controls stable in size so hover, selected, loading, and dynamic text
+  states do not shift layout.
+
+## Loading
+
+Keep stable chrome visible while data loads: titles, descriptions, labels,
+table headers, form section headings, tabs, and navigation. Skeletonise only
+data-driven fields, active values, badges, preview media, and controls whose
+value is still loading. Match loaded dimensions closely.
+
+## App And Admin Patterns
+
+- `AppShell` owns the authenticated customer shell.
+- `AdminShell` owns admin chrome.
+- Firework, effect, and style-default editors share `FireworkEditorShell`,
+  compact preview transport controls, history/JSON panels, and scoped
+  `FireworkRenderControls`.
+- Style-default pages should keep a narrower side rail than the full
+  firework/effect editors.
+- Heavy WebGL, shader, and editor components should not be imported globally.
+
+## Shader Covers
+
+Shows and presets store serialisable `cover_shader` JSON. Use
+`platform/lib/shader-cover.ts` helpers for generation, parsing, normalisation,
+and deterministic seeded covers. Do not hand-roll incompatible cover objects in
+routes.

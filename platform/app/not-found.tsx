@@ -7,18 +7,10 @@ import { getCurrentUserId } from '@/lib/current-user.server';
 
 export default async function NotFound() {
   const userId = await getCurrentUserId();
-  const homeHref = userId ? '/dashboard' : '/';
+  const homeHref = userId ? '/home' : '/';
 
   return (
     <div className="bg-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-      {/* Neon glow backdrop */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
-      >
-        <div className="bg-primary/10 h-[600px] w-[600px] rounded-full blur-[140px]" />
-      </div>
-
       {/* Floating sparks */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {[

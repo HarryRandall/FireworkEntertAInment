@@ -1,7 +1,6 @@
 /** Marketing "Tutorials" page. */
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Clock, PlayCircle } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
@@ -91,27 +90,25 @@ export default function TutorialsPage() {
         <Container>
           <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
             {TUTORIALS.map((tutorial) => (
-              <Link key={tutorial.title} href="#" className="block">
-                <Card radius="lg" hoverable className="flex h-full flex-col p-7">
-                  <div className="flex items-center gap-3">
-                    <Badge tone={TONE[tutorial.level]}>{tutorial.level}</Badge>
-                    <span className="text-on-surface-variant inline-flex items-center gap-1.5 text-xs tracking-widest uppercase">
-                      <Clock size={12} strokeWidth={1.75} />
-                      {tutorial.duration}
-                    </span>
-                  </div>
-                  <h3 className="text-on-surface mt-4 text-xl font-bold tracking-tight">
-                    {tutorial.title}
-                  </h3>
-                  <p className="text-on-surface-variant mt-2 flex-grow text-sm leading-relaxed">
-                    {tutorial.excerpt}
-                  </p>
-                  <div className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-bold">
-                    Read tutorial
-                    <PlayCircle size={16} strokeWidth={1.75} />
-                  </div>
-                </Card>
-              </Link>
+              <Card key={tutorial.title} radius="lg" className="flex h-full flex-col p-7">
+                <div className="flex items-center gap-3">
+                  <Badge tone={TONE[tutorial.level]}>{tutorial.level}</Badge>
+                  <span className="text-on-surface-variant inline-flex items-center gap-1.5 text-xs tracking-widest uppercase">
+                    <Clock size={12} strokeWidth={1.75} />
+                    {tutorial.duration}
+                  </span>
+                </div>
+                <h3 className="text-on-surface mt-4 text-xl font-bold tracking-tight">
+                  {tutorial.title}
+                </h3>
+                <p className="text-on-surface-variant mt-2 flex-grow text-sm leading-relaxed">
+                  {tutorial.excerpt}
+                </p>
+                <div className="text-primary mt-5 inline-flex items-center gap-2 text-sm font-bold">
+                  Read tutorial
+                  <PlayCircle size={16} strokeWidth={1.75} />
+                </div>
+              </Card>
             ))}
           </div>
 

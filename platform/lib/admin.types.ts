@@ -1,5 +1,6 @@
 import type { Json } from '@/lib/database.types';
 import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
+import type { ShaderCover } from '@/lib/shader-cover';
 
 /**
  * Shared admin / RBAC domain types.
@@ -18,6 +19,7 @@ export type PermissionKey =
   | 'shows.create'
   | 'admin.view'
   | 'admin.manage_users'
+  | 'admin.manage_billing'
   | 'admin.impersonate_users'
   | 'admin.manage_suppliers'
   | 'admin.manage_catalogue'
@@ -366,6 +368,7 @@ export type ShowTemplate = {
   timeOfDay: string | null;
   moodTags: string[];
   previewCues: ShowTemplateCue[];
+  coverShader: ShaderCover | null;
   isFeatured: boolean;
   likeCount: number;
   createdAt: string;

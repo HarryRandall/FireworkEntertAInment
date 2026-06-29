@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server';
+import { grantAiCredits } from '@/lib/ai-credits.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -34,6 +35,12 @@ const OverrideSchema = z.object({
   userId: z.string().uuid(),
   permissionId: z.string().uuid(),
   mode: z.enum(['grant', 'deny', 'clear']),
+});
+
+const GrantAiCreditsSchema = z.object({
+  userId: z.string().uuid(),
+  amount: z.coerce.number().int().min(1).max(100_000),
+  note: z.string().trim().max(280).optional(),
 });
 
 /** Set a user's `users.status` (active / suspended); refuses to suspend the current admin. */
@@ -157,5 +164,29 @@ export async function setUserPermissionOverrideAction(
 
   await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath(`/admin/users/${parsed.data.userId}`);
+  return { ok: true };
+}
+
+/** Grant AI credits to a user from the admin user detail page. */
+export async function grantUserAiCreditsAction(
+  input: z.infer<typeof GrantAiCreditsSchema>,
+): Promise<Result> {
+  const admin = await requirePermission('admin.manage_billing');
+  if (!admin) return { ok: false, error: 'Not permitted.' };
+  const parsed = GrantAiCreditsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
+  }
+
+  const result = await grantAiCredits({
+    userId: parsed.data.userId,
+    amount: parsed.data.amount,
+    note: parsed.data.note ?? '',
+  });
+  if (!result.ok) return { ok: false, error: result.error ?? 'Could not grant AI credits.' };
+
+  await invalidateAdminUsersCache(parsed.data.userId);
+  revalidatePath(`/admin/users/${parsed.data.userId}`);
+  revalidatePath('/settings/billing');
   return { ok: true };
 }

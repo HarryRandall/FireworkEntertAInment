@@ -215,7 +215,7 @@ export async function startImpersonationAction(input: {
     return switchResult;
   }
 
-  redirect('/dashboard');
+  redirect('/home');
 }
 
 export async function stopImpersonationAction(

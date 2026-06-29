@@ -68,6 +68,10 @@ const LazyFireworkReplayCanvas = dynamic(
 const PREVIEW_COLOR = '#22d3ee';
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
 const PREVIEW_START_SECONDS = 0;
+// Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
+// fast scrub does not re-render the whole editor on every input event. The
+// engine ref and the transport's local thumb still update at full input rate.
+const SCRUB_COMMIT_INTERVAL_MS = 67;
 const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 
 const KIND_OPTIONS = FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => ({
@@ -156,6 +160,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
+  const lastScrubCommitRef = useRef(0);
+  const pendingScrubRef = useRef<number | null>(null);
 
   const parsedDefaults = useMemo(() => parseJsonObject(defaultsText), [defaultsText]);
   const defaultsRecord = useMemo<Record<string, unknown>>(
@@ -314,6 +320,29 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     setElapsed(seconds);
   }
 
+  function scrubTo(seconds: number) {
+    const next = Math.max(0, Math.min(previewDuration, seconds));
+    // Engine ref + play-loop anchor track the drag at full rate; the
+    // heavyweight `elapsed` state (which re-renders the whole editor) is
+    // coalesced to ~15Hz. The transport's local thumb covers the visual gap.
+    playbackRef.current = next;
+    startedAtRef.current = performance.now() - next * 1000;
+    pendingScrubRef.current = next;
+    const now = performance.now();
+    if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
+      lastScrubCommitRef.current = now;
+      setElapsed(next);
+    }
+  }
+
+  function commitScrub() {
+    const pending = pendingScrubRef.current;
+    if (pending == null) return;
+    pendingScrubRef.current = null;
+    lastScrubCommitRef.current = 0;
+    setPreviewTime(pending);
+  }
+
   function mutateDefaults(updater: (defaults: Record<string, unknown>) => void) {
     if (!parsedDefaults.ok) return;
     const draft = cloneRecord(parsedDefaults.value);
@@ -434,6 +463,10 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       interactive
       controlsVisible
       showFps
+      primeSnapshots
+      primeOnCueChanges={false}
+      showLoadingBar
+      loadingBarPosition="center"
       renderTuning={{
         glowPadding: heads.glowPadding,
         whiteCoreSizePercent: heads.whiteCoreSizePercent,
@@ -473,8 +506,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       onLoopToggle={() => setIsLooping((looping) => !looping)}
       onScrub={(seconds) => {
         setIsPlaying(false);
-        setPreviewTime(seconds);
+        scrubTo(seconds);
       }}
+      onScrubEnd={commitScrub}
     />
   );
 

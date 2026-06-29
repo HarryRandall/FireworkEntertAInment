@@ -1,0 +1,59 @@
+---
+description: Firework EntertAInment project-wide agent rules for ShowCrafter.
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# Firework EntertAInment Project Rules
+
+- Use British English, straight apostrophes, and no em dashes.
+- Treat the live local repo as the source of truth. Inspect files before
+  answering or editing.
+- Keep unrelated dirty worktree changes intact.
+- Vercel deploys from `platform`.
+- The app is ShowCrafter: a consumer firework show-planning platform for
+  pyromusical shows built from retail catalogue items.
+- Do not collapse upload-scoped music analysis into final show creation.
+  Upload can start analysis; Generate creates the show and starts cue
+  generation.
+- Do not expose hidden background processing in UI copy unless an error blocks
+  the user.
+- Default cue generation is the fast deterministic planner. OpenRouter cue
+  assignment is optional and selected through generation settings or
+  `CUE_GENERATION_MODE=llm`.
+- Show cues are stored as `show_timeline_items`, not legacy `show_cues`.
+- Upload-scoped analysis rows are `song_analyses`, not legacy
+  `music_analyses`.
+- The AI credit ledger reserves before cost-bearing work, settles on success,
+  and refunds expected failures.
+- Public browse access for catalogue/templates is intentional only for the
+  documented tables and must be backed by explicit RLS policies.
+- Run the narrowest useful verification for the change and state clearly when a
+  full gate was not run.
+
+## Main Commands
+
+```bash
+cd platform
+npm run dev
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run check
+```
+
+Python analyser tests:
+
+```bash
+cd platform/analyser
+python -m unittest discover -s tests -p "*test*.py"
+```
+
+Import worker:
+
+```bash
+cd platform
+npm run worker:firework-import
+```

@@ -110,7 +110,7 @@ test('resolved render designs merge linked defaults in kind order before local o
     /deepMergeDesign\(\s*deepMergeDesign\(withBase, fireworkStyleDefaults\),\s*variantOverrides,\s*\)/,
   );
 
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v9'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v10'/);
   assert.match(showTypes, /style_default_links:firework_style_default_links/);
   assert.match(showTypes, /style_default_links:firework_effect_style_default_links/);
   assert.match(showMappers, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
@@ -210,7 +210,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(effectEditor, /removeStyleDefaultOverridesFromRecord/);
   assert.match(effectEditor, /createdStyleDefaults/);
   assert.match(effectEditor, /result\.styleDefault/);
-  assert.match(effectEditor, /Style default created and selected/);
+  assert.match(effectEditor, /Style default created and saved/);
   assert.match(fireworkEditor, /EditorStyleDefaultControls/);
   for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
     assert.match(fireworkEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
@@ -219,7 +219,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.doesNotMatch(fireworkEditor, /PanelSection title="Style defaults"/);
   assert.match(fireworkEditor, /createdStyleDefaults/);
   assert.match(fireworkEditor, /result\.styleDefault/);
-  assert.match(fireworkEditor, /Style default created and selected/);
+  assert.match(fireworkEditor, /Style default created and saved/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedEffectStyleDefaults\)/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedFireworkStyleDefaults\)/);
   assert.match(sectionPanels, /Save new default/);

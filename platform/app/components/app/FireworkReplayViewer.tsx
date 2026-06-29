@@ -9,7 +9,17 @@
  */
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from 'react';
+import {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,6 +35,10 @@ import {
   deletePreviewCueAction,
   type CueActionResult,
 } from '@/app/actions/preview-cues';
+import {
+  usePreviewFullscreen,
+  PreviewFullscreenBackdrop,
+} from '@/app/components/admin/previewFullscreen';
 import { Eyebrow } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -57,16 +71,25 @@ import { formatDuration, formatTotal } from '@/lib/show-domain';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import { cn } from '@/lib/utils';
 
+const REFINEMENT_CREDIT_COST = 2;
+
+type ReplayData = {
+  cues: ReplayCue[];
+  specifications: FireworkSpecification[];
+  audioUrl: string | null;
+};
+
 type FireworkReplayViewerProps = {
   showId: string;
   showSlug: string;
   showName: string;
   durationSeconds: number | null;
   totalCents?: number | null;
-  cues: ReplayCue[];
-  specifications: FireworkSpecification[];
   launchPositions: LaunchPosition[];
-  audioUrl?: string | null;
+  /** Server-streamed cues, catalogue, and audio URL. Resolved on the client
+   * via `use()` so the canvas can mount with an empty scene immediately and
+   * populate fireworks once this resolves. */
+  replayDataPromise: Promise<ReplayData>;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -77,6 +100,14 @@ const LAUNCH_POSITION_OPTIONS = [
   { value: '2', label: 'Mortar 3 (right)' },
 ];
 const PLAYBACK_CONTROL_IDLE_MS = 1800;
+// Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
+// fast scrub does not re-render the whole viewer on every input event. The
+// slider thumb and the engine ref still update at full input rate.
+const SCRUB_COMMIT_INTERVAL_MS = 67;
+// Stable empty defaults so the canvas's `cues` effect doesn't re-fire on every
+// render while the streamed replay data is still pending.
+const EMPTY_CUES: ReplayCue[] = [];
+const EMPTY_SPECS: FireworkSpecification[] = [];
 
 function ReplayCanvasPlaceholder() {
   return (
@@ -113,17 +144,43 @@ function isTubeBusyError(result: CueActionResult): boolean {
   return !result.ok && /^Tube \d+ is busy from /.test(result.error);
 }
 
+/**
+ * Resolves the streamed replay promise inside a Suspense boundary and pushes
+ * the result up to the viewer once it lands, so the canvas can mount with an
+ * empty scene immediately and populate fireworks when the data is ready.
+ */
+function ReplayDataReader({
+  promise,
+  onLoaded,
+}: {
+  promise: Promise<ReplayData>;
+  onLoaded: (data: ReplayData) => void;
+}) {
+  const data = use(promise);
+  useEffect(() => {
+    onLoaded(data);
+  }, [data, onLoaded]);
+  return null;
+}
+
 export function FireworkReplayViewer({
   showId,
   showSlug,
   showName,
   durationSeconds,
   totalCents = null,
-  cues,
-  specifications,
   launchPositions,
-  audioUrl = null,
+  replayDataPromise,
 }: FireworkReplayViewerProps) {
+  const [replayData, setReplayData] = useState<ReplayData | null>(null);
+  const cues = replayData?.cues ?? EMPTY_CUES;
+  const specifications = replayData?.specifications ?? EMPTY_SPECS;
+  const audioUrl = replayData?.audioUrl ?? null;
+  const replayDataReady = replayData !== null;
+  const hasFireworkSpecifications = specifications.length > 0;
+  const handleReplayDataLoaded = useCallback((data: ReplayData) => {
+    setReplayData(data);
+  }, []);
   const [optimisticCues, addOptimisticCue] = useOptimistic(
     cues,
     (current: ReplayCue[], pending: ReplayCue) =>
@@ -145,6 +202,7 @@ export function FireworkReplayViewer({
   const [cueDialogTab, setCueDialogTab] = useState<CueDialogTab>('manual');
   const [insertBeforeTime, setInsertBeforeTime] = useState<number | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [isSceneReady, setIsSceneReady] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [cuePage, setCuePage] = useState(0);
@@ -154,11 +212,29 @@ export function FireworkReplayViewer({
   const playheadStart = useRef(0);
   const elapsedRef = useRef(elapsed);
   const lastUIElapsedRef = useRef(elapsed);
+  const lastScrubCommitRef = useRef(0);
+  const pendingScrubRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayStartedRef = useRef(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const firstProductId = specifications[0]?.id;
+    if (!firstProductId) {
+      setSelectedProductId(undefined);
+      return;
+    }
+    if (!selectedProductId || !specifications.some((spec) => spec.id === selectedProductId)) {
+      setSelectedProductId(firstProductId);
+    }
+  }, [selectedProductId, specifications]);
+
+  // Fullscreen overlay for the replay player. The hook owns the Esc + body
+  // scroll-lock wiring; this component applies the overlay classes to the
+  // player container and renders the shared backdrop.
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
 
   // Keep the audio element in sync with playhead and play/pause state.
   useEffect(() => {
@@ -288,7 +364,10 @@ export function FireworkReplayViewer({
   const emptyBuilderCueSlots = Math.max(0, CUES_PER_PAGE - visibleBuilderCues.length);
 
   const activeCue = useMemo(() => {
-    return [...sortedCues].reverse().find((cue) => cue.timeSeconds <= elapsed + 0.35);
+    for (let i = sortedCues.length - 1; i >= 0; i--) {
+      if (sortedCues[i].timeSeconds <= elapsed + 0.35) return sortedCues[i];
+    }
+    return undefined;
   }, [sortedCues, elapsed]);
 
   const activeBaseCueId = activeCue?.id.replace(/-shot-\d+$/, '');
@@ -316,6 +395,12 @@ export function FireworkReplayViewer({
   }, [activeBuilderIndex]);
 
   const hasReplayCues = optimisticCues.length > 0;
+  // The timeline slider stays hidden until the streamed replay data has landed
+  // and the engine has finished priming the show's fireworks; until then the
+  // loading bar owns the control bar slot so there is no layout shift when it
+  // swaps in. The empty scene is shown as soon as the canvas mounts, via
+  // `isSceneReady`, so the stage is visible (and orbitable) while loading.
+  const replayReady = replayDataReady && isCanvasReady;
   const playbackControlsVisible = !isPlaying || playbackControlsActive;
 
   function wakePlaybackControls() {
@@ -366,6 +451,31 @@ export function FireworkReplayViewer({
     setElapsed(next);
   }
 
+  function scrubTo(timeSeconds: number) {
+    const next = Math.max(0, Math.min(duration, timeSeconds));
+    // Engine + slider thumb track the drag at full rate via the ref and the
+    // lightweight display state; the heavyweight `elapsed` state (active cue,
+    // table highlight, canvas prop) is coalesced to ~15Hz so a fast drag does
+    // not re-render the whole viewer on every input event.
+    elapsedRef.current = next;
+    setDisplayElapsed(next);
+    pendingScrubRef.current = next;
+    const now = performance.now();
+    if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
+      lastScrubCommitRef.current = now;
+      lastUIElapsedRef.current = next;
+      setElapsed(next);
+    }
+  }
+
+  function commitScrub() {
+    const pending = pendingScrubRef.current;
+    if (pending == null) return;
+    pendingScrubRef.current = null;
+    lastScrubCommitRef.current = 0;
+    seekTo(pending, false);
+  }
+
   function playFrom(timeSeconds: number) {
     seekTo(timeSeconds, true);
     setIsPlaying(true);
@@ -389,6 +499,7 @@ export function FireworkReplayViewer({
   }, [hasReplayCues, isCanvasReady, router, searchParams, showSlug]);
 
   function openCueDialog(tab: CueDialogTab, prompt?: string) {
+    if (!hasFireworkSpecifications) return;
     setCueDialogTab(tab);
     if (prompt !== undefined) setAiPrompt(prompt);
     setShowAddForm(true);
@@ -443,6 +554,9 @@ export function FireworkReplayViewer({
     formData.set('timeSeconds', String(timeSeconds));
     formData.set('launchPositionIndex', String(launchPositionIndex));
     formData.set('description', description);
+    formData.set('aiCreditAction', 'show_refinement');
+    formData.set('aiCreditReferenceId', crypto.randomUUID());
+    formData.set('refinementPrompt', prompt);
 
     setRefinePrompt('');
     setAiPrompt('');
@@ -480,493 +594,531 @@ export function FireworkReplayViewer({
   }
 
   return (
-    <div className="space-y-6">
-      <Card
-        elevation="low"
-        radius="lg"
-        className="from-surface-container-high via-surface-container to-surface-container-low overflow-hidden bg-gradient-to-b p-0 shadow-[var(--shadow-card-hover)]"
-      >
-        <div
-          className="group/replay relative h-[min(72vh,680px)] min-h-[520px]"
-          onFocusCapture={wakePlaybackControls}
-          onPointerDown={wakePlaybackControls}
-          onPointerMove={wakePlaybackControls}
-          aria-busy={!isCanvasReady}
+    <>
+      <Suspense fallback={null}>
+        <ReplayDataReader promise={replayDataPromise} onLoaded={handleReplayDataLoaded} />
+      </Suspense>
+      <div className="space-y-6">
+        <Card
+          elevation="low"
+          radius="lg"
+          bordered={!isFullscreen}
+          className={cn(
+            'overflow-hidden bg-gradient-to-b p-0',
+            isFullscreen
+              ? 'h-0 border-0 bg-transparent p-0 shadow-none'
+              : 'from-surface-container-high via-surface-container to-surface-container-low shadow-[var(--shadow-card-hover)]',
+          )}
         >
-          <div className="absolute top-6 left-6 z-10 space-y-2">
-            <h2 className="text-on-surface max-w-xl text-3xl font-extrabold tracking-tight md:text-4xl">
-              {showName}
-            </h2>
-            <p className="text-on-surface-variant max-w-sm text-xs font-medium">
-              Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
-            </p>
-          </div>
-
-          <LazyFireworkReplayCanvas
-            cues={sortedCues}
-            elapsed={elapsed}
-            playbackRef={elapsedRef}
-            launchPositions={launchPositions}
-            muted={!isPlaying}
-            controlsVisible={isCanvasReady && playbackControlsVisible}
-            onReady={() => setIsCanvasReady(true)}
-          />
-
-          {!isCanvasReady ? <ReplayCanvasPlaceholder /> : null}
-          {!hasReplayCues ? <EmptyPreview /> : null}
-          {audioUrl ? (
-            <audio
-              ref={audioRef}
-              src={audioUrl}
-              preload="auto"
-              className="hidden"
-              onEnded={() => setIsPlaying(false)}
-            />
-          ) : null}
-
           <div
             className={cn(
-              'border-outline-variant/15 bg-surface-container-low/90 absolute bottom-6 left-1/2 z-20 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 rounded-lg border px-4 py-3 shadow-[var(--shadow-modal)] backdrop-blur transition-all duration-300',
-              playbackControlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
+              'group/replay',
+              isFullscreen
+                ? 'border-outline-variant/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
+                : 'relative h-[min(72vh,680px)] min-h-[520px]',
             )}
+            onFocusCapture={wakePlaybackControls}
+            onPointerDown={wakePlaybackControls}
+            onPointerMove={wakePlaybackControls}
+            aria-busy={!replayReady}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={togglePlayback}
-                  disabled={!hasReplayCues}
-                  aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-                  className="focus-glow-action bg-primary-container text-on-primary-container disabled:bg-surface-container-high disabled:text-on-surface-variant/40 flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-cta)] transition-all hover:brightness-110 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  {isPlaying ? (
-                    <Pause size={18} strokeWidth={2.5} />
-                  ) : (
-                    <Play size={18} strokeWidth={2.5} />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={restart}
-                  aria-label="Restart preview"
-                  className="focus-glow-action border-outline/20 text-primary hover:bg-surface-container-highest/50 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
-                >
-                  <RotateCcw size={16} strokeWidth={2} />
-                </button>
-              </div>
-
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <span className="text-tertiary/80 min-w-[2.75rem] font-mono text-[11px] tabular-nums">
-                  {formatDuration(displayElapsed)}
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration}
-                  step={0.05}
-                  value={displayElapsed}
-                  onChange={(event) => {
-                    setIsPlaying(false);
-                    seekTo(Number(event.target.value), false);
-                  }}
-                  className="accent-tertiary h-2 min-w-0 flex-1"
-                  aria-label="Preview timeline"
-                />
-                <span className="text-tertiary/80 min-w-[2.75rem] text-right font-mono text-[11px] tabular-nums">
-                  {formatDuration(duration)}
-                </span>
-              </div>
+            <div className="absolute top-6 left-6 z-10 space-y-2">
+              <h2 className="text-on-surface max-w-xl text-3xl font-extrabold tracking-tight md:text-4xl">
+                {showName}
+              </h2>
+              <p className="text-on-surface-variant max-w-sm text-xs font-medium">
+                Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
+              </p>
             </div>
-          </div>
-        </div>
-      </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
-        <Card elevation="high" radius="md" className="space-y-5 p-6 xl:col-span-2">
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-            <div>
-              <Eyebrow tone="muted">Cue builder</Eyebrow>
-              <h3 className="text-on-surface mt-2 text-2xl font-bold">Cues</h3>
-            </div>
-            <div className="flex items-center gap-3">
-              {actionResult ? (
-                <p
-                  className={
-                    actionResult.ok
-                      ? 'text-primary text-sm font-semibold'
-                      : 'text-error text-sm font-semibold'
-                  }
-                >
-                  {actionResult.ok ? actionResult.message : actionResult.error}
-                </p>
-              ) : null}
-              <Button type="button" onClick={() => openCueDialog('manual')} size="sm">
-                <Plus size={16} strokeWidth={2} />
-                Add firework
-              </Button>
-            </div>
-          </div>
+            <LazyFireworkReplayCanvas
+              cues={sortedCues}
+              elapsed={elapsed}
+              playbackRef={elapsedRef}
+              launchPositions={launchPositions}
+              muted={!isPlaying}
+              controlsVisible={isSceneReady && playbackControlsVisible}
+              primeSnapshots={hasReplayCues}
+              cuesFinal={replayDataReady}
+              onSceneReady={() => setIsSceneReady(true)}
+              showLoadingBar
+              loadingBarPosition="bottom"
+              onReady={() => setIsCanvasReady(true)}
+              allowFullscreen
+              fullscreen={isFullscreen}
+              onToggleFullscreen={toggleFullscreen}
+            />
 
-          <Dialog
-            open={showAddForm}
-            onOpenChange={(open) => {
-              setShowAddForm(open);
-              if (!open) setInsertBeforeTime(null);
-            }}
-          >
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Add firework cue</DialogTitle>
-                <DialogDescription>
-                  Insert a new firework into <span className="font-semibold">{showName}</span> at
-                  the chosen time and mortar. The current playhead is at{' '}
-                  <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>; the
-                  show runs{' '}
-                  <span className="font-mono tabular-nums">{formatDuration(duration)}</span>.
-                </DialogDescription>
-              </DialogHeader>
-              <Tabs
-                value={cueDialogTab}
-                onValueChange={(value) => setCueDialogTab(value === 'ai' ? 'ai' : 'manual')}
-              >
-                <TabsList className="mb-4 w-full">
-                  <TabsTrigger value="manual">Pick firework</TabsTrigger>
-                  <TabsTrigger value="ai">
-                    <Sparkles size={12} strokeWidth={2} />
-                    Describe with AI
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="manual">
-                  <form
-                    ref={formRef}
-                    action={addCue}
-                    className="grid min-h-[18rem] grid-cols-1 gap-4 sm:grid-cols-2"
-                  >
-                    <input type="hidden" name="showId" value={showId} />
-                    <input type="hidden" name="showSlug" value={showSlug} />
-                    <label className="space-y-2 sm:col-span-2">
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        Firework
-                      </span>
-                      <SelectField
-                        name="productId"
-                        required
-                        placeholder="Select firework"
-                        defaultValue={specifications[0]?.id}
-                        options={specifications.map((spec) => ({
-                          value: spec.id,
-                          label: spec.name,
-                        }))}
-                        onChange={(value) => setSelectedProductId(value)}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        Mortar
-                      </span>
-                      <SelectField
-                        name="launchPositionIndex"
-                        defaultValue="1"
-                        options={LAUNCH_POSITION_OPTIONS}
-                      />
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        Time (seconds)
-                      </span>
-                      <NumberInput
-                        key={`time-${insertBeforeTime ?? 'default'}-${showAddForm}`}
-                        name="timeSeconds"
-                        min={0}
-                        max={duration}
-                        step={0.5}
-                        defaultValue={
-                          insertBeforeTime !== null
-                            ? Math.max(0, Number((insertBeforeTime - 0.5).toFixed(1)))
-                            : Math.min(duration, Math.round(elapsed + 3))
-                        }
-                        required
-                        ariaLabel="Cue time in seconds"
-                      />
-                    </label>
-                    <label className="space-y-2 sm:col-span-2">
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        Label
-                      </span>
-                      <Input
-                        key={selectedProductId}
-                        name="description"
-                        defaultValue={
-                          specifications.find((s) => s.id === selectedProductId)?.name ?? ''
-                        }
-                        required
-                      />
-                    </label>
-                    <DialogFooter className="sm:col-span-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowAddForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={isPending || specifications.length === 0}
-                      >
-                        <Plus size={16} strokeWidth={2} />
-                        Add cue
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </TabsContent>
-                <TabsContent value="ai">
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      applyRefinement(aiPrompt);
-                    }}
-                    className="flex min-h-[18rem] flex-col gap-4"
-                  >
-                    <label className="block space-y-2">
-                      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                        Describe what you want
-                      </span>
-                      <Textarea
-                        value={aiPrompt}
-                        onChange={(event) => setAiPrompt(event.target.value)}
-                        placeholder={
-                          insertBeforeTime !== null
-                            ? `e.g. "Something gold and crackling just before ${formatDuration(
-                                insertBeforeTime,
-                              )}"`
-                            : 'e.g. "A red strobe burst at the chorus around 1:20"'
-                        }
-                        rows={4}
-                        required
-                      />
-                    </label>
-                    <DialogFooter className="mt-auto">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowAddForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" size="sm" disabled={!aiPrompt.trim()}>
-                        <Sparkles size={16} strokeWidth={2} />
-                        Generate cue
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </DialogContent>
-          </Dialog>
+            {!isSceneReady ? <ReplayCanvasPlaceholder /> : null}
+            {replayReady && !hasReplayCues ? <EmptyPreview /> : null}
+            {audioUrl ? (
+              <audio
+                ref={audioRef}
+                src={audioUrl}
+                preload="auto"
+                className="hidden"
+                onEnded={() => setIsPlaying(false)}
+              />
+            ) : null}
 
-          <div className="space-y-3">
-            {builderCues.length > 0 ? (
-              <div>
-                <DataTableShell>
-                  <table className={tableClasses('min-w-0 table-fixed')}>
-                    <colgroup>
-                      <col className="w-[88px]" />
-                      <col />
-                      <col className="w-[110px]" />
-                      <col className="w-[56px]" />
-                    </colgroup>
-                    <thead className={tableHeadClasses()}>
-                      <tr>
-                        <th className={tableHeaderCellClasses()}>Time</th>
-                        <th className={tableHeaderCellClasses()}>Firework</th>
-                        <th className={tableHeaderCellClasses()}>Mortar</th>
-                        <th className={tableHeaderCellClasses('text-right')}>
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleBuilderCues.map((row) => {
-                        const { cue, baseCueId, shotCount } = row;
-                        const fullMortarLabel =
-                          LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
-                          `Mortar ${cue.launchPositionIndex + 1}`;
-                        const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
-                        const isActive = activeBaseCueIds.has(baseCueId);
-                        return (
-                          <tr
-                            key={baseCueId}
-                            onClick={() => {
-                              setIsPlaying(false);
-                              seekTo(cue.timeSeconds, false);
-                            }}
-                            aria-current={isActive ? 'true' : undefined}
-                            className={tableRowClasses(
-                              cn(
-                                'cursor-pointer',
-                                isActive &&
-                                  'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
-                              ),
-                            )}
-                          >
-                            <td className={tableCellClasses('h-14')}>
-                              <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
-                                {formatDuration(cue.timeSeconds)}
-                              </span>
-                            </td>
-                            <td className={tableCellClasses('h-14')}>
-                              <TruncatedCell text={cue.description || cue.firework.name} />
-                              {shotCount > 1 && (
-                                <div className="text-on-surface-variant mt-0.5 text-[10px] font-bold tracking-widest uppercase">
-                                  {shotCount} shots
-                                </div>
-                              )}
-                            </td>
-                            <td className={tableCellClasses('h-14')}>
-                              <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                                {mortarLabel}
-                              </span>
-                            </td>
-                            <td
-                              className={tableCellClasses('h-14 text-right')}
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              <RowActionsMenu
-                                label="Cue actions"
-                                items={[
-                                  {
-                                    label: 'Play from here',
-                                    icon: <Play size={14} strokeWidth={2} />,
-                                    onSelect: () => playFrom(cue.timeSeconds),
-                                  },
-                                  {
-                                    label: 'Insert firework above',
-                                    icon: <Plus size={14} strokeWidth={2} />,
-                                    onSelect: () => {
-                                      setInsertBeforeTime(cue.timeSeconds);
-                                      openCueDialog('manual');
-                                    },
-                                  },
-                                  {
-                                    label: 'Delete cue',
-                                    icon: <Trash2 size={14} strokeWidth={2} />,
-                                    destructive: true,
-                                    disabled: isPending,
-                                    onSelect: () => deleteCue(baseCueId),
-                                  },
-                                ]}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </DataTableShell>
-                {emptyBuilderCueSlots > 0 && (
-                  <div aria-hidden="true" style={{ height: `${emptyBuilderCueSlots * 56}px` }} />
+            {replayReady ? (
+              <div
+                className={cn(
+                  'border-outline-variant/15 bg-surface-container-low/90 absolute bottom-6 left-1/2 z-20 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 rounded-lg border px-4 py-3 shadow-[var(--shadow-modal)] backdrop-blur transition-all duration-300',
+                  playbackControlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
-              </div>
-            ) : (
-              <DataTableShell>
-                <div className="text-on-surface-variant px-4 py-8 text-center text-sm">
-                  No cues yet. Add your first firework above to make the preview playable.
-                </div>
-              </DataTableShell>
-            )}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={togglePlayback}
+                      disabled={!hasReplayCues}
+                      aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
+                      className="focus-glow-action bg-primary-container text-on-primary-container disabled:bg-surface-container-high disabled:text-on-surface-variant/40 flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-cta)] transition-all hover:brightness-110 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
+                    >
+                      {isPlaying ? (
+                        <Pause size={18} strokeWidth={2.5} />
+                      ) : (
+                        <Play size={18} strokeWidth={2.5} />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={restart}
+                      aria-label="Restart preview"
+                      className="focus-glow-action border-outline/20 text-primary hover:bg-surface-container-highest/50 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
+                    >
+                      <RotateCcw size={16} strokeWidth={2} />
+                    </button>
+                  </div>
 
-            {pageCount > 1 && (
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <span className="text-on-surface-variant text-[11px] font-semibold tracking-widest uppercase tabular-nums">
-                  Page {safePage + 1} of {pageCount} · {builderCues.length} cues
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCuePage((p) => Math.max(0, p - 1))}
-                    disabled={safePage === 0}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft size={14} strokeWidth={2} />
-                    Prev
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCuePage((p) => Math.min(pageCount - 1, p + 1))}
-                    disabled={safePage >= pageCount - 1}
-                    aria-label="Next page"
-                  >
-                    Next
-                    <ChevronRight size={14} strokeWidth={2} />
-                  </Button>
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="text-tertiary/80 min-w-[2.75rem] font-mono text-[11px] tabular-nums">
+                      {formatDuration(displayElapsed)}
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration}
+                      step={0.05}
+                      value={displayElapsed}
+                      onChange={(event) => {
+                        setIsPlaying(false);
+                        scrubTo(Number(event.target.value));
+                      }}
+                      onPointerUp={commitScrub}
+                      onKeyUp={commitScrub}
+                      className="accent-tertiary h-2 min-w-0 flex-1"
+                      aria-label="Preview timeline"
+                    />
+                    <span className="text-tertiary/80 min-w-[2.75rem] text-right font-mono text-[11px] tabular-nums">
+                      {formatDuration(duration)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </Card>
 
-        <div className="flex flex-col gap-4 xl:sticky xl:top-6 xl:h-full xl:min-h-0">
-          <div className="space-y-2">
-            <StatChip
-              label="Total cost"
-              value={totalCents != null ? formatTotal(totalCents) : '—'}
-            />
-            <StatChip label="Fireworks" value={String(builderCues.length)} />
-            <StatChip label="Length" value={formatDuration(duration)} />
-          </div>
-          <Card
-            elevation="high"
-            radius="md"
-            className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1"
-          >
-            <div className="flex items-start gap-3">
-              <div className="bg-surface-container-highest text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                <Sparkles size={16} strokeWidth={2} />
-              </div>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
+          <Card elevation="high" radius="md" className="space-y-5 p-6 xl:col-span-2">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
               <div>
-                <Eyebrow tone="muted">Refine with prompt</Eyebrow>
-                <h3 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h3>
-                <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
-                  Say what you want next — &ldquo;add green firework at the start&rdquo;,
-                  &ldquo;something gold at 1:20&rdquo; — and we&apos;ll drop a matching cue in.
-                </p>
+                <Eyebrow tone="muted">Cue builder</Eyebrow>
+                <h3 className="text-on-surface mt-2 text-2xl font-bold">Cues</h3>
               </div>
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                const prompt = refinePrompt.trim();
-                openCueDialog('ai', prompt || undefined);
-              }}
-              className="flex flex-col gap-3 xl:min-h-0 xl:flex-1"
-            >
-              <Textarea
-                value={refinePrompt}
-                onChange={(event) => setRefinePrompt(event.target.value)}
-                placeholder="e.g. add green firework at the very start"
-                rows={3}
-                aria-label="Refinement prompt"
-                className="min-h-32 xl:[field-sizing:fixed] xl:min-h-0 xl:flex-1 xl:resize-none"
-              />
-              <div className="flex justify-end">
-                <Button type="submit" size="sm" disabled={isPending}>
-                  <Sparkles size={14} strokeWidth={2} />
-                  Apply refinement
+              <div className="flex items-center gap-3">
+                {actionResult ? (
+                  <p
+                    className={
+                      actionResult.ok
+                        ? 'text-primary text-sm font-semibold'
+                        : 'text-error text-sm font-semibold'
+                    }
+                  >
+                    {actionResult.ok ? actionResult.message : actionResult.error}
+                  </p>
+                ) : null}
+                <Button
+                  type="button"
+                  onClick={() => openCueDialog('manual')}
+                  size="sm"
+                  disabled={!hasFireworkSpecifications}
+                >
+                  <Plus size={16} strokeWidth={2} />
+                  Add firework
                 </Button>
               </div>
-            </form>
+            </div>
+
+            <Dialog
+              open={showAddForm}
+              onOpenChange={(open) => {
+                setShowAddForm(open);
+                if (!open) setInsertBeforeTime(null);
+              }}
+            >
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add firework cue</DialogTitle>
+                  <DialogDescription>
+                    Insert a new firework into <span className="font-semibold">{showName}</span> at
+                    the chosen time and mortar. The current playhead is at{' '}
+                    <span className="font-mono tabular-nums">{formatDuration(elapsed)}</span>; the
+                    show runs{' '}
+                    <span className="font-mono tabular-nums">{formatDuration(duration)}</span>.
+                  </DialogDescription>
+                </DialogHeader>
+                <Tabs
+                  value={cueDialogTab}
+                  onValueChange={(value) => setCueDialogTab(value === 'ai' ? 'ai' : 'manual')}
+                >
+                  <TabsList className="mb-4 w-full">
+                    <TabsTrigger value="manual">Pick firework</TabsTrigger>
+                    <TabsTrigger value="ai">
+                      <Sparkles size={12} strokeWidth={2} />
+                      Describe with AI
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="manual">
+                    <form
+                      ref={formRef}
+                      action={addCue}
+                      className="grid min-h-[18rem] grid-cols-1 gap-4 sm:grid-cols-2"
+                    >
+                      <input type="hidden" name="showId" value={showId} />
+                      <input type="hidden" name="showSlug" value={showSlug} />
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                          Firework
+                        </span>
+                        <SelectField
+                          name="productId"
+                          required
+                          placeholder="Select firework"
+                          value={selectedProductId ?? ''}
+                          options={specifications.map((spec) => ({
+                            value: spec.id,
+                            label: spec.name,
+                          }))}
+                          onChange={(value) => setSelectedProductId(value)}
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                          Mortar
+                        </span>
+                        <SelectField
+                          name="launchPositionIndex"
+                          defaultValue="1"
+                          options={LAUNCH_POSITION_OPTIONS}
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                          Time (seconds)
+                        </span>
+                        <NumberInput
+                          key={`time-${insertBeforeTime ?? 'default'}-${showAddForm}`}
+                          name="timeSeconds"
+                          min={0}
+                          max={duration}
+                          step={0.5}
+                          defaultValue={
+                            insertBeforeTime !== null
+                              ? Math.max(0, Number((insertBeforeTime - 0.5).toFixed(1)))
+                              : Math.min(duration, Math.round(elapsed + 3))
+                          }
+                          required
+                          ariaLabel="Cue time in seconds"
+                        />
+                      </label>
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                          Label
+                        </span>
+                        <Input
+                          key={selectedProductId}
+                          name="description"
+                          defaultValue={
+                            specifications.find((s) => s.id === selectedProductId)?.name ?? ''
+                          }
+                          required
+                        />
+                      </label>
+                      <DialogFooter className="sm:col-span-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowAddForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={isPending || !hasFireworkSpecifications}
+                        >
+                          <Plus size={16} strokeWidth={2} />
+                          Add cue
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </TabsContent>
+                  <TabsContent value="ai">
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        applyRefinement(aiPrompt);
+                      }}
+                      className="flex min-h-[18rem] flex-col gap-4"
+                    >
+                      <label className="block space-y-2">
+                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                          Describe what you want
+                        </span>
+                        <Textarea
+                          value={aiPrompt}
+                          onChange={(event) => setAiPrompt(event.target.value)}
+                          placeholder={
+                            insertBeforeTime !== null
+                              ? `e.g. "Something gold and crackling just before ${formatDuration(
+                                  insertBeforeTime,
+                                )}"`
+                              : 'e.g. "A red strobe burst at the chorus around 1:20"'
+                          }
+                          rows={4}
+                          required
+                        />
+                      </label>
+                      <DialogFooter className="mt-auto">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowAddForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" size="sm" disabled={!aiPrompt.trim()}>
+                          <Sparkles size={16} strokeWidth={2} />
+                          Generate cue
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
+
+            <div className="space-y-3">
+              {builderCues.length > 0 ? (
+                <div>
+                  <DataTableShell>
+                    <table className={tableClasses('min-w-0 table-fixed')}>
+                      <colgroup>
+                        <col className="w-[88px]" />
+                        <col />
+                        <col className="w-[110px]" />
+                        <col className="w-[56px]" />
+                      </colgroup>
+                      <thead className={tableHeadClasses()}>
+                        <tr>
+                          <th className={tableHeaderCellClasses()}>Time</th>
+                          <th className={tableHeaderCellClasses()}>Firework</th>
+                          <th className={tableHeaderCellClasses()}>Mortar</th>
+                          <th className={tableHeaderCellClasses('text-right')}>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleBuilderCues.map((row) => {
+                          const { cue, baseCueId, shotCount } = row;
+                          const fullMortarLabel =
+                            LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
+                            `Mortar ${cue.launchPositionIndex + 1}`;
+                          const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
+                          const isActive = activeBaseCueIds.has(baseCueId);
+                          return (
+                            <tr
+                              key={baseCueId}
+                              onClick={() => {
+                                setIsPlaying(false);
+                                seekTo(cue.timeSeconds, false);
+                              }}
+                              aria-current={isActive ? 'true' : undefined}
+                              className={tableRowClasses(
+                                cn(
+                                  'cursor-pointer',
+                                  isActive &&
+                                    'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
+                                ),
+                              )}
+                            >
+                              <td className={tableCellClasses('h-14')}>
+                                <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
+                                  {formatDuration(cue.timeSeconds)}
+                                </span>
+                              </td>
+                              <td className={tableCellClasses('h-14')}>
+                                <TruncatedCell text={cue.description || cue.firework.name} />
+                                {shotCount > 1 && (
+                                  <div className="text-on-surface-variant mt-0.5 text-[10px] font-bold tracking-widest uppercase">
+                                    {shotCount} shots
+                                  </div>
+                                )}
+                              </td>
+                              <td className={tableCellClasses('h-14')}>
+                                <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                                  {mortarLabel}
+                                </span>
+                              </td>
+                              <td
+                                className={tableCellClasses('h-14 text-right')}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <RowActionsMenu
+                                  label="Cue actions"
+                                  items={[
+                                    {
+                                      label: 'Play from here',
+                                      icon: <Play size={14} strokeWidth={2} />,
+                                      onSelect: () => playFrom(cue.timeSeconds),
+                                    },
+                                    {
+                                      label: 'Insert firework above',
+                                      icon: <Plus size={14} strokeWidth={2} />,
+                                      disabled: !hasFireworkSpecifications,
+                                      onSelect: () => {
+                                        setInsertBeforeTime(cue.timeSeconds);
+                                        openCueDialog('manual');
+                                      },
+                                    },
+                                    {
+                                      label: 'Delete cue',
+                                      icon: <Trash2 size={14} strokeWidth={2} />,
+                                      destructive: true,
+                                      disabled: isPending,
+                                      onSelect: () => deleteCue(baseCueId),
+                                    },
+                                  ]}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </DataTableShell>
+                  {emptyBuilderCueSlots > 0 && (
+                    <div aria-hidden="true" style={{ height: `${emptyBuilderCueSlots * 56}px` }} />
+                  )}
+                </div>
+              ) : (
+                <DataTableShell>
+                  <div className="text-on-surface-variant px-4 py-8 text-center text-sm">
+                    No cues yet. Add your first firework above to make the preview playable.
+                  </div>
+                </DataTableShell>
+              )}
+
+              {pageCount > 1 && (
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <span className="text-on-surface-variant text-[11px] font-semibold tracking-widest uppercase tabular-nums">
+                    Page {safePage + 1} of {pageCount} · {builderCues.length} cues
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCuePage((p) => Math.max(0, p - 1))}
+                      disabled={safePage === 0}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft size={14} strokeWidth={2} />
+                      Prev
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setCuePage((p) => Math.min(pageCount - 1, p + 1))}
+                      disabled={safePage >= pageCount - 1}
+                      aria-label="Next page"
+                    >
+                      Next
+                      <ChevronRight size={14} strokeWidth={2} />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </Card>
+
+          <div className="flex flex-col gap-4 xl:sticky xl:top-6 xl:h-full xl:min-h-0">
+            <div className="space-y-2">
+              <StatChip
+                label="Total cost"
+                value={totalCents != null ? formatTotal(totalCents) : '—'}
+              />
+              <StatChip label="Fireworks" value={String(builderCues.length)} />
+              <StatChip label="Length" value={formatDuration(duration)} />
+            </div>
+            <Card
+              elevation="high"
+              radius="md"
+              className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1"
+            >
+              <div className="flex items-start gap-3">
+                <div className="bg-surface-container-highest text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                  <Sparkles size={16} strokeWidth={2} />
+                </div>
+                <div>
+                  <Eyebrow tone="muted">Refine with prompt</Eyebrow>
+                  <h3 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h3>
+                  <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
+                    Say what you want next — &ldquo;add green firework at the start&rdquo;,
+                    &ldquo;something gold at 1:20&rdquo; — and we&apos;ll drop a matching cue in.
+                  </p>
+                  <p className="text-on-surface-variant mt-2 text-xs leading-relaxed">
+                    This will use {REFINEMENT_CREDIT_COST} AI credits.
+                  </p>
+                </div>
+              </div>
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const prompt = refinePrompt.trim();
+                  openCueDialog('ai', prompt || undefined);
+                }}
+                className="flex flex-col gap-3 xl:min-h-0 xl:flex-1"
+              >
+                <Textarea
+                  value={refinePrompt}
+                  onChange={(event) => setRefinePrompt(event.target.value)}
+                  placeholder="e.g. add green firework at the very start"
+                  rows={3}
+                  aria-label="Refinement prompt"
+                  className="min-h-32 xl:[field-sizing:fixed] xl:min-h-0 xl:flex-1 xl:resize-none"
+                />
+                <div className="flex justify-end">
+                  <Button type="submit" size="sm" disabled={isPending}>
+                    <Sparkles size={14} strokeWidth={2} />
+                    Apply refinement
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+      {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
+    </>
   );
 }
 

@@ -818,6 +818,14 @@ export class Effects {
       this.fireMine(design, position, color, rng, options.audible, smokeRng);
       return;
     }
+    if (design.geometry === 'roman_candle') {
+      this.fireRomanCandle(design, position, color, rng, options.audible, smokeRng);
+      return;
+    }
+    if (design.geometry === 'fountain') {
+      this.fireFountain(design, position, color, rng, options.audible, smokeRng);
+      return;
+    }
 
     if (options.audible && design.sound.launch) this.sh.playRandomMortar(1.0, rng);
     this.lights.newLight({ x: position.x, y: 30, z: position.z }, new THREE.Color(0.7, 0.3, 0), 10);
@@ -915,6 +923,146 @@ export class Effects {
         trailStarCount: count,
       });
     }
+  }
+
+  /**
+   * Roman candle: a ground tube that ejects a sequence of large ascending stars
+   * over several seconds. Implemented as a hidden ground emitter whose per-frame
+   * effect callback releases one star on a staggered interval, so the candle
+   * reads as discrete shots rather than a single burst.
+   */
+  private fireRomanCandle(
+    design: FireworkDesign,
+    position: Pos,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+    smokeRng: RandomSource,
+  ): void {
+    if (audible && design.sound.launch) this.sh.playRandomMortar(0.45, rng);
+    this.spawnMortarSmoke(position, design, smokeRng, 0.4);
+    const layer = design.stars.outer;
+    const shotCount = Math.max(4, Math.round(design.size * 0.08));
+    const duration = Math.max(3, Math.min(10, design.shellLife * 0.4));
+    const interval = duration / shotCount;
+    const speed = rangeRand(design.burst.speed, rng);
+    const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
+    let elapsed = 0;
+    let emitted = 0;
+    this.lights.newLight({ x: position.x, y: 60, z: position.z }, color, 9);
+
+    this.pp.new({
+      x: position.x,
+      y: position.y + 18,
+      z: position.z,
+      size: 40,
+      mass: 0.5,
+      vy: 0,
+      gravity: 0,
+      drag: 0,
+      shape: HIDDEN_PARTICLE_SHAPE,
+      life: duration + 1,
+      decay: 0.1,
+      effect: (p, dt) => {
+        elapsed += dt;
+        while (emitted < shotCount && elapsed >= emitted * interval + interval * 0.5) {
+          emitted += 1;
+          const spread = (rng.next() - 0.5) * 0.55;
+          const azimuth = (rng.next() - 0.5) * 0.4;
+          const starSpeed = speed * (0.95 + rng.next() * 0.35);
+          const starColor = this.starColor(design, layer, 'outer', color, emitted, shotCount, rng);
+          if (audible && rng.next() < 0.55) this.sh.playRandomCrackle(0.05, rng);
+          this.spawnEffectStar({
+            design,
+            layer,
+            rng,
+            audible,
+            x: p.x + (rng.next() - 0.5) * 12,
+            y: p.y,
+            z: p.z + (rng.next() - 0.5) * 12,
+            vx: Math.sin(spread) * starSpeed * 0.28,
+            vy: starSpeed * (1.0 + rng.next() * 0.32),
+            vz: Math.sin(azimuth) * starSpeed * 0.22,
+            color: starColor,
+            life: rangeRand(design.burst.life, rng) * 0.92,
+            gravity: grav,
+            drag: STAR_DRAG * 0.68,
+            headSizeScale: 0.92,
+            trailLifeScale: 0.85,
+            trailStarCount: shotCount,
+          });
+        }
+      },
+    });
+  }
+
+  /**
+   * Fountain: a steady ground glitter spray. A hidden ground emitter releases
+   * many small sparks per frame into a narrow upward cone; high drag and gravity
+   * pull them back into the classic fountain arc. No mortar burst, no boom.
+   */
+  private fireFountain(
+    design: FireworkDesign,
+    position: Pos,
+    color: THREE.Color,
+    rng: RandomSource,
+    audible: boolean,
+    smokeRng: RandomSource,
+  ): void {
+    this.spawnMortarSmoke(position, design, smokeRng, 0.25);
+    const layer = design.stars.outer;
+    const duration = Math.max(2.5, Math.min(10, design.shellLife * 0.26));
+    const speed = rangeRand(design.burst.speed, rng);
+    const grav = clampStarGravity(rangeRand(design.burst.gravity, rng));
+    const ratePerSecond = Math.max(40, design.size * 1.4);
+    let carry = 0;
+    this.lights.newLight({ x: position.x, y: 70, z: position.z }, color, 11);
+    if (audible && design.sound.launch) this.sh.playRandomCrackle(0.12, rng);
+
+    this.pp.new({
+      x: position.x,
+      y: position.y + 14,
+      z: position.z,
+      size: 30,
+      mass: 0.5,
+      vy: 0,
+      gravity: 0,
+      drag: 0,
+      shape: HIDDEN_PARTICLE_SHAPE,
+      life: duration + 0.5,
+      decay: 0.1,
+      effect: (p, dt) => {
+        carry += ratePerSecond * dt;
+        const toEmit = Math.floor(carry);
+        carry -= toEmit;
+        for (let i = 0; i < toEmit; i++) {
+          const cone = (rng.next() - 0.5) * 0.85;
+          const azimuth = rng.next() * Math.PI * 2;
+          const starSpeed = speed * (0.45 + rng.next() * 0.75);
+          const lateral = Math.sin(cone) * starSpeed;
+          const starColor = this.starColor(design, layer, 'outer', color, i, 16, rng);
+          this.spawnEffectStar({
+            design,
+            layer,
+            rng,
+            audible: false,
+            x: p.x + (rng.next() - 0.5) * 10,
+            y: p.y,
+            z: p.z + (rng.next() - 0.5) * 10,
+            vx: Math.cos(azimuth) * lateral * 0.55,
+            vy: Math.cos(cone) * starSpeed,
+            vz: Math.sin(azimuth) * lateral * 0.55,
+            color: starColor,
+            life: rangeRand(design.burst.life, rng) * 0.6,
+            gravity: grav,
+            drag: STAR_DRAG * 1.15,
+            headSizeScale: 0.4,
+            trailLifeScale: 0.4,
+            trailStarCount: 16,
+          });
+        }
+      },
+    });
   }
 
   private spawnMortarSmoke(
@@ -1343,6 +1491,10 @@ export class Effects {
       case 'ring':
         count = Math.max(72, Math.round(layer.count * 0.72));
         break;
+      case 'bowtie':
+        // Two opposed lobes: keep enough stars per lobe to read as a clean shape.
+        count = Math.max(60, Math.round(layer.count * 0.82));
+        break;
       case 'fragment_cloud':
         count = Math.max(90, Math.round(layer.count * 0.9));
         break;
@@ -1411,6 +1563,23 @@ export class Effects {
       }
       case 'fragment_cloud': {
         return direction.multiplyScalar(speed * (0.72 + rng.next() * 0.78));
+      }
+      case 'bowtie': {
+        // Two opposed lobes fired in a flat plane: stars split into a +X lobe
+        // and a -X lobe, each fanned with a narrow vertical spread so the pair
+        // reads as a bow-tie / cross shape rather than a full sphere.
+        const half = Math.floor(count / 2);
+        const lobe = index < half ? 1 : -1;
+        const withinLobe = lobe === 1 ? index : index - half;
+        const lobeCount = lobe === 1 ? half : count - half;
+        const t = lobeCount > 1 ? withinLobe / (lobeCount - 1) : 0.5;
+        const fan = (t - 0.5) * Math.PI * 0.62;
+        const length = 0.82 + rng.next() * 0.22;
+        return new THREE.Vector3(
+          lobe * Math.cos(fan) * speed * length,
+          Math.sin(fan) * speed * 0.34,
+          (rng.next() - 0.5) * speed * 0.16,
+        );
       }
       default: {
         const warble = seed === 2 ? 0.78 + rng.next() * 0.5 : 1;

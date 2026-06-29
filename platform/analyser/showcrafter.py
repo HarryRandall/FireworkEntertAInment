@@ -30,7 +30,10 @@ from scipy.signal import find_peaks, savgol_filter
 #         decided by relative prominence ranking (top quartile = climax)
 #         instead of an absolute energy threshold.
 # 1.0.0 - initial versioned contract.
-SCHEMA_VERSION = "1.3.0"
+# 1.4.0 - added downbeat_times + beats_per_bar (bar grid), drop/build/breakdown
+#         section labels, hardened chorus detection, and a top-level `derived`
+#         block (finale window, anchor windows, energy rank) on the result.
+SCHEMA_VERSION = "1.4.0"
 ANALYSER_MODE = "fast"
 ANALYSER_RUNNER_VERSION = "local-librosa-2"
 
@@ -144,11 +147,22 @@ PERSONALITY_PRESETS = {
     },
 }
 
-SchemaVersion = Literal["1.3.0"]
+SchemaVersion = Literal["1.3.0", "1.4.0"]
 Score = Annotated[float, Field(ge=0.0, le=1.0)]
 NonNegativeFloat = Annotated[float, Field(ge=0.0)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
-SectionLabel = Literal["intro", "verse", "pre-chorus", "chorus", "bridge", "outro", "unknown"]
+SectionLabel = Literal[
+    "intro",
+    "verse",
+    "pre-chorus",
+    "chorus",
+    "bridge",
+    "drop",
+    "build",
+    "breakdown",
+    "outro",
+    "unknown",
+]
 SectionIntensity = Literal["low", "medium", "high"]
 MomentType = Literal["build", "climax"]
 CueEffect = Literal["barrage", "accent", "crackle", "single"]
@@ -336,40 +350,6 @@ class AnalysisMetaModel(SchemaModel):
     timings_ms: AnalysisTimingsModel
 
 
-class AnalysisResultModel(SchemaModel):
-    schema_version: SchemaVersion
-    file: str
-    analysis_meta: AnalysisMetaModel
-    duration_seconds: NonNegativeFloat
-    tempo_bpm: NonNegativeFloat
-    total_beats: NonNegativeInt
-    beat_times: list[NonNegativeFloat]
-    onset_times: list[NonNegativeFloat]
-    energy_timeline: list[EnergyPointModel]
-    sections: list[SectionModel]
-    key_moments: list[KeyMomentModel]
-    buildups: list[BuildupModel]
-    music_profile: MusicProfileModel
-    show_personality: ShowPersonalityModel
-    firework_cues: list[FireworkCueModel]
-
-    @model_validator(mode="after")
-    def validate_times_within_duration(self):
-        duration = self.duration_seconds + 0.75
-        timed_values = [
-            *self.beat_times,
-            *self.onset_times,
-            *(point.time for point in self.energy_timeline),
-            *(section.end for section in self.sections),
-            *(moment.time for moment in self.key_moments),
-            *(buildup.peak for buildup in self.buildups),
-            *(cue.end if cue.end is not None else cue.time for cue in self.firework_cues),
-        ]
-        if any(value > duration for value in timed_values):
-            raise ValueError("timed analysis fields must not exceed song duration")
-        return self
-
-
 class FinaleWindowModel(SchemaModel):
     start: NonNegativeFloat
     end: NonNegativeFloat
@@ -401,12 +381,52 @@ class AnchorWindowModel(SchemaModel):
 
 
 class DerivedFeaturesModel(SchemaModel):
-    finale_window: FinaleWindowModel | None
-    quietest_section_index: NonNegativeInt | None
-    highest_energy_section_index: NonNegativeInt | None
+    finale_window: FinaleWindowModel | None = None
+    quietest_section_index: NonNegativeInt | None = None
+    highest_energy_section_index: NonNegativeInt | None = None
     repeated_chorus_count: NonNegativeInt
     section_rank_by_energy: list[NonNegativeInt]
     anchor_windows: list[AnchorWindowModel]
+
+
+class AnalysisResultModel(SchemaModel):
+    schema_version: SchemaVersion
+    file: str
+    analysis_meta: AnalysisMetaModel
+    duration_seconds: NonNegativeFloat
+    tempo_bpm: NonNegativeFloat
+    total_beats: NonNegativeInt
+    beat_times: list[NonNegativeFloat]
+    onset_times: list[NonNegativeFloat]
+    energy_timeline: list[EnergyPointModel]
+    sections: list[SectionModel]
+    key_moments: list[KeyMomentModel]
+    buildups: list[BuildupModel]
+    music_profile: MusicProfileModel
+    show_personality: ShowPersonalityModel
+    firework_cues: list[FireworkCueModel]
+    derived: DerivedFeaturesModel
+    # Bar grid (schema 1.4.0). Optional with defaults so older 1.3.0 payloads
+    # still validate; `analyse_song` always populates them for new runs.
+    downbeat_times: list[NonNegativeFloat] = Field(default_factory=list)
+    beats_per_bar: NonNegativeInt = 4
+
+    @model_validator(mode="after")
+    def validate_times_within_duration(self):
+        duration = self.duration_seconds + 0.75
+        timed_values = [
+            *self.beat_times,
+            *self.onset_times,
+            *self.downbeat_times,
+            *(point.time for point in self.energy_timeline),
+            *(section.end for section in self.sections),
+            *(moment.time for moment in self.key_moments),
+            *(buildup.peak for buildup in self.buildups),
+            *(cue.end if cue.end is not None else cue.time for cue in self.firework_cues),
+        ]
+        if any(value > duration for value in timed_values):
+            raise ValueError("timed analysis fields must not exceed song duration")
+        return self
 
 
 class SongPayloadModel(SchemaModel):
@@ -840,12 +860,18 @@ def select_climax_indices(
         label = section["label"] if section else "unknown"
         intensity = section["intensity"] if section else "low"
         label_bonus = 0.0
-        if label == "chorus":
+        if label == "drop":
+            label_bonus = 0.40
+        elif label == "chorus":
             label_bonus = 0.35
+        elif label == "build":
+            label_bonus = 0.10
         elif label == "bridge" or intensity == "high":
             label_bonus = 0.22
         elif label in {"intro", "outro"}:
             label_bonus = -0.18
+        elif label == "breakdown":
+            label_bonus = -0.05
         elif label == "verse":
             label_bonus = -0.08
 
@@ -875,6 +901,63 @@ def select_climax_indices(
     if len(selected) < target:
         selected = pick_spaced(CLIMAX_MIN_SPACING_SEC * 0.65)
     return set(selected[:target])
+
+
+def estimate_downbeats(beat_times, onset_env, sr, hop_length):
+    """
+    Lightweight bar/downbeat estimator for pyromusical sync.
+
+    Groups detected beats into bars of `beats_per_bar` (2, 3, or 4) and picks
+    the phase offset whose bar-1 beats carry the most onset energy on average,
+    so cues can land on musical bars instead of on every kick-drum beat.
+    Returns ``(downbeat_times, beats_per_bar)``. Falls back to ``([], 4)`` when
+    there are too few beats or no onset envelope to trust.
+    """
+    beats = np.asarray(beat_times, dtype=float)
+    if beats.size < 8 or onset_env is None or len(onset_env) == 0:
+        return [], 4
+
+    fps = sr / hop_length
+    # Sample the onset envelope around each beat (small window so a slightly
+    # early/late beat still captures its energy).
+    half_window = max(1, int(round(0.05 * fps)))
+    beat_strengths = np.zeros(beats.shape[0], dtype=float)
+    for i, t in enumerate(beats):
+        center = int(round(float(t) * fps))
+        lo = max(0, center - half_window)
+        hi = min(len(onset_env), center + half_window + 1)
+        if hi > lo:
+            beat_strengths[i] = float(np.mean(onset_env[lo:hi]))
+
+    span = float(beat_strengths.max() - beat_strengths.min())
+    if span > 1e-6:
+        beat_strengths = (beat_strengths - beat_strengths.min()) / span
+
+    n = beats.shape[0]
+    best_score = -1.0
+    best_bpb = 4
+    best_phase = 0
+    for bpb in (4, 3, 2):
+        if n < bpb * 2:
+            continue
+        # Slight prior toward 4/4, the dominant meter in pop/edm/rock.
+        prior = 0.04 if bpb == 4 else (0.02 if bpb == 3 else 0.0)
+        for phase in range(bpb):
+            down_list = list(range(phase, n, bpb))
+            down_set = set(down_list)
+            other_list = [i for i in range(n) if i not in down_set]
+            if not other_list:
+                continue
+            down_mean = float(np.mean(beat_strengths[down_list]))
+            other_mean = float(np.mean(beat_strengths[other_list]))
+            score = (down_mean - other_mean) + prior
+            if score > best_score:
+                best_score = score
+                best_bpb = bpb
+                best_phase = phase
+
+    downbeat_times = [round(float(beats[i]), 3) for i in range(best_phase, n, best_bpb)]
+    return downbeat_times, best_bpb
 
 
 def analyse_song(
@@ -919,6 +1002,10 @@ def analyse_song(
     beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
     tempo_value = float(np.atleast_1d(tempo)[0])
     timings["beat_ms"] += elapsed_ms(beat_start)
+
+    # Bar/downbeat grid (schema 1.4.0) so cues can lock to musical bars
+    # instead of firing on every kick-drum beat.
+    downbeat_times, beats_per_bar = estimate_downbeats(beat_times, onset_env, sr, hop_length)
 
     # ──────────────────────────────────────────────
     # 2. ENERGY CURVE (RMS, normalised 0-1)
@@ -1068,6 +1155,8 @@ def analyse_song(
         "total_beats": len(beat_times),
         "beat_times": [round(t, 3) for t in beat_times],
         "onset_times": [round(t, 3) for t in onset_times],
+        "downbeat_times": downbeat_times,
+        "beats_per_bar": beats_per_bar,
         "energy_timeline": energy_timeline,
         "sections": sections,
         "key_moments": key_moments,
@@ -1076,6 +1165,11 @@ def analyse_song(
         "show_personality": show_personality,
         "firework_cues": firework_cues,
     }
+
+    # Derived choreography helpers (finale window, anchor windows, energy
+    # rank) live on the top-level result so the app does not need the compact
+    # LLM payload to read them.
+    result["derived"] = compute_derived_features(result)
 
     validation_start = time.perf_counter()
     validate_analysis_result(result)
@@ -1265,8 +1359,8 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
             "label": "unknown",
         })
 
-    # Label sections using cluster IDs + energy heuristics
-    label_sections_from_clusters(sections)
+    # Label sections using cluster IDs + energy heuristics + energy slope
+    label_sections_from_clusters(sections, rms_normalised, sr, hop_length)
 
     return sections, cqt_mag
 
@@ -1286,29 +1380,55 @@ def estimate_k(evals, min_k=3, max_k=8):
     return min_k
 
 
-def label_sections_from_clusters(sections):
+def section_energy_slope(section, rms_normalised, sr, hop_length):
     """
-    Label sections using cluster IDs and energy heuristics.
-    Sections with the same cluster_id sound similar (same musical function).
-    Chorus = most-repeated high-energy cluster.
-    Verse = most-repeated lower-energy cluster.
+    Positive when energy rises across a section (a build), negative when it
+    falls. Used to tag build sections that lead into a drop or chorus.
+    """
+    if rms_normalised is None or rms_normalised.size == 0:
+        return 0.0
+    start_frame = int(section["start"] * sr / hop_length)
+    end_frame = min(int(section["end"] * sr / hop_length), rms_normalised.size)
+    if end_frame - start_frame < 4:
+        return 0.0
+    mid = (start_frame + end_frame) // 2
+    first_half = float(np.mean(rms_normalised[start_frame:mid])) if mid > start_frame else 0.0
+    second_half = float(np.mean(rms_normalised[mid:end_frame])) if end_frame > mid else 0.0
+    return second_half - first_half
+
+
+def label_sections_from_clusters(sections, rms_normalised, sr, hop_length):
+    """
+    Label sections using cluster IDs, energy heuristics, and energy slope.
+
+    Sections sharing a cluster_id sound similar (same musical function).
+    Chorus = most-repeated cluster whose peak energy is clearly above the song
+    median. Drop = a high-intensity, non-chorus section with top-tier peak
+    energy (the big payoff in EDM/hip-hop). Build = a section whose energy
+    rises into a drop or chorus. Breakdown = a low-energy breather between
+    high-energy sections. Falls back to crowning the strongest section(s) as
+    chorus when no cluster repeats (through-composed songs).
     """
     n = len(sections)
     if n == 0:
         return
 
-    # Group sections by cluster ID
     from collections import Counter
     cluster_counts = Counter(s["cluster_id"] for s in sections)
     cluster_energies = {}
+    cluster_peaks = {}
     for s in sections:
         cid = s["cluster_id"]
-        if cid not in cluster_energies:
-            cluster_energies[cid] = []
-        cluster_energies[cid].append(s["avg_energy"])
+        cluster_energies.setdefault(cid, []).append(s["avg_energy"])
+        cluster_peaks.setdefault(cid, []).append(s["peak_energy"])
+    cluster_avg_energy = {cid: float(np.mean(v)) for cid, v in cluster_energies.items()}
+    cluster_peak_energy = {cid: float(np.mean(v)) for cid, v in cluster_peaks.items()}
 
-    cluster_avg_energy = {cid: np.mean(energies) for cid, energies in cluster_energies.items()}
     median_energy = float(np.median([s["avg_energy"] for s in sections]))
+    median_peak = float(np.median([s["peak_energy"] for s in sections]))
+    section_peaks = [s["peak_energy"] for s in sections]
+    drop_peak_threshold = float(np.percentile(section_peaks, 80)) if section_peaks else 0.7
+    drop_peak_threshold = max(drop_peak_threshold, median_peak + 0.1)
 
     # Label intro/outro (edges)
     if sections[0]["avg_energy"] < 0.35 or sections[0]["duration"] < 10:
@@ -1316,19 +1436,33 @@ def label_sections_from_clusters(sections):
     if n > 1 and (sections[-1]["avg_energy"] < 0.35 or sections[-1]["duration"] < 10):
         sections[-1]["label"] = "outro"
 
-    # Find chorus cluster: repeated (2+) with highest energy
+    # Find chorus cluster: repeated (2+) with peak energy above the median.
     chorus_cluster = None
-    best_score = -1
+    best_score = -1.0
     for cid, count in cluster_counts.items():
-        if count >= 2 and cluster_avg_energy[cid] >= median_energy * 0.8:
-            score = count * cluster_avg_energy[cid]
+        if count >= 2 and cluster_peak_energy[cid] >= median_peak:
+            score = count * cluster_avg_energy[cid] * cluster_peak_energy[cid]
             if score > best_score:
                 best_score = score
                 chorus_cluster = cid
 
-    # Find verse cluster: repeated, lower energy than chorus
+    # Fallback for through-composed songs: no cluster repeats, so crown the
+    # highest-peak section(s) as the chorus.
+    chorus_indices = set()
+    if chorus_cluster is None:
+        ranked = sorted(range(n), key=lambda i: sections[i]["peak_energy"], reverse=True)
+        if ranked and sections[ranked[0]]["peak_energy"] >= median_peak:
+            chorus_indices.add(ranked[0])
+            if (
+                n > 1
+                and sections[ranked[1]]["peak_energy"] >= median_peak
+                and sections[ranked[1]]["peak_energy"] >= 0.9 * sections[ranked[0]]["peak_energy"]
+            ):
+                chorus_indices.add(ranked[1])
+
+    # Find verse cluster: repeated, lower energy than chorus.
     verse_cluster = None
-    best_verse_score = -1
+    best_verse_score = -1.0
     for cid, count in cluster_counts.items():
         if cid == chorus_cluster:
             continue
@@ -1338,15 +1472,43 @@ def label_sections_from_clusters(sections):
                 best_verse_score = score
                 verse_cluster = cid
 
-    # Assign labels
+    # First pass: chorus + drop labels (the structural anchors).
     for idx, s in enumerate(sections):
         if s["label"] != "unknown":
             continue
         cid = s["cluster_id"]
-        precedes_chorus = idx + 1 < n and sections[idx + 1].get("cluster_id") == chorus_cluster
-        if cid == chorus_cluster:
+        is_chorus = cid == chorus_cluster or idx in chorus_indices
+        if is_chorus:
             s["label"] = "chorus"
-        elif (
+            continue
+        if s["intensity"] == "high" and s["peak_energy"] >= drop_peak_threshold:
+            s["label"] = "drop"
+
+    # Second pass: builds (rising energy into a drop/chorus) and breakdowns
+    # (low-energy breathers between high-energy sections).
+    for idx, s in enumerate(sections):
+        if s["label"] != "unknown":
+            continue
+        slope = section_energy_slope(s, rms_normalised, sr, hop_length)
+        next_label = sections[idx + 1]["label"] if idx + 1 < n else None
+        prev_label = sections[idx - 1]["label"] if idx > 0 else None
+        if next_label in {"drop", "chorus"} and slope > 0.03:
+            s["label"] = "build"
+            continue
+        if (
+            prev_label in {"drop", "chorus"}
+            and next_label in {"drop", "chorus"}
+            and s["intensity"] == "low"
+        ):
+            s["label"] = "breakdown"
+
+    # Third pass: remaining sections get verse / pre-chorus / bridge.
+    for idx, s in enumerate(sections):
+        if s["label"] != "unknown":
+            continue
+        cid = s["cluster_id"]
+        precedes_chorus = idx + 1 < n and sections[idx + 1].get("label") == "chorus"
+        if (
             precedes_chorus
             and idx > 0
             and s["duration"] <= PRE_CHORUS_MAX_DURATION_SEC
@@ -1361,12 +1523,10 @@ def label_sections_from_clusters(sections):
             s["label"] = "bridge"
         elif cluster_avg_energy.get(cid, 0) < median_energy * 0.7:
             s["label"] = "pre-chorus"
+        elif idx + 1 < n and sections[idx + 1].get("label") == "chorus":
+            s["label"] = "pre-chorus"
         else:
-            # Check if it precedes a chorus section
-            if idx + 1 < n and sections[idx + 1].get("label") == "chorus":
-                s["label"] = "pre-chorus"
-            else:
-                s["label"] = "verse"
+            s["label"] = "verse"
 
 
 def classify_intensity(energy: float, low: float, high: float) -> str:
@@ -1871,7 +2031,7 @@ def build_llm_payload(result: dict) -> dict:
             "key_moments": result["key_moments"],
             "buildups": result["buildups"],
         },
-        "derived": compute_derived_features(result),
+        "derived": result.get("derived") or compute_derived_features(result),
         "firework_cue_summary": build_firework_cue_summary(cues, sections_compact),
         "firework_cue_samples": select_firework_cue_samples(cues),
         "cue_reference": {
@@ -1908,6 +2068,8 @@ def write_markdown(result: dict, output_path: str):
     lines.append(f"- **Duration:** {fmt_time(r['duration_seconds'])} ({r['duration_seconds']}s)")
     lines.append(f"- **Tempo:** {r['tempo_bpm']} BPM")
     lines.append(f"- **Total beats:** {r['total_beats']}")
+    lines.append(f"- **Beats per bar:** {r.get('beats_per_bar', 4)}")
+    lines.append(f"- **Downbeats:** {len(r.get('downbeat_times', []))}")
     lines.append(f"- **Total firework cues:** {len(r['firework_cues'])}")
     lines.append(f"- **Climax moments:** {sum(1 for m in r['key_moments'] if m['type'] == 'climax')}")
     lines.append(f"- **Build-ups detected:** {len(r['buildups'])}")

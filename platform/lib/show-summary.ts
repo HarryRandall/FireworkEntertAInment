@@ -1,5 +1,6 @@
 import type { Show } from '@/lib/show-domain';
 import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShaderCover } from '@/lib/shader-cover';
 
 export type VisualPalette = {
   names: [string, string, string];
@@ -19,6 +20,7 @@ export type ShowSummaryCard = {
   lastEditedAt: string;
   palette: VisualPalette;
   energySeries: number[];
+  coverShader: ShaderCover | null;
 };
 
 export type TemplateSummaryCard = {
@@ -136,6 +138,7 @@ export function mapShowToSummary(show: Show): ShowSummaryCard {
     lastEditedAt: show.updatedAt,
     palette: buildVisualPalette(seed),
     energySeries: buildEnergySeries(seed, cueCount),
+    coverShader: show.coverShader,
   };
 }
 

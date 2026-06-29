@@ -1,14 +1,15 @@
 /**
  * The "create new show" flow.
  *
- * Five minimal full-screen steps, one question each, everything answerable
+ * Six minimal full-screen steps, one question each, everything answerable
  * by tapping a card (the brief is the only typed field):
  *   0. Describe — big-type creative brief + style pills.
- *   1. Sound — drop a track, or pick "No soundtrack" (+ length cards).
+ *   1. Sound — drop a track, or pick "No soundtrack".
  *      Upload + music analysis start in the background immediately.
- *   2. Budget — four human-labelled tiers, no sliders.
- *   3. Fireworks — multi-select type cards, all on by default.
- *   4. Site — width presets with firing-position dot diagrams.
+ *   2. Length — match the track, or pick a fixed show length.
+ *   3. Budget — four human-labelled tiers, no sliders.
+ *   4. Fireworks — multi-select type cards, at least one required.
+ *   5. Site — width presets with firing-position dot diagrams.
  *
  * The show title is derived automatically (track filename, then the brief)
  * so nothing has to be typed beyond the description.
@@ -33,11 +34,21 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, MicOff, Sparkles, X } from 'lucide-react';
-import { ChoiceChip } from '@/app/components/ui/Badge';
+import {
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  Dices,
+  Hourglass,
+  MicOff,
+  Sparkles,
+  Timer,
+  Waves,
+  Zap,
+} from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
+import { CueModelSelect } from '@/app/components/app/CueModelSelect';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
@@ -47,11 +58,8 @@ import {
   launchPositionsForWidth,
   type FireworkTypeKey,
 } from '@/lib/cue-generation/show-options';
-import {
-  DEFAULT_SHOW_STYLE,
-  SHOW_STYLE_LIST,
-  type ShowStyleKey,
-} from '@/lib/cue-generation/show-styles';
+import { DEFAULT_SHOW_STYLE, type ShowStyleKey } from '@/lib/cue-generation/show-styles';
+import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
 import {
   clearPersistedGenerationStart,
   persistGenerationStartedAt,
@@ -61,24 +69,35 @@ import { cn } from '@/lib/utils';
 import { createShowAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
 import { ChoiceCard, PositionDots } from './_components/cards';
+import { StepDots } from './_components/StepDots';
 import { StepPanel } from './_components/StepPanel';
 import {
   AUDIO_BUCKET,
   BUDGET_TIERS,
   MAX_AUDIO_BYTES,
-  NO_MUSIC_DURATIONS,
+  SHOW_LENGTH_PRESETS,
+  RANDOM_BRIEFS,
   STEPS,
   WIDTH_PRESETS,
 } from './constants';
 import type { AudioUploadState, FieldError as FieldErrorKey, UploadedAudio } from './types';
 import {
   deriveTitleFromDescription,
+  formatDuration,
   inferAudioContentType,
   sanitizeStorageName,
   suggestTitleFromFilename,
 } from './utils';
 
 type SoundtrackMode = 'song' | 'none';
+
+/** Either "match the track" (use the uploaded audio's duration) or one of the
+ * fixed preset lengths. `null` means the user has not chosen yet. */
+type LengthChoice = 'match' | (typeof SHOW_LENGTH_PRESETS)[number]['minutes'];
+
+/** Diagram icon for each preset, in SHOW_LENGTH_PRESETS order. */
+const LENGTH_PRESET_ICONS = [Zap, Timer, Hourglass] as const;
+const DEFAULT_GENERATE_CREDIT_COST = 3;
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -87,13 +106,15 @@ export default function NewShowPage() {
 
   // === Step 0: describe ====================================================
   const [description, setDescription] = useState('');
-  const [styleKey, setStyleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
+  const [styleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
+  const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
   const promptPrefilledRef = useRef(false);
+  const modelPrefilledRef = useRef(false);
 
   // === Step 1: sound =======================================================
   const [soundtrackMode, setSoundtrackMode] = useState<SoundtrackMode>('song');
-  const [durationMinutes, setDurationMinutes] =
-    useState<(typeof NO_MUSIC_DURATIONS)[number]['minutes']>(3);
+  // === Step 2: length ======================================================
+  const [lengthChoice, setLengthChoice] = useState<LengthChoice | null>(null);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [audioUploadState, setAudioUploadState] = useState<AudioUploadState>('idle');
@@ -110,15 +131,13 @@ export default function NewShowPage() {
   const uploadTokenRef = useRef(0);
   const autoBriefUploadIdRef = useRef<string | null>(null);
 
-  // === Step 2: budget ======================================================
-  const [budget, setBudget] = useState<number>(1000);
+  // === Step 3: budget ======================================================
+  const [budget, setBudget] = useState<number | null>(null);
 
-  // === Step 3: firework types =============================================
-  const [fireworkTypes, setFireworkTypes] = useState<Set<FireworkTypeKey>>(
-    () => new Set(FIREWORK_TYPE_KEYS),
-  );
+  // === Step 4: firework types =============================================
+  const [fireworkTypes, setFireworkTypes] = useState<Set<FireworkTypeKey>>(() => new Set());
 
-  // === Step 4: site width ==================================================
+  // === Step 5: site width ==================================================
   const [widthFeet, setWidthFeet] = useState<number>(80);
   const [measuredWidth, setMeasuredWidth] = useState('');
 
@@ -129,29 +148,61 @@ export default function NewShowPage() {
   const [mounted, setMounted] = useState(false);
   const [, startTransition] = useTransition();
 
-  const durationValue = `${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`;
   const measuredFeet = Number(measuredWidth);
   const effectiveWidthFeet =
     measuredWidth.trim() && Number.isFinite(measuredFeet) && measuredFeet >= 5
       ? Math.min(Math.round(measuredFeet), 2000)
       : widthFeet;
   const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
+  const selectedCueModelOption = CUE_MODEL_OPTIONS.find(
+    (option) => option.value === selectedCueModel,
+  );
+  const selectedCueModelLabel = selectedCueModelOption?.label ?? 'selected model';
+  const selectedCueModelCost = selectedCueModelOption?.creditCost ?? DEFAULT_GENERATE_CREDIT_COST;
+
+  // "Match the track" sends the audio's exact duration in seconds so the show
+  // runs for the whole song; presets send the round-minute form the action's
+  // duration map already understands.
+  const durationValue =
+    lengthChoice === 'match'
+      ? audioDuration && Number.isFinite(audioDuration) && audioDuration > 0
+        ? `${Math.round(audioDuration)} seconds`
+        : '3 minutes'
+      : `${lengthChoice ?? 3} minute${lengthChoice === 1 ? '' : 's'}`;
+
+  // A track is attached (still uploading or ready). Drives whether the Length
+  // step offers the "match the track" option.
+  const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (promptPrefilledRef.current) return;
+    let shouldCleanUrl = false;
     const prompt = searchParams.get('prompt')?.trim();
-    if (!prompt) return;
-    promptPrefilledRef.current = true;
-    setDescription(prompt.slice(0, 2000));
+    if (prompt && !promptPrefilledRef.current) {
+      promptPrefilledRef.current = true;
+      setDescription(prompt.slice(0, 2000));
+      setStepIndex((index) => (index === 0 ? 1 : index));
+      shouldCleanUrl = true;
+    }
+    const model = searchParams.get('model');
+    if (model && !modelPrefilledRef.current) {
+      modelPrefilledRef.current = true;
+      setSelectedCueModel(normaliseCueModel(model, FALLBACK_CUE_MODEL));
+      shouldCleanUrl = true;
+    }
+    if (!shouldCleanUrl) return;
+    // Strip consumed query params so a refresh or share link starts clean.
+    // Use history directly to avoid a navigation that would re-render the flow.
+    window.history.replaceState(null, '', '/shows/new');
   }, [searchParams]);
 
   /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {
     if (stepIndex === 0) return description.trim().length > 0;
+    if (stepIndex === 4) return fireworkTypes.size > 0;
     return true;
-  }, [stepIndex, description]);
+  }, [stepIndex, description, fireworkTypes]);
 
   // Resolve the audio file's duration locally so we can show "M:SS" in the
   // attached-track pill. The `<audio>` element is throwaway and never plays.
@@ -191,12 +242,18 @@ export default function NewShowPage() {
     });
   };
 
+  /** Dice: replace the whole brief with a random ready-made example. */
+  const rollDice = () => {
+    const options = RANDOM_BRIEFS.filter((brief) => brief !== description.trim());
+    const pool = options.length > 0 ? options : RANDOM_BRIEFS;
+    setDescription(pool[Math.floor(Math.random() * pool.length)]);
+  };
+
   const toggleFireworkType = (type: FireworkTypeKey) => {
     setFireworkTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
-        // Keep at least one type selected — an empty show isn't a show.
-        if (next.size > 1) next.delete(type);
+        next.delete(type);
       } else {
         next.add(type);
       }
@@ -234,6 +291,7 @@ export default function NewShowPage() {
       }
     }
     setSoundtrackMode('song');
+    setLengthChoice(null);
     setAudioFile(file);
     setUploadedAudio(null);
     setAudioUploadError(null);
@@ -245,6 +303,7 @@ export default function NewShowPage() {
       // The visible error state is set inside uploadAudioAndStartAnalysis.
     });
     toast.success('Track attached', { description: file.name });
+    goToStep(stepIndex + 1);
   };
 
   const clearAudio = () => {
@@ -256,11 +315,14 @@ export default function NewShowPage() {
     uploadPromiseRef.current = null;
     autoBriefUploadIdRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setLengthChoice((prev) => (prev === 'match' ? null : prev));
   };
 
   const chooseNoSoundtrack = () => {
     clearAudio();
     setSoundtrackMode('none');
+    setLengthChoice(null);
+    goToStep(stepIndex + 1);
   };
 
   /**
@@ -426,12 +488,13 @@ export default function NewShowPage() {
       }
 
       const data = new FormData();
-      data.set('budget', String(budget));
+      data.set('budget', String(budget ?? 1000));
       data.set('duration', durationValue);
       data.set('timeOfDay', 'Night');
       data.set('title', finalTitle);
       data.set('description', description);
       data.set('showStyle', styleKey);
+      data.set('selectedCueModel', selectedCueModel);
       data.set('siteWidthFeet', String(effectiveWidthFeet));
       data.set('desiredSlug', desiredSlug);
       fireworkTypes.forEach((type) => data.append('fireworkTypes', type));
@@ -487,210 +550,321 @@ export default function NewShowPage() {
       noValidate
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className="-mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
+      className="new-show-wizard-screen -mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
     >
       {/* Hidden derived title — kept as a named element for focus targeting. */}
       <input type="hidden" name="title" value={title} readOnly />
 
-      <div className="flex w-full flex-col px-6 pt-5 pb-6 sm:px-10">
-        {/* === Top bar: counter + close ================================== */}
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-xs tracking-[0.18em] text-[color:var(--color-content-muted)] tabular-nums">
-            {stepIndex + 1} / {STEPS.length}
-          </p>
-          <Link
-            href="/shows"
-            aria-label="Close"
-            className="rounded-full p-2 text-[color:var(--color-content-muted)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]"
-          >
-            <X size={18} strokeWidth={1.75} />
-          </Link>
-        </div>
-
+      <div className="relative z-10 flex w-full flex-col px-6 pt-5 pb-6 sm:px-10">
         {/* === Step content, vertically centred ========================== */}
-        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center py-8">
-          <h1 className="text-3xl font-black tracking-tight text-[color:var(--color-content-emphasis)] sm:text-5xl">
-            {activeStep.title}
-          </h1>
-          <p className="mt-3 text-sm text-[color:var(--color-content-subtle)] sm:text-base">
-            {activeStep.description}
-          </p>
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center py-8 sm:py-10">
+          <div className="relative isolate mx-auto w-full max-w-4xl">
+            <div className="prompt-hero-glow" aria-hidden />
+            <div className="text-center">
+              <h1 className="text-3xl leading-tight font-bold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-4xl lg:text-5xl">
+                {activeStep.title}
+              </h1>
+              <p className="mt-3 text-sm text-[color:var(--color-content-subtle)] sm:text-base">
+                {activeStep.description}
+              </p>
+            </div>
 
-          <div className="mt-8">
-            <StepPanel active={stepIndex === 0}>
-              <div className="space-y-6">
-                <Textarea
-                  name="description"
-                  rows={4}
-                  autoFocus
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="e.g. Gold and silver, slow elegant start, everything ends in one huge crackling finale."
-                  className="text-base sm:text-lg"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="mr-1 font-mono text-[10px] tracking-[0.18em] text-[color:var(--color-content-muted)] uppercase">
-                    Style
-                  </span>
-                  {SHOW_STYLE_LIST.map((style) => (
-                    <ChoiceChip
-                      key={style.key}
-                      size="md"
-                      selected={styleKey === style.key}
-                      onClick={() => setStyleKey(style.key)}
-                      title={style.tagline}
-                    >
-                      {style.name}
-                    </ChoiceChip>
-                  ))}
-                </div>
-              </div>
-            </StepPanel>
-
-            <StepPanel active={stepIndex === 1}>
-              <div className="space-y-3">
-                <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
-                  <AudioUpload
-                    file={audioFile}
-                    duration={audioDuration}
-                    uploadState={audioUploadState}
-                    error={audioUploadError}
-                    inputRef={fileInputRef}
-                    onFile={onFilePicked}
-                    onClear={clearAudio}
-                  />
-                </div>
-                <ChoiceCard
-                  selected={soundtrackMode === 'none'}
-                  title="No soundtrack"
-                  description="Design to a rhythm instead - the show builds its own arc."
-                  diagram={
-                    <MicOff
-                      size={16}
-                      strokeWidth={1.75}
-                      className="text-[color:var(--color-content-muted)]"
+            <div className="mt-8 w-full">
+              <StepPanel active={stepIndex === 0}>
+                <div className="space-y-6">
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/70 shadow-xs backdrop-blur-xl">
+                    <Textarea
+                      name="description"
+                      rows={4}
+                      autoFocus
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Describe your show, or hit the dice to randomise."
+                      className="h-36 resize-none rounded-none border-0 bg-transparent p-4 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-lg"
                     />
-                  }
-                  onClick={chooseNoSoundtrack}
-                />
-                {soundtrackMode === 'none' ? (
-                  <div className="grid gap-3 pt-3 sm:grid-cols-3">
-                    {NO_MUSIC_DURATIONS.map((option) => (
-                      <ChoiceCard
-                        key={option.minutes}
-                        selected={durationMinutes === option.minutes}
-                        title={option.label}
-                        hint={`${option.minutes} min`}
-                        description={option.description}
-                        onClick={() => setDurationMinutes(option.minutes)}
-                      />
-                    ))}
+                    <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <CueModelSelect
+                          value={selectedCueModel}
+                          onChange={setSelectedCueModel}
+                          className="sm:w-[164px]"
+                        />
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={rollDice}
+                            aria-label="Randomise the brief"
+                            title="Randomise the brief"
+                            className="h-12 w-12 rounded-full px-0"
+                          >
+                            <Dices size={18} />
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => goToStep(stepIndex + 1)}
+                            disabled={mounted && !stepValid}
+                            size="lg"
+                            className="rounded-full px-8"
+                          >
+                            Continue
+                            <ArrowRight size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                ) : null}
-              </div>
-            </StepPanel>
+                </div>
+              </StepPanel>
 
-            <StepPanel active={stepIndex === 2}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {BUDGET_TIERS.map((tier) => (
-                  <ChoiceCard
-                    key={tier.value}
-                    selected={budget === tier.value}
-                    title={tier.label}
-                    hint={tier.hint}
-                    description={tier.description}
-                    onClick={() => setBudget(tier.value)}
-                  />
-                ))}
-              </div>
-            </StepPanel>
-
-            <StepPanel active={stepIndex === 3}>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {FIREWORK_TYPE_KEYS.map((key) => {
-                  const type = FIREWORK_TYPES[key];
-                  return (
-                    <ChoiceCard
-                      key={key}
-                      multi
-                      selected={fireworkTypes.has(key)}
-                      title={type.label}
-                      description={type.description}
-                      onClick={() => toggleFireworkType(key)}
+              <StepPanel active={stepIndex === 1}>
+                <div className="space-y-4">
+                  <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
+                    <AudioUpload
+                      file={audioFile}
+                      duration={audioDuration}
+                      uploadState={audioUploadState}
+                      error={audioUploadError}
+                      inputRef={fileInputRef}
+                      onFile={onFilePicked}
+                      onClear={clearAudio}
                     />
-                  );
-                })}
-              </div>
-            </StepPanel>
+                  </div>
+                  <div className="flex items-center gap-3 py-1">
+                    <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                    <span className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
+                      or
+                    </span>
+                    <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                  </div>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={soundtrackMode === 'none'}
+                    onClick={chooseNoSoundtrack}
+                    className={cn(
+                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99] sm:p-5',
+                      soundtrackMode === 'none'
+                        ? 'border-[color:var(--color-content-emphasis)]'
+                        : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
+                    )}
+                  >
+                    {soundtrackMode === 'none' ? (
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm"
+                      >
+                        <Check size={12} strokeWidth={3} />
+                      </span>
+                    ) : null}
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]">
+                      <MicOff
+                        size={18}
+                        strokeWidth={1.75}
+                        className="text-[color:var(--color-content-muted)]"
+                      />
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)] sm:text-base">
+                        No soundtrack
+                      </span>
+                      <span className="text-xs leading-relaxed text-[color:var(--color-content-subtle)] sm:text-sm">
+                        Design to a rhythm instead - the show builds its own arc.
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </StepPanel>
 
-            <StepPanel active={stepIndex === 4}>
-              <div className="space-y-5">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {WIDTH_PRESETS.map((preset) => (
+              <StepPanel active={stepIndex === 2}>
+                <div className="space-y-4">
+                  {hasSoundtrack ? (
+                    <>
+                      <ChoiceCard
+                        selected={lengthChoice === 'match'}
+                        title="Match the track"
+                        hint={audioDuration ? formatDuration(audioDuration) : 'Auto'}
+                        description="Run the show for the full length of your soundtrack."
+                        diagram={
+                          <Waves
+                            size={16}
+                            strokeWidth={1.75}
+                            className="text-[color:var(--color-content-muted)]"
+                          />
+                        }
+                        onClick={() => {
+                          setLengthChoice('match');
+                          goToStep(stepIndex + 1);
+                        }}
+                      />
+                      <div className="flex items-center gap-3 py-1">
+                        <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                        <span className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
+                          or
+                        </span>
+                        <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                      </div>
+                    </>
+                  ) : null}
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {SHOW_LENGTH_PRESETS.map((option, index) => {
+                      const Icon = LENGTH_PRESET_ICONS[index] ?? Timer;
+                      return (
+                        <ChoiceCard
+                          key={option.minutes}
+                          selected={lengthChoice === option.minutes}
+                          title={option.label}
+                          hint={`${option.minutes} min`}
+                          description={option.description}
+                          diagram={
+                            <Icon
+                              size={16}
+                              strokeWidth={1.75}
+                              className="text-[color:var(--color-content-muted)]"
+                            />
+                          }
+                          onClick={() => {
+                            setLengthChoice(option.minutes);
+                            goToStep(stepIndex + 1);
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </StepPanel>
+
+              <StepPanel active={stepIndex === 3}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {BUDGET_TIERS.map((tier) => (
                     <ChoiceCard
-                      key={preset.feet}
-                      selected={!measuredWidth.trim() && widthFeet === preset.feet}
-                      title={preset.label}
-                      description={preset.description}
-                      diagram={<PositionDots count={preset.positions} />}
+                      key={tier.value}
+                      selected={budget === tier.value}
+                      title={tier.label}
+                      hint={tier.hint}
+                      description={tier.description}
                       onClick={() => {
-                        setMeasuredWidth('');
-                        setWidthFeet(preset.feet);
+                        setBudget(tier.value);
+                        goToStep(stepIndex + 1);
                       }}
                     />
                   ))}
                 </div>
-                <div className="flex items-center gap-3 text-sm text-[color:var(--color-content-subtle)]">
-                  <span>I&apos;ve measured:</span>
-                  <Input
-                    type="number"
-                    min={5}
-                    max={2000}
-                    inputMode="numeric"
-                    value={measuredWidth}
-                    onChange={(e) => setMeasuredWidth(e.target.value)}
-                    placeholder="width"
-                    className="h-9 w-24 text-center tabular-nums"
-                  />
-                  <span>ft</span>
-                  {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
+              </StepPanel>
+
+              <StepPanel active={stepIndex === 4}>
+                <div className="space-y-6">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {FIREWORK_TYPE_KEYS.map((key) => {
+                      const type = FIREWORK_TYPES[key];
+                      return (
+                        <ChoiceCard
+                          key={key}
+                          multi
+                          selected={fireworkTypes.has(key)}
+                          title={type.label}
+                          description={type.description}
+                          onClick={() => toggleFireworkType(key)}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      type="button"
+                      onClick={() => goToStep(stepIndex + 1)}
+                      disabled={mounted && fireworkTypes.size === 0}
+                      size="lg"
+                      className="rounded-full px-8"
+                    >
+                      Continue
+                      <ArrowRight size={16} />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </StepPanel>
+              </StepPanel>
+
+              <StepPanel active={stepIndex === 5}>
+                <div className="space-y-6">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {WIDTH_PRESETS.map((preset) => (
+                      <ChoiceCard
+                        key={preset.feet}
+                        selected={!measuredWidth.trim() && widthFeet === preset.feet}
+                        title={preset.label}
+                        description={preset.description}
+                        diagram={<PositionDots count={preset.positions} />}
+                        onClick={() => {
+                          setMeasuredWidth('');
+                          setWidthFeet(preset.feet);
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-center gap-3 text-sm text-[color:var(--color-content-subtle)]">
+                    <span>I&apos;ve measured:</span>
+                    <Input
+                      type="number"
+                      min={5}
+                      max={2000}
+                      inputMode="numeric"
+                      value={measuredWidth}
+                      onChange={(e) => setMeasuredWidth(e.target.value)}
+                      placeholder="width"
+                      className="h-9 w-24 text-center tabular-nums"
+                    />
+                    <span>ft</span>
+                    {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
+                  </div>
+                  <div className="flex flex-col items-center pt-2">
+                    <Button
+                      type="button"
+                      onClick={triggerGenerate}
+                      disabled={mounted && isLaunching}
+                      size="lg"
+                      className="rounded-full px-8"
+                    >
+                      <Sparkles size={16} strokeWidth={2} />
+                      Generate show
+                    </Button>
+                    <p className="mt-3 text-center text-xs text-[color:var(--color-content-subtle)]">
+                      This will use {selectedCueModelCost} AI credit
+                      {selectedCueModelCost === 1 ? '' : 's'} with {selectedCueModelLabel}.
+                    </p>
+                  </div>
+                </div>
+              </StepPanel>
+            </div>
           </div>
         </div>
 
-        {/* === Bottom bar: navigation ==================================== */}
-        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3">
+        {/* === Footer: circular Back (left edge), minimal dot stepper (centre),
+                pill Skip (right edge) - spans the full content width ========== */}
+        <div className="flex w-full items-center justify-between gap-3">
           <Button
             type="button"
             variant="secondary"
             onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
             disabled={mounted && stepIndex === 0}
+            aria-label="Back"
+            className="h-10 w-10 rounded-full px-0"
           >
-            <ArrowLeft size={16} />
-            Back
+            <ChevronLeft size={18} strokeWidth={2} />
           </Button>
-          <div className="flex items-center gap-4">
-            <span className="hidden font-mono text-[11px] text-[color:var(--color-content-muted)] sm:inline">
-              press Enter ↵
-            </span>
-            {!isFinalStep ? (
-              <Button
-                type="button"
-                onClick={() => goToStep(stepIndex + 1)}
-                disabled={mounted && !stepValid}
-              >
-                Continue
-                <ArrowRight size={16} />
-              </Button>
-            ) : (
-              <Button type="button" onClick={triggerGenerate} disabled={mounted && isLaunching}>
-                Generate show
-                <Sparkles size={16} strokeWidth={2} />
-              </Button>
-            )}
-          </div>
+          <StepDots stepIndex={stepIndex} total={STEPS.length} />
+          {isFinalStep ? (
+            <span className="inline-block h-10 w-10" aria-hidden="true" />
+          ) : (
+            <Button
+              type="button"
+              onClick={() => goToStep(stepIndex + 1)}
+              disabled={mounted && !stepValid}
+              variant="ghost"
+              className="rounded-full px-5"
+            >
+              Skip
+            </Button>
+          )}
         </div>
       </div>
     </form>

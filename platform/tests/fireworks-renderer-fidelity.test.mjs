@@ -22,7 +22,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v9'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v10'/);
   assert.match(showDomain, /rawSpec: unknown/);
   assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
   assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);
@@ -36,7 +36,7 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(engine, /createSeededRng/);
   assert.match(engine, /mixSeed/);
   assert.match(engine, /const isBackwardSeek = delta < -0\.0001/);
-  assert.match(engine, /this\.seekTo\(next, \{ useSnapshots: false \}\)/);
+  assert.match(engine, /if \(isBackwardSeek\) \{\s*this\.seekTo\(next\);\s*return;/);
   assert.match(engine, /this\.seekTo\(next\)/);
   assert.match(
     engine,
@@ -103,9 +103,12 @@ test('QA seed creates pattern, colour, and replay test shows for every user', ()
   assert.match(seed, /qa-colour-check/);
   assert.match(seed, /qa-replay-scrub-check/);
   assert.match(seed, /launch_position_index/);
-  assert.match(seed, /'fib-gold'/);
-  assert.match(seed, /'wave-cyan'/);
-  assert.match(seed, /'strobe-white'/);
+  assert.match(seed, /'peony-default'/);
+  assert.match(seed, /'whirl-azure'/);
+  assert.match(seed, /'strobe-default'/);
+  assert.doesNotMatch(seed, /'fib-[^']+'/);
+  assert.doesNotMatch(seed, /'wave-(cyan|purple|rainbow)'/);
+  assert.doesNotMatch(seed, /'strobe-(mixed|red|white)'/);
 });
 
 test('burst patterns distribute over the full sphere', () => {
@@ -263,7 +266,10 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(engine, /const live = this\.pool\.aliveIndices/);
   assert.match(engine, /let drawCount = 0/);
   assert.match(engine, /renderParticleSize\(p\)/);
-  assert.match(engine, /renderParticleAlpha\(p\) \* twinkle \* clamp\(p\.alpha, 0, 1\)/);
+  assert.match(
+    engine,
+    /renderParticleAlpha\(\s*p,\s*this\.headHoldOuter[\s\S]*?\)\s*\*\s*twinkle\s*\*\s*clamp\(p\.alpha, 0, 1\)/,
+  );
   assert.match(engine, /shapeAttribute/);
   assert.match(engine, /rotationAttribute/);
   assert.match(engine, /this\.geometry\.setAttribute\('shape', this\.shapeAttribute\)/);
@@ -274,9 +280,12 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(engine, /this\.geometry\.setDrawRange\(0, drawCount\)/);
   assert.match(engine, /addUpdateRange\(0, positionCount\)/);
   assert.doesNotMatch(engine, /TextureLoader|SPARK_TEXTURE_URL/);
-  assert.doesNotMatch(engine, /alphaAttribute|setAttribute\("alpha"/);
+  // The main additive points geometry bakes alpha into colour, so it must not
+  // gain an alpha attribute. No shader may declare alpha as a vertex attribute.
+  assert.doesNotMatch(engine, /this\.geometry\.setAttribute\('alpha'/);
   assert.doesNotMatch(shaders, /texture2D|sampler2D|pointTexture/);
-  assert.doesNotMatch(shaders, /attribute float alpha|vAlpha/);
+  assert.doesNotMatch(shaders, /attribute float alpha/);
+  assert.doesNotMatch(shaders, /varying float vAlpha/);
   assert.match(shaders, /attribute float shape/);
   assert.match(shaders, /attribute float rotation/);
   assert.match(shaders, /varying float vShape/);
@@ -333,11 +342,8 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /scene\.add\(guide\)/);
   assert.match(canvas, /scene\.remove\(guide\)/);
   assert.match(canvas, /playbackRef \? playbackRef\.current : internalElapsedRef\.current/);
-  assert.match(canvas, /const isBackwardSeek =[\s\S]*targetElapsed < renderedElapsed - 0\.0001/);
-  assert.match(
-    canvas,
-    /const engineMayUpdate = isBackwardSeek \|\| !isLargeJump \|\| now - lastEngineUpdate >= 60/,
-  );
+  assert.match(canvas, /const isLargeJump = delta > 0\.15 && !Number\.isNaN\(renderedElapsed\)/);
+  assert.match(canvas, /const engineMayUpdate = !isLargeJump \|\| now - lastEngineUpdate >= 60/);
   assert.match(canvas, /MIN_CAMERA_HEIGHT = 24/);
   assert.match(canvas, /ORBIT_FLOOR_OVERSHOOT = 0\.35/);
   assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ ORBIT_FLOOR_OVERSHOOT/);

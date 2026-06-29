@@ -33,7 +33,7 @@ export async function loadBrief(
   const { data, error } = await supabase
     .from('shows')
     .select(
-      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, firework_types',
+      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, selected_cue_model, firework_types',
     )
     .eq('id', showId)
     .eq('user_id', userId)

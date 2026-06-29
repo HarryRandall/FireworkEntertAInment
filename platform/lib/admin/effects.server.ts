@@ -232,3 +232,62 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
 }
+
+async function selectBaseEffectBySlug(supabase: ServerClient, slug: string) {
+  const result = await supabase
+    .from('firework_effects')
+    .select(BASE_EFFECT_SELECT)
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
+
+  return supabase
+    .from('firework_effects')
+    .select(LEGACY_BASE_EFFECT_SELECT)
+    .eq('slug', slug)
+    .maybeSingle();
+}
+
+/**
+ * Returns one colourless base effect by slug. Used by the dev firework lab,
+ * which keys effects by their catalogue slug and needs the live `updated_at`
+ * plus existing style-default assignments so saves do not clobber links.
+ */
+export async function getAdminEffectBySlug(slug: string): Promise<AdminEffectDetail | null> {
+  if (!(await requirePermission('admin.manage_catalogue'))) return null;
+
+  const supabase = await getServerClient();
+  const { data, error } = await selectBaseEffectBySlug(supabase, slug);
+
+  if (error) {
+    console.error('[admin.effects] getAdminEffectBySlug failed:', describeSupabaseError(error));
+    return null;
+  }
+  if (!data) return null;
+
+  const row = data as BaseEffectRow;
+  const legacyLinks = legacyStyleDefaultLinks({
+    star: mapStyleDefaultOption(firstStyleDefault(row.star_style_default)),
+    trail: mapStyleDefaultOption(firstStyleDefault(row.trail_style_default)),
+  });
+  const linkMap = await loadEffectStyleDefaultLinkMap(supabase, [row.id]);
+  const styleDefaultLinks = { ...legacyLinks, ...(linkMap[row.id] ?? {}) };
+  const [styleDefaults, history] = await Promise.all([
+    listAdminStyleDefaultOptions(),
+    listEffectEditorVersions(supabase, row.id),
+  ]);
+  const mapped = {
+    ...mapBaseEffectDetail(row),
+    starStyleDefault: styleDefaultLinks.star ?? null,
+    trailStyleDefault: styleDefaultLinks.trail ?? null,
+    starStyleDefaultId: styleDefaultLinks.star?.id ?? row.star_style_default_id ?? null,
+    trailStyleDefaultId: styleDefaultLinks.trail?.id ?? row.trail_style_default_id ?? null,
+    styleDefaultLinks,
+    styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
+    styleDefaults,
+    history,
+  };
+  await setCachedJson(getAdminEffectCacheKey(row.id), mapped, ADMIN_CACHE_TTL_SECONDS);
+  return mapped;
+}

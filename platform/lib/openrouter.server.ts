@@ -11,8 +11,9 @@
 import 'server-only';
 
 import OpenAI from 'openai';
+import { FALLBACK_CUE_MODEL } from '@/lib/cue-models';
 
-export const DEFAULT_CUE_MODEL = process.env.OPENROUTER_CUE_MODEL ?? 'openai/gpt-4.1-mini';
+export const DEFAULT_CUE_MODEL = process.env.OPENROUTER_CUE_MODEL ?? FALLBACK_CUE_MODEL;
 
 let cached: OpenAI | null = null;
 

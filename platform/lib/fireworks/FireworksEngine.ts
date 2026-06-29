@@ -19,6 +19,7 @@ import {
   type LaunchPosition,
   compileFireworkDesign,
   scaleDesignForCaliber,
+  scaleDesignForEmphasis,
 } from '@/lib/fireworks/design';
 import { ParticlePool } from '@/lib/fireworks/ParticlePool';
 import { SoundHandler } from '@/lib/fireworks/SoundHandler';
@@ -46,12 +47,27 @@ import {
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
 
-type PoolSnapshot = {
+export type PoolSnapshot = {
   indices: Uint32Array;
   /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin,fadeIn] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
+};
+
+export type SnapshotCacheEntry = { time: number; state: PoolSnapshot; lossy: boolean };
+
+/**
+ * Serialisable-ish snapshot of the primed seek cache, plus the simulated show
+ * length it covers. The packed `Uint32Array`/`Float32Array` buffers inside each
+ * entry are kept by reference: the engine never mutates them after capture
+ * (`captureSnapshot` allocates fresh, `restoreSnapshot` only reads), so a
+ * module-level cache can hold and re-feed them across remounts without copying
+ * potentially hundreds of MB of particle state.
+ */
+export type SnapshotCacheData = {
+  snapshots: SnapshotCacheEntry[];
+  primingEnd: number;
 };
 
 export type FireworksEngineStats = {
@@ -67,7 +83,7 @@ const FIXED_DT = 1 / 60;
 const SCRUB_DT = 1 / 24;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 21;
-const MAX_SNAPSHOTS = 120;
+const MAX_SNAPSHOTS = 600;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
 const SMOKE_BRIGHTNESS_BOOST = 1.8;
@@ -119,12 +135,32 @@ export class FireworksEngine {
   private headShapeAttribute: THREE.InstancedBufferAttribute | null = null;
   private viewport = new THREE.Vector2(1, 1);
 
+  // Per-layer head brightness hold (outer/core), mirrored into the material
+  // uniforms and consumed CPU-side by renderParticleAlpha so the packed head
+  // colour holds bright for a configurable slice of life before fading.
+  private headHoldOuter = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent;
+  private headHoldCore = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent;
+  private headExpOuter = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent;
+  private headExpCore = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent;
+
   private elapsed = 0;
   private time = 0;
   /** Snapshots keyed by elapsed seconds, used for fast backward seeks. */
-  private snapshots: { time: number; state: PoolSnapshot }[] = [];
+  private snapshots: { time: number; state: PoolSnapshot; lossy: boolean }[] = [];
   private readonly SNAPSHOT_INTERVAL = 1.0;
+  // When the nearest snapshot to a seek is lossy (captured while callback-driven
+  // heads/flashes were alive), prefer a nearby accurate snapshot if one sits
+  // within this window. Keeps restores faithful when cheap, without falling back
+  // to the from-zero rebuilds that froze scrubbing on busy shows.
+  private readonly PREFER_CLEAN_SNAPSHOT_WINDOW = 1.5;
   private nextSnapshotAt = 0;
+  private primed = false;
+  private cueSignature = '';
+  // Async priming state: when active, `stepPriming` drives the silent full-show
+  // pass across frames so the main thread stays responsive while fireworks load.
+  private primingActive = false;
+  private primingCursor = 0;
+  private primingEnd = 0;
 
   constructor(
     scene: THREE.Scene,
@@ -214,6 +250,18 @@ export class FireworksEngine {
           value: new THREE.Vector2(
             DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
             DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
+          ),
+        },
+        headBrightnessHold: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
+          ),
+        },
+        headBrightnessHoldExponent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
           ),
         },
       },
@@ -396,6 +444,18 @@ export class FireworksEngine {
             DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
           ),
         },
+        headBrightnessHold: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
+          ),
+        },
+        headBrightnessHoldExponent: {
+          value: new THREE.Vector2(
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
+            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
+          ),
+        },
         viewport: { value: this.viewport },
       },
       vertexShader: HEAD_BILLBOARD_VERTEX_SHADER,
@@ -491,7 +551,23 @@ export class FireworksEngine {
         next.backgroundGlowSoftness,
         next.backgroundGlowSoftness,
       );
+      this.setVec2Uniform(
+        material,
+        'headBrightnessHold',
+        next.brightnessHoldPercent / 100,
+        next.brightnessHoldPercent / 100,
+      );
+      this.setVec2Uniform(
+        material,
+        'headBrightnessHoldExponent',
+        next.brightnessHoldExponent,
+        next.brightnessHoldExponent,
+      );
     };
+    this.headHoldOuter = next.brightnessHoldPercent;
+    this.headHoldCore = next.brightnessHoldPercent;
+    this.headExpOuter = next.brightnessHoldExponent;
+    this.headExpCore = next.brightnessHoldExponent;
     apply(this.material);
     apply(this.headBillboardMaterial);
   }
@@ -541,7 +617,23 @@ export class FireworksEngine {
         outer.backgroundGlowSoftness,
         core.backgroundGlowSoftness,
       );
+      this.setVec2Uniform(
+        material,
+        'headBrightnessHold',
+        outer.brightnessHoldPercent / 100,
+        core.brightnessHoldPercent / 100,
+      );
+      this.setVec2Uniform(
+        material,
+        'headBrightnessHoldExponent',
+        outer.brightnessHoldExponent,
+        core.brightnessHoldExponent,
+      );
     };
+    this.headHoldOuter = outer.brightnessHoldPercent;
+    this.headHoldCore = core.brightnessHoldPercent;
+    this.headExpOuter = outer.brightnessHoldExponent;
+    this.headExpCore = core.brightnessHoldExponent;
     apply(this.material);
     apply(this.headBillboardMaterial);
   }
@@ -587,11 +679,180 @@ export class FireworksEngine {
     void this.sound.resume();
   }
 
-  setCues(cues: ReplayCue[]): void {
+  setCues(
+    cues: ReplayCue[],
+    options: { prime?: boolean; primeAsync?: boolean; cache?: SnapshotCacheData | null } = {},
+  ): void {
+    const target = this.elapsed;
+    const nextCueSignature = this.createCueSignature(cues);
+    const cuesChanged = nextCueSignature !== this.cueSignature;
+    this.cueSignature = nextCueSignature;
     this.scheduler.setCues(cues);
+    // Cancel any in-flight async prime so a fresh cue set restarts cleanly.
+    this.primingActive = false;
+    if (cuesChanged) {
+      this.primed = false;
+      this.snapshots.length = 0;
+      this.nextSnapshotAt = 0;
+    }
+    if (options.cache && this.importSnapshotCache(options.cache)) {
+      // Cached prime: skip the silent full pass and settle at the playhead.
+      if (target > 0) this.seekTo(target);
+      return;
+    }
+    if (options.prime && (cuesChanged || !this.primed) && this.beginPriming()) {
+      if (options.primeAsync) {
+        // The caller drives `stepPriming` each animation frame so the main
+        // thread stays responsive and the scene can render while fireworks
+        // load. `stepPriming` finalises (and sets `primed`) when it reaches
+        // the end; the caller then seeks back to the playhead.
+        return;
+      }
+      while (this.primingActive) this.stepPriming(Infinity);
+      this.primed = true;
+      if (target > 0) this.seekTo(target);
+      return;
+    }
     this.snapshots.length = 0;
     this.nextSnapshotAt = 0;
-    this.seekTo(this.elapsed);
+    this.seekTo(target);
+  }
+
+  private createCueSignature(cues: ReplayCue[]): string {
+    return cues
+      .map((cue) =>
+        [
+          cue.id,
+          cue.position,
+          cue.timeSeconds,
+          cue.productId,
+          cue.firework.id,
+          cue.launchPositionIndex,
+          cue.seedOverride ?? '',
+          cue.emphasis ?? 'normal',
+          cue.shotPanDegrees ?? '',
+          cue.shotTiltDegrees ?? '',
+          cue.shotPositionOverride?.x ?? '',
+          cue.shotPositionOverride?.y ?? '',
+          cue.shotPositionOverride?.z ?? '',
+        ].join(':'),
+      )
+      .join('|');
+  }
+
+  /**
+   * Hand back the current primed snapshot cache so a caller can keep it alive
+   * across remounts and skip the silent full-show pass on re-entry. Returns
+   * null when nothing useful has been primed yet.
+   */
+  exportSnapshotCache(): SnapshotCacheData | null {
+    if (this.snapshots.length === 0) return null;
+    return {
+      // Shallow-copy the wrapper array so later engine pushes don't mutate the
+      // cached entry; the packed typed arrays inside `state` stay shared.
+      snapshots: this.snapshots.map((s) => ({ time: s.time, lossy: s.lossy, state: s.state })),
+      primingEnd: this.primingEnd,
+    };
+  }
+
+  /**
+   * Load a previously exported snapshot cache, mark the engine primed, and
+   * reset to t=0 so the caller can seek to the playhead. Returns false when the
+   * cache is empty/missing so `setCues` falls through to a real prime.
+   */
+  importSnapshotCache(cache: SnapshotCacheData | null | undefined): boolean {
+    if (!cache || cache.snapshots.length === 0) return false;
+    this.primingActive = false;
+    this.primingCursor = 0;
+    this.primingEnd = cache.primingEnd;
+    // Fresh wrapper array, shared read-only typed arrays.
+    this.snapshots = cache.snapshots.map((s) => ({ time: s.time, lossy: s.lossy, state: s.state }));
+    const lastTime = this.snapshots[this.snapshots.length - 1].time;
+    this.nextSnapshotAt = lastTime + this.SNAPSHOT_INTERVAL;
+    this.primed = true;
+    this.pool.reset();
+    this.lights.reset();
+    this.scheduler.resetAll();
+    this.elapsed = 0;
+    this.time = 0;
+    this.syncGeometry();
+    return true;
+  }
+
+  /** True while an async prime is mid-flight (see `setCues` with `primeAsync`). */
+  isPriming(): boolean {
+    return this.primingActive;
+  }
+
+  /**
+   * Advance the in-flight async prime by up to `budgetMs` of wall-clock work,
+   * capturing a snapshot every {@link SNAPSHOT_INTERVAL} seconds. Returns the
+   * 0..1 progress and whether priming is complete. When complete, the engine is
+   * reset to t=0 with the snapshot cache populated and `primed` set.
+   */
+  stepPriming(budgetMs: number): { progress: number; done: boolean } {
+    if (!this.primingActive) return { progress: 1, done: true };
+    const start = performance.now();
+    this.effects.setAudible(false);
+    while (this.primingCursor + 0.0001 < this.primingEnd) {
+      const next = Math.min(this.primingEnd, this.primingCursor + SCRUB_DT);
+      const due = this.scheduler.pop(this.primingCursor, next);
+      for (const cue of due) this.fireCue(cue, false);
+      this.tickPhysics(next - this.primingCursor);
+      this.primingCursor = next;
+      if (this.primingCursor >= this.nextSnapshotAt) {
+        this.snapshots.push({
+          time: this.primingCursor,
+          state: this.captureSnapshot(),
+          lossy: this.poolHasLiveCallbackParticles(),
+        });
+        if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
+        this.nextSnapshotAt = this.primingCursor + this.SNAPSHOT_INTERVAL;
+      }
+      if (performance.now() - start >= budgetMs) break;
+    }
+    this.elapsed = this.primingCursor;
+    if (this.primingCursor + 0.0001 >= this.primingEnd) {
+      // Reset to the start, keeping the snapshots.
+      this.pool.reset();
+      this.lights.reset();
+      this.scheduler.resetAll();
+      this.elapsed = 0;
+      this.time = 0;
+      this.nextSnapshotAt = 0;
+      this.syncGeometry();
+      this.primingActive = false;
+      this.primed = true;
+      return { progress: 1, done: true };
+    }
+    return { progress: clamp(this.primingCursor / this.primingEnd, 0, 1), done: false };
+  }
+
+  /**
+   * Reset to t=0 and arm a silent full-show pass that {@link stepPriming} will
+   * drive across frames. Returns false when there are no cues to prime, so
+   * callers can retry once cues arrive. Replaces the old synchronous
+   * `primeSnapshots` so the page can paint the empty scene and a progress bar
+   * while fireworks load instead of blocking the main thread.
+   */
+  private beginPriming(): boolean {
+    if (this.scheduler.size() === 0) return false;
+    const end = this.scheduler.lastCueTime() + 10;
+    this.pool.reset();
+    this.lights.reset();
+    this.scheduler.resetAll();
+    this.elapsed = 0;
+    this.time = 0;
+    this.snapshots.length = 0;
+    // Seed an empty t=0 snapshot so a seek back to the start restores instead
+    // of falling through to the from-zero rebuild, which would wipe the cache.
+    this.snapshots.push({ time: 0, state: this.captureSnapshot(), lossy: false });
+    this.nextSnapshotAt = this.SNAPSHOT_INTERVAL;
+    this.syncGeometry();
+    this.primingCursor = 0;
+    this.primingEnd = end;
+    this.primingActive = true;
+    return true;
   }
 
   /**
@@ -603,7 +864,7 @@ export class FireworksEngine {
     const delta = next - this.elapsed;
     const isBackwardSeek = delta < -0.0001;
     if (isBackwardSeek) {
-      this.seekTo(next, { useSnapshots: false });
+      this.seekTo(next);
       return;
     }
     if (delta > LARGE_JUMP_SECONDS) {
@@ -622,10 +883,11 @@ export class FireworksEngine {
   }
 
   private fireCue(cue: ReplayCue, audible: boolean): void {
-    const design = scaleDesignForCaliber(
+    const baseDesign = scaleDesignForCaliber(
       cue.firework.renderDesign ?? compileFireworkDesign({ legacySpec: cue.firework.rawSpec }),
       cue.firework.caliber,
     );
+    const design = scaleDesignForEmphasis(baseDesign, cue.emphasis);
     // Head appearance is saved per design. Outer/Core styles share the global
     // material uniforms for a cue, while each head particle carries the style
     // slot encoded in its shape value.
@@ -660,7 +922,12 @@ export class FireworksEngine {
   /** Seek using nearest snapshot if available, otherwise full rebuild. */
   private seekTo(target: number, options: { useSnapshots?: boolean } = {}): void {
     const snap = options.useSnapshots === false ? null : this.findSnapshot(target);
-    if (snap && snap.time <= target) {
+    // A lossy snapshot's particles lose their behaviour callbacks on restore
+    // (see restoreSnapshot), so head colour-evolution freezes if we advance
+    // past it. When the nearest snapshot is lossy and the target sits beyond
+    // it, rebuild from zero so opening/closing colours replay correctly.
+    const snapUsable = snap && snap.time <= target && !(snap.lossy && target > snap.time + 0.0001);
+    if (snapUsable) {
       this.restoreSnapshot(snap.state);
       this.elapsed = snap.time;
       this.time = snap.time;
@@ -693,10 +960,18 @@ export class FireworksEngine {
       }
       this.tickPhysics(next - cursor);
       cursor = next;
-      // Skip frames with live callback-driven particles: those callbacks are
-      // intentionally not serialised, so restoring them would change effects.
-      if (cursor >= this.nextSnapshotAt && !this.poolHasLiveCallbackParticles()) {
-        this.snapshots.push({ time: cursor, state: this.captureSnapshot() });
+      // Capture every interval even when callback-driven heads/flashes are
+      // alive. Those callbacks are not serialised, so such snapshots restore
+      // slightly lossy (a head may miss a few trail emissions for the fraction
+      // of a second after the seek), but skipping them left the cache empty in
+      // busy shows and forced a from-zero rebuild on every scrub, freezing the
+      // timeline. Tag them so seeks can prefer an accurate snapshot when nearby.
+      if (cursor >= this.nextSnapshotAt) {
+        this.snapshots.push({
+          time: cursor,
+          state: this.captureSnapshot(),
+          lossy: this.poolHasLiveCallbackParticles(),
+        });
         if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
       }
@@ -751,7 +1026,16 @@ export class FireworksEngine {
       // looked like noise rather than burning chemistry. Head orbs are exempt:
       // they are meant to read as a steady, constant core, so they never twinkle.
       const twinkle = isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
-      const alpha = renderParticleAlpha(p) * twinkle * clamp(p.alpha, 0, 1);
+      const alpha =
+        renderParticleAlpha(
+          p,
+          this.headHoldOuter,
+          this.headHoldCore,
+          this.headExpOuter,
+          this.headExpCore,
+        ) *
+        twinkle *
+        clamp(p.alpha, 0, 1);
       if (isSmoke) {
         const si = smokeDrawCount * 3;
         const smokeTone = alpha * SMOKE_BRIGHTNESS_BOOST;
@@ -979,10 +1263,24 @@ export class FireworksEngine {
     return false;
   }
 
-  private findSnapshot(target: number): { time: number; state: PoolSnapshot } | null {
-    let best: { time: number; state: PoolSnapshot } | null = null;
+  private findSnapshot(
+    target: number,
+  ): { time: number; state: PoolSnapshot; lossy: boolean } | null {
+    let best: { time: number; state: PoolSnapshot; lossy: boolean } | null = null;
     for (const s of this.snapshots) {
       if (s.time <= target && (!best || s.time > best.time)) best = s;
+    }
+    if (best && best.lossy) {
+      // Prefer the nearest accurate snapshot when one sits close behind the
+      // lossy best, so restores keep callback-driven effects when cheap.
+      let clean: typeof best | null = null;
+      for (const s of this.snapshots) {
+        if (s.lossy || s.time > target || best.time - s.time > this.PREFER_CLEAN_SNAPSHOT_WINDOW) {
+          continue;
+        }
+        if (!clean || s.time > clean.time) clean = s;
+      }
+      if (clean) best = clean;
     }
     return best;
   }
@@ -1042,7 +1340,13 @@ function renderParticleSize(p: Particle): number {
   return clamp(base * 1.2, 1.1, 20);
 }
 
-function renderParticleAlpha(p: Particle): number {
+function renderParticleAlpha(
+  p: Particle,
+  holdOuter = 82,
+  holdCore = 82,
+  expOuter = 0.8,
+  expCore = 0.8,
+): number {
   const maxLife = Math.max(p.maxLife, p.life, 0.001);
   const lifeRatio = clamp(p.life / maxLife, 0, 1);
   const ageRatio = 1 - lifeRatio;
@@ -1056,9 +1360,14 @@ function renderParticleAlpha(p: Particle): number {
   if (isFlash) peak = 0.14;
   else if (p.mass >= 0.1) peak = 0.28;
   else if (p.shape > 1.5) {
-    // Heads hold brightness for most of their life, then wink out quickly.
-    // The shader keeps the core opaque while this packed colour fades.
-    const holdFade = Math.pow(clamp(lifeRatio / 0.18, 0, 1), 0.8);
+    // Heads hold brightness for a configurable slice of life, then wink out.
+    // The shader keeps the core opaque while this packed colour fades. Core
+    // heads (shape >= 3.0, the headShapeValue core sentinel) can hold for a
+    // different slice than outer heads, so each layer fades on its own curve.
+    const isCoreHead = p.shape >= 3.0;
+    const hold = isCoreHead ? holdCore : holdOuter;
+    const exponent = isCoreHead ? expCore : expOuter;
+    const holdFade = Math.pow(clamp(lifeRatio / Math.max(0.001, 1 - hold / 100), 0, 1), exponent);
     return clamp(0.7 * fadeIn * holdFade, 0, 0.82);
   } else if (p.shape > 0.5)
     peak = 0.6; // brocade trail squares read brighter

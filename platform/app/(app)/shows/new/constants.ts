@@ -39,8 +39,10 @@ export const BUDGET_TIERS = [
   },
 ] as const;
 
-/** Show length options when there is no soundtrack to time against. */
-export const NO_MUSIC_DURATIONS = [
+/** Fixed show-length presets. The wizard also offers a "match the track"
+ * option on the Length step when the user has uploaded a soundtrack, so the
+ * show runs for the exact duration of the audio. */
+export const SHOW_LENGTH_PRESETS = [
   { minutes: 1, label: 'Quick burst', description: 'One arc, one finale.' },
   { minutes: 3, label: 'Classic', description: 'Room to build and pay off.' },
   { minutes: 5, label: 'Extended', description: 'A full evening centrepiece.' },
@@ -83,6 +85,12 @@ export const STEPS = [
     description: 'Analysis starts in the background while you finish the next steps.',
   },
   {
+    key: 'length',
+    label: 'Length',
+    title: 'How long should it run?',
+    description: 'Match the track, or pick a fixed length for the show.',
+  },
+  {
     key: 'budget',
     label: 'Budget',
     title: "What's the budget?",
@@ -92,7 +100,7 @@ export const STEPS = [
     key: 'types',
     label: 'Fireworks',
     title: 'What can we fire?',
-    description: 'Everything is on by default. Untick anything you cannot use.',
+    description: 'Select one or more firework types available for this show.',
   },
   {
     key: 'site',
@@ -100,4 +108,13 @@ export const STEPS = [
     title: 'How wide is the site?',
     description: 'Width decides how many firing positions the show can use.',
   },
+] as const;
+
+/** Ready-made briefs the dice button picks from to randomise the whole brief. */
+export const RANDOM_BRIEFS = [
+  'Gold and silver, slow elegant start, everything ends in one huge crackling finale.',
+  'Warm reds and oranges building to a dense, beat-synced crescendo with a crackling send-off.',
+  'Cool blues and whites, minimalist and precise, with one big surprise before the finale.',
+  'A playful, colourful backyard show - quick bursts, a quiet moment, then a crackling finish.',
+  'Cinematic and grand: a slow build, a quiet midpoint, and a finale that fills the sky.',
 ] as const;

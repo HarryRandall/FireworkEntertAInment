@@ -11,7 +11,7 @@ export default async function SecuritySettingsPage() {
   const isImpersonating = Boolean(impersonation);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {isImpersonating ? (
         <InlineAlert tone="warning" title="Security changes are blocked while impersonating">
           Stop impersonating to return to your admin account before changing passwords or security
@@ -19,12 +19,12 @@ export default async function SecuritySettingsPage() {
         </InlineAlert>
       ) : null}
 
-      <Card>
+      <Card size="sm">
         <CardHeader>
           <CardTitle>Password</CardTitle>
           <CardDescription>Update the password you use to sign in to ShowCrafter.</CardDescription>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="px-4 pb-4 sm:px-5 sm:pb-5">
           <PasswordChangeForm disabled={isImpersonating} />
         </CardContent>
       </Card>

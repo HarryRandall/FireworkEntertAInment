@@ -7,7 +7,19 @@
  * is intentionally `dynamic`-imported by parents to avoid SSR.
  */
 import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, Axis3d, Hand, RotateCcw, Settings, Sun, X, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+  Activity,
+  Axis3d,
+  Hand,
+  Maximize2,
+  Minimize2,
+  RotateCcw,
+  Settings,
+  Sun,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
@@ -15,7 +27,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { ReplayCue } from '@/lib/show-domain';
-import { FireworksEngine } from '@/lib/fireworks/FireworksEngine';
+import { FireworksEngine, type SnapshotCacheData } from '@/lib/fireworks/FireworksEngine';
 import type { FireworkSceneMode } from '@/lib/fireworks/World';
 import {
   DEFAULT_LAUNCH_POSITIONS,
@@ -29,6 +41,76 @@ import {
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
 import { Button } from '@/app/components/ui/Button';
+import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
+import { cn } from '@/lib/utils';
+
+// Wall-clock budget per frame for the async snapshot prime, balancing how fast
+// fireworks load against keeping the loop responsive while the bar animates.
+const PRIME_BUDGET_MS = 8;
+
+// Module-level cache of primed snapshot caches, keyed by a content signature of
+// the cue set. The canvas module stays loaded across client navigations within
+// a tab, so this lets a quick leave-and-return to the same show skip the silent
+// full-show prime entirely (no loading bar) instead of re-running it on every
+// mount. Capped at one entry to bound memory: each entry holds the packed
+// particle buffers for every second of a show, which can run to tens of MB.
+const MAX_CACHED_SHOWS = 1;
+const snapshotCacheByKey = new Map<string, SnapshotCacheData>();
+
+function rememberSnapshotCache(key: string, cache: SnapshotCacheData): void {
+  if (cache.snapshots.length === 0) return;
+  // Move-to-front so the most recently primed show survives eviction.
+  snapshotCacheByKey.delete(key);
+  snapshotCacheByKey.set(key, cache);
+  while (snapshotCacheByKey.size > MAX_CACHED_SHOWS) {
+    const oldest = snapshotCacheByKey.keys().next().value;
+    if (oldest === undefined) break;
+    snapshotCacheByKey.delete(oldest);
+  }
+}
+
+/**
+ * Hash the effective firework design (`renderDesign`, falling back to the
+ * legacy `rawSpec` that the engine compiles) into a short stable string. The
+ * admin editors rebuild a cue's design on every slider tick while keeping the
+ * same productId/caliber/duration, so the cache key has to fold the design in
+ * or a colour edit would import a stale snapshot and show the wrong preview.
+ */
+function hashDesign(design: unknown): string {
+  if (design == null) return '';
+  let str: string;
+  try {
+    str = JSON.stringify(design);
+  } catch {
+    str = String(design);
+  }
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * Build a stable signature for a cue set so cue edits invalidate the cache but
+ * harmless re-renders do not. Covers the fields that change the simulated show
+ * (timing, position, product, shot overrides, seed) plus a hash of each
+ * firework's design, so editor design tweaks invalidate the cache too. The
+ * cache is session-scoped and a full reload clears it.
+ */
+function cuesCacheKey(cues: ReplayCue[]): string {
+  let key = '';
+  for (const cue of cues) {
+    key += `${cue.id}|${cue.timeSeconds}|${cue.productId}|${cue.launchPositionIndex}|${
+      cue.seedOverride ?? ''
+    }|${cue.shotPanDegrees ?? 0}|${cue.shotTiltDegrees ?? 0}|${
+      cue.shotPositionOverride ? '1' : '0'
+    }|${cue.firework.caliber ?? ''}|${cue.firework.durationSeconds ?? ''}|d:${hashDesign(
+      cue.firework.renderDesign ?? cue.firework.rawSpec,
+    )};`;
+  }
+  return key;
+}
 
 type Props = {
   cues: ReplayCue[];
@@ -43,10 +125,69 @@ type Props = {
   allowWheelZoom?: boolean;
   controlsVisible?: boolean;
   showFps?: boolean;
+  /** Upper bound for renderer DPR. Lower values are useful for large public previews. */
+  maxDevicePixelRatio?: number;
+  /**
+   * Pre-run the whole show silently on cue load and cache a particle snapshot
+   * every second, so timeline seeks land near a snapshot instead of rebuilding
+   * from zero. Intended for full-show previews where scrubbing matters; leave
+   * off for short single-firework editors.
+   */
+  primeSnapshots?: boolean;
+  /**
+   * When `primeSnapshots` is on, keep re-priming as `cues` change so seeks stay
+   * fast after a cue edit. Set false for the single-firework admin editors,
+   * which rebuild their one cue on every slider tick: they prime once on mount
+   * (for the loading bar and the come-back cache) then skip the per-edit prime
+   * to avoid drag jank, accepting from-zero seeks after each edit.
+   */
+  primeOnCueChanges?: boolean;
   renderTuning?: Partial<FireworkRenderTuning>;
   headStyle?: Partial<FireworkHeadStyle>;
   trailWidthGuideDesign?: FireworkDesign | null;
+  /**
+   * Fired once after the canvas mounts and the empty scene is first rendered,
+   * before any fireworks are loaded. Parents can use this to drop a placeholder
+   * so the user can see (and orbit) the scene while cues are still priming.
+   */
+  onSceneReady?: () => void;
+  /**
+   * Fired with `null` when no prime is in flight, and with a 0..1 fraction as
+   * the async snapshot prime advances, so parents can render a determinate
+   * loading bar while fireworks load.
+   */
+  onPrimeProgress?: (progress: number | null) => void;
+  /**
+   * Whether the current `cues` are the final set the parent intends to show.
+   * When streaming cues, keep this false until the data lands so the canvas
+   * does not report `onReady` on the initial empty scene. Defaults to true for
+   * non-streaming callers.
+   */
+  cuesFinal?: boolean;
   onReady?: () => void;
+  /**
+   * Render the canvas's built-in loading bar overlay while fireworks are
+   * loading (before `onReady` fires). Off by default so decorative callers
+   * with their own loading UI (landing demo, template cards) are unaffected;
+   * the show viewer and admin editors opt in so every preview has consistent
+   * loading feedback without per-consumer wiring.
+   */
+  showLoadingBar?: boolean;
+  /**
+   * Where the built-in loading bar floats. `bottom` sits in the playback slot
+   * (show viewer, import preview); `center` floats mid-stage so it clears the
+   * always-on transport strip in the admin editors.
+   */
+  loadingBarPosition?: 'bottom' | 'center';
+  /**
+   * Show the in-canvas fullscreen toggle (top-right) and let this canvas drive
+   * a parent-owned fullscreen overlay. Off by default so decorative card
+   * previews and admin editors are unaffected.
+   */
+  allowFullscreen?: boolean;
+  /** Controlled fullscreen flag; the parent owns the overlay chrome. */
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
@@ -210,6 +351,8 @@ function burstParticleCount(design: FireworkDesign): number {
       return Math.max(18, Math.round(design.size * 0.18));
     case 'ring':
       return Math.max(72, Math.round(design.size * 0.72));
+    case 'bowtie':
+      return Math.max(60, Math.round(design.size * 0.82));
     case 'fragment_cloud':
       return Math.max(90, Math.round(design.size * 0.9));
     default:
@@ -270,6 +413,19 @@ function buildTrailWidthGuideVelocity(design: FireworkDesign): THREE.Vector3 {
     }
     case 'fragment_cloud':
       return direction.multiplyScalar(speed * 1.11);
+    case 'bowtie': {
+      const half = Math.floor(count / 2);
+      const lobe = index < half ? 1 : -1;
+      const withinLobe = lobe === 1 ? index : index - half;
+      const lobeCount = lobe === 1 ? half : count - half;
+      const t = lobeCount > 1 ? withinLobe / (lobeCount - 1) : 0.5;
+      const fan = (t - 0.5) * Math.PI * 0.62;
+      return new THREE.Vector3(
+        lobe * Math.cos(fan) * speed * 0.92,
+        Math.sin(fan) * speed * 0.34,
+        0,
+      );
+    }
     default: {
       const warble = PATTERN_SEED[design.pattern] === 2 ? 1.03 : 1;
       return direction.multiplyScalar(speed * warble);
@@ -439,10 +595,21 @@ export function FireworkReplayCanvas({
   allowWheelZoom = true,
   controlsVisible = true,
   showFps = false,
+  maxDevicePixelRatio = MAX_DEVICE_PIXEL_RATIO,
+  primeSnapshots = false,
+  primeOnCueChanges = true,
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
   headStyle = DEFAULT_FIREWORK_HEAD_STYLE,
   trailWidthGuideDesign = null,
+  onSceneReady,
+  onPrimeProgress,
+  cuesFinal = true,
   onReady,
+  showLoadingBar = false,
+  loadingBarPosition = 'bottom',
+  allowFullscreen = false,
+  fullscreen = false,
+  onToggleFullscreen,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
@@ -464,13 +631,42 @@ export function FireworkReplayCanvas({
   const floorLiftRef = useRef(0);
   const showViewHelperRef = useRef(false);
   const hasReportedReadyRef = useRef(false);
+  const hasReportedSceneReadyRef = useRef(false);
+  const lastReportedPrimeProgressRef = useRef(0);
+  // Cache key for the prime currently in flight, so the RAF loop can store the
+  // finished snapshot cache under the right signature when priming completes.
+  const primeCacheKeyRef = useRef<string>('');
+  const onSceneReadyRef = useRef(onSceneReady);
+  const onPrimeProgressRef = useRef(onPrimeProgress);
+  const cuesFinalRef = useRef(cuesFinal);
   const [panMode, setPanMode] = useState(false);
-  const [showCameraControls, setShowCameraControls] = useState(false);
   const [showViewHelper, setShowViewHelper] = useState(false);
   const [sceneMode, setSceneMode] = useState<FireworkSceneMode>('night');
   const [showFpsOverlay, setShowFpsOverlay] = useState(showFps);
+  // Camera-controls reveal state. The controls slide in on mouse hover
+  // (`menuHovered`) and keyboard focus (`gearFocused`); tapping the gear on a
+  // touch device focuses it, which also reveals them. There is no pinned
+  // open-state, so the cluster always collapses again once the pointer leaves
+  // and focus moves away.
+  const [menuHovered, setMenuHovered] = useState(false);
+  const [gearFocused, setGearFocused] = useState(false);
+  // `menuMounted` keeps the dropdown in the DOM through its exit animation;
+  // `menuEntered` drives the transition direction (in vs. out). The ref mirrors
+  // `menuMounted` so the exit timer can be skipped before the first open.
+  const [menuEntered, setMenuEntered] = useState(false);
+  const [menuMounted, setMenuMounted] = useState(false);
+  const menuMountedRef = useRef(false);
+  const gearClusterRef = useRef<HTMLDivElement | null>(null);
+  const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fps, setFps] = useState<number | null>(null);
   const [fpsSamples, setFpsSamples] = useState<number[]>([]);
+  // Internal loading-bar state. `loadingBarVisible` mirrors `!hasReportedReady`
+  // (false once the canvas settles on a final cue set) and `loadingProgress`
+  // is null (indeterminate "Preparing preview") until the async prime starts,
+  // then 0..1 ("Loading fireworks"). Kept here so every consumer gets the bar
+  // by passing `showLoadingBar` instead of wiring its own progress state.
+  const [loadingProgress, setLoadingProgress] = useState<number | null>(null);
+  const [loadingBarVisible, setLoadingBarVisible] = useState(showLoadingBar);
   const onReadyRef = useRef(onReady);
   const glowPadding = renderTuning.glowPadding ?? DEFAULT_FIREWORK_RENDER_TUNING.glowPadding;
   const whiteCoreSizePercent =
@@ -495,6 +691,15 @@ export function FireworkReplayCanvas({
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
+  useEffect(() => {
+    onSceneReadyRef.current = onSceneReady;
+  }, [onSceneReady]);
+  useEffect(() => {
+    onPrimeProgressRef.current = onPrimeProgress;
+  }, [onPrimeProgress]);
+  useEffect(() => {
+    cuesFinalRef.current = cuesFinal;
+  }, [cuesFinal]);
 
   useEffect(() => {
     setShowFpsOverlay(showFps);
@@ -510,6 +715,66 @@ export function FireworkReplayCanvas({
       setFpsSamples([]);
     }
   }, [showFpsOverlay]);
+
+  const menuVisible = menuHovered || gearFocused;
+
+  function cancelMenuClose() {
+    if (menuCloseTimer.current) {
+      clearTimeout(menuCloseTimer.current);
+      menuCloseTimer.current = null;
+    }
+  }
+
+  function scheduleMenuClose() {
+    cancelMenuClose();
+    // Brief grace period so a momentary slip off the gear cluster does not
+    // collapse the dropdown. The menu lives inside the cluster, so moving
+    // between the gear and the items does not trigger this leave at all.
+    menuCloseTimer.current = setTimeout(() => setMenuHovered(false), 100);
+  }
+
+  // Collapse the controls on Esc or an outside tap, so a touch reveal does not
+  // linger after the user moves away (hover reveals close via the leave timer).
+  useEffect(() => {
+    if (!gearFocused) return;
+    function onPointerDown(event: PointerEvent) {
+      if (gearClusterRef.current && !gearClusterRef.current.contains(event.target as Node)) {
+        setGearFocused(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setGearFocused(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [gearFocused]);
+
+  useEffect(() => () => cancelMenuClose(), []);
+
+  // Drive the dropdown reveal. On open, mount the menu and flip `menuEntered`
+  // next frame so the whole popover transitions in together (one fade + lift,
+  // no per-item stagger). On close, flip it back so the same transition plays
+  // in reverse, then unmount once it finishes. The ref skips the exit timer
+  // before the first open so the menu does not flash on initial render.
+  useEffect(() => {
+    if (menuVisible) {
+      menuMountedRef.current = true;
+      setMenuMounted(true);
+      const id = requestAnimationFrame(() => setMenuEntered(true));
+      return () => cancelAnimationFrame(id);
+    }
+    if (!menuMountedRef.current) return;
+    setMenuEntered(false);
+    const id = setTimeout(() => {
+      setMenuMounted(false);
+      menuMountedRef.current = false;
+    }, 160);
+    return () => clearTimeout(id);
+  }, [menuVisible]);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
@@ -592,7 +857,7 @@ export function FireworkReplayCanvas({
       alpha: false,
       powerPreference: 'high-performance',
     });
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, maxDevicePixelRatio);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -681,6 +946,12 @@ export function FireworkReplayCanvas({
     }
     syncEngineViewport();
     composer.render(0);
+    // The empty scene is on screen; let the parent drop its placeholder so the
+    // user can see (and orbit) the stage while fireworks are still priming.
+    if (!hasReportedSceneReadyRef.current) {
+      hasReportedSceneReadyRef.current = true;
+      onSceneReadyRef.current?.();
+    }
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
     // Keep the axis helper below the camera settings button when enabled.
@@ -708,25 +979,60 @@ export function FireworkReplayCanvas({
       const comp = composerRef.current;
       const sc = sceneRef.current;
       if (!eng || !cam || !rend || !comp || !sc) return;
-      const targetElapsed = Math.max(
-        0,
-        playbackRef ? playbackRef.current : internalElapsedRef.current,
-      );
-      const delta = Math.abs(targetElapsed - renderedElapsed);
-      const timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
-      // Small deltas (normal playback) flow through every frame. Large deltas
-      // are scrubs — coalesce them to ~16Hz so rapid drag events collapse to
-      // one seek instead of one per drag tick.
       const now = performance.now();
       sampleFps(now);
-      const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
-      const isBackwardSeek =
-        !Number.isNaN(renderedElapsed) && targetElapsed < renderedElapsed - 0.0001;
-      const engineMayUpdate = isBackwardSeek || !isLargeJump || now - lastEngineUpdate >= 60;
-      if (timelineChanged && engineMayUpdate) {
-        eng.setElapsed(targetElapsed);
-        renderedElapsed = targetElapsed;
-        lastEngineUpdate = now;
+      let timelineChanged = false;
+      if (eng.isPriming()) {
+        // Async prime: advance a budgeted slice, keep rendering the empty scene,
+        // and report progress so the parent's loading bar can animate. The
+        // playhead is not driven until priming finishes.
+        const { progress, done } = eng.stepPriming(PRIME_BUDGET_MS);
+        if (done) {
+          const target = Math.max(
+            0,
+            playbackRef ? playbackRef.current : internalElapsedRef.current,
+          );
+          eng.setElapsed(0);
+          if (target > 0) eng.setElapsed(target);
+          renderedElapsed = Number.NaN;
+          onPrimeProgressRef.current?.(null);
+          lastReportedPrimeProgressRef.current = 0;
+          setLoadingProgress(null);
+          setLoadingBarVisible(false);
+          if (!hasReportedReadyRef.current) {
+            hasReportedReadyRef.current = true;
+            onReadyRef.current?.();
+          }
+          // Store the finished snapshot cache so a quick back-and-forth to this
+          // show skips the prime on the next mount.
+          const cacheKey = primeCacheKeyRef.current;
+          if (cacheKey) {
+            const exported = eng.exportSnapshotCache();
+            if (exported) rememberSnapshotCache(cacheKey, exported);
+          }
+        } else if (progress - lastReportedPrimeProgressRef.current >= 0.02) {
+          lastReportedPrimeProgressRef.current = progress;
+          onPrimeProgressRef.current?.(progress);
+          setLoadingProgress(progress);
+        }
+        forceRenderRef.current = true;
+      } else {
+        const targetElapsed = Math.max(
+          0,
+          playbackRef ? playbackRef.current : internalElapsedRef.current,
+        );
+        const delta = Math.abs(targetElapsed - renderedElapsed);
+        timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
+        // Small deltas (normal playback) flow through every frame. Large deltas
+        // are scrubs — coalesce them to ~16Hz so rapid drag events collapse to
+        // one seek instead of one per drag tick.
+        const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
+        const engineMayUpdate = !isLargeJump || now - lastEngineUpdate >= 60;
+        if (timelineChanged && engineMayUpdate) {
+          eng.setElapsed(targetElapsed);
+          renderedElapsed = targetElapsed;
+          lastEngineUpdate = now;
+        }
       }
       timer.update(timestamp);
       const dt = timer.getDelta();
@@ -830,17 +1136,60 @@ export function FireworkReplayCanvas({
     const engine = engineRef.current;
     if (!engine) return;
     const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
+    const cacheKey = cuesCacheKey(cues);
+    // Reuse a previously primed snapshot cache for this exact cue set so a
+    // quick leave-and-return skips the silent full-show prime (and the loading
+    // bar) instead of re-running it on every mount.
+    const cached = primeSnapshots ? (snapshotCacheByKey.get(cacheKey) ?? null) : null;
+    // Time-slice the initial prime so the empty scene paints and the loading
+    // bar can animate while fireworks load. Once the first prime is done (or a
+    // non-priming caller has settled), fall back to the synchronous path so
+    // mid-session cue edits snap back to the playhead without a reload bar.
+    const useAsyncPrime = primeSnapshots && !hasReportedReadyRef.current && !cached;
+    // Re-prime on cue changes so seeks stay fast after edits, unless the caller
+    // is a single-firework editor that rebuilds its cue on every slider tick:
+    // those prime once on mount (above) then skip the per-edit prime to avoid
+    // drag jank, accepting from-zero seeks after each edit.
+    const shouldPrime = primeSnapshots && (useAsyncPrime || primeOnCueChanges);
     engine.clear();
-    engine.setCues(cues);
+    engine.setCues(cues, { prime: shouldPrime, primeAsync: useAsyncPrime, cache: cached });
+    if (engine.isPriming()) {
+      // The RAF loop drives `stepPriming`, seeks to the playhead, fires
+      // `onReady` when priming completes, and stores the finished snapshot
+      // cache. Surface 0% immediately so the bar does not sit empty for a frame.
+      primeCacheKeyRef.current = cacheKey;
+      lastReportedPrimeProgressRef.current = 0;
+      onPrimeProgressRef.current?.(0);
+      setLoadingBarVisible(true);
+      setLoadingProgress(0);
+      forceRenderRef.current = true;
+      return;
+    }
     engine.setElapsed(0);
     if (targetElapsed > 0) engine.setElapsed(targetElapsed);
     composerRef.current?.render(0);
-    if (!hasReportedReadyRef.current) {
-      hasReportedReadyRef.current = true;
+    if (cuesFinalRef.current) {
+      // For streaming callers this only flips true once the real cue set has
+      // landed, so `onReady` does not fire on the initial empty scene.
+      if (!hasReportedReadyRef.current) hasReportedReadyRef.current = true;
       onReadyRef.current?.();
+      onPrimeProgressRef.current?.(null);
+      setLoadingBarVisible(false);
+    } else {
+      // Cues still streaming: show the indeterminate "Preparing preview" bar
+      // until the final set lands and primes.
+      setLoadingBarVisible(true);
+      setLoadingProgress(null);
+    }
+    // Persist the primed cache (or re-affirm an imported one) so the next mount
+    // for this cue set can skip the prime. The async-prime path stores it from
+    // the RAF completion handler instead, so only export here when not priming.
+    if (shouldPrime && cacheKey) {
+      const exported = engine.exportSnapshotCache();
+      if (exported) rememberSnapshotCache(cacheKey, exported);
     }
     forceRenderRef.current = true;
-  }, [cues, playbackRef]);
+  }, [cues, playbackRef, primeSnapshots, primeOnCueChanges, cuesFinal]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -981,60 +1330,101 @@ export function FireworkReplayCanvas({
       ) : null}
       {interactive ? (
         <div className="absolute top-6 right-6 z-10 flex flex-col items-end gap-1.5">
-          <CanvasIconButton
-            onClick={() => setShowCameraControls((open) => !open)}
-            label={showCameraControls ? 'Hide camera controls' : 'Show camera controls'}
-            active={showCameraControls}
-            className={
-              showCameraControls || controlsVisible
-                ? 'opacity-100'
-                : 'pointer-events-none opacity-0'
-            }
-          >
-            <Settings size={16} strokeWidth={2} />
-          </CanvasIconButton>
-          {showCameraControls ? (
-            <div className="flex flex-col gap-1.5">
-              <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
-                <ZoomIn size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
-                <ZoomOut size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton
-                onClick={() => setPanMode((on) => !on)}
-                label={panMode ? 'Orbit mode' : 'Pan mode'}
-                active={panMode}
-              >
-                <Hand size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton onClick={resetView} label="Reset view">
-                <RotateCcw size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton
-                onClick={() => setSceneMode((mode) => (mode === 'day' ? 'night' : 'day'))}
-                label={sceneMode === 'day' ? 'Night preview' : 'Day preview'}
-                active={sceneMode === 'day'}
-              >
-                <Sun size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton
-                onClick={() => setShowFpsOverlay((visible) => !visible)}
-                label={showFpsOverlay ? 'Hide FPS graph' : 'Show FPS graph'}
-                active={showFpsOverlay}
-              >
-                <Activity size={16} strokeWidth={2} />
-              </CanvasIconButton>
-              <CanvasIconButton
-                onClick={() => setShowViewHelper((on) => !on)}
-                label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
-                active={showViewHelper}
-              >
-                <Axis3d size={16} strokeWidth={2} />
-              </CanvasIconButton>
-            </div>
+          {allowFullscreen && onToggleFullscreen ? (
+            <CanvasIconButton
+              onClick={onToggleFullscreen}
+              label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              active={fullscreen}
+            >
+              {fullscreen ? (
+                <Minimize2 size={16} strokeWidth={2} />
+              ) : (
+                <Maximize2 size={16} strokeWidth={2} />
+              )}
+            </CanvasIconButton>
           ) : null}
+
+          {/* Settings gear: hover (or click to pin) drops the camera controls
+              down as a popover that fades and lifts in as one unit. Auto-hides
+              with the rest of the controls when playback is idle. */}
+          <div
+            ref={gearClusterRef}
+            className={cn(
+              'flex flex-col items-end gap-1.5 transition-opacity duration-200',
+              controlsVisible || menuMounted ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+            onMouseEnter={() => {
+              cancelMenuClose();
+              setMenuHovered(true);
+            }}
+            onMouseLeave={() => scheduleMenuClose()}
+            onFocus={() => setGearFocused(true)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setGearFocused(false);
+              }
+            }}
+          >
+            <CanvasIconButton
+              onClick={() => setGearFocused((open) => !open)}
+              label={menuVisible ? 'Hide camera controls' : 'Show camera controls'}
+              active={menuVisible}
+            >
+              <Settings size={16} strokeWidth={2} />
+            </CanvasIconButton>
+            {menuMounted ? (
+              <div
+                className={cn(
+                  'mt-1 flex origin-top flex-col items-end gap-1.5 transition-[opacity,transform] duration-200 ease-out',
+                  menuEntered
+                    ? 'translate-y-0 opacity-100'
+                    : 'pointer-events-none -translate-y-1 opacity-0',
+                )}
+              >
+                <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
+                  <ZoomIn size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
+                  <ZoomOut size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton
+                  onClick={() => setPanMode((on) => !on)}
+                  label={panMode ? 'Orbit mode' : 'Pan mode'}
+                  active={panMode}
+                >
+                  <Hand size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton onClick={resetView} label="Reset view">
+                  <RotateCcw size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton
+                  onClick={() => setSceneMode((mode) => (mode === 'day' ? 'night' : 'day'))}
+                  label={sceneMode === 'day' ? 'Night preview' : 'Day preview'}
+                  active={sceneMode === 'day'}
+                >
+                  <Sun size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton
+                  onClick={() => setShowFpsOverlay((visible) => !visible)}
+                  label={showFpsOverlay ? 'Hide FPS graph' : 'Show FPS graph'}
+                  active={showFpsOverlay}
+                >
+                  <Activity size={16} strokeWidth={2} />
+                </CanvasIconButton>
+                <CanvasIconButton
+                  onClick={() => setShowViewHelper((on) => !on)}
+                  label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
+                  active={showViewHelper}
+                >
+                  <Axis3d size={16} strokeWidth={2} />
+                </CanvasIconButton>
+              </div>
+            ) : null}
+          </div>
         </div>
+      ) : null}
+      {showLoadingBar && loadingBarVisible ? (
+        <ReplayLoadingBar progress={loadingProgress} position={loadingBarPosition} />
       ) : null}
     </>
   );

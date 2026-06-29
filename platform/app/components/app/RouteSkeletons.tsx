@@ -19,6 +19,14 @@ import {
 import { Input } from '@/app/components/ui/Input';
 import { cn } from '@/lib/utils';
 
+const EXPLORE_SKELETON_SHELVES = [
+  'Staff picks',
+  'Popular this month',
+  'Hot right now',
+  'Fresh drops',
+  'Quick bursts',
+];
+
 /** Grid of card placeholders for paginated list routes. */
 export function CardGridSkeleton({
   count = 6,
@@ -73,19 +81,28 @@ export function FilterSkeleton({
 /** Skeleton for the `/library` template grid. */
 export function LibraryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3" aria-label="Loading library templates">
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          className="border-outline-variant/45 bg-surface-container-low/80 overflow-hidden rounded-xl border"
-        >
-          <Skeleton className="h-44 rounded-none" />
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-3 w-full" />
+    <div className="space-y-8" aria-label="Loading library templates">
+      {EXPLORE_SKELETON_SHELVES.map((title) => (
+        <section key={title}>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+            <Skeleton className="h-7 w-20 rounded-full" />
           </div>
-        </div>
+
+          <div className="flex gap-4 overflow-hidden">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="w-44 shrink-0 sm:w-48">
+                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                <div className="mt-2.5 flex items-center gap-2">
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-5 w-10 rounded-md" />
+                </div>
+                <Skeleton className="mt-2 h-3 w-24" />
+                <Skeleton className="mt-2 h-3 w-32" />
+              </div>
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );
@@ -484,7 +501,7 @@ export function AdminRolesSkeleton() {
 /** Skeleton for the admin prompt control route. */
 export function AdminPromptsSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5 pb-14" aria-label="Loading prompts">
+    <div className="flex flex-col gap-5" aria-label="Loading prompts">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Prompt settings"
@@ -493,7 +510,7 @@ export function AdminPromptsSkeleton() {
           {[0, 1, 2].map((item) => (
             <Skeleton
               key={item}
-              className={item === 1 ? 'h-10 w-36 rounded-md' : 'h-10 w-28 rounded-md'}
+              className={item === 1 ? 'h-9 w-36 rounded-md' : 'h-9 w-28 rounded-md'}
             />
           ))}
         </nav>
@@ -505,11 +522,11 @@ export function AdminPromptsSkeleton() {
         </div>
       </div>
 
-      <div className="border-border bg-card flex min-h-0 flex-1 rounded-lg border p-4 pb-5 shadow-xs">
-        <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="border-border bg-card rounded-lg border p-4 pb-5 shadow-xs">
+        <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
-              <Skeleton className="h-11 w-11 shrink-0 rounded-md" />
+              <Skeleton className="h-10 w-10 shrink-0 rounded-md" />
               <div className="min-w-0">
                 <h2 className="text-foreground text-lg font-semibold">
                   Show generation system prompt
@@ -523,9 +540,9 @@ export function AdminPromptsSkeleton() {
             <Skeleton className="mt-0.5 h-6 w-16 shrink-0 rounded-md" />
           </div>
 
-          <Skeleton className="min-h-[416px] flex-1 rounded-md" />
+          <Skeleton className="min-h-[24rem] rounded-md" />
 
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end sm:pb-1">
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
             <Skeleton className="h-10 w-full rounded-lg sm:w-[92px]" />
             <Skeleton className="h-10 w-full rounded-lg sm:w-[82px]" />
           </div>

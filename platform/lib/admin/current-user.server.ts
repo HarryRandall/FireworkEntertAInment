@@ -50,9 +50,11 @@ function parseAccessRpc(value: Json): CurrentProfile | null {
     phone: typeof profile.phone === 'string' ? profile.phone : null,
     status: typeof profile.status === 'string' ? asProfileStatus(profile.status) : 'active',
     themePreference:
-      profile.theme_preference === 'light' || profile.theme_preference === 'system'
+      profile.theme_preference === 'dark' ||
+      profile.theme_preference === 'light' ||
+      profile.theme_preference === 'system'
         ? profile.theme_preference
-        : 'dark',
+        : 'system',
     roles: roles.length > 0 ? unique(roles) : ['user'],
     permissions: unique(permissions),
   };
@@ -137,9 +139,11 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     phone: profile.phone,
     status: asProfileStatus(profile.status),
     themePreference:
-      profile.theme_preference === 'light' || profile.theme_preference === 'system'
+      profile.theme_preference === 'dark' ||
+      profile.theme_preference === 'light' ||
+      profile.theme_preference === 'system'
         ? profile.theme_preference
-        : 'dark',
+        : 'system',
     roles: roleKeys.length > 0 ? roleKeys : ['user'],
     permissions: Array.from(granted),
   };

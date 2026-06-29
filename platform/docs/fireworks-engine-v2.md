@@ -1,38 +1,39 @@
-# Fireworks Engine V2
+# Fireworks Engine
 
 ## Architecture
 
-`FireworkReplayCanvas` now configures a mostly imperative `FireworksEngine` instead of keeping live burst arrays in React state. React passes cues and elapsed time; the engine owns scheduling, object pools, typed arrays, shader materials, trails, smoke, and deterministic scrub rebuilds.
+`FireworkReplayCanvas` configures a mostly imperative `FireworksEngine` instead of keeping live burst arrays in React state. React passes cues and elapsed time; the engine owns scheduling, object pools, shader materials, trails, smoke, audio reports, and deterministic scrub rebuilds.
 
 Core modules live in `lib/fireworks`:
 
-- `spec-v2.ts`: TypeScript-first Zod schemas for `FireworkEffectSpecV2`, products, show cues, shot sequences, launches, breaks, particle layers, smoke, flash, render profiles, and video observations.
-- `spec-v3.ts`: CodePen-style standalone firework schema. It stores shell family, size, fuse/lift timing, palette, glitter, crackle, strobe, pistil, streamers, smoke, and reusable cue placement data.
-- `legacy-adapter.ts`: migrates old `FireworkRenderSpec` data into v2. `trailLength` becomes real trail seconds/segments, `secondaryBursts` become sub-breaks, and legacy cue timing is preserved.
-- `EffectCompiler.ts`: turns v3, v2, or legacy replay cues into deterministic launch/layer/flash/smoke events and emits shader attributes into pools.
-- `FireworksEngine.ts`: owns GPU-friendly draw systems and deterministic forward/scrub playback.
-- `ParticlePool.ts`, `GpuParticleSystem.ts`, `TrailSystem.ts`, `SmokeSystem.ts`: reusable typed-array-backed render systems.
+- `spec.ts`: shared runtime cue and render types.
+- `design.ts`: validates, normalises, and compiles catalogue render JSON into a `FireworkDesign`.
+- `effect-catalogue.ts`: source of truth for the generated reference catalogue.
+- `Effects.ts`: turns a compiled design into launch, trail, burst, smoke, and audio behaviour.
+- `FireworksEngine.ts`, `Scheduler.ts`, `ParticlePool.ts`, `World.ts`, and `SoundHandler.ts`: own deterministic playback, scene setup, and reuse of render/audio resources.
 
 ## Adding Effects
 
-Add new reusable effects in the database using `effect_specs.spec_json`. For local/manual seeding, start from `supabase/seed-codepen-fireworks-v3.sql`. The active library should not depend on hard-coded TypeScript presets.
+Add reusable reference effects in `lib/fireworks/effect-catalogue.ts`, then regenerate the clean catalogue reseed migration with `node scripts/seed/generate-firework-catalogue-migration.mjs` from `platform`. The generated migration upserts `firework_effects` and `fireworks`; it should not reintroduce legacy `effect_specs`, `product_shots`, or `fib-*` seed rows.
 
-Use v3 `shots` for cakes, fans, zippers, rows, and volleys. Do not fake these as one large burst. Shows can reuse one product many times by adding multiple cue rows with different `time_seconds`, `track`, `layer`, `launch_position_index`, `label`, `locked`, `seed_override`, and `product_id`.
+Use `multishots` and `multishot_fireworks` for cakes, fans, zippers, rows, and volleys. Do not fake these as one large burst. Shows can reuse one catalogue item many times by adding multiple timeline rows with different `time_seconds`, `track`, `layer`, `launch_position_index`, `label`, `locked`, `seed_override`, and `catalogue_item_id`.
 
 ## Database Model
 
-The current product schema uses the 2026-05-11 product catalogue migrations:
+The current catalogue schema uses the 2026-06-14 catalogue rework plus later editor migrations:
 
-- `products`: queryable product metadata and default effect link.
-- `product_shots`: per-product shot rows used by the renderer/compiler.
-- `show_cues` columns: `product_id`, `time_seconds`, `label`, `track`, `layer`, `launch_position_index`, `locked`, and `seed_override`.
-- `inferred_video_observations`: stores video observation JSON linked to an effect spec.
+- `firework_effects`: reusable base effect families with validated `model_json`.
+- `fireworks`: colour and render variants linked to a base effect.
+- `multishots` and `multishot_fireworks`: ordered composite products that expand into replay cues.
+- `catalogue_items`: purchasable items pointing at either a firework or multishot.
+- `show_timeline_items`: cue rows consumed by the replay and generation flows.
+- `firework_style_defaults`, `firework_effect_style_default_links`, and `firework_style_default_links`: admin-managed reusable defaults for editor sections.
 
-The existing `firework_specifications` path remains supported. Server parsing detects `version: 3` and `version: 2`; otherwise it returns the old legacy spec and the renderer migrates it at runtime.
+Server reads should go through `lib/shows.server.ts` and `lib/shows/*` mappers so multishot expansion, style-default hydration, and cache invalidation stay consistent.
 
 ## Video/LLM Ingestion
 
-The worker should output structured inference, not frames or per-frame drawing instructions. The accepted envelope is:
+The worker should output structured inference, not frames or per-frame drawing instructions. The accepted envelope is validated in `lib/import-jobs.ts` and approved through the admin import actions:
 
 ```json
 {
@@ -40,7 +41,7 @@ The worker should output structured inference, not frames or per-frame drawing i
   "description": "Short product/effect summary",
   "durationSeconds": 8.5,
   "confidence": 0.78,
-  "effectSpec": { "version": 3 },
+  "spec": { "version": 3 },
   "observations": {
     "observedEvents": [],
     "inferredShotSequence": {},
@@ -52,7 +53,7 @@ The worker should output structured inference, not frames or per-frame drawing i
 }
 ```
 
-`lib/imports.ts` accepts v3, v2, and old legacy `renderSpec` envelopes. Old outputs are migrated for preview; approved imports now publish the versioned `effectSpec` into `effect_specs`.
+Approved imports create or update catalogue effects/fireworks, compile their render design with `compileFireworkDesign`, and invalidate the admin plus show catalogue caches.
 
 ## Quality And Performance
 

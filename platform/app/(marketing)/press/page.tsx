@@ -1,8 +1,7 @@
 /** Marketing "Press" page. */
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowUpRight, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
@@ -20,25 +19,21 @@ const COVERAGE = [
     outlet: 'ABC News',
     date: '18 Apr 2026',
     title: 'Brisbane students teach AI to choreograph backyard fireworks',
-    href: '#',
   },
   {
     outlet: 'Hackaday',
     date: '02 Apr 2026',
     title: 'ShowCrafter pairs librosa with an LLM to score the night sky',
-    href: '#',
   },
   {
     outlet: 'Australian Pyrotechnics Quarterly',
     date: '21 Mar 2026',
     title: 'ICON Pyrotechnics partners with UQ team on consumer choreography tool',
-    href: '#',
   },
   {
     outlet: 'Courier Mail',
     date: '07 Mar 2026',
     title: 'AI puts a fireworks-show designer in every backyard',
-    href: '#',
   },
 ];
 
@@ -76,7 +71,11 @@ export default function PressPage() {
                 SVG and PNG variants on light, dark and night-sky backgrounds.
               </p>
               <div className="mt-5">
-                <Button href="#" variant="secondary" size="sm">
+                <Button
+                  href="mailto:press@showcrafter.app?subject=ShowCrafter%20brand%20kit"
+                  variant="secondary"
+                  size="sm"
+                >
                   Download <Download size={14} strokeWidth={1.75} />
                 </Button>
               </div>
@@ -88,7 +87,11 @@ export default function PressPage() {
                 High-resolution captures of the editor, preview and dashboard.
               </p>
               <div className="mt-5">
-                <Button href="#" variant="secondary" size="sm">
+                <Button
+                  href="mailto:press@showcrafter.app?subject=ShowCrafter%20screenshots"
+                  variant="secondary"
+                  size="sm"
+                >
                   Download <Download size={14} strokeWidth={1.75} />
                 </Button>
               </div>
@@ -119,25 +122,17 @@ export default function PressPage() {
             <ul className="divide-outline-variant/15 border-outline-variant/15 mt-12 divide-y border-y">
               {COVERAGE.map((c) => (
                 <li key={c.title}>
-                  <Link
-                    href={c.href}
-                    className="group hover:bg-surface-container-low/40 flex flex-col gap-2 py-6 transition-colors md:flex-row md:items-center md:gap-6"
-                  >
+                  <div className="flex flex-col gap-2 py-6 md:flex-row md:items-center md:gap-6">
                     <div className="md:w-56">
                       <Badge tone="neutral">{c.outlet}</Badge>
                       <div className="text-on-surface-variant mt-2 text-xs tracking-widest uppercase">
                         {c.date}
                       </div>
                     </div>
-                    <h3 className="text-on-surface group-hover:text-primary flex-grow text-base font-bold transition-colors md:text-lg">
+                    <h3 className="text-on-surface flex-grow text-base font-bold md:text-lg">
                       {c.title}
                     </h3>
-                    <ArrowUpRight
-                      size={18}
-                      strokeWidth={1.75}
-                      className="text-on-surface-variant group-hover:text-primary transition-colors"
-                    />
-                  </Link>
+                  </div>
                 </li>
               ))}
             </ul>

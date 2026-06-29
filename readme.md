@@ -1,93 +1,98 @@
 # Firework EntertAInment
 
-An AI tool for designing real consumer firework shows.
+ShowCrafter is an AI-assisted firework show-planning platform for designing
+real consumer pyromusical shows from a retailer catalogue.
 
-Built in partnership with [ICON Pyrotechnics International](http://www.iconpyro.com) as part of COMP3500.
+The project is built in partnership with
+[ICON Pyrotechnics International](http://www.iconpyro.com) as part of COMP3500.
 
-## About
+## Product Snapshot
 
-ShowCrafter is a web-based tool that lets everyday consumers design AI-choreographed pyromusical fireworks shows using products available at their local retail fireworks store. Users pick a song, set a budget, describe the vibe they want, and ShowCrafter handles the rest — analysing the music, selecting appropriate fireworks from the retailer's catalogue, and generating a fully choreographed show plan.
+ShowCrafter helps non-experts turn a song, budget, site width, style brief, and
+retailer firework catalogue into a timed show plan. The app supports:
 
-The tool is provided to consumers by fireworks retailers, either in-store (as a sales and upselling tool) or online (as a self-service experience).
+- Public browsing for catalogue items and curated show presets.
+- Authenticated show creation, library, previews, shopping lists, exports, and
+  account settings.
+- Quiet upload-scoped music analysis before final show generation.
+- Deterministic fast cue planning by default, with an optional OpenRouter LLM
+  assignment mode for higher-cost generation paths.
+- AI credit reservations, settlement, refunds, and admin credit grants.
+- Admin catalogue, effect, multishot, prompt, user, role, import, supplier, and
+  billing surfaces.
+- Animated shader cover art for generated shows and curated presets.
+- A separate firework-video import worker for AI-assisted catalogue ingestion.
 
 ## Tech Stack
 
-| Layer             | Technology                                  |
-| ----------------- | ------------------------------------------- |
-| Framework         | [Next.js](https://nextjs.org/) (App Router) |
-| Language          | TypeScript                                  |
-| Styling           | [Tailwind CSS](https://tailwindcss.com/) v4 |
-| Backend / Storage | [Supabase](https://supabase.com/)           |
-| Hosting           | [Vercel](https://vercel.com/)               |
-| Audio Analysis    | Python (librosa)                            |
-| Choreography      | LLM-based agent (API)                       |
+| Layer               | Technology                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| Web app             | Next.js App Router, React 19, TypeScript                                            |
+| Styling             | Tailwind CSS v4, Radix/shadcn primitives, custom app UI primitives                  |
+| Rendering           | Three.js, React Three Fiber, custom firework engine                                 |
+| Shader covers       | `@paper-design/shaders-react`, `@firecms/neat`                                      |
+| Backend and storage | Supabase Auth, Postgres, Storage, RLS, RPCs                                         |
+| Audio analysis      | Python, librosa, Modal-hosted HTTP analyser                                         |
+| Cue generation      | Fast deterministic planner by default, optional OpenRouter through the `openai` SDK |
+| Cache               | Optional Upstash Redis REST cache, otherwise per-process memory                     |
+| Hosting             | Vercel, with `platform` as the project root                                         |
+| Worker              | Python firework import worker under `workers/firework-import-worker`                |
 
-## Getting Started
+## Repository Layout
+
+```text
+platform/                       Next.js app, deploy root for Vercel
+  app/                          App Router routes, layouts, actions, APIs
+    (app)/                      Authenticated customer workspace
+    (admin)/                    Platform admin console
+    (auth)/                     Login and signup pages
+    (dev)/dev/                  Local visual and shader playgrounds
+    (marketing)/                Public marketing and browse pages
+    api/                        Health, analysis, admin, user, and show APIs
+    components/                 App, admin, marketing, theme, and UI components
+  components/ui/                Generated Radix/shadcn primitives
+  analyser/                     Python Modal song analyser
+  docs/                         Platform technical notes
+  lib/                          Server, domain, renderer, generation, admin utilities
+  public/                       Static assets
+  scripts/                      Platform scripts
+  supabase/migrations/          Chronological database migrations
+  tests/                        Node test suites
+  utils/supabase/               Supabase browser, server, middleware helpers
+workers/firework-import-worker/  Queued firework-video import worker
+data/                           Sample data and example media
+memory/                         Project memory notes
+prototypes/                     Standalone prototypes
+scripts/                        Repo-level utility scripts
+.agents/                        Codex skills
+.claude/                        Claude skills and settings
+.cursor/                        Cursor rules and MCP config
+.codex/                         Codex hooks
+```
+
+## Local Setup
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 20.9+
-- npm
+- Node.js 22 for parity with CI, or Node.js 20.9+ for local development.
+- npm.
+- Python 3.11 for analyser tests and Modal work.
+- A Supabase project for end-to-end auth, storage, and database flows.
+- A Modal account for hosted music analysis.
+- An OpenRouter key only when using LLM cue generation or the import worker.
 
-### Installation
+### Install And Run
 
 ```bash
 cd platform
-cp .env.example .env.local   # then fill in Supabase + analyser values
+cp .env.example .env.local
 npm install
-```
-
-### Development
-
-```bash
-cd platform
 npm run dev
 ```
 
-### Audio analyser (Modal)
+Open [http://localhost:3000](http://localhost:3000).
 
-The librosa song analyser is too heavy for Vercel's serverless runtime (the
-`librosa + numpy + scipy + scikit-learn` stack exceeds the 250 MB function
-size limit and a full analysis can outrun the function timeout), so we host
-it on [Modal](https://modal.com/) and the Next.js server calls it over HTTP.
-
-One-time setup (per developer / per environment):
-
-```bash
-brew install pipx
-pipx ensurepath && exec zsh
-pipx install modal
-pipx inject modal fastapi          # fastapi is needed locally for `modal deploy`
-
-modal token new                    # browser-based login
-
-SECRET=$(openssl rand -hex 32)
-echo "$SECRET"                     # save this — also goes into .env.local / Vercel
-modal secret create showcrafter ANALYSER_SHARED_SECRET="$SECRET"
-
-cd platform/analyser
-modal deploy modal_app.py          # prints the public URL
-```
-
-Set the printed URL as `ANALYSER_URL` and the same secret as
-`ANALYSER_SHARED_SECRET` in both `platform/.env.local` and in
-Vercel → Project Settings → Environment Variables (Production + Preview + Development).
-
-To redeploy after editing `platform/analyser/showcrafter.py` or
-`modal_app.py`, just re-run `modal deploy modal_app.py`. Logs live at
-`modal app logs showcrafter-analyser`.
-
-The local CLI (`python showcrafter.py song.mp3 ...`) still works for
-offline debugging — Modal only fronts the HTTP path.
-
-Open [http://localhost:3000](http://localhost:3000) to view the app.
-
-### Build
-
-```bash
-cd platform
-npm run build
-```
+The Vercel project root must be set to `platform`.
 
 ### Checks
 
@@ -97,72 +102,191 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
-```
-
-Run the full local gate with:
-
-```bash
-cd platform
 npm run check
 ```
 
-### CI
+`npm run check` runs Prettier check, ESLint, TypeScript, node tests, and a
+production build.
 
-GitHub Actions runs the platform checks on every pushed commit and pull request:
+Python analyser tests run from `platform/analyser`:
 
-- `npm run lint` from `platform/`
-- `npm run typecheck` from `platform/`
-- `npm test` from `platform/`
-- `npm run build` from `platform/`
-- Python analyser unit tests from `platform/analyser/`
-
-## Deployment
-
-The project is hosted on Vercel with the following branching strategy:
-
-| Branch                  | Environment | URL                                 |
-| ----------------------- | ----------- | ----------------------------------- |
-| `main`                  | Production  | Primary Vercel domain               |
-| `development` (and PRs) | Preview     | Auto-generated preview URL per push |
-
-All deployment URLs are publicly accessible — team members do not need Vercel accounts to view them.
-
-## Repository Structure
-
-```
-app/                       — Next.js App Router (pages, layouts, styles)
-public/                    — static assets
-docs/                      — project documentation and planning
-  guides/                  — team workflow guides (issue & merging)
-  planning/                — product vision, roadmap, user stories, risk assessment
-  project/                 — research, competitor analysis, technical notes
-  sprints/                 — sprint scrum notes and stakeholder meeting records
-data/                      — sample data and example audio tracks
-prototypes/                — standalone prototypes
-  site-mockup/             — static HTML/Tailwind landing page mockup
-platform/analyser/         — Python song analysis runner (librosa/MIR)
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -p "*test*.py"
 ```
 
-## Components
+CI runs the platform gate plus the analyser unit tests on every push and pull
+request.
 
-- **Web App** (`app/`): Next.js application — the main platform.
-- **Audio Analyser** (`platform/analyser/`): Python-based song analysis pipeline that extracts musical structure, timestamps beats, and classifies sections (highs, lows, drops, builds) for the choreography engine.
-- **Site Mockup** (`prototypes/site-mockup/`): Original static HTML mockups used during early design exploration.
+## Environment Variables
 
-## Contributing
+Use `platform/.env.local` for local development. It is gitignored. Never commit
+real secrets.
 
-This project follows the [Issue & Merging Guide](docs/guides/issue-and-merging-guide.md). Key rules:
+| Name                                                  | Required                                                  | Purpose                                                                                                                                |
+| ----------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`                            | Yes                                                       | Supabase project URL for browser and server clients.                                                                                   |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                | Yes, preferred                                            | Browser-safe Supabase publishable key.                                                                                                 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`        | Optional fallback                                         | Legacy publishable key alias.                                                                                                          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                       | Optional fallback                                         | Legacy anon key alias.                                                                                                                 |
+| `SUPABASE_URL`                                        | Optional server fallback                                  | Server-only Supabase URL fallback.                                                                                                     |
+| `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | Optional server fallback                                  | Server-only public key fallbacks.                                                                                                      |
+| `SUPABASE_SERVICE_ROLE_KEY`                           | Feature-gated                                             | Trusted server and worker operations, admin media signing, imports, prompt lookups, and impersonation. Never expose it to the browser. |
+| `ANALYSER_URL`                                        | Yes for analysis                                          | Modal analyser URL printed by `modal deploy`.                                                                                          |
+| `ANALYSER_SHARED_SECRET`                              | Yes for analysis                                          | Bearer token shared by Next.js and the Modal secret.                                                                                   |
+| `CRON_SECRET`                                         | Required in deployed warm-up                              | Authorises `/api/admin/analyser/warm`; development allows calls without it.                                                            |
+| `CUE_GENERATION_MODE`                                 | Optional                                                  | Defaults to `fast`. Set to `llm` to use OpenRouter cue assignment.                                                                     |
+| `OPENROUTER_API_KEY`                                  | Optional for default generation, required for LLM/imports | Enables optional LLM cue assignment and firework-video reconstruction.                                                                 |
+| `OPENROUTER_CUE_MODEL`                                | Optional                                                  | Cue model override, defaulting to `anthropic/claude-sonnet-4.5`.                                                                       |
+| `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME`         | Optional                                                  | OpenRouter ranking headers.                                                                                                            |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Optional                                                  | Shared cache for dynamic server reads. Missing or placeholder values fall back to memory cache.                                        |
+| `SHOWCRAFTER_SLOW_LOG_MS`                             | Optional                                                  | Development slow-log threshold for server timing diagnostics.                                                                          |
 
-- No work begins without a GitHub issue
-- Branch naming: `<type>/#<issue>-<short-description>`
-- Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
-- PRs require at least one reviewer approval before merging
-- Use **Squash and Merge**
+## Music Analysis
+
+Audio upload writes directly to the private Supabase `audio` bucket under the
+current user's prefix. `/api/music-analysis` validates that the object exists,
+that it is 50 MB or smaller, and that its MIME type is MP3, WAV, AAC, or M4A.
+
+The API reserves AI credits, creates a `song_analyses` row, then starts
+`runMusicAnalysisForUpload` in a Next.js `after()` callback. The hosted Modal
+runner receives a short-lived signed URL and persists analyser JSON with schema
+version `1.4.0` and runner version `modal-librosa-2`.
+
+Deploy or redeploy the analyser with:
+
+```bash
+brew install pipx
+pipx ensurepath
+pipx install modal
+pipx inject modal fastapi
+modal token new
+
+SECRET=$(openssl rand -hex 32)
+modal secret create showcrafter ANALYSER_SHARED_SECRET="$SECRET"
+
+cd platform/analyser
+modal deploy modal_app.py
+```
+
+Set the printed URL as `ANALYSER_URL` and the same secret as
+`ANALYSER_SHARED_SECRET` in local and Vercel environments.
+
+## Show Generation Flow
+
+The show-creation flow intentionally separates upload analysis from explicit
+show generation:
+
+1. `/shows/new` is a client wizard. Form submission advances steps until the
+   final Generate action.
+2. Audio upload starts music analysis quietly and stores the result in
+   `song_analyses`. Uploading a song must not create a final show.
+3. The Generate button calls
+   `platform/app/(app)/shows/new/actions.ts#createShowAction`.
+4. `createShowAction` creates the `shows` row, assigns a random `cover_shader`,
+   reserves generation credits, marks generation as running, and redirects to
+   `/shows/[slug]/generating`.
+5. Cue generation runs in an `after()` callback. If music analysis is still
+   running, the generation runner waits and resumes after analysis completes.
+6. The fast deterministic planner is the default. The optional LLM path is
+   enabled only when the generation setting or `CUE_GENERATION_MODE` selects
+   `llm`.
+7. Accepted cues are written to `show_timeline_items` through the
+   `replace_show_timeline_items` RPC. AI credits are settled on success and
+   refunded on expected failure.
+
+## Database
+
+Schema lives in `platform/supabase/migrations` and is applied chronologically.
+Generated TypeScript types live in `platform/lib/database.types.ts`.
+
+Current major groups:
+
+- **Users and RBAC**: `users`, `roles`, `permissions`, `role_permissions`,
+  `user_roles`, `user_permission_overrides`, plus `current_user_access` and
+  `current_user_has_permission` RPCs.
+- **Catalogue and effects**: `catalogue_items`, `fireworks`,
+  `firework_effects`, `firework_style_defaults`, style-default link tables,
+  `multishots`, and `multishot_fireworks`.
+- **Shows and generation**: `shows`, `show_timeline_items`, `show_presets`,
+  `shopping_list_items`, `song_analyses`, and `show_generation_runs`.
+- **AI credits**: `ai_credit_accounts`, `ai_credit_costs`, and
+  `ai_credit_transactions`.
+- **Suppliers and imports**: `supplier_profiles`, `supplier_locations`,
+  `supplier_inventory_items`, `import_jobs`, `import_outputs`, and
+  `media_assets`.
+
+Every public table must have RLS enabled with policies. Public browse tables
+such as `show_presets`, `catalogue_items`, `fireworks`, `multishots`, and
+`multishot_fireworks` intentionally allow anonymous `SELECT`; document any new
+anonymous policy in the migration.
+
+When schema changes are made, regenerate `platform/lib/database.types.ts` with
+the Supabase MCP `generate_typescript_types` tool or the approved project
+workflow, then update tests that assert schema-dependent behaviour.
+
+## Storage
+
+- `audio`: private user-uploaded tracks. Objects live under `<user id>/...`.
+  Storage policies enforce per-user access and the bucket limits accepted MIME
+  types to MP3, WAV, AAC, and M4A with a 50 MB file limit.
+- `import-videos`: admin-only firework videos for import jobs. The import
+  worker signs and processes these files with service-role access.
+
+## Admin And Worker Flows
+
+The admin area under `/admin` covers overview, catalogue, fireworks,
+multishots, effects, style defaults, prompts, imports, suppliers, users, roles,
+and billing.
+
+Firework and effect editors share `FireworkEditorShell`, `FireworkRenderControls`,
+history panels, JSON panels, and compact preview transport controls. Style
+defaults use the same shell but keep a narrower side rail.
+
+Start the import worker from `platform`:
+
+```bash
+npm run worker:firework-import
+```
+
+The worker polls queued `firework_video` import jobs, validates videos are 60
+seconds or less, extracts features, asks OpenRouter for a structured
+reconstruction, and writes `generated_spec` output rows for admin review.
+
+## UI And Design System
+
+Use the repo-local ShowCrafter design-system skill before UI work:
+
+- Codex: `.agents/skills/showcrafter-design-system/SKILL.md`
+- Claude: `.claude/skills/showcrafter-design-system/SKILL.md`
+
+Shared app UI primitives live in `platform/app/components/ui`. Generated
+Radix/shadcn primitives live in `platform/components/ui`. Prefer the app
+primitives for new product UI and use generated primitives only when extending
+the shadcn layer. Use `cn()` from `@/lib/utils`.
+
+Global tokens live in `platform/app/globals.css`. Shared legacy class fragments
+live in `platform/app/components/ui/styles.ts`; prefer moving repeated patterns
+onto primitives over adding more route-level class strings there.
+
+Loading states should keep stable route chrome visible, including page titles,
+descriptions, labels, table headers, and form section headings. Use neutral
+`Skeleton` placeholders only for data-driven values and controls whose value is
+still loading.
+
+## Notes For Agents
+
+- Use British English, straight apostrophes, and no em dashes.
+- Preserve the explicit show-generation boundary. Music analysis can run after
+  upload, but final show creation and cue generation belong to Generate.
+- Do not reveal hidden background work unless an error blocks the user.
+- Treat local source, migrations, tests, and route files as the source of truth.
+- Keep unrelated dirty worktree changes intact.
 
 ## Team Tools
 
-- **Notion** — documentation and notes
-- **GitHub** — version control and issues
-- **Linear** — issue tracking
-- **Teams** — stakeholder meetings
-- **Discord** — team communication
+- GitHub: version control, CI, pull requests.
+- Linear: issue tracking.
+- Notion: planning and documentation.
+- Teams: stakeholder meetings.
+- Discord: team communication.

@@ -3,6 +3,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
+// Uses cookies() (a request-scoped dynamic API), so render on demand.
+export const dynamic = 'force-dynamic';
+
 // Tiny dev smoke test: confirms the typed Supabase client can fetch from a
 // real table (`shows`) that's gated by RLS. Anonymous viewers will see an
 // empty list — that's expected and proves RLS is working.

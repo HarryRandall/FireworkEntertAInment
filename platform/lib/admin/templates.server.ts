@@ -9,30 +9,46 @@ import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { ShowTemplate } from '@/lib/admin.types';
+import { mergeSeededLibraryTemplates } from '@/lib/library-seed-templates';
 import { PLATFORM_CACHE_PREFIX, SHOW_TEMPLATES_TTL_SECONDS } from './cache-keys';
 import { mapShowTemplate, type ShowTemplateRow } from './mappers';
 import { getServerClient } from './supabase';
 
 const SHOW_TEMPLATES_CACHE_KEY = `${PLATFORM_CACHE_PREFIX}:show-templates`;
-const SHOW_TEMPLATES_SELECT =
+const SHOW_TEMPLATES_BASE_SELECT =
   'id, slug, title, theme, description, duration_seconds, budget_cents, total_cents, effects_count, time_of_day, mood_tags, preview_cues, is_featured, sort_order, created_at, updated_at';
+const SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader`;
+
+function isMissingCoverShaderError(error: { code?: string; message?: string } | null): boolean {
+  const message = error?.message ?? '';
+  return Boolean(error && (error.code === '42703' || message.includes('cover_shader')));
+}
 
 /** Returns all show templates, featured first then by sort order. Cached. */
 export async function listShowTemplates(): Promise<ShowTemplate[]> {
   const cached = await getCachedJson<ShowTemplate[]>(SHOW_TEMPLATES_CACHE_KEY);
-  if (cached) return cached;
+  if (cached) return mergeSeededLibraryTemplates(cached);
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
+  const primary = await supabase
     .from('show_presets')
     .select(SHOW_TEMPLATES_SELECT)
     .order('is_featured', { ascending: false })
     .order('sort_order', { ascending: true });
+  const { data, error } = isMissingCoverShaderError(primary.error)
+    ? await supabase
+        .from('show_presets')
+        .select(SHOW_TEMPLATES_BASE_SELECT)
+        .order('is_featured', { ascending: false })
+        .order('sort_order', { ascending: true })
+    : primary;
   if (error) {
     console.error('[admin.server] listShowTemplates failed:', error);
-    return [];
+    return mergeSeededLibraryTemplates([]);
   }
-  const mapped = ((data ?? []) as ShowTemplateRow[]).map(mapShowTemplate);
+  const mapped = mergeSeededLibraryTemplates(
+    ((data ?? []) as ShowTemplateRow[]).map(mapShowTemplate),
+  );
   await setCachedJson(SHOW_TEMPLATES_CACHE_KEY, mapped, SHOW_TEMPLATES_TTL_SECONDS);
   return mapped;
 }
@@ -47,11 +63,18 @@ export async function getShowTemplateBySlug(slug: string): Promise<ShowTemplate 
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
+  const primary = await supabase
     .from('show_presets')
     .select(SHOW_TEMPLATES_SELECT)
     .eq('slug', slug)
     .maybeSingle();
+  const { data, error } = isMissingCoverShaderError(primary.error)
+    ? await supabase
+        .from('show_presets')
+        .select(SHOW_TEMPLATES_BASE_SELECT)
+        .eq('slug', slug)
+        .maybeSingle()
+    : primary;
   if (error) {
     console.error('[admin.server] getShowTemplateBySlug failed:', error);
     return null;

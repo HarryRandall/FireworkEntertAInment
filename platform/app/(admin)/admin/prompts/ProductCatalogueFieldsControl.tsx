@@ -44,9 +44,6 @@ const FIELD_HELP: Record<ProductCatalogueField, string> = {
   effects: 'Active effect flags used for matching musical intent.',
 };
 
-const STATIC_SECONDARY_BUTTON_CLASS =
-  '!transition-none hover:!border-border hover:!bg-background hover:!text-foreground hover:!ring-0 focus:!border-border focus:!bg-background focus:!text-foreground focus:!ring-0 active:!border-border active:!bg-background active:!text-foreground active:!ring-0';
-
 type Props = {
   initialFields: readonly ProductCatalogueField[];
 };
@@ -80,11 +77,7 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button
-            type="button"
-            variant="secondary"
-            className={cn('shrink-0', STATIC_SECONDARY_BUTTON_CLASS)}
-          >
+          <Button type="button" variant="secondary" className="shrink-0">
             <Settings2 size={16} />
             Configure fields
           </Button>

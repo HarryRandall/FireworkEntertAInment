@@ -2,16 +2,12 @@ import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerEnv } from '@/utils/supabase/env';
 
-const PROTECTED_PREFIXES = [
-  '/catalogue',
-  '/dashboard',
-  '/exports',
-  '/shows',
-  '/library',
-  '/recommendations',
-  '/admin',
-  '/settings',
-];
+// Private route prefixes that require an authenticated session. Browse routes
+// (/home, /catalogue, /library, /library/[id]) are intentionally public so
+// guests can explore the catalogue and templates; /dashboard is also public
+// because it only redirects to /home. Creation and account routes stay gated.
+// Dev-only diagnostics are blocked in production before auth handling.
+const PROTECTED_PREFIXES = ['/exports', '/shows', '/recommendations', '/admin', '/settings'];
 const AUTH_ONLY_PATHS = ['/login', '/signup'];
 
 function matchesPathPrefix(pathname: string, prefix: string) {
@@ -37,10 +33,19 @@ export async function proxy(request: NextRequest) {
   let supabaseResponse = createSupabaseResponse();
 
   const { pathname } = request.nextUrl;
+
+  if (pathname === '/dev' || pathname.startsWith('/dev/')) {
+    if (process.env.NODE_ENV === 'development') {
+      return supabaseResponse;
+    }
+    return NextResponse.rewrite(new URL('/404', request.url), { status: 404 });
+  }
+
   const isProtected = PROTECTED_PREFIXES.some((p) => matchesPathPrefix(pathname, p));
   const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
+  const isRoot = pathname === '/';
 
-  if (!isProtected && !isAuthPage) {
+  if (!isProtected && !isAuthPage && !isRoot) {
     return supabaseResponse;
   }
 
@@ -84,9 +89,11 @@ export async function proxy(request: NextRequest) {
     return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
   }
 
-  if (isAuthPage && userId) {
+  // Authenticated users skip the marketing surface: send them to the app
+  // home page from auth-only pages and the public root.
+  if ((isAuthPage || isRoot) && userId) {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = '/home';
     return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
   }
 

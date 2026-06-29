@@ -92,6 +92,10 @@ export type FireworkHeadStyle = {
   backgroundGlowOpacityFalloff: number;
   /** Large background glow diffusion. */
   backgroundGlowSoftness: number;
+  /** Percent of life the head holds full brightness before fading. */
+  brightnessHoldPercent: number;
+  /** Exponent shaping the post-hold fade (higher = sharper wink-out). */
+  brightnessHoldExponent: number;
 };
 
 export const DEFAULT_CORE_SOFTNESS = 55;
@@ -139,6 +143,20 @@ export const MIN_BACKGROUND_GLOW_SOFTNESS = 0;
 export const MAX_BACKGROUND_GLOW_SOFTNESS = 100;
 export const BACKGROUND_GLOW_SOFTNESS_STEP = 1;
 
+// Head brightness hold: how long the packed head colour stays at full
+// intensity before fading. Expressed as a percentage of life remaining, so 82
+// means the head holds bright until 82% of its life is gone, then winks out.
+// The exponent shapes the tail of that fade (higher = sharper wink-out).
+export const DEFAULT_BRIGHTNESS_HOLD_PERCENT = 82;
+export const MIN_BRIGHTNESS_HOLD_PERCENT = 0;
+export const MAX_BRIGHTNESS_HOLD_PERCENT = 100;
+export const BRIGHTNESS_HOLD_PERCENT_STEP = 1;
+
+export const DEFAULT_BRIGHTNESS_HOLD_EXPONENT = 0.8;
+export const MIN_BRIGHTNESS_HOLD_EXPONENT = 0.2;
+export const MAX_BRIGHTNESS_HOLD_EXPONENT = 4;
+export const BRIGHTNESS_HOLD_EXPONENT_STEP = 0.05;
+
 export const DEFAULT_FIREWORK_HEAD_STYLE: FireworkHeadStyle = {
   coreSoftness: DEFAULT_CORE_SOFTNESS,
   coreBrightness: DEFAULT_CORE_BRIGHTNESS,
@@ -149,6 +167,8 @@ export const DEFAULT_FIREWORK_HEAD_STYLE: FireworkHeadStyle = {
   glowBlur: DEFAULT_GLOW_BLUR,
   backgroundGlowOpacityFalloff: DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
   backgroundGlowSoftness: DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+  brightnessHoldPercent: DEFAULT_BRIGHTNESS_HOLD_PERCENT,
+  brightnessHoldExponent: DEFAULT_BRIGHTNESS_HOLD_EXPONENT,
 };
 
 function clampOr(value: number, min: number, max: number, fallback: number): number {
@@ -202,6 +222,18 @@ export function normaliseFireworkHeadStyle(
       MIN_BACKGROUND_GLOW_SOFTNESS,
       MAX_BACKGROUND_GLOW_SOFTNESS,
       DEFAULT_BACKGROUND_GLOW_SOFTNESS,
+    ),
+    brightnessHoldPercent: clampOr(
+      Number(style?.brightnessHoldPercent),
+      MIN_BRIGHTNESS_HOLD_PERCENT,
+      MAX_BRIGHTNESS_HOLD_PERCENT,
+      DEFAULT_BRIGHTNESS_HOLD_PERCENT,
+    ),
+    brightnessHoldExponent: clampOr(
+      Number(style?.brightnessHoldExponent),
+      MIN_BRIGHTNESS_HOLD_EXPONENT,
+      MAX_BRIGHTNESS_HOLD_EXPONENT,
+      DEFAULT_BRIGHTNESS_HOLD_EXPONENT,
     ),
   };
 }

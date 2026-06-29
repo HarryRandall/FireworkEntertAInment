@@ -14,7 +14,8 @@ type PageProps = {
   searchParams: Promise<{ creating?: string; t?: string }>;
 };
 
-const SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
+const SPLASH_CLASS =
+  '-mx-6 -mt-6 -mb-10 min-h-[calc(100svh-3.5rem)] flex-1 sm:-mx-8 sm:-mb-12 lg:-mx-10';
 
 export default async function ShowGeneratingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -33,6 +34,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
         <GeneratingShowAnimation
           showTitle={provisionalTitle}
           isWarm={isWarm}
+          randomiseCoverOnLoad
           persistKey={id}
           className={SPLASH_CLASS}
         />
@@ -84,6 +86,8 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       status={show.generationStatus === 'completed' ? 'completed' : 'running'}
       isWarm={isWarm}
       startedAt={show.generationStartedAt}
+      coverShader={creating === '1' ? null : show.coverShader}
+      randomiseCoverOnLoad={creating === '1' || !show.coverShader}
       persistKey={show.slug}
       className={SPLASH_CLASS}
     />

@@ -401,3 +401,18 @@ export function removeStyleDefaultOverridesFromRecord(
       return;
   }
 }
+
+/**
+ * Remove nested stars.outer/stars.core burstTrail overrides so a top-level
+ * burstTrail write is not shadowed when the compiled design prefers the
+ * layer-level value (see burstTrailOverrideKind in design.ts). The top-level
+ * burstTrail is preserved.
+ */
+export function clearNestedStarBurstTrails(defaults: JsonRecord): void {
+  const stars = isRecord(defaults.stars) ? defaults.stars : null;
+  if (!stars) return;
+  for (const layerKey of ['outer', 'core']) {
+    const layer = isRecord(stars[layerKey]) ? (stars[layerKey] as JsonRecord) : null;
+    if (layer) delete layer.burstTrail;
+  }
+}

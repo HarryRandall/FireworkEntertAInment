@@ -8,14 +8,23 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
+import { randomShaderCover } from '@/lib/shader-cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
-import { DEFAULT_SHOW_STYLE, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';
+import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
+import { DEFAULT_SHOW_STYLE, SHOW_STYLES, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';
 import {
   FIREWORK_TYPE_KEYS,
   MAX_SITE_WIDTH_FEET,
   MIN_SITE_WIDTH_FEET,
 } from '@/lib/cue-generation/show-options';
+import { DEFAULT_CUE_MODEL } from '@/lib/openrouter.server';
+import { normaliseCueModel } from '@/lib/cue-models';
+import {
+  creditActionForGenerationMode,
+  reserveAiCredits,
+  showGenerationReservationKey,
+} from '@/lib/ai-credits.server';
 
 const DURATION_TO_SECONDS: Record<string, number> = {
   '1 minute': 60,
@@ -28,12 +37,23 @@ const DURATION_TO_SECONDS: Record<string, number> = {
 function parseDurationSeconds(duration: string) {
   if (DURATION_TO_SECONDS[duration] != null) return DURATION_TO_SECONDS[duration];
 
-  const match = duration.trim().match(/^(\d+)\s+minutes?$/i);
+  const trimmed = duration.trim();
+
+  // Precise seconds, e.g. "252 seconds". Sent by the wizard's "match the
+  // track" option so the show runs for the exact length of the uploaded audio.
+  const secondsMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s+seconds?$/i);
+  if (secondsMatch) {
+    const seconds = Number(secondsMatch[1]);
+    if (!Number.isFinite(seconds) || seconds < 1) return null;
+    return Math.round(seconds);
+  }
+
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s+minutes?$/i);
   if (!match) return null;
 
   const minutes = Number(match[1]);
-  if (!Number.isFinite(minutes) || minutes < 1 || minutes > 60) return null;
-  return minutes * 60;
+  if (!Number.isFinite(minutes) || minutes < 1 / 60 || minutes > 60) return null;
+  return Math.round(minutes * 60);
 }
 
 const NewShowSchema = z.object({
@@ -52,6 +72,7 @@ const NewShowSchema = z.object({
     .min(MIN_SITE_WIDTH_FEET)
     .max(MAX_SITE_WIDTH_FEET)
     .optional(),
+  selectedCueModel: z.string().trim().max(120).optional(),
   fireworkTypes: z.array(z.enum(FIREWORK_TYPE_KEYS)).max(FIREWORK_TYPE_KEYS.length).optional(),
   audioPath: z.string().trim().max(300).optional(),
   musicAnalysisId: z.string().uuid().optional(),
@@ -86,6 +107,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     moodTags: formData.getAll('moodTags').map(String),
     showStyle: formData.get('showStyle') ?? DEFAULT_SHOW_STYLE,
     siteWidthFeet: formData.get('siteWidthFeet') ?? undefined,
+    selectedCueModel: formData.get('selectedCueModel') ?? undefined,
     fireworkTypes: formData.getAll('fireworkTypes').map(String),
     audioPath: formData.get('audioPath') ?? undefined,
     musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
@@ -102,6 +124,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
 
   let audioPath = parsed.data.audioPath || null;
   const musicAnalysisId = parsed.data.musicAnalysisId || null;
+  const selectedCueModel = normaliseCueModel(parsed.data.selectedCueModel, DEFAULT_CUE_MODEL);
 
   if (musicAnalysisId) {
     const { data: analysis, error: analysisError } = await supabase
@@ -153,9 +176,11 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       mood_tags: parsed.data.moodTags,
       show_style: parsed.data.showStyle,
       site_width_feet: parsed.data.siteWidthFeet ?? null,
+      selected_cue_model: selectedCueModel,
       firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,
       music_analysis_id: musicAnalysisId,
+      cover_shader: randomShaderCover(),
       status: 'draft',
       generation_status: 'running',
       generation_started_at: new Date().toISOString(),
@@ -168,12 +193,39 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     return { ok: false, error: 'Could not save your show. Please try again.' };
   }
 
+  const generationSettings = await getShowCueGenerationSettings();
+  const generationMode =
+    SHOW_STYLES[parsed.data.showStyle].engine === 'beat'
+      ? 'beat'
+      : generationSettings.generationMode;
+  const reservation = await reserveAiCredits(supabase, {
+    userId: user.id,
+    actionKey: creditActionForGenerationMode(generationMode, selectedCueModel),
+    referenceType: 'shows',
+    referenceId: show.id,
+    reservationKey: showGenerationReservationKey(show.id),
+    metadata: {
+      durationSeconds,
+      generationMode,
+      model: selectedCueModel,
+      showStyle: parsed.data.showStyle,
+    },
+  });
+
+  if (!reservation.ok) {
+    await supabase.from('shows').delete().eq('id', show.id).eq('user_id', user.id);
+    return {
+      ok: false,
+      error: reservation.error ?? 'You do not have enough AI credits to generate this show.',
+    };
+  }
+
   await invalidateShowsCacheForUser(user.id);
   await invalidateShowCacheForUser(user.id, {
     showId: show.id,
     showSlug: show.slug,
   });
-  revalidatePath('/dashboard');
+  revalidatePath('/home');
   revalidatePath(`/shows/${show.slug}`);
   revalidatePath(`/shows/${show.slug}/generating`);
   revalidatePath(`/shows/${show.slug}/preview`);
@@ -184,6 +236,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       userId: user.id,
       showId: show.id,
       musicAnalysisId,
+      selectedCueModel,
     });
     if (!result.ok) {
       console.error('[createShowAction] background generation failed:', result.error);

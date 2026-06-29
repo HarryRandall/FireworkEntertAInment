@@ -14,6 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_credit_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          reserved: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          reserved?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          reserved?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credit_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          is_billable: boolean
+          key: string
+          name: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          is_billable?: boolean
+          key: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          is_billable?: boolean
+          key?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_costs_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_credit_transactions: {
+        Row: {
+          action_key: string
+          amount: number
+          balance_after: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          idempotency_key: string | null
+          metadata: Json
+          reference_id: string | null
+          reference_type: string | null
+          related_transaction_id: string | null
+          reserved_after: number | null
+          status: string
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          action_key: string
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          reference_id?: string | null
+          reference_type?: string | null
+          related_transaction_id?: string | null
+          reserved_after?: number | null
+          status?: string
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          action_key?: string
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json
+          reference_id?: string | null
+          reference_type?: string | null
+          related_transaction_id?: string | null
+          reserved_after?: number | null
+          status?: string
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_transactions_related_transaction_id_fkey"
+            columns: ["related_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ai_credit_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalogue_items: {
         Row: {
           catalogue_item_kind: string
@@ -73,6 +203,66 @@ export type Database = {
             columns: ["multishot_id"]
             isOneToOne: false
             referencedRelation: "multishots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      firework_editor_versions: {
+        Row: {
+          action: string
+          changes_json: Json
+          created_at: string
+          created_by: string | null
+          created_by_label: string
+          firework_effect_id: string | null
+          firework_id: string | null
+          id: string
+          previous_snapshot_json: Json | null
+          snapshot_json: Json
+          summary: string
+          target_kind: string
+        }
+        Insert: {
+          action: string
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_label: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          id?: string
+          previous_snapshot_json?: Json | null
+          snapshot_json: Json
+          summary: string
+          target_kind: string
+        }
+        Update: {
+          action?: string
+          changes_json?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_label?: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          id?: string
+          previous_snapshot_json?: Json | null
+          snapshot_json?: Json
+          summary?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_editor_versions_firework_effect_id_fkey"
+            columns: ["firework_effect_id"]
+            isOneToOne: false
+            referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_editor_versions_firework_id_fkey"
+            columns: ["firework_id"]
+            isOneToOne: false
+            referencedRelation: "fireworks"
             referencedColumns: ["id"]
           },
         ]
@@ -175,73 +365,6 @@ export type Database = {
             columns: ["trail_style_default_id"]
             isOneToOne: false
             referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      firework_editor_versions: {
-        Row: {
-          action: string
-          changes_json: Json
-          created_at: string
-          created_by: string | null
-          created_by_label: string
-          firework_effect_id: string | null
-          firework_id: string | null
-          id: string
-          previous_snapshot_json: Json | null
-          snapshot_json: Json
-          summary: string
-          target_kind: string
-        }
-        Insert: {
-          action: string
-          changes_json?: Json
-          created_at?: string
-          created_by?: string | null
-          created_by_label: string
-          firework_effect_id?: string | null
-          firework_id?: string | null
-          id?: string
-          previous_snapshot_json?: Json | null
-          snapshot_json: Json
-          summary: string
-          target_kind: string
-        }
-        Update: {
-          action?: string
-          changes_json?: Json
-          created_at?: string
-          created_by?: string | null
-          created_by_label?: string
-          firework_effect_id?: string | null
-          firework_id?: string | null
-          id?: string
-          previous_snapshot_json?: Json | null
-          snapshot_json?: Json
-          summary?: string
-          target_kind?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "firework_editor_versions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "firework_editor_versions_firework_effect_id_fkey"
-            columns: ["firework_effect_id"]
-            isOneToOne: false
-            referencedRelation: "firework_effects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "firework_editor_versions_firework_id_fkey"
-            columns: ["firework_id"]
-            isOneToOne: false
-            referencedRelation: "fireworks"
             referencedColumns: ["id"]
           },
         ]
@@ -1007,6 +1130,7 @@ export type Database = {
       show_presets: {
         Row: {
           budget_cents: number | null
+          cover_shader: Json | null
           created_at: string
           description: string | null
           duration_seconds: number | null
@@ -1025,6 +1149,7 @@ export type Database = {
         }
         Insert: {
           budget_cents?: number | null
+          cover_shader?: Json | null
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1043,6 +1168,7 @@ export type Database = {
         }
         Update: {
           budget_cents?: number | null
+          cover_shader?: Json | null
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1066,6 +1192,7 @@ export type Database = {
           catalogue_item_id: string
           created_at: string
           description: string
+          emphasis: string
           id: string
           label: string | null
           launch_position_index: number
@@ -1082,6 +1209,7 @@ export type Database = {
           catalogue_item_id: string
           created_at?: string
           description: string
+          emphasis?: string
           id?: string
           label?: string | null
           launch_position_index?: number
@@ -1098,6 +1226,7 @@ export type Database = {
           catalogue_item_id?: string
           created_at?: string
           description?: string
+          emphasis?: string
           id?: string
           label?: string | null
           launch_position_index?: number
@@ -1132,6 +1261,7 @@ export type Database = {
           artist: string | null
           audio_path: string | null
           budget_cents: number | null
+          cover_shader: Json | null
           created_at: string
           description: string | null
           duration_seconds: number | null
@@ -1148,6 +1278,7 @@ export type Database = {
           mood_tags: string[]
           music_analysis_id: string | null
           safety_meters: number | null
+          selected_cue_model: string | null
           show_style: string
           site_width_feet: number | null
           slug: string
@@ -1164,6 +1295,7 @@ export type Database = {
           artist?: string | null
           audio_path?: string | null
           budget_cents?: number | null
+          cover_shader?: Json | null
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1180,6 +1312,7 @@ export type Database = {
           mood_tags?: string[]
           music_analysis_id?: string | null
           safety_meters?: number | null
+          selected_cue_model?: string | null
           show_style?: string
           site_width_feet?: number | null
           slug: string
@@ -1196,6 +1329,7 @@ export type Database = {
           artist?: string | null
           audio_path?: string | null
           budget_cents?: number | null
+          cover_shader?: Json | null
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1212,6 +1346,7 @@ export type Database = {
           mood_tags?: string[]
           music_analysis_id?: string | null
           safety_meters?: number | null
+          selected_cue_model?: string | null
           show_style?: string
           site_width_feet?: number | null
           slug?: string
@@ -1551,9 +1686,60 @@ export type Database = {
         Args: { permission_key: string }
         Returns: boolean
       }
+      ai_credit_usage_payload: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      ensure_ai_credit_account: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      grant_ai_credits: {
+        Args: {
+          p_amount: number
+          p_idempotency_key: string
+          p_note: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       has_permission: {
         Args: { permission_key: string; target_user_id: string }
         Returns: boolean
+      }
+      refund_ai_credit_reservation: {
+        Args: {
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_reservation_key: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      replace_show_timeline_items: {
+        Args: { p_items: Json; p_show_id: string; p_user_id: string }
+        Returns: number
+      }
+      reserve_ai_credits: {
+        Args: {
+          p_action_key: string
+          p_amount: number
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_reference_id: string
+          p_reference_type: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      settle_ai_credit_reservation: {
+        Args: {
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_reservation_key: string
+          p_user_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

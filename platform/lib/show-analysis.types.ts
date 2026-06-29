@@ -132,6 +132,10 @@ export type AnalyserResult = {
   buildups: AnalyserBuildup[];
   beat_times?: number[];
   onset_times?: number[];
+  /** Bar grid (schema 1.4.0). Absent on older 1.3.0 analyses. */
+  downbeat_times?: number[];
+  beats_per_bar?: number;
+  derived?: AnalyserDerivedFeatures;
   music_profile?: AnalyserMusicProfile;
   show_personality?: AnalyserShowPersonality;
   firework_cues?: AnalyserFireworkCue[];

@@ -126,23 +126,16 @@ test('show analyses repair migration relaxes legacy not-null columns', () => {
 test('show song context exposes stored analysis context', () => {
   const page = readFileSync(join(root, 'app/(app)/shows/[id]/timeline/page.tsx'), 'utf8');
   const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
-  const previewRedirect = readFileSync(
-    join(root, 'app/(app)/shows/[id]/ShowPreviewRedirect.tsx'),
-    'utf8',
-  );
   const timeline = readFileSync(join(root, 'app/components/app/AudioAnalysisTimeline.tsx'), 'utf8');
   const splashPath = join(root, 'app/components/app/GeneratingShowAnimation.tsx');
   const generatorPath = join(root, 'lib/cue-generation.server.ts');
   assert.equal(existsSync(splashPath), true);
   assert.equal(existsSync(generatorPath), true);
 
-  assert.match(indexPage, /<ShowPreviewRedirect \/>/);
-  assert.match(indexPage, /<ReplayPanelSkeleton \/>/);
-  assert.doesNotMatch(indexPage, /redirect\(/);
-  assert.match(
-    previewRedirect,
-    /router\.replace\(`\/shows\/\$\{encodeURIComponent\(id\)\}\/preview`\)/,
-  );
+  assert.match(indexPage, /import \{ redirect \} from 'next\/navigation'/);
+  assert.match(indexPage, /redirect\(`\/shows\/\$\{encodeURIComponent\(id\)\}\/preview`\)/);
+  assert.doesNotMatch(indexPage, /ReplayPanelSkeleton/);
+  assert.doesNotMatch(indexPage, /ShowPreviewRedirect/);
   assert.match(page, /ShowSongContextPage/);
   assert.match(page, /getLatestAnalysisForShow\(show\.id\)/);
   assert.match(page, /generationStatus === 'running'/);

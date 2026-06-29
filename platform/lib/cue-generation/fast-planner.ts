@@ -8,7 +8,7 @@
 import type { CueSlot } from '@/lib/beat-grid.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
-import type { ShowBriefRow } from './schemas';
+import type { CueEmphasis, ShowBriefRow } from './schemas';
 
 export type PlannedCue = {
   timeSeconds: number;
@@ -17,6 +17,7 @@ export type PlannedCue = {
   description: string;
   slotIndex: number;
   intensity: number;
+  emphasis: CueEmphasis;
 };
 
 export type FastPlanResult = {
@@ -277,6 +278,7 @@ function toCue(slot: CueSlot, product: ProductInfo, description: string): Planne
     description: description.slice(0, 180),
     slotIndex: slot.index,
     intensity: slot.intensity,
+    emphasis: slot.emphasis,
   };
 }
 

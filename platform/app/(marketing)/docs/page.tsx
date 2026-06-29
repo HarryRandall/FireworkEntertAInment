@@ -1,7 +1,6 @@
 /** Marketing "Docs" landing page. */
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { ArrowRight, BookOpen, Rocket, Wand2, ShieldCheck, Code2, Mic2 } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
@@ -89,17 +88,10 @@ export default function DocsPage() {
                   <ul className="mt-5 space-y-2">
                     {section.items.map((item) => (
                       <li key={item}>
-                        <Link
-                          href="#"
-                          className="group text-on-surface-variant hover:bg-surface-container-highest/50 hover:text-primary flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm transition-colors"
-                        >
+                        <div className="text-on-surface-variant flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm">
                           <span>{item}</span>
-                          <ArrowRight
-                            size={14}
-                            strokeWidth={1.75}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                          />
-                        </Link>
+                          <ArrowRight size={14} strokeWidth={1.75} className="opacity-50" />
+                        </div>
                       </li>
                     ))}
                   </ul>

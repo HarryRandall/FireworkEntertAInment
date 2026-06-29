@@ -33,6 +33,7 @@ import {
 } from '@/app/components/admin/FireworkEditorShell';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
+import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { Skeleton } from '@/app/components/ui/Feedback';
@@ -57,6 +58,7 @@ import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
   NO_STYLE_DEFAULT_VALUE,
+  clearNestedStarBurstTrails,
   emptyStyleDefaultIdMap,
   orderedStyleDefaultValues,
   removeStyleDefaultOverridesFromRecord,
@@ -86,6 +88,10 @@ const LazyFireworkReplayCanvas = dynamic(
 const PREVIEW_COLOR = '#22d3ee';
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
 const PREVIEW_START_SECONDS = 0;
+// Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
+// fast scrub does not re-render the whole editor on every input event. The
+// engine ref and the transport's local thumb still update at full input rate.
+const SCRUB_COMMIT_INTERVAL_MS = 67;
 const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 const FAMILY_OPTIONS: SelectOption[] = [
   { value: 'aerial_burst', label: 'Aerial burst' },
@@ -138,6 +144,37 @@ function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
 
 function readRecord(parent: JsonRecord, key: string): JsonRecord {
   return isRecord(parent[key]) ? (parent[key] as JsonRecord) : {};
+}
+
+function toSaveStyleDefaultIds(
+  ids: Record<FireworkStyleDefaultKind, string>,
+): Record<FireworkStyleDefaultKind, string | null> {
+  return Object.fromEntries(
+    FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
+      kind,
+      ids[kind] === NO_STYLE_DEFAULT_VALUE ? null : ids[kind],
+    ]),
+  ) as Record<FireworkStyleDefaultKind, string | null>;
+}
+
+function effectEditorSignature(fields: {
+  name: string;
+  description: string;
+  family: BaseEffectFamily;
+  patternKey: string;
+  sortOrder: number;
+  styleDefaultIds: Record<FireworkStyleDefaultKind, string | null>;
+  modelJson: JsonRecord | string;
+}): string {
+  return JSON.stringify({
+    name: fields.name,
+    description: fields.description,
+    family: fields.family,
+    patternKey: fields.patternKey,
+    sortOrder: fields.sortOrder,
+    styleDefaultIds: fields.styleDefaultIds,
+    modelJson: fields.modelJson,
+  });
 }
 
 function hasConcreteRendererColor(value: unknown): boolean {
@@ -224,6 +261,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
+  const lastScrubCommitRef = useRef(0);
+  const pendingScrubRef = useRef<number | null>(null);
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
 
   const parsedModel = useMemo(() => parseJsonObject(modelText), [modelText]);
   const baseModel = useMemo(
@@ -252,19 +292,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     return selected;
   }, [createdStyleDefaults, effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
   const saveStyleDefaultIds = useMemo(
-    () =>
-      Object.fromEntries(
-        FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
-          kind,
-          styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds[kind],
-        ]),
-      ),
+    () => toSaveStyleDefaultIds(styleDefaultIds),
     [styleDefaultIds],
   );
   const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
   const currentSignature = useMemo(
     () =>
-      JSON.stringify({
+      effectEditorSignature({
         name,
         description,
         family,
@@ -437,6 +471,29 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setElapsed(seconds);
   }
 
+  function scrubTo(seconds: number) {
+    const next = Math.max(0, Math.min(previewDuration, seconds));
+    // Engine ref + play-loop anchor track the drag at full rate; the
+    // heavyweight `elapsed` state (which re-renders the whole editor) is
+    // coalesced to ~15Hz. The transport's local thumb covers the visual gap.
+    playbackRef.current = next;
+    startedAtRef.current = performance.now() - next * 1000;
+    pendingScrubRef.current = next;
+    const now = performance.now();
+    if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
+      lastScrubCommitRef.current = now;
+      setElapsed(next);
+    }
+  }
+
+  function commitScrub() {
+    const pending = pendingScrubRef.current;
+    if (pending == null) return;
+    pendingScrubRef.current = null;
+    lastScrubCommitRef.current = 0;
+    setPreviewTime(pending);
+  }
+
   function updateModelDefaults(updater: (defaults: JsonRecord) => void) {
     if (!parsedModel.ok) return;
     const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
@@ -451,8 +508,46 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
+  function handleStyleDefaultChange(kind: FireworkStyleDefaultKind, value: string) {
+    if (value !== NO_STYLE_DEFAULT_VALUE) {
+      updateModelDefaults((defaults) => {
+        removeStyleDefaultOverridesFromRecord(defaults, kind);
+      });
+    }
+    setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
+  }
+
+  async function persistEffect(args: {
+    styleDefaultIdsMap: Record<FireworkStyleDefaultKind, string | null>;
+    modelJson: string;
+  }): Promise<boolean> {
+    const result = await updateEffect({
+      id: effect.id,
+      expectedUpdatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      family,
+      patternKey,
+      sortOrder: sortOrderNumber,
+      starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
+      trailStyleDefaultId: args.styleDefaultIdsMap.trail ?? null,
+      styleDefaultIds: args.styleDefaultIdsMap,
+      modelJson: args.modelJson,
+    });
+    if (!result.ok) {
+      setError(result.error);
+      return false;
+    }
+    setLastSavedUpdatedAt(result.updatedAt);
+    return true;
+  }
+
   function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind) {
     setError(null);
+    if (!parsedModel.ok) {
+      setError(parsedModel.error);
+      return;
+    }
     startTransition(async () => {
       const result = await createStyleDefault({
         kind,
@@ -473,8 +568,37 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
         ],
       }));
-      setStyleDefaultIds((current) => ({ ...current, [kind]: result.id }));
-      toast.success('Style default created and selected');
+
+      const nextStyleDefaultIds = { ...styleDefaultIds, [kind]: result.id };
+      const nextModel = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
+      const nextRenderDefaults = ensureRecord(nextModel, 'renderDefaults');
+      removeStyleDefaultOverridesFromRecord(nextRenderDefaults, kind);
+      const nextModelText = JSON.stringify(nextModel, null, 2);
+
+      // Select the new preset and clear its inline overrides so the preset drives the preview
+      // instead of being shadowed by stale renderDefaults.
+      setStyleDefaultIds(nextStyleDefaultIds);
+      setModelText(nextModelText);
+
+      const nextSaveMap = toSaveStyleDefaultIds(nextStyleDefaultIds);
+      const ok = await persistEffect({
+        styleDefaultIdsMap: nextSaveMap,
+        modelJson: nextModelText,
+      });
+      if (!ok) return;
+      setSavedSignature(
+        effectEditorSignature({
+          name,
+          description,
+          family,
+          patternKey,
+          sortOrder: sortOrderNumber,
+          styleDefaultIds: nextSaveMap,
+          modelJson: nextModel,
+        }),
+      );
+      toast.success('Style default created and saved');
+      router.refresh();
     });
   }
 
@@ -491,28 +615,11 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     );
 
     startTransition(async () => {
-      const result = await updateEffect({
-        id: effect.id,
-        expectedUpdatedAt: lastSavedUpdatedAt,
-        name,
-        description,
-        family,
-        patternKey,
-        sortOrder: sortOrderNumber,
-        starStyleDefaultId:
-          styleDefaultIds.star === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.star,
-        trailStyleDefaultId:
-          styleDefaultIds.trail === NO_STYLE_DEFAULT_VALUE ? null : styleDefaultIds.trail,
-        styleDefaultIds: saveStyleDefaultIds,
+      const ok = await persistEffect({
+        styleDefaultIdsMap: saveStyleDefaultIds,
         modelJson: canonicalModelText,
       });
-
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-
-      setLastSavedUpdatedAt(result.updatedAt);
+      if (!ok) return;
       setModelText(canonicalModelText);
       setSavedSignature(currentSignature);
       toast.success('Effect saved');
@@ -559,6 +666,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const next = updater(JSON.parse(JSON.stringify(previewDesign.burstTrail)) as BurstTrail);
     updateModelDefaults((defaults) => {
       defaults.burstTrail = custom ? { ...next, preset: 'custom' } : next;
+      clearNestedStarBurstTrails(defaults);
     });
   }
 
@@ -597,6 +705,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       interactive
       controlsVisible
       showFps
+      allowFullscreen
+      fullscreen={isFullscreen}
+      onToggleFullscreen={toggleFullscreen}
+      primeSnapshots
+      primeOnCueChanges={false}
+      showLoadingBar
+      loadingBarPosition="center"
       renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
       headStyle={{
         coreSoftness,
@@ -631,8 +746,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       onLoopToggle={() => setIsLooping((looping) => !looping)}
       onScrub={(seconds) => {
         setIsPlaying(false);
-        setPreviewTime(seconds);
+        scrubTo(seconds);
       }}
+      onScrubEnd={commitScrub}
     />
   );
   const detailsContent = (
@@ -685,7 +801,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       <EditorStyleDefaultControls
         label={`${styleDefaultKindLabel(kind)} style`}
         value={styleDefaultIds[kind]}
-        onChange={(value) => setStyleDefaultIds((current) => ({ ...current, [kind]: value }))}
+        onChange={(value) => handleStyleDefaultChange(kind, value)}
         options={styleDefaultOptions(
           effect.styleDefaults[kind],
           selectedStyleDefaults[kind] ?? effect.styleDefaultLinks[kind] ?? null,
@@ -918,6 +1034,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       transport={transport}
       error={error}
       previewNotice={previewNotice}
+      fullscreen={isFullscreen}
+      onExitFullscreen={exitFullscreen}
     />
   );
 }

@@ -310,7 +310,15 @@ export function FireworkImportPreview({
         <div className="border-outline-variant/35 bg-surface-container-lowest relative aspect-video w-full overflow-hidden rounded-xl border">
           <div className="absolute inset-0 min-h-[200px]">
             {spec ? (
-              <LazyFireworkReplayCanvas cues={cues} elapsed={elapsed} interactive showFps />
+              <LazyFireworkReplayCanvas
+                cues={cues}
+                elapsed={elapsed}
+                interactive
+                showFps
+                primeSnapshots
+                showLoadingBar
+                loadingBarPosition="bottom"
+              />
             ) : (
               <div className="text-on-surface-variant flex h-full items-center justify-center p-6 text-center text-sm">
                 The generated 3D reconstruction will appear after processing.

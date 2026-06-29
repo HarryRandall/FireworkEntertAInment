@@ -22,6 +22,8 @@ export type SlotVibe =
   | 'buildup'
   | 'outro';
 
+export type SlotEmphasis = 'normal' | 'accent' | 'peak';
+
 export type CueSlot = {
   index: number;
   time: number; // seconds, 2 decimals
@@ -30,6 +32,14 @@ export type CueSlot = {
   sectionLabel: string;
   vibe: SlotVibe;
   nearClimax: boolean;
+  /** True when the slot lands on a detected bar downbeat. */
+  isDownbeat: boolean;
+  /** Beat-in-bar position (0 = downbeat), or -1 for a non-beat onset accent. */
+  barPosition: number;
+  /** Render + product-size emphasis derived from musical importance. */
+  emphasis: SlotEmphasis;
+  /** True when the slot falls inside the analyser's finale window. */
+  finale: boolean;
 };
 
 const TARGET_SLOTS = 160;
@@ -78,6 +88,8 @@ export function buildCueSlots(
   const buildups = analysis?.buildups ?? [];
   const keyMoments = analysis?.key_moments ?? [];
   const tempoBpm = clampTempo(analysis?.tempo_bpm ?? 120);
+  const beatsPerBar = clampBeatsPerBar(analysis?.beats_per_bar ?? 4);
+  const finaleWindow = analysis?.derived?.finale_window ?? null;
 
   // 1. Beat times: prefer AI's, fall back to synthetic from tempo if sparse.
   //    Keep only finite beats inside the song, sorted, with exact duplicates
@@ -97,16 +109,38 @@ export function buildCueSlots(
     }
   }
 
-  // 2. Score each beat by section + climax proximity + buildup ramp.
+  // Bar / downbeat grid (schema 1.4.0). When the analyser provides downbeats
+  // we lock sparse sections to one fire per bar; without downbeats (older
+  // 1.3.0 analyses) we fall back to the original every-beat windowed sampling
+  // so nothing regresses.
+  const downbeatTimes = (analysis?.downbeat_times ?? [])
+    .filter((t) => Number.isFinite(t) && t >= 0 && t < songDuration)
+    .map((t) => Number(t.toFixed(2)));
+  const hasDownbeats = downbeatTimes.length > 0 && !needsSynth;
+  const nearDownbeat = (t: number) => downbeatTimes.some((d) => Math.abs(d - t) <= 0.06);
+
+  const finaleStart = finaleWindow?.start ?? null;
+  const finaleEnd = finaleWindow?.end ?? null;
+  const inFinale = (t: number) =>
+    finaleStart != null && finaleEnd != null && t >= finaleStart && t <= finaleEnd;
+  const buildupPeaks = buildups.map((b) => b.peak);
+
+  // 2. Score each beat by section + climax proximity + buildup ramp, and tag
+  //    it with downbeat / bar / emphasis / finale metadata.
   type Scored = {
     time: number;
     intensity: number;
     sectionLabel: string;
     vibe: SlotVibe;
     nearClimax: boolean;
+    isDownbeat: boolean;
+    barPosition: number;
+    emphasis: SlotEmphasis;
+    finale: boolean;
   };
 
-  const scored: Scored[] = beats.map((t) => {
+  let barCounter = 0;
+  const scored: Scored[] = beats.map((t, i) => {
     const section = sections.find((s) => t >= s.start && t < s.end);
     const sectionLabel = section?.label ?? 'unknown';
     const vibe = vibeFor(sectionLabel);
@@ -134,12 +168,42 @@ export function buildCueSlots(
       }
     }
 
+    const isDownbeat = hasDownbeats ? nearDownbeat(t) : i % beatsPerBar === 0;
+    let barPosition: number;
+    if (isDownbeat) {
+      barPosition = 0;
+      barCounter = 1;
+    } else {
+      barPosition = barCounter;
+      barCounter = (barCounter + 1) % beatsPerBar;
+    }
+
+    const finale = inFinale(t);
+    const atBuildupPeak = buildupPeaks.some((p) => Math.abs(p - t) <= 0.25);
+    let emphasis: SlotEmphasis = 'normal';
+    if (nearClimax || atBuildupPeak) {
+      emphasis = 'peak';
+    } else if (finale && isDownbeat && (vibe === 'chorus' || vibe === 'drop')) {
+      emphasis = 'peak';
+    } else if (
+      isDownbeat &&
+      (vibe === 'chorus' || vibe === 'drop' || vibe === 'buildup' || vibe === 'pre-chorus')
+    ) {
+      emphasis = 'accent';
+    } else if (finale && isDownbeat) {
+      emphasis = 'accent';
+    }
+
     return {
       time: t,
       intensity: clamp01(intensity),
       sectionLabel,
       vibe,
       nearClimax,
+      isDownbeat,
+      barPosition,
+      emphasis,
+      finale,
     };
   });
 
@@ -147,21 +211,35 @@ export function buildCueSlots(
   const live = scored.filter((b) => b.intensity > MIN_INTENSITY);
   if (live.length === 0) return [];
 
-  // 4. Sample quieter sections, but keep every chorus/drop/climax beat.
+  // 4. Select slots. Must-keep beats: choruses/drops (every beat), climaxes,
+  //    and - when we have a bar grid - every downbeat so verses lock to the
+  //    bar. Remaining beats fill build/bridge texture toward the target.
   const WINDOW_COUNT = 12;
   const tubesForBeat = (beat: { intensity: number; nearClimax: boolean; vibe: SlotVibe }) =>
     Math.min(tubeCountForBeat(beat), maxTubes);
-  const fullCoverage = live.filter(isFullCoverageBeat);
+  const isMustKeep = (b: Scored) =>
+    b.vibe === 'chorus' || b.vibe === 'drop' || b.nearClimax || (hasDownbeats && b.isDownbeat);
+  const isFillEligible = (b: Scored) => {
+    if (isMustKeep(b)) return false;
+    if (!hasDownbeats) return true; // 1.3.0: original windowed fill everywhere.
+    // With a bar grid, sparse sections are represented by their downbeats;
+    // only allow off-beat fill in build/bridge sections to shape ramps.
+    return b.vibe === 'buildup' || b.vibe === 'pre-chorus' || b.vibe === 'bridge';
+  };
+
+  const fullCoverage = live.filter(isMustKeep);
   const sampled: Scored[] = [...fullCoverage];
   let sampledSlotCount = fullCoverage.reduce((total, beat) => total + tubesForBeat(beat), 0);
   const remainingTarget = Math.max(0, TARGET_SLOTS - sampledSlotCount);
 
   if (remainingTarget > 0) {
     const sampledBeatKeys = new Set(fullCoverage.map(beatKey));
-    const sampledCandidates = live.filter((b) => !sampledBeatKeys.has(beatKey(b)));
+    const sampledCandidates = live.filter(
+      (b) => !sampledBeatKeys.has(beatKey(b)) && isFillEligible(b),
+    );
 
     // Keep coverage across the whole song by bucketing into windows and taking
-    // the strongest non-chorus beats in each window.
+    // the strongest eligible beats in each window.
     const windowSize = songDuration / WINDOW_COUNT;
     const buckets: Scored[][] = Array.from({ length: WINDOW_COUNT }, () => []);
     for (const b of sampledCandidates) {
@@ -212,17 +290,76 @@ export function buildCueSlots(
         sectionLabel: b.sectionLabel,
         vibe: b.vibe,
         nearClimax: b.nearClimax,
+        isDownbeat: b.isDownbeat,
+        barPosition: b.barPosition,
+        emphasis: b.emphasis,
+        finale: b.finale,
       });
     }
   }
+
+  // 6. Onset accents: a few sharp non-beat hits inside chorus/drop/high
+  //    sections so snare/kick accents land without cluttering verses.
+  const onsetTimes = (analysis?.onset_times ?? []).filter(
+    (t) => Number.isFinite(t) && t >= 0 && t < songDuration,
+  );
+  if (onsetTimes.length > 0) {
+    const energyTimeline = analysis?.energy_timeline ?? [];
+    const energyAt = (t: number) => {
+      let best = 0;
+      for (const p of energyTimeline) {
+        if (Math.abs(p.time - t) <= 1.0) best = Math.max(best, p.energy);
+      }
+      return best;
+    };
+    const isStrongSection = (t: number) => {
+      const s = sections.find((sec) => t >= sec.start && t < sec.end);
+      if (!s) return false;
+      const v = vibeFor(s.label);
+      return v === 'chorus' || v === 'drop' || s.intensity === 'high';
+    };
+    const nearBeat = (t: number) => beats.some((b) => Math.abs(b - t) <= 0.08);
+    const chosen: number[] = [];
+    for (const t of onsetTimes) {
+      if (chosen.length >= 12) break;
+      if (!isStrongSection(t)) continue;
+      if (energyAt(t) < 0.5) continue;
+      if (nearBeat(t)) continue;
+      if (chosen.some((c) => Math.abs(c - t) < 0.3)) continue;
+      chosen.push(Number(t.toFixed(2)));
+    }
+    for (const t of chosen) {
+      const section = sections.find((s) => t >= s.start && t < s.end);
+      const vibe = section ? vibeFor(section.label) : 'verse';
+      slots.push({
+        index: idx++,
+        time: Number(t.toFixed(2)),
+        tube: (rotor % maxTubes) as 0 | 1 | 2,
+        intensity: 0.6,
+        sectionLabel: section?.label ?? 'unknown',
+        vibe,
+        nearClimax: false,
+        isDownbeat: false,
+        barPosition: -1,
+        emphasis: 'accent',
+        finale: inFinale(t),
+      });
+      rotor = ((rotor + 1) % maxTubes) as 0 | 1 | 2;
+    }
+  }
+
+  // Re-sort by time and re-index so slotIndex maps to time order after adding
+  // interleaved onset accents.
+  slots.sort((a, b) => a.time - b.time || a.tube - b.tube);
+  slots.forEach((s, i) => (s.index = i));
   return slots;
 }
 
-function isFullCoverageBeat(beat: { sectionLabel: string; vibe: SlotVibe; nearClimax: boolean }) {
-  const label = beat.sectionLabel.toLowerCase();
-  return (
-    beat.vibe === 'chorus' || beat.vibe === 'drop' || beat.nearClimax || label.includes('climax')
-  );
+function clampBeatsPerBar(value: number): number {
+  if (!Number.isFinite(value)) return 4;
+  const v = Math.round(value);
+  if (v === 2 || v === 3) return v;
+  return 4;
 }
 
 function tubeCountForBeat(beat: { intensity: number; nearClimax: boolean; vibe: SlotVibe }) {

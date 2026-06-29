@@ -8,14 +8,14 @@
  */
 import { z } from 'zod';
 
-/** Named display colours and their hex values. */
+/** Named display colours and their hex values, tuned to firework chemistry. */
 export const FIREWORK_COLORS = {
-  Red: '#ff0043',
-  Green: '#14fc56',
-  Blue: '#1e7fff',
-  Purple: '#e60aff',
-  Gold: '#ffbf36',
-  White: '#ffffff',
+  Red: '#ff2d55', // strontium / lithium
+  Green: '#14fc56', // barium
+  Blue: '#1e7fff', // copper (deep, as copper blue reads)
+  Purple: '#c800ff', // potassium / caesium
+  Gold: '#ffd166', // sodium / iron
+  White: '#ffffff', // titanium / magnesium
 } as const;
 
 export type FireworkColor = (typeof FIREWORK_COLORS)[keyof typeof FIREWORK_COLORS];
@@ -27,11 +27,15 @@ export const SHELL_TYPES = [
   'crysanthemum',
   'chrysanthemum',
   'brocade',
+  'kamuro',
   'ghost',
   'strobe',
   'palm',
   'ring',
+  'saturn',
   'crossette',
+  'double_break',
+  'bowtie',
   'floral',
   'fallingLeaves',
   'willow',
@@ -42,9 +46,13 @@ export const SHELL_TYPES = [
   'mine',
   'pearls',
   'pistil',
+  'nishiki',
+  'diadem',
   'silverFish',
   'waterfall',
   'whirl',
+  'roman_candle',
+  'fountain',
 ] as const;
 
 export type ShellType = (typeof SHELL_TYPES)[number];

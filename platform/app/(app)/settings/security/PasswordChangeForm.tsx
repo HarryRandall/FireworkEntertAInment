@@ -23,7 +23,7 @@ export function PasswordChangeForm({ disabled = false }: { disabled?: boolean })
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-5">
+    <form ref={formRef} action={formAction} className="space-y-4">
       <Field>
         <FieldLabel htmlFor="currentPassword">Current password</FieldLabel>
         <Input
@@ -38,7 +38,7 @@ export function PasswordChangeForm({ disabled = false }: { disabled?: boolean })
         <FieldHint>Required so an open browser session cannot change credentials alone.</FieldHint>
       </Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
         <Field>
           <FieldLabel htmlFor="newPassword">New password</FieldLabel>
           <Input
@@ -67,15 +67,6 @@ export function PasswordChangeForm({ disabled = false }: { disabled?: boolean })
         </Field>
       </div>
 
-      <div className="border-border bg-muted/30 rounded-lg border p-4">
-        <p className="text-foreground text-sm font-medium">Password requirements</p>
-        <div className="text-muted-foreground mt-3 grid gap-2 text-sm sm:grid-cols-3">
-          <span>8 or more characters</span>
-          <span>Different from old password</span>
-          <span>Stored by Supabase auth</span>
-        </div>
-      </div>
-
       {state.status === 'error' && state.message ? (
         <InlineAlert tone="danger" title="Password not updated">
           {state.message}
@@ -87,8 +78,8 @@ export function PasswordChangeForm({ disabled = false }: { disabled?: boolean })
         </InlineAlert>
       ) : null}
 
-      <div className="border-border flex justify-end border-t pt-5">
-        <Button type="submit" loading={pending} disabled={disabled}>
+      <div className="flex justify-end">
+        <Button type="submit" loading={pending} disabled={disabled} className="w-full sm:w-auto">
           Update password
         </Button>
       </div>

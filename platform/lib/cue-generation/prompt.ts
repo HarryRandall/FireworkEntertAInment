@@ -24,6 +24,8 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
     };
   }
   const beatTimes = analysis.beat_times ?? [];
+  const downbeatTimes = analysis.downbeat_times ?? [];
+  const beatsPerBar = analysis.beats_per_bar ?? 4;
   const sections = analysis.sections.map((section) => ({
     ...section,
     beatCount: beatTimes.filter((beat) => beat >= section.start && beat < section.end).length,
@@ -34,7 +36,11 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
   return {
     durationSeconds: analysis.duration_seconds || durationSeconds,
     tempoBpm: analysis.tempo_bpm,
-    beatGrid: describeBeatGrid(beatTimes, analysis.tempo_bpm),
+    beatGrid: describeBeatGrid(beatTimes, analysis.tempo_bpm, beatsPerBar, downbeatTimes.length),
+    downbeats: downbeatTimes,
+    beatsPerBar,
+    derived: analysis.derived ?? null,
+    energyTimeline: downsampleEnergy(analysis.energy_timeline ?? []),
     musicProfile: analysis.music_profile,
     showPersonality: analysis.show_personality,
     sections,
@@ -47,7 +53,12 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
  * Compact beat-grid description so the model knows slot times ARE the
  * analysed beats and how tightly spaced they are.
  */
-function describeBeatGrid(beatTimes: number[], tempoBpm: number | null | undefined) {
+function describeBeatGrid(
+  beatTimes: number[],
+  tempoBpm: number | null | undefined,
+  beatsPerBar: number,
+  downbeatCount: number,
+) {
   if (!beatTimes.length) {
     return {
       source: 'synthetic' as const,
@@ -63,10 +74,40 @@ function describeBeatGrid(beatTimes: number[], tempoBpm: number | null | undefin
   return {
     source: 'analysed' as const,
     beatCount: beatTimes.length,
+    beatsPerBar,
+    downbeatCount,
     medianBeatIntervalSeconds: median != null ? Number(median.toFixed(3)) : null,
     tempoBpm: tempoBpm ?? null,
-    note: 'Every slot time t is an exact analysed beat timestamp. Assigning a cue to a slot fires it exactly on that beat.',
+    note: 'Every slot time t is an exact analysed beat (or a strong onset accent). db:1 slots are bar downbeats; assigning a cue to a slot fires it exactly on that beat.',
   };
+}
+
+/**
+ * Coarsen the per-second energy timeline to roughly one sample per 2.5s
+ * (keeping the peak in each window) so the model sees the energy curve
+ * without blowing the token budget.
+ */
+function downsampleEnergy(
+  timeline: { time: number; energy: number }[],
+): { time: number; energy: number }[] {
+  if (timeline.length <= 1) return timeline;
+  const windowSec = 2.5;
+  const out: { time: number; energy: number }[] = [];
+  let i = 0;
+  const last = timeline[timeline.length - 1].time;
+  for (let start = 0; start <= last + 1e-6; start += windowSec) {
+    let max = -1;
+    let maxT = start;
+    while (i < timeline.length && timeline[i].time < start + windowSec) {
+      if (timeline[i].energy > max) {
+        max = timeline[i].energy;
+        maxT = timeline[i].time;
+      }
+      i += 1;
+    }
+    if (max >= 0) out.push({ time: Number(maxT.toFixed(1)), energy: Number(max.toFixed(2)) });
+  }
+  return out;
 }
 
 function targetFillRatioFor(intensity: string): number {
@@ -159,6 +200,10 @@ export function projectSlotsForLLM(slots: CueSlot[]) {
     tube: s.tube,
     v: s.vibe,
     e: Number(s.intensity.toFixed(2)),
+    db: s.isDownbeat ? 1 : 0,
+    bar: s.barPosition,
+    em: s.emphasis === 'peak' ? 2 : s.emphasis === 'accent' ? 1 : 0,
+    fin: s.finale ? 1 : 0,
     climax: s.nearClimax ? 1 : 0,
     section: s.sectionLabel,
   }));
@@ -177,11 +222,11 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '  - brief: title, mood tags, budget, time of day, location, requested duration, siteWidthFeet, launchPositions, and optionally fireworkTypes.',
   '  - brief.launchPositions is how many firing positions the site supports; the slots already respect it, so never assume more tubes exist.',
   '  - brief.fireworkTypes, when present, lists the only product families the user wants. The catalogue is already filtered to match where possible - stay inside it.',
-  '  - analysisSummary: song structure: duration, tempo, beatGrid, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, music_profile, show_personality.',
+  '  - analysisSummary: song structure: duration, tempo, beatGrid (beatCount, beatsPerBar, downbeatCount), downbeats, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, derived (finale_window, anchor_windows, repeated_chorus_count, section_rank_by_energy), energyTimeline, music_profile, show_personality.',
   '  - catalogue: every available product with id, name, compact description, durationSeconds, shotCount, isMultiShot, caliber, heightMeters, shellType, color, colorPalette, and any active effect flags.',
-  '  - slots: a dense beat grid sampled from the actual analysed beats. Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), climax, section }. Slots are the ONLY times you can fire on.',
+  '  - slots: a beat grid sampled from the analysed beats (plus a few strong onset accents). Each slot is { i (index), t (seconds), tube (0|1|2), v (vibe), e (intensity 0-1), db (1=downbeat/bar-1), bar (beat-in-bar, 0=downbeat, -1=onset accent), em (emphasis 0=normal,1=accent,2=peak), fin (1=inside finale window), climax, section }. Slots are the ONLY times you can fire on.',
   '',
-  'Output: assign at most one product per slot. Return { cues: [{ slotIndex, productId, description }], rationale }.',
+  'Output: assign at most one product per slot. Return { cues: [{ slotIndex, productId, description, emphasis? }], rationale }.',
   '',
   'Hard rules:',
   '  - slotIndex MUST exist in the slots array. Never invent indices.',
@@ -190,23 +235,31 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '  - One cue per slotIndex, no duplicates.',
   '',
   'Beat synchronisation (non-negotiable):',
-  '  - Every slot time t is an exact analysed beat timestamp. A cue on a slot fires exactly on that beat; there is no other way to be on-beat.',
-  '  - Never leave a climax slot empty. Climax beats are the moments the audience remembers.',
+  '  - Every slot time t is an exact analysed beat (or a strong onset accent with bar=-1). A cue on a slot fires exactly then; there is no other way to be on-beat.',
+  '  - Fire on the bar. db:1 slots are bar downbeats - the strongest musical grid lines. In verses, intro and bridge, fill downbeats first and leave most off-beats empty.',
+  '  - Saturate chorus and drop: fire on every slot, with the biggest products on the db:1 downbeats.',
+  '  - Never leave a climax (climax:1) or em:2 slot empty. These are the moments the audience remembers.',
   '  - Treat consecutive slots that share the same t as one beat across multiple tubes: stack them for emphasis on strong beats.',
-  '  - When in doubt between two slots, pick the one whose section and intensity better match the product size - never shift a big product onto a weak beat.',
+  '  - When in doubt between two slots, pick the one whose section, downbeat and intensity better match the product size - never shift a big product onto a weak off-beat.',
+  '',
+  'Emphasis and finale (this makes climaxes visibly bigger):',
+  '  - em tiers: 2=peak, 1=accent, 0=normal. Each slot already carries a suggested em; you may override it by returning emphasis on a cue when you have a creative reason, otherwise leave it out and the slot value is used.',
+  '  - Put your largest-caliber, highest, multi-shot products on em:2 slots. Medium products on em:1. Small single-shot pops on em:0.',
+  '  - fin:1 slots are inside the finale window. Hold back your 2-3 biggest products for the finale and saturate every tube across that window; taper only if the song ends soft.',
+  '  - Ramp buildups beat-over-beat: increasing product size and density as bar numbers rise into a drop or chorus.',
   '',
   'Pacing rules (this is the biggest quality lever - get it right):',
-  "  - The show must FEEL like the song. Cue density and product size should track each slot's intensity e and section densityHint.",
-  '  - Target overall fill: 90-100% of slots. Never fall below 85% in chorus, drop, climax, or finale sections.',
-  '  - Intro / first verse: breathe, but do not go mute. Aim for about 50% fill with single-tube, small-caliber, mostly single-shot pops on downbeats.',
-  '  - Buildups / pre-chorus: ramp from about 60% fill at the start to 100% in the last second before the climax. Stack effects to communicate rising tension.',
+  "  - The show must FEEL like the song. Cue density and product size should track each slot's intensity e, emphasis em and section densityHint.",
+  '  - Target overall fill: 90-100% of slots. Never fall below 85% in chorus, drop, climax, finale, or em:2 slots.',
+  '  - Intro / first verse: breathe, but do not go mute. Aim for about 50% fill with single-tube, small-caliber, mostly single-shot pops on downbeats (db:1).',
+  '  - Buildups / pre-chorus: ramp from about 60% fill at the start to 100% in the last second before the drop/chorus. Stack effects to communicate rising tension.',
   '  - Chorus / drop / climax: saturate. Every slot fires. Use multi-shot cakes on at least one tube to lay a continuous bed, and put single-shot pops on the other tubes on every beat.',
   '  - Post-chorus verses: keep the energy alive at about 65-75% fill so the show does not crater after a hook.',
   '  - Outro / finale: every tube, every slot, finishers plus multi-shot cakes if the song ends loud; taper only when the ending is clearly soft.',
   '',
   'Product timing rules:',
   '  - Single-shot products = pops on the beat. Use these to hit beats, climaxes, and accent moments.',
-  '  - Multi-shot products = sustained barrages. Place them at section boundaries: start of chorus, peak of buildup, and start of finale.',
+  '  - Multi-shot products = sustained barrages. Place them at section boundaries: start of chorus, peak of buildup, start of drop, and start of the finale window.',
   "  - Multi-shots block their tube for the product's full airtime, so plan the other two tubes around them instead of trying to reuse that tube immediately.",
   '',
   'Variety rules:',
@@ -218,12 +271,12 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   'Creative direction:',
   "  - The userPrompt overrides defaults. If they say 'mostly green', favour green; if they say 'patriotic', red/white/blue with gold finishers; if they say 'minimalist', drop the fill ratio toward 65%.",
   "  - Match each cue's product to its slot vibe AND to the userPrompt palette.",
-  "  - description: ≤ 180 chars, one sentence, says WHAT fires and WHY this beat (e.g. 'Twin gold willows on the snare hit before the drop').",
-  '  - rationale: 1–2 sentences explaining chorus saturation, multi-shot placement, and how the structure serves the userPrompt.',
+  "  - description: ≤ 180 chars, one sentence, says WHAT fires and WHY this beat (e.g. 'Twin gold willows on the bar downbeat before the drop').",
+  '  - rationale: 1-2 sentences explaining bar-downbeat placement, chorus/drop saturation, finale hold-back, and how the structure serves the userPrompt.',
   '',
   'Output schema (return EXACTLY this JSON shape, no prose, no markdown fences):',
-  '  { "cues": [{ "slotIndex": <int>, "productId": "<uuid>", "description": "<string ≤180 chars>" }, ...], "rationale": "<string>" }',
-  'Constraints: cues.length 1–360. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
+  '  { "cues": [{ "slotIndex": <int>, "productId": "<uuid>", "description": "<string ≤180 chars>", "emphasis": "normal"|"accent"|"peak" (optional) }, ...], "rationale": "<string>" }',
+  'Constraints: cues.length 1-360. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
 ].join('\n');
 
 export const DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT = [

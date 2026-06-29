@@ -6,11 +6,16 @@
  */
 import { z } from 'zod';
 
+/** Per-cue render emphasis the model may override. */
+export const CUE_EMPHASIS_VALUES = ['normal', 'accent', 'peak'] as const;
+export type CueEmphasis = (typeof CUE_EMPHASIS_VALUES)[number];
+
 /** A single LLM assignment of a product to a slot. */
 export const AssignmentSchema = z.object({
   slotIndex: z.number().int().min(0),
   productId: z.string().uuid(),
   description: z.string().trim().min(1).max(180),
+  emphasis: z.enum(CUE_EMPHASIS_VALUES).optional(),
 });
 
 /** Top-level response shape we expect back from the LLM. */
@@ -41,5 +46,6 @@ export type ShowBriefRow = {
   music_analysis_id: string | null;
   show_style: string | null;
   site_width_feet: number | null;
+  selected_cue_model: string | null;
   firework_types: string[] | null;
 };

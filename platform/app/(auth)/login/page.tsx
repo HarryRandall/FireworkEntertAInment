@@ -15,7 +15,7 @@ import { FormError } from '@/app/components/ui/FormError';
 type Step = 'email' | 'password';
 
 function getSafeNextPath(nextPath: string) {
-  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard';
+  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/home';
 }
 
 export default function LoginPage() {
@@ -28,7 +28,7 @@ export default function LoginPage() {
 
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get('next') || '/dashboard';
+  const nextPath = searchParams.get('next') || '/home';
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');

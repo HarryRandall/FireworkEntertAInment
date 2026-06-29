@@ -23,7 +23,6 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Button } from '@/app/components/ui/Button';
-import { ThemeToggle } from '@/app/components/theme/ThemeToggle';
 import { createClient } from '@/utils/supabase/client';
 
 type MenuItem = { t: string; d: string; href: string; Icon: LucideIcon };
@@ -60,7 +59,7 @@ const FEATURE_ITEMS: MenuItem[] = [
   {
     t: 'Safety engine',
     d: 'Minimum safe-distance on every cue',
-    href: '/safety',
+    href: '/features',
     Icon: ShieldCheck,
   },
   {
@@ -135,7 +134,7 @@ export function MarketingNavBar() {
     <nav className="border-outline-variant/60 sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--background)_80%,transparent)] backdrop-blur-xl">
       <Container className="flex h-[66px] items-center justify-between">
         <Link
-          href={authenticated ? '/dashboard' : '/'}
+          href={authenticated ? '/home' : '/'}
           className="text-on-surface flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]"
         >
           <span className="brand-logo-mark h-[30px] w-[30px] rounded-[9px]">
@@ -156,10 +155,9 @@ export function MarketingNavBar() {
         </div>
 
         <div className="hidden items-center gap-2.5 lg:flex">
-          <ThemeToggle />
           {authenticated ? (
-            <Button href="/dashboard" size="sm" className="lp-nav-auth-button">
-              Dashboard
+            <Button href="/home" size="sm" className="lp-nav-auth-button">
+              Home
             </Button>
           ) : (
             <>
@@ -174,7 +172,6 @@ export function MarketingNavBar() {
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
-          <ThemeToggle />
           <button
             type="button"
             aria-label={open ? 'Close menu' : 'Open menu'}
@@ -209,8 +206,8 @@ export function MarketingNavBar() {
               ))}
               <div className="border-outline-variant/60 mt-3 flex flex-col gap-3 border-t pt-4">
                 {authenticated ? (
-                  <Button href="/dashboard" size="md" className="w-full">
-                    Dashboard
+                  <Button href="/home" size="md" className="w-full">
+                    Home
                   </Button>
                 ) : (
                   <>

@@ -335,36 +335,13 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     render_overrides_json: overrides.value,
     updated_at: new Date().toISOString(),
   };
-  const fallbackPatch = {
-    name: parsed.data.name,
-    description: parsed.data.description || null,
-    firework_effect_id: parsed.data.fireworkEffectId,
-    caliber: parsed.data.caliber || null,
-    duration_seconds: parsed.data.durationSeconds ?? null,
-    height_meters: parsed.data.heightMeters ?? null,
-    primary_color: parsed.data.primaryColor || null,
-    secondary_color: parsed.data.secondaryColor || null,
-    color_palette: parsed.data.colorPalette ?? [],
-    render_overrides_json: overrides.value,
-    updated_at: patch.updated_at,
-  };
-  let result = await supabase
+  const result = await supabase
     .from('fireworks')
     .update(patch)
     .eq('id', parsed.data.id)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
     .select('updated_at')
     .maybeSingle();
-
-  if (isMissingStyleDefaultSchemaError(result.error)) {
-    result = await supabase
-      .from('fireworks')
-      .update(fallbackPatch)
-      .eq('id', parsed.data.id)
-      .eq('updated_at', parsed.data.expectedUpdatedAt)
-      .select('updated_at')
-      .maybeSingle();
-  }
 
   const { data, error } = result;
   if (error) return { ok: false, error: error.message };
