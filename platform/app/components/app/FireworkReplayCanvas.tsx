@@ -128,6 +128,12 @@ type Props = {
   /** Upper bound for renderer DPR. Lower values are useful for large public previews. */
   maxDevicePixelRatio?: number;
   /**
+   * Request a multisampled render context. Off by default to keep the
+   * full-show player and editors cheap; card hover previews opt in so small
+   * canvases do not show aliased star edges when blown up by the browser.
+   */
+  antialias?: boolean;
+  /**
    * Pre-run the whole show silently on cue load and cache a particle snapshot
    * every second, so timeline seeks land near a snapshot instead of rebuilding
    * from zero. Intended for full-show previews where scrubbing matters; leave
@@ -596,6 +602,7 @@ export function FireworkReplayCanvas({
   controlsVisible = true,
   showFps = false,
   maxDevicePixelRatio = MAX_DEVICE_PIXEL_RATIO,
+  antialias = false,
   primeSnapshots = false,
   primeOnCueChanges = true,
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
@@ -853,7 +860,7 @@ export function FireworkReplayCanvas({
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
-      antialias: false,
+      antialias,
       alpha: false,
       powerPreference: 'high-performance',
     });
@@ -878,9 +885,13 @@ export function FireworkReplayCanvas({
     };
 
     const renderPass = new RenderPass(scene, camera);
+    // Small card canvases render the bloom pass at thumbnail resolution, which
+    // reads as a soft mush when the browser upscales it. Ease the strength back
+    // for sub-400px viewports so hover previews keep readable star heads.
+    const bloomStrength = width < 400 ? BLOOM_STRENGTH * 0.6 : BLOOM_STRENGTH;
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(width, height),
-      BLOOM_STRENGTH,
+      bloomStrength,
       BLOOM_RADIUS,
       BLOOM_THRESHOLD,
     );

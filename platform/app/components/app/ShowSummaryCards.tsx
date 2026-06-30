@@ -77,12 +77,15 @@ export function ShowSummaryRow({
         </span>
       </Link>
       <div className="flex shrink-0 items-center gap-3 text-right">
-        <div className="hidden min-w-20 sm:block">
-          <div className="font-mono text-xs font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+        <div className="hidden min-w-24 sm:block">
+          <div
+            className="font-mono text-xs font-medium text-[color:var(--color-content-emphasis)] tabular-nums"
+            title="Estimated retail cost of fireworks"
+          >
             {formatBudget(show.totalCostCents)}
           </div>
-          <div className="text-xs text-[color:var(--color-content-subtle)]">
-            {show.cueCount} cues
+          <div className="text-[10px] text-[color:var(--color-content-subtle)]">
+            Est. retail · {show.cueCount} cues
           </div>
         </div>
         {showPlay ? (
@@ -136,7 +139,9 @@ export function TemplateSummaryCardView({
               <Heart size={12} className="shrink-0 fill-current text-[color:var(--destructive)]" />
               <span className="tabular-nums">{template.likes}</span>
             </span>
-            <span className="tabular-nums">{formatBudget(template.totalCostCents)}</span>
+            <span className="tabular-nums" title="Estimated retail cost of fireworks">
+              {formatBudget(template.totalCostCents)}
+            </span>
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-3 p-3.5">

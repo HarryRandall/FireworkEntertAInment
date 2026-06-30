@@ -20,7 +20,7 @@ const LazyFireworkReplayCanvas = dynamic(
   },
 );
 
-const CARD_PREVIEW_WINDOW_SECONDS = 12;
+const CARD_PREVIEW_WINDOW_SECONDS = 18;
 
 function formatEditedAt(iso: string) {
   const date = new Date(iso);
@@ -38,7 +38,7 @@ function showMeta(show: ShowSummaryCard) {
 
 function previewStartFor(cues: ReplayCue[]) {
   const firstCue = cues[0]?.timeSeconds ?? 0;
-  return Math.max(0, firstCue - 0.75);
+  return Math.max(0, firstCue - 0.3);
 }
 
 export function ShowReplayCoverCard({ show, cues }: { show: ShowSummaryCard; cues: ReplayCue[] }) {
@@ -116,7 +116,8 @@ export function ShowReplayCoverCard({ show, cues }: { show: ShowSummaryCard; cue
               playbackRef={elapsedRef}
               interactive={false}
               muted
-              maxDevicePixelRatio={1}
+              maxDevicePixelRatio={1.75}
+              antialias
             />
           </div>
         ) : null}
@@ -149,7 +150,10 @@ export function ShowReplayCoverCard({ show, cues }: { show: ShowSummaryCard; cue
             <ListMusic size={12} />
             <span className="tabular-nums">{show.cueCount}</span>
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span
+            className="inline-flex items-center gap-1"
+            title="Estimated retail cost of fireworks"
+          >
             <BadgeDollarSign size={12} />
             <span className="tabular-nums">{formatBudget(show.totalCostCents)}</span>
           </span>

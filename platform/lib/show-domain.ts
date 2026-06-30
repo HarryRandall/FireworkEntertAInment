@@ -116,7 +116,10 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 export function formatBudget(cents: number | null | undefined): string {
   if (cents == null) return '—';
-  return `$${(cents / 100).toLocaleString()}`;
+  return `$${(cents / 100).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 export function formatTotal(cents: number): string {
