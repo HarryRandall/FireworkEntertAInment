@@ -39,8 +39,9 @@ const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   willow: 'willow-gold',
 };
 
-// Card previews only simulate this window — keeps initial seek fast.
-const CARD_PREVIEW_SECONDS = 10;
+// Card previews only simulate this window — keeps initial seek fast while
+// giving hover playback enough runway to read as a real snippet of the show.
+const CARD_PREVIEW_SECONDS = 18;
 // Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
 // fast scrub does not re-render the preview on every input event. The engine
 // ref and the display state still update at full input rate.
@@ -77,7 +78,7 @@ function hoverStartTimeFor(cues: ShowTemplateCue[]): number {
     (earliest, cue) => (earliest == null ? cue.timeSeconds : Math.min(earliest, cue.timeSeconds)),
     null,
   );
-  return Math.max(0, (firstCueTime ?? 0) - 0.75);
+  return Math.max(0, (firstCueTime ?? 0) - 0.3);
 }
 
 function toReplayCue(
@@ -319,7 +320,8 @@ export function TemplateReplayPreview({
             playbackRef={elapsedRef}
             interactive={isDetail}
             muted={isDetail ? !isPlaying : true}
-            maxDevicePixelRatio={1}
+            maxDevicePixelRatio={isDetail ? 1.25 : 1.75}
+            antialias
             primeSnapshots={isDetail}
             showLoadingBar={isDetail}
             loadingBarPosition="center"
@@ -390,7 +392,10 @@ export function TemplateReplayPreview({
               <Heart size={14} className="fill-current text-[color:var(--destructive)]" />
               <span className="tabular-nums">{template.likeCount}</span>
             </span>
-            <span className="block font-mono tabular-nums">
+            <span
+              className="block font-mono tabular-nums"
+              title="Estimated retail cost of fireworks"
+            >
               {formatBudget(template.totalCents)}
             </span>
           </div>

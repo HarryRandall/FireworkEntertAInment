@@ -72,11 +72,10 @@ test('app shell exposes only shipped V1 navigation routes', () => {
   assert.match(shell, /href: '\/admin', label: 'Admin'/);
   assert.match(shell, /href="\/shows\/new"/);
   assert.match(shell, /SidebarRecentShows/);
-  assert.match(shell, /SidebarFeaturedTemplate/);
-  assert.match(shell, /getFeaturedTemplateAccentStyle/);
-  assert.match(shell, /var\(--sidebar-primary-foreground\)/);
+  assert.doesNotMatch(shell, /SidebarFeaturedTemplate/);
+  assert.doesNotMatch(shell, /getFeaturedTemplateAccentStyle/);
+  assert.doesNotMatch(shell, /Show of the week/);
   assert.match(shell, /text-\[11px\]/);
-  assert.match(shell, /w-full rounded-full/);
   assert.doesNotMatch(shell, /orientation="horizontal"/);
   assert.doesNotMatch(shell, /Shopping lists/);
 });

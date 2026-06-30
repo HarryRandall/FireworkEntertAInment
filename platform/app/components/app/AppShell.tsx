@@ -36,7 +36,6 @@ import {
   Star,
   TriangleAlert,
   UserRound,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
@@ -74,15 +73,9 @@ import { Separator } from '@/components/ui/separator';
 import { PaletteStrip } from '@/app/components/app/ShowSummaryCards';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
-import {
-  featuredTemplateDismissalCookieMaxAge,
-  featuredTemplateDismissalCookieName,
-  featuredTemplateDismissalDurationMs,
-  parseFeaturedTemplateDismissedUntil,
-} from '@/lib/featured-template-dismissal';
 import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
-import type { ShowSummaryCard, TemplateSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
+import type { ShowSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
 
 type AppNavLink = {
   href: string;
@@ -123,14 +116,6 @@ const SETTINGS_BREADCRUMB_LABELS: Record<string, string> = {
   '/settings/security': 'Security',
 };
 
-function getFeaturedTemplateAccentStyle(template: TemplateSummaryCard): CSSProperties {
-  const [startColour, middleColour] = template.palette.hex;
-
-  return {
-    background: `linear-gradient(90deg, ${startColour}, ${middleColour} 54%, var(--sidebar-primary-foreground))`,
-  };
-}
-
 const SHOW_SUBPAGE_LABELS: Record<string, string> = {
   preview: 'Preview',
   timeline: 'Timeline',
@@ -153,7 +138,6 @@ type AppShellProps = {
   aiUsage?: SidebarAiUsage | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
-  initialFeaturedTemplateDismissedUntil?: number | null;
 };
 
 type ProfileSummary = {
@@ -194,29 +178,6 @@ function isActivePath(pathname: string | null, href: string) {
     );
   }
   return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
-}
-
-function readFeaturedTemplateDismissedUntil() {
-  try {
-    const cookiePrefix = `${featuredTemplateDismissalCookieName}=`;
-    const cookie = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(cookiePrefix))
-      ?.slice(cookiePrefix.length);
-
-    return parseFeaturedTemplateDismissedUntil(cookie ? decodeURIComponent(cookie) : null);
-  } catch {
-    return null;
-  }
-}
-
-function writeFeaturedTemplateDismissalCookie(dismissedUntil: number) {
-  try {
-    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = `${featuredTemplateDismissalCookieName}=${dismissedUntil}; Path=/; Max-Age=${featuredTemplateDismissalCookieMaxAge}; SameSite=Lax${secure}`;
-  } catch {
-    // Ignore cookie errors; the card should still stay hidden in this session.
-  }
 }
 
 function SidebarBrand() {
@@ -388,59 +349,6 @@ function SidebarRecentShows({
         </div>
       </SidebarGroupContent>
     </SidebarGroup>
-  );
-}
-
-function SidebarFeaturedTemplate({
-  template,
-  onNavigate,
-  onDismiss,
-  dismissed,
-}: {
-  template: TemplateSummaryCard | null;
-  onNavigate: (href: string) => void;
-  onDismiss: () => void;
-  dismissed: boolean;
-}) {
-  const { isMobile, setOpenMobile } = useSidebar();
-  if (!template || dismissed) return null;
-
-  const href = `/library/${template.slug}`;
-
-  return (
-    <div className="relative mt-auto px-2 pt-2 pb-1 group-data-[collapsible=icon]:hidden">
-      <Link
-        href={href}
-        prefetch
-        onClick={(event) => {
-          if (isPlainLeftClick(event)) {
-            onNavigate(href);
-            if (isMobile) setOpenMobile(false);
-          }
-        }}
-        className="border-sidebar-border/80 bg-sidebar-accent/20 hover:bg-sidebar-accent/45 focus-visible:ring-sidebar-ring block rounded-lg border px-2.5 py-2 transition-colors focus:outline-none focus-visible:ring-2"
-      >
-        <span className="text-sidebar-foreground/50 block pr-7 text-[11px] leading-4 font-semibold">
-          Show of the week
-        </span>
-        <span className="text-sidebar-accent-foreground mt-0.5 block truncate pr-7 text-[13px] leading-4 font-semibold tracking-tight">
-          {template.title}
-        </span>
-        <span
-          aria-hidden
-          className="mt-2 block h-1 w-full rounded-full"
-          style={getFeaturedTemplateAccentStyle(template)}
-        />
-      </Link>
-      <button
-        type="button"
-        aria-label="Hide show of the week for one day"
-        onClick={onDismiss}
-        className="text-sidebar-foreground/45 hover:bg-destructive/10 hover:text-destructive focus-visible:ring-sidebar-ring absolute top-3 right-4 z-10 flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2"
-      >
-        <X aria-hidden size={13} strokeWidth={2} />
-      </button>
-    </div>
   );
 }
 
@@ -812,15 +720,11 @@ export function AppShell({
   aiUsage,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
-  initialFeaturedTemplateDismissedUntil = null,
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
-  const [featuredTemplateDismissedUntil, setFeaturedTemplateDismissedUntil] = useState<
-    number | null
-  >(initialFeaturedTemplateDismissedUntil);
   const effectivePath = pendingHref ?? pathname;
   const inSettings = effectivePath?.startsWith('/settings') ?? false;
   const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
@@ -858,21 +762,6 @@ export function AppShell({
   }, [pathname]);
 
   useEffect(() => {
-    const storedDismissedUntil = readFeaturedTemplateDismissedUntil();
-    setFeaturedTemplateDismissedUntil(
-      storedDismissedUntil ?? initialFeaturedTemplateDismissedUntil,
-    );
-  }, [initialFeaturedTemplateDismissedUntil]);
-
-  useEffect(() => {
-    if (!featuredTemplateDismissedUntil) return;
-
-    const remainingMs = Math.max(0, featuredTemplateDismissedUntil - Date.now());
-    const timer = window.setTimeout(() => setFeaturedTemplateDismissedUntil(null), remainingMs);
-    return () => window.clearTimeout(timer);
-  }, [featuredTemplateDismissedUntil]);
-
-  useEffect(() => {
     if (isGuest) return;
     let active = true;
 
@@ -902,12 +791,6 @@ export function AppShell({
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
-  };
-
-  const handleDismissFeaturedTemplate = () => {
-    const dismissedUntil = Date.now() + featuredTemplateDismissalDurationMs;
-    setFeaturedTemplateDismissedUntil(dismissedUntil);
-    writeFeaturedTemplateDismissalCookie(dismissedUntil);
   };
 
   return (
@@ -980,13 +863,6 @@ export function AppShell({
               <SidebarRecentShows
                 shows={workspaceSummary?.recentShows ?? []}
                 onNavigate={setPendingHref}
-              />
-
-              <SidebarFeaturedTemplate
-                template={workspaceSummary?.featuredTemplate ?? null}
-                onNavigate={setPendingHref}
-                onDismiss={handleDismissFeaturedTemplate}
-                dismissed={featuredTemplateDismissedUntil !== null}
               />
             </>
           )}

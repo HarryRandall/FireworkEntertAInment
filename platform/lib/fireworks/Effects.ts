@@ -2457,29 +2457,28 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
   ): void {
-    const count = Math.max(8, Math.round(design.size * 0.18));
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      const speed = rangeRand(design.burst.speed, rng) * 0.55;
-      this.spawnEffectStar({
-        design,
-        rng,
-        audible,
-        x: particle.x,
-        y: particle.y,
-        z: particle.z,
-        vx: Math.cos(angle) * speed * 0.45,
-        vy: speed * (0.1 + rng.next() * 0.28),
-        vz: Math.sin(angle) * speed * 0.45,
-        color,
-        life: rangeRand(design.burst.life, rng) * 0.55,
-        gravity: clampStarGravity(rangeRand(design.burst.gravity, rng) * 0.75),
-        drag: STAR_DRAG * 1.25 * 0.75,
-        headSizeScale: 0.4,
-        trailLifeScale: 0.5,
-        trailStarCount: count,
-      });
-    }
+    // Comets are single ascending tailed stars. The detonation should read as
+    // one bright head continuing along the trail, not a radial ring of blobs.
+    const speed = rangeRand(design.burst.speed, rng);
+    const drift = speed * 0.12;
+    this.spawnEffectStar({
+      design,
+      rng,
+      audible,
+      x: particle.x,
+      y: particle.y,
+      z: particle.z,
+      vx: particle.vx * 0.35 + rangeRand([-drift, drift], rng),
+      vy: Math.max(speed * 0.55, particle.vy * 0.55 + speed * 0.35),
+      vz: particle.vz * 0.35 + rangeRand([-drift, drift], rng),
+      color,
+      life: rangeRand(design.burst.life, rng) * 0.9,
+      gravity: clampStarGravity(rangeRand(design.burst.gravity, rng)),
+      drag: STAR_DRAG,
+      headSizeScale: 0.6,
+      trailLifeScale: 1.25,
+      trailStarCount: 1,
+    });
   }
 
   private spawnFishSwarm(

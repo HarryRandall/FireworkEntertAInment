@@ -42,7 +42,6 @@ export type WorkspaceSummary = {
   totalRuntimeSeconds: number;
   totalCatalogueValueCents: number;
   recentShows: ShowSummaryCard[];
-  featuredTemplate: TemplateSummaryCard | null;
 };
 
 export type DashboardSummary = WorkspaceSummary & {

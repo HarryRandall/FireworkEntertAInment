@@ -87,7 +87,7 @@ export default async function LibraryDetailPage({ params }: PageProps) {
               <DetailRow icon={<Clock size={15} />} label="Duration">
                 {formatDuration(template.durationSeconds)}
               </DetailRow>
-              <DetailRow icon={<Wallet size={15} />} label="Cost">
+              <DetailRow icon={<Wallet size={15} />} label="Est. retail">
                 {formatBudget(template.totalCents)}
               </DetailRow>
               <DetailRow icon={<Sparkles size={15} />} label="Effects">

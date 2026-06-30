@@ -369,7 +369,10 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.doesNotMatch(canvas, /CLOSE_CAMERA_DISTANCE/);
   assert.match(canvas, /EffectComposer/);
   assert.match(canvas, /UnrealBloomPass/);
-  assert.match(canvas, /antialias: false/);
+  // Antialias is a prop that defaults to false so the heavy full-show renderer
+  // stays cheap; card hover previews opt in to avoid aliased upscaled edges.
+  assert.match(canvas, /antialias = false/);
+  assert.match(canvas, /antialias,/);
   assert.match(canvas, /renderer\.sortObjects = false/);
 });
 

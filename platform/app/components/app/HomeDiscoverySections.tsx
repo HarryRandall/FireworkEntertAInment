@@ -113,7 +113,10 @@ function FeaturedShowCard({ template, index }: { template: ShowTemplate; index: 
             <ListMusic size={13} />
             <span className="tabular-nums">{template.previewCues.length}</span>
           </span>
-          <span className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center gap-1.5"
+            title="Estimated retail cost of fireworks"
+          >
             <BadgeDollarSign size={13} />
             <span className="tabular-nums">{formatBudget(template.totalCents)}</span>
           </span>

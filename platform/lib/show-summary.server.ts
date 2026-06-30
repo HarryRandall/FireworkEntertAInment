@@ -8,17 +8,8 @@ import {
   mapShowToSummary,
   mapTemplateToSummary,
   type DashboardSummary,
-  type TemplateSummaryCard,
   type WorkspaceSummary,
 } from '@/lib/show-summary';
-
-function pickFeaturedTemplate(templates: TemplateSummaryCard[]): TemplateSummaryCard | null {
-  return (
-    templates.find((template) => template.isFeatured) ??
-    [...templates].sort((a, b) => b.likes - a.likes)[0] ??
-    null
-  );
-}
 
 function buildDashboardSummary(shows: Show[], templates: ShowTemplate[]): DashboardSummary {
   const showSummaries = shows.map(mapShowToSummary);
@@ -37,7 +28,6 @@ function buildDashboardSummary(shows: Show[], templates: ShowTemplate[]): Dashbo
     totalRuntimeSeconds,
     totalCatalogueValueCents,
     recentShows: showSummaries.slice(0, 5),
-    featuredTemplate: pickFeaturedTemplate(templateSummaries),
     allShows: showSummaries,
     communityTemplates: [...templateSummaries]
       .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || b.likes - a.likes)
@@ -68,6 +58,5 @@ export async function getWorkspaceSummary(): Promise<WorkspaceSummary> {
     totalRuntimeSeconds: summary.totalRuntimeSeconds,
     totalCatalogueValueCents: summary.totalCatalogueValueCents,
     recentShows: summary.recentShows.slice(0, 3),
-    featuredTemplate: summary.featuredTemplate,
   };
 }

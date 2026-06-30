@@ -11,10 +11,6 @@ import {
   parseSidebarCollapsedPreference,
   sidebarCollapsedCookieName,
 } from '@/lib/sidebar-preference';
-import {
-  featuredTemplateDismissalCookieName,
-  parseFeaturedTemplateDismissedUntil,
-} from '@/lib/featured-template-dismissal';
 
 // App routes are dynamic so the profile check reflects the current session,
 // even for guest browsing.
@@ -36,9 +32,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   ]);
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,
-  );
-  const featuredTemplateDismissedUntil = parseFeaturedTemplateDismissedUntil(
-    cookieStore.get(featuredTemplateDismissalCookieName)?.value,
   );
 
   return (
@@ -65,7 +58,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
       }
       initialSidebarCollapsed={sidebarPreference ?? false}
       hasInitialSidebarCollapsedCookie={sidebarPreference !== null}
-      initialFeaturedTemplateDismissedUntil={featuredTemplateDismissedUntil}
     >
       {children}
     </AppShell>
