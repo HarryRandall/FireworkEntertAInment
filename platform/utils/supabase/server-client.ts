@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cache } from 'react';
 import { cookies } from 'next/headers';
+import { supabaseFetchCatalogue } from '@/utils/supabase/fetch';
 import { createClient } from '@/utils/supabase/server';
 
 /**
@@ -15,3 +16,8 @@ import { createClient } from '@/utils/supabase/server';
  * created two clients).
  */
 export const getServerClient = cache(async () => createClient(await cookies()));
+
+/** Longer-timeout client for nested catalogue reads that fan out across joins. */
+export const getCatalogueReadClient = cache(async () =>
+  createClient(await cookies(), supabaseFetchCatalogue),
+);

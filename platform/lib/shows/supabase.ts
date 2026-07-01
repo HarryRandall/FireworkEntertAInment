@@ -7,4 +7,4 @@
  */
 import 'server-only';
 
-export { getServerClient } from '@/utils/supabase/server-client';
+export { getServerClient, getCatalogueReadClient } from '@/utils/supabase/server-client';

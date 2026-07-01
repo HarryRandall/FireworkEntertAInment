@@ -6,7 +6,7 @@ import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { EmptyNotice, Skeleton } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
 import { CatalogueToolbar } from './CatalogueToolbar';
 
@@ -65,9 +65,22 @@ async function CatalogueList({
   page?: string;
   query: string;
 }) {
-  const products = (await listFireworkProducts()).filter((product) =>
-    matchesProduct(product, query, kind),
-  );
+  let products: CatalogueProduct[];
+  try {
+    products = (await listFireworkProducts({ lightweight: true })).filter((product) =>
+      matchesProduct(product, query, kind),
+    );
+  } catch (error) {
+    if (error instanceof ShowsNetworkError) {
+      console.error('[catalogue] listFireworkProducts unavailable:', error);
+      return (
+        <EmptyNotice>
+          The catalogue is temporarily unavailable. Please retry in a moment.
+        </EmptyNotice>
+      );
+    }
+    throw error;
+  }
 
   if (products.length === 0) {
     return <EmptyNotice>No catalogue products match that search.</EmptyNotice>;

@@ -120,6 +120,13 @@ type Props = {
    * instead of the throttled `elapsed` prop — letting parents update React
    * state at a lower rate while keeping playback smooth. */
   playbackRef?: MutableRefObject<number>;
+  /**
+   * True while the user is dragging the timeline. Puts the engine in scrub
+   * mode: seeks accept fast lossy snapshot restores (never a from-zero
+   * rebuild). When the drag ends the engine re-seeks accurately to repair
+   * any lossy state.
+   */
+  scrubbing?: boolean;
   launchPositions?: LaunchPosition[];
   muted?: boolean;
   interactive?: boolean;
@@ -789,6 +796,7 @@ export function FireworkReplayCanvas({
   cues,
   elapsed,
   playbackRef,
+  scrubbing = false,
   launchPositions = DEFAULT_LAUNCH_POSITIONS,
   muted = false,
   interactive = true,
@@ -1274,16 +1282,17 @@ export function FireworkReplayCanvas({
         );
         const delta = Math.abs(targetElapsed - renderedElapsed);
         timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
-        // Small deltas (normal playback) flow through every frame. Large forward
-        // jumps are scrubs - coalesce them to ~16Hz so rapid drag events collapse
-        // to one seek instead of one per drag tick. Backward seeks bypass
-        // coalescing: they require a snapshot restore and cannot be incrementally
-        // advanced, so coalescing leaves the engine rendering stale forward state
-        // while the thumb has already moved back.
+        // Small forward deltas (normal playback) flow through every frame.
+        // Seeks — large forward jumps and any backward move — are scrub-style
+        // and every one costs a snapshot restore plus a resimulated advance, so
+        // coalesce them to ~22Hz. Rapid drag events collapse to one seek per
+        // window while the thumb still reads as continuous; the engine always
+        // catches up to the latest playhead on the next window.
         const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
         const isBackwardSeek =
           !Number.isNaN(renderedElapsed) && targetElapsed < renderedElapsed - 0.0001;
-        const engineMayUpdate = isBackwardSeek || !isLargeJump || now - lastEngineUpdate >= 60;
+        const isSeek = isLargeJump || isBackwardSeek;
+        const engineMayUpdate = !isSeek || now - lastEngineUpdate >= 45;
         if (timelineChanged && engineMayUpdate) {
           eng.setElapsed(targetElapsed);
           renderedElapsed = targetElapsed;
@@ -1639,6 +1648,19 @@ export function FireworkReplayCanvas({
     engineRef.current?.setMuted(muted);
     if (!muted) engineRef.current?.resumeAudio();
   }, [muted]);
+
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (!scrubbing && playbackRef && !engine.isPriming()) {
+      // Apply the final drag position before leaving scrub mode, so the
+      // accurate repair re-seek (inside setScrubbing) runs at the released
+      // playhead rather than the last coalesced one.
+      engine.setElapsed(Math.max(0, playbackRef.current));
+    }
+    engine.setScrubbing(scrubbing);
+    forceRenderRef.current = true;
+  }, [scrubbing, playbackRef]);
 
   useEffect(() => {
     engineRef.current?.setSceneMode(sceneMode);

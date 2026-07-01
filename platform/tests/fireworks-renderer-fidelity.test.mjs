@@ -48,8 +48,25 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   );
   assert.match(engine, /options\.useSnapshots === false \? null : this\.findSnapshot\(target\)/);
   assert.match(engine, /this\.advanceTo\(target, false\)/);
-  assert.match(engine, /if \(this\.scheduler\.size\(\) > 1 && cursor >= this\.nextSnapshotAt\)/);
+  assert.match(
+    engine,
+    /if \(this\.scheduler\.size\(\) > 1 && !this\.scrubbing && cursor >= this\.nextSnapshotAt\)/,
+  );
   assert.match(engine, /const SCRUB_DT = 1 \/ 24/);
+  // Timeline-drag scrub mode: lossy restores are accepted (never a from-zero
+  // rebuild mid-drag), advances run at the coarse drag step, and ending the
+  // drag repairs any approximate state with an accurate re-seek.
+  assert.match(engine, /const SCRUB_DRAG_DT = 1 \/ 12/);
+  assert.match(engine, /setScrubbing\(active: boolean\): void/);
+  assert.match(engine, /if \(this\.scrubbing\) this\.needsAccurateReseek = true/);
+  assert.match(
+    engine,
+    /const snapUsable = snapExact \|\| \(this\.scrubbing && snap && snap\.time <= target\)/,
+  );
+  assert.match(
+    engine,
+    /if \(!active && this\.needsAccurateReseek\) \{[\s\S]*this\.seekTo\(this\.elapsed/,
+  );
   assert.match(engine, /poolHasLiveCallbackParticles/);
   assert.match(engine, /p\.mass >= 0\.1 \|\| p\.shape > 1\.5/);
   assert.match(engine, /this\.lights\.reset\(\)/);
@@ -358,10 +375,8 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /playbackRef \? playbackRef\.current : internalElapsedRef\.current/);
   assert.match(canvas, /const isLargeJump = delta > 0\.15 && !Number\.isNaN\(renderedElapsed\)/);
   assert.match(canvas, /const isBackwardSeek =[\s\S]*targetElapsed < renderedElapsed - 0\.0001/);
-  assert.match(
-    canvas,
-    /const engineMayUpdate = isBackwardSeek \|\| !isLargeJump \|\| now - lastEngineUpdate >= 60/,
-  );
+  assert.match(canvas, /const isSeek = isLargeJump \|\| isBackwardSeek/);
+  assert.match(canvas, /const engineMayUpdate = !isSeek \|\| now - lastEngineUpdate >= 45/);
   assert.match(canvas, /MIN_CAMERA_HEIGHT = 24/);
   assert.match(canvas, /ORBIT_FLOOR_OVERSHOOT = 0\.35/);
   assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ ORBIT_FLOOR_OVERSHOOT/);

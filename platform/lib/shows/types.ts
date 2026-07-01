@@ -80,6 +80,25 @@ export type FireworkStyleDefaultLinkProjection = {
   style_default: FireworkStyleDefaultProjection | FireworkStyleDefaultProjection[] | null;
 };
 
+export type CatalogueFireworkCardProjection = Pick<
+  FireworkVariantRow,
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'description'
+  | 'primary_color'
+  | 'secondary_color'
+  | 'color_palette'
+  | 'caliber'
+  | 'duration_seconds'
+  | 'height_meters'
+> & {
+  firework_effects:
+    | Pick<FireworkEffectRow, 'id' | 'slug' | 'name' | 'pattern_key'>
+    | Pick<FireworkEffectRow, 'id' | 'slug' | 'name' | 'pattern_key'>[]
+    | null;
+};
+
 export type FireworkVariantProjection = Pick<
   FireworkVariantRow,
   | 'id'
@@ -123,5 +142,8 @@ export const SHOW_CUE_SELECT =
   'id, show_id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index, emphasis';
 export const FIREWORK_VARIANT_SELECT =
   'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, variant_json, star_style_default:firework_style_defaults!fireworks_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!fireworks_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_style_default_links(kind, style_default:firework_style_defaults!firework_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)), firework_effects(id, slug, name, pattern_key, model_json, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, defaults_json), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, defaults_json), style_default_links:firework_effect_style_default_links(kind, style_default:firework_style_defaults!firework_effect_style_default_links_style_default_id_fkey(id, kind, name, defaults_json)))';
+/** Lighter fireworks projection for browse-only catalogue cards. */
+export const CATALOGUE_FIREWORK_CARD_SELECT =
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, firework_effects(id, slug, name, pattern_key)';
 export const SHOW_CUES_WITH_PRODUCT_SELECT =
   'catalogue_item_id, catalogue_items(id, name, part_number, manufacturer)';

@@ -81,6 +81,10 @@ const FIXED_DT = 1 / 60;
 // Scrub rebuilds can be coarser than playback; procedural emitters compensate
 // by ageing particles across each rebuilt segment.
 const SCRUB_DT = 1 / 24;
+// Coarser still while the user is actively dragging the thumb: this state is
+// transient (an accurate re-seek repairs it when the drag ends), so halving
+// the step count keeps fast drags across busy shows responsive.
+const SCRUB_DRAG_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 21;
 const MAX_SNAPSHOTS = 600;
@@ -165,6 +169,12 @@ export class FireworksEngine {
   private primingActive = false;
   private primingCursor = 0;
   private primingEnd = 0;
+  // Scrub mode: while the user drags the timeline, seeks trade fidelity for
+  // speed (lossy snapshot restores are accepted instead of falling back to a
+  // from-zero rebuild). When the drag ends, an accurate re-seek repairs any
+  // lossy state so playback resumes with correct behaviour callbacks.
+  private scrubbing = false;
+  private needsAccurateReseek = false;
 
   constructor(
     scene: THREE.Scene,
@@ -697,6 +707,7 @@ export class FireworksEngine {
     this.scheduler.setCues(cues);
     // Cancel any in-flight async prime so a fresh cue set restarts cleanly.
     this.primingActive = false;
+    this.needsAccurateReseek = false;
     if (cuesChanged) {
       this.primed = false;
       this.snapshots.length = 0;
@@ -891,6 +902,23 @@ export class FireworksEngine {
     this.advanceTo(next, true);
   }
 
+  /**
+   * Toggle timeline-scrub mode. While active, seeks accept lossy snapshot
+   * restores instead of falling back to a from-zero rebuild, so dragging the
+   * thumb across a busy show stays responsive. Turning it off runs an accurate
+   * re-seek to the current playhead when a lossy restore happened mid-drag,
+   * so behaviour-driven effects (brocade heads, flashes) replay correctly
+   * before playback resumes.
+   */
+  setScrubbing(active: boolean): void {
+    if (this.scrubbing === active) return;
+    this.scrubbing = active;
+    if (!active && this.needsAccurateReseek) {
+      this.needsAccurateReseek = false;
+      this.seekTo(this.elapsed, { useSnapshots: this.scheduler.size() > 1 });
+    }
+  }
+
   /** Drop all live particles & flash lights — used at end-of-show flush. */
   clear(): void {
     this.pool.reset();
@@ -942,7 +970,15 @@ export class FireworksEngine {
     // (see restoreSnapshot), so head colour-evolution freezes if we advance
     // past it. When the nearest snapshot is lossy and the target sits beyond
     // it, rebuild from zero so opening/closing colours replay correctly.
-    const snapUsable = snap && snap.time <= target && !(snap.lossy && target > snap.time + 0.0001);
+    // While scrubbing, accept the lossy restore anyway: a from-zero rebuild on
+    // every drag tick froze the timeline on busy shows, and the slight fidelity
+    // loss is repaired by the accurate re-seek when the drag ends.
+    const snapExact = snap && snap.time <= target && !(snap.lossy && target > snap.time + 0.0001);
+    const snapUsable = snapExact || (this.scrubbing && snap && snap.time <= target);
+    // Any scrub-mode seek is approximate (lossy restores are accepted and the
+    // catch-up advance runs at the coarse drag step), so flag it for the
+    // accurate repair re-seek when the drag ends.
+    if (this.scrubbing) this.needsAccurateReseek = true;
     if (snapUsable) {
       this.restoreSnapshot(snap.state);
       this.elapsed = snap.time;
@@ -965,7 +1001,7 @@ export class FireworksEngine {
   }
 
   private advanceTo(target: number, audible: boolean): void {
-    const dt = audible ? FIXED_DT : SCRUB_DT;
+    const dt = audible ? FIXED_DT : this.scrubbing ? SCRUB_DRAG_DT : SCRUB_DT;
     let cursor = this.elapsed;
     this.effects.setAudible(audible);
     while (cursor + 0.0001 < target) {
@@ -985,8 +1021,10 @@ export class FireworksEngine {
       // Single-firework previews bypass snapshot seeks (see setElapsed), so skip
       // capture there: the cache would never be read, and re-allocating packed
       // particle buffers on every from-zero rebuild made dense brocade scrubbing
-      // janky.
-      if (this.scheduler.size() > 1 && cursor >= this.nextSnapshotAt) {
+      // janky. Scrub-mode drags also skip capture: they can advance from a
+      // lossy restore, and captures taken from that state would poison the
+      // primed cache with degraded snapshots.
+      if (this.scheduler.size() > 1 && !this.scrubbing && cursor >= this.nextSnapshotAt) {
         this.snapshots.push({
           time: cursor,
           state: this.captureSnapshot(),

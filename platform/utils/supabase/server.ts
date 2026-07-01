@@ -6,7 +6,10 @@ import { getSupabaseServerEnv } from '@/utils/supabase/env';
 import { supabaseFetch } from '@/utils/supabase/fetch';
 import type { Database } from '@/lib/database.types';
 
-export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
+export const createClient = (
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  fetchImpl: typeof fetch = supabaseFetch,
+) => {
   const env = getSupabaseServerEnv();
   if (!env) {
     throw new Error(
@@ -15,7 +18,7 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
   }
 
   return createServerClient<Database>(env.url, env.key, {
-    global: { fetch: supabaseFetch },
+    global: { fetch: fetchImpl },
     cookies: {
       getAll() {
         return cookieStore.getAll();
