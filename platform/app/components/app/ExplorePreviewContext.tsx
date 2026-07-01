@@ -10,21 +10,43 @@
  * live WebGL canvas tears down its context); instead we track the hovered
  * card's screen rect each frame and position the overlay on top of it.
  */
+import dynamic from 'next/dynamic';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { TemplateReplayPreview } from '@/app/components/app/TemplateReplayPreview';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { ShowTemplate } from '@/lib/admin.types';
 
+// Hover-intent delay: a card must be hovered (or focused) for this long before
+// the heavy Three.js replay canvas loads and plays. Grazing the grid never
+// loads WebGL; only a deliberate dwell triggers the black empty set -> play.
+const HOVER_INTENT_MS = 500;
+
+// Lazy-load the replay preview (and its Three.js canvas + Slider + icons) so it
+// is not in the initial bundle; it mounts on first confirmed hover and stays
+// warm.
+const TemplateReplayPreview = dynamic(
+  () =>
+    import('@/app/components/app/TemplateReplayPreview').then((mod) => mod.TemplateReplayPreview),
+  { ssr: false, loading: () => null },
+);
+
 type PreviewContextValue = {
   activeId: string | null;
+  pendingId: string | null;
+  /**
+   * The active card whose replay canvas has actually painted. Cards keep their
+   * static poster until they become the `readyId`, so the overlay only reveals
+   * once there are real fireworks to show (never a black warm-up frame).
+   */
+  readyId: string | null;
   requestPreview: (id: string, element: HTMLElement, template: ShowTemplate) => void;
   releasePreview: (id: string) => void;
 };
@@ -43,10 +65,37 @@ export function ExplorePreviewProvider({
   children: ReactNode;
 }) {
   const [active, setActive] = useState<{ id: string; element: HTMLElement } | null>(null);
+  // A hover that has started but not yet survived the intent delay. While
+  // pending, the card keeps showing its poster; only on confirm do we activate
+  // the overlay and load the replay canvas.
+  const [pending, setPending] = useState<{
+    id: string;
+    element: HTMLElement;
+    template: ShowTemplate;
+  } | null>(null);
+  const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The most recently previewed template; kept mounted so the warm canvas
   // always has a show to render and a new hover only swaps cues.
   const [mountedTemplate, setMountedTemplate] = useState<ShowTemplate | null>(null);
+  // Whether the active card's canvas has painted its first frame. Read live by
+  // the follow loop (via the ref) so the overlay only fades in once ready.
+  const [ready, setReady] = useState(false);
+  const readyRef = useRef(false);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+
+  // Every time the active card changes (including to none), drop back to the
+  // poster until the freshly mounted canvas reports ready again.
+  useEffect(() => {
+    readyRef.current = false;
+    setReady(false);
+  }, [active?.id]);
+
+  const clearIntentTimer = useCallback(() => {
+    if (intentTimerRef.current !== null) {
+      clearTimeout(intentTimerRef.current);
+      intentTimerRef.current = null;
+    }
+  }, []);
 
   const parkOverlay = useCallback(() => {
     const overlay = overlayRef.current;
@@ -60,24 +109,42 @@ export function ExplorePreviewProvider({
   }, []);
 
   const cancelActivePreview = useCallback(() => {
+    clearIntentTimer();
+    setPending(null);
     parkOverlay();
     setActive(null);
-  }, [parkOverlay]);
+  }, [clearIntentTimer, parkOverlay]);
 
-  const requestPreview = useCallback((id: string, element: HTMLElement, template: ShowTemplate) => {
-    setMountedTemplate(template);
-    setActive({ id, element });
-  }, []);
+  const requestPreview = useCallback(
+    (id: string, element: HTMLElement, template: ShowTemplate) => {
+      clearIntentTimer();
+      setPending({ id, element, template });
+      intentTimerRef.current = setTimeout(() => {
+        intentTimerRef.current = null;
+        setMountedTemplate(template);
+        setActive({ id, element });
+        setPending((current) => (current && current.id === id ? null : current));
+      }, HOVER_INTENT_MS);
+    },
+    [clearIntentTimer],
+  );
 
-  const releasePreview = useCallback((id: string) => {
-    setActive((current) => (current && current.id === id ? null : current));
-  }, []);
+  const releasePreview = useCallback(
+    (id: string) => {
+      clearIntentTimer();
+      setPending((current) => (current && current.id === id ? null : current));
+      setActive((current) => (current && current.id === id ? null : current));
+    },
+    [clearIntentTimer],
+  );
+
+  useEffect(() => () => clearIntentTimer(), [clearIntentTimer]);
 
   // Wheel/scroll can leave the pointer "hovering" while the card moves under
-  // it. Hide the fixed replay overlay immediately so it cannot bleed between
-  // cards or rows during scroll.
+  // it. Hide the fixed replay overlay immediately and cancel any pending
+  // hover-intent so it cannot confirm into a play mid-scroll.
   useEffect(() => {
-    if (!active) return;
+    if (!active && !pending) return;
 
     const options = { capture: true, passive: true } as const;
     window.addEventListener('wheel', cancelActivePreview, options);
@@ -88,7 +155,7 @@ export function ExplorePreviewProvider({
       window.removeEventListener('scroll', cancelActivePreview, options);
       window.removeEventListener('touchmove', cancelActivePreview, options);
     };
-  }, [active, cancelActivePreview]);
+  }, [active, pending, cancelActivePreview]);
 
   // Follow the active card's on-screen position each frame without re-rendering.
   useEffect(() => {
@@ -148,7 +215,10 @@ export function ExplorePreviewProvider({
         raf = requestAnimationFrame(follow);
         return;
       }
-      overlay.style.opacity = '1';
+      // Keep the overlay hidden (poster showing through) until the canvas has
+      // painted, then reveal it in place. Position still tracks the card so the
+      // reveal lands exactly on top.
+      overlay.style.opacity = readyRef.current ? '1' : '0';
       overlay.style.transform = `translate(${rect.left}px, ${rect.top}px)`;
       overlay.style.width = `${rect.width}px`;
       overlay.style.height = `${rect.height}px`;
@@ -161,7 +231,16 @@ export function ExplorePreviewProvider({
 
   return (
     <ExplorePreviewContext.Provider
-      value={{ activeId: active?.id ?? null, requestPreview, releasePreview }}
+      value={useMemo(
+        () => ({
+          activeId: active?.id ?? null,
+          pendingId: pending?.id ?? null,
+          readyId: ready ? (active?.id ?? null) : null,
+          requestPreview,
+          releasePreview,
+        }),
+        [active?.id, pending?.id, ready, requestPreview, releasePreview],
+      )}
     >
       {children}
       <div
@@ -176,6 +255,11 @@ export function ExplorePreviewProvider({
             specifications={specifications}
             isCardHovered={active !== null}
             showCardOverlays={false}
+            lazyHoverMount
+            onReady={() => {
+              readyRef.current = true;
+              setReady(true);
+            }}
             cardClassName="absolute inset-0 h-full w-full overflow-hidden"
           />
         ) : null}

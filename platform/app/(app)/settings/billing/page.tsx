@@ -1,6 +1,6 @@
 /** Billing settings page for early-access plan and future subscription management. */
 
-import { CheckCircle2, FileText, ReceiptText, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock3, FileText, ReceiptText, Sparkles } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +21,67 @@ import {
 } from '@/components/ui/table';
 
 const PLAN_FEATURES = [
-  'Full preview access',
-  'Music analysis and cue generation',
+  '3 starter show generations',
+  '20 flexible AI credits',
   'Catalogue access and shopping lists',
   'Show previews and exports',
 ];
+
+const BILLING_PLANS = [
+  {
+    name: 'Free',
+    status: 'Current plan',
+    price: '$0',
+    cadence: 'preview',
+    description: 'For trying ShowCrafter and building the first few shows.',
+    badge: 'Active',
+    featured: true,
+    button: 'Current plan',
+    disabled: true,
+    features: [
+      '3 starter show generations',
+      '20 flexible AI credits',
+      'Catalogue and shopping lists',
+      'Preview exports',
+    ],
+  },
+  {
+    name: 'Pro',
+    status: 'Coming soon',
+    price: '30',
+    cadence: 'shows per week',
+    description: 'For regular show builders who want more planning power.',
+    badge: 'Coming soon',
+    featured: false,
+    button: 'Coming soon',
+    disabled: true,
+    features: [
+      '30 show generations each week',
+      'More AI credits for premium models',
+      '3D site maps',
+      'Real location planning',
+      'Priority support',
+    ],
+  },
+  {
+    name: 'Ultra',
+    status: 'Coming soon',
+    price: '100',
+    cadence: 'shows per week',
+    description: 'For high-volume planning, teams, and advanced show design.',
+    badge: 'Coming soon',
+    featured: false,
+    button: 'Coming soon',
+    disabled: true,
+    features: [
+      '100 show generations each week',
+      'Higher AI credit allowance',
+      'Advanced 3D maps and site layouts',
+      'Team support',
+      'Faster support response',
+    ],
+  },
+] as const;
 
 const INVOICE_ROWS = [
   {
@@ -40,8 +96,8 @@ export default function BillingSettingsPage() {
   const summaryCards = [
     {
       title: 'Current plan',
-      value: 'Early access',
-      detail: 'Full preview access',
+      value: 'Free',
+      detail: 'Starter shows and preview access',
       icon: Sparkles,
     },
     {
@@ -59,13 +115,16 @@ export default function BillingSettingsPage() {
           <Card className="border-border gap-5 rounded-none border-0 border-b ring-0 lg:col-span-6 lg:border-r lg:border-b-0">
             <CardHeader>
               <CardTitle className="text-xl leading-none">Billing</CardTitle>
-              <CardDescription className="max-w-lg leading-snug">
-                ShowCrafter is free during preview. You will be asked before any paid subscription
-                starts.
+              <CardDescription className="max-w-lg space-y-1 leading-snug">
+                <p>Stay on Free while paid plans are prepared.</p>
+                <p>
+                  Free is the only available plan today. Pro and Ultra are coming soon with higher
+                  allowances and location-planning tools.
+                </p>
               </CardDescription>
               <CardAction>
                 <Badge solid tone="success">
-                  Free preview
+                  Free
                 </Badge>
               </CardAction>
             </CardHeader>
@@ -107,6 +166,14 @@ export default function BillingSettingsPage() {
                 </Card>
               );
             })}
+          </div>
+        </div>
+
+        <div id="plans" className="border-border border-t px-6 py-6">
+          <div className="grid gap-3 lg:grid-cols-3">
+            {BILLING_PLANS.map((plan) => (
+              <PlanCard key={plan.name} plan={plan} />
+            ))}
           </div>
         </div>
       </div>
@@ -152,5 +219,54 @@ export default function BillingSettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function PlanCard({ plan }: { plan: (typeof BILLING_PLANS)[number] }) {
+  return (
+    <article
+      className={`flex min-h-full flex-col rounded-xl border p-4 ${
+        plan.featured
+          ? 'border-[color:var(--hl)] bg-[color-mix(in_srgb,var(--hl)_8%,transparent)]'
+          : 'border-[color:var(--color-border-subtle)]'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-lg font-semibold">{plan.name}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{plan.description}</p>
+        </div>
+        <Badge solid tone={plan.featured ? 'success' : 'neutral'}>
+          {plan.badge}
+        </Badge>
+      </div>
+
+      <div className="mt-5">
+        <p className="font-mono text-3xl font-semibold tabular-nums">{plan.price}</p>
+        <p className="text-muted-foreground text-xs">{plan.cadence}</p>
+      </div>
+
+      <ul className="mt-5 flex-1 space-y-2">
+        {plan.features.map((feature) => (
+          <li key={feature} className="flex items-start gap-2 text-sm">
+            <CheckCircle2
+              size={15}
+              className="mt-0.5 shrink-0 text-[color:var(--color-status-success)]"
+            />
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        type="button"
+        variant={plan.featured ? 'secondary' : 'outline'}
+        disabled={plan.disabled}
+        className="mt-5 w-full"
+      >
+        {plan.featured ? <CheckCircle2 /> : <Clock3 />}
+        {plan.button}
+      </Button>
+    </article>
   );
 }

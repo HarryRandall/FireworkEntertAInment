@@ -23,14 +23,15 @@ import {
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
+import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
+import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import {
   FireworkRenderControls,
   PanelSection,
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Skeleton } from '@/app/components/ui/Feedback';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
@@ -97,7 +98,7 @@ const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
 };
 
 function ReplayCanvasSkeleton() {
-  return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
+  return <ReplayStageBackdrop />;
 }
 
 function parseJsonObject(text: string): ParsedJson {
@@ -134,10 +135,13 @@ function compileStyleDefaultPreviewDesign(
 export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleDefaultDetail }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewLoadingProgress, setPreviewLoadingProgress] = useState<number | null>(null);
   const [name, setName] = useState(styleDefault.name);
   const [description, setDescription] = useState(styleDefault.description ?? '');
   const [kind, setKind] = useState<FireworkStyleDefaultKind>(styleDefault.kind);
@@ -461,12 +465,20 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       launchPositions={PREVIEW_LAUNCH_POSITIONS}
       muted={!isPlaying}
       interactive
-      controlsVisible
+      controlsVisible={previewReady}
+      showStarfield={false}
       showFps
       primeSnapshots
       primeOnCueChanges={false}
-      showLoadingBar
-      loadingBarPosition="center"
+      showLoadingBar={false}
+      onPrimeProgress={(progress) => {
+        setPreviewLoadingProgress(progress);
+        if (progress !== null) setPreviewReady(false);
+      }}
+      onReady={() => {
+        setPreviewReady(true);
+        setPreviewLoadingProgress(null);
+      }}
       renderTuning={{
         glowPadding: heads.glowPadding,
         whiteCoreSizePercent: heads.whiteCoreSizePercent,
@@ -492,6 +504,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       duration={previewDuration}
       isPlaying={isPlaying}
       isLooping={isLooping}
+      fullscreen={isFullscreen}
+      loading={!previewReady}
+      loadingProgress={previewLoadingProgress}
       ticks={previewTicks}
       onPlayPause={() => {
         if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
@@ -504,6 +519,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         setPreviewTime(PREVIEW_START_SECONDS);
       }}
       onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onFullscreenToggle={toggleFullscreen}
       onScrub={(seconds) => {
         setIsPlaying(false);
         scrubTo(seconds);
@@ -629,7 +645,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       icon: SlidersHorizontal,
       eyebrow: 'Style default',
       title: 'Details',
-      description: 'Name, kind and catalogue ordering for this reusable style.',
       content: detailsContent,
     },
     {
@@ -638,7 +653,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       icon: KIND_ICON[kind],
       eyebrow: 'Defaults',
       title: `${kindLabel} defaults`,
-      description: `Reusable ${kindLabel.toLowerCase()} settings applied before local editor overrides.`,
       content: kindControls,
     },
     {
@@ -647,22 +661,14 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       icon: Braces,
       eyebrow: 'Advanced',
       title: 'Defaults JSON',
-      content: (
-        <JsonReadOnlyPanel
-          label="Read-only view of the firework_style_defaults.defaults_json payload."
-          value={jsonValue}
-        />
-      ),
+      content: <JsonReadOnlyPanel value={jsonValue} />,
     },
   ];
 
   return (
     <FireworkEditorShell
       title={name || styleDefault.name}
-      chips={[
-        { label: 'Kind', value: kindLabel, icon: KIND_ICON[kind] },
-        { label: 'Status', value: isArchived ? 'Archived' : null, icon: Archive },
-      ]}
+      chips={[{ label: 'Status', value: isArchived ? 'Archived' : null, icon: Archive }]}
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
@@ -676,6 +682,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       preview={preview}
       transport={transport}
       error={error}
+      fullscreen={isFullscreen}
+      onExitFullscreen={exitFullscreen}
     />
   );
 }

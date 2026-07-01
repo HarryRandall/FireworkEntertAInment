@@ -41,6 +41,8 @@ export type Show = {
   launchPositions: LaunchPosition[];
   /** Saved shader "visual identity" for this show; null for older shows. */
   coverShader: ShaderCover | null;
+  /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
+  coverImagePath: string | null;
   updatedAt: string;
 };
 

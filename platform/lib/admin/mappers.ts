@@ -189,6 +189,7 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     moodTags: row.mood_tags ?? [],
     previewCues: parseTemplateCues(row.preview_cues),
     coverShader: parseShaderCover(row.cover_shader),
+    coverImagePath: row.cover_image_path ?? null,
     isFeatured: row.is_featured,
     likeCount: deriveTemplateLikeCount(row),
     createdAt: row.created_at,

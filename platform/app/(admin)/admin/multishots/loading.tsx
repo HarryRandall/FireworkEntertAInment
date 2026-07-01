@@ -9,6 +9,7 @@ export default function AdminMultishotsLoading() {
       headers={['Preview', 'Multishot', 'Shots', 'Duration', 'Open']}
       tableClassName="min-w-[820px]"
       rows={8}
+      filterActionLabel="New multishot"
       ariaLabel="Loading multishots"
     />
   );

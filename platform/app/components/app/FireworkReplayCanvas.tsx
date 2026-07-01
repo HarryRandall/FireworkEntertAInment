@@ -55,6 +55,7 @@ const PRIME_BUDGET_MS = 8;
 // mount. Capped at one entry to bound memory: each entry holds the packed
 // particle buffers for every second of a show, which can run to tens of MB.
 const MAX_CACHED_SHOWS = 1;
+const CAMERA_MENU_ANIMATION_MS = 180;
 const snapshotCacheByKey = new Map<string, SnapshotCacheData>();
 
 function rememberSnapshotCache(key: string, cache: SnapshotCacheData): void {
@@ -124,6 +125,7 @@ type Props = {
   interactive?: boolean;
   allowWheelZoom?: boolean;
   controlsVisible?: boolean;
+  showCameraControls?: boolean;
   showFps?: boolean;
   /** Upper bound for renderer DPR. Lower values are useful for large public previews. */
   maxDevicePixelRatio?: number;
@@ -173,10 +175,9 @@ type Props = {
   onReady?: () => void;
   /**
    * Render the canvas's built-in loading bar overlay while fireworks are
-   * loading (before `onReady` fires). Off by default so decorative callers
-   * with their own loading UI (landing demo, template cards) are unaffected;
-   * the show viewer and admin editors opt in so every preview has consistent
-   * loading feedback without per-consumer wiring.
+   * loading (before `onReady` fires). On by default so every visible firework
+   * preview, admin or customer-facing, has consistent loading feedback. Hidden
+   * render jobs can explicitly disable it to keep captured frames clean.
    */
   showLoadingBar?: boolean;
   /**
@@ -194,6 +195,14 @@ type Props = {
   /** Controlled fullscreen flag; the parent owns the overlay chrome. */
   fullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  /** Show the decorative sky starfield behind the stage. */
+  showStarfield?: boolean;
+  /**
+   * Keep the WebGL drawing buffer so `canvas.toDataURL()` returns the last
+   * rendered frame. Off by default (a small perf/memory cost); the offscreen
+   * stage-poster capture opts in so it can screenshot the empty scene.
+   */
+  preserveDrawingBuffer?: boolean;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
@@ -350,17 +359,17 @@ function fibonacciDirection(index: number, count: number): THREE.Vector3 {
 function burstParticleCount(design: FireworkDesign): number {
   switch (design.geometry) {
     case 'radial_arms':
-      return Math.max(44, Math.round(design.size * 0.46));
+      return Math.max(1, Math.round(design.size * 0.46));
     case 'falling_tail':
-      return Math.max(52, Math.round(design.size * 0.62));
+      return Math.max(1, Math.round(design.size * 0.62));
     case 'pearls':
-      return Math.max(18, Math.round(design.size * 0.18));
+      return Math.max(1, Math.round(design.size * 0.18));
     case 'ring':
-      return Math.max(72, Math.round(design.size * 0.72));
+      return Math.max(1, Math.round(design.size * 0.72));
     case 'bowtie':
-      return Math.max(60, Math.round(design.size * 0.82));
+      return Math.max(1, Math.round(design.size * 0.82));
     case 'fragment_cloud':
-      return Math.max(90, Math.round(design.size * 0.9));
+      return Math.max(1, Math.round(design.size * 0.9));
     default:
       return Math.max(1, Math.round(design.size));
   }
@@ -600,6 +609,7 @@ export function FireworkReplayCanvas({
   interactive = true,
   allowWheelZoom = true,
   controlsVisible = true,
+  showCameraControls = true,
   showFps = false,
   maxDevicePixelRatio = MAX_DEVICE_PIXEL_RATIO,
   antialias = false,
@@ -612,11 +622,13 @@ export function FireworkReplayCanvas({
   onPrimeProgress,
   cuesFinal = true,
   onReady,
-  showLoadingBar = false,
+  showLoadingBar = true,
   loadingBarPosition = 'bottom',
   allowFullscreen = false,
   fullscreen = false,
   onToggleFullscreen,
+  showStarfield = true,
+  preserveDrawingBuffer = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
@@ -650,19 +662,15 @@ export function FireworkReplayCanvas({
   const [showViewHelper, setShowViewHelper] = useState(false);
   const [sceneMode, setSceneMode] = useState<FireworkSceneMode>('night');
   const [showFpsOverlay, setShowFpsOverlay] = useState(showFps);
-  // Camera-controls reveal state. The controls slide in on mouse hover
-  // (`menuHovered`) and keyboard focus (`gearFocused`); tapping the gear on a
-  // touch device focuses it, which also reveals them. There is no pinned
-  // open-state, so the cluster always collapses again once the pointer leaves
-  // and focus moves away.
+  // Camera-controls reveal state. Hover and keyboard focus can preview the rail;
+  // clicking the gear can explicitly open or close it without hover fighting the
+  // user's click.
   const [menuHovered, setMenuHovered] = useState(false);
   const [gearFocused, setGearFocused] = useState(false);
-  // `menuMounted` keeps the dropdown in the DOM through its exit animation;
-  // `menuEntered` drives the transition direction (in vs. out). The ref mirrors
-  // `menuMounted` so the exit timer can be skipped before the first open.
-  const [menuEntered, setMenuEntered] = useState(false);
-  const [menuMounted, setMenuMounted] = useState(false);
-  const menuMountedRef = useRef(false);
+  const [menuPinned, setMenuPinned] = useState(false);
+  const [menuHoverSuppressed, setMenuHoverSuppressed] = useState(false);
+  const menuVisibleRef = useRef(false);
+  const menuVisibleBeforePressRef = useRef<boolean | null>(null);
   const gearClusterRef = useRef<HTMLDivElement | null>(null);
   const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fps, setFps] = useState<number | null>(null);
@@ -723,7 +731,10 @@ export function FireworkReplayCanvas({
     }
   }, [showFpsOverlay]);
 
-  const menuVisible = menuHovered || gearFocused;
+  const menuVisible = menuPinned || (!menuHoverSuppressed && (menuHovered || gearFocused));
+  const menuClusterVisible =
+    controlsVisible || menuHovered || gearFocused || menuPinned || menuHoverSuppressed;
+  menuVisibleRef.current = menuVisible;
 
   function cancelMenuClose() {
     if (menuCloseTimer.current) {
@@ -737,20 +748,50 @@ export function FireworkReplayCanvas({
     // Brief grace period so a momentary slip off the gear cluster does not
     // collapse the dropdown. The menu lives inside the cluster, so moving
     // between the gear and the items does not trigger this leave at all.
-    menuCloseTimer.current = setTimeout(() => setMenuHovered(false), 100);
+    menuCloseTimer.current = setTimeout(() => {
+      setMenuHovered(false);
+      setMenuHoverSuppressed(false);
+    }, 100);
+  }
+
+  function closeCameraMenu() {
+    cancelMenuClose();
+    setMenuPinned(false);
+    setGearFocused(false);
+    setMenuHovered(false);
+    setMenuHoverSuppressed(true);
+  }
+
+  function handleCameraMenuToggle() {
+    const wasVisible = menuVisibleBeforePressRef.current ?? menuVisibleRef.current;
+    menuVisibleBeforePressRef.current = null;
+    if (wasVisible) {
+      closeCameraMenu();
+      return;
+    }
+    cancelMenuClose();
+    setMenuHoverSuppressed(false);
+    setMenuPinned(true);
+    setGearFocused(true);
   }
 
   // Collapse the controls on Esc or an outside tap, so a touch reveal does not
   // linger after the user moves away (hover reveals close via the leave timer).
   useEffect(() => {
-    if (!gearFocused) return;
+    if (!gearFocused && !menuPinned) return;
     function onPointerDown(event: PointerEvent) {
       if (gearClusterRef.current && !gearClusterRef.current.contains(event.target as Node)) {
         setGearFocused(false);
+        setMenuPinned(false);
+        setMenuHoverSuppressed(false);
       }
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setGearFocused(false);
+      if (event.key === 'Escape') {
+        setGearFocused(false);
+        setMenuPinned(false);
+        setMenuHoverSuppressed(false);
+      }
     }
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -758,30 +799,9 @@ export function FireworkReplayCanvas({
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [gearFocused]);
+  }, [gearFocused, menuPinned]);
 
   useEffect(() => () => cancelMenuClose(), []);
-
-  // Drive the dropdown reveal. On open, mount the menu and flip `menuEntered`
-  // next frame so the whole popover transitions in together (one fade + lift,
-  // no per-item stagger). On close, flip it back so the same transition plays
-  // in reverse, then unmount once it finishes. The ref skips the exit timer
-  // before the first open so the menu does not flash on initial render.
-  useEffect(() => {
-    if (menuVisible) {
-      menuMountedRef.current = true;
-      setMenuMounted(true);
-      const id = requestAnimationFrame(() => setMenuEntered(true));
-      return () => cancelAnimationFrame(id);
-    }
-    if (!menuMountedRef.current) return;
-    setMenuEntered(false);
-    const id = setTimeout(() => {
-      setMenuMounted(false);
-      menuMountedRef.current = false;
-    }, 160);
-    return () => clearTimeout(id);
-  }, [menuVisible]);
 
   const positionsKey = useMemo(
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
@@ -863,6 +883,7 @@ export function FireworkReplayCanvas({
       antialias,
       alpha: false,
       powerPreference: 'high-performance',
+      preserveDrawingBuffer,
     });
     const pixelRatio = Math.min(window.devicePixelRatio || 1, maxDevicePixelRatio);
     renderer.setPixelRatio(pixelRatio);
@@ -928,7 +949,9 @@ export function FireworkReplayCanvas({
     controls.addEventListener('change', onControlsChange);
     controls.addEventListener('end', onControlsEnd);
 
-    const engine = new FireworksEngine(scene, launchPositions, renderer);
+    const engine = new FireworksEngine(scene, launchPositions, renderer, sceneMode, {
+      showStarfield,
+    });
     engine.attachListenerToCamera(camera);
     engine.setMuted(muted);
     engine.setSceneMode(sceneMode);
@@ -1034,11 +1057,16 @@ export function FireworkReplayCanvas({
         );
         const delta = Math.abs(targetElapsed - renderedElapsed);
         timelineChanged = Number.isNaN(renderedElapsed) || delta > 0.0001;
-        // Small deltas (normal playback) flow through every frame. Large deltas
-        // are scrubs — coalesce them to ~16Hz so rapid drag events collapse to
-        // one seek instead of one per drag tick.
+        // Small deltas (normal playback) flow through every frame. Large forward
+        // jumps are scrubs - coalesce them to ~16Hz so rapid drag events collapse
+        // to one seek instead of one per drag tick. Backward seeks bypass
+        // coalescing: they require a snapshot restore and cannot be incrementally
+        // advanced, so coalescing leaves the engine rendering stale forward state
+        // while the thumb has already moved back.
         const isLargeJump = delta > 0.15 && !Number.isNaN(renderedElapsed);
-        const engineMayUpdate = !isLargeJump || now - lastEngineUpdate >= 60;
+        const isBackwardSeek =
+          !Number.isNaN(renderedElapsed) && targetElapsed < renderedElapsed - 0.0001;
+        const engineMayUpdate = isBackwardSeek || !isLargeJump || now - lastEngineUpdate >= 60;
         if (timelineChanged && engineMayUpdate) {
           eng.setElapsed(targetElapsed);
           renderedElapsed = targetElapsed;
@@ -1355,83 +1383,100 @@ export function FireworkReplayCanvas({
             </CanvasIconButton>
           ) : null}
 
-          {/* Settings gear: hover (or click to pin) drops the camera controls
-              down as a popover that fades and lifts in as one unit. Auto-hides
-              with the rest of the controls when playback is idle. */}
-          <div
-            ref={gearClusterRef}
-            className={cn(
-              'flex flex-col items-end gap-1.5 transition-opacity duration-200',
-              controlsVisible || menuMounted ? 'opacity-100' : 'pointer-events-none opacity-0',
-            )}
-            onMouseEnter={() => {
-              cancelMenuClose();
-              setMenuHovered(true);
-            }}
-            onMouseLeave={() => scheduleMenuClose()}
-            onFocus={() => setGearFocused(true)}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                setGearFocused(false);
-              }
-            }}
-          >
-            <CanvasIconButton
-              onClick={() => setGearFocused((open) => !open)}
-              label={menuVisible ? 'Hide camera controls' : 'Show camera controls'}
-              active={menuVisible}
+          {showCameraControls ? (
+            <div
+              ref={gearClusterRef}
+              className={cn(
+                'flex flex-col items-end gap-1.5 transition-opacity duration-200',
+                menuClusterVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
+              )}
+              onMouseEnter={() => {
+                cancelMenuClose();
+                setMenuHoverSuppressed(false);
+                setMenuHovered(true);
+              }}
+              onMouseLeave={() => scheduleMenuClose()}
+              onFocus={() => {
+                setMenuHoverSuppressed(false);
+                setGearFocused(true);
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setGearFocused(false);
+                  setMenuPinned(false);
+                  setMenuHoverSuppressed(false);
+                }
+              }}
             >
-              <Settings size={16} strokeWidth={2} />
-            </CanvasIconButton>
-            {menuMounted ? (
-              <div
-                className={cn(
-                  'mt-1 flex origin-top flex-col items-end gap-1.5 transition-[opacity,transform] duration-200 ease-out',
-                  menuEntered
-                    ? 'translate-y-0 opacity-100'
-                    : 'pointer-events-none -translate-y-1 opacity-0',
-                )}
+              <CanvasIconButton
+                onPointerDown={() => {
+                  menuVisibleBeforePressRef.current = menuVisibleRef.current;
+                }}
+                onClick={handleCameraMenuToggle}
+                label={menuVisible ? 'Hide camera controls' : 'Show camera controls'}
+                active={menuVisible}
               >
-                <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
-                  <ZoomIn size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
-                  <ZoomOut size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton
-                  onClick={() => setPanMode((on) => !on)}
-                  label={panMode ? 'Orbit mode' : 'Pan mode'}
-                  active={panMode}
+                <Settings size={16} strokeWidth={2} />
+              </CanvasIconButton>
+              <div
+                aria-hidden={!menuVisible}
+                inert={!menuVisible}
+                className={cn(
+                  'grid origin-top-right overflow-hidden transition-[max-height,opacity] ease-out will-change-[max-height,opacity] motion-reduce:transition-opacity',
+                  menuVisible
+                    ? 'max-h-[18.5rem] opacity-100'
+                    : 'pointer-events-none max-h-0 opacity-0',
+                )}
+                style={{ transitionDuration: `${CAMERA_MENU_ANIMATION_MS}ms` }}
+              >
+                <div
+                  className={cn(
+                    'flex flex-col items-end gap-1.5 pt-1.5 transition-transform ease-out will-change-transform motion-reduce:transform-none',
+                    menuVisible ? 'translate-y-0' : '-translate-y-2',
+                  )}
+                  style={{ transitionDuration: `${CAMERA_MENU_ANIMATION_MS}ms` }}
                 >
-                  <Hand size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton onClick={resetView} label="Reset view">
-                  <RotateCcw size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton
-                  onClick={() => setSceneMode((mode) => (mode === 'day' ? 'night' : 'day'))}
-                  label={sceneMode === 'day' ? 'Night preview' : 'Day preview'}
-                  active={sceneMode === 'day'}
-                >
-                  <Sun size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton
-                  onClick={() => setShowFpsOverlay((visible) => !visible)}
-                  label={showFpsOverlay ? 'Hide FPS graph' : 'Show FPS graph'}
-                  active={showFpsOverlay}
-                >
-                  <Activity size={16} strokeWidth={2} />
-                </CanvasIconButton>
-                <CanvasIconButton
-                  onClick={() => setShowViewHelper((on) => !on)}
-                  label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
-                  active={showViewHelper}
-                >
-                  <Axis3d size={16} strokeWidth={2} />
-                </CanvasIconButton>
+                  <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
+                    <ZoomIn size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton onClick={() => adjustZoom(1.2)} label="Zoom out">
+                    <ZoomOut size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton
+                    onClick={() => setPanMode((on) => !on)}
+                    label={panMode ? 'Orbit mode' : 'Pan mode'}
+                    active={panMode}
+                  >
+                    <Hand size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton onClick={resetView} label="Reset view">
+                    <RotateCcw size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton
+                    onClick={() => setSceneMode((mode) => (mode === 'day' ? 'night' : 'day'))}
+                    label={sceneMode === 'day' ? 'Night preview' : 'Day preview'}
+                    active={sceneMode === 'day'}
+                  >
+                    <Sun size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton
+                    onClick={() => setShowFpsOverlay((visible) => !visible)}
+                    label={showFpsOverlay ? 'Hide FPS graph' : 'Show FPS graph'}
+                    active={showFpsOverlay}
+                  >
+                    <Activity size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                  <CanvasIconButton
+                    onClick={() => setShowViewHelper((on) => !on)}
+                    label={showViewHelper ? 'Hide XYZ axes' : 'Show XYZ axes'}
+                    active={showViewHelper}
+                  >
+                    <Axis3d size={16} strokeWidth={2} />
+                  </CanvasIconButton>
+                </div>
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {showLoadingBar && loadingBarVisible ? (
@@ -1513,12 +1558,14 @@ function FpsGraph({
 
 function CanvasIconButton({
   onClick,
+  onPointerDown,
   label,
   active = false,
   className = '',
   children,
 }: {
   onClick: () => void;
+  onPointerDown?: () => void;
   label: string;
   active?: boolean;
   className?: string;
@@ -1527,14 +1574,16 @@ function CanvasIconButton({
   return (
     <button
       type="button"
+      onPointerDown={onPointerDown}
       onClick={onClick}
       aria-label={label}
-      title={label}
-      className={`focus-glow-action flex h-9 w-9 items-center justify-center rounded-full border backdrop-blur transition-all focus:outline-none focus-visible:outline-none active:scale-[0.95] ${
+      className={cn(
+        'focus-glow-action flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border transition-colors duration-150 ease-out focus:outline-none focus-visible:outline-none',
         active
           ? 'border-primary/40 bg-primary-container/85 text-on-primary-container'
-          : 'border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90'
-      } ${className}`}
+          : 'border-outline-variant/15 bg-surface-container-low/80 text-on-surface hover:bg-surface-container-high/90',
+        className,
+      )}
     >
       {children}
     </button>

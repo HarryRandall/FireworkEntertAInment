@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type CSSProperties } from 'react';
-import { ArrowRight, Dices, Heart, Play, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Dices, Heart, Play } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { Textarea } from '@/app/components/ui/Input';
@@ -63,7 +63,7 @@ export function ShowSummaryRow({
     >
       <Link
         href={`/shows/${show.slug}/preview`}
-        prefetch
+        prefetch={false}
         className="focus-visible:ring-ring/50 grid min-w-0 grid-cols-[auto_1fr] items-center gap-3 rounded-md focus:outline-none focus-visible:ring-3"
       >
         <PaletteStrip palette={show.palette} className="h-7 w-1" />
@@ -91,7 +91,7 @@ export function ShowSummaryRow({
         {showPlay ? (
           <Link
             href={`/shows/${show.slug}/preview?autoplay=1`}
-            prefetch
+            prefetch={false}
             aria-label={`Play ${show.title}`}
             className="focus-visible:ring-ring/50 inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-emphasis)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-3"
           >
@@ -119,7 +119,7 @@ export function TemplateSummaryCardView({
   return (
     <Link
       href={`/library/${template.slug}`}
-      prefetch
+      prefetch={false}
       className={cn(
         'group focus-visible:ring-ring/50 block h-full rounded-xl focus:outline-none focus-visible:ring-3',
         className,
@@ -212,13 +212,13 @@ export function PromptHero({ className }: PromptHeroProps) {
           className="h-28 resize-none rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
         />
         <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-3">
             <CueModelSelect
               value={selectedCueModel}
               onChange={setSelectedCueModel}
-              className="sm:w-[164px]"
+              className="min-w-0 flex-1 sm:max-w-[164px]"
             />
-            <div className="flex items-center gap-2.5">
+            <div className="flex shrink-0 items-center gap-2.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -241,63 +241,6 @@ export function PromptHero({ className }: PromptHeroProps) {
   );
 }
 
-export function SafetyFooter() {
-  return (
-    <Card radius="lg" className="p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--color-status-success)_16%,transparent)] text-[color:var(--color-status-success)]">
-            <ShieldCheck size={18} />
-          </span>
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
-            <span className="font-medium text-[color:var(--color-content-emphasis)]">
-              New to fireworks?
-            </span>{' '}
-            Read the safety guide before planning a real show.
-          </p>
-        </div>
-        <Button href="/safety" variant="secondary" size="sm">
-          Safety guide
-        </Button>
-      </div>
-    </Card>
-  );
-}
-
-export function EmptyShowsPanel({
-  templates,
-  includeSafety = true,
-  includePromptHero = true,
-}: {
-  templates: TemplateSummaryCard[];
-  includeSafety?: boolean;
-  includePromptHero?: boolean;
-}) {
-  return (
-    <div className="space-y-6">
-      {includePromptHero ? <PromptHero /> : null}
-      {templates.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium text-[color:var(--color-content-subtle)]">
-              Or start from a template
-            </h2>
-            <Link
-              href="/library"
-              className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline"
-            >
-              Explore all
-              <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {templates.map((template) => (
-              <TemplateSummaryCardView key={template.id} template={template} showCloneAction />
-            ))}
-          </div>
-        </section>
-      ) : null}
-      {includeSafety ? <SafetyFooter /> : null}
-    </div>
-  );
+export function EmptyShowsPanel({ includePromptHero = true }: { includePromptHero?: boolean }) {
+  return <>{includePromptHero ? <PromptHero /> : null}</>;
 }

@@ -1,9 +1,11 @@
-/** AI usage page showing credit limits, recent spend, and top-up status. */
+/** AI usage page showing free allowance, recent spend, and top-up status. */
 
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Gauge, Plus, ReceiptText } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, Plus, ReceiptText, Sparkles } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
+import { TablePagination } from '@/app/components/ui/TablePagination';
 import {
   Card,
   CardAction,
@@ -25,20 +27,55 @@ import {
   signedAiCreditAmount,
   type AiCreditTransactionSummary,
 } from '@/lib/ai-credits.server';
+import { cn } from '@/lib/utils';
+
+type PageProps = {
+  searchParams?: Promise<{ usagePage?: string }>;
+};
 
 const creditFormatter = new Intl.NumberFormat('en-AU');
+const FREE_SHOWS_INCLUDED = 3;
+const FREE_AI_CREDITS_INCLUDED = 20;
+const PRO_WEEKLY_SHOW_CREDITS = 30;
+const ULTRA_WEEKLY_SHOW_CREDITS = 100;
+const RECENT_USAGE_PAGE_SIZE = 5;
+const USED_SHOW_SEGMENT_STYLE = {
+  backgroundColor: 'color-mix(in srgb, var(--color-content-muted) 10%, var(--color-bg-elevated))',
+  backgroundImage:
+    'repeating-linear-gradient(90deg, color-mix(in srgb, var(--color-content-muted) 20%, transparent) 0, color-mix(in srgb, var(--color-content-muted) 20%, transparent) 8px, transparent 8px, transparent 16px)',
+};
+const PLAN_TIERS = [
+  {
+    name: 'Free',
+    description: `${FREE_SHOWS_INCLUDED} free shows + ${FREE_AI_CREDITS_INCLUDED} AI credits`,
+    current: true,
+    href: null,
+  },
+  {
+    name: 'Pro',
+    description: `${PRO_WEEKLY_SHOW_CREDITS} shows each week`,
+    current: false,
+    href: '/settings/billing#plans',
+  },
+  {
+    name: 'Ultra',
+    description: `${ULTRA_WEEKLY_SHOW_CREDITS} shows each week`,
+    current: false,
+    href: '/settings/billing#plans',
+  },
+] as const;
 
 function formatCredits(value: number) {
   return creditFormatter.format(value);
 }
 
-function usagePercent(value: number, total: number) {
-  if (total <= 0) return 0;
-  return Math.min(100, Math.max(0, (value / total) * 100));
-}
-
 function creditLabel(amount: number) {
   return `${formatCredits(amount)} ${amount === 1 ? 'credit' : 'credits'}`;
+}
+
+function parsePage(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '1', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 function transactionTypeLabel(transaction: AiCreditTransactionSummary) {
@@ -63,69 +100,115 @@ function transactionCreditClass(transaction: AiCreditTransactionSummary) {
   return 'text-muted-foreground';
 }
 
-export default async function UsageSettingsPage() {
+function isShowGenerationUse(transaction: AiCreditTransactionSummary) {
+  return (
+    transaction.actionKey.startsWith('show_generation') &&
+    (transaction.type === 'debit' || transaction.type === 'reserve')
+  );
+}
+
+function countShowGenerationUses(transactions: AiCreditTransactionSummary[]) {
+  const showReferences = new Set<string>();
+
+  for (const transaction of transactions) {
+    if (!isShowGenerationUse(transaction)) continue;
+    showReferences.add(transaction.referenceId ?? transaction.id);
+  }
+
+  return showReferences.size;
+}
+
+export default async function UsageSettingsPage({ searchParams }: PageProps) {
+  const params = (await searchParams) ?? {};
   const credits = await getCurrentUserAiCreditSummary();
   if (!credits) redirect('/login?next=/settings/usage');
 
-  const hourlyUsed = credits.hourlyUsed + credits.reserved;
-  const weeklyUsed = credits.weeklyUsed + credits.reserved;
+  const availableCredits = Math.max(credits.available, 0);
+  const usedOrReservedFreeShows = Math.min(
+    countShowGenerationUses(credits.recentTransactions),
+    FREE_SHOWS_INCLUDED,
+  );
+  const freeShowsRemaining = Math.max(FREE_SHOWS_INCLUDED - usedOrReservedFreeShows, 0);
+  const freeCreditsRemaining = Math.min(availableCredits, FREE_AI_CREDITS_INCLUDED);
+  const topUpCredits = Math.max(availableCredits - FREE_AI_CREDITS_INCLUDED, 0);
+  const recentTotalPages = Math.max(
+    1,
+    Math.ceil(credits.recentTransactions.length / RECENT_USAGE_PAGE_SIZE),
+  );
+  const currentRecentPage = Math.min(parsePage(params.usagePage), recentTotalPages);
+  const recentPageStart = (currentRecentPage - 1) * RECENT_USAGE_PAGE_SIZE;
+  const visibleRecentTransactions = credits.recentTransactions.slice(
+    recentPageStart,
+    recentPageStart + RECENT_USAGE_PAGE_SIZE,
+  );
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <Card>
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Gauge className="size-5" />
-              AI usage
+              <Sparkles className="size-5" />
+              Free allowance
             </CardTitle>
             <CardDescription>
-              Hourly and weekly limits reset automatically. Running work counts as reserved until it
-              finishes.
+              Your Free plan includes {FREE_SHOWS_INCLUDED} show generations and{' '}
+              {FREE_AI_CREDITS_INCLUDED} flexible AI credits.
             </CardDescription>
+            <CardAction>
+              <Badge
+                solid
+                tone="success"
+                className="bg-[color-mix(in_srgb,var(--hl)_18%,transparent)] text-[color:var(--hl)]"
+              >
+                Included
+              </Badge>
+            </CardAction>
           </CardHeader>
-          <CardContent className="space-y-4 p-6">
-            <UsageLimitRow
-              label="Hourly limit"
-              used={hourlyUsed}
-              remaining={credits.hourlyRemaining}
-              limit={credits.hourlyLimit}
-              resetAt={credits.hourlyResetAt}
-            />
-            <UsageLimitRow
-              label="Weekly limit"
-              used={weeklyUsed}
-              remaining={credits.weeklyRemaining}
-              limit={credits.weeklyLimit}
-              resetAt={credits.weeklyResetAt}
-            />
-            <div className="text-muted-foreground flex items-center justify-between gap-3 border-t pt-3 text-xs">
-              <span>Credit balance</span>
-              <span className="font-mono tabular-nums">{creditLabel(credits.balance)}</span>
+          <CardContent className="space-y-5 p-6">
+            <FreeShowAllowance remaining={freeShowsRemaining} total={FREE_SHOWS_INCLUDED} />
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <CreditStat
+                label="Free shows"
+                value={`${freeShowsRemaining}/${FREE_SHOWS_INCLUDED} left`}
+              />
+              <CreditStat
+                label="Free AI credits"
+                value={`${freeCreditsRemaining}/${FREE_AI_CREDITS_INCLUDED} left`}
+              />
+              <CreditStat label="Top-up credits" value={creditLabel(topUpCredits)} />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card size="sm" className="h-full">
           <CardHeader>
-            <CardTitle>Add credits</CardTitle>
-            <CardDescription>Top-ups will be available once paid plans launch.</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="size-5" />
+              Plan
+            </CardTitle>
             <CardAction>
-              <Badge solid tone="neutral">
-                Coming soon
+              <Badge solid tone="success">
+                Current
               </Badge>
             </CardAction>
           </CardHeader>
-          <CardContent className="p-6">
-            <Button type="button" variant="secondary" disabled className="w-full">
-              <Plus size={16} />
-              Add credits
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              {PLAN_TIERS.map((tier) => (
+                <PlanTierRow key={tier.name} tier={tier} />
+              ))}
+            </div>
+            <Button href="/settings/billing" className="w-full">
+              <ArrowUpRight size={16} />
+              Upgrade plan
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="pb-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ReceiptText className="size-5" />
@@ -146,7 +229,7 @@ export default async function UsageSettingsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {credits.recentTransactions.map((transaction) => (
+              {visibleRecentTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-muted/45">
                   <TableCell>
                     <div>
@@ -178,57 +261,115 @@ export default async function UsageSettingsPage() {
               ) : null}
             </TableBody>
           </Table>
+          {credits.recentTransactions.length > RECENT_USAGE_PAGE_SIZE ? (
+            <div className="border-t px-6 py-3">
+              <TablePagination
+                currentPage={currentRecentPage}
+                totalPages={recentTotalPages}
+                searchParams={{ usagePage: params.usagePage }}
+                pageKey="usagePage"
+                visibleItems={visibleRecentTransactions.length}
+                totalItems={credits.recentTransactions.length}
+                itemLabel="activity"
+                itemLabelPlural="activities"
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function formatReset(value: string | null) {
-  if (!value) return 'Resets automatically';
-  return `Resets ${new Date(value).toLocaleDateString('en-AU', {
-    day: 'numeric',
-    month: 'short',
-    hour: 'numeric',
-    minute: '2-digit',
-  })}`;
+function FreeShowAllowance({ remaining, total }: { remaining: number; total: number }) {
+  return (
+    <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] p-4 sm:p-5">
+      <ShowAllowanceSegments total={total} remaining={remaining} className="mb-6 h-3" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="font-mono text-2xl font-semibold tabular-nums">
+          {remaining}/{total} shows left
+        </p>
+        <Button href="/settings/billing" variant="secondary" className="sm:w-auto">
+          <Plus size={16} />
+          Refill
+        </Button>
+      </div>
+    </div>
+  );
 }
 
-function UsageLimitRow({
-  label,
-  used,
+function PlanTierRow({ tier }: { tier: (typeof PLAN_TIERS)[number] }) {
+  const className = cn(
+    'flex items-start justify-between gap-3 rounded-lg border px-3 py-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+    tier.current
+      ? 'border-[color:var(--hl)] bg-[color-mix(in_srgb,var(--hl)_9%,transparent)]'
+      : 'border-[color:var(--color-border-subtle)] hover:bg-muted/60',
+  );
+
+  const content = (
+    <>
+      <div>
+        <p className="text-sm font-semibold">{tier.name}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs">{tier.description}</p>
+      </div>
+      {tier.href ? (
+        <span className="text-muted-foreground inline-flex items-center gap-1 text-xs whitespace-nowrap">
+          View
+          <ChevronRight size={13} />
+        </span>
+      ) : null}
+    </>
+  );
+
+  if (tier.href) {
+    return (
+      <Link href={tier.href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
+}
+
+function ShowAllowanceSegments({
+  total,
   remaining,
-  limit,
-  resetAt,
+  className,
 }: {
-  label: string;
-  used: number;
+  total: number;
   remaining: number;
-  limit: number;
-  resetAt: string | null;
+  className?: string;
 }) {
+  const safeTotal = Math.max(total, 1);
+  const safeRemaining = Math.min(Math.max(remaining, 0), safeTotal);
+  const used = safeTotal - safeRemaining;
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-foreground text-sm font-medium">{label}</p>
-          <p className="text-muted-foreground text-xs">{formatReset(resetAt)}</p>
-        </div>
-        <div className="text-right">
-          <p className="font-mono text-sm font-semibold tabular-nums">
-            {creditLabel(remaining)} left
-          </p>
-          <p className="text-muted-foreground font-mono text-xs tabular-nums">
-            {formatCredits(used)} / {formatCredits(limit)}
-          </p>
-        </div>
-      </div>
-      <div aria-hidden className="bg-muted h-1.5 overflow-hidden rounded-full">
-        <div
-          className="bg-primary h-full rounded-full"
-          style={{ width: `${usagePercent(used, limit)}%` }}
+    <div
+      className={cn('grid gap-3', className)}
+      style={{ gridTemplateColumns: `repeat(${safeTotal}, minmax(0, 1fr))` }}
+      aria-hidden
+    >
+      {Array.from({ length: safeTotal }).map((_, index) => (
+        <span
+          key={index}
+          className={cn(
+            'min-w-0 rounded-full shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-border-subtle)_85%,transparent)]',
+            index < used ? '' : 'bg-[color:var(--hl)]',
+          )}
+          style={index < used ? USED_SHOW_SEGMENT_STYLE : undefined}
         />
-      </div>
+      ))}
+    </div>
+  );
+}
+
+function CreditStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-[color:var(--color-border-subtle)] px-3 py-2.5">
+      <p className="text-muted-foreground text-xs">{label}</p>
+      <p className="font-mono text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

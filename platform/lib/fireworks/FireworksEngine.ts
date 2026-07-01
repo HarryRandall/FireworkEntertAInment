@@ -88,6 +88,10 @@ const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
 const SMOKE_BRIGHTNESS_BOOST = 1.8;
 
+type FireworksEngineOptions = {
+  showStarfield?: boolean;
+};
+
 export class FireworksEngine {
   private scene: THREE.Scene;
   private camera: THREE.Camera | null = null;
@@ -167,13 +171,16 @@ export class FireworksEngine {
     launchPositions: LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS,
     renderer?: THREE.WebGLRenderer,
     sceneMode: FireworkSceneMode = 'night',
+    options: FireworksEngineOptions = {},
   ) {
     this.scene = scene;
     this.pool = new ParticlePool(PARTICLE_CAPACITY);
     this.sound = new SoundHandler();
     void this.sound.load();
     this.lights = new Lights(scene);
-    this.world = new World(scene, launchPositions, sceneMode);
+    this.world = new World(scene, launchPositions, sceneMode, {
+      showStarfield: options.showStarfield,
+    });
     this.effects = new Effects(this.pool, this.sound, this.lights);
     this.scheduler = new Scheduler();
     this.headBillboardsEnabled = readMaxPointSize(renderer) < HEAD_SPRITE_MAX_SIZE;
@@ -858,17 +865,26 @@ export class FireworksEngine {
   /**
    * Drive timeline. Scrubbing or large jumps silently rebuild the particle
    * state at the target time; normal forward playback emits sound.
+   *
+   * Single-firework previews (admin editors) bypass the snapshot cache on
+   * seeks: snapshot restores drop behaviour callbacks, which freezes
+   * callback-driven effects such as brocade heads and flips the preview
+   * between lossy-restore and from-zero-rebuild frames as the thumb crosses
+   * snapshot boundaries. Rebuilding from zero is cheap for one firework and
+   * replays trails accurately. Multi-cue shows keep snapshot seeks so long,
+   * busy timelines do not freeze on every scrub.
    */
   setElapsed(target: number): void {
     const next = Math.max(0, target);
     const delta = next - this.elapsed;
     const isBackwardSeek = delta < -0.0001;
+    const useSnapshots = this.scheduler.size() > 1;
     if (isBackwardSeek) {
-      this.seekTo(next);
+      this.seekTo(next, { useSnapshots });
       return;
     }
     if (delta > LARGE_JUMP_SECONDS) {
-      this.seekTo(next);
+      this.seekTo(next, { useSnapshots });
       return;
     }
     if (delta <= 0.0001) return;
@@ -966,7 +982,11 @@ export class FireworksEngine {
       // of a second after the seek), but skipping them left the cache empty in
       // busy shows and forced a from-zero rebuild on every scrub, freezing the
       // timeline. Tag them so seeks can prefer an accurate snapshot when nearby.
-      if (cursor >= this.nextSnapshotAt) {
+      // Single-firework previews bypass snapshot seeks (see setElapsed), so skip
+      // capture there: the cache would never be read, and re-allocating packed
+      // particle buffers on every from-zero rebuild made dense brocade scrubbing
+      // janky.
+      if (this.scheduler.size() > 1 && cursor >= this.nextSnapshotAt) {
         this.snapshots.push({
           time: cursor,
           state: this.captureSnapshot(),

@@ -44,6 +44,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       duration_seconds: template.durationSeconds,
       budget_cents: template.budgetCents,
       cover_shader: template.coverShader ?? randomShaderCover(),
+      cover_image_path: template.coverImagePath ?? null,
       total_cents: template.totalCents,
       effects_count: template.effectsCount,
       time_of_day: template.timeOfDay,

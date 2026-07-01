@@ -1,15 +1,10 @@
 /**
  * Shared request-scoped Supabase client used by every admin server module.
  *
- * Wrapped in React's `cache()` so a single request reuses one client across
- * many server components — important because each `createClient` call reads
- * the cookie store.
+ * Re-exports the canonical `getServerClient` from `utils/supabase/server-client`
+ * so admin modules share one memoised client per request with shows and other
+ * server modules, instead of each domain keeping its own `cache()` cell.
  */
 import 'server-only';
 
-import { cache } from 'react';
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
-
-/** Returns the request-scoped Supabase client (memoised per request). */
-export const getServerClient = cache(async () => createClient(await cookies()));
+export { getServerClient } from '@/utils/supabase/server-client';

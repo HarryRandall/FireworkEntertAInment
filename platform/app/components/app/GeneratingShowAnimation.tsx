@@ -8,6 +8,9 @@ import {
   resolveGenerationStartedAt,
 } from '@/lib/generation-progress-storage';
 import { randomShaderCover, type ShaderCover as ShaderCoverConfig } from '@/lib/shader-cover';
+import { renderCoverToPng } from '@/lib/render-cover-poster';
+import { setShowCoverImagePath } from '@/app/actions/show-cover-poster';
+import { createClient } from '@/utils/supabase/client';
 import { ShaderCover } from './ShaderCover';
 import styles from './GeneratingShowAnimation.module.css';
 
@@ -30,6 +33,10 @@ type GeneratingShowAnimationProps = {
    * sessionStorage so the bar resumes where it was after a refresh.
    */
   persistKey?: string;
+  /** Show id; when set and no cover image exists yet, the live cover is captured to a PNG. */
+  showId?: string | null;
+  /** Existing cover image path; when set, the capture step is skipped. */
+  coverImagePath?: string | null;
 };
 
 type Stage = { label: string; minProgress: number };
@@ -110,9 +117,12 @@ export function GeneratingShowAnimation({
   coverShader,
   randomiseCoverOnLoad = false,
   persistKey,
+  showId = null,
+  coverImagePath = null,
 }: GeneratingShowAnimationProps) {
   const router = useRouter();
   const progressFillRef = useRef<HTMLDivElement>(null);
+  const coverCapturedRef = useRef(false);
   const [generatedCover, setGeneratedCover] = useState<ShaderCoverConfig | null>(null);
   const [progressUi, setProgressUi] = useState<ProgressUi>(() => ({
     percent: status === 'completed' ? 100 : 0,
@@ -173,6 +183,48 @@ export function GeneratingShowAnimation({
 
   const activeCover = coverShader ?? generatedCover;
   const hint = isWarm ? 'Fast lane is open.' : 'Building a pyromusical timeline.';
+
+  // Render the cover to a PNG once and persist it so browse pages can show an
+  // <img> instead of a live WebGL context per card. Skipped when the show
+  // already has a cover image, or when the show row is not yet available
+  // (the creating=1 provisional splash); the polling refresh re-runs this once
+  // the row exists. The guard prevents re-entry across poll refreshes; on
+  // failure it resets so a later refresh can retry. Failures never block
+  // generation. renderCoverToPng cleans up its own hidden DOM, and the upload +
+  // row update are idempotent, so letting the async settle is safe even if the
+  // component re-renders or unmounts mid-capture.
+  useEffect(() => {
+    if (coverCapturedRef.current) return;
+    if (!showId || !activeCover || coverImagePath) return;
+    coverCapturedRef.current = true;
+
+    void (async () => {
+      try {
+        const dataUrl = await renderCoverToPng(activeCover);
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+        const path = `${user.id}/${showId}.png`;
+        const blob = await (await fetch(dataUrl)).blob();
+        const { error: uploadError } = await supabase.storage.from('covers').upload(path, blob, {
+          contentType: 'image/png',
+          cacheControl: 'public, max-age=31536000, immutable',
+          upsert: true,
+        });
+        if (uploadError) {
+          console.error('[cover-poster] upload failed:', uploadError);
+          coverCapturedRef.current = false;
+          return;
+        }
+        await setShowCoverImagePath(showId, path);
+      } catch (error) {
+        console.error('[cover-poster] capture failed:', error);
+        coverCapturedRef.current = false;
+      }
+    })();
+  }, [showId, activeCover, coverImagePath]);
 
   return (
     <section

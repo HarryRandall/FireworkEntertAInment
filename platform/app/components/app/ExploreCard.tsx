@@ -7,9 +7,10 @@
  */
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import { useId, useRef } from 'react';
+import { memo, useId, useRef } from 'react';
 import { MessageCircle, Play, ThumbsUp } from 'lucide-react';
-import { ShaderCover } from '@/app/components/app/ShaderCover';
+import { CoverPoster } from '@/app/components/app/CoverPoster';
+import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
 import { formatDuration } from '@/lib/show-domain';
 import { shaderCoverFromSeed } from '@/lib/shader-cover';
@@ -41,13 +42,17 @@ function formatCount(value: number): string {
   return String(value);
 }
 
-export function ExploreCard({ template }: { template: ShowTemplate }) {
+export const ExploreCard = memo(function ExploreCard({ template }: { template: ShowTemplate }) {
   const preview = useExplorePreview();
   const coverRef = useRef<HTMLDivElement | null>(null);
   const previewId = useId();
   const cover = template.coverShader ?? shaderCoverFromSeed(template.id || template.slug);
   const [accentStart, accentMiddle = accentStart, accentEnd = accentStart] = cover.colors;
-  const isPreviewActive = preview?.activeId === previewId;
+  // Hovering (dwell or active) swaps the resting poster for the static firework
+  // stage; the shared overlay canvas only reveals once it has actually painted
+  // for this card, so hover never flashes black during the WebGL warm-up.
+  const isPreviewHovering = preview?.pendingId === previewId || preview?.activeId === previewId;
+  const isPreviewRevealed = preview?.readyId === previewId;
   const accentStyle = {
     '--template-accent-start': accentStart,
     '--template-accent-middle': accentMiddle,
@@ -58,7 +63,7 @@ export function ExploreCard({ template }: { template: ShowTemplate }) {
   return (
     <Link
       href={`/library/${template.slug}`}
-      prefetch
+      prefetch={false}
       className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative z-0 block w-44 shrink-0 cursor-pointer touch-manipulation rounded-xl transition-transform duration-200 ease-out hover:z-20 hover:translate-x-1 hover:-translate-y-2 focus:outline-none focus-visible:z-20 focus-visible:translate-x-1 focus-visible:-translate-y-2 focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-x-0 motion-reduce:focus-visible:translate-y-0 sm:w-48"
       aria-label={`Open template: ${template.title}`}
       style={accentStyle}
@@ -73,23 +78,28 @@ export function ExploreCard({ template }: { template: ShowTemplate }) {
     >
       <div
         ref={coverRef}
-        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
+        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 [content-visibility:auto] group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
       >
-        <ShaderCover
+        <ReplayCanvasSkeleton
+          showLoadingBar={isPreviewHovering && !isPreviewRevealed}
+          className={`transition-opacity duration-200 ease-out ${
+            isPreviewHovering && !isPreviewRevealed ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+        <CoverPoster
           cover={cover}
-          animate={false}
-          showSkeletonUntilReady
-          className={`transition-all duration-200 ease-out group-hover:scale-105 ${
-            isPreviewActive ? 'opacity-0' : 'opacity-100'
+          imagePath={template.coverImagePath}
+          className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 ${
+            isPreviewHovering ? 'opacity-0' : 'opacity-100'
           }`}
         />
         <div
           aria-hidden
           className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_92%,rgba(255,255,255,0.18),transparent_38%),linear-gradient(180deg,transparent_10%,rgba(0,0,0,0.18)_100%)] transition-opacity duration-200 ${
-            isPreviewActive ? 'opacity-0' : 'opacity-70 group-hover:opacity-40'
+            isPreviewRevealed ? 'opacity-0' : 'opacity-70 group-hover:opacity-40'
           }`}
         />
-        <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100">
+        <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <Play size={16} fill="currentColor" />
         </span>
       </div>
@@ -120,4 +130,6 @@ export function ExploreCard({ template }: { template: ShowTemplate }) {
       </div>
     </Link>
   );
-}
+});
+
+ExploreCard.displayName = 'ExploreCard';

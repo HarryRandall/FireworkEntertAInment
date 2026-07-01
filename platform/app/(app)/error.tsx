@@ -16,7 +16,7 @@ export default function AppError({
   return (
     <div className="flex min-h-[calc(100vh-8rem)] w-full items-start justify-center px-4 py-8">
       <div className="flex w-full max-w-xl flex-col items-start gap-3">
-        <InlineAlert tone="danger" title="Workspace view failed to load" className="w-full">
+        <InlineAlert tone="danger" title="View failed to load" className="w-full">
           {error.message ||
             'Try again. If the issue persists, check the latest import or profile changes.'}
         </InlineAlert>

@@ -6,9 +6,8 @@
  * the engine primes fireworks (`progress` is a 0..1 fraction) and an
  * indeterminate pulse before the cue set has landed or while the prime is
  * pending. `position` controls where it floats: `bottom` sits in the playback
- * slot (used by the show replay viewer, whose controls take that slot once
- * ready), `center` floats mid-stage (used by the admin editors, whose
- * transport already owns the bottom strip).
+ * slot until controls take that space, while `center` is reserved for
+ * standalone surfaces such as the firework lab.
  */
 import { Loader2 } from 'lucide-react';
 
@@ -25,8 +24,8 @@ export function ReplayLoadingBar({
   const pct = determinate ? Math.max(2, Math.round(progress * 100)) : 0;
   const positionClass =
     position === 'center'
-      ? 'absolute top-1/2 left-1/2 z-20 flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2'
-      : 'absolute bottom-6 left-1/2 z-20 flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2';
+      ? 'pointer-events-none absolute top-1/2 left-1/2 z-[80] flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2'
+      : 'pointer-events-none absolute bottom-6 left-1/2 z-[80] flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2';
   return (
     <div
       className={`${positionClass} border-outline-variant/15 bg-surface-container-low/90 items-center gap-3 rounded-lg border px-4 py-3 shadow-[var(--shadow-modal)] backdrop-blur`}

@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { cache } from 'react';
 import { listShowTemplates } from '@/lib/admin.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 import { listShowsForCurrentUser } from '@/lib/shows.server';
@@ -35,21 +36,23 @@ function buildDashboardSummary(shows: Show[], templates: ShowTemplate[]): Dashbo
   };
 }
 
-export async function getDashboardSummary(): Promise<DashboardSummary> {
+export const getDashboardSummary = cache(async (): Promise<DashboardSummary> => {
   const [shows, templates] = await Promise.all([listShowsForCurrentUser(), listShowTemplates()]);
   return buildDashboardSummary(shows, templates);
-}
+});
 
-export async function getDashboardSummaryWithTemplates(): Promise<{
-  summary: DashboardSummary;
-  templates: ShowTemplate[];
-}> {
-  const [shows, templates] = await Promise.all([listShowsForCurrentUser(), listShowTemplates()]);
-  return {
-    summary: buildDashboardSummary(shows, templates),
-    templates,
-  };
-}
+export const getDashboardSummaryWithTemplates = cache(
+  async (): Promise<{
+    summary: DashboardSummary;
+    templates: ShowTemplate[];
+  }> => {
+    const [shows, templates] = await Promise.all([listShowsForCurrentUser(), listShowTemplates()]);
+    return {
+      summary: buildDashboardSummary(shows, templates),
+      templates,
+    };
+  },
+);
 
 export async function getWorkspaceSummary(): Promise<WorkspaceSummary> {
   const summary = await getDashboardSummary();

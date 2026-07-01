@@ -304,6 +304,7 @@ function buildSeedTemplate(section: LibrarySeedSection, index: number): ShowTemp
     ],
     previewCues: buildPreviewCues(section.fireworkSlugs, durationSeconds, effectsCount),
     coverShader: shaderCoverFromSeed(slug),
+    coverImagePath: null,
     isFeatured: section.isFeatured,
     likeCount: likeCountFor(section, item),
     createdAt: new Date(SEED_BASE_TIME - (section.sortBase + item) * 60 * 60 * 1000).toISOString(),

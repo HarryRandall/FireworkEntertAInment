@@ -8,11 +8,23 @@
  */
 import dynamic from 'next/dynamic';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Heart, Maximize, Minimize, Pause, Play, RotateCcw } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import type { ShowTemplate, ShowTemplateCue } from '@/lib/admin.types';
-import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
-import { formatBudget, formatDuration } from '@/lib/show-domain';
-import { Slider } from '@/components/ui/slider';
+import type { FireworkSpecification } from '@/lib/show-domain';
+import { formatBudget } from '@/lib/show-domain';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/app/components/admin/previewFullscreen';
+import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
+import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
+import {
+  buildTemplateReplayCues,
+  getCurrentTemplateReplayCue,
+  TEMPLATE_REPLAY_ACTIVE_CUE_EVENT,
+  type TemplateReplayActiveCueEventDetail,
+} from '@/app/components/app/template-replay-cues';
+import { cn } from '@/lib/utils';
 
 type TemplateReplayPreviewProps = {
   template: ShowTemplate;
@@ -29,14 +41,8 @@ type TemplateReplayPreviewProps = {
    * render a lightweight poster behind the preview for the idle state.
    */
   lazyHoverMount?: boolean;
-};
-
-const FIREWORK_SLUG_ALIASES: Record<string, string> = {
-  chrysanthemum: 'gold-chrysanthemum',
-  comet: 'comet-gold',
-  finale_barrage: 'white-strobe',
-  peony: 'gold-chrysanthemum',
-  willow: 'willow-gold',
+  /** Fired once the replay canvas has painted its first developed frame. */
+  onReady?: () => void;
 };
 
 // Card previews only simulate this window — keeps initial seek fast while
@@ -47,19 +53,11 @@ const CARD_PREVIEW_SECONDS = 18;
 // ref and the display state still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 
-function ReplayCanvasSkeleton() {
-  // Calm, static "empty firework scene" — no pulse, so a quick sweep across many
-  // cards shows the night-sky backdrop instantly without flashing.
-  return (
-    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle_at_50%_88%,rgba(120,150,210,0.12),transparent_45%),linear-gradient(180deg,#05070d,#0b1020)]" />
-  );
-}
-
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
-    loading: () => <ReplayCanvasSkeleton />,
+    loading: () => <ReplayCanvasSkeleton showLoadingBar />,
   },
 );
 const MemoizedFireworkReplayCanvas = memo(LazyFireworkReplayCanvas);
@@ -81,26 +79,6 @@ function hoverStartTimeFor(cues: ShowTemplateCue[]): number {
   return Math.max(0, (firstCueTime ?? 0) - 0.3);
 }
 
-function toReplayCue(
-  cue: ShowTemplateCue,
-  index: number,
-  specBySlug: Map<string, FireworkSpecification>,
-): ReplayCue | null {
-  const firework =
-    specBySlug.get(cue.fireworkSlug) ??
-    specBySlug.get(FIREWORK_SLUG_ALIASES[cue.fireworkSlug] ?? '');
-  if (!firework) return null;
-  return {
-    id: `${cue.fireworkSlug}-${cue.timeSeconds}-${index}`,
-    position: index + 1,
-    timeSeconds: cue.timeSeconds,
-    description: cue.description,
-    productId: firework.id,
-    launchPositionIndex: index % 3,
-    firework,
-  };
-}
-
 export function TemplateReplayPreview({
   template,
   specifications,
@@ -109,6 +87,7 @@ export function TemplateReplayPreview({
   cardClassName,
   showCardOverlays = true,
   lazyHoverMount = false,
+  onReady,
 }: TemplateReplayPreviewProps) {
   const isDetail = mode === 'detail';
 
@@ -134,7 +113,8 @@ export function TemplateReplayPreview({
   const [displayElapsed, setDisplayElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isVisible, setIsVisible] = useState(isDetail);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isReplayReady, setIsReplayReady] = useState(!isDetail);
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const elapsedRef = useRef(elapsed);
   const lastScrubCommitRef = useRef(0);
@@ -156,13 +136,28 @@ export function TemplateReplayPreview({
     [duration],
   );
 
-  const cues = useMemo(() => {
-    const specBySlug = new Map(specifications.map((spec) => [spec.slug, spec]));
-    return visibleCues
-      .map((cue, index) => toReplayCue(cue, index, specBySlug))
-      .filter((cue): cue is ReplayCue => Boolean(cue))
-      .sort((a, b) => a.timeSeconds - b.timeSeconds);
-  }, [specifications, visibleCues]);
+  const handleReplayReady = useCallback(() => {
+    setIsReplayReady(true);
+    onReady?.();
+  }, [onReady]);
+
+  const cues = useMemo(
+    () => buildTemplateReplayCues(visibleCues, specifications),
+    [specifications, visibleCues],
+  );
+  const activeCue = useMemo(
+    () => getCurrentTemplateReplayCue(cues, displayElapsed),
+    [cues, displayElapsed],
+  );
+
+  useEffect(() => {
+    if (!isDetail || typeof window === 'undefined') return;
+    const detail: TemplateReplayActiveCueEventDetail = {
+      templateSlug: template.slug,
+      cueId: activeCue?.id ?? null,
+    };
+    window.dispatchEvent(new CustomEvent(TEMPLATE_REPLAY_ACTIVE_CUE_EVENT, { detail }));
+  }, [activeCue?.id, isDetail, template.slug]);
 
   useEffect(() => {
     if (isDetail || isVisible) return;
@@ -195,7 +190,8 @@ export function TemplateReplayPreview({
 
   useEffect(() => {
     detailAutoplayRef.current = false;
-  }, [template.slug]);
+    setIsReplayReady(!isDetail);
+  }, [isDetail, template.slug]);
 
   useEffect(() => {
     if (!isDetail || cues.length === 0 || detailAutoplayRef.current) return;
@@ -274,45 +270,24 @@ export function TemplateReplayPreview({
     setPlayhead(0);
   }
 
-  function toggleFullscreen() {
-    const element = containerRef.current;
-    if (!element) return;
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void element.requestFullscreen?.();
-    }
-  }
-
-  useEffect(() => {
-    if (!isDetail) return;
-    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
-  }, [isDetail]);
-
   const shouldMountCanvas =
     isDetail || (lazyHoverMount ? isCardHovered : isVisible || isCardHovered);
 
   return (
     <div
       ref={containerRef}
-      className={
+      className={cn(
         isDetail
-          ? 'border-outline-variant/15 relative overflow-hidden rounded-xl border bg-black'
-          : (cardClassName ?? 'relative h-44 overflow-hidden')
-      }
+          ? 'group/replay border-border overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-card-hover)]'
+          : (cardClassName ?? 'relative h-44 overflow-hidden'),
+        isDetail &&
+          (isFullscreen
+            ? 'fixed inset-[5vmin] z-[100] shadow-[var(--shadow-modal)]'
+            : 'relative h-[min(72vh,680px)] min-h-[520px]'),
+      )}
       style={isDetail || lazyHoverMount ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
     >
-      <div
-        className={
-          isDetail
-            ? isFullscreen
-              ? 'relative h-screen w-screen'
-              : 'relative aspect-video w-full'
-            : 'relative h-full'
-        }
-      >
+      <div className={isDetail ? 'relative h-full w-full' : 'relative h-full'}>
         {shouldMountCanvas ? (
           <MemoizedFireworkReplayCanvas
             cues={cues}
@@ -323,8 +298,8 @@ export function TemplateReplayPreview({
             maxDevicePixelRatio={isDetail ? 1.25 : 1.75}
             antialias
             primeSnapshots={isDetail}
-            showLoadingBar={isDetail}
-            loadingBarPosition="center"
+            loadingBarPosition="bottom"
+            onReady={handleReplayReady}
           />
         ) : lazyHoverMount ? null : (
           <ReplayCanvasSkeleton />
@@ -332,58 +307,36 @@ export function TemplateReplayPreview({
       </div>
       {isDetail ? (
         <>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-28 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 z-20">
-            <div className="border-t border-white/12 bg-black/70 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md sm:px-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={togglePlayback}
-                    disabled={cues.length === 0}
-                    aria-label={isPlaying ? 'Pause template preview' : 'Play template preview'}
-                    className="focus-glow-action flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-[var(--shadow-cta)] transition-all hover:bg-white/90 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40 disabled:shadow-none"
-                  >
-                    {isPlaying ? <Pause size={17} /> : <Play size={17} fill="currentColor" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={restart}
-                    aria-label="Restart template preview"
-                    className="focus-glow-action flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all hover:bg-white/12 focus:outline-none focus-visible:outline-none active:scale-[0.98]"
-                  >
-                    <RotateCcw size={15} />
-                  </button>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex justify-between font-mono text-[11px] text-white/75 tabular-nums">
-                    <span>{formatDuration(displayElapsed)}</span>
-                    <span>{formatDuration(duration)}</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={duration}
-                    step={0.05}
-                    value={[displayElapsed]}
-                    onValueChange={([next]) => {
-                      setIsPlaying(false);
-                      scrubTo(next);
-                    }}
-                    onValueCommit={commitScrub}
-                    aria-label="Template preview timeline"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleFullscreen}
-                  aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
-                  className="focus-glow-action flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition-all hover:bg-white/12 focus:outline-none focus-visible:outline-none active:scale-[0.98]"
-                >
-                  {isFullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
-                </button>
-              </div>
-            </div>
+          <div className="pointer-events-none absolute top-5 left-5 z-10 max-w-sm">
+            <p className="text-xs font-medium text-white/65 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+              Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
+            </p>
           </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          {isReplayReady ? (
+            <div className="absolute inset-x-0 bottom-6 z-20">
+              <ReplayTransportControls
+                elapsed={displayElapsed}
+                duration={duration}
+                isPlaying={isPlaying}
+                disabled={cues.length === 0}
+                fullscreen={isFullscreen}
+                playLabel="Play template preview"
+                pauseLabel="Pause template preview"
+                resetLabel="Restart template preview"
+                timelineLabel="Template preview timeline"
+                onPlayPause={togglePlayback}
+                onReset={restart}
+                onFullscreenToggle={toggleFullscreen}
+                onScrub={(next) => {
+                  setIsPlaying(false);
+                  scrubTo(next);
+                }}
+                onScrubEnd={commitScrub}
+              />
+            </div>
+          ) : null}
+          {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
         </>
       ) : !showCardOverlays ? null : (
         <>

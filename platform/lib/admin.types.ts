@@ -227,7 +227,6 @@ export type AdminEffectSummary = {
   slug: string;
   name: string;
   description: string | null;
-  family: string;
   patternKey: string;
   source: string;
   sortOrder: number;
@@ -254,7 +253,6 @@ export type AdminEffectOption = {
   slug: string;
   name: string;
   patternKey: string;
-  family: string;
 };
 
 /**
@@ -369,6 +367,8 @@ export type ShowTemplate = {
   moodTags: string[];
   previewCues: ShowTemplateCue[];
   coverShader: ShaderCover | null;
+  /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
+  coverImagePath: string | null;
   isFeatured: boolean;
   likeCount: number;
   createdAt: string;

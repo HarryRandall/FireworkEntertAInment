@@ -30,11 +30,11 @@ async function HomeContent() {
   ]);
   const hasShows = summary.recentShows.length > 0;
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
-  const explorePreviewTemplates = exploreTemplates.slice(0, 10);
+  const explorePreviewTemplates = exploreTemplates.slice(2, 12);
 
   return hasShows ? (
     <>
-      <HomeFeaturedShows templates={featuredShowTemplates} />
+      <HomeFeaturedShows templates={featuredShowTemplates} specifications={specifications} />
       <HomeCollectionsSection />
 
       {explorePreviewTemplates.length > 0 ? (
@@ -44,6 +44,6 @@ async function HomeContent() {
       ) : null}
     </>
   ) : (
-    <EmptyShowsPanel templates={summary.communityTemplates} includePromptHero={false} />
+    <EmptyShowsPanel includePromptHero={false} />
   );
 }

@@ -1096,7 +1096,7 @@ export const FireworkDesignSchema = z.object({
   brocade: z
     .object({
       /** Streak heads per shell. Falls back to `size` when absent. */
-      streakCount: z.coerce.number().int().min(8).max(64).optional(),
+      streakCount: z.coerce.number().int().min(1).max(100).optional(),
       /** Arc-length spacing (world units) between trail square emissions. */
       trailStep: z.coerce.number().min(1).max(10).default(3),
       /** Radius (world units) of the tube trail squares scatter within. */
@@ -2556,8 +2556,14 @@ export function estimateDesignDurationSeconds(design: FireworkDesign): number {
     design.geometry === 'falling_tail' ||
     design.geometry === 'waterfall';
   const starLifeMultiplier = longHangGeometry ? 1.6 : 1;
-  // Flair/trail particles spawned near a star's death linger a little longer.
-  const trailTail = Math.max(1, 1.25 * design.trail.length);
+  const headDuration = burstLife * starLifeMultiplier;
+  // Split and crackle fragments are the only normal particles that can outlive
+  // the main head. Legacy trail length now mostly shapes lift sparkle, so do not
+  // add a blanket tail after every clean burst.
+  const splitTail = design.split.enabled
+    ? Math.max(0, headDuration * design.split.delayRatio + 2.25 - headDuration)
+    : 0;
+  const crackleTail = design.crackle.enabled && design.crackle.probability > 0 ? 1.2 : 0;
   // Streak trails melt away shortly after their head dies; give the timeline
   // room for the last squares' staggered fade.
   const streakTail = Math.max(
@@ -2571,7 +2577,7 @@ export function estimateDesignDurationSeconds(design: FireworkDesign): number {
       return Math.max(layer.burst.life[0], layer.burst.life[1]) * Math.max(0, maxTrailLife - 1);
     }),
   );
-  return liftTime + burstLife * starLifeMultiplier + Math.max(trailTail, streakTail);
+  return liftTime + headDuration + Math.max(splitTail, crackleTail, streakTail);
 }
 
 export type LaunchPosition = { x: number; y: number; z: number };

@@ -134,6 +134,7 @@ function makeTrailPreviewStarLayers(): JsonRecord {
         flairColorMode: 'bombColor',
       },
       head: {
+        visible: true,
         size: 96,
         glowStrength: 0.45,
         glowPadding: 62,
@@ -161,6 +162,7 @@ function makeTrailPreviewStarLayers(): JsonRecord {
         flairColorMode: 'bombColor',
       },
       head: {
+        visible: true,
         size: 62,
         glowStrength: 0.35,
         glowPadding: 48,
@@ -252,6 +254,10 @@ function stripColourFields(layer: FireworkStarLayer): JsonRecord {
   };
 }
 
+function isBrocadeCrownDesign(design: FireworkDesign): boolean {
+  return design.geometry === 'crown' && design.trailProfile === 'glitter';
+}
+
 export function extractStyleDefaultsFromDesign(
   design: FireworkDesign,
   kind: FireworkStyleDefaultKind,
@@ -298,13 +304,23 @@ export function extractStyleDefaultsFromDesign(
         },
       };
     case 'star':
-    default:
-      return {
+    default: {
+      const starDefaults: JsonRecord = {
         stars: {
           outer: stripColourFields(design.stars.outer),
           core: stripColourFields(design.stars.core),
         },
       };
+      if (isBrocadeCrownDesign(design)) {
+        const brocadeDefaults = cloneJson(design.brocade) as JsonRecord;
+        if (typeof brocadeDefaults.streakCount !== 'number') {
+          brocadeDefaults.streakCount = design.stars.outer.count;
+        }
+        starDefaults.burst = cloneJson(design.burst);
+        starDefaults.brocade = brocadeDefaults;
+      }
+      return starDefaults;
+    }
   }
 }
 

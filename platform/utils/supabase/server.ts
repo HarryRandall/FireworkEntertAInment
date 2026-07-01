@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseServerEnv } from '@/utils/supabase/env';
+import { supabaseFetch } from '@/utils/supabase/fetch';
 import type { Database } from '@/lib/database.types';
 
 export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) => {
@@ -14,6 +15,7 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
   }
 
   return createServerClient<Database>(env.url, env.key, {
+    global: { fetch: supabaseFetch },
     cookies: {
       getAll() {
         return cookieStore.getAll();

@@ -10,12 +10,12 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { cookies, headers } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
+import { headers } from 'next/headers';
+import { getServerClient } from '@/utils/supabase/server-client';
 
 /** Returns the Supabase Auth user object for the request, or `null` when unauthenticated. */
 export const getCurrentUser = cache(async () => {
-  const supabase = createClient(await cookies());
+  const supabase = await getServerClient();
   const {
     data: { user },
     error,
@@ -38,7 +38,7 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
     return proxiedUserId;
   }
 
-  const supabase = createClient(await cookies());
+  const supabase = await getServerClient();
   const { data } = await supabase.auth.getClaims();
   const claimsUserId = data?.claims.sub;
   if (typeof claimsUserId === 'string') {

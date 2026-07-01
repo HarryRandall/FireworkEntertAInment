@@ -22,7 +22,6 @@ import {
   CircleUser,
   CreditCard,
   Database,
-  EllipsisVertical,
   FileInput,
   Layers,
   LayoutDashboard,
@@ -30,6 +29,7 @@ import {
   MessageSquareDot,
   MessageSquareText,
   Rocket,
+  Settings,
   ShieldCheck,
   Sparkles,
   Store,
@@ -66,7 +66,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile } from '@/lib/admin.types';
@@ -90,6 +89,9 @@ const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin/imports', label: 'Imports', icon: FileInput },
   { href: '/admin/prompts', label: 'Prompts', icon: MessageSquareText },
 ];
+
+const SIDEBAR_HEADER_TRIGGER_CLASS =
+  'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 
 type ProfileSummary = {
   displayName: string;
@@ -133,29 +135,39 @@ function SidebarBrand() {
   const { isMobile, setOpenMobile } = useSidebar();
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild size="lg" tooltip="ShowCrafter Admin">
-          <Link
-            href="/admin"
-            prefetch
-            onClick={() => {
-              if (isMobile) setOpenMobile(false);
-            }}
+    <div className="relative flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:justify-center">
+      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            size="lg"
+            tooltip="ShowCrafter Admin"
+            className="h-10 transition-opacity duration-150 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:group-hover:opacity-0"
           >
-            <span className="brand-logo-mark flex h-7 w-7 shrink-0 items-center justify-center rounded-md">
-              <Sparkles size={14} strokeWidth={2.2} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold tracking-tight">ShowCrafter</span>
-              <span className="text-muted-foreground block truncate text-[10px] font-medium tracking-wide uppercase">
-                Admin
+            <Link
+              href="/admin"
+              prefetch={false}
+              onClick={() => {
+                if (isMobile) setOpenMobile(false);
+              }}
+            >
+              <span className="brand-logo-mark flex h-7 w-7 shrink-0 items-center justify-center rounded-md group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+                <Sparkles size={16} strokeWidth={2.2} />
               </span>
-            </span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
+              <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+                <span className="block truncate text-sm font-semibold tracking-tight">
+                  ShowCrafter
+                </span>
+                <span className="text-muted-foreground block truncate text-[10px] font-medium tracking-wide uppercase">
+                  Admin
+                </span>
+              </span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+      <SidebarTrigger className={SIDEBAR_HEADER_TRIGGER_CLASS} />
+    </div>
   );
 }
 
@@ -176,7 +188,7 @@ function SidebarNavItem({
       <SidebarMenuButton asChild isActive={active} tooltip={link.label}>
         <Link
           href={link.href}
-          prefetch
+          prefetch={false}
           onClick={(event) => {
             if (isPlainLeftClick(event)) {
               onNavigate(link.href);
@@ -228,7 +240,7 @@ function ProfileMenuButton({
                   {profile.secondaryLine}
                 </span>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
+              <Settings className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -260,19 +272,19 @@ function ProfileMenuButton({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/settings/profile" prefetch>
+                <Link href="/settings/profile" prefetch={false}>
                   <CircleUser />
                   Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/billing" prefetch>
+                <Link href="/settings/billing" prefetch={false}>
                   <CreditCard />
                   Billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/notifications" prefetch>
+                <Link href="/settings/notifications" prefetch={false}>
                   <MessageSquareDot />
                   Notifications
                 </Link>
@@ -320,11 +332,6 @@ function AdminSidebarFooter({
 function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
-      <SidebarTrigger className="-ml-1" />
-      <Separator
-        orientation="vertical"
-        className="mx-1 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"
-      />
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm"
@@ -335,7 +342,7 @@ function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
             crumb.href && !isLast ? (
               <Link
                 href={crumb.href}
-                prefetch
+                prefetch={false}
                 className="hover:text-foreground truncate transition-colors"
               >
                 {crumb.label}

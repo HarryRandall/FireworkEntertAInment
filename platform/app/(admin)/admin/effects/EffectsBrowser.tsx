@@ -13,7 +13,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronRight, ListFilter, Plus, Search, Sparkles } from 'lucide-react';
+import { ChevronRight, ListFilter, Plus, Search } from 'lucide-react';
 import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
 import { createCustomStarEffect } from '@/app/actions/admin-effects';
 import { createStyleDefaultFromKind } from '@/app/actions/admin-style-defaults';
@@ -59,14 +59,6 @@ type Props = {
 
 const ALL = '__all';
 
-const NEW_EFFECT_FAMILIES: Option[] = [
-  { value: 'aerial_burst', label: 'Aerial burst' },
-  { value: 'ascending', label: 'Ascending' },
-  { value: 'ground', label: 'Ground' },
-  { value: 'noise', label: 'Noise' },
-  { value: 'compound', label: 'Compound' },
-];
-
 function styleDefaultBadgeTone(kind: FireworkStyleDefaultKind) {
   switch (kind) {
     case 'star':
@@ -86,14 +78,6 @@ function styleDefaultBadgeTone(kind: FireworkStyleDefaultKind) {
     case 'sound':
       return 'success' as const;
   }
-}
-
-function formatEffectFamily(value: string) {
-  return value
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
 
 function matches(query: string, parts: (string | null | undefined)[]) {
@@ -205,7 +189,6 @@ function Tabs({ value, onChange }: { value: EffectsTab; onChange: (tab: EffectsT
 }
 
 function CreateEffectAction() {
-  const [family, setFamily] = useState('aerial_burst');
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -217,24 +200,12 @@ function CreateEffectAction() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New custom effect</DialogTitle>
-          <DialogDescription>
-            Pick a family to start from. The effect opens in the editor so you can shape it.
-          </DialogDescription>
+          <DialogDescription>The effect opens in the editor so you can shape it.</DialogDescription>
         </DialogHeader>
         <form action={createCustomStarEffect} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-muted-foreground text-xs font-medium">Name (optional)</span>
             <Input name="name" placeholder="Custom Star" aria-label="Effect name" />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium">Family</span>
-            <SelectField
-              name="family"
-              value={family}
-              ariaLabel="Effect family"
-              onChange={setFamily}
-              options={NEW_EFFECT_FAMILIES}
-            />
           </label>
           <DialogFooter>
             <DialogClose asChild>
@@ -300,18 +271,10 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
   const [, startTransition] = useTransition();
   const [tab, setTab] = useState<EffectsTab>(initialTab);
   const [query, setQuery] = useState('');
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<string | null>(null);
 
   const normalisedQuery = query.trim().toLowerCase();
-
-  const familyOptions = useMemo<Option[]>(() => {
-    const values = Array.from(new Set(effects.map((effect) => effect.family)));
-    return values
-      .map((value) => ({ value, label: formatEffectFamily(value) }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [effects]);
 
   const sourceOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(effects.map((effect) => effect.source)));
@@ -334,15 +297,13 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
         effect.name,
         effect.slug,
         effect.description,
-        formatEffectFamily(effect.family),
         effect.patternKey,
         effect.source,
       ]);
-      const matchesFamily = !familyFilter || effect.family === familyFilter;
       const matchesSource = !sourceFilter || effect.source === sourceFilter;
-      return matchesQuery && matchesFamily && matchesSource;
+      return matchesQuery && matchesSource;
     });
-  }, [effects, normalisedQuery, familyFilter, sourceFilter]);
+  }, [effects, normalisedQuery, sourceFilter]);
 
   const filteredDefaults = useMemo(() => {
     return styleDefaults.filter((item) => {
@@ -362,14 +323,9 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
   };
 
   const effectsActive = tab === 'effects';
-  const activeFilterCount = effectsActive
-    ? (familyFilter ? 1 : 0) + (sourceFilter ? 1 : 0)
-    : kindFilter
-      ? 1
-      : 0;
+  const activeFilterCount = effectsActive ? (sourceFilter ? 1 : 0) : kindFilter ? 1 : 0;
 
   const resetFilters = () => {
-    setFamilyFilter(null);
     setSourceFilter(null);
     setKindFilter(null);
   };
@@ -404,20 +360,12 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
         </div>
         <FilterPopover activeCount={activeFilterCount} onReset={resetFilters}>
           {effectsActive ? (
-            <>
-              <FilterSelect
-                label="Family"
-                value={familyFilter}
-                options={familyOptions}
-                onChange={setFamilyFilter}
-              />
-              <FilterSelect
-                label="Source"
-                value={sourceFilter}
-                options={sourceOptions}
-                onChange={setSourceFilter}
-              />
-            </>
+            <FilterSelect
+              label="Source"
+              value={sourceFilter}
+              options={sourceOptions}
+              onChange={setSourceFilter}
+            />
           ) : (
             <FilterSelect
               label="Kind"
@@ -440,11 +388,10 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
         }
       >
         {effectsActive ? (
-          <table className={tableClasses('min-w-[920px]')}>
+          <table className={tableClasses('min-w-[820px]')}>
             <thead className={tableHeadClasses()}>
               <tr>
                 <th className={tableHeaderCellClasses()}>Effect</th>
-                <th className={tableHeaderCellClasses()}>Family</th>
                 <th className={tableHeaderCellClasses()}>Pattern</th>
                 <th className={tableHeaderCellClasses()}>Source</th>
                 <th className={tableHeaderCellClasses('text-right')}>Variants</th>
@@ -456,7 +403,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
             </thead>
             <tbody>
               {filteredEffects.length === 0 ? (
-                <EmptyRow colSpan={7} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
+                <EmptyRow colSpan={6} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
               ) : (
                 filteredEffects.map((effect) => {
                   const href = `/admin/effects/${effect.id}`;
@@ -484,11 +431,6 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
                             </div>
                           </div>
                         </div>
-                      </td>
-                      <td className={tableCellClasses()}>
-                        <Badge tone="violet" solid icon={Sparkles}>
-                          {formatEffectFamily(effect.family)}
-                        </Badge>
                       </td>
                       <td className={tableCellClasses()}>
                         <span className="font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)]">

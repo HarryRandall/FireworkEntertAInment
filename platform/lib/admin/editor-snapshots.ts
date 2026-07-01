@@ -24,7 +24,6 @@ export type EffectEditorSnapshot = {
   id: string;
   name: string;
   description: string | null;
-  family: string;
   patternKey: string;
   sortOrder: number;
   styleDefaultIds: AdminStyleDefaultIdMap;
@@ -85,7 +84,6 @@ export function makeEffectEditorSnapshot(input: EffectEditorSnapshot): Json {
     id: input.id,
     name: input.name,
     description: input.description,
-    family: input.family,
     patternKey: input.patternKey,
     sortOrder: input.sortOrder,
     styleDefaultIds: input.styleDefaultIds,
@@ -127,7 +125,6 @@ export function parseFireworkEditorSnapshot(value: Json | unknown): FireworkEdit
 export function parseEffectEditorSnapshot(value: Json | unknown): EffectEditorSnapshot | null {
   if (!isRecord(value) || value.kind !== 'effect' || typeof value.id !== 'string') return null;
   const name = typeof value.name === 'string' && value.name.trim() ? value.name : 'Untitled effect';
-  const family = typeof value.family === 'string' && value.family ? value.family : 'aerial_burst';
   const patternKey =
     typeof value.patternKey === 'string' && value.patternKey ? value.patternKey : 'custom';
 
@@ -136,7 +133,6 @@ export function parseEffectEditorSnapshot(value: Json | unknown): EffectEditorSn
     id: value.id,
     name,
     description: stringOrNull(value.description),
-    family,
     patternKey,
     sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 0,
     styleDefaultIds: normaliseSnapshotStyleDefaultIds(value.styleDefaultIds),

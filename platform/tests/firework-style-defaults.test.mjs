@@ -166,6 +166,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   const sectionPanels = read('app/components/admin/EditorSectionPanels.tsx');
   const selectField = read('app/components/ui/SelectField.tsx');
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
+  const styleDefaults = read('lib/fireworks/style-defaults.ts');
 
   assert.match(effectsBrowser, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
   assert.match(effectsBrowser, /function StyleDefaultCreateAction/);
@@ -177,7 +178,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   );
   assert.match(effectsBrowser, /styleDefaultBadgeTone/);
   assert.doesNotMatch(effectsBrowser, /tone=\{styleDefault\.kind === 'star' \? 'accent' : 'sky'\}/);
-  assert.match(effectsBrowser, /formatEffectFamily\(effect\.family\)/);
+  assert.doesNotMatch(effectsBrowser, /formatEffectType|effect\.type|Effect type/);
   assert.doesNotMatch(effectsBrowser, /tone="accent" solid icon=\{Sparkles\}/);
   assert.match(effectsBrowser, /Linked effects/);
   assert.match(effectsBrowser, /Linked fireworks/);
@@ -199,6 +200,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   );
   assert.match(defaultsEditor, /controlScope="star"/);
   assert.match(defaultsEditor, /Archive default/);
+  assert.match(defaultsEditor, /showStarfield=\{false\}/);
   assert.doesNotMatch(defaultsEditor, /id: 'star'|id: 'trail'|id: 'launch'|id: 'fx'/);
 
   assert.match(effectEditor, /EditorStyleDefaultControls/);
@@ -211,6 +213,13 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(effectEditor, /createdStyleDefaults/);
   assert.match(effectEditor, /result\.styleDefault/);
   assert.match(effectEditor, /Style default created and saved/);
+  assert.match(effectEditor, /function materialiseStyleDefault/);
+  assert.match(effectEditor, /updateModelDefaultsForStyle\('star'/);
+  assert.match(effectEditor, /updateModelDefaultsForStyle\('trail'/);
+  assert.match(styleDefaults, /function isBrocadeCrownDesign/);
+  assert.match(styleDefaults, /starDefaults\.burst = cloneJson\(design\.burst\)/);
+  assert.match(styleDefaults, /brocadeDefaults\.streakCount = design\.stars\.outer\.count/);
+  assert.match(styleDefaults, /starDefaults\.brocade = brocadeDefaults/);
   assert.match(fireworkEditor, /EditorStyleDefaultControls/);
   for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
     assert.match(fireworkEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
@@ -222,6 +231,10 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(fireworkEditor, /Style default created and saved/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedEffectStyleDefaults\)/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedFireworkStyleDefaults\)/);
+  assert.match(fireworkEditor, /function materialiseStyleDefault/);
+  assert.match(fireworkEditor, /mutateOverridesForStyle\('star'/);
+  assert.match(fireworkEditor, /mutateOverridesForStyle\('trail'/);
+  assert.match(fireworkEditor, /selectedEffectStyleDefaults\[kind\] != null/);
   assert.match(sectionPanels, /Save new default/);
   assert.match(sectionPanels, /Clear edits/);
   assert.match(selectField, /<SelectValue placeholder=\{placeholder\} \/>/);

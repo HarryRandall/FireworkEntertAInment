@@ -9,6 +9,9 @@ import * as THREE from 'three';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 
 export type FireworkSceneMode = 'night' | 'day';
+export type WorldOptions = {
+  showStarfield?: boolean;
+};
 
 const GROUND_SIZE = 8000;
 const HORIZON_GROUND_RADIUS = 28000;
@@ -184,14 +187,17 @@ export class World {
   private groundMaterial: THREE.ShaderMaterial | null = null;
   private horizonGroundMaterial: THREE.ShaderMaterial | null = null;
   private starfield: THREE.Points | null = null;
+  private readonly showStarfield: boolean;
 
   constructor(
     scene: THREE.Scene,
     positions: LaunchPosition[],
     sceneMode: FireworkSceneMode = 'night',
+    options: WorldOptions = {},
   ) {
     this.group = new THREE.Group();
     this.sceneMode = sceneMode;
+    this.showStarfield = options.showStarfield ?? true;
     scene.add(this.group);
     this.build(positions);
   }
@@ -200,7 +206,7 @@ export class World {
     this.mortarPositions = positions.slice(0, 3);
 
     this.addSkyDome();
-    this.addStarfield();
+    if (this.showStarfield) this.addStarfield();
 
     // Soft circular horizon floor: it keeps the grid grounded while avoiding a
     // square edge against the sky at low camera angles.

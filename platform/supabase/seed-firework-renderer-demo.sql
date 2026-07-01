@@ -11,7 +11,7 @@ insert into public.firework_effects (
   slug,
   name,
   description,
-  family,
+  type,
   pattern_key,
   model_json,
   source,
@@ -29,7 +29,7 @@ insert into public.firework_effects (
 on conflict (slug) do update set
   name = excluded.name,
   description = excluded.description,
-  family = excluded.family,
+  type = excluded.type,
   pattern_key = excluded.pattern_key,
   model_json = excluded.model_json,
   source = excluded.source,

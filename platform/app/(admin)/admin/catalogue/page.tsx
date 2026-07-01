@@ -1,6 +1,7 @@
 /** Admin catalogue page listing every firework product available across suppliers. */
 
 import { Suspense } from 'react';
+import { CircleDashed, CircleDot, Layers3, Package, type LucideIcon } from 'lucide-react';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Badge } from '@/app/components/ui/Badge';
 import { FilterBar } from '@/app/components/ui/FilterBar';
@@ -24,6 +25,17 @@ const KIND_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+const KIND_ICONS: Record<string, LucideIcon> = {
+  firework: CircleDashed,
+  multishot: Layers3,
+  bundle: Package,
+  other: CircleDot,
+};
+
+function kindIcon(kind: string): LucideIcon {
+  return KIND_ICONS[kind] ?? CircleDot;
+}
+
 type PageProps = {
   searchParams: Promise<{
     q?: string;
@@ -40,11 +52,6 @@ export default async function AdminCataloguePage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <p className="text-sm text-[color:var(--color-content-subtle)]">
-        Everything in stock. Every firework and multishot appears here automatically and cannot be
-        deleted; edit stock metadata inline.
-      </p>
-
       <Suspense
         fallback={
           <>
@@ -177,7 +184,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                   ) : null}
                 </td>
                 <td className={tableCellClasses()}>
-                  <Badge solid tone={product.kind === 'multishot' ? 'accent' : 'neutral'}>
+                  <Badge solid tone="neutral" icon={kindIcon(product.kind)}>
                     {KIND_LABELS[product.kind] ?? product.kind}
                   </Badge>
                 </td>

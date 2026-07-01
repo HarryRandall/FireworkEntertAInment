@@ -126,7 +126,7 @@ function PromptTabs({ activeKey, configs }: { activeKey: PromptTabKey; configs: 
           <Link
             key={tab.key}
             href={`/admin/prompts?tab=${tab.key}`}
-            prefetch
+            prefetch={false}
             className={cn(
               'focus-visible:ring-ring/50 inline-flex h-9 min-w-0 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-3',
               active
@@ -166,7 +166,7 @@ function PromptContentSkeleton({ activeKey }: { activeKey: PromptTabKey }) {
               <Link
                 key={tab.key}
                 href={`/admin/prompts?tab=${tab.key}`}
-                prefetch
+                prefetch={false}
                 className={cn(
                   'focus-visible:ring-ring/50 inline-flex h-9 min-w-0 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-3',
                   active

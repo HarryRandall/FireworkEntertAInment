@@ -17,7 +17,7 @@ import { getServerClient } from './supabase';
 const SHOW_TEMPLATES_CACHE_KEY = `${PLATFORM_CACHE_PREFIX}:show-templates`;
 const SHOW_TEMPLATES_BASE_SELECT =
   'id, slug, title, theme, description, duration_seconds, budget_cents, total_cents, effects_count, time_of_day, mood_tags, preview_cues, is_featured, sort_order, created_at, updated_at';
-const SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader`;
+const SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path`;
 
 function isMissingCoverShaderError(error: { code?: string; message?: string } | null): boolean {
   const message = error?.message ?? '';

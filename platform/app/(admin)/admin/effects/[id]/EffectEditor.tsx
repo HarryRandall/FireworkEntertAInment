@@ -21,24 +21,21 @@ import {
   EditorHistoryPanel,
   JsonReadOnlyPanel,
 } from '@/app/components/admin/EditorInspectorPanels';
-import {
-  EditorStyleDefaultControls,
-  EditorTrailPanel,
-} from '@/app/components/admin/EditorSectionPanels';
+import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSectionPanels';
 import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
-import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
-import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
 import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
+import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
+import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
+import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
+import type { SelectOption } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
 import type {
   AdminEditorVersion,
@@ -51,14 +48,12 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-  type FireworkStarLayer,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
   NO_STYLE_DEFAULT_VALUE,
-  clearNestedStarBurstTrails,
   emptyStyleDefaultIdMap,
   orderedStyleDefaultValues,
   removeStyleDefaultOverridesFromRecord,
@@ -70,8 +65,6 @@ import type { ReplayCue } from '@/lib/show-domain';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type JsonRecord = Record<string, unknown>;
-type BaseEffectFamily = 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound';
-type BurstTrail = FireworkStarLayer['burstTrail'];
 type LocalStyleDefaultOptions = Partial<
   Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
 >;
@@ -93,26 +86,6 @@ const PREVIEW_START_SECONDS = 0;
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
-const FAMILY_OPTIONS: SelectOption[] = [
-  { value: 'aerial_burst', label: 'Aerial burst' },
-  { value: 'ascending', label: 'Ascending' },
-  { value: 'ground', label: 'Ground' },
-  { value: 'noise', label: 'Noise' },
-  { value: 'compound', label: 'Compound' },
-];
-
-function normaliseFamily(value: string): BaseEffectFamily {
-  if (
-    value === 'aerial_burst' ||
-    value === 'ascending' ||
-    value === 'ground' ||
-    value === 'noise' ||
-    value === 'compound'
-  ) {
-    return value;
-  }
-  return 'aerial_burst';
-}
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -135,6 +108,20 @@ function isRecord(value: unknown): value is JsonRecord {
 
 function cloneRecord(value: JsonRecord): JsonRecord {
   return JSON.parse(JSON.stringify(value)) as JsonRecord;
+}
+
+function cloneJsonValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function mergeRecordInto(target: JsonRecord, source: JsonRecord) {
+  for (const [key, value] of Object.entries(source)) {
+    if (isRecord(value)) {
+      mergeRecordInto(ensureRecord(target, key), value);
+    } else {
+      target[key] = cloneJsonValue(value);
+    }
+  }
 }
 
 function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
@@ -160,7 +147,6 @@ function toSaveStyleDefaultIds(
 function effectEditorSignature(fields: {
   name: string;
   description: string;
-  family: BaseEffectFamily;
   patternKey: string;
   sortOrder: number;
   styleDefaultIds: Record<FireworkStyleDefaultKind, string | null>;
@@ -169,7 +155,6 @@ function effectEditorSignature(fields: {
   return JSON.stringify({
     name: fields.name,
     description: fields.description,
-    family: fields.family,
     patternKey: fields.patternKey,
     sortOrder: fields.sortOrder,
     styleDefaultIds: fields.styleDefaultIds,
@@ -233,19 +218,21 @@ function initialStyleDefaultIds(
 }
 
 function ReplayCanvasSkeleton() {
-  return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
+  return <ReplayStageBackdrop />;
 }
 
 export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewLoadingProgress, setPreviewLoadingProgress] = useState<number | null>(null);
   const [name, setName] = useState(effect.name);
   const [description, setDescription] = useState(effect.description ?? '');
-  const [family, setFamily] = useState<BaseEffectFamily>(() => normaliseFamily(effect.family));
   const [patternKey, setPatternKey] = useState(effect.patternKey);
   const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
   const [modelText, setModelText] = useState(() =>
@@ -263,8 +250,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const startedAtRef = useRef(0);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
-
   const parsedModel = useMemo(() => parseJsonObject(modelText), [modelText]);
   const baseModel = useMemo(
     () =>
@@ -301,7 +286,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       effectEditorSignature({
         name,
         description,
-        family,
         patternKey,
         sortOrder: sortOrderNumber,
         styleDefaultIds: saveStyleDefaultIds,
@@ -310,7 +294,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     [
       baseModel,
       description,
-      family,
       modelText,
       name,
       parsedModel.ok,
@@ -328,7 +311,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   useEffect(() => {
     setName(effect.name);
     setDescription(effect.description ?? '');
-    setFamily(normaliseFamily(effect.family));
     setPatternKey(effect.patternKey);
     setSortOrder(String(effect.sortOrder));
     setModelText(JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2));
@@ -502,6 +484,32 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setModelText(JSON.stringify(draft, null, 2));
   }
 
+  function markStyleDefaultCustom(kind: FireworkStyleDefaultKind) {
+    setStyleDefaultIds((current) => {
+      if (current[kind] === NO_STYLE_DEFAULT_VALUE) return current;
+      return { ...current, [kind]: NO_STYLE_DEFAULT_VALUE };
+    });
+  }
+
+  function materialiseStyleDefault(kind: FireworkStyleDefaultKind, defaults: JsonRecord) {
+    if (styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE) return false;
+    mergeRecordInto(defaults, extractStyleDefaultsFromDesign(previewDesign, kind));
+    return true;
+  }
+
+  function updateModelDefaultsForStyle(
+    kind: FireworkStyleDefaultKind,
+    updater: (defaults: JsonRecord) => void,
+  ) {
+    if (!parsedModel.ok) return;
+    const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
+    const defaults = ensureRecord(draft, 'renderDefaults');
+    const shouldMarkCustom = materialiseStyleDefault(kind, defaults);
+    updater(defaults);
+    setModelText(JSON.stringify(draft, null, 2));
+    if (shouldMarkCustom) markStyleDefaultCustom(kind);
+  }
+
   function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
     updateModelDefaults((defaults) => {
       removeStyleDefaultOverridesFromRecord(defaults, kind);
@@ -526,7 +534,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       expectedUpdatedAt: lastSavedUpdatedAt,
       name,
       description,
-      family,
       patternKey,
       sortOrder: sortOrderNumber,
       starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
@@ -590,7 +597,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         effectEditorSignature({
           name,
           description,
-          family,
           patternKey,
           sortOrder: sortOrderNumber,
           styleDefaultIds: nextSaveMap,
@@ -630,7 +636,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   function revertLocalChanges() {
     setName(effect.name);
     setDescription(effect.description ?? '');
-    setFamily(normaliseFamily(effect.family));
     setPatternKey(effect.patternKey);
     setSortOrder(String(effect.sortOrder));
     setModelText(JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2));
@@ -662,18 +667,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
-  function updateBurstTrail(updater: (trail: BurstTrail) => BurstTrail, custom = true) {
-    const next = updater(JSON.parse(JSON.stringify(previewDesign.burstTrail)) as BurstTrail);
-    updateModelDefaults((defaults) => {
-      defaults.burstTrail = custom ? { ...next, preset: 'custom' } : next;
-      clearNestedStarBurstTrails(defaults);
-    });
-  }
-
-  function setBurstTrail(next: BurstTrail, custom = true) {
-    updateBurstTrail(() => next, custom);
-  }
-
   const previewSnapshot = previewVersion
     ? parseEffectEditorSnapshot(previewVersion.snapshotJson)
     : null;
@@ -703,15 +696,20 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       launchPositions={PREVIEW_LAUNCH_POSITIONS}
       muted={!isPlaying}
       interactive
-      controlsVisible
+      controlsVisible={previewReady}
+      showStarfield={false}
       showFps
-      allowFullscreen
-      fullscreen={isFullscreen}
-      onToggleFullscreen={toggleFullscreen}
       primeSnapshots
       primeOnCueChanges={false}
-      showLoadingBar
-      loadingBarPosition="center"
+      showLoadingBar={false}
+      onPrimeProgress={(progress) => {
+        setPreviewLoadingProgress(progress);
+        if (progress !== null) setPreviewReady(false);
+      }}
+      onReady={() => {
+        setPreviewReady(true);
+        setPreviewLoadingProgress(null);
+      }}
       renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
       headStyle={{
         coreSoftness,
@@ -732,6 +730,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       duration={previewDuration}
       isPlaying={isPlaying}
       isLooping={isLooping}
+      fullscreen={isFullscreen}
+      loading={!previewReady}
+      loadingProgress={previewLoadingProgress}
       ticks={previewTicks}
       onPlayPause={() => {
         if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
@@ -744,6 +745,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         setPreviewTime(PREVIEW_START_SECONDS);
       }}
       onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onFullscreenToggle={toggleFullscreen}
       onScrub={(seconds) => {
         setIsPlaying(false);
         scrubTo(seconds);
@@ -767,15 +769,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field>
-          <FieldLabel>Family</FieldLabel>
-          <SelectField
-            value={family}
-            onChange={(value) => setFamily(normaliseFamily(value))}
-            options={FAMILY_OPTIONS}
-            ariaLabel="Effect family"
-          />
-        </Field>
         <Field>
           <FieldLabel htmlFor="fx-pattern">Pattern key</FieldLabel>
           <Input
@@ -820,7 +813,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: SlidersHorizontal,
       eyebrow: 'Catalogue',
       title: 'Details',
-      description: 'Name, effect family and renderer key for this base effect.',
       content: detailsContent,
     },
     {
@@ -829,14 +821,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Sparkles,
       eyebrow: 'Appearance',
       title: 'Star & glow',
-      description: 'Size, life and the glow around each burning star.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('star', updater)}
             disabled={!parsedModel.ok}
             showStarCount
             controlScope="star"
@@ -851,7 +842,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: CircleDot,
       eyebrow: 'Appearance',
       title: 'Star Inner',
-      description: 'The smaller core burst inside the main star break.',
       content: (
         <FireworkRenderControls
           design={previewDesign}
@@ -870,13 +860,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Wind,
       eyebrow: 'Appearance',
       title: 'Trail',
-      description: 'The brocade streaks that hang behind each star.',
       content: (
         <div className="space-y-5">
-          <EditorTrailPanel
-            trail={previewDesign.burstTrail}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('trail', updater)}
             disabled={!parsedModel.ok}
-            onChange={setBurstTrail}
+            controlScope="trail"
           />
           {renderStyleDefaultControls('trail')}
         </div>
@@ -888,14 +880,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Rocket,
       eyebrow: 'Ascent',
       title: 'Launch',
-      description: 'How the shell rises before it bursts.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
             disabled={!parsedModel.ok}
             showLaunch
             controlScope="launch"
@@ -910,14 +901,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Zap,
       eyebrow: 'Effects',
       title: 'Spark effects',
-      description: 'Optional strobe, crackle and split-shell effects.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('strobe', updater)}
             disabled={!parsedModel.ok}
             controlScope="strobe"
           />
@@ -926,7 +916,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('crackle', updater)}
             disabled={!parsedModel.ok}
             controlScope="crackle"
           />
@@ -935,7 +925,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('split', updater)}
             disabled={!parsedModel.ok}
             controlScope="split"
           />
@@ -949,14 +939,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Cloud,
       eyebrow: 'Atmosphere',
       title: 'Smoke',
-      description: 'Launch smoke that lingers after the lift.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('smoke', updater)}
             disabled={!parsedModel.ok}
             controlScope="smoke"
           />
@@ -970,14 +959,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Volume2,
       eyebrow: 'Audio',
       title: 'Sound',
-      description: 'The report heard on launch and at the burst.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
             calibrationDefaults={calibrationDefaults}
-            mutate={updateModelDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('sound', updater)}
             disabled={!parsedModel.ok}
             controlScope="sound"
           />
@@ -1008,12 +996,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Braces,
       eyebrow: 'Advanced',
       title: 'Canonical model JSON',
-      content: (
-        <JsonReadOnlyPanel
-          label="Read-only v1 view of the canonical firework_effects.model_json payload."
-          value={baseModel as Json}
-        />
-      ),
+      content: <JsonReadOnlyPanel value={baseModel as Json} />,
     },
   ];
 

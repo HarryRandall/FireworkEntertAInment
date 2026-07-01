@@ -89,6 +89,8 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       coverShader={creating === '1' ? null : show.coverShader}
       randomiseCoverOnLoad={creating === '1' || !show.coverShader}
       persistKey={show.slug}
+      showId={show.id}
+      coverImagePath={show.coverImagePath}
       className={SPLASH_CLASS}
     />
   );

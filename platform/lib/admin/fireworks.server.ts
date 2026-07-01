@@ -45,7 +45,7 @@ type FireworkEffectRow = {
   name: string;
   slug: string;
   pattern_key: string;
-  family?: string | null;
+  type?: string | null;
   model_json?: Json;
   star_style_default_id?: string | null;
   trail_style_default_id?: string | null;
@@ -74,12 +74,12 @@ type FireworkRow = {
 };
 
 const FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, star_style_default_id, trail_style_default_id, updated_at, firework_effects (id, slug, name, pattern_key, family, model_json, star_style_default_id, trail_style_default_id, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)), star_style_default:firework_style_defaults!fireworks_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!fireworks_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, star_style_default_id, trail_style_default_id, updated_at, firework_effects (id, slug, name, pattern_key, model_json, star_style_default_id, trail_style_default_id, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)), star_style_default:firework_style_defaults!fireworks_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!fireworks_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
 const LEGACY_FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, family, model_json)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json)';
 const EFFECT_OPTIONS_SELECT =
-  'id, slug, name, pattern_key, family, model_json, star_style_default_id, trail_style_default_id, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
-const LEGACY_EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, family, model_json';
+  'id, slug, name, pattern_key, model_json, star_style_default_id, trail_style_default_id, star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
+const LEGACY_EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 
 function firstEffect(
   effect: FireworkEffectRow | FireworkEffectRow[] | null | undefined,
@@ -171,7 +171,7 @@ function mapSummary(
         color: row.primary_color ?? undefined,
         colorPalette: palette.length ? palette : undefined,
       } as Json,
-      { type: effect?.name ?? null, name: row.name },
+      { pattern: effect?.name ?? null, name: row.name },
     ),
     updatedAt: row.updated_at,
   };
@@ -299,7 +299,6 @@ async function loadEffectOptionsAndModels(): Promise<{
     slug: row.slug,
     name: row.name,
     patternKey: row.pattern_key,
-    family: row.family ?? 'aerial_burst',
   }));
   const models: Record<string, Json> = {};
   const starStyleDefaults: Record<string, AdminStyleDefaultOption | null> = {};

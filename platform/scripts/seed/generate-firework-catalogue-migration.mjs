@@ -135,21 +135,20 @@ lines.push(`-- Reseed base effects (upsert by slug). multishot_fireworks.firewor
 lines.push(`-- null with on-delete restrict, so effects/fireworks are upserted in place and`);
 lines.push(`-- legacy rows are pruned only after dependents are re-linked below.`);
 lines.push(`insert into public.firework_effects`);
-lines.push(`  (slug, name, description, family, pattern_key, model_json, sort_order, source)`);
+lines.push(`  (slug, name, description, pattern_key, model_json, sort_order, source)`);
 lines.push('values');
 FIREWORK_EFFECT_CATALOGUE.forEach((effect, index) => {
   const modelJson = catalogueEffectModelJson(effect);
   const comma = index < FIREWORK_EFFECT_CATALOGUE.length - 1 ? ',' : '';
   lines.push(
     `  (${sqlString(effect.slug)}, ${sqlString(effect.name)}, ${sqlString(effect.description)}, ` +
-      `${sqlString(effect.family)}, ${sqlString(effect.patternKey)}, ` +
-      `${jsonLiteral(modelJson)}::jsonb, ${effect.sortOrder}, 'reference')${comma}`,
+      `${sqlString(effect.patternKey)}, ${jsonLiteral(modelJson)}::jsonb, ` +
+      `${effect.sortOrder}, 'reference')${comma}`,
   );
 });
 lines.push(`on conflict (slug) do update set`);
 lines.push(`  name = excluded.name,`);
 lines.push(`  description = excluded.description,`);
-lines.push(`  family = excluded.family,`);
 lines.push(`  pattern_key = excluded.pattern_key,`);
 lines.push(`  model_json = excluded.model_json,`);
 lines.push(`  sort_order = excluded.sort_order,`);

@@ -14,7 +14,13 @@ for (const path of ['app/components/app/AppShell.tsx', 'app/components/admin/Adm
     assert.match(source, /useSidebarPreference/);
     assert.match(source, /open=\{!sidebarCollapsed\}/);
     assert.match(source, /onOpenChange=\{\(open\) => setSidebarCollapsedPreference\(!open\)\}/);
-    assert.match(source, /<SidebarTrigger className="-ml-1" \/>/);
+    assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
+    assert.match(source, /hover:scale-\[1\.03\]/);
+    assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
+    assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-100/);
+    assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-0/);
+    assert.match(source, /<SidebarTrigger className=\{SIDEBAR_HEADER_TRIGGER_CLASS\} \/>/);
+    assert.doesNotMatch(source, /<SidebarTrigger className="-ml-1" \/>/);
     assert.match(source, /overflow-hidden/);
     assert.match(source, /overflow-y-auto/);
     assert.doesNotMatch(source, /<SidebarRail/);
@@ -36,6 +42,7 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
   assert.match(appSource, /icon\?: LucideIcon/);
   assert.match(appSource, /icon: staticLink\?\.icon/);
   assert.doesNotMatch(appSource, /label: 'Workspace'/);
+  assert.doesNotMatch(appSource, /<SidebarGroupLabel>Workspace<\/SidebarGroupLabel>/);
   assert.match(appSource, /SidebarPrimaryAction/);
   assert.match(appSource, /label: 'My shows'/);
   assert.match(appSource, /label: 'Explore'/);
@@ -50,6 +57,29 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
 
   assert.match(adminSource, /getAdminBreadcrumbs/);
   assert.match(adminSource, /aria-label="Breadcrumb"/);
+});
+
+test('app profile theme picker stays compact and border-only', () => {
+  const source = readFileSync(join(root, 'app/components/app/AppShell.tsx'), 'utf8');
+  const start = source.indexOf('function ProfileThemeMenu()');
+  const end = source.indexOf('function SidebarAiUsageMeter', start);
+  const themeBlock = source.slice(start, end);
+
+  assert.match(themeBlock, /aria-label="Interface theme"/);
+  assert.match(themeBlock, /hover:bg-\[color:var\(--accent\)\]/);
+  assert.match(themeBlock, /flex h-8 items-center gap-2 rounded-sm px-2/);
+  assert.match(
+    themeBlock,
+    /bg-background[\s\S]*grid h-7 w-\[6\.75rem\] shrink-0 grid-cols-3 items-center rounded-full border p-0\.5/,
+  );
+  assert.match(themeBlock, /flex h-full w-full items-center justify-center rounded-full/);
+  assert.match(themeBlock, /bg-muted text-foreground shadow-xs/);
+  assert.doesNotMatch(themeBlock, /before:right-\[/);
+  assert.doesNotMatch(themeBlock, /ring-border\/80/);
+  assert.doesNotMatch(themeBlock, /hover:text-foreground/);
+
+  assert.match(source, /<ProfileMenuButton profile=\{profile\} onSignOut=\{onSignOut\} \/>/);
+  assert.doesNotMatch(source, /!\s*inSettings\s*\? <ProfileMenuButton/);
 });
 
 test('shared sidebar hook reads storage after hydration and writes the cookie fallback', () => {

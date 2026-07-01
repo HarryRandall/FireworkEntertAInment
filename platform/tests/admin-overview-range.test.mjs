@@ -37,6 +37,13 @@ test('admin overview range selector is URL-backed', () => {
 
   assert.match(tabs, /useSearchParams/);
   assert.match(tabs, /Tabs\s+value=\{selectedTab\}/);
+  assert.match(tabs, /pendingFallbacks\[selectedTab\]/);
+  assert.doesNotMatch(tabs, /pendingFallback\(selectedTab\)/);
+  assert.match(page, /pendingFallbacks=\{\{/);
+  assert.match(page, /overview: <AdminOverviewContentSkeleton tab="overview" \/>/);
+  assert.match(page, /catalogue: <AdminOverviewContentSkeleton tab="catalogue" \/>/);
+  assert.match(page, /imports: <AdminOverviewContentSkeleton tab="imports" \/>/);
+  assert.match(page, /generation: <AdminOverviewContentSkeleton tab="generation" \/>/);
   assert.match(tabs, /params\.set\(ADMIN_OVERVIEW_TAB_PARAM, nextTab\)/);
   assert.match(tabs, /params\.delete\(ADMIN_OVERVIEW_TAB_PARAM\)/);
 

@@ -19,7 +19,6 @@ export type LabEffect = Pick<
   | 'slug'
   | 'name'
   | 'description'
-  | 'family'
   | 'patternKey'
   | 'sortOrder'
   | 'updatedAt'

@@ -119,6 +119,9 @@ const CONTROL_GRID_CLASS =
 const BROCADE_SPEED_HALF_WIDTH = 0.6;
 const BROCADE_LIFE_HALF_WIDTH = 0.6;
 const BROCADE_GRAVITY_HALF_WIDTH = 0.12;
+const BROCADE_HEAD_SIZE_MIN = 100;
+const BROCADE_HEAD_SIZE_MAX = 4000;
+const BROCADE_HEAD_SIZE_STEP = 50;
 const STAR_COUNT_MIN = 1;
 const STAR_COUNT_MAX = 100;
 const STAR_SIZE_MIN = 10;
@@ -649,9 +652,15 @@ export function SubSection({
  * sliders so each section shows only its few common controls by default.
  * Renders full-width inside the compact control grid.
  */
-function AdvancedControls({ children }: { children: ReactNode }) {
+function AdvancedControls({
+  children,
+  defaultOpen = false,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
   const contentId = useId();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="col-span-full">
       <button
@@ -799,7 +808,7 @@ export function FireworkRenderControls({
 
   const isBrocade = design.geometry === 'crown' && design.trailProfile === 'glitter';
   const headsEnabled = design.brocade.headsEnabled;
-  const outerEnabled = design.stars.outer.enabled;
+  const outerEnabled = isBrocade ? headsEnabled : design.stars.outer.enabled;
   const coreEnabled = design.stars.core.enabled;
   const strobeEnabled =
     typeof strobeDefaults.enabled === 'boolean' ? strobeDefaults.enabled : design.strobe.enabled;
@@ -970,7 +979,7 @@ export function FireworkRenderControls({
   function renderLaunchSoundControl() {
     return (
       <SwitchField
-        label="Launch report"
+        label="Launch sound"
         checked={launchSoundValue}
         disabled={disabled}
         hint="Mortar lift sound when the shell leaves the tube."
@@ -1677,18 +1686,42 @@ export function FireworkRenderControls({
     );
   }
 
+  function ensureDraftStarLayer(draft: JsonRecord, layerKey: StarLayerKey) {
+    const stars = ensureRecord(draft, 'stars');
+    return ensureRecord(stars, layerKey);
+  }
+
+  function ensureDraftStarNested(
+    draft: JsonRecord,
+    layerKey: StarLayerKey,
+    group: 'burst' | 'head',
+  ) {
+    const layer = ensureDraftStarLayer(draft, layerKey);
+    return ensureRecord(layer, group);
+  }
+
+  function normaliseStarCount(value: number) {
+    return Math.min(STAR_COUNT_MAX, Math.max(STAR_COUNT_MIN, Math.round(value)));
+  }
+
   function setBurstRangeMid(key: 'speed' | 'gravity' | 'life', mid: number, halfWidth: number) {
     mutate((draft) => {
+      const next = [round2(mid - halfWidth), round2(mid + halfWidth)];
       const burst = ensureRecord(draft, 'burst');
-      burst[key] = [round2(mid - halfWidth), round2(mid + halfWidth)];
+      burst[key] = next;
+      if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst')[key] = next;
     });
   }
 
   function setBrocadeGravityUpper(maxGravity: number) {
     mutate((draft) => {
+      const next = [
+        round2(Math.min(0, maxGravity) - BROCADE_GRAVITY_HALF_WIDTH),
+        round2(Math.min(0, maxGravity)),
+      ];
       const burst = ensureRecord(draft, 'burst');
-      const upper = Math.min(0, maxGravity);
-      burst.gravity = [round2(upper - BROCADE_GRAVITY_HALF_WIDTH), round2(upper)];
+      burst.gravity = next;
+      if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst').gravity = next;
     });
   }
 
@@ -1696,14 +1729,31 @@ export function FireworkRenderControls({
     mutate((draft) => {
       const brocade = ensureRecord(draft, 'brocade');
       brocade[key] = value;
+      if (key === 'headsEnabled') ensureDraftStarLayer(draft, 'outer').enabled = value;
+      if (key === 'headSize') ensureDraftStarNested(draft, 'outer', 'head').size = value;
+      if (key === 'glowStrength')
+        ensureDraftStarNested(draft, 'outer', 'head').glowStrength = value;
     });
   }
 
-  function setLayerValue(layerKey: StarLayerKey, key: string, value: unknown) {
+  function setStarLayerEnabled(layerKey: StarLayerKey, value: boolean) {
     mutate((draft) => {
-      const stars = ensureRecord(draft, 'stars');
-      const target = ensureRecord(stars, layerKey);
-      target[key] = value;
+      ensureDraftStarLayer(draft, layerKey).enabled = value;
+      if (isBrocade && layerKey === 'outer') {
+        const brocade = ensureRecord(draft, 'brocade');
+        brocade.headsEnabled = value;
+      }
+    });
+  }
+
+  function setStarCount(layerKey: StarLayerKey, value: number) {
+    const count = normaliseStarCount(value);
+    mutate((draft) => {
+      ensureDraftStarLayer(draft, layerKey).count = count;
+      if (isBrocade && layerKey === 'outer') {
+        const brocade = ensureRecord(draft, 'brocade');
+        brocade.streakCount = count;
+      }
     });
   }
 
@@ -1714,10 +1764,59 @@ export function FireworkRenderControls({
     value: unknown,
   ) {
     mutate((draft) => {
-      const stars = ensureRecord(draft, 'stars');
-      const layer = ensureRecord(stars, layerKey);
+      const layer = ensureDraftStarLayer(draft, layerKey);
       const target = ensureRecord(layer, group);
       target[key] = value;
+    });
+  }
+
+  function setStarBurstRangeMid(
+    layerKey: StarLayerKey,
+    key: 'speed' | 'gravity' | 'life',
+    mid: number,
+    halfWidth: number,
+  ) {
+    if (isBrocade && layerKey === 'outer') {
+      setBurstRangeMid(key, mid, halfWidth);
+      return;
+    }
+    setLayerBurstRangeMid(layerKey, key, mid, halfWidth);
+  }
+
+  function setStarBurstLifeMid(layerKey: StarLayerKey, mid: number) {
+    if (isBrocade && layerKey === 'outer') {
+      setBurstRangeMid('life', mid, BROCADE_LIFE_HALF_WIDTH);
+      return;
+    }
+    setLayerBurstLifeMid(layerKey, mid);
+  }
+
+  function setStarGravityUpper(layerKey: StarLayerKey, maxGravity: number) {
+    if (isBrocade && layerKey === 'outer') {
+      setBrocadeGravityUpper(maxGravity);
+      return;
+    }
+    setLayerGravityUpper(layerKey, maxGravity);
+  }
+
+  function setStarHeadSize(layerKey: StarLayerKey, value: number) {
+    mutate((draft) => {
+      ensureDraftStarNested(draft, layerKey, 'head').size = value;
+      if (isBrocade && layerKey === 'outer') {
+        const brocade = ensureRecord(draft, 'brocade');
+        brocade.headSize = value;
+      }
+    });
+  }
+
+  function setStarGlowStrength(layerKey: StarLayerKey, value: number) {
+    const strength = round2(value);
+    mutate((draft) => {
+      ensureDraftStarNested(draft, layerKey, 'head').glowStrength = strength;
+      if (isBrocade && layerKey === 'outer') {
+        const brocade = ensureRecord(draft, 'brocade');
+        brocade.glowStrength = strength;
+      }
     });
   }
 
@@ -2250,10 +2349,11 @@ export function FireworkRenderControls({
   }
 
   function setStreakCount(value: number) {
+    const count = normaliseStarCount(value);
     mutate((draft) => {
       const brocade = ensureRecord(draft, 'brocade');
-      brocade.streakCount = value;
-      draft.size = value;
+      brocade.streakCount = count;
+      ensureDraftStarLayer(draft, 'outer').count = count;
     });
   }
 
@@ -2265,7 +2365,7 @@ export function FireworkRenderControls({
       disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
 
     return (
-      <SubSection title="Opening">
+      <SubSection title="Opening" defaultExpanded={controlScope === 'trail'}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <SliderField
             label="Start particles"
@@ -2343,7 +2443,7 @@ export function FireworkRenderControls({
     const spreadFadeEnabled = closing.spreadFade.enabled;
 
     return (
-      <SubSection title="Closing">
+      <SubSection title="Closing" defaultExpanded={controlScope === 'trail'}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <SliderField
             label="Particle life"
@@ -2610,7 +2710,7 @@ export function FireworkRenderControls({
             </Field>
           </div>
 
-          <SubSection title="Particles">
+          <SubSection title="Particles" defaultExpanded={controlScope === 'trail'}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Amount"
@@ -2653,7 +2753,7 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'particleSize', 'base', round2(value))
                 }
               />
-              <AdvancedControls>
+              <AdvancedControls defaultOpen={controlScope === 'trail'}>
                 <SliderField
                   label="Head scale"
                   min={0}
@@ -2721,7 +2821,7 @@ export function FireworkRenderControls({
           {renderBurstTrailOpeningControls(layerKey)}
           {renderBurstTrailClosingControls(layerKey)}
 
-          <SubSection title="Placement">
+          <SubSection title="Placement" defaultExpanded={controlScope === 'trail'}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Head-tail balance"
@@ -2734,7 +2834,7 @@ export function FireworkRenderControls({
                 hint="Where the total particle budget lands along each star path. This redistributes placement without changing the amount."
                 onChange={(value) => setTrailBias(layerKey, round2(value))}
               />
-              <AdvancedControls>
+              <AdvancedControls defaultOpen={controlScope === 'trail'}>
                 <SliderField
                   label="Spacing curve"
                   min={TRAIL_SPACING_CURVE_MIN}
@@ -2814,7 +2914,7 @@ export function FireworkRenderControls({
             </div>
           </SubSection>
 
-          <SubSection title="Glow">
+          <SubSection title="Glow" defaultExpanded={controlScope === 'trail'}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Brightness"
@@ -2829,7 +2929,7 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'intensity', 'brightness', round2(value))
                 }
               />
-              <AdvancedControls>
+              <AdvancedControls defaultOpen={controlScope === 'trail'}>
                 <SliderField
                   label="Fade softness"
                   min={0.2}
@@ -2878,17 +2978,29 @@ export function FireworkRenderControls({
 
   function renderStarLayerControls(layerKey: StarLayerKey, title: 'Star' | 'Star Inner') {
     const layer = design.stars[layerKey];
-    const controlDisabled = sectionDisabled[layerKey];
+    const usesBrocadeStarPath = isBrocade && layerKey === 'outer';
+    const layerEnabled = usesBrocadeStarPath ? headsEnabled : layer.enabled;
+    const controlDisabled = usesBrocadeStarPath
+      ? disabled || !headsEnabled
+      : sectionDisabled[layerKey];
     const toggleId = layerKey === 'outer' ? outerToggleId : coreToggleId;
     const isInnerLayer = layerKey === 'core';
     const starControlsAlwaysOpen = controlScope === 'star' || controlScope === 'starInner';
+    const burst = usesBrocadeStarPath ? design.burst : layer.burst;
+    const starCount = usesBrocadeStarPath
+      ? (design.brocade.streakCount ?? design.size)
+      : layer.count;
+    const starSize = usesBrocadeStarPath ? design.brocade.headSize : layer.head.size;
+    const glowStrength = usesBrocadeStarPath
+      ? design.brocade.glowStrength
+      : layer.head.glowStrength;
 
     return (
       <PanelSection
         title={title}
         collapsible={!starControlsAlwaysOpen}
         defaultExpanded={starControlsAlwaysOpen}
-        inactive={!layer.enabled}
+        inactive={!layerEnabled}
         titleAccessory={
           <InfoTooltip text={`${title} has its own burst, head, colour, and trail settings.`} />
         }
@@ -2896,8 +3008,8 @@ export function FireworkRenderControls({
           <Switch
             id={toggleId}
             aria-label={title}
-            checked={layer.enabled}
-            onCheckedChange={(value) => setLayerValue(layerKey, 'enabled', value)}
+            checked={layerEnabled}
+            onCheckedChange={(value) => setStarLayerEnabled(layerKey, value)}
             disabled={disabled}
           />
         }
@@ -2910,20 +3022,14 @@ export function FireworkRenderControls({
                 min={STAR_COUNT_MIN}
                 max={STAR_COUNT_MAX}
                 step={1}
-                value={Math.min(STAR_COUNT_MAX, Math.max(STAR_COUNT_MIN, Math.round(layer.count)))}
+                value={normaliseStarCount(starCount)}
                 disabled={controlDisabled}
                 hint={
                   isInnerLayer
                     ? 'How many inner stars this layer breaks into. It starts smaller, but can be made fuller than Star.'
                     : 'How many stars this layer breaks into. Fuller shells are capped at 100 for a clean preview.'
                 }
-                onChange={(value) =>
-                  setLayerValue(
-                    layerKey,
-                    'count',
-                    Math.min(STAR_COUNT_MAX, Math.max(STAR_COUNT_MIN, Math.round(value))),
-                  )
-                }
+                onChange={(value) => setStarCount(layerKey, value)}
               />
             ) : null}
             <SliderField
@@ -2931,7 +3037,7 @@ export function FireworkRenderControls({
               min={0.5}
               max={12}
               step={0.1}
-              value={round2(rangeMid(layer.burst.speed))}
+              value={round2(rangeMid(burst.speed))}
               disabled={controlDisabled}
               hint={
                 isInnerLayer
@@ -2939,7 +3045,7 @@ export function FireworkRenderControls({
                   : 'How far Star flies from the centre.'
               }
               onChange={(value) =>
-                setLayerBurstRangeMid(layerKey, 'speed', value, BROCADE_SPEED_HALF_WIDTH)
+                setStarBurstRangeMid(layerKey, 'speed', value, BROCADE_SPEED_HALF_WIDTH)
               }
             />
             <SliderField
@@ -2947,41 +3053,39 @@ export function FireworkRenderControls({
               min={STAR_LIFE_MIN}
               max={STAR_LIFE_MAX}
               step={0.1}
-              value={round2(rangeMid(layer.burst.life))}
+              value={round2(rangeMid(burst.life))}
               formatValue={formatSeconds}
               disabled={controlDisabled}
               hint="How long this layer's stars burn before fading."
-              onChange={(value) => setLayerBurstLifeMid(layerKey, value)}
+              onChange={(value) => setStarBurstLifeMid(layerKey, value)}
             />
             <SliderField
               label="Floatiness"
               min={-1.85}
               max={0}
               step={0.01}
-              value={round2(rangeUpper(layer.burst.gravity))}
+              value={round2(rangeUpper(burst.gravity))}
               disabled={controlDisabled}
               hint="0 keeps this layer almost flat; more negative values let it sink faster."
-              onChange={(value) => setLayerGravityUpper(layerKey, value)}
+              onChange={(value) => setStarGravityUpper(layerKey, value)}
             />
             <SliderField
               label="Star size"
-              min={STAR_SIZE_MIN}
-              max={STAR_SIZE_MAX}
-              step={STAR_SIZE_STEP}
-              value={layer.head.size}
+              min={usesBrocadeStarPath ? BROCADE_HEAD_SIZE_MIN : STAR_SIZE_MIN}
+              max={usesBrocadeStarPath ? BROCADE_HEAD_SIZE_MAX : STAR_SIZE_MAX}
+              step={usesBrocadeStarPath ? BROCADE_HEAD_SIZE_STEP : STAR_SIZE_STEP}
+              value={starSize}
               disabled={controlDisabled}
               hint="Size budget for each glowing star in this layer."
-              onChange={(value) => setLayerNestedValue(layerKey, 'head', 'size', value)}
+              onChange={(value) => setStarHeadSize(layerKey, value)}
             />
             <CalibratedSliderField
               label="Glow strength"
               range={headGlowStrengthRange}
-              value={layer.head.glowStrength}
+              value={glowStrength}
               disabled={controlDisabled}
               hint="Halo brightness around each star in this layer."
-              onChange={(value) =>
-                setLayerNestedValue(layerKey, 'head', 'glowStrength', round2(value))
-              }
+              onChange={(value) => setStarGlowStrength(layerKey, value)}
             />
           </div>
 
@@ -3198,12 +3302,10 @@ export function FireworkRenderControls({
               {showStarCount ? (
                 <SliderField
                   label="Streak count"
-                  min={8}
-                  max={64}
+                  min={STAR_COUNT_MIN}
+                  max={STAR_COUNT_MAX}
                   step={1}
-                  value={
-                    design.brocade.streakCount ?? Math.min(64, Math.max(8, Math.round(design.size)))
-                  }
+                  value={normaliseStarCount(design.brocade.streakCount ?? design.size)}
                   disabled={disabled}
                   hint="How many streaks the shell splits into. 20 reads as a small cake; 60 is a full display crown."
                   onChange={setStreakCount}

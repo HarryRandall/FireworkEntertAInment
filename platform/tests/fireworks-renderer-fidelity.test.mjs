@@ -36,14 +36,19 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(engine, /createSeededRng/);
   assert.match(engine, /mixSeed/);
   assert.match(engine, /const isBackwardSeek = delta < -0\.0001/);
-  assert.match(engine, /if \(isBackwardSeek\) \{\s*this\.seekTo\(next\);\s*return;/);
-  assert.match(engine, /this\.seekTo\(next\)/);
+  assert.match(engine, /const useSnapshots = this\.scheduler\.size\(\) > 1/);
+  assert.match(
+    engine,
+    /if \(isBackwardSeek\) \{\s*this\.seekTo\(next, \{ useSnapshots \}\);\s*return;/,
+  );
+  assert.match(engine, /this\.seekTo\(next, \{ useSnapshots \}\)/);
   assert.match(
     engine,
     /private seekTo\(target: number, options: \{ useSnapshots\?: boolean \} = \{\}\): void/,
   );
   assert.match(engine, /options\.useSnapshots === false \? null : this\.findSnapshot\(target\)/);
   assert.match(engine, /this\.advanceTo\(target, false\)/);
+  assert.match(engine, /if \(this\.scheduler\.size\(\) > 1 && cursor >= this\.nextSnapshotAt\)/);
   assert.match(engine, /const SCRUB_DT = 1 \/ 24/);
   assert.match(engine, /poolHasLiveCallbackParticles/);
   assert.match(engine, /p\.mass >= 0\.1 \|\| p\.shape > 1\.5/);
@@ -175,6 +180,9 @@ test('renderer preserves named firework geometry and trail profiles', () => {
   assert.match(effects, /spawnFishSwarm/);
   assert.match(effects, /spawnWaterfall/);
   assert.match(effects, /spawnWhirl/);
+  assert.doesNotMatch(effects, /Math\.max\((44|52|18|72|60|80|90), Math\.round/);
+  assert.match(effects, /Math\.max\(1, Math\.round\(layer\.count \* 0\.46\)\)/);
+  assert.match(effects, /Math\.max\(1, Math\.round\(design\.size \* 0\.78\)\)/);
   for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
     assert.match(migration, new RegExp(`'${slug}'`));
   }
@@ -343,7 +351,11 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /scene\.remove\(guide\)/);
   assert.match(canvas, /playbackRef \? playbackRef\.current : internalElapsedRef\.current/);
   assert.match(canvas, /const isLargeJump = delta > 0\.15 && !Number\.isNaN\(renderedElapsed\)/);
-  assert.match(canvas, /const engineMayUpdate = !isLargeJump \|\| now - lastEngineUpdate >= 60/);
+  assert.match(canvas, /const isBackwardSeek =[\s\S]*targetElapsed < renderedElapsed - 0\.0001/);
+  assert.match(
+    canvas,
+    /const engineMayUpdate = isBackwardSeek \|\| !isLargeJump \|\| now - lastEngineUpdate >= 60/,
+  );
   assert.match(canvas, /MIN_CAMERA_HEIGHT = 24/);
   assert.match(canvas, /ORBIT_FLOOR_OVERSHOOT = 0\.35/);
   assert.match(canvas, /maxPolarAngle = Math\.PI \/ 2 \+ ORBIT_FLOOR_OVERSHOOT/);
@@ -432,7 +444,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
 
-  assert.match(controls, /const outerEnabled = design\.stars\.outer\.enabled/);
+  assert.match(
+    controls,
+    /const outerEnabled = isBrocade \? headsEnabled : design\.stars\.outer\.enabled/,
+  );
   assert.match(controls, /const coreEnabled = design\.stars\.core\.enabled/);
   assert.match(controls, /renderStarLayerControls\('outer', 'Star'\)/);
   assert.match(controls, /renderStarLayerControls\('core', 'Star Inner'\)/);
@@ -442,10 +457,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   );
   assert.match(controls, /collapsible=\{!starControlsAlwaysOpen\}/);
   assert.match(controls, /defaultExpanded=\{[\s\S]*starControlsAlwaysOpen/);
-  assert.match(controls, /setLayerValue\(layerKey, 'enabled', value\)/);
-  assert.match(controls, /setLayerBurstRangeMid\(layerKey, 'speed'/);
-  assert.match(controls, /setLayerGravityUpper\(layerKey, value\)/);
-  assert.match(controls, /setLayerNestedValue\(layerKey, 'head', 'size', value\)/);
+  assert.match(controls, /setStarLayerEnabled\(layerKey, value\)/);
+  assert.match(controls, /setStarBurstRangeMid\(layerKey, 'speed'/);
+  assert.match(controls, /setStarGravityUpper\(layerKey, value\)/);
+  assert.match(controls, /setStarHeadSize\(layerKey, value\)/);
   assert.match(controls, /leadingControls\?: ReactNode/);
   assert.match(controls, /layerKey === 'outer' \? starControls : undefined/);
   assert.match(
@@ -901,10 +916,24 @@ test('effect editor canonicalises render defaults for shared controls', () => {
   assert.match(controls, /const STAR_COUNT_MAX = 100/);
   assert.match(controls, /const STAR_SIZE_MIN = 10/);
   assert.match(controls, /const STAR_SIZE_MAX = 1000/);
+  assert.match(controls, /function setStarCount\(layerKey: StarLayerKey, value: number\)/);
+  assert.match(controls, /brocade\.streakCount = count/);
+  assert.doesNotMatch(controls, /draft\.size = value/);
+  assert.match(controls, /const usesBrocadeStarPath = isBrocade && layerKey === 'outer'/);
   assert.match(
     controls,
-    /<SliderField\s+label="Star count"[\s\S]*max=\{STAR_COUNT_MAX\}[\s\S]*setLayerValue\([\s\S]*'count'/,
+    /<SliderField\s+label="Star count"[\s\S]*max=\{STAR_COUNT_MAX\}[\s\S]*setStarCount\(layerKey, value\)/,
   );
+  assert.match(
+    controls,
+    /const starCount = usesBrocadeStarPath[\s\S]*design\.brocade\.streakCount \?\? design\.size[\s\S]*: layer\.count/,
+  );
+  assert.match(
+    controls,
+    /setStarBurstRangeMid\(layerKey, 'speed', value, BROCADE_SPEED_HALF_WIDTH\)/,
+  );
+  assert.match(controls, /setStarHeadSize\(layerKey, value\)/);
+  assert.match(controls, /setStarGlowStrength\(layerKey, value\)/);
   assert.match(
     controls,
     /const LIFT_VELOCITY_OPTIONS = \[[\s\S]*velocity: 7[\s\S]*velocity: 15[\s\S]*velocity: 20[\s\S]*value: 'custom'/,
@@ -928,7 +957,7 @@ test('effect editor canonicalises render defaults for shared controls', () => {
   );
   assert.match(
     controls,
-    /label="Star size"[\s\S]*min=\{STAR_SIZE_MIN\}[\s\S]*max=\{STAR_SIZE_MAX\}/,
+    /label="Star size"[\s\S]*min=\{usesBrocadeStarPath \? BROCADE_HEAD_SIZE_MIN : STAR_SIZE_MIN\}[\s\S]*max=\{usesBrocadeStarPath \? BROCADE_HEAD_SIZE_MAX : STAR_SIZE_MAX\}/,
   );
   assert.match(
     design,
@@ -1026,10 +1055,17 @@ test('brocade calibration is data-driven and admin-tunable', () => {
 
   // Brocade tuning lives in the design schema, not renderer constants.
   assert.match(design, /brocade: z/);
-  assert.match(design, /streakCount: z\.coerce\.number\(\)/);
+  assert.match(
+    design,
+    /streakCount: z\.coerce\.number\(\)\.int\(\)\.min\(1\)\.max\(100\)\.optional\(\)/,
+  );
   assert.match(design, /estimateDesignDurationSeconds/);
   assert.match(effects, /design\.brocade/);
-  assert.match(effects, /brocade\.streakCount \?\? design\.size/);
+  assert.match(effects, /BROCADE_MAX_STREAKS = 100/);
+  assert.match(
+    effects,
+    /clamp\(Math\.round\(brocade\.streakCount \?\? design\.size\), 1, BROCADE_MAX_STREAKS\)/,
+  );
   assert.match(effects, /headShapeValue\(glow, 0\)/);
   assert.match(effects, /BROCADE_MAX_HEAD_GRAVITY = 0/);
   assert.match(effects, /BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32/);
@@ -1286,7 +1322,7 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(editor, /calibrationDefaults=\{calibrationDefaults\}/);
   assert.match(fireworkEditor, /calibrationDefaults=\{calibrationDefaults\}/);
   assert.match(controls, /setBrocadeValue/);
-  assert.match(controls, /draft\.size = value/);
+  assert.match(controls, /ensureDraftStarLayer\(draft, 'outer'\)\.count = count/);
   assert.match(controls, /setBrocadeGravityUpper/);
   assert.match(controls, /label="Floatiness"[\s\S]*max=\{0\}/);
   assert.match(controls, /label="Burst size"[\s\S]*max=\{12\}/);
@@ -1384,4 +1420,17 @@ test('brocade calibration is data-driven and admin-tunable', () => {
     design,
     /count: Math\.round\(Math\.max\(1, Math\.min\(MAX_STAR_COUNT, layer\.count \* scale\)\)\)/,
   );
+});
+
+test('preview duration estimate avoids blanket post-burst padding', () => {
+  const design = read('lib/fireworks/design.ts');
+
+  assert.match(design, /const headDuration = burstLife \* starLifeMultiplier/);
+  assert.match(design, /const splitTail = design\.split\.enabled/);
+  assert.match(
+    design,
+    /const crackleTail = design\.crackle\.enabled && design\.crackle\.probability > 0 \? 1\.2 : 0/,
+  );
+  assert.match(design, /Math\.max\(splitTail, crackleTail, streakTail\)/);
+  assert.doesNotMatch(design, /Math\.max\(1,\s*1\.25 \* design\.trail\.length\)/);
 });

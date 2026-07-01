@@ -1,11 +1,12 @@
 import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 import type { Database, Json } from '@/lib/database.types';
 import { requirePermission } from '@/lib/admin/current-user.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
-import { createClient } from '@/utils/supabase/server';
+import { deleteCachedKeys, getCachedJson, setCachedJson } from '@/lib/server-cache';
+import type { AiUsageSummary } from '@/lib/show-summary';
+import { getServerClient } from '@/utils/supabase/server-client';
 
 type AppSupabase = SupabaseClient<Database>;
 
@@ -266,6 +267,56 @@ export function showGenerationReservationKey(showId: string): string {
   return `show-generation:${showId}:reserve`;
 }
 
+const AI_USAGE_CACHE_PREFIX = 'showcrafter:ai-usage:v1';
+const AI_USAGE_CACHE_TTL_SECONDS = 30;
+
+function aiUsageCacheKey(userId: string): string {
+  return `${AI_USAGE_CACHE_PREFIX}:${userId}`;
+}
+
+/** Drop the cached sidebar AI usage for a user (after a credit mutation). */
+export async function invalidateSidebarAiUsageCache(userId: string): Promise<void> {
+  await deleteCachedKeys([aiUsageCacheKey(userId)]);
+}
+
+/** Map the account RPC result to the sidebar usage shape with safe fallbacks. */
+function sidebarUsageFromRpc(usage: AiCreditRpcResult): AiUsageSummary {
+  const fallbackBalance = DEFAULT_INCLUDED_AI_CREDITS;
+  const balance = usage.ok ? (usage.balance ?? fallbackBalance) : fallbackBalance;
+  const reserved = usage.ok ? (usage.reserved ?? 0) : 0;
+  const totalGranted = usage.ok
+    ? (usage.totalGranted ?? Math.max(balance, DEFAULT_INCLUDED_AI_CREDITS))
+    : DEFAULT_INCLUDED_AI_CREDITS;
+  const totalSpent = usage.ok ? (usage.totalSpent ?? Math.max(totalGranted - balance, 0)) : 0;
+  const hourlyLimit = usage.hourlyLimit ?? DEFAULT_HOURLY_AI_CREDIT_LIMIT;
+  const weeklyLimit = usage.weeklyLimit ?? DEFAULT_WEEKLY_AI_CREDIT_LIMIT;
+  const hourlyUsed = usage.ok ? (usage.hourlyUsed ?? 0) : 0;
+  const weeklyUsed = usage.ok ? (usage.weeklyUsed ?? 0) : 0;
+  const hourlyRemaining = usage.ok
+    ? (usage.hourlyRemaining ?? Math.max(hourlyLimit - hourlyUsed - reserved, 0))
+    : hourlyLimit;
+  const weeklyRemaining = usage.ok
+    ? (usage.weeklyRemaining ?? Math.max(weeklyLimit - weeklyUsed - reserved, 0))
+    : weeklyLimit;
+  return {
+    balance,
+    reserved,
+    available: usage.ok
+      ? (usage.available ??
+        Math.min(Math.max(balance - reserved, 0), hourlyRemaining, weeklyRemaining))
+      : Math.min(fallbackBalance, hourlyRemaining, weeklyRemaining),
+    includedCredits: usage.includedCredits ?? DEFAULT_INCLUDED_AI_CREDITS,
+    hourlyLimit,
+    weeklyLimit,
+    hourlyUsed,
+    weeklyUsed,
+    hourlyRemaining,
+    weeklyRemaining,
+    totalGranted,
+    totalSpent,
+  };
+}
+
 export function musicAnalysisReservationKey(analysisId: string): string {
   return `music-analysis:${analysisId}:reserve`;
 }
@@ -294,7 +345,7 @@ export function creditActionForGenerationMode(
 }
 
 async function getSupabase() {
-  return createClient(await cookies());
+  return getServerClient();
 }
 
 export async function getAiCreditCost(
@@ -366,6 +417,7 @@ export async function reserveAiCredits(
     };
   }
 
+  await invalidateSidebarAiUsageCache(params.userId);
   return {
     ...parseRpcResult(data),
     reservationKey: params.reservationKey,
@@ -388,6 +440,7 @@ export async function settleAiCreditReservation(
     p_user_id: params.userId,
   });
   if (error) return { ok: false, error: error.message };
+  await invalidateSidebarAiUsageCache(params.userId);
   return parseRpcResult(data);
 }
 
@@ -406,6 +459,7 @@ export async function refundAiCreditReservation(
     p_user_id: params.userId,
   });
   if (error) return { ok: false, error: error.message };
+  await invalidateSidebarAiUsageCache(params.userId);
   return parseRpcResult(data);
 }
 
@@ -422,6 +476,7 @@ export async function grantAiCredits(params: {
     p_user_id: params.userId,
   });
   if (error) return { ok: false, error: error.message };
+  await invalidateSidebarAiUsageCache(params.userId);
   return parseRpcResult(data);
 }
 
@@ -473,6 +528,25 @@ export async function getCurrentUserAiCreditSummary(): Promise<AiCreditSummary |
   const userId = await getCurrentUserId();
   if (!userId) return null;
   return getAiCreditSummaryForUser(userId);
+}
+
+/** Sidebar-sized usage for the `/api/me/summary` payload. Drops the cost
+ * definitions and recent transactions that the shell meter does not render. */
+export async function getSidebarAiUsageSummary(): Promise<AiUsageSummary | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const cacheKey = aiUsageCacheKey(userId);
+  const cached = await getCachedJson<AiUsageSummary>(cacheKey);
+  if (cached) return cached;
+
+  const supabase = await getServerClient();
+  // The sidebar only needs the usage fields from the account RPC; skip the
+  // ai_credit_costs and ai_credit_transactions selects the full summary makes.
+  const usage = await ensureAiCreditAccount(supabase, userId);
+  const summary = sidebarUsageFromRpc(usage);
+  await setCachedJson(cacheKey, summary, AI_USAGE_CACHE_TTL_SECONDS);
+  return summary;
 }
 
 export async function listAdminAiCreditAccounts(): Promise<AdminAiCreditAccountSummary[]> {

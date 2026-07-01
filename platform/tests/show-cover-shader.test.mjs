@@ -47,22 +47,24 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(showPresetsTypes, /cover_shader: Json \| null/);
   assert.match(showPresetsTypes, /cover_shader\?: Json \| null/);
   assert.match(adminTypes, /coverShader: ShaderCover \| null/);
+  assert.match(adminTypes, /coverImagePath: string \| null/);
   assert.match(
     templates,
-    /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader`/,
+    /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path`/,
   );
   assert.match(mapper, /coverShader: parseShaderCover\(row\.cover_shader\)/);
+  assert.match(mapper, /coverImagePath: row\.cover_image_path \?\? null/);
   assert.match(exploreCard, /template\.coverShader \?\? shaderCoverFromSeed/);
-  assert.match(exploreCard, /import \{ ShaderCover \}/);
-  assert.match(exploreCard, /<ShaderCover\s+cover=\{cover\}/);
-  assert.match(exploreCard, /animate=\{false\}/);
-  assert.match(exploreCard, /showSkeletonUntilReady/);
+  assert.match(exploreCard, /import \{ CoverPoster \}/);
+  assert.match(exploreCard, /<CoverPoster\s+cover=\{cover\}/);
+  assert.match(exploreCard, /imagePath=\{template\.coverImagePath\}/);
+  assert.match(exploreCard, /group-hover:scale-105/);
   assert.match(exploreCard, /hover:-translate-y-2/);
   assert.match(exploreCard, /hover:translate-x-1/);
   assert.match(exploreCard, /hover:z-20/);
   assert.match(exploreCard, /motion-reduce:hover:translate-y-0/);
   assert.match(exploreCard, /const previewId = useId\(\)/);
-  assert.match(exploreCard, /preview\?\.activeId === previewId/);
+  assert.match(exploreCard, /preview\?\.readyId === previewId/);
   assert.match(exploreCard, /requestPreview\(previewId, coverRef\.current, template\)/);
   assert.doesNotMatch(exploreCard, /requestPreview\(template\.id/);
   assert.match(explorePreview, /window\.addEventListener\('wheel', cancelActivePreview/);

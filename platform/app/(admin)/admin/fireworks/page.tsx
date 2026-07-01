@@ -1,6 +1,7 @@
 /** Admin fireworks page: every atomic firework (effect + colours + overrides). */
 
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
@@ -42,16 +43,24 @@ function Swatch({ color }: { color: string | null }) {
 
 export default async function AdminFireworksPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  if (params.effect) {
+    const cleaned = new URLSearchParams();
+    if (params.q) cleaned.set('q', params.q);
+    if (params.page) cleaned.set('page', params.page);
+    const query = cleaned.toString();
+    redirect(query ? `/admin/fireworks?${query}` : '/admin/fireworks');
+  }
+
   const effects = await listEffectOptions();
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <div className="flex justify-end">
-        <NewFireworkButton effects={effects} />
-      </div>
       <Suspense
         fallback={
           <>
-            <FilterSkeleton searchPlaceholder="Search firework, effect, colour..." />
+            <FilterSkeleton
+              searchPlaceholder="Search firework, effect, colour..."
+              actionLabel="New firework"
+            />
             <div className="min-h-0 flex-1 overflow-hidden">
               <TableSkeleton
                 rows={TABLE_PAGE_SIZE}
@@ -70,32 +79,36 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
           </>
         }
       >
-        <FireworksData params={params} />
+        <FireworksData params={params} effects={effects} />
       </Suspense>
     </div>
   );
 }
 
-async function FireworksData({ params }: { params: FireworksSearchParams }) {
+async function FireworksData({
+  params,
+  effects,
+}: {
+  params: FireworksSearchParams;
+  effects: Awaited<ReturnType<typeof listEffectOptions>>;
+}) {
   const query = (params.q ?? '').trim().toLowerCase();
-  const effectFilter = params.effect;
   const requestedPage = Number(params.page ?? '1');
   const fireworks = await listAdminFireworks();
 
-  const effectOptions = Array.from(
-    new Set(fireworks.map((firework) => firework.effectName).filter((v): v is string => !!v)),
-  )
-    .sort()
-    .map((value) => ({ value, label: value }));
-
   const filtered = fireworks.filter((firework) => {
-    const text = [firework.name, firework.slug, firework.effectName, firework.caliber]
+    const text = [
+      firework.name,
+      firework.slug,
+      firework.effectName,
+      firework.caliber,
+      firework.primaryColor,
+      ...firework.colorPalette,
+    ]
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
-    const matchesQuery = !query || text.includes(query);
-    const matchesEffect = !effectFilter || firework.effectName === effectFilter;
-    return matchesQuery && matchesEffect;
+    return !query || text.includes(query);
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
@@ -109,7 +122,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
     <>
       <FilterBar
         searchPlaceholder="Search firework, effect, colour…"
-        filters={[{ key: 'effect', label: 'Base effect', type: 'select', options: effectOptions }]}
+        action={<NewFireworkButton effects={effects} />}
       />
 
       <DataTableShell
@@ -118,7 +131,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            searchParams={params}
+            searchParams={{ q: params.q, page: params.page }}
             visibleItems={paginated.length}
             totalItems={filtered.length}
             itemLabel="firework"
@@ -147,13 +160,10 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
                   <div className="line-clamp-2 max-w-xs font-medium text-[color:var(--color-content-emphasis)]">
                     {firework.name}
                   </div>
-                  <div className="mt-1 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums">
-                    {firework.slug}
-                  </div>
                 </td>
                 <td className={tableCellClasses()}>
                   {firework.effectName ? (
-                    <Badge tone="accent" solid className="whitespace-nowrap">
+                    <Badge tone="neutral" className="whitespace-nowrap">
                       {firework.effectName}
                     </Badge>
                   ) : (

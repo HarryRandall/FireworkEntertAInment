@@ -12,10 +12,8 @@
  */
 import 'server-only';
 
-import { cookies } from 'next/headers';
-import { cache } from 'react';
-import { createClient } from '@/utils/supabase/server';
 import { getCurrentUserId } from '@/lib/current-user.server';
+import { getServerClient } from '@/utils/supabase/server-client';
 import type { Database } from '@/lib/database.types';
 import type {
   AnalyserResult,
@@ -31,10 +29,6 @@ const MUSIC_ANALYSIS_SELECT =
   'id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json';
 const LEGACY_SHOW_ANALYSIS_SELECT =
   'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json, cue_generation_status, cue_generation_error, cue_count';
-
-const getServerClient = cache(async () => {
-  return createClient(await cookies());
-});
 
 function hydrateMusicAnalysis(
   row: MusicAnalysisRow,

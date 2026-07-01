@@ -1,13 +1,10 @@
 /**
  * Request-scoped Supabase client for the shows module.
  *
- * Mirrors the pattern in `lib/admin/supabase.ts` — wrapped in `cache()` so a
- * single request reuses one client across many server-component reads.
+ * Re-exports the canonical `getServerClient` from `utils/supabase/server-client`
+ * so shows queries share one memoised client per request with admin and other
+ * server modules, instead of each domain keeping its own `cache()` cell.
  */
 import 'server-only';
 
-import { cache } from 'react';
-import { cookies } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
-
-export const getServerClient = cache(async () => createClient(await cookies()));
+export { getServerClient } from '@/utils/supabase/server-client';

@@ -9,7 +9,7 @@ export default function AdminSuppliersLoading() {
       headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
       rowSize="relaxed"
       rows={8}
-      hasAction
+      filterActionLabel="New supplier"
       ariaLabel="Loading suppliers"
     />
   );

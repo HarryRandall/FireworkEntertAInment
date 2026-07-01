@@ -44,6 +44,14 @@ test('customer billing page stays billing-only without AI credit usage', () => {
   assert.match(page, /Billing/);
   assert.match(page, /Invoices/);
   assert.match(page, /Next invoice/);
+  assert.match(page, /BILLING_PLANS/);
+  assert.match(page, /name: 'Free'/);
+  assert.match(page, /name: 'Pro'/);
+  assert.match(page, /name: 'Ultra'/);
+  assert.match(page, /3D site maps/);
+  assert.match(page, /Real location planning/);
+  assert.match(page, /Priority support/);
+  assert.match(page, /Coming soon/);
   assert.doesNotMatch(page, /getCurrentUserAiCreditSummary/);
   assert.doesNotMatch(page, /150 preview AI credits included/);
   assert.doesNotMatch(page, /What AI work costs/);
@@ -54,37 +62,57 @@ test('customer billing page stays billing-only without AI credit usage', () => {
   assert.doesNotMatch(page, /weeklyRemaining/);
 });
 
-test('customer usage page shows hourly and weekly limits, recent spend, and coming-soon top-up', () => {
+test('customer usage page shows free allowance, plan tiers, recent spend pagination, and upgrade', () => {
   const page = read('app/(app)/settings/usage/page.tsx');
   assert.match(page, /getCurrentUserAiCreditSummary/);
-  assert.match(page, /AI usage/);
-  assert.match(page, /Hourly limit/);
-  assert.match(page, /Weekly limit/);
+  assert.match(page, /Free allowance/);
+  assert.match(page, /FREE_SHOWS_INCLUDED = 3/);
+  assert.match(page, /FREE_AI_CREDITS_INCLUDED = 20/);
+  assert.match(page, /PLAN_TIERS/);
+  assert.match(page, /name: 'Free'/);
+  assert.match(page, /name: 'Pro'/);
+  assert.match(page, /name: 'Ultra'/);
+  assert.match(page, /href: '\/settings\/billing#plans'/);
+  assert.match(page, /PRO_WEEKLY_SHOW_CREDITS = 30/);
+  assert.match(page, /ULTRA_WEEKLY_SHOW_CREDITS = 100/);
+  assert.match(page, /RECENT_USAGE_PAGE_SIZE = 5/);
+  assert.match(page, /TablePagination/);
+  assert.match(page, /pageKey="usagePage"/);
   assert.match(page, /Recent usage/);
   assert.doesNotMatch(page, /Credit costs/);
+  assert.doesNotMatch(page, /Hourly limit/);
+  assert.doesNotMatch(page, /Weekly limit/);
+  assert.doesNotMatch(page, /Paid weekly plan/);
+  assert.doesNotMatch(page, /Starter pack/);
+  assert.doesNotMatch(page, /You are currently on Free/);
   assert.doesNotMatch(page, /show_generation_gpt4o/);
   assert.doesNotMatch(page, /show_generation_opus/);
-  assert.match(page, /Add credits/);
-  assert.match(page, /Coming soon/);
+  assert.match(page, /Upgrade plan/);
 });
 
-test('app shell renders a compact bottom-left AI credits meter', () => {
-  const layout = read('app/(app)/layout.tsx');
+test('app shell renders a compact bottom-left show credits meter', () => {
+  const summaryRoute = read('app/api/me/summary/route.ts');
   const appShell = read('app/components/app/AppShell.tsx');
   const meterStart = appShell.indexOf('function SidebarAiUsageMeter');
-  const meterEnd = appShell.indexOf('function SidebarLimitProgress');
+  const meterEnd = appShell.indexOf('function SidebarCreditSegments');
   const meterBlock = appShell.slice(meterStart, meterEnd);
-  assert.match(layout, /getAiCreditSummaryForUser/);
-  assert.match(layout, /aiUsage=/);
-  assert.match(layout, /hourlyLimit: aiUsage\.hourlyLimit/);
+  // AI usage ships via /api/me/summary (not the (app) layout) so the layout
+  // drops a Supabase round-trip per render; the shell fills it client-side and
+  // skeletons the meter until it lands.
+  assert.match(summaryRoute, /getSidebarAiUsageSummary/);
+  assert.match(appShell, /nextSummary\.aiUsage/);
+  assert.match(appShell, /aiUsageLoading/);
+  assert.match(appShell, /Skeleton/);
   assert.match(appShell, /SidebarAiUsageMeter/);
   assert.match(meterBlock, /href="\/settings\/usage"/);
-  assert.match(meterBlock, /AI usage/);
-  assert.match(meterBlock, /Hourly/);
-  assert.match(meterBlock, /Weekly/);
+  assert.match(meterBlock, /shows left/);
+  assert.match(meterBlock, /Upgrade/);
+  assert.match(appShell, /SIDEBAR_FREE_SHOWS_INCLUDED = 3/);
+  assert.doesNotMatch(meterBlock, /Hourly/);
+  assert.doesNotMatch(meterBlock, /Weekly/);
   assert.match(meterBlock, /border-sidebar-border\/75/);
   assert.doesNotMatch(meterBlock, /bg-sidebar-accent\/20/);
-  assert.doesNotMatch(meterBlock, /usage\.available/);
+  assert.match(meterBlock, /usage\?\.totalSpent/);
   assert.doesNotMatch(meterBlock, /Preview balance/);
   assert.match(meterBlock, /group-data-\[collapsible=icon\]:hidden/);
 });

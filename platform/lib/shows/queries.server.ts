@@ -9,6 +9,8 @@
 import 'server-only';
 
 import { cache } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -40,6 +42,31 @@ import {
   type FireworkVariantProjection,
   type ReplayCueRow,
 } from './types';
+
+/**
+ * Thrown when a shows read fails due to a network or connect issue, so the page
+ * can render a real error state instead of a fake empty list. Previously
+ * `listShowsForCurrentUser` returned `[]` on `fetch failed`, which made
+ * `/shows?page=3` show an empty library after an 18s hang even when the user had
+ * shows.
+ */
+export class ShowsNetworkError extends Error {
+  constructor(cause: unknown) {
+    super('Shows service is temporarily unavailable. Please retry.', { cause });
+    this.name = 'ShowsNetworkError';
+  }
+}
+
+/** True when a Supabase error looks like a transient network or connect failure. */
+function isSupabaseNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const message = String((error as { message?: unknown }).message ?? '');
+  const details = String((error as { details?: unknown }).details ?? '');
+  const text = `${message}\n${details}`;
+  return /fetch failed|ETIMEDOUT|ENOTFOUND|ENETUNREACH|ECONNRESET|ECONNREFUSED|EAI_AGAIN|AbortError/i.test(
+    text,
+  );
+}
 
 function firstVariant(
   variant: FireworkVariantProjection | FireworkVariantProjection[] | null | undefined,
@@ -93,6 +120,7 @@ export async function listShowsForCurrentUser(): Promise<Show[]> {
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
   if (error) {
+    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listShowsForCurrentUser failed:', error);
     return [];
   }
@@ -260,128 +288,119 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
   return mapped;
 }
 
-/**
- * Lists time-scheduled cues expanded for replay.
- *
- * Catalogue items that point at a single firework become one replay cue.
- * Catalogue items that point at a multishot fan out into one replay cue per
- * ordered `multishot_fireworks` row.
- */
-export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
-  const userId = await getCurrentUserId();
-  if (!userId) return [];
-
-  const cacheKey = getShowReplayCuesCacheKey(userId, showId);
-  const cached = await getCachedJson<ReplayCue[]>(cacheKey);
-  if (cached) return cached;
-
-  const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from('show_timeline_items')
-    .select(SHOW_CUE_SELECT)
-    .eq('show_id', showId)
-    .not('time_seconds', 'is', null)
-    .order('time_seconds', { ascending: true })
-    .order('position', { ascending: true });
-  if (error) {
-    console.error('[shows.server] listReplayCuesForShow failed:', error);
-    return [];
-  }
-
-  const rows = (data ?? []) as ReplayCueRow[];
-  const catalogueItemIds = [
-    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
-  ];
-
-  type CatalogueFireworkRow = {
+type CatalogueFireworkRow = {
+  id: string;
+  catalogue_item_kind: string;
+  fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+  multishots: {
     id: string;
-    catalogue_item_kind: string;
-    fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-    multishots: {
-      id: string;
-      multishot_fireworks: Array<{
-        sequence_index: number;
-        time_offset_seconds: number;
-        pan_degrees: number | null;
-        tilt_degrees: number | null;
-        position_override_json: unknown;
-        caliber: string | null;
-        fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-      }>;
-    } | null;
-  };
+    multishot_fireworks: Array<{
+      sequence_index: number;
+      time_offset_seconds: number;
+      pan_degrees: number | null;
+      tilt_degrees: number | null;
+      position_override_json: unknown;
+      caliber: string | null;
+      fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
+    }>;
+  } | null;
+};
 
-  type ShotSpec = {
-    timeOffsetSeconds: number;
-    panDegrees: number | null;
-    tiltDegrees: number | null;
-    positionOverride: LaunchPosition | null;
-    launchPositionIndex: number | null;
-    firework: FireworkSpecification;
-  };
+type ShotSpec = {
+  timeOffsetSeconds: number;
+  panDegrees: number | null;
+  tiltDegrees: number | null;
+  positionOverride: LaunchPosition | null;
+  launchPositionIndex: number | null;
+  firework: FireworkSpecification;
+};
+
+/**
+ * Fetches the per-catalogue-item shot spec for replay expansion. A single
+ * firework becomes one shot; a multishot fans out into one shot per ordered
+ * `multishot_fireworks` row. Shared by the per-show and batched replay loaders
+ * so the catalogue join logic has one source of truth.
+ */
+async function fetchShotsByCatalogueItem(
+  supabase: SupabaseClient<Database>,
+  catalogueItemIds: string[],
+): Promise<Map<string, ShotSpec[]>> {
   const shotsByCatalogueItem = new Map<string, ShotSpec[]>();
+  if (catalogueItemIds.length === 0) return shotsByCatalogueItem;
 
-  if (catalogueItemIds.length > 0) {
-    const { data: catalogueItems, error: catalogueErr } = await supabase
-      .from('catalogue_items')
-      .select(
-        `id, catalogue_item_kind,
-         fireworks (${FIREWORK_VARIANT_SELECT}),
-         multishots (
-           id,
-           multishot_fireworks (
-             sequence_index,
-             time_offset_seconds,
-             pan_degrees,
-             tilt_degrees,
-             position_override_json,
-             caliber,
-             fireworks (${FIREWORK_VARIANT_SELECT})
-           )
-         )`,
-      )
-      .in('id', catalogueItemIds);
+  const { data, error } = await supabase
+    .from('catalogue_items')
+    .select(
+      `id, catalogue_item_kind,
+       fireworks (${FIREWORK_VARIANT_SELECT}),
+       multishots (
+         id,
+         multishot_fireworks (
+           sequence_index,
+           time_offset_seconds,
+           pan_degrees,
+           tilt_degrees,
+           position_override_json,
+           caliber,
+           fireworks (${FIREWORK_VARIANT_SELECT})
+         )
+       )`,
+    )
+    .in('id', catalogueItemIds);
 
-    if (catalogueErr) {
-      console.error('[shows.server] catalogue_items load failed:', catalogueErr);
-    } else {
-      for (const item of (catalogueItems ?? []) as CatalogueFireworkRow[]) {
-        const directFirework = firstVariant(item.fireworks);
-        if (directFirework) {
-          shotsByCatalogueItem.set(item.id, [
-            {
-              timeOffsetSeconds: 0,
-              panDegrees: null,
-              tiltDegrees: null,
-              positionOverride: null,
-              launchPositionIndex: null,
-              firework: mapFireworkVariantSpecification(directFirework, 0),
-            },
-          ]);
-          continue;
-        }
-
-        const multishotRows = [...(item.multishots?.multishot_fireworks ?? [])].sort(
-          (a, b) => a.sequence_index - b.sequence_index,
-        );
-        const shots: ShotSpec[] = [];
-        for (const shot of multishotRows) {
-          const firework = firstVariant(shot.fireworks);
-          if (!firework) continue;
-          shots.push({
-            timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
-            panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
-            tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
-            positionOverride: parseShotPositionOverride(shot.position_override_json),
-            launchPositionIndex: parseShotLaunchPositionIndex(shot.position_override_json),
-            firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
-          });
-        }
-        if (shots.length > 0) shotsByCatalogueItem.set(item.id, shots);
-      }
-    }
+  if (error) {
+    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    console.error('[shows.server] catalogue_items load failed:', error);
+    return shotsByCatalogueItem;
   }
 
+  for (const item of (data ?? []) as CatalogueFireworkRow[]) {
+    const directFirework = firstVariant(item.fireworks);
+    if (directFirework) {
+      shotsByCatalogueItem.set(item.id, [
+        {
+          timeOffsetSeconds: 0,
+          panDegrees: null,
+          tiltDegrees: null,
+          positionOverride: null,
+          launchPositionIndex: null,
+          firework: mapFireworkVariantSpecification(directFirework, 0),
+        },
+      ]);
+      continue;
+    }
+
+    const multishotRows = [...(item.multishots?.multishot_fireworks ?? [])].sort(
+      (a, b) => a.sequence_index - b.sequence_index,
+    );
+    const shots: ShotSpec[] = [];
+    for (const shot of multishotRows) {
+      const firework = firstVariant(shot.fireworks);
+      if (!firework) continue;
+      shots.push({
+        timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
+        panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
+        tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
+        positionOverride: parseShotPositionOverride(shot.position_override_json),
+        launchPositionIndex: parseShotLaunchPositionIndex(shot.position_override_json),
+        firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
+      });
+    }
+    if (shots.length > 0) shotsByCatalogueItem.set(item.id, shots);
+  }
+
+  return shotsByCatalogueItem;
+}
+
+/**
+ * Expands time-scheduled timeline rows into replay cues using the preloaded
+ * shot specs. Multishot catalogue items fan out into one cue per shot, with a
+ * stable `-shot-<index>` id so the renderer can dedupe. Sorted by time.
+ */
+function expandReplayCues(
+  rows: ReplayCueRow[],
+  shotsByCatalogueItem: Map<string, ShotSpec[]>,
+): ReplayCue[] {
   const expanded: ReplayCue[] = [];
   for (const row of rows) {
     const baseCue = mapReplayCueBase(row);
@@ -408,9 +427,100 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
   }
 
   expanded.sort((a, b) => a.timeSeconds - b.timeSeconds);
+  return expanded;
+}
+
+/**
+ * Lists time-scheduled cues expanded for replay, for a single show. Cached per
+ * show so the show detail page reuses the result.
+ *
+ * Catalogue items that point at a single firework become one replay cue.
+ * Catalogue items that point at a multishot fan out into one replay cue per
+ * ordered `multishot_fireworks` row.
+ */
+export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const cacheKey = getShowReplayCuesCacheKey(userId, showId);
+  const cached = await getCachedJson<ReplayCue[]>(cacheKey);
+  if (cached) return cached;
+
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from('show_timeline_items')
+    .select(SHOW_CUE_SELECT)
+    .eq('show_id', showId)
+    .not('time_seconds', 'is', null)
+    .order('time_seconds', { ascending: true })
+    .order('position', { ascending: true });
+  if (error) {
+    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    console.error('[shows.server] listReplayCuesForShow failed:', error);
+    return [];
+  }
+
+  const rows = (data ?? []) as ReplayCueRow[];
+  const catalogueItemIds = [
+    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
+  ];
+  const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
+  const expanded = expandReplayCues(rows, shotsByCatalogueItem);
 
   await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
   return expanded;
+}
+
+/**
+ * Batched replay-cue loader for listing pages. Fetches one `show_timeline_items`
+ * query for every show id and one `catalogue_items` join for the distinct
+ * catalogue items, then groups the expanded cues by show id. Replaces the
+ * 12-call per-show fan-out that made `/shows` issue up to 24 parallel Supabase
+ * requests per page. Returns a map with an entry (possibly empty) for every
+ * requested show id.
+ */
+export async function listReplayCuesForShows(showIds: string[]): Promise<Map<string, ReplayCue[]>> {
+  const result = new Map<string, ReplayCue[]>();
+  if (showIds.length === 0) return result;
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    for (const id of showIds) result.set(id, []);
+    return result;
+  }
+
+  const uniqueShowIds = [...new Set(showIds)];
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from('show_timeline_items')
+    .select(SHOW_CUE_SELECT)
+    .in('show_id', uniqueShowIds)
+    .not('time_seconds', 'is', null)
+    .order('time_seconds', { ascending: true })
+    .order('position', { ascending: true });
+  if (error) {
+    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    console.error('[shows.server] listReplayCuesForShows failed:', error);
+    for (const id of uniqueShowIds) result.set(id, []);
+    return result;
+  }
+
+  const rows = (data ?? []) as ReplayCueRow[];
+  const rowsByShowId = new Map<string, ReplayCueRow[]>();
+  for (const id of uniqueShowIds) rowsByShowId.set(id, []);
+  for (const row of rows) {
+    const list = rowsByShowId.get(row.show_id);
+    if (list) list.push(row);
+  }
+
+  const catalogueItemIds = [
+    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
+  ];
+  const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
+
+  for (const showId of uniqueShowIds) {
+    result.set(showId, expandReplayCues(rowsByShowId.get(showId) ?? [], shotsByCatalogueItem));
+  }
+  return result;
 }
 
 /** Per-show shopping list with pricing. Cached with the standard TTL. */

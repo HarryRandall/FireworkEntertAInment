@@ -20,16 +20,7 @@ import {
   useState,
   useTransition,
 } from 'react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Pause,
-  Play,
-  Plus,
-  RotateCcw,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Play, Plus, Sparkles, Trash2 } from 'lucide-react';
 import {
   addPreviewCueAction,
   deletePreviewCueAction,
@@ -39,6 +30,9 @@ import {
   usePreviewFullscreen,
   PreviewFullscreenBackdrop,
 } from '@/app/components/admin/previewFullscreen';
+import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
+import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
+import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
 import { Eyebrow } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -86,6 +80,7 @@ type FireworkReplayViewerProps = {
   durationSeconds: number | null;
   totalCents?: number | null;
   launchPositions: LaunchPosition[];
+  canEditFireworks?: boolean;
   /** Server-streamed cues, catalogue, and audio URL. Resolved on the client
    * via `use()` so the canvas can mount with an empty scene immediately and
    * populate fireworks once this resolves. */
@@ -112,9 +107,12 @@ const EMPTY_SPECS: FireworkSpecification[] = [];
 function ReplayCanvasPlaceholder() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 bg-[color:var(--color-bg-subtle)]"
+      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden bg-[#020409]"
       aria-label="Loading preview"
-    />
+    >
+      <ReplayStageBackdrop />
+      <ReplayLoadingBar progress={null} position="bottom" />
+    </div>
   );
 }
 
@@ -170,6 +168,7 @@ export function FireworkReplayViewer({
   durationSeconds,
   totalCents = null,
   launchPositions,
+  canEditFireworks = false,
   replayDataPromise,
 }: FireworkReplayViewerProps) {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
@@ -623,10 +622,10 @@ export function FireworkReplayViewer({
             aria-busy={!replayReady}
           >
             <div className="absolute top-6 left-6 z-10 space-y-2">
-              <h2 className="text-on-surface max-w-xl text-3xl font-extrabold tracking-tight md:text-4xl">
+              <h2 className="max-w-xl text-3xl font-extrabold tracking-tight text-white/86 [text-shadow:0_1px_18px_rgba(0,0,0,0.72)] md:text-4xl">
                 {showName}
               </h2>
-              <p className="text-on-surface-variant max-w-sm text-xs font-medium">
+              <p className="max-w-sm text-xs font-medium text-white/62 [text-shadow:0_1px_10px_rgba(0,0,0,0.72)]">
                 Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
               </p>
             </div>
@@ -644,9 +643,6 @@ export function FireworkReplayViewer({
               showLoadingBar
               loadingBarPosition="bottom"
               onReady={() => setIsCanvasReady(true)}
-              allowFullscreen
-              fullscreen={isFullscreen}
-              onToggleFullscreen={toggleFullscreen}
             />
 
             {!isSceneReady ? <ReplayCanvasPlaceholder /> : null}
@@ -664,59 +660,25 @@ export function FireworkReplayViewer({
             {replayReady ? (
               <div
                 className={cn(
-                  'border-outline-variant/15 bg-surface-container-low/90 absolute bottom-6 left-1/2 z-20 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 rounded-lg border px-4 py-3 shadow-[var(--shadow-modal)] backdrop-blur transition-all duration-300',
+                  'absolute inset-x-0 bottom-6 z-20 transition-all duration-300',
                   playbackControlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={togglePlayback}
-                      disabled={!hasReplayCues}
-                      aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-                      className="focus-glow-action bg-primary-container text-on-primary-container disabled:bg-surface-container-high disabled:text-on-surface-variant/40 flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-cta)] transition-all hover:brightness-110 focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none"
-                    >
-                      {isPlaying ? (
-                        <Pause size={18} strokeWidth={2.5} />
-                      ) : (
-                        <Play size={18} strokeWidth={2.5} />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={restart}
-                      aria-label="Restart preview"
-                      className="focus-glow-action border-outline/20 text-primary hover:bg-surface-container-highest/50 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
-                    >
-                      <RotateCcw size={16} strokeWidth={2} />
-                    </button>
-                  </div>
-
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <span className="text-tertiary/80 min-w-[2.75rem] font-mono text-[11px] tabular-nums">
-                      {formatDuration(displayElapsed)}
-                    </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={duration}
-                      step={0.05}
-                      value={displayElapsed}
-                      onChange={(event) => {
-                        setIsPlaying(false);
-                        scrubTo(Number(event.target.value));
-                      }}
-                      onPointerUp={commitScrub}
-                      onKeyUp={commitScrub}
-                      className="accent-tertiary h-2 min-w-0 flex-1"
-                      aria-label="Preview timeline"
-                    />
-                    <span className="text-tertiary/80 min-w-[2.75rem] text-right font-mono text-[11px] tabular-nums">
-                      {formatDuration(duration)}
-                    </span>
-                  </div>
-                </div>
+                <ReplayTransportControls
+                  elapsed={displayElapsed}
+                  duration={duration}
+                  isPlaying={isPlaying}
+                  disabled={!hasReplayCues}
+                  fullscreen={isFullscreen}
+                  onPlayPause={togglePlayback}
+                  onReset={restart}
+                  onFullscreenToggle={toggleFullscreen}
+                  onScrub={(next) => {
+                    setIsPlaying(false);
+                    scrubTo(next);
+                  }}
+                  onScrubEnd={commitScrub}
+                />
               </div>
             ) : null}
           </div>
@@ -989,6 +951,16 @@ export function FireworkReplayViewer({
                                       icon: <Play size={14} strokeWidth={2} />,
                                       onSelect: () => playFrom(cue.timeSeconds),
                                     },
+                                    ...(canEditFireworks
+                                      ? [
+                                          {
+                                            label: 'Edit firework',
+                                            icon: <Pencil size={14} strokeWidth={2} />,
+                                            onSelect: () =>
+                                              router.push(`/admin/fireworks/${cue.firework.id}`),
+                                          },
+                                        ]
+                                      : []),
                                     {
                                       label: 'Insert firework above',
                                       icon: <Plus size={14} strokeWidth={2} />,

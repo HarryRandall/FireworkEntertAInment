@@ -148,7 +148,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                     <div className="flex items-center gap-3 px-4 py-3">
                       <Link
                         href={href}
-                        prefetch
+                        prefetch={false}
                         className="focus-visible:ring-ring/50 shrink-0 rounded-full focus:outline-none focus-visible:ring-2"
                         aria-label={`View ${displayName}`}
                       >
@@ -162,7 +162,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                         <span className="group/identity flex min-w-0 items-center gap-1.5">
                           <Link
                             href={href}
-                            prefetch
+                            prefetch={false}
                             className="min-w-0 truncate text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline focus:underline focus:outline-none"
                           >
                             {displayName}
@@ -180,7 +180,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                             <>
                               <Link
                                 href={href}
-                                prefetch
+                                prefetch={false}
                                 className="min-w-0 truncate text-xs text-[color:var(--color-content-subtle)] hover:underline focus:underline focus:outline-none"
                               >
                                 {user.email}
@@ -201,14 +201,14 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                     </div>
                   </td>
                   <td className={tableCellClasses('p-0')}>
-                    <Link href={href} prefetch className={rowLinkClasses}>
+                    <Link href={href} prefetch={false} className={rowLinkClasses}>
                       <Badge solid tone={roleTone(primaryRole)}>
                         {primaryRole}
                       </Badge>
                     </Link>
                   </td>
                   <td className={tableCellClasses('p-0')}>
-                    <Link href={href} prefetch className={rowLinkClasses}>
+                    <Link href={href} prefetch={false} className={rowLinkClasses}>
                       <Badge solid tone={statusTone(user.status)}>
                         {user.status}
                       </Badge>
@@ -219,7 +219,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                       'p-0 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
                     )}
                   >
-                    <Link href={href} prefetch className={rowLinkClasses}>
+                    <Link href={href} prefetch={false} className={rowLinkClasses}>
                       {new Date(user.updatedAt).toLocaleDateString()}
                     </Link>
                   </td>

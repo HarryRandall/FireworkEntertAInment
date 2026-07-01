@@ -310,7 +310,6 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
-          family: string
           id: string
           model_json: Json
           name: string
@@ -325,7 +324,6 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
-          family?: string
           id?: string
           model_json?: Json
           name: string
@@ -340,7 +338,6 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
-          family?: string
           id?: string
           model_json?: Json
           name?: string
@@ -1130,6 +1127,7 @@ export type Database = {
       show_presets: {
         Row: {
           budget_cents: number | null
+          cover_image_path: string | null
           cover_shader: Json | null
           created_at: string
           description: string | null
@@ -1149,6 +1147,7 @@ export type Database = {
         }
         Insert: {
           budget_cents?: number | null
+          cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
           description?: string | null
@@ -1168,6 +1167,7 @@ export type Database = {
         }
         Update: {
           budget_cents?: number | null
+          cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
           description?: string | null
@@ -1261,6 +1261,7 @@ export type Database = {
           artist: string | null
           audio_path: string | null
           budget_cents: number | null
+          cover_image_path: string | null
           cover_shader: Json | null
           created_at: string
           description: string | null
@@ -1295,6 +1296,7 @@ export type Database = {
           artist?: string | null
           audio_path?: string | null
           budget_cents?: number | null
+          cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
           description?: string | null
@@ -1329,6 +1331,7 @@ export type Database = {
           artist?: string | null
           audio_path?: string | null
           budget_cents?: number | null
+          cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
           description?: string | null
