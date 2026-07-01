@@ -1055,7 +1055,7 @@ function PreviewStage({
           onPointerMoveCapture={wakePreviewTransport}
           onPointerLeave={hidePreviewTransport}
           className={cn(
-            'overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[#05070d] text-white',
+            'bg-stage-night overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white',
             fullscreen
               ? 'fixed inset-[5vmin] z-[100] rounded-2xl border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
               : 'relative h-[560px]',

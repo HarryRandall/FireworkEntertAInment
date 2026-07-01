@@ -33,6 +33,32 @@ export type EditorPreviewTick = ReplayTransportTick;
 
 const PREVIEW_TRANSPORT_IDLE_MS = 2000;
 
+/** Overlay banner shown while previewing an earlier saved version inside the editor stage. */
+export function EditorVersionPreviewNotice({
+  summary,
+  onExit,
+}: {
+  summary: string;
+  onExit: () => void;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--hl)] bg-black/60 p-3 text-sm text-white shadow-lg">
+      <div className="min-w-0">
+        <p className="font-semibold">Viewing earlier version</p>
+        <p className="truncate text-white/68">{summary}</p>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="border-white/15 bg-white/8 text-white hover:bg-white/14 hover:text-white"
+        onClick={onExit}
+      >
+        Live version
+      </Button>
+    </div>
+  );
+}
+
 export function EditorPreviewTransport({
   elapsed,
   duration,
@@ -293,7 +319,7 @@ export function FireworkEditorShell({
       >
         <section
           className={cn(
-            'min-w-0 overflow-hidden bg-[#05070d] text-white',
+            'bg-stage-night min-w-0 overflow-hidden text-white',
             fullscreen
               ? 'fixed inset-[5vmin] z-[100] rounded-2xl border border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
               : 'relative min-h-[520px] lg:min-h-0',
@@ -352,7 +378,7 @@ export function FireworkEditorShell({
                 <div className="pointer-events-auto flex shrink-0 items-center gap-2">
                   <Button
                     variant="secondary"
-                    className="h-9 rounded-[10px] border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
+                    className="h-9 rounded-lg border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
                     disabled={revertDisabled || saving}
                     onClick={onRevert}
                   >
@@ -363,7 +389,7 @@ export function FireworkEditorShell({
                     loading={saving}
                     disabled={saveDisabled}
                     onClick={onSave}
-                    className="h-9 rounded-[10px] bg-[color:var(--hl)] px-4 text-xs font-semibold text-[#05231a] hover:bg-[color:var(--hl)]/85"
+                    className="text-hl-contrast h-9 rounded-lg bg-[color:var(--hl)] px-4 text-xs font-semibold hover:bg-[color:var(--hl)]/85"
                   >
                     <Save size={14} />
                     {saveLabel}

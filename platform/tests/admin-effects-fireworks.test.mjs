@@ -286,7 +286,7 @@ test('admin effects UI is wired to base effect fields', () => {
     routeSkeletons,
     /grid h-full min-h-0 lg:grid-cols-\[minmax\(0,1fr\)_minmax\(360px,408px\)\]/,
   );
-  assert.match(routeSkeletons, /bg-\[#05070d\]/);
+  assert.match(routeSkeletons, /bg-stage-night/);
   assert.match(routeSkeletons, /radial-gradient\(ellipse_at_50%_35%/);
   assert.doesNotMatch(routeSkeletons, /Array\.from\(\{ length: 8 \}\)/);
   assert.doesNotMatch(routeSkeletons, /Array\.from\(\{ length: 2 \}\)/);
@@ -368,7 +368,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /id: 'sound'/);
   assert.match(fireworkEditor, /id: 'history'/);
   assert.match(fireworkEditor, /id: 'json'/);
-  assert.match(fireworkEditor, /Viewing earlier version/);
+  assert.match(fireworkEditor, /EditorVersionPreviewNotice/);
   assert.doesNotMatch(fireworkEditor, /Current vs Proposed|Proposed|comparison switch/);
   assert.doesNotMatch(fireworkEditor, /eyebrow="Firework editor"/);
   assert.doesNotMatch(
