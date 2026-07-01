@@ -17,7 +17,11 @@ import {
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { archiveStyleDefault, updateStyleDefault } from '@/app/actions/admin-style-defaults';
 import { JsonReadOnlyPanel } from '@/app/components/admin/EditorInspectorPanels';
-import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  estimateLaunchPreviewDurationSeconds,
+  estimateLaunchPreviewTicks,
+  estimatePreviewTicks,
+} from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
@@ -237,18 +241,23 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
 
   const heads = previewDesign.stars.outer.head;
   const previewDuration = useMemo(() => {
-    const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
-    return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign]);
-  const previewTicks = useMemo(
-    () =>
-      estimatePreviewTicks({
-        design: previewDesign,
-        cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
-        previewDuration,
-      }),
-    [previewDesign, previewDuration],
-  );
+    const estimated =
+      kind === 'launch'
+        ? estimateLaunchPreviewDurationSeconds({
+            design: previewDesign,
+            cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
+          })
+        : PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
+    return Math.max(kind === 'launch' ? 2.5 : 4, Math.ceil(estimated * 2) / 2);
+  }, [kind, previewDesign]);
+  const previewTicks = useMemo(() => {
+    const params = {
+      design: previewDesign,
+      cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
+      previewDuration,
+    };
+    return kind === 'launch' ? estimateLaunchPreviewTicks(params) : estimatePreviewTicks(params);
+  }, [kind, previewDesign, previewDuration]);
 
   const previewCue = useMemo<ReplayCue>(
     () => ({
@@ -681,6 +690,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       tabs={tabs}
       preview={preview}
       transport={transport}
+      transportPlaying={isPlaying}
       error={error}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}

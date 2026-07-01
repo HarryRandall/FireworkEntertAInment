@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ReplayLoadingBar,
   type ReplayLoadingBarPosition,
+  type ReplayLoadingBarVariant,
 } from '@/app/components/app/ReplayLoadingBar';
 import { cn } from '@/lib/utils';
 import { getCachedStagePoster, getStagePoster } from '@/lib/stage-poster-cache';
@@ -20,10 +21,12 @@ export function ReplayCanvasSkeleton({
   className,
   showLoadingBar = false,
   loadingBarPosition = 'bottom',
+  loadingBarVariant = 'default',
 }: {
   className?: string;
   showLoadingBar?: boolean;
   loadingBarPosition?: ReplayLoadingBarPosition;
+  loadingBarVariant?: ReplayLoadingBarVariant;
 } = {}) {
   const [src, setSrc] = useState<string | null>(null);
 
@@ -60,7 +63,13 @@ export function ReplayCanvasSkeleton({
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : null}
-      {showLoadingBar ? <ReplayLoadingBar progress={null} position={loadingBarPosition} /> : null}
+      {showLoadingBar ? (
+        <ReplayLoadingBar
+          progress={null}
+          position={loadingBarPosition}
+          variant={loadingBarVariant}
+        />
+      ) : null}
     </div>
   );
 }

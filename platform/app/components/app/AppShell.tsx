@@ -142,6 +142,7 @@ type AppShellProps = {
   children: ReactNode;
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
+  isAuthenticated?: boolean;
   impersonation?: ActiveImpersonation | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
@@ -941,6 +942,7 @@ function ShellTopBar({ pathname }: { pathname: string | null }) {
 export function AppShell({
   children,
   profile,
+  isAuthenticated = Boolean(profile),
   impersonation,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
@@ -950,7 +952,7 @@ export function AppShell({
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
-  const [aiUsageLoading, setAiUsageLoading] = useState(Boolean(profile));
+  const [aiUsageLoading, setAiUsageLoading] = useState(isAuthenticated);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -964,7 +966,7 @@ export function AppShell({
     });
 
   const permissions = new Set(profile?.permissions ?? []);
-  const isGuest = !profile;
+  const isGuest = !isAuthenticated;
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };

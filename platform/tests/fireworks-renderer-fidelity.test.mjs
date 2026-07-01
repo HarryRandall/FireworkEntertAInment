@@ -77,11 +77,11 @@ test('firework audio separates launch and burst reports', () => {
   assert.match(effects, /setAudible\(audible: boolean\): void \{\s*this\.audible = audible;\s*\}/);
   assert.match(
     effects,
-    /action: \(p, dt, t\) => this\.detonate\(p, dt, t, design, color, seed, rng, this\.audible\)/,
+    /action: \(p, dt, t\) => \{[\s\S]*this\.detonate\(p, dt, t, design, color, seed, rng, this\.audible\);[\s\S]*\},/,
   );
   assert.match(effects, /options\.audible && design\.sound\.launch/);
   assert.match(effects, /boom !== 'none'/);
-  assert.match(controls, /label="Launch report"/);
+  assert.match(controls, /label="Launch sound"/);
   assert.match(controls, /sound\.launch = value/);
   assert.match(controls, /mortar\.sound = value/);
   assert.match(controls, /<FieldLabel>Burst report<\/FieldLabel>/);
@@ -340,6 +340,12 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
   assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 2850\)/);
   assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 1000, 0\)/);
+  assert.match(canvas, /renderOverscanPx\?: number/);
+  assert.match(canvas, /const renderOverscan = Math\.max\(0, renderOverscanPx\)/);
+  assert.match(canvas, /const renderSurfaceLeft = renderOverscan > 0 \? -renderOverscan \/ 2 : 0/);
+  assert.match(canvas, /renderOverscan > 0 \? `calc\(100% \+ \$\{renderOverscan\}px\)` : '100%'/);
+  assert.match(canvas, /style=\{\{ left: renderSurfaceLeft, width: renderSurfaceWidth \}\}/);
+  assert.doesNotMatch(canvas, /cameraViewOffset|setViewOffset|clearViewOffset/);
   assert.match(canvas, /trailWidthGuideDesign\?: FireworkDesign \| null/);
   assert.match(canvas, /TRAIL_WIDTH_GUIDE_STAR_INDEX = 0/);
   assert.match(canvas, /function buildTrailWidthGuideVelocity\(design: FireworkDesign\)/);
@@ -422,7 +428,8 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(effects, /const lifeMultiplier = clamp\(trail\.lifetime\.percent, 0, 2\)/);
   assert.match(effects, /Math\.max\(0, headRemainingLife\) \*/);
   assert.match(effects, /function burstTrailWideTailAlpha/);
-  assert.match(effects, /p\.alpha = burstTrailWideTailAlpha\(trail, spreadPosition\)/);
+  assert.match(effects, /const initialFadePosition = pathPosition/);
+  assert.match(effects, /p\.alpha = burstTrailWideTailAlpha\(trail, fadePosition\)/);
   assert.doesNotMatch(effects, /dynamicLifeCeiling|fixedLifeCeiling/);
   assert.match(effects, /mass: 0\.006/);
   assert.match(effects, /mass: 0\.002/);
@@ -443,6 +450,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
+  const starAppearance = controls.slice(
+    controls.indexOf('function renderStarAppearance('),
+    controls.indexOf('function currentBurstTrail('),
+  );
 
   assert.match(
     controls,
@@ -468,11 +479,14 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
     /<div className="space-y-2\.5">[\s\S]*\{leadingControls\}[\s\S]*renderStarOpeningControls\(layerKey, controlDisabled\)[\s\S]*<SubSection title="Core">/,
   );
   assert.doesNotMatch(controls, /defaultExpanded=\{layerKey === 'outer'\}/);
-  assert.doesNotMatch(controls, /<SubSection title="Opening" defaultExpanded/);
-  assert.doesNotMatch(controls, /<SubSection title="Core" defaultExpanded/);
-  assert.doesNotMatch(controls, /subsectionsCollapsible|collapsible=\{subsectionsCollapsible\}/);
-  assert.doesNotMatch(controls, /<SubSection title="Particles" defaultExpanded/);
-  assert.doesNotMatch(controls, /<SubSection title="Placement" defaultExpanded/);
+  assert.doesNotMatch(starAppearance, /<SubSection title="Opening" defaultExpanded/);
+  assert.doesNotMatch(starAppearance, /<SubSection title="Core" defaultExpanded/);
+  assert.doesNotMatch(
+    starAppearance,
+    /subsectionsCollapsible|collapsible=\{subsectionsCollapsible\}/,
+  );
+  assert.doesNotMatch(starAppearance, /<SubSection title="Particles" defaultExpanded/);
+  assert.doesNotMatch(starAppearance, /<SubSection title="Placement" defaultExpanded/);
   assert.match(controls, /renderBurstTrailControls\(layerKey\)/);
   assert.match(controls, /const title = layerKey === 'core' \? 'Trail Inner' : 'Trail'/);
   assert.match(controls, /aria-label=\{`Show \$\{title\.toLowerCase\(\)\}`\}/);
@@ -640,6 +654,11 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(controls, /label="Gap random"/);
   assert.match(controls, /label="Head gap"/);
   assert.match(controls, /label="Front angle"/);
+  assert.match(controls, /const TRAIL_FRONT_SPREAD_ANGLE_MIN = 1/);
+  assert.match(
+    controls,
+    /label="Front angle"[\s\S]*min=\{TRAIL_FRONT_SPREAD_ANGLE_MIN\}[\s\S]*max=\{TRAIL_FRONT_SPREAD_ANGLE_MAX\}/,
+  );
   assert.match(controls, /label="Tail angle"/);
   assert.match(controls, /label="Particle life"/);
   assert.match(controls, /label="Life random"/);
@@ -655,7 +674,12 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(controls, /label="Fade softness"/);
   assert.match(controls, /label="Flicker"/);
   assert.match(design, /preset: 'custom'[\s\S]*colourMode: 'starFade'[\s\S]*particlesPerStar: 178/);
-  assert.match(design, /width: \{ front: 20, tail: 0, curve: 1 \}/);
+  assert.match(design, /BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX = 10/);
+  assert.match(design, /width: \{ front: 10, tail: 0, curve: 1 \}/);
+  assert.match(
+    design,
+    /front: z\.coerce[\s\S]*Math\.min\(BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX, value\)/,
+  );
   assert.match(design, /particleSize: \{ base: 1\.2, headScale: 1, tailScale: 0\.35/);
   assert.match(design, /placement: \{ headGapPercent: 60 \}/);
   assert.match(design, /spacing: \{ curve: 1, jitterPercent: 18 \}/);
@@ -729,7 +753,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.doesNotMatch(controls, /label="Glow padding"/);
   assert.doesNotMatch(controls, /formatPixels/);
   assert.doesNotMatch(controls, /label="White core size"|label="White core blur"/);
-  assert.match(controls, /Reset to preset/);
+  assert.doesNotMatch(controls, /Reset to preset/);
   assert.doesNotMatch(controls, /Advanced trails|Shape stops|Add stop|Remove trail stop/);
   assert.doesNotMatch(controls, /normaliseWeights|updateStop|canAddStop/);
   assert.match(controls, /showNumberInput/);
@@ -770,6 +794,7 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(design, /liftParticles: LaunchLiftParticlesSchema/);
   assert.match(design, /const LaunchShellTrailSchema = z/);
   assert.match(design, /shape: z\.enum\(LAUNCH_SHELL_SHAPES\)/);
+  assert.match(design, /visible: z\.boolean\(\)\.default\(true\)/);
   assert.match(design, /sizeScale: z\.coerce\.number\(\)\.min\(0\.25\)\.max\(4\)\.default\(1\)/);
   assert.match(design, /brightness: z\.coerce\.number\(\)\.min\(0\)\.max\(3\)\.default\(1\)/);
   assert.match(design, /glowStrength:[\s\S]*DEFAULT_HEAD_GLOW_STRENGTH/);
@@ -777,12 +802,19 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(design, /tubeDiameter: z\.coerce\.number\(\)\.min\(0\)\.max\(90\)\.default\(0\)/);
   assert.match(design, /frontAngle: z\.coerce\.number\(\)\.min\(0\)\.max\(60\)\.default\(0\)/);
   assert.match(design, /tailAngle: z\.coerce\.number\(\)\.min\(0\)\.max\(60\)\.default\(0\)/);
+  assert.match(
+    design,
+    /amount: z\.coerce\.number\(\)\.int\(\)\.min\(0\)\.max\(1000\)\.default\(100\)/,
+  );
   assert.match(design, /height: z\.coerce[\s\S]*Math\.min\(100, value\)[\s\S]*\.default\(100\)/);
   assert.match(design, /shapeWeights: BurstTrailShapeWeightsSchema/);
   assert.match(design, /particleSize:[\s\S]*headScale:[\s\S]*tailScale/);
   assert.match(design, /lifetime:[\s\S]*baseSeconds:[\s\S]*afterglowSeconds/);
-  assert.match(design, /spacing:[\s\S]*pathSamples/);
-  assert.match(design, /motion:[\s\S]*gravity:[\s\S]*drag:[\s\S]*spin[\s\S]*swirlStrength/);
+  assert.match(design, /spacing:[\s\S]*clusterStrength[\s\S]*pathSamples/);
+  assert.match(
+    design,
+    /motion:[\s\S]*gravity:[\s\S]*drag:[\s\S]*spin[\s\S]*swirlStrength[\s\S]*swirlLoopCount[\s\S]*swirlLoopLength[\s\S]*swirlLoopHeight/,
+  );
   assert.match(design, /smoke:[\s\S]*enabled:[\s\S]*particles:[\s\S]*drift:[\s\S]*height/);
   assert.doesNotMatch(smokeSchema, /colour:/);
   assert.match(design, /DEFAULT_LAUNCH_SMOKE_COLOR/);
@@ -811,7 +843,11 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /headShapeValue\(shell\.glowStrength, 0\)/);
   assert.match(effects, /resolveLaunchColor\(shell\.colour, liftColor, rng\)\.multiplyScalar/);
   assert.match(effects, /Math\.max\(size, 110\) \* shell\.sizeScale/);
-  assert.match(effects, /shape: launchShellShapeValue\(shell\)/);
+  assert.match(effects, /const guidedShellVisible = shell\.visible && usesGuidedLiftPath/);
+  assert.match(
+    effects,
+    /shape:[\s\S]*shell\.visible && !guidedShellVisible[\s\S]*launchShellShapeValue\(shell\)[\s\S]*HIDDEN_PARTICLE_SHAPE/,
+  );
   assert.match(effects, /previousPosition = liftPreviousPosition/);
   assert.match(effects, /this\.shellEffect\([\s\S]*previousPosition/);
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
@@ -819,20 +855,46 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /function liftPathPoint/);
   assert.match(effects, /function shellTrailSpreadAngle/);
   assert.match(effects, /function shellTrailTubeRadius/);
+  assert.match(effects, /SHELL_TRAIL_CLEAR_AGE_START/);
+  assert.match(effects, /SHELL_TRAIL_CLEAR_AGE_END/);
   assert.match(effects, /const lockToShellPath = liftTubeRadius <= 0/);
-  assert.match(effects, /const scatter = burstTrailScatterOffset\(/);
+  assert.match(effects, /const scatter = brocadeLift[\s\S]*burstTrailScatterOffset/);
+  assert.match(effects, /function flatLiftScatterOffset/);
+  assert.match(effects, /: flatLiftScatterOffset\(liftTubeRadius, liftRng\)/);
+  assert.match(effects, /function usesGuidedLiftPath/);
+  assert.match(effects, /function liftGuidedPosition/);
+  assert.match(effects, /private spawnGuidedLaunchShell/);
+  assert.match(
+    effects,
+    /this\.spawnGuidedLaunchShell\(guidedShellPoint, design, shellColor, shellSize, dt\)/,
+  );
   assert.match(effects, /applyLiftSwirlToShell/);
+  assert.match(effects, /applyLiftSwirlToShell\(particle, dt, time, liftParticles, liftAge\)/);
+  assert.doesNotMatch(effects, /particle\.vz \+= Math\.sin\(phase\) \* force \* dt/);
   assert.match(effects, /liftParticles\.motion\.swirlStrength/);
-  assert.match(effects, /const headProgress = 1 - clamp\(progress, 0, 1\)/);
-  assert.match(effects, /const headAge = 1 - clamp\(age, 0, 1\)/);
+  assert.match(effects, /liftParticles\.motion\.swirlLoopCount/);
+  assert.match(effects, /liftParticles\.motion\.swirlLoopLength/);
+  assert.match(effects, /liftParticles\.motion\.swirlLoopHeight/);
+  assert.match(effects, /liftParticles\.spacing\.clusterStrength/);
+  assert.match(effects, /y: Math\.max\(liftOriginY, base\.y \+ swirl\.y\)/);
+  assert.match(effects, /LIFT_SWIRL_START_AGE/);
+  assert.match(effects, /LIFT_SWIRL_FULL_AGE/);
+  assert.match(effects, /function liftLoopProgress/);
+  assert.match(effects, /function liftSwirlPhase/);
+  assert.match(effects, /const pathPhase = loopCount > 0 \? liftLoopProgress/);
+  assert.match(effects, /z: 0/);
+  assert.match(effects, /const sampleTime = from \? time - \(1 - progress\) \* dt : time/);
+  assert.match(effects, /Math\.max\(visibleRadius, visibleLoopHeight \* 0\.55\)/);
   assert.match(effects, /const smokeCount =[\s\S]*smoke\.particles \/ 100/);
   assert.match(effects, /const smokeColor = DEFAULT_LAUNCH_SMOKE_COLOR/);
   assert.match(effects, /liftParticleDensityScale/);
   assert.doesNotMatch(effects, /spawnMortarSmoke\(position, design\.mortar\.smokeParticles, rng\)/);
 
   assert.match(controls, /function renderLiftParticleControls/);
-  assert.match(controls, /function renderLaunchShellControls/);
+  assert.match(controls, /function renderLaunchShellParticleControls/);
+  assert.match(controls, /function renderLaunchShellTrailControls/);
   assert.match(controls, /title="Shell particle"/);
+  assert.match(controls, /label="Show shell particle"[\s\S]*setLaunchValue\('shell', 'visible'/);
   assert.match(controls, /<FieldLabel>Shell shape<\/FieldLabel>/);
   assert.match(controls, /label="Shell colour"[\s\S]*setLaunchValue\('shell', 'colour'/);
   assert.match(controls, /label="Shell size"[\s\S]*setLaunchValue\('shell', 'sizeScale'/);
@@ -856,7 +918,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /title="Smoke"/);
   assert.match(controls, /checked=\{liftParticlesEnabled\}/);
   assert.match(controls, /checked=\{smokeEnabled\}/);
-  assert.match(controls, /label="Amount"[\s\S]*setLaunchValue\('liftParticles', 'amount'/);
+  assert.match(
+    controls,
+    /const LIFT_PARTICLE_AMOUNT_MAX = 1000[\s\S]*label="Amount"[\s\S]*setLaunchValue\('liftParticles', 'amount'/,
+  );
   assert.match(
     controls,
     /label="Colour"[\s\S]*setLaunchValue\([\s\S]*'liftParticles',[\s\S]*'colour'/,
@@ -873,9 +938,13 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.doesNotMatch(controls, /inputAriaLabel="Lift inherited speed value"/);
   assert.doesNotMatch(controls, /inputAriaLabel="Lift turbulence value"/);
   assert.match(controls, /label="Path fill"/);
+  assert.match(controls, /label="Cluster strength"/);
   assert.match(controls, /label="Ascent swirl"/);
   assert.match(controls, /label="Swirl radius"/);
-  assert.match(controls, /label="Swirl rate"/);
+  assert.match(controls, /label="Loop count"/);
+  assert.match(controls, /label="Loop length"/);
+  assert.match(controls, /label="Loop height"/);
+  assert.match(controls, /label="Loop speed"/);
   assert.match(
     controls,
     /label="Rise height"[\s\S]*formatValue=\{formatPercent\}[\s\S]*setLaunchValue\('liftParticles', 'height'/,

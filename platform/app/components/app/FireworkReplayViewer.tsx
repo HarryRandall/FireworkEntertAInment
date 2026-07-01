@@ -44,7 +44,6 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from '@/app/components/ui/DataTable';
-import { Input } from '@/app/components/ui/Input';
 import { NumberInput } from '@/app/components/ui/NumberInput';
 import { RowActionsMenu } from '@/app/components/ui/RowActionsMenu';
 import { SelectField } from '@/app/components/ui/SelectField';
@@ -131,7 +130,7 @@ function EmptyPreview() {
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
         <h3 className="text-on-surface text-xl font-bold">No typed fireworks yet</h3>
         <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-          Add a cue below, then drag the scene to orbit and scroll to switch view distance.
+          Add a cue below to preview the show.
         </p>
       </div>
     </div>
@@ -332,6 +331,14 @@ export function FireworkReplayViewer({
     () => [...optimisticCues].sort((a, b) => a.timeSeconds - b.timeSeconds),
     [optimisticCues],
   );
+  const productNameById = useMemo(
+    () => new Map(specifications.map((spec) => [spec.id, spec.name])),
+    [specifications],
+  );
+  const selectedProduct = useMemo(
+    () => specifications.find((spec) => spec.id === selectedProductId),
+    [selectedProductId, specifications],
+  );
 
   // Collapse expanded shots back to one row per show_cue for the builder list.
   // Multi-shot IDs are "{baseCueId}-shot-N"; single-shot IDs are just the UUID.
@@ -507,9 +514,10 @@ export function FireworkReplayViewer({
   function addCue(formData: FormData) {
     const productId = String(formData.get('productId') ?? '');
     const product = specifications.find((s) => s.id === productId);
-    const description = String(formData.get('description') ?? '');
+    const description = product?.name ?? '';
     const timeSeconds = Number(formData.get('timeSeconds') ?? 0);
     const launchPositionIndex = Number(formData.get('launchPositionIndex') ?? 0);
+    if (product) formData.set('description', product.name);
 
     formRef.current?.reset();
     setShowAddForm(false);
@@ -621,15 +629,6 @@ export function FireworkReplayViewer({
             onPointerMove={wakePlaybackControls}
             aria-busy={!replayReady}
           >
-            <div className="absolute top-6 left-6 z-10 space-y-2">
-              <h2 className="max-w-xl text-3xl font-extrabold tracking-tight text-white/86 [text-shadow:0_1px_18px_rgba(0,0,0,0.72)] md:text-4xl">
-                {showName}
-              </h2>
-              <p className="max-w-sm text-xs font-medium text-white/62 [text-shadow:0_1px_10px_rgba(0,0,0,0.72)]">
-                Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
-              </p>
-            </div>
-
             <LazyFireworkReplayCanvas
               cues={sortedCues}
               elapsed={elapsed}
@@ -752,6 +751,7 @@ export function FireworkReplayViewer({
                     >
                       <input type="hidden" name="showId" value={showId} />
                       <input type="hidden" name="showSlug" value={showSlug} />
+                      <input type="hidden" name="description" value={selectedProduct?.name ?? ''} />
                       <label className="space-y-2 sm:col-span-2">
                         <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
                           Firework
@@ -795,19 +795,6 @@ export function FireworkReplayViewer({
                           }
                           required
                           ariaLabel="Cue time in seconds"
-                        />
-                      </label>
-                      <label className="space-y-2 sm:col-span-2">
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-                          Label
-                        </span>
-                        <Input
-                          key={selectedProductId}
-                          name="description"
-                          defaultValue={
-                            specifications.find((s) => s.id === selectedProductId)?.name ?? ''
-                          }
-                          required
                         />
                       </label>
                       <DialogFooter className="sm:col-span-2">
@@ -904,6 +891,8 @@ export function FireworkReplayViewer({
                             LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
                             `Mortar ${cue.launchPositionIndex + 1}`;
                           const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
+                          const fireworkName =
+                            productNameById.get(cue.productId) ?? cue.firework.name;
                           const isActive = activeBaseCueIds.has(baseCueId);
                           return (
                             <tr
@@ -927,7 +916,7 @@ export function FireworkReplayViewer({
                                 </span>
                               </td>
                               <td className={tableCellClasses('h-14')}>
-                                <TruncatedCell text={cue.description || cue.firework.name} />
+                                <TruncatedCell text={fireworkName} />
                                 {shotCount > 1 && (
                                   <div className="text-on-surface-variant mt-0.5 text-[10px] font-bold tracking-widest uppercase">
                                     {shotCount} shots
@@ -1253,6 +1242,6 @@ function parsePromptToCue(
     product: bestProduct,
     timeSeconds,
     launchPositionIndex,
-    description: prompt.length > 180 ? prompt.slice(0, 177) + '...' : prompt,
+    description: bestProduct.name,
   };
 }

@@ -187,6 +187,8 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(defaultsEditor, /FireworkEditorShell/);
   assert.match(defaultsEditor, /EditorPreviewTransport/);
   assert.match(defaultsEditor, /estimatePreviewTicks/);
+  assert.match(defaultsEditor, /estimateLaunchPreviewDurationSeconds/);
+  assert.match(defaultsEditor, /estimateLaunchPreviewTicks/);
   assert.match(defaultsEditor, /JsonReadOnlyPanel/);
   assert.match(defaultsEditor, /id: kind/);
   assert.match(defaultsEditor, /icon: KIND_ICON\[kind\]/);
@@ -217,6 +219,8 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(effectEditor, /updateModelDefaultsForStyle\('star'/);
   assert.match(effectEditor, /updateModelDefaultsForStyle\('trail'/);
   assert.match(styleDefaults, /function isBrocadeCrownDesign/);
+  assert.match(styleDefaults, /function makeLaunchPreviewStarLayers/);
+  assert.match(styleDefaults, /kind === 'launch'[\s\S]*makeLaunchPreviewStarLayers/);
   assert.match(styleDefaults, /starDefaults\.burst = cloneJson\(design\.burst\)/);
   assert.match(styleDefaults, /brocadeDefaults\.streakCount = design\.stars\.outer\.count/);
   assert.match(styleDefaults, /starDefaults\.brocade = brocadeDefaults/);
@@ -235,13 +239,11 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(fireworkEditor, /mutateOverridesForStyle\('star'/);
   assert.match(fireworkEditor, /mutateOverridesForStyle\('trail'/);
   assert.match(fireworkEditor, /selectedEffectStyleDefaults\[kind\] != null/);
-  assert.match(sectionPanels, /Save new default/);
-  assert.match(sectionPanels, /Clear edits/);
-  assert.match(selectField, /<SelectValue placeholder=\{placeholder\} \/>/);
-  assert.doesNotMatch(
-    selectField,
-    /<SelectValue placeholder=\{placeholder\}>\{selected\?\.label\}/,
-  );
+  assert.match(sectionPanels, /Save as effect/);
+  assert.match(sectionPanels, /variant="destructive"/);
+  assert.match(sectionPanels, /AlertDialog/);
+  assert.doesNotMatch(sectionPanels, /Save changes/);
+  assert.match(selectField, /<SelectValue placeholder=\{placeholder\}>/);
 
   assert.match(controls, /\| 'launch'/);
   assert.match(controls, /\| 'smoke'/);
@@ -251,6 +253,7 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(controls, /\| 'split'/);
   assert.match(controls, /\| 'sound'/);
   assert.match(controls, /if \(controlScope === 'launch'\)/);
+  assert.match(controls, /label="Show shell particle"/);
   assert.match(controls, /if \(controlScope === 'smoke'\)/);
   assert.match(controls, /if \(controlScope === 'starInner'\)/);
   assert.match(controls, /if \(controlScope === 'sound'\)/);

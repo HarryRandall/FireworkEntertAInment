@@ -8,7 +8,7 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { memo, useId, useRef } from 'react';
-import { MessageCircle, Play, ThumbsUp } from 'lucide-react';
+import { Loader2, MessageCircle, Play, ThumbsUp } from 'lucide-react';
 import { CoverPoster } from '@/app/components/app/CoverPoster';
 import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
@@ -53,6 +53,7 @@ export const ExploreCard = memo(function ExploreCard({ template }: { template: S
   // for this card, so hover never flashes black during the WebGL warm-up.
   const isPreviewHovering = preview?.pendingId === previewId || preview?.activeId === previewId;
   const isPreviewRevealed = preview?.readyId === previewId;
+  const isPreviewLoading = isPreviewHovering && !isPreviewRevealed;
   const accentStyle = {
     '--template-accent-start': accentStart,
     '--template-accent-middle': accentMiddle,
@@ -81,9 +82,8 @@ export const ExploreCard = memo(function ExploreCard({ template }: { template: S
         className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 [content-visibility:auto] group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
       >
         <ReplayCanvasSkeleton
-          showLoadingBar={isPreviewHovering && !isPreviewRevealed}
           className={`transition-opacity duration-200 ease-out ${
-            isPreviewHovering && !isPreviewRevealed ? 'opacity-100' : 'opacity-0'
+            isPreviewLoading ? 'opacity-100' : 'opacity-0'
           }`}
         />
         <CoverPoster
@@ -99,6 +99,16 @@ export const ExploreCard = memo(function ExploreCard({ template }: { template: S
             isPreviewRevealed ? 'opacity-0' : 'opacity-70 group-hover:opacity-40'
           }`}
         />
+        <span
+          className={`pointer-events-none absolute top-1/2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-lg border border-white/20 bg-white/90 px-3 py-2 text-sm font-semibold text-neutral-700 shadow-[var(--shadow-card)] backdrop-blur transition-opacity duration-200 ${
+            isPreviewLoading ? 'opacity-100' : 'opacity-0'
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="text-primary h-4 w-4 shrink-0 animate-spin" strokeWidth={2.5} />
+          Loading...
+        </span>
         <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <Play size={16} fill="currentColor" />
         </span>

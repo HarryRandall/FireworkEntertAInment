@@ -44,7 +44,7 @@ export const uiStyles = {
       'inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-xs transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
     navBase:
       "relative flex h-8 items-center gap-2 rounded-lg px-2 pl-3 text-sm font-medium transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 before:absolute before:left-1 before:top-1.5 before:h-5 before:w-0.5 before:rounded-full before:bg-transparent before:content-['']",
-    navActive: 'bg-accent text-accent-foreground before:bg-primary',
+    navActive: 'bg-[color:var(--accent)] text-[color:var(--accent-foreground)] before:bg-primary',
     navInactive: 'text-muted-foreground hover:bg-muted hover:text-foreground',
   },
   table: {

@@ -48,6 +48,7 @@ export function SelectField({
   const isControlled = typeof value === 'string';
   const [internal, setInternal] = useState(defaultValue ?? '');
   const current = isControlled ? value! : internal;
+  const selectedOption = options.find((option) => option.value === current);
 
   const handleChange = (next: string) => {
     if (!isControlled) setInternal(next);
@@ -69,7 +70,9 @@ export function SelectField({
           )}
         >
           {iconLeft ? <span className="text-muted-foreground">{iconLeft}</span> : null}
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={placeholder}>
+            {selectedOption ? <span className="truncate">{selectedOption.label}</span> : null}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent
           align="start"

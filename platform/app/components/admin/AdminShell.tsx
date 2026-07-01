@@ -6,12 +6,14 @@
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import {
   createContext,
   useEffect,
   useContext,
   useRef,
   useState,
+  useTransition,
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
@@ -23,23 +25,28 @@ import {
   CreditCard,
   Database,
   FileInput,
+  Laptop,
   Layers,
   LayoutDashboard,
   LogOut,
   MessageSquareDot,
   MessageSquareText,
+  Moon,
   Rocket,
   Settings,
   ShieldCheck,
   Sparkles,
   Store,
+  Sun,
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { updateProfileAction } from '@/app/actions/platform-admin';
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
+import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,9 +73,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
-import type { CurrentProfile } from '@/lib/admin.types';
+import type { CurrentProfile, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
 type AdminNavLink = {
@@ -98,6 +106,12 @@ type ProfileSummary = {
   secondaryLine: string;
 };
 
+type ThemeMenuOption = {
+  value: ThemePreference;
+  label: string;
+  icon: LucideIcon;
+};
+
 type Breadcrumb = {
   label: string;
   href?: string;
@@ -107,8 +121,18 @@ const AdminBreadcrumbOverrideContext = createContext<(breadcrumb: Breadcrumb | n
   () => {},
 );
 
+const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Laptop },
+];
+
 export function useAdminBreadcrumbOverride() {
   return useContext(AdminBreadcrumbOverrideContext);
+}
+
+function isThemePreference(value: string | undefined): value is ThemePreference {
+  return value === 'dark' || value === 'light' || value === 'system';
 }
 
 function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -128,7 +152,10 @@ function isActivePath(pathname: string | null, href: string) {
 
 function getAdminBreadcrumbs(pathname: string | null): Breadcrumb[] {
   const match = ADMIN_LINKS.find((link) => isActivePath(pathname, link.href));
-  return [{ label: 'Admin', href: '/admin' }, { label: match?.label ?? 'Overview' }];
+  return [
+    { label: 'Admin', href: '/admin' },
+    { label: match?.label ?? 'Overview', href: match?.href },
+  ];
 }
 
 function SidebarBrand() {
@@ -289,9 +316,11 @@ function ProfileMenuButton({
                   Notifications
                 </Link>
               </DropdownMenuItem>
+              <ProfileThemeMenu />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              variant="destructive"
               onSelect={(event) => {
                 event.preventDefault();
                 void onSignOut();
@@ -304,6 +333,68 @@ function ProfileMenuButton({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+function ProfileThemeMenu() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [, startTransition] = useTransition();
+
+  useEffect(() => setMounted(true), []);
+
+  const selectedTheme = mounted && isThemePreference(theme) ? theme : undefined;
+
+  function chooseTheme(value: ThemePreference) {
+    if (value === selectedTheme) return;
+
+    setTheme(value);
+    startTransition(async () => {
+      const result = await updateProfileAction({ themePreference: value });
+      if (!result.ok) toast.error(result.error);
+    });
+  }
+
+  return (
+    <div
+      className="group/theme focus-within:text-accent-foreground hover:text-accent-foreground relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm outline-hidden transition-colors select-none focus-within:bg-[color:var(--accent)] hover:bg-[color:var(--accent)]"
+      role="radiogroup"
+      aria-label="Interface theme"
+    >
+      <Sun className="size-4 shrink-0 opacity-90" />
+      <span className="min-w-0 flex-1 truncate">Theme</span>
+      <div className="border-border bg-background ml-auto grid h-7 w-[6.75rem] shrink-0 grid-cols-3 items-center rounded-full border p-0.5">
+        {PROFILE_THEME_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const active = selectedTheme === option.value;
+
+          return (
+            <Tooltip key={option.value}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${option.label} theme`}
+                  onClick={() => chooseTheme(option.value)}
+                  className={cn(
+                    'focus-visible:ring-ring/50 text-muted-foreground flex h-full w-full items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2',
+                    active
+                      ? 'bg-muted text-foreground shadow-xs'
+                      : 'group-hover/theme:text-muted-foreground',
+                  )}
+                >
+                  <Icon size={12} strokeWidth={2.2} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" collisionPadding={12}>
+                {option.label}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

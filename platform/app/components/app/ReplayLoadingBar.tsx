@@ -10,46 +10,67 @@
  * standalone surfaces such as the firework lab.
  */
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type ReplayLoadingBarPosition = 'bottom' | 'center';
+export type ReplayLoadingBarVariant = 'default' | 'compact';
 
 export function ReplayLoadingBar({
   progress,
   position = 'bottom',
+  variant = 'default',
 }: {
   progress: number | null;
   position?: ReplayLoadingBarPosition;
+  variant?: ReplayLoadingBarVariant;
 }) {
   const determinate = progress != null;
+  const compact = variant === 'compact';
   const pct = determinate ? Math.max(2, Math.round(progress * 100)) : 0;
   const positionClass =
     position === 'center'
-      ? 'pointer-events-none absolute top-1/2 left-1/2 z-[80] flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2'
-      : 'pointer-events-none absolute bottom-6 left-1/2 z-[80] flex w-[min(440px,calc(100%-2rem))] -translate-x-1/2';
+      ? 'pointer-events-none absolute top-1/2 left-1/2 z-[80] flex -translate-x-1/2 -translate-y-1/2'
+      : 'pointer-events-none absolute bottom-6 left-1/2 z-[80] flex -translate-x-1/2';
+  const widthClass = compact ? 'w-auto max-w-[calc(100%-2rem)]' : 'w-[min(440px,calc(100%-2rem))]';
+  const label = compact ? 'Loading...' : determinate ? 'Loading fireworks' : 'Preparing preview';
   return (
     <div
-      className={`${positionClass} border-outline-variant/15 bg-surface-container-low/90 items-center gap-3 rounded-lg border px-4 py-3 shadow-[var(--shadow-modal)] backdrop-blur`}
+      className={cn(
+        positionClass,
+        widthClass,
+        'border-outline-variant/15 bg-surface-container-low/90 items-center rounded-lg border shadow-[var(--shadow-modal)] backdrop-blur',
+        compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3',
+      )}
       role="status"
       aria-live="polite"
-      aria-label={determinate ? 'Loading fireworks' : 'Preparing preview'}
+      aria-label={compact ? 'Loading preview' : label}
     >
       <Loader2 className="text-primary h-4 w-4 shrink-0 animate-spin" strokeWidth={2.5} />
-      <span className="text-on-surface-variant shrink-0 text-[10px] font-bold tracking-widest uppercase">
-        {determinate ? 'Loading fireworks' : 'Preparing preview'}
-      </span>
-      <div className="bg-surface-container-highest relative h-1.5 flex-1 overflow-hidden rounded-full">
-        {determinate ? (
-          <div
-            className="bg-primary h-full rounded-full transition-[width] duration-150 ease-out"
-            style={{ width: `${pct}%` }}
-          />
-        ) : (
-          <div className="bg-primary h-full w-full animate-pulse rounded-full opacity-70" />
+      <span
+        className={cn(
+          'text-on-surface-variant shrink-0',
+          compact ? 'text-xs font-semibold' : 'text-[10px] font-bold tracking-widest uppercase',
         )}
-      </div>
-      <span className="text-on-surface-variant w-9 shrink-0 text-right font-mono text-[11px] tabular-nums">
-        {determinate ? `${pct}%` : ''}
+      >
+        {label}
       </span>
+      {compact ? null : (
+        <>
+          <div className="bg-surface-container-highest relative h-1.5 flex-1 overflow-hidden rounded-full">
+            {determinate ? (
+              <div
+                className="bg-primary h-full rounded-full transition-[width] duration-150 ease-out"
+                style={{ width: `${pct}%` }}
+              />
+            ) : (
+              <div className="bg-primary h-full w-full animate-pulse rounded-full opacity-70" />
+            )}
+          </div>
+          <span className="text-on-surface-variant w-9 shrink-0 text-right font-mono text-[11px] tabular-nums">
+            {determinate ? `${pct}%` : ''}
+          </span>
+        </>
+      )}
     </div>
   );
 }

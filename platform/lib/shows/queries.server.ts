@@ -14,6 +14,7 @@ import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
+import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 import type {
   FireworkSpecification,
   ReplayCue,
@@ -55,17 +56,6 @@ export class ShowsNetworkError extends Error {
     super('Shows service is temporarily unavailable. Please retry.', { cause });
     this.name = 'ShowsNetworkError';
   }
-}
-
-/** True when a Supabase error looks like a transient network or connect failure. */
-function isSupabaseNetworkError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const message = String((error as { message?: unknown }).message ?? '');
-  const details = String((error as { details?: unknown }).details ?? '');
-  const text = `${message}\n${details}`;
-  return /fetch failed|ETIMEDOUT|ENOTFOUND|ENETUNREACH|ECONNRESET|ECONNREFUSED|EAI_AGAIN|AbortError/i.test(
-    text,
-  );
 }
 
 function firstVariant(
@@ -120,7 +110,7 @@ export async function listShowsForCurrentUser(): Promise<Show[]> {
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
   if (error) {
-    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listShowsForCurrentUser failed:', error);
     return [];
   }
@@ -146,6 +136,7 @@ export const getShowBySlug = cache(async (slug: string): Promise<Show | null> =>
     .eq('slug', slug)
     .maybeSingle();
   if (error) {
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] getShowBySlug failed:', error);
     return null;
   }
@@ -172,6 +163,7 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
     .eq('show_id', showId)
     .order('position', { ascending: true });
   if (error) {
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listCuesForShow failed:', error);
     return [];
   }
@@ -192,6 +184,7 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
     .select(FIREWORK_VARIANT_SELECT)
     .order('name', { ascending: true });
   if (error) {
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listFireworkSpecifications failed:', error);
     return [];
   }
@@ -232,6 +225,7 @@ export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
     )
     .order('name', { ascending: true });
   if (error) {
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listFireworkProducts failed:', error);
     return [];
   }
@@ -349,7 +343,7 @@ async function fetchShotsByCatalogueItem(
     .in('id', catalogueItemIds);
 
   if (error) {
-    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] catalogue_items load failed:', error);
     return shotsByCatalogueItem;
   }
@@ -455,7 +449,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     .order('time_seconds', { ascending: true })
     .order('position', { ascending: true });
   if (error) {
-    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listReplayCuesForShow failed:', error);
     return [];
   }
@@ -469,6 +463,46 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
 
   await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
   return expanded;
+}
+
+/**
+ * Lists only the opening card-preview window for a show. The `/shows` grid
+ * hover preview should feel light and responsive, so it does not need the full
+ * replay cue set that the dedicated preview page uses.
+ */
+export async function listReplayPreviewCuesForShow(
+  showId: string,
+  windowSeconds: number,
+): Promise<ReplayCue[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+
+  const previewWindowSeconds = Math.max(1, Math.min(90, windowSeconds));
+  const supabase = await getServerClient();
+  const previewEnd = previewWindowSeconds;
+  const { data, error } = await supabase
+    .from('show_timeline_items')
+    .select(SHOW_CUE_SELECT)
+    .eq('show_id', showId)
+    .not('time_seconds', 'is', null)
+    .lte('time_seconds', previewEnd)
+    .order('time_seconds', { ascending: true })
+    .order('position', { ascending: true });
+
+  if (error) {
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+    console.error('[shows.server] listReplayPreviewCuesForShow failed:', error);
+    return [];
+  }
+
+  const rows = (data ?? []) as ReplayCueRow[];
+  const catalogueItemIds = [
+    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
+  ];
+  const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
+  return expandReplayCues(rows, shotsByCatalogueItem).filter(
+    (cue) => cue.timeSeconds <= previewEnd + 0.001,
+  );
 }
 
 /**
@@ -498,7 +532,7 @@ export async function listReplayCuesForShows(showIds: string[]): Promise<Map<str
     .order('time_seconds', { ascending: true })
     .order('position', { ascending: true });
   if (error) {
-    if (isSupabaseNetworkError(error)) throw new ShowsNetworkError(error);
+    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
     console.error('[shows.server] listReplayCuesForShows failed:', error);
     for (const id of uniqueShowIds) result.set(id, []);
     return result;

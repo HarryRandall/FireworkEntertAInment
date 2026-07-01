@@ -4,13 +4,15 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   Braces,
+  Circle,
   CircleDot,
   Cloud,
+  GanttChartSquare,
   History,
-  Rocket,
   SlidersHorizontal,
   Sparkles,
   Volume2,
+  Waves,
   Wind,
   Zap,
 } from 'lucide-react';
@@ -34,6 +36,7 @@ import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import type { SelectOption } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
@@ -549,7 +552,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     return true;
   }
 
-  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind) {
+  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, name: string) {
     setError(null);
     if (!parsedModel.ok) {
       setError(parsedModel.error);
@@ -558,8 +561,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     startTransition(async () => {
       const result = await createStyleDefault({
         kind,
-        name: `${effect.name} ${styleDefaultKindLabel(kind).toLowerCase()} style`,
-        description: `Created from ${effect.name}.`,
+        name,
+        description: '',
         defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
       });
 
@@ -696,7 +699,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       launchPositions={PREVIEW_LAUNCH_POSITIONS}
       muted={!isPlaying}
       interactive
-      controlsVisible={previewReady}
+      controlsVisible
       showStarfield={false}
       showFps
       primeSnapshots
@@ -800,7 +803,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           selectedStyleDefaults[kind] ?? effect.styleDefaultLinks[kind] ?? null,
         )}
         disabled={!parsedModel.ok}
-        onSave={() => saveCurrentStyleAsDefault(kind)}
+        onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
         onReset={() => resetLocalStyleDefaults(kind)}
       />
     );
@@ -814,6 +817,65 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       eyebrow: 'Catalogue',
       title: 'Details',
       content: detailsContent,
+    },
+    {
+      id: 'launch-dot',
+      label: 'Launch Dot',
+      icon: Circle,
+      eyebrow: 'Ascent',
+      title: 'Launch dot',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
+            disabled={!parsedModel.ok}
+            showLaunch
+            controlScope="launchShell"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
+      ),
+    },
+    {
+      id: 'launch-trail',
+      label: 'Launch Trail',
+      icon: Waves,
+      eyebrow: 'Ascent',
+      title: 'Launch trail',
+      content: (
+        <FireworkRenderControls
+          design={previewDesign}
+          defaults={renderDefaults}
+          calibrationDefaults={calibrationDefaults}
+          mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
+          disabled={!parsedModel.ok}
+          showLaunch
+          controlScope="launchTrail"
+        />
+      ),
+    },
+    {
+      id: 'smoke',
+      label: 'Smoke',
+      icon: Cloud,
+      eyebrow: 'Atmosphere',
+      title: 'Smoke',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('smoke', updater)}
+            disabled={!parsedModel.ok}
+            controlScope="smoke"
+          />
+          {renderStyleDefaultControls('smoke')}
+        </div>
+      ),
     },
     {
       id: 'star',
@@ -875,32 +937,11 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       ),
     },
     {
-      id: 'launch',
-      label: 'Launch',
-      icon: Rocket,
-      eyebrow: 'Ascent',
-      title: 'Launch',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
-            disabled={!parsedModel.ok}
-            showLaunch
-            controlScope="launch"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx',
-      label: 'FX',
+      id: 'fx-strobe',
+      label: 'Strobe',
       icon: Zap,
       eyebrow: 'Effects',
-      title: 'Spark effects',
+      title: 'Strobe',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
@@ -912,6 +953,17 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             controlScope="strobe"
           />
           {renderStyleDefaultControls('strobe')}
+        </div>
+      ),
+    },
+    {
+      id: 'fx-crackle',
+      label: 'Crackle',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Crackle',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
@@ -921,6 +973,17 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             controlScope="crackle"
           />
           {renderStyleDefaultControls('crackle')}
+        </div>
+      ),
+    },
+    {
+      id: 'fx-split',
+      label: 'Split',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Split',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={renderDefaults}
@@ -929,27 +992,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
             disabled={!parsedModel.ok}
             controlScope="split"
           />
-          {renderStyleDefaultControls('split')}
-        </div>
-      ),
-    },
-    {
-      id: 'smoke',
-      label: 'Smoke',
-      icon: Cloud,
-      eyebrow: 'Atmosphere',
-      title: 'Smoke',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('smoke', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="smoke"
-          />
-          {renderStyleDefaultControls('smoke')}
+          {previewDesign.split.enabled ? renderStyleDefaultControls('split') : null}
         </div>
       ),
     },
@@ -971,6 +1014,19 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           />
           {renderStyleDefaultControls('sound')}
         </div>
+      ),
+    },
+    {
+      id: 'timeline',
+      label: 'Timeline',
+      icon: GanttChartSquare,
+      eyebrow: 'Timing',
+      title: 'Timeline',
+      content: (
+        <InlineAlert tone="info" title="Coming soon">
+          A master timeline for extending individual sections and the overall firework length will
+          live here.
+        </InlineAlert>
       ),
     },
     {
@@ -1015,6 +1071,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       tabs={tabs}
       preview={preview}
       transport={transport}
+      transportPlaying={isPlaying}
       error={error}
       previewNotice={previewNotice}
       fullscreen={isFullscreen}

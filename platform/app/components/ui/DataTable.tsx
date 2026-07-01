@@ -1,6 +1,7 @@
 /** DataTable primitives: class helpers + a Shell wrapper for consistent table styling across admin/app routes. */
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { StickyTableViewport } from './StickyTableViewport';
 
 /** Bordered, rounded container for tables. Wrap any `<table>` in this for consistent chrome. */
 export function DataTableShell({
@@ -30,21 +31,11 @@ export function DataTableShell({
         </div>
       ) : null}
       <div className={cn('relative min-h-0', viewport && 'md:flex md:flex-1')}>
-        <div
-          className={cn(
-            'isolate overflow-x-auto overscroll-x-contain',
-            viewport &&
-              'data-table-scrollport md:min-h-0 md:flex-1 md:overflow-x-auto md:overflow-y-auto md:overscroll-none',
-          )}
-        >
-          {children}
-        </div>
         {viewport ? (
-          <div
-            aria-hidden="true"
-            className="border-border/50 bg-background pointer-events-auto absolute top-0 right-0 z-30 hidden h-11 w-4 border-b border-l md:block"
-          />
-        ) : null}
+          <StickyTableViewport>{children}</StickyTableViewport>
+        ) : (
+          <div className="isolate overflow-x-auto overscroll-x-contain">{children}</div>
+        )}
       </div>
       {footer ? <div className="border-border/50 shrink-0 border-t px-4 py-3">{footer}</div> : null}
     </div>

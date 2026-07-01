@@ -62,6 +62,8 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
         {isPreviewHovering ? (
           <ReplayCanvasSkeleton
             showLoadingBar={!isPreviewRevealed}
+            loadingBarPosition="center"
+            loadingBarVariant="compact"
             className={cn(
               'transition-opacity duration-200 ease-out',
               isPreviewRevealed ? 'opacity-0' : 'opacity-100',

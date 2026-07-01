@@ -1,0 +1,1 @@
+export const SHOW_CARD_PREVIEW_WINDOW_SECONDS = 12;

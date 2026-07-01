@@ -15,7 +15,7 @@ for (const path of ['app/components/app/AppShell.tsx', 'app/components/admin/Adm
     assert.match(source, /open=\{!sidebarCollapsed\}/);
     assert.match(source, /onOpenChange=\{\(open\) => setSidebarCollapsedPreference\(!open\)\}/);
     assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
-    assert.match(source, /hover:scale-\[1\.03\]/);
+    assert.match(source, /hover:bg-sidebar-accent/);
     assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
     assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-100/);
     assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-0/);

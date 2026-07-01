@@ -11,6 +11,7 @@
  * card's screen rect each frame and position the overlay on top of it.
  */
 import dynamic from 'next/dynamic';
+import { Play } from 'lucide-react';
 import {
   createContext,
   useCallback,
@@ -263,6 +264,9 @@ export function ExplorePreviewProvider({
             cardClassName="absolute inset-0 h-full w-full overflow-hidden"
           />
         ) : null}
+        <span className="pointer-events-none absolute top-2 left-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white">
+          <Play size={16} fill="currentColor" />
+        </span>
       </div>
     </ExplorePreviewContext.Provider>
   );

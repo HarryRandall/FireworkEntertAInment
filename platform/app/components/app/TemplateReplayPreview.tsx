@@ -57,7 +57,7 @@ const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
-    loading: () => <ReplayCanvasSkeleton showLoadingBar />,
+    loading: () => <ReplayCanvasSkeleton />,
   },
 );
 const MemoizedFireworkReplayCanvas = memo(LazyFireworkReplayCanvas);
@@ -299,6 +299,7 @@ export function TemplateReplayPreview({
             antialias
             primeSnapshots={isDetail}
             loadingBarPosition="bottom"
+            showLoadingBar={isDetail}
             onReady={handleReplayReady}
           />
         ) : lazyHoverMount ? null : (
@@ -307,11 +308,6 @@ export function TemplateReplayPreview({
       </div>
       {isDetail ? (
         <>
-          <div className="pointer-events-none absolute top-5 left-5 z-10 max-w-sm">
-            <p className="text-xs font-medium text-white/65 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
-              Drag to orbit. Scroll to switch view distance. Use the timeline to scrub.
-            </p>
-          </div>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           {isReplayReady ? (
             <div className="absolute inset-x-0 bottom-6 z-20">

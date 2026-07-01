@@ -33,7 +33,7 @@ const AddCueSchema = z.object({
     .number()
     .min(0)
     .max(60 * 60),
-  description: z.string().trim().min(1).max(180),
+  description: z.string().trim().max(180).optional(),
   launchPositionIndex: z.coerce.number().int().min(0).max(2).default(0),
   emphasis: z.enum(['normal', 'accent', 'peak']).default('normal'),
   aiCreditAction: z.enum(['show_refinement']).optional(),
@@ -57,7 +57,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     showSlug: formData.get('showSlug'),
     productId: formData.get('productId'),
     timeSeconds: formData.get('timeSeconds'),
-    description: formData.get('description'),
+    description: formData.get('description') || undefined,
     launchPositionIndex: formData.get('launchPositionIndex') ?? 0,
     emphasis: formData.get('emphasis') ?? 'normal',
     aiCreditAction: formData.get('aiCreditAction') || undefined,
@@ -76,6 +76,16 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { data: productRow, error: productError } = await supabase
+    .from('catalogue_items')
+    .select('name')
+    .eq('id', parsed.data.productId)
+    .maybeSingle();
+  if (productError || !productRow?.name) {
+    console.error('[addPreviewCueAction] product lookup failed:', productError);
+    return { ok: false, error: 'Could not find that firework.' };
+  }
+  const cueDescription = productRow.name.trim();
 
   const newDuration =
     (await getProductDurationSeconds(supabase, parsed.data.productId)) ??
@@ -146,7 +156,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       referenceId: parsed.data.aiCreditReferenceId,
       reservationKey: refinementReservationKey,
       metadata: {
-        description: parsed.data.description,
+        description: cueDescription,
         productId: parsed.data.productId,
         prompt: parsed.data.refinementPrompt ?? null,
         showId: parsed.data.showId,
@@ -167,7 +177,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     show_id: parsed.data.showId,
     position: (lastCue?.position ?? 0) + 1,
     time_seconds: parsed.data.timeSeconds,
-    description: parsed.data.description,
+    description: cueDescription,
     catalogue_item_id: parsed.data.productId,
     launch_position_index: parsed.data.launchPositionIndex,
     emphasis: parsed.data.emphasis,
@@ -194,7 +204,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       userId: user.id,
       reservationKey: refinementReservationKey,
       metadata: {
-        cueDescription: parsed.data.description,
+        cueDescription,
         productId: parsed.data.productId,
         showId: parsed.data.showId,
         showSlug: parsed.data.showSlug,

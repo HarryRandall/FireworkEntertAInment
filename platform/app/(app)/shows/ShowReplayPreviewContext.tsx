@@ -11,12 +11,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getShowReplayCues } from '@/app/actions/show-replay-cues';
+import { Play } from 'lucide-react';
+import { getShowReplayPreviewCues } from '@/app/actions/show-replay-cues';
 import type { ReplayCue } from '@/lib/show-domain';
+import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 
 const HOVER_INTENT_MS = 500;
-const CARD_PREVIEW_WINDOW_SECONDS = 18;
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
@@ -47,9 +48,14 @@ export function useShowReplayPreview() {
   return useContext(ShowReplayPreviewContext);
 }
 
-function previewStartFor(cues: ReplayCue[]) {
-  const firstCue = cues[0]?.timeSeconds ?? 0;
-  return Math.max(0, firstCue - 0.3);
+function formatEditedAt(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function ShowReplayPreviewSurface({
@@ -61,13 +67,8 @@ function ShowReplayPreviewSurface({
   active: boolean;
   onReady: () => void;
 }) {
-  const previewStart = useMemo(() => previewStartFor(preview.cues), [preview.cues]);
-  const duration = Math.max(
-    preview.show.lengthSeconds ?? 30,
-    preview.cues.at(-1)?.timeSeconds ?? 0,
-    10,
-  );
-  const previewEnd = Math.min(duration, previewStart + CARD_PREVIEW_WINDOW_SECONDS);
+  const previewStart = 0;
+  const previewEnd = SHOW_CARD_PREVIEW_WINDOW_SECONDS;
   const [elapsed, setElapsed] = useState(previewStart);
   const elapsedRef = useRef(previewStart);
 
@@ -112,6 +113,7 @@ function ShowReplayPreviewSurface({
       muted
       maxDevicePixelRatio={1.75}
       antialias
+      showLoadingBar={false}
       onReady={onReady}
     />
   );
@@ -164,7 +166,7 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       let cues = cueCacheRef.current.get(show.id);
       if (!cues) {
         try {
-          cues = await getShowReplayCues(show.id);
+          cues = await getShowReplayPreviewCues(show.id);
         } catch (error) {
           console.error('[show-replay] cue fetch failed', error);
           cues = [];
@@ -288,14 +290,22 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
         {mountedPreview ? (
-          <ShowReplayPreviewSurface
-            preview={mountedPreview}
-            active={active !== null}
-            onReady={() => {
-              readyRef.current = true;
-              setReady(true);
-            }}
-          />
+          <>
+            <ShowReplayPreviewSurface
+              preview={mountedPreview}
+              active={active !== null}
+              onReady={() => {
+                readyRef.current = true;
+                setReady(true);
+              }}
+            />
+            <span className="pointer-events-none absolute top-2 left-2 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white">
+              <Play size={16} fill="currentColor" />
+            </span>
+            <span className="pointer-events-none absolute top-2 right-2 z-20 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[10px] font-medium text-white/90 tabular-nums">
+              {formatEditedAt(mountedPreview.show.lastEditedAt)}
+            </span>
+          </>
         ) : null}
       </div>
     </ShowReplayPreviewContext.Provider>

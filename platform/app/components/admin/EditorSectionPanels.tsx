@@ -1,9 +1,29 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, RotateCcw, Save } from 'lucide-react';
 import { useId, useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
+import { Input } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +32,7 @@ import {
   type BurstTrailPreset,
   type FireworkStarLayer,
 } from '@/lib/fireworks/design';
+import { NO_STYLE_DEFAULT_VALUE } from '@/lib/fireworks/style-defaults';
 
 type BurstTrail = FireworkStarLayer['burstTrail'];
 
@@ -61,44 +82,124 @@ export function EditorStyleDefaultControls({
   resetDisabled?: boolean;
   inheritedLabel?: string | null;
   onChange: (value: string) => void;
-  onSave: () => void;
+  onSave: (name: string) => void;
   onReset: () => void;
 }) {
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const isCustom = value === NO_STYLE_DEFAULT_VALUE;
+  const selectedOption = options.find((option) => option.value === value);
+
+  function openSaveDialog() {
+    setDraftName('');
+    setSaveDialogOpen(true);
+  }
+
+  function confirmSave() {
+    const trimmed = draftName.trim();
+    if (!trimmed) return;
+    onSave(trimmed);
+    setSaveDialogOpen(false);
+  }
+
+  function confirmReset() {
+    onReset();
+    setResetDialogOpen(false);
+  }
+
   return (
-    <div className="space-y-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-3">
+    <div className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-5">
       <Field>
-        <FieldLabel>{label}</FieldLabel>
+        <div className="flex items-center gap-1.5">
+          <FieldLabel>{label}</FieldLabel>
+          <InfoTooltip text="Save these settings as a reusable effect, or pick a saved effect to apply here instead." />
+        </div>
         <SelectField
           value={value}
           onChange={onChange}
           options={options}
           ariaLabel={label}
           disabled={disabled}
+          className="h-auto min-h-10 py-2"
         />
-        {inheritedLabel ? (
+        {!isCustom && inheritedLabel ? (
           <p className="text-xs text-[color:var(--color-content-muted)]">{inheritedLabel}</p>
         ) : null}
       </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="min-h-9 px-2 text-center leading-tight whitespace-normal"
-          onClick={onSave}
-          disabled={disabled || saveDisabled}
-        >
-          Save new default
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="min-h-9 px-2 text-center leading-tight whitespace-normal"
-          onClick={onReset}
-          disabled={disabled || resetDisabled}
-        >
-          Clear edits
-        </Button>
+      <div className="flex items-center gap-2">
+        {isCustom ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="min-h-9 flex-1 justify-center gap-1.5 px-2 text-center leading-tight whitespace-normal"
+            onClick={openSaveDialog}
+            disabled={disabled || saveDisabled}
+          >
+            <Save size={14} />
+            Save as effect
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="min-h-9 flex-1 justify-center gap-1.5 px-2 text-center leading-tight whitespace-normal"
+            onClick={() => setResetDialogOpen(true)}
+            disabled={disabled || resetDisabled}
+          >
+            <RotateCcw size={14} />
+            Reset
+          </Button>
+        )}
       </div>
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save {label.toLowerCase()}</DialogTitle>
+            <DialogDescription>
+              Give this preset a name so you can apply it elsewhere later.
+            </DialogDescription>
+          </DialogHeader>
+          <Field>
+            <FieldLabel htmlFor="style-default-save-name">Name</FieldLabel>
+            <Input
+              id="style-default-save-name"
+              autoFocus
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  confirmSave();
+                }
+              }}
+              placeholder="e.g. Gold peony"
+            />
+          </Field>
+          <DialogFooter>
+            <Button onClick={confirmSave} disabled={draftName.trim().length === 0}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset {label.toLowerCase()}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This reverts to {selectedOption ? `"${selectedOption.label}"` : 'the saved style'} and
+              discards any changes you have made here for this effect.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmReset}>
+              Reset
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

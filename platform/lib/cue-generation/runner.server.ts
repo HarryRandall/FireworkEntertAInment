@@ -486,10 +486,11 @@ export async function generateCuesForShow(params: {
 
   // === Stage 5: transactionally replace show_timeline_items ================
   const dbStart = performance.now();
+  const productNameById = new Map(products.map((product) => [product.id, product.name]));
   const rows = accepted.map((cue, i) => ({
     position: i + 1,
     time_seconds: cue.timeSeconds,
-    description: cue.description,
+    description: productNameById.get(cue.productId) ?? cue.description,
     catalogue_item_id: cue.productId,
     launch_position_index: cue.tube,
     emphasis: cue.emphasis,

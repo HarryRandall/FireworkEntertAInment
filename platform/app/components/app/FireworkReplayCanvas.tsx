@@ -154,6 +154,12 @@ type Props = {
   headStyle?: Partial<FireworkHeadStyle>;
   trailWidthGuideDesign?: FireworkDesign | null;
   /**
+   * Render extra horizontal WebGL width while the visible frame clips the middle.
+   * Multishot uses this so opening the side inspector keeps the scene scale
+   * stable without pushing the mortar off-centre.
+   */
+  renderOverscanPx?: number;
+  /**
    * Fired once after the canvas mounts and the empty scene is first rendered,
    * before any fireworks are loaded. Parents can use this to drop a placeholder
    * so the user can see (and orbit) the scene while cues are still priming.
@@ -203,6 +209,22 @@ type Props = {
    * stage-poster capture opts in so it can screenshot the empty scene.
    */
   preserveDrawingBuffer?: boolean;
+  /**
+   * Aim-direction overlay for the multishot editor. When provided, a marker is
+   * drawn from the shared mortar for each shot and the canvas becomes
+   * pickable: clicking a marker selects it, and (with `repositionMarkerId` set)
+   * dragging changes that shot's pan/tilt. Absent by default, so every other
+   * consumer of this canvas is unaffected.
+   */
+  aimMarkers?: AimMarker[];
+  selectedMarkerId?: string | null;
+  onSelectMarker?: (id: string | null) => void;
+  /** When set, dragging the canvas repositions this marker instead of orbiting. */
+  repositionMarkerId?: string | null;
+  /** Fired continuously while dragging a marker in reposition mode. */
+  onRepositionMarker?: (id: string, panDegrees: number, tiltDegrees: number) => void;
+  /** Fired once on pointer-up after a reposition drag, for persistence. */
+  onRepositionCommit?: (id: string, panDegrees: number, tiltDegrees: number) => void;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
@@ -600,6 +622,169 @@ function disposeTrailWidthGuide(group: THREE.Group | null): void {
   });
 }
 
+/**
+ * A single aim marker for the multishot editor: one shot's launch direction
+ * from the shared mortar, described by its pan (left/right) and tilt
+ * (toward/away) in degrees. Purely an editor overlay; it does not affect the
+ * simulated show, which reads pan/tilt from each cue.
+ */
+export type AimMarker = {
+  id: string;
+  panDegrees: number;
+  tiltDegrees: number;
+  color?: string | null;
+  label?: string | null;
+  /**
+   * World-space centre of the shot's burst. When provided, the marker sits
+   * exactly where the firework pops; otherwise it falls back to a fixed-length
+   * aim ray from the mortar.
+   */
+  position?: { x: number; y: number; z: number } | null;
+};
+
+// Overlay geometry constants. The mortar sits at the world origin and the aim
+// line reaches up toward the burst band (orbit target is y=1000).
+const AIM_MARKER_LENGTH = 1500;
+const AIM_MARKER_HANDLE_RADIUS_SELECTED = 104;
+// Invisible but pickable hit sphere around each shot's burst, so any firework
+// can be clicked to select it even though only the selected one is drawn.
+const AIM_MARKER_PICK_RADIUS = 150;
+const AIM_MARKER_DEFAULT_COLOR = 0x8ad7ff;
+// Degrees of pan/tilt per pixel dragged while repositioning a marker in 3D.
+const AIM_REPOSITION_PAN_PER_PX = 0.32;
+const AIM_REPOSITION_TILT_PER_PX = 0.28;
+// A pointer that moves less than this (px) between down and up counts as a click
+// (used to distinguish selecting a marker from orbiting the camera).
+const AIM_CLICK_SLOP_PX = 5;
+
+function clampPan(value: number): number {
+  return Math.max(-180, Math.min(180, value));
+}
+
+function clampTilt(value: number): number {
+  return Math.max(-90, Math.min(90, value));
+}
+
+/** Unit direction a shot is aimed, mirroring how the sim offsets a burst. */
+function aimMarkerDirection(panDegrees: number, tiltDegrees: number): THREE.Vector3 {
+  const pan = (panDegrees * Math.PI) / 180;
+  const tilt = (tiltDegrees * Math.PI) / 180;
+  return new THREE.Vector3(
+    Math.sin(pan),
+    Math.max(0.35, Math.cos(pan)),
+    Math.sin(tilt),
+  ).normalize();
+}
+
+function aimMarkerEndpoint(marker: AimMarker): THREE.Vector3 {
+  if (marker.position) {
+    return new THREE.Vector3(marker.position.x, marker.position.y, marker.position.z);
+  }
+  return aimMarkerDirection(marker.panDegrees, marker.tiltDegrees).multiplyScalar(
+    AIM_MARKER_LENGTH,
+  );
+}
+
+function buildAimMarkerGroup(markers: AimMarker[], selectedId: string | null): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'aim-markers';
+  group.userData.aimMarkers = true;
+
+  for (const marker of markers) {
+    const endpoint = aimMarkerEndpoint(marker);
+    // Invisible hit target at the burst centre so every shot stays clickable
+    // even though only the selected marker is drawn.
+    const pickGeometry = new THREE.SphereGeometry(AIM_MARKER_PICK_RADIUS, 12, 12);
+    const pickMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const pick = new THREE.Mesh(pickGeometry, pickMaterial);
+    pick.position.copy(endpoint);
+    pick.renderOrder = 20;
+    pick.userData.aimMarkerId = marker.id;
+    group.add(pick);
+
+    if (marker.id !== selectedId) continue;
+
+    // Only the selected shot draws a visible ring, halo, and aim line so the
+    // preview stays uncluttered.
+    const color = new THREE.Color(marker.color ?? undefined);
+    if (!marker.color) color.setHex(AIM_MARKER_DEFAULT_COLOR);
+
+    const lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, endpoint.x, endpoint.y, endpoint.z], 3),
+    );
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.7,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+    line.renderOrder = 21;
+    group.add(line);
+
+    // A thin ring around the burst rather than a solid dot, so the firework
+    // itself stays visible inside the selection marker.
+    const ringGeometry = new THREE.TorusGeometry(AIM_MARKER_HANDLE_RADIUS_SELECTED, 8, 12, 40);
+    const ringMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.position.copy(endpoint);
+    ring.renderOrder = 23;
+    ring.userData.aimMarkerId = marker.id;
+    ring.userData.aimMarkerBillboard = true;
+    group.add(ring);
+
+    const haloGeometry = new THREE.SphereGeometry(AIM_MARKER_HANDLE_RADIUS_SELECTED + 30, 22, 22);
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.16,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+    halo.position.copy(endpoint);
+    halo.renderOrder = 21;
+    halo.userData.aimMarkerId = marker.id;
+    group.add(halo);
+  }
+
+  return group;
+}
+
+function orientAimMarkerBillboards(group: THREE.Group | null, camera: THREE.Camera): void {
+  if (!group) return;
+  for (const child of group.children) {
+    if (child.userData?.aimMarkerBillboard) child.quaternion.copy(camera.quaternion);
+  }
+}
+
+function aimMarkersSignature(markers: AimMarker[]): string {
+  return markers
+    .map((m) => {
+      const p = m.position;
+      const pos = p ? `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}` : '';
+      return `${m.id}:${m.panDegrees}:${m.tiltDegrees}:${m.color ?? ''}:${pos}`;
+    })
+    .join('|');
+}
+
 export function FireworkReplayCanvas({
   cues,
   elapsed,
@@ -618,6 +803,7 @@ export function FireworkReplayCanvas({
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
   headStyle = DEFAULT_FIREWORK_HEAD_STYLE,
   trailWidthGuideDesign = null,
+  renderOverscanPx = 0,
   onSceneReady,
   onPrimeProgress,
   cuesFinal = true,
@@ -629,6 +815,12 @@ export function FireworkReplayCanvas({
   onToggleFullscreen,
   showStarfield = true,
   preserveDrawingBuffer = false,
+  aimMarkers,
+  selectedMarkerId = null,
+  onSelectMarker,
+  repositionMarkerId = null,
+  onRepositionMarker,
+  onRepositionCommit,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
@@ -638,6 +830,14 @@ export function FireworkReplayCanvas({
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const trailWidthGuideRef = useRef<THREE.Group | null>(null);
+  const aimMarkersGroupRef = useRef<THREE.Group | null>(null);
+  const aimMarkersRef = useRef<AimMarker[]>(aimMarkers ?? []);
+  const selectedMarkerIdRef = useRef<string | null>(selectedMarkerId);
+  const repositionMarkerIdRef = useRef<string | null>(repositionMarkerId);
+  const onSelectMarkerRef = useRef(onSelectMarker);
+  const onRepositionMarkerRef = useRef(onRepositionMarker);
+  const onRepositionCommitRef = useRef(onRepositionCommit);
+  const [sceneReady, setSceneReady] = useState(false);
   const rafRef = useRef<number | null>(null);
   const internalElapsedRef = useRef(elapsed);
   const showFpsRef = useRef(showFps);
@@ -715,6 +915,20 @@ export function FireworkReplayCanvas({
   useEffect(() => {
     cuesFinalRef.current = cuesFinal;
   }, [cuesFinal]);
+  useEffect(() => {
+    onSelectMarkerRef.current = onSelectMarker;
+    onRepositionMarkerRef.current = onRepositionMarker;
+    onRepositionCommitRef.current = onRepositionCommit;
+  }, [onSelectMarker, onRepositionMarker, onRepositionCommit]);
+  useEffect(() => {
+    aimMarkersRef.current = aimMarkers ?? [];
+  }, [aimMarkers]);
+  useEffect(() => {
+    selectedMarkerIdRef.current = selectedMarkerId;
+  }, [selectedMarkerId]);
+  useEffect(() => {
+    repositionMarkerIdRef.current = repositionMarkerId;
+  }, [repositionMarkerId]);
 
   useEffect(() => {
     setShowFpsOverlay(showFps);
@@ -986,6 +1200,9 @@ export function FireworkReplayCanvas({
       hasReportedSceneReadyRef.current = true;
       onSceneReadyRef.current?.();
     }
+    // Signal that scene/camera/controls refs are live so the aim-overlay and
+    // picking effects (below) can safely attach.
+    setSceneReady(true);
 
     const viewHelper = new ViewHelper(camera, renderer.domElement);
     // Keep the axis helper below the camera settings button when enabled.
@@ -1104,6 +1321,7 @@ export function FireworkReplayCanvas({
         interactionActive
       ) {
         forceRenderRef.current = false;
+        orientAimMarkerBillboards(aimMarkersGroupRef.current, cam);
         comp.render(dt);
         if (showViewHelperRef.current) {
           // Gizmo overlays the main pass; it manages its own viewport region.
@@ -1156,6 +1374,7 @@ export function FireworkReplayCanvas({
       cameraRef.current = null;
       rendererRef.current = null;
       sceneRef.current = null;
+      setSceneReady(false);
     };
     // launchPositions handled by separate effect to avoid full teardown on edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1270,6 +1489,152 @@ export function FireworkReplayCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positionsKey]);
 
+  // Aim-marker overlay: rebuild the in-scene markers whenever the shot set or
+  // the selection changes. Gated behind `aimMarkers` so non-editor consumers
+  // never pay for this. `aimMarkersKey` is the value surrogate for the array.
+  const aimMarkersKey = aimMarkers ? aimMarkersSignature(aimMarkers) : null;
+  useEffect(() => {
+    if (!sceneReady) return;
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (aimMarkersGroupRef.current) {
+      scene.remove(aimMarkersGroupRef.current);
+      disposeTrailWidthGuide(aimMarkersGroupRef.current);
+      aimMarkersGroupRef.current = null;
+    }
+    const markers = aimMarkers ?? [];
+    if (markers.length > 0) {
+      const group = buildAimMarkerGroup(markers, selectedMarkerId);
+      scene.add(group);
+      aimMarkersGroupRef.current = group;
+    }
+    forceRenderRef.current = true;
+    return () => {
+      if (aimMarkersGroupRef.current) {
+        scene.remove(aimMarkersGroupRef.current);
+        disposeTrailWidthGuide(aimMarkersGroupRef.current);
+        aimMarkersGroupRef.current = null;
+        forceRenderRef.current = true;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneReady, aimMarkersKey, selectedMarkerId]);
+
+  // Keep orbit disabled while a marker is being repositioned so dragging aims
+  // the shot rather than moving the camera.
+  useEffect(() => {
+    if (!controlsRef.current) return;
+    controlsRef.current.enabled = interactive && !repositionMarkerId;
+  }, [interactive, repositionMarkerId, sceneReady]);
+
+  // Pointer picking + drag-to-reposition. Attached once the scene is live and
+  // only when the caller opted into aim markers. Latest props are read through
+  // refs so this listener does not need to re-attach on every edit.
+  const aimEnabled = Boolean(aimMarkers);
+  useEffect(() => {
+    if (!sceneReady || !aimEnabled) return;
+    const renderer = rendererRef.current;
+    if (!renderer) return;
+    const dom = renderer.domElement;
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    function toNdc(event: PointerEvent) {
+      const rect = dom.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function pickMarkerId(): string | null {
+      const cam = cameraRef.current;
+      const group = aimMarkersGroupRef.current;
+      if (!cam || !group) return null;
+      raycaster.setFromCamera(pointer, cam);
+      const hits = raycaster.intersectObjects(group.children, false);
+      for (const hit of hits) {
+        const id = (hit.object.userData?.aimMarkerId as string | undefined) ?? null;
+        if (id) return id;
+      }
+      return null;
+    }
+
+    let dragging = false;
+    let dragId: string | null = null;
+    let startX = 0;
+    let startY = 0;
+    let startPan = 0;
+    let startTilt = 0;
+    let pickCandidate: string | null = null;
+    let downX = 0;
+    let downY = 0;
+
+    function computeAim(event: PointerEvent) {
+      const pan = clampPan(startPan + (event.clientX - startX) * AIM_REPOSITION_PAN_PER_PX);
+      const tilt = clampTilt(startTilt - (event.clientY - startY) * AIM_REPOSITION_TILT_PER_PX);
+      return { pan: Math.round(pan), tilt: Math.round(tilt) };
+    }
+
+    function onPointerDown(event: PointerEvent) {
+      if (event.button !== 0) return;
+      toNdc(event);
+      downX = event.clientX;
+      downY = event.clientY;
+      const repoId = repositionMarkerIdRef.current;
+      if (repoId) {
+        const marker = aimMarkersRef.current.find((m) => m.id === repoId);
+        if (marker) {
+          dragging = true;
+          dragId = repoId;
+          startX = event.clientX;
+          startY = event.clientY;
+          startPan = marker.panDegrees;
+          startTilt = marker.tiltDegrees;
+          if (dom.setPointerCapture) dom.setPointerCapture(event.pointerId);
+          return;
+        }
+      }
+      // Not repositioning: remember what was under the cursor. A pure click
+      // (little movement) selects it; a drag falls through to orbit.
+      pickCandidate = pickMarkerId();
+    }
+
+    function onPointerMove(event: PointerEvent) {
+      if (!dragging || !dragId) return;
+      const { pan, tilt } = computeAim(event);
+      onRepositionMarkerRef.current?.(dragId, pan, tilt);
+    }
+
+    function onPointerUp(event: PointerEvent) {
+      if (dragging && dragId) {
+        const { pan, tilt } = computeAim(event);
+        onRepositionCommitRef.current?.(dragId, pan, tilt);
+        dragging = false;
+        dragId = null;
+        if (dom.releasePointerCapture) {
+          try {
+            dom.releasePointerCapture(event.pointerId);
+          } catch {
+            // capture may already be gone; ignore
+          }
+        }
+        return;
+      }
+      const moved = Math.hypot(event.clientX - downX, event.clientY - downY);
+      if (moved <= AIM_CLICK_SLOP_PX) onSelectMarkerRef.current?.(pickCandidate);
+      pickCandidate = null;
+    }
+
+    dom.addEventListener('pointerdown', onPointerDown);
+    dom.addEventListener('pointermove', onPointerMove);
+    dom.addEventListener('pointerup', onPointerUp);
+    return () => {
+      dom.removeEventListener('pointerdown', onPointerDown);
+      dom.removeEventListener('pointermove', onPointerMove);
+      dom.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [sceneReady, aimEnabled]);
+
   useEffect(() => {
     engineRef.current?.setMuted(muted);
     if (!muted) engineRef.current?.resumeAudio();
@@ -1361,9 +1726,17 @@ export function FireworkReplayCanvas({
     renderFor(360);
   }
 
+  const renderOverscan = Math.max(0, renderOverscanPx);
+  const renderSurfaceLeft = renderOverscan > 0 ? -renderOverscan / 2 : 0;
+  const renderSurfaceWidth = renderOverscan > 0 ? `calc(100% + ${renderOverscan}px)` : '100%';
+
   return (
     <>
-      <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />
+      <div
+        ref={containerRef}
+        className="absolute top-0 bottom-0 h-full bg-black"
+        style={{ left: renderSurfaceLeft, width: renderSurfaceWidth }}
+      />
       {showFpsOverlay ? (
         <FpsGraph fps={fps} samples={fpsSamples} onClose={() => setShowFpsOverlay(false)} />
       ) : null}

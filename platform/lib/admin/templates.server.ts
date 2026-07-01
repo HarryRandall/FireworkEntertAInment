@@ -10,6 +10,7 @@ import 'server-only';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { ShowTemplate } from '@/lib/admin.types';
 import { mergeSeededLibraryTemplates } from '@/lib/library-seed-templates';
+import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 import { PLATFORM_CACHE_PREFIX, SHOW_TEMPLATES_TTL_SECONDS } from './cache-keys';
 import { mapShowTemplate, type ShowTemplateRow } from './mappers';
 import { getServerClient } from './supabase';
@@ -43,7 +44,9 @@ export async function listShowTemplates(): Promise<ShowTemplate[]> {
         .order('sort_order', { ascending: true })
     : primary;
   if (error) {
-    console.error('[admin.server] listShowTemplates failed:', error);
+    if (!isSupabaseTransientNetworkError(error)) {
+      console.error('[admin.server] listShowTemplates failed:', error);
+    }
     return mergeSeededLibraryTemplates([]);
   }
   const mapped = mergeSeededLibraryTemplates(
@@ -76,7 +79,9 @@ export async function getShowTemplateBySlug(slug: string): Promise<ShowTemplate 
         .maybeSingle()
     : primary;
   if (error) {
-    console.error('[admin.server] getShowTemplateBySlug failed:', error);
+    if (!isSupabaseTransientNetworkError(error)) {
+      console.error('[admin.server] getShowTemplateBySlug failed:', error);
+    }
     return null;
   }
   return data ? mapShowTemplate(data as ShowTemplateRow) : null;

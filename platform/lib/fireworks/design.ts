@@ -204,6 +204,7 @@ export type LaunchShellShape = (typeof LAUNCH_SHELL_SHAPES)[number];
 
 export const BURST_TRAIL_MAX_STOPS = 5;
 export const BURST_TRAIL_PARTICLES_PER_STAR_MAX = 2000;
+export const BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX = 10;
 export const BURST_TRAIL_FLICKER_LIFE_MAX = 0.5;
 export const BURST_TRAIL_FADE_MODES = ['dynamic', 'fixed'] as const;
 export type BurstTrailFadeMode = (typeof BURST_TRAIL_FADE_MODES)[number];
@@ -321,6 +322,7 @@ const LaunchShellTrailSchema = z
 
 const LaunchShellSchema = z
   .object({
+    visible: z.boolean().default(true),
     shape: z.enum(LAUNCH_SHELL_SHAPES).default('circle'),
     colour: ColorSchema.optional(),
     sizeScale: z.coerce.number().min(0.25).max(4).default(1),
@@ -333,6 +335,7 @@ const LaunchShellSchema = z
     trail: LaunchShellTrailSchema,
   })
   .default({
+    visible: true,
     shape: 'circle',
     sizeScale: 1,
     brightness: 1,
@@ -343,7 +346,7 @@ const LaunchShellSchema = z
 const LaunchLiftParticlesSchema = z
   .object({
     enabled: z.boolean().default(true),
-    amount: z.coerce.number().int().min(0).max(240).default(100),
+    amount: z.coerce.number().int().min(0).max(1000).default(100),
     colour: ColorSchema.optional(),
     height: z.coerce
       .number()
@@ -364,9 +367,10 @@ const LaunchLiftParticlesSchema = z
       .object({
         curve: z.coerce.number().min(0.2).max(4).default(1),
         jitterPercent: z.coerce.number().min(0).max(100).default(35),
+        clusterStrength: z.coerce.number().min(0).max(100).default(0),
         pathSamples: z.coerce.number().int().min(1).max(12).default(5),
       })
-      .default({ curve: 1, jitterPercent: 35, pathSamples: 5 }),
+      .default({ curve: 1, jitterPercent: 35, clusterStrength: 0, pathSamples: 5 }),
     lifetime: z
       .object({
         baseSeconds: z.coerce.number().min(0.1).max(8).default(0.8),
@@ -402,7 +406,10 @@ const LaunchLiftParticlesSchema = z
         driftZ: z.coerce.number().min(-2).max(2).default(0),
         spin: z.coerce.number().min(0).max(8).default(0),
         swirlStrength: z.coerce.number().min(0).max(4).default(0),
-        swirlRadius: z.coerce.number().min(0).max(90).default(0),
+        swirlRadius: z.coerce.number().min(0).max(180).default(0),
+        swirlLoopCount: z.coerce.number().min(0).max(6).default(0),
+        swirlLoopLength: z.coerce.number().min(5).max(100).default(100),
+        swirlLoopHeight: z.coerce.number().min(0).max(180).default(0),
         swirlRate: z.coerce.number().min(0).max(16).default(4),
       })
       .default({
@@ -416,6 +423,9 @@ const LaunchLiftParticlesSchema = z
         spin: 0,
         swirlStrength: 0,
         swirlRadius: 0,
+        swirlLoopCount: 0,
+        swirlLoopLength: 100,
+        swirlLoopHeight: 0,
         swirlRate: 4,
       }),
   })
@@ -426,7 +436,7 @@ const LaunchLiftParticlesSchema = z
     shapeWeights: { circle: 0, square: 100, triangle: 0 },
     particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
     frontClump: 0.55,
-    spacing: { curve: 1, jitterPercent: 35, pathSamples: 5 },
+    spacing: { curve: 1, jitterPercent: 35, clusterStrength: 0, pathSamples: 5 },
     lifetime: { baseSeconds: 0.8, variationPercent: 35, afterglowSeconds: 0.1 },
     intensity: { brightness: 1, fadeSoftness: 1 },
     flicker: { chance: 0.08, strength: 0.8, lifetimeMultiplier: 0.45 },
@@ -441,6 +451,9 @@ const LaunchLiftParticlesSchema = z
       spin: 0,
       swirlStrength: 0,
       swirlRadius: 0,
+      swirlLoopCount: 0,
+      swirlLoopLength: 100,
+      swirlLoopHeight: 0,
       swirlRate: 4,
     },
   });
@@ -471,6 +484,7 @@ const LaunchSchema = z
   })
   .default({
     shell: {
+      visible: true,
       shape: 'circle',
       sizeScale: 1,
       brightness: 1,
@@ -484,7 +498,7 @@ const LaunchSchema = z
       shapeWeights: { circle: 0, square: 100, triangle: 0 },
       particleSize: { base: 30, headScale: 1, tailScale: 0.35, variationPercent: 20 },
       frontClump: 0.55,
-      spacing: { curve: 1, jitterPercent: 35, pathSamples: 5 },
+      spacing: { curve: 1, jitterPercent: 35, clusterStrength: 0, pathSamples: 5 },
       lifetime: { baseSeconds: 0.8, variationPercent: 35, afterglowSeconds: 0.1 },
       intensity: { brightness: 1, fadeSoftness: 1 },
       flicker: { chance: 0.08, strength: 0.8, lifetimeMultiplier: 0.45 },
@@ -499,6 +513,9 @@ const LaunchSchema = z
         spin: 0,
         swirlStrength: 0,
         swirlRadius: 0,
+        swirlLoopCount: 0,
+        swirlLoopLength: 100,
+        swirlLoopHeight: 0,
         swirlRate: 4,
       },
     },
@@ -528,7 +545,11 @@ const BurstTrailSchema = z
     frontClump: z.coerce.number().min(0).max(1).default(0.45),
     width: z
       .object({
-        front: z.coerce.number().min(0).max(80).default(1.4),
+        front: z.coerce
+          .number()
+          .min(0)
+          .default(1.4)
+          .transform((value) => Math.min(BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX, value)),
         tail: z.coerce.number().min(0).max(80).default(1.4),
         curve: z.coerce.number().min(0.2).max(4).default(1),
       })
@@ -620,7 +641,7 @@ const BurstTrailSchema = z
     colourMode: 'starFade',
     particlesPerStar: 178,
     frontClump: 0.55,
-    width: { front: 20, tail: 0, curve: 1 },
+    width: { front: 10, tail: 0, curve: 1 },
     particleSize: { base: 1.2, headScale: 1, tailScale: 0.35, variationPercent: 8 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,
@@ -1419,7 +1440,7 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
     colourMode: 'starFade',
     particlesPerStar: 178,
     frontClump: 0.55,
-    width: { front: 20, tail: 0, curve: 1 },
+    width: { front: 10, tail: 0, curve: 1 },
     particleSize: { base: 1.2, headScale: 1, tailScale: 0.35, variationPercent: 8 },
     opening: TRAIL_OPENING_DEFAULTS,
     closing: TRAIL_CLOSING_DEFAULTS,

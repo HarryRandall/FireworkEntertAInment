@@ -36,7 +36,7 @@ function closingFadePercent(layer: FireworkDesign['stars']['outer']) {
   return Math.max(...fadePercents);
 }
 
-function estimateLiftTimeSeconds(design: FireworkDesign) {
+export function estimateLiftTimeSeconds(design: FireworkDesign) {
   const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
   const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
   const shellMass = 0.5;
@@ -51,6 +51,50 @@ function estimateLiftTimeSeconds(design: FireworkDesign) {
   }
 
   return liftTime;
+}
+
+export function estimateLaunchPreviewDurationSeconds({
+  design,
+  cueTimeSeconds,
+}: {
+  design: FireworkDesign;
+  cueTimeSeconds: number;
+}): number {
+  const liftTime = estimateLiftTimeSeconds(design);
+  const shellEnd = liftTime + (design.launch.shell.visible ? 0.2 : 0);
+  const liftParticles = design.launch.liftParticles;
+  const liftParticleEnd =
+    liftParticles.enabled && liftParticles.amount > 0
+      ? liftTime * Math.min(1, Math.max(0, liftParticles.height / 100)) +
+        (liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds) *
+          (1 + Math.min(1, Math.max(0, liftParticles.lifetime.variationPercent / 100)))
+      : 0;
+  const smoke = design.launch.smoke;
+  const smokeEnd = smoke.enabled && smoke.particles > 0 ? smoke.lifeSeconds : 0;
+
+  return cueTimeSeconds + Math.max(shellEnd, liftParticleEnd, smokeEnd, 0.8) + 0.35;
+}
+
+export function estimateLaunchPreviewTicks({
+  design,
+  cueTimeSeconds,
+  previewDuration,
+}: {
+  design: FireworkDesign;
+  cueTimeSeconds: number;
+  previewDuration: number;
+}): EditorPreviewTick[] {
+  const liftTime = estimateLiftTimeSeconds(design);
+  const clampTick = (timeSeconds: number) => Math.min(previewDuration - 0.05, timeSeconds);
+
+  return [
+    { timeSeconds: clampTick(cueTimeSeconds), label: 'Launch' },
+    { timeSeconds: clampTick(cueTimeSeconds + liftTime), label: 'Apex' },
+    {
+      timeSeconds: clampTick(estimateLaunchPreviewDurationSeconds({ design, cueTimeSeconds })),
+      label: 'Trail clears',
+    },
+  ];
 }
 
 export function estimatePreviewTicks({

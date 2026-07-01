@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Loader2, PanelRightClose, Save, Undo2 } from 'lucide-react';
+import { Maximize2, PanelRightClose, Play, Repeat, RotateCcw, Save, Undo2 } from 'lucide-react';
 import { PreviewFullscreenBackdrop } from '@/app/components/admin/previewFullscreen';
 import {
   ReplayTransportControls,
@@ -31,6 +31,8 @@ export type FireworkEditorShellTab = {
 
 export type EditorPreviewTick = ReplayTransportTick;
 
+const PREVIEW_TRANSPORT_IDLE_MS = 2000;
+
 export function EditorPreviewTransport({
   elapsed,
   duration,
@@ -38,7 +40,6 @@ export function EditorPreviewTransport({
   isLooping,
   fullscreen,
   loading = false,
-  loadingProgress = null,
   ticks = [],
   onPlayPause,
   onReset,
@@ -65,7 +66,6 @@ export function EditorPreviewTransport({
   if (loading) {
     return (
       <EditorPreviewTransportLoading
-        progress={loadingProgress}
         hasLoop={Boolean(onLoopToggle)}
         hasFullscreen={Boolean(onFullscreenToggle)}
       />
@@ -91,64 +91,59 @@ export function EditorPreviewTransport({
 }
 
 function EditorPreviewTransportLoading({
-  progress,
   hasLoop,
   hasFullscreen,
 }: {
-  progress: number | null;
   hasLoop: boolean;
   hasFullscreen: boolean;
 }) {
-  const determinate = progress != null;
-  const pct = determinate ? Math.max(2, Math.round(progress * 100)) : 100;
-  const label = determinate ? 'Loading fireworks' : 'Preparing preview';
-
   return (
-    <div className="mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md">
-      <span className="size-11 shrink-0 animate-pulse rounded-full bg-white/20" aria-hidden />
-      <span
-        className="size-10 shrink-0 animate-pulse rounded-full border border-white/15 bg-white/6"
-        aria-hidden
-      />
+    <div
+      className="mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md"
+      aria-label="Loading preview controls"
+    >
+      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-[var(--shadow-cta)]">
+        <Play size={17} className="translate-x-0.5" fill="currentColor" strokeWidth={2.5} />
+      </div>
+      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
+        <RotateCcw size={15} strokeWidth={2} />
+      </div>
       {hasLoop ? (
-        <span
-          className="size-10 shrink-0 animate-pulse rounded-full bg-[color:var(--hl,#10b981)]/70"
-          aria-hidden
-        />
+        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-transparent bg-[color:var(--hl,#10b981)] text-black">
+          <Repeat size={15} strokeWidth={2} />
+        </div>
       ) : null}
 
-      <div
-        className="flex h-7 min-w-0 flex-1 items-center gap-3"
-        role="status"
-        aria-live="polite"
-        aria-label={label}
-      >
-        <Loader2
-          className="h-4 w-4 shrink-0 animate-spin text-[color:var(--hl,#10b981)]"
-          strokeWidth={2.5}
-        />
-        <span className="hidden shrink-0 text-[10px] font-bold tracking-widest text-white/68 uppercase sm:inline">
-          {label}
+      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
+        <span className="min-w-[2.55rem] text-right font-mono text-[11px] text-white/75 tabular-nums">
+          0:00
         </span>
-        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/20">
+        <div className="relative flex h-7 min-w-0 items-center rounded-full">
+          <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+          {[28, 54, 82].map((left) => (
+            <span
+              key={left}
+              className="absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm"
+              style={{ left: `${left}%` }}
+              aria-hidden
+            >
+              <span className="h-4 w-px rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,.42)]" />
+            </span>
+          ))}
           <span
-            className={cn(
-              'absolute inset-y-0 left-0 rounded-full bg-[color:var(--hl,#10b981)] transition-[width] duration-150 ease-out',
-              !determinate && 'animate-pulse opacity-80',
-            )}
-            style={{ width: `${pct}%` }}
+            className="absolute top-1/2 left-0 z-30 size-4 -translate-y-1/2 rounded-full border-2 border-[color:var(--hl,#10b981)] bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
+            aria-hidden
           />
         </div>
-        <span className="w-9 shrink-0 text-right font-mono text-[11px] text-white/62 tabular-nums">
-          {determinate ? `${pct}%` : ''}
+        <span className="min-w-[2.55rem] font-mono text-[11px] text-white/75 tabular-nums">
+          0:05
         </span>
       </div>
 
       {hasFullscreen ? (
-        <span
-          className="size-10 shrink-0 animate-pulse rounded-full border border-white/15 bg-white/6"
-          aria-hidden
-        />
+        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
+          <Maximize2 size={15} strokeWidth={2} />
+        </div>
       ) : null}
     </div>
   );
@@ -172,6 +167,7 @@ type FireworkEditorShellProps = {
   tabs: FireworkEditorShellTab[];
   preview: ReactNode;
   transport: ReactNode;
+  transportPlaying?: boolean;
   error?: string | null;
   previewNotice?: ReactNode;
   fullscreen?: boolean;
@@ -195,18 +191,52 @@ export function FireworkEditorShell({
   tabs,
   preview,
   transport,
+  transportPlaying = false,
   error,
   previewNotice,
   fullscreen,
   onExitFullscreen,
 }: FireworkEditorShellProps) {
   const [inspectorCollapsed, setInspectorCollapsed] = useState(true);
+  const [transportActive, setTransportActive] = useState(true);
+  const transportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const utilityTabIds = new Set(['history', 'json']);
   const primaryTabs = tabs.filter((tab) => !utilityTabIds.has(tab.id));
   const utilityTabs = tabs.filter((tab) => utilityTabIds.has(tab.id));
   const visibleChips = chips.filter((chip) => chip.value);
   const hasMetadata = visibleChips.length > 0 || palette.length > 0 || Boolean(subtitle);
+  const transportVisible = !transportPlaying || transportActive;
+
+  useEffect(() => {
+    if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
+    setTransportActive(true);
+
+    if (transportPlaying) {
+      transportIdleTimer.current = setTimeout(
+        () => setTransportActive(false),
+        PREVIEW_TRANSPORT_IDLE_MS,
+      );
+    }
+
+    return () => {
+      if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
+    };
+  }, [transportPlaying]);
+
+  function wakePreviewTransport() {
+    if (!transportPlaying) {
+      setTransportActive(true);
+      return;
+    }
+
+    setTransportActive(true);
+    if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
+    transportIdleTimer.current = setTimeout(
+      () => setTransportActive(false),
+      PREVIEW_TRANSPORT_IDLE_MS,
+    );
+  }
 
   function handleRailTabClick(tab: FireworkEditorShellTab) {
     if (currentTab?.id === tab.id) {
@@ -233,7 +263,7 @@ export function FireworkEditorShell({
         title={tab.label}
         onClick={() => handleRailTabClick(tab)}
         className={cn(
-          'focus-visible:ring-ring/55 relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border px-2 text-center transition outline-none focus-visible:ring-2 lg:h-[52px] lg:w-12 lg:min-w-12 lg:px-1',
+          'focus-visible:ring-ring/55 relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border px-2 text-center transition outline-none focus-visible:ring-2 lg:h-11 lg:w-11 lg:min-w-11 lg:px-1',
           selected
             ? 'border-[color:var(--hl)] bg-[color:var(--hl-soft)] text-[color:var(--hl-ink)]'
             : inspectorCollapsed
@@ -241,8 +271,8 @@ export function FireworkEditorShell({
               : 'border-transparent text-[color:var(--color-content-subtle)] hover:border-[color:var(--color-border-subtle)] hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)]',
         )}
       >
-        <Icon size={18} />
-        <span className="max-h-[1.25rem] max-w-full overflow-hidden text-[9px] leading-[1.05] font-semibold tracking-normal">
+        <Icon size={16} />
+        <span className="max-h-[1.1rem] max-w-full overflow-hidden text-[8.5px] leading-[1.05] font-semibold tracking-normal">
           {tab.label}
         </span>
       </button>
@@ -268,6 +298,9 @@ export function FireworkEditorShell({
               ? 'fixed inset-[5vmin] z-[100] rounded-2xl border border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
               : 'relative min-h-[520px] lg:min-h-0',
           )}
+          onFocusCapture={wakePreviewTransport}
+          onPointerDown={wakePreviewTransport}
+          onPointerMove={wakePreviewTransport}
         >
           <div className="absolute inset-0 z-0">{preview}</div>
 
@@ -341,8 +374,15 @@ export function FireworkEditorShell({
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30">
-            <div className="pointer-events-auto">{transport}</div>
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-5 z-30 transition-all duration-300',
+              transportVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
+            )}
+          >
+            <div className={transportVisible ? 'pointer-events-auto' : 'pointer-events-none'}>
+              {transport}
+            </div>
           </div>
 
           {fullscreen && onExitFullscreen ? (
@@ -358,23 +398,44 @@ export function FireworkEditorShell({
         >
           <div
             className={cn(
-              'order-1 flex min-w-0 gap-1 overflow-x-auto border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-2 lg:order-2 lg:flex-col lg:items-center lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:border-b-0 lg:px-0 lg:py-2.5',
+              'order-1 flex min-h-0 min-w-0 gap-1 overflow-x-auto border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-2 lg:order-2 lg:flex-col lg:items-center lg:gap-1 lg:overflow-x-visible lg:border-b-0 lg:px-1.5 lg:py-2.5',
               inspectorCollapsed ? 'lg:border-l-0' : 'lg:border-l',
             )}
           >
-            <nav
-              className="flex min-w-0 gap-1 lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col lg:items-center"
-              aria-label="Editor sections"
-              role="tablist"
-            >
-              {primaryTabs.map(renderRailTab)}
-              <div className="hidden flex-1 lg:block" aria-hidden />
+            <div className="relative min-h-0 flex-1 lg:w-full">
+              <nav
+                className="no-scrollbar flex min-h-0 min-w-0 gap-1 overflow-x-auto lg:h-full lg:w-full lg:flex-col lg:items-center lg:overflow-x-visible lg:overflow-y-auto lg:pb-2"
+                aria-label="Editor sections"
+                role="tablist"
+              >
+                {primaryTabs.map(renderRailTab)}
+              </nav>
               <div
-                className="hidden h-px w-full shrink-0 bg-[color:var(--color-border-subtle)] lg:block"
+                className="pointer-events-none absolute inset-x-0 top-0 hidden h-4 bg-gradient-to-b from-[color:var(--color-bg-muted)] to-transparent lg:block"
                 aria-hidden
               />
-              {utilityTabs.map(renderRailTab)}
-            </nav>
+              <div
+                className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-6 bg-gradient-to-t from-[color:var(--color-bg-muted)] to-transparent lg:block"
+                aria-hidden
+              />
+            </div>
+            {utilityTabs.length > 0 ? (
+              <div
+                className="hidden shrink-0 lg:flex lg:w-full lg:flex-col lg:items-center lg:gap-1"
+                aria-hidden={false}
+              >
+                <div
+                  className="mb-1 h-px w-full shrink-0 bg-[color:var(--color-border-subtle)]"
+                  aria-hidden
+                />
+                {utilityTabs.map(renderRailTab)}
+              </div>
+            ) : null}
+            {utilityTabs.length > 0 ? (
+              <div className="flex shrink-0 gap-1 lg:hidden" role="presentation">
+                {utilityTabs.map(renderRailTab)}
+              </div>
+            ) : null}
           </div>
 
           <div

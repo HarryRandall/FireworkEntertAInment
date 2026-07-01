@@ -16,6 +16,7 @@ import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };
+type UpsertShotResult = { ok: true; id: string } | { ok: false; error: string };
 
 const CreateMultishotSchema = z.object({
   name: z.string().trim().min(1).max(180),
@@ -129,7 +130,9 @@ export async function updateMultishot(
   return { ok: true };
 }
 
-export async function upsertMultishotShot(input: z.infer<typeof ShotSchema>): Promise<Result> {
+export async function upsertMultishotShot(
+  input: z.infer<typeof ShotSchema>,
+): Promise<UpsertShotResult> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
   }
@@ -153,20 +156,23 @@ export async function upsertMultishotShot(input: z.infer<typeof ShotSchema>): Pr
     time_offset_seconds: parsed.data.timeOffsetSeconds,
     pan_degrees: parsed.data.panDegrees,
     tilt_degrees: parsed.data.tiltDegrees,
+    // A multishot fires from a single mortar; per-shot aim is pan/tilt only.
     position_override_json: { launchPositionIndex: parsed.data.launchPositionIndex },
     caliber: parsed.data.caliber || null,
     notes: parsed.data.notes || null,
   };
 
   const query = parsed.data.id
-    ? supabase.from('multishot_fireworks').update(payload).eq('id', parsed.data.id)
-    : supabase.from('multishot_fireworks').insert(payload);
-  const { error } = await query;
+    ? supabase.from('multishot_fireworks').update(payload).eq('id', parsed.data.id).select('id')
+    : supabase.from('multishot_fireworks').insert(payload).select('id');
+  const { data, error } = await query.maybeSingle();
   if (error) return { ok: false, error: error.message };
+  const id = (data?.id as string | undefined) ?? parsed.data.id ?? undefined;
+  if (!id) return { ok: false, error: 'Could not save shot.' };
 
   await syncShotCount(supabase, parsed.data.multishotId);
   await refresh(parsed.data.multishotId);
-  return { ok: true };
+  return { ok: true, id };
 }
 
 export async function deleteMultishotShot(

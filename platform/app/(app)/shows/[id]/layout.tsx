@@ -1,8 +1,10 @@
 /** Show detail layout; loads the show by slug and renders the per-show tab navigation. */
 
 import type { ReactNode } from 'react';
+import { redirect } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
 import { ShowTabs } from './ShowTabs';
+import { getCurrentUserId } from '@/lib/current-user.server';
 import { getShowBySlug } from '@/lib/shows.server';
 
 type LayoutProps = {
@@ -14,6 +16,11 @@ export const maxDuration = 300;
 
 export default async function ShowLayout({ children, params }: LayoutProps) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
+  if (!userId) {
+    redirect(`/login?next=${encodeURIComponent(`/shows/${id}`)}`);
+  }
+
   const show = await getShowBySlug(id);
   if (!show) {
     return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
