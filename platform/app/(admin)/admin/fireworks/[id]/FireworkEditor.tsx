@@ -94,7 +94,7 @@ type LocalStyleDefaultOptions = Partial<
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
-  { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
+  { ssr: false, loading: () => <ReplayStageBackdrop /> },
 );
 
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
@@ -588,10 +588,6 @@ function ColourPatternBar({
       ) : null}
     </div>
   );
-}
-
-function ReplayCanvasSkeleton() {
-  return <ReplayStageBackdrop />;
 }
 
 function buildInitialColourStops(

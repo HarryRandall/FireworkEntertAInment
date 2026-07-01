@@ -42,9 +42,9 @@ export const cssTokens = {
 } as const;
 
 /**
- * Static colour palette used by Three.js / SVG art that doesn't theme-switch
- * (HeroCanvas, FireworkArt, VendorNetwork). These are deliberately kept as a
- * vivid set independent of the app's neutral UI palette.
+ * Static colour palette used by Three.js / SVG art that doesn't theme-switch.
+ * These are deliberately kept as a vivid set independent of the app's neutral
+ * UI palette.
  */
 export const staticShowCrafterPalette = {
   night: '#05070D',

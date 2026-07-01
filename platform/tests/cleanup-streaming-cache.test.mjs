@@ -91,16 +91,15 @@ test('app and admin routes have granular loading coverage and streaming boundari
   assert.match(previewLoader, /Promise\.all\(/);
 });
 
-test('three replay canvases are lazy loaded without console warning monkey patches', () => {
+test('replay canvases are lazy loaded without console warning monkey patches', () => {
   const viewer = read('app/components/app/FireworkReplayViewer.tsx');
   const template = read('app/components/app/TemplateReplayPreview.tsx');
   const importPreview = read('app/(admin)/admin/imports/[id]/FireworkImportPreview.tsx');
-  const heroCanvas = read('app/components/marketing/HeroCanvas.tsx');
 
   assert.match(viewer, /dynamic\(/);
   assert.match(template, /IntersectionObserver/);
   assert.match(importPreview, /dynamic\(/);
-  for (const source of [viewer, template, importPreview, heroCanvas]) {
+  for (const source of [viewer, template, importPreview]) {
     assert.doesNotMatch(source, /console\.warn\s*=/);
     assert.doesNotMatch(source, /Clock: This module has been deprecated/);
   }

@@ -9,6 +9,8 @@ import { useState, useMemo } from 'react';
 import { Package, Printer, ArrowUpDown } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
+import { SectionHeader } from '@/app/components/ui/SectionHeader';
 import type { ShoppingListItem } from '@/lib/show-domain';
 
 type SortKey = 'name' | 'qty' | 'total';
@@ -66,28 +68,26 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
 
   return (
     <Card elevation="low" radius="md" className="space-y-6 p-8 print:border-none print:shadow-none">
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <h2 className="text-on-surface text-2xl font-bold tracking-tight">Shopping List</h2>
-          <p className="text-on-surface-variant text-sm">
-            Products needed for this show, derived from your show cues.
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => window.print()}
-          className="shrink-0 print:hidden"
-        >
-          <Printer size={15} />
-          Print
-        </Button>
-      </header>
+      <SectionHeader
+        title="Shopping List"
+        description="Products needed for this show, derived from your show cues."
+        action={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => window.print()}
+            className="print:hidden"
+          >
+            <Printer size={15} />
+            Print
+          </Button>
+        }
+      />
 
       {items.length === 0 ? (
-        <p className="border-outline-variant/20 bg-surface-container-highest/30 text-on-surface-variant rounded-xl border border-dashed p-8 text-center text-sm">
+        <EmptyNotice>
           No cues in this show yet. Add products to your timeline and they&apos;ll appear here.
-        </p>
+        </EmptyNotice>
       ) : (
         <>
           {/* Sort controls */}

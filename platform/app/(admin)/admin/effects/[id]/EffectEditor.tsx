@@ -76,7 +76,7 @@ const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
-    loading: () => <ReplayCanvasSkeleton />,
+    loading: () => <ReplayStageBackdrop />,
   },
 );
 
@@ -218,10 +218,6 @@ function initialStyleDefaultIds(
   ids.star = effect.starStyleDefaultId ?? ids.star;
   ids.trail = effect.trailStyleDefaultId ?? ids.trail;
   return ids;
-}
-
-function ReplayCanvasSkeleton() {
-  return <ReplayStageBackdrop />;
 }
 
 export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {

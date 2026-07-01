@@ -114,6 +114,20 @@ export function EmptyState({
   );
 }
 
+/** Lightweight dashed empty message for sections that have no rows yet. Use EmptyState for full-page empties. */
+export function EmptyNotice({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p
+      className={cn(
+        'border-border bg-muted/40 text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm',
+        className,
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
 /** Thin wrapper around the shadcn Skeleton, use for loading placeholders. */
 export function Skeleton({ className }: { className?: string }) {
   return <ShadcnSkeleton className={cn('rounded-md', className)} />;

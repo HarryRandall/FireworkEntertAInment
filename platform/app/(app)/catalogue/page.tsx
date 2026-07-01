@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { EmptyNotice, Skeleton } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
 import { listFireworkProducts } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
@@ -70,11 +70,7 @@ async function CatalogueList({
   );
 
   if (products.length === 0) {
-    return (
-      <div className="bg-card rounded-xl border border-[color:var(--color-border-subtle)] p-6 text-sm text-[color:var(--color-content-subtle)]">
-        No catalogue products match that search.
-      </div>
-    );
+    return <EmptyNotice>No catalogue products match that search.</EmptyNotice>;
   }
 
   const totalPages = Math.ceil(products.length / CATALOGUE_PAGE_SIZE);
