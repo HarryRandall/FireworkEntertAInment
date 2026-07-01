@@ -1,9 +1,17 @@
 /** Exports page for generated files and download history. */
 
-import Link from 'next/link';
 import { Download, FileText } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import {
+  DataTableShell,
+  tableCellClasses,
+  tableClasses,
+  tableHeadClasses,
+  tableHeaderCellClasses,
+  tableRowClasses,
+} from '@/app/components/ui/DataTable';
+import { SectionHeader } from '@/app/components/ui/SectionHeader';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import { formatDuration } from '@/lib/show-domain';
 
@@ -15,15 +23,13 @@ export default async function ExportsPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <Card radius="xl" className="p-6">
         <div className="flex max-w-2xl items-start gap-4">
-          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]">
+          <span className="bg-muted text-foreground inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md">
             <Download size={18} />
           </span>
           <div className="space-y-3">
             <div>
-              <h2 className="text-base font-medium text-[color:var(--color-content-emphasis)]">
-                No exported files yet
-              </h2>
-              <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
+              <h2 className="text-foreground text-base font-medium">No exported files yet</h2>
+              <p className="text-muted-foreground mt-1 text-sm">
                 Open a show preview to create cue sheets, guides, and production exports.
               </p>
             </div>
@@ -42,55 +48,48 @@ export default async function ExportsPage() {
 
       {recentShows.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium text-[color:var(--color-content-subtle)]">
-            Shows ready to export
-          </h2>
-          <div className="bg-card overflow-hidden rounded-xl border border-[color:var(--color-border-subtle)]">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-[color:var(--color-border-subtle)] text-xs text-[color:var(--color-content-muted)] uppercase">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Show</th>
-                    <th className="px-4 py-3 font-medium">Length</th>
-                    <th className="px-4 py-3 font-medium">Cues</th>
-                    <th className="px-4 py-3 text-right font-medium">Action</th>
+          <SectionHeader size="sm" title="Shows ready to export" />
+          <DataTableShell>
+            <table className={tableClasses('min-w-[560px]')}>
+              <thead className={tableHeadClasses()}>
+                <tr>
+                  <th className={tableHeaderCellClasses()}>Show</th>
+                  <th className={tableHeaderCellClasses()}>Length</th>
+                  <th className={tableHeaderCellClasses()}>Cues</th>
+                  <th className={tableHeaderCellClasses('text-right')}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentShows.map((show) => (
+                  <tr key={show.id} className={tableRowClasses('hover:bg-muted/45')}>
+                    <td className={tableCellClasses()}>
+                      <div className="text-foreground font-medium">{show.title}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {show.songTitle ?? 'Untitled track'}
+                      </div>
+                    </td>
+                    <td className={tableCellClasses('font-mono text-xs tabular-nums')}>
+                      {formatDuration(show.lengthSeconds)}
+                    </td>
+                    <td className={tableCellClasses('font-mono text-xs tabular-nums')}>
+                      {show.cueCount}
+                    </td>
+                    <td className={tableCellClasses('text-right')}>
+                      <Button
+                        href={`/shows/${show.slug}/preview`}
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <FileText size={13} />
+                        Open
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {recentShows.map((show) => (
-                    <tr
-                      key={show.id}
-                      className="border-b border-[color:var(--color-border-subtle)] last:border-b-0"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-[color:var(--color-content-emphasis)]">
-                          {show.title}
-                        </div>
-                        <div className="text-xs text-[color:var(--color-content-subtle)]">
-                          {show.songTitle ?? 'Untitled track'}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
-                        {formatDuration(show.lengthSeconds)}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
-                        {show.cueCount}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/shows/${show.slug}/preview`}
-                          className="focus-visible:ring-ring/50 inline-flex items-center gap-1 rounded-md border border-[color:var(--color-border-subtle)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--color-content-emphasis)] transition-colors hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:ring-3"
-                        >
-                          <FileText size={13} />
-                          Open
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                ))}
+              </tbody>
+            </table>
+          </DataTableShell>
         </section>
       ) : null}
     </div>

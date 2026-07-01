@@ -23,7 +23,7 @@ export function EffectPreviewIcon({ preview, size = 'sm', className }: Props) {
       aria-label={`${preview.label} preview`}
       role="img"
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[#05070d]',
+        'bg-stage-night relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)]',
         sizeClasses[size],
         className,
       )}

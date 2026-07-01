@@ -112,11 +112,13 @@ export function TemplateReplayPreview({
   const [elapsed, setElapsed] = useState(posterTime);
   const [displayElapsed, setDisplayElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   const [isVisible, setIsVisible] = useState(isDetail);
   const [isReplayReady, setIsReplayReady] = useState(!isDetail);
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const elapsedRef = useRef(elapsed);
+  const lastUIElapsedRef = useRef(elapsed);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
   const hoverStartTimeRef = useRef(hoverStartTime);
@@ -130,6 +132,7 @@ export function TemplateReplayPreview({
     (seconds: number) => {
       const next = Math.max(0, Math.min(duration, seconds));
       elapsedRef.current = next;
+      lastUIElapsedRef.current = next;
       setDisplayElapsed(next);
       setElapsed(next);
     },
@@ -231,7 +234,12 @@ export function TemplateReplayPreview({
         setElapsed(0);
       } else {
         elapsedRef.current = next;
-        if (isDetail) setDisplayElapsed(next);
+        // The transport thumb self-animates from elapsedRef; React state only
+        // needs the ~15Hz active-cue cadence, not a re-render per frame.
+        if (isDetail && next - lastUIElapsedRef.current >= 0.067) {
+          lastUIElapsedRef.current = next;
+          setDisplayElapsed(next);
+        }
       }
       frame = requestAnimationFrame(tick);
     }
@@ -243,16 +251,19 @@ export function TemplateReplayPreview({
   function scrubTo(seconds: number) {
     const next = Math.max(0, Math.min(duration, seconds));
     elapsedRef.current = next;
-    setDisplayElapsed(next);
     pendingScrubRef.current = next;
+    setIsScrubbing(true);
     const now = performance.now();
     if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
       lastScrubCommitRef.current = now;
+      lastUIElapsedRef.current = next;
+      setDisplayElapsed(next);
       setElapsed(next);
     }
   }
 
   function commitScrub() {
+    setIsScrubbing(false);
     const pending = pendingScrubRef.current;
     if (pending == null) return;
     pendingScrubRef.current = null;
@@ -293,6 +304,7 @@ export function TemplateReplayPreview({
             cues={cues}
             elapsed={elapsed}
             playbackRef={elapsedRef}
+            scrubbing={isScrubbing}
             interactive={isDetail}
             muted={isDetail ? !isPlaying : true}
             maxDevicePixelRatio={isDetail ? 1.25 : 1.75}
@@ -313,6 +325,7 @@ export function TemplateReplayPreview({
             <div className="absolute inset-x-0 bottom-6 z-20">
               <ReplayTransportControls
                 elapsed={displayElapsed}
+                playheadRef={elapsedRef}
                 duration={duration}
                 isPlaying={isPlaying}
                 disabled={cues.length === 0}

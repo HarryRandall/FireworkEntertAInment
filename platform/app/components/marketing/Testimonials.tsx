@@ -13,19 +13,19 @@ const QUOTES = [
     q: 'I picked a song on Friday and fired a perfectly timed show on Saturday. The finale hit the key change exactly.',
     name: 'Mia Reyes',
     loc: 'AUSTIN, TX',
-    tone: '#efb93f',
+    tone: 'var(--show-gold)',
   },
   {
     q: 'It bought the right cakes from my local shop and kept me $40 under budget. Felt like having a pro on call.',
     name: 'Tom Klein',
     loc: 'BEND, OR',
-    tone: '#15bd8b',
+    tone: 'var(--show-green)',
   },
   {
     q: 'Zero pyro experience. The click-track told me when to light each cue — neighbours thought we hired a company.',
     name: 'Ada Patel',
     loc: 'NASHVILLE, TN',
-    tone: '#8f7be8',
+    tone: 'var(--show-violet)',
   },
 ];
 

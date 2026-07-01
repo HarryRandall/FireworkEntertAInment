@@ -38,6 +38,7 @@ import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSection
 import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
+  EditorVersionPreviewNotice,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
@@ -94,7 +95,7 @@ type LocalStyleDefaultOptions = Partial<
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
-  { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
+  { ssr: false, loading: () => <ReplayStageBackdrop /> },
 );
 
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
@@ -588,10 +589,6 @@ function ColourPatternBar({
       ) : null}
     </div>
   );
-}
-
-function ReplayCanvasSkeleton() {
-  return <ReplayStageBackdrop />;
 }
 
 function buildInitialColourStops(
@@ -1508,22 +1505,10 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     ? parseFireworkEditorSnapshot(previewVersion.snapshotJson)
     : null;
   const previewNotice = previewVersion ? (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--hl)] bg-black/60 p-3 text-sm text-white shadow-lg">
-      <div className="min-w-0">
-        <p className="font-semibold">Viewing earlier version</p>
-        <p className="truncate text-white/68">
-          {previewSnapshot?.name ?? previewVersion.summary} by {previewVersion.createdByLabel}
-        </p>
-      </div>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="border-white/15 bg-white/8 text-white hover:bg-white/14 hover:text-white"
-        onClick={() => setPreviewVersion(null)}
-      >
-        Live version
-      </Button>
-    </div>
+    <EditorVersionPreviewNotice
+      summary={`${previewSnapshot?.name ?? previewVersion.summary} by ${previewVersion.createdByLabel}`}
+      onExit={() => setPreviewVersion(null)}
+    />
   ) : null;
   const preview = (
     <LazyFireworkReplayCanvas

@@ -31,10 +31,17 @@ import {
   getShowReplayCuesCacheKey,
   getUserShowsCacheKey,
 } from './cache-keys';
-import { mapCue, mapFireworkVariantSpecification, mapReplayCueBase, mapShow } from './mappers';
-import { computeShoppingListForShow } from './shopping.server';
-import { getServerClient } from './supabase';
 import {
+  mapCue,
+  mapCatalogueFireworkCard,
+  mapFireworkVariantSpecification,
+  mapReplayCueBase,
+  mapShow,
+} from './mappers';
+import { computeShoppingListForShow } from './shopping.server';
+import { getCatalogueReadClient, getServerClient } from './supabase';
+import {
+  CATALOGUE_FIREWORK_CARD_SELECT,
   FIREWORK_VARIANT_SELECT,
   FIREWORK_SPECS_TTL_SECONDS,
   SHOWS_TTL_SECONDS,
@@ -42,7 +49,24 @@ import {
   SHOW_SELECT,
   type FireworkVariantProjection,
   type ReplayCueRow,
+  type CatalogueFireworkCardProjection,
 } from './types';
+
+const catalogueLoadsInFlight = new Map<string, Promise<unknown>>();
+
+async function loadCachedCatalogue<T>(cacheKey: string, loader: () => Promise<T>): Promise<T> {
+  const cached = await getCachedJson<T>(cacheKey);
+  if (cached) return cached;
+
+  const pending = catalogueLoadsInFlight.get(cacheKey);
+  if (pending) return pending as Promise<T>;
+
+  const promise = loader().finally(() => {
+    catalogueLoadsInFlight.delete(cacheKey);
+  });
+  catalogueLoadsInFlight.set(cacheKey, promise);
+  return promise;
+}
 
 /**
  * Thrown when a shows read fails due to a network or connect issue, so the page
@@ -58,9 +82,7 @@ export class ShowsNetworkError extends Error {
   }
 }
 
-function firstVariant(
-  variant: FireworkVariantProjection | FireworkVariantProjection[] | null | undefined,
-): FireworkVariantProjection | null {
+function firstVariant<T>(variant: T | T[] | null | undefined): T | null {
   if (!variant) return null;
   return Array.isArray(variant) ? (variant[0] ?? null) : variant;
 }
@@ -173,27 +195,31 @@ export async function listCuesForShow(showId: string): Promise<ShowCue[]> {
 }
 
 /** All atomic fireworks in the catalogue. Used by library previews. */
-export async function listFireworkSpecifications(): Promise<FireworkSpecification[]> {
+export const listFireworkSpecifications = cache(async (): Promise<FireworkSpecification[]> => {
   const cacheKey = getFireworkSpecificationsCacheKey();
-  const cached = await getCachedJson<FireworkSpecification[]>(cacheKey);
-  if (cached) return cached;
+  return loadCachedCatalogue(cacheKey, async () => {
+    const supabase = await getCatalogueReadClient();
+    const { data, error } = await supabase
+      .from('fireworks')
+      .select(FIREWORK_VARIANT_SELECT)
+      .order('name', { ascending: true });
+    if (error) {
+      if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+      console.error('[shows.server] listFireworkSpecifications failed:', error);
+      return [];
+    }
+    const mapped = ((data ?? []) as FireworkVariantProjection[]).map((row, i) =>
+      mapFireworkVariantSpecification(row, i),
+    );
+    await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+    return mapped;
+  });
+});
 
-  const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from('fireworks')
-    .select(FIREWORK_VARIANT_SELECT)
-    .order('name', { ascending: true });
-  if (error) {
-    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
-    console.error('[shows.server] listFireworkSpecifications failed:', error);
-    return [];
-  }
-  const mapped = ((data ?? []) as FireworkVariantProjection[]).map((row, i) =>
-    mapFireworkVariantSpecification(row, i),
-  );
-  await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
-  return mapped;
-}
+export type ListFireworkProductsOptions = {
+  /** Skip render-design joins for browse-only catalogue cards. */
+  lightweight?: boolean;
+};
 
 /**
  * Returns one {@link FireworkSpecification} per selectable catalogue item.
@@ -202,85 +228,105 @@ export async function listFireworkSpecifications(): Promise<FireworkSpecificatio
  * first child firework for prompt/render preview data, while replay expands
  * the full sequence through `multishot_fireworks`.
  */
-export async function listFireworkProducts(): Promise<FireworkSpecification[]> {
-  const cacheKey = getFireworkProductsCacheKey();
-  const cached = await getCachedJson<FireworkSpecification[]>(cacheKey);
-  if (cached) return cached;
+export const listFireworkProducts = cache(
+  async (options?: ListFireworkProductsOptions): Promise<FireworkSpecification[]> => {
+    const lightweight = options?.lightweight ?? false;
+    const cacheKey = getFireworkProductsCacheKey(lightweight);
+    const fireworkSelect = lightweight ? CATALOGUE_FIREWORK_CARD_SELECT : FIREWORK_VARIANT_SELECT;
 
-  const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from('catalogue_items')
-    .select(
-      `id, name, part_number, description, duration_seconds, catalogue_item_kind,
-       fireworks (${FIREWORK_VARIANT_SELECT}),
+    return loadCachedCatalogue(cacheKey, async () => {
+      const supabase = await getCatalogueReadClient();
+      const { data, error } = await supabase
+        .from('catalogue_items')
+        .select(
+          `id, name, part_number, description, duration_seconds, catalogue_item_kind,
+       fireworks (${fireworkSelect}),
        multishots (
          id,
          shot_count,
          multishot_fireworks (
            sequence_index,
            caliber,
-           fireworks (${FIREWORK_VARIANT_SELECT})
+           fireworks (${fireworkSelect})
          )
        )`,
-    )
-    .order('name', { ascending: true });
-  if (error) {
-    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
-    console.error('[shows.server] listFireworkProducts failed:', error);
-    return [];
-  }
+        )
+        .order('name', { ascending: true });
+      if (error) {
+        if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+        console.error('[shows.server] listFireworkProducts failed:', error);
+        return [];
+      }
 
-  type CatalogueItemRow = {
-    id: string;
-    name: string;
-    part_number: string;
-    description: string | null;
-    duration_seconds: number | null;
-    catalogue_item_kind: string;
-    fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-    multishots: {
-      id: string;
-      shot_count: number;
-      multishot_fireworks: Array<{
-        sequence_index: number;
-        caliber: string | null;
-        fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-      }>;
-    } | null;
-  };
+      type CatalogueItemRow = {
+        id: string;
+        name: string;
+        part_number: string;
+        description: string | null;
+        duration_seconds: number | null;
+        catalogue_item_kind: string;
+        fireworks:
+          | FireworkVariantProjection
+          | FireworkVariantProjection[]
+          | CatalogueFireworkCardProjection
+          | CatalogueFireworkCardProjection[]
+          | null;
+        multishots: {
+          id: string;
+          shot_count: number;
+          multishot_fireworks: Array<{
+            sequence_index: number;
+            caliber: string | null;
+            fireworks:
+              | FireworkVariantProjection
+              | FireworkVariantProjection[]
+              | CatalogueFireworkCardProjection
+              | CatalogueFireworkCardProjection[]
+              | null;
+          }>;
+        } | null;
+      };
 
-  const mapped: FireworkSpecification[] = [];
-  for (const row of (data ?? []) as CatalogueItemRow[]) {
-    const directFirework = firstVariant(row.fireworks);
-    const multishotRows = [...(row.multishots?.multishot_fireworks ?? [])].sort(
-      (a, b) => a.sequence_index - b.sequence_index,
-    );
-    const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
-    const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
-    if (!primary) continue;
+      const mapped: FireworkSpecification[] = [];
+      for (const row of (data ?? []) as CatalogueItemRow[]) {
+        const directFirework = firstVariant(row.fireworks);
+        const multishotRows = [...(row.multishots?.multishot_fireworks ?? [])].sort(
+          (a, b) => a.sequence_index - b.sequence_index,
+        );
+        const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
+        const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
+        if (!primary) continue;
 
-    const base = mapFireworkVariantSpecification(
-      primary,
-      mapped.length,
-      firstMultishotFirework?.caliber ?? null,
-    );
-    mapped.push({
-      ...base,
-      id: row.id,
-      slug: row.part_number,
-      name: row.name,
-      description: row.description ?? base.description,
-      durationSeconds: row.duration_seconds ?? base.durationSeconds,
-      shotCount:
-        row.catalogue_item_kind === 'multishot'
-          ? (row.multishots?.shot_count ?? multishotRows.length)
-          : 1,
+        const base = lightweight
+          ? mapCatalogueFireworkCard(
+              primary as CatalogueFireworkCardProjection,
+              mapped.length,
+              firstMultishotFirework?.caliber ?? null,
+            )
+          : mapFireworkVariantSpecification(
+              primary as FireworkVariantProjection,
+              mapped.length,
+              firstMultishotFirework?.caliber ?? null,
+            );
+        mapped.push({
+          ...base,
+          id: row.id,
+          slug: row.part_number,
+          name: row.name,
+          description: row.description ?? base.description,
+          durationSeconds: row.duration_seconds ?? base.durationSeconds,
+          shotCount:
+            row.catalogue_item_kind === 'multishot'
+              ? (row.multishots?.shot_count ?? multishotRows.length)
+              : 1,
+        });
+      }
+
+      await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+      return mapped;
     });
-  }
-
-  await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
-  return mapped;
-}
+  },
+);
 
 type CatalogueFireworkRow = {
   id: string;

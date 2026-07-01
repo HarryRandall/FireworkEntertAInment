@@ -18,6 +18,7 @@ import type {
   ShowStatus,
 } from '@/lib/show-domain';
 import type {
+  CatalogueFireworkCardProjection,
   FireworkEffectProjection,
   FireworkStyleDefaultLinkProjection,
   FireworkStyleDefaultProjection,
@@ -121,6 +122,53 @@ function styleDefaultArrayFromLinks(
   }
 
   return FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => byKind.get(kind)?.defaults_json);
+}
+
+function firstCatalogueEffect(
+  effect: CatalogueFireworkCardProjection['firework_effects'],
+): Pick<FireworkEffectProjection, 'id' | 'slug' | 'name' | 'pattern_key'> | null {
+  if (!effect) return null;
+  return Array.isArray(effect) ? (effect[0] ?? null) : effect;
+}
+
+/** Browse-only mapper for catalogue cards that do not need render design data. */
+export function mapCatalogueFireworkCard(
+  row: CatalogueFireworkCardProjection,
+  index = 0,
+  shotCaliber: string | null = null,
+): FireworkSpecification {
+  const effect = firstCatalogueEffect(row.firework_effects);
+  const caliber = shotCaliber ?? row.caliber;
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    sortOrder: index,
+    durationSeconds: row.duration_seconds,
+    heightMeters: row.height_meters,
+    caliber,
+    shotCount: null,
+    spec: safeParseFireworkSpec(null),
+    rawSpec: null,
+    renderDesign: null,
+    baseEffect: effect
+      ? {
+          id: effect.id,
+          slug: effect.slug,
+          name: effect.name,
+          patternKey: effect.pattern_key,
+        }
+      : null,
+    variant: {
+      id: row.id,
+      slug: row.slug,
+      primaryColor: row.primary_color,
+      secondaryColor: row.secondary_color,
+      colorPalette: row.color_palette,
+    },
+  };
 }
 
 export function mapFireworkVariantSpecification(

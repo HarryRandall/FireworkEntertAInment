@@ -746,7 +746,7 @@ function AdminVisualEditorSkeleton({
       className="grid h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[color:var(--color-bg-default)] lg:grid-cols-[minmax(0,1fr)_60px]"
       aria-label={label}
     >
-      <section className="relative min-h-[520px] overflow-hidden bg-[#05070d] text-white lg:min-h-0">
+      <section className="bg-stage-night relative min-h-[520px] overflow-hidden text-white lg:min-h-0">
         <div
           className="h-full bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.035),transparent_44%),linear-gradient(180deg,#05070d_0%,#070b14_58%,#020307_100%)]"
           aria-hidden
@@ -760,7 +760,7 @@ function AdminVisualEditorSkeleton({
                 variant="secondary"
                 tabIndex={-1}
                 aria-disabled
-                className="pointer-events-none h-9 rounded-[10px] border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
+                className="pointer-events-none h-9 rounded-lg border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
               >
                 <Undo2 size={14} />
                 Revert
@@ -769,7 +769,7 @@ function AdminVisualEditorSkeleton({
                 type="button"
                 tabIndex={-1}
                 aria-disabled
-                className="pointer-events-none h-9 rounded-[10px] bg-[color:var(--hl)] px-4 text-xs font-semibold text-[#05231a] hover:bg-[color:var(--hl)]/85"
+                className="text-hl-contrast pointer-events-none h-9 rounded-lg bg-[color:var(--hl)] px-4 text-xs font-semibold hover:bg-[color:var(--hl)]/85"
               >
                 <Save size={14} />
                 Save
@@ -800,10 +800,10 @@ function AdminVisualEditorSkeleton({
               return (
                 <div
                   key={tab.label}
-                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-[52px] lg:w-12 lg:min-w-12 lg:px-1"
+                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-11 lg:w-11 lg:min-w-11 lg:px-1"
                 >
-                  <Icon size={18} />
-                  <span className="max-h-[1.25rem] max-w-full overflow-hidden text-[9px] leading-[1.05] font-semibold tracking-normal">
+                  <Icon size={16} />
+                  <span className="max-h-[1.1rem] max-w-full overflow-hidden text-[8.5px] leading-[1.05] font-semibold tracking-normal">
                     {tab.label}
                   </span>
                 </div>
@@ -819,10 +819,10 @@ function AdminVisualEditorSkeleton({
               return (
                 <div
                   key={tab.label}
-                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-[52px] lg:w-12 lg:min-w-12 lg:px-1"
+                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-11 lg:w-11 lg:min-w-11 lg:px-1"
                 >
-                  <Icon size={18} />
-                  <span className="max-h-[1.25rem] max-w-full overflow-hidden text-[9px] leading-[1.05] font-semibold tracking-normal">
+                  <Icon size={16} />
+                  <span className="max-h-[1.1rem] max-w-full overflow-hidden text-[8.5px] leading-[1.05] font-semibold tracking-normal">
                     {tab.label}
                   </span>
                 </div>

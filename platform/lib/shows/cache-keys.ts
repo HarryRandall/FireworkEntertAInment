@@ -33,8 +33,10 @@ export function getFireworkSpecificationsCacheKey(): string {
   return `${CACHE_PREFIX}:firework-specifications`;
 }
 
-export function getFireworkProductsCacheKey(): string {
-  return `${CACHE_PREFIX}:firework-products`;
+export function getFireworkProductsCacheKey(lightweight = false): string {
+  return lightweight
+    ? `${CACHE_PREFIX}:firework-catalogue-cards`
+    : `${CACHE_PREFIX}:firework-products`;
 }
 
 /** Invalidate the per-user shows list (e.g. after creating/deleting a show). */
@@ -65,5 +67,9 @@ export async function invalidateShowCacheForUser(
 
 /** Drop both firework-catalogue caches. Called after an admin import flow finishes. */
 export async function invalidateFireworkCatalogueCaches(): Promise<void> {
-  await deleteCachedKeys([getFireworkSpecificationsCacheKey(), getFireworkProductsCacheKey()]);
+  await deleteCachedKeys([
+    getFireworkSpecificationsCacheKey(),
+    getFireworkProductsCacheKey(false),
+    getFireworkProductsCacheKey(true),
+  ]);
 }

@@ -21,13 +21,18 @@ export function createSupabaseFetch(timeoutMs = 8_000) {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    const signal = init?.signal ?? AbortSignal.timeout(timeoutMs);
-    return fetch(input, { ...init, signal });
+    // Always enforce our timeout. Supabase can pass its own AbortSignal with a
+    // shorter limit, which previously caused catalogue reads to abort around 6s
+    // even though this wrapper was configured for 8s.
+    return fetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   };
 }
 
 /** Read and auth path: fail fast at 8s rather than hanging ~18s. */
 export const supabaseFetch = createSupabaseFetch(8_000);
+
+/** Nested catalogue joins can exceed the default read timeout on cold starts. */
+export const supabaseFetchCatalogue = createSupabaseFetch(20_000);
 
 /** Service-role uploads (PNG cover backfill, firework imports): allow 30s. */
 export const supabaseFetchLong = createSupabaseFetch(30_000);

@@ -4,6 +4,8 @@
  * upstream server component flattens multi-shot products into cues.
  */
 import { Card } from '@/app/components/ui/Card';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
+import { SectionHeader } from '@/app/components/ui/SectionHeader';
 import type { ShowCue } from '@/lib/show-domain';
 
 type ShowGuideListProps = {
@@ -22,17 +24,15 @@ function formatCueTime(seconds: number | null): string {
 export function ShowGuideList({ steps }: ShowGuideListProps) {
   return (
     <Card elevation="low" radius="md" className="space-y-6 p-8">
-      <header className="space-y-2">
-        <h2 className="text-on-surface text-2xl font-bold tracking-tight">Show Guide</h2>
-        <p className="text-on-surface-variant text-sm">
-          Step-by-step firing instructions, timestamped to your song.
-        </p>
-      </header>
+      <SectionHeader
+        title="Show Guide"
+        description="Step-by-step firing instructions, timestamped to your song."
+      />
 
       {steps.length === 0 ? (
-        <p className="border-outline-variant/20 bg-surface-container-highest/30 text-on-surface-variant rounded-xl border border-dashed p-8 text-center text-sm">
+        <EmptyNotice>
           No cues yet. They&apos;ll appear here once the AI has choreographed your show.
-        </p>
+        </EmptyNotice>
       ) : (
         <ol className="space-y-0">
           {steps.map((step, i) => {
@@ -43,9 +43,9 @@ export function ShowGuideList({ steps }: ShowGuideListProps) {
                   <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-mono text-sm font-bold tabular-nums">
                     {formatCueTime(step.timeSeconds)}
                   </div>
-                  {!isLast ? <div className="bg-outline-variant/20 mt-2 w-0.5 flex-grow" /> : null}
+                  {!isLast ? <div className="bg-border mt-2 w-0.5 flex-grow" /> : null}
                 </div>
-                <p className="text-on-surface pb-8 leading-relaxed">{step.description}</p>
+                <p className="text-foreground pb-8 leading-relaxed">{step.description}</p>
               </li>
             );
           })}

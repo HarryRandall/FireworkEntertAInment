@@ -906,6 +906,8 @@ body {
   --color-hl: var(--hl);
   --color-hl-soft: var(--hl-soft);
   --color-hl-ink: var(--hl-ink);
+  --color-hl-contrast: var(--hl-contrast);
+  --color-stage-night: var(--stage-night);
   --color-show-gold: var(--show-gold);
   --color-show-green: var(--show-green);
   --color-show-violet: var(--show-violet);
@@ -974,6 +976,8 @@ body {
   --hl: #15bd8b;
   --hl-soft: #d7f3e9;
   --hl-ink: #0a7d57;
+  --hl-contrast: #05231a;
+  --stage-night: #05070d;
   --show-gold: #efb93f;
   --show-green: #2ec487;
   --show-violet: #8f7be8;
@@ -1020,6 +1024,8 @@ body {
   --hl: #2ee0a3;
   --hl-soft: #0f3026;
   --hl-ink: #46e7b0;
+  --hl-contrast: #05231a;
+  --stage-night: #05070d;
   --show-gold: #efb93f;
   --show-green: #2ec487;
   --show-violet: #8f7be8;

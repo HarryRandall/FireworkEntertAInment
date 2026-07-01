@@ -9,7 +9,8 @@ import {
 } from '@/app/components/app/HomeDiscoverySections';
 import { EmptyShowsPanel, PromptHero } from '@/app/components/app/ShowSummaryCards';
 import { getDashboardSummaryWithTemplates } from '@/lib/show-summary.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import { listFireworkSpecifications, ShowsNetworkError } from '@/lib/shows.server';
+import type { FireworkSpecification } from '@/lib/show-domain';
 import HomeLoading from './loading';
 
 export default function HomePage() {
@@ -24,10 +25,20 @@ export default function HomePage() {
 }
 
 async function HomeContent() {
-  const [{ summary, templates: exploreTemplates }, specifications] = await Promise.all([
+  const [{ summary, templates: exploreTemplates }, specificationsResult] = await Promise.all([
     getDashboardSummaryWithTemplates(),
-    listFireworkSpecifications(),
+    listFireworkSpecifications().then(
+      (specifications) => ({ specifications, failed: false as const }),
+      (error) => {
+        if (error instanceof ShowsNetworkError) {
+          console.error('[home] listFireworkSpecifications unavailable:', error);
+          return { specifications: [] as FireworkSpecification[], failed: true as const };
+        }
+        throw error;
+      },
+    ),
   ]);
+  const { specifications } = specificationsResult;
   const hasShows = summary.recentShows.length > 0;
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
   const explorePreviewTemplates = exploreTemplates.slice(2, 12);

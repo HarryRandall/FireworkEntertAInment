@@ -230,7 +230,7 @@ export function EditorHistoryPanel({
                   <Button
                     variant="primary"
                     size="sm"
-                    className="h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold text-[#05231a] shadow-none hover:bg-[color:var(--hl)]/85"
+                    className="text-hl-contrast h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold shadow-none hover:bg-[color:var(--hl)]/85"
                     loading={restoringVersionId === version.id}
                     onClick={() => onRestore(version)}
                   >

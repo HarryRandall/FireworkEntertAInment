@@ -21,10 +21,10 @@ type HeroProps = {
 };
 
 const PROOF_AVATARS: { name: string; tone: string }[] = [
-  { name: 'Mia R', tone: '#efb93f' },
-  { name: 'Tom K', tone: '#15bd8b' },
-  { name: 'Ada P', tone: '#8f7be8' },
-  { name: 'Jo L', tone: '#fb7185' },
+  { name: 'Mia R', tone: 'var(--show-gold)' },
+  { name: 'Tom K', tone: 'var(--show-green)' },
+  { name: 'Ada P', tone: 'var(--show-violet)' },
+  { name: 'Jo L', tone: 'var(--show-rose)' },
 ];
 
 export function Hero({
@@ -71,7 +71,7 @@ export function Hero({
             {title}
             <br />
             <Mark>{highlight}</Mark>
-            <Star4 size={24} style={{ position: 'absolute', top: -6, right: '14%' }} />
+            <Star4 size={24} className="absolute -top-1.5 right-[14%]" />
           </h1>
         </Reveal>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { Maximize2, Minimize2, Pause, Play, Repeat, RotateCcw } from 'lucide-react';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,13 @@ export type ReplayTransportTick = {
 
 type ReplayTransportControlsProps = {
   elapsed: number;
+  /**
+   * Optional live playhead ref (same ref the engine reads). When provided,
+   * the thumb and time readout self-animate from it at display rate while
+   * playing, so the parent can throttle its `elapsed` state without the
+   * transport UI stuttering.
+   */
+  playheadRef?: MutableRefObject<number>;
   duration: number;
   isPlaying: boolean;
   disabled?: boolean;
@@ -38,6 +45,7 @@ type ReplayTransportControlsProps = {
 
 export function ReplayTransportControls({
   elapsed,
+  playheadRef,
   duration,
   isPlaying,
   disabled = false,
@@ -64,10 +72,26 @@ export function ReplayTransportControls({
   const safeDuration = Math.max(0.1, duration);
   const scrubbingRef = useRef(false);
   const [localElapsed, setLocalElapsed] = useState(elapsed);
+  const selfAnimated = playheadRef != null && isPlaying;
 
   useEffect(() => {
-    if (!scrubbingRef.current) setLocalElapsed(elapsed);
-  }, [elapsed]);
+    // While self-animating, the RAF below owns localElapsed; syncing the
+    // throttled prop on top would step the thumb backwards between frames.
+    if (!scrubbingRef.current && !selfAnimated) setLocalElapsed(elapsed);
+  }, [elapsed, selfAnimated]);
+
+  // Smooth playback: track the live playhead ref at display rate so only this
+  // small component re-renders each frame, not the parent viewer.
+  useEffect(() => {
+    if (!selfAnimated || !playheadRef) return;
+    let frame = 0;
+    function tick() {
+      if (!scrubbingRef.current) setLocalElapsed(playheadRef!.current);
+      frame = requestAnimationFrame(tick);
+    }
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [selfAnimated, playheadRef]);
 
   const safeElapsed = Math.min(safeDuration, Math.max(0, localElapsed));
   const progress = (safeElapsed / safeDuration) * 100;

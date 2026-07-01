@@ -9,6 +9,8 @@ import { useState, useMemo } from 'react';
 import { Package, Printer, ArrowUpDown } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
+import { SectionHeader } from '@/app/components/ui/SectionHeader';
 import type { ShoppingListItem } from '@/lib/show-domain';
 
 type SortKey = 'name' | 'qty' | 'total';
@@ -30,7 +32,7 @@ function SortButton({ active, col, label, onToggle }: SortButtonProps) {
     <button
       onClick={() => onToggle(col)}
       className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-        active ? 'text-primary' : 'text-on-surface-variant hover:text-on-surface'
+        active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
       }`}
     >
       {label}
@@ -66,33 +68,31 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
 
   return (
     <Card elevation="low" radius="md" className="space-y-6 p-8 print:border-none print:shadow-none">
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <h2 className="text-on-surface text-2xl font-bold tracking-tight">Shopping List</h2>
-          <p className="text-on-surface-variant text-sm">
-            Products needed for this show, derived from your show cues.
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => window.print()}
-          className="shrink-0 print:hidden"
-        >
-          <Printer size={15} />
-          Print
-        </Button>
-      </header>
+      <SectionHeader
+        title="Shopping List"
+        description="Products needed for this show, derived from your show cues."
+        action={
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => window.print()}
+            className="print:hidden"
+          >
+            <Printer size={15} />
+            Print
+          </Button>
+        }
+      />
 
       {items.length === 0 ? (
-        <p className="border-outline-variant/20 bg-surface-container-highest/30 text-on-surface-variant rounded-xl border border-dashed p-8 text-center text-sm">
+        <EmptyNotice>
           No cues in this show yet. Add products to your timeline and they&apos;ll appear here.
-        </p>
+        </EmptyNotice>
       ) : (
         <>
           {/* Sort controls */}
           <div className="flex items-center gap-4 print:hidden">
-            <span className="text-on-surface-variant text-xs">Sort by</span>
+            <span className="text-muted-foreground text-xs">Sort by</span>
             <SortButton active={sortKey === 'name'} col="name" label="Name" onToggle={toggleSort} />
             <SortButton active={sortKey === 'qty'} col="qty" label="Qty" onToggle={toggleSort} />
             <SortButton
@@ -109,15 +109,15 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
               return (
                 <li
                   key={item.id}
-                  className="border-outline-variant/10 bg-surface-container-highest/40 flex items-center justify-between rounded-xl border p-4"
+                  className="border-border/60 bg-muted/40 flex items-center justify-between rounded-xl border p-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
                       <Package size={18} strokeWidth={1.75} />
                     </div>
                     <div>
-                      <div className="text-on-surface text-sm font-medium">{item.name}</div>
-                      <div className="text-on-surface-variant mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums">
+                      <div className="text-foreground text-sm font-medium">{item.name}</div>
+                      <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs tabular-nums">
                         <span>
                           Qty {item.qty} &times;{' '}
                           {item.priceCents > 0
@@ -141,8 +141,8 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
         </>
       )}
 
-      <div className="border-outline-variant/10 flex items-center justify-between border-t pt-6">
-        <span className="text-on-surface-variant font-medium">Total estimated cost</span>
+      <div className="border-border/60 flex items-center justify-between border-t pt-6">
+        <span className="text-muted-foreground font-medium">Total estimated cost</span>
         <span className="text-primary text-2xl font-bold tabular-nums">
           $
           {total.toLocaleString(undefined, {

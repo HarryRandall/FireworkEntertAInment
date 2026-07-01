@@ -188,8 +188,8 @@ export function FireworkReplayViewer({
     optimisticCues.length > 0 ? Math.max(...optimisticCues.map((cue) => cue.timeSeconds)) + 5 : 30;
   const duration = Math.max(durationSeconds ?? inferredDuration, inferredDuration);
   const [elapsed, setElapsed] = useState(0);
-  const [displayElapsed, setDisplayElapsed] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackControlsActive, setPlaybackControlsActive] = useState(true);
   const [actionResult, setActionResult] = useState<CueActionResult | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | undefined>(
@@ -249,22 +249,26 @@ export function FireworkReplayViewer({
     }
   }, [isPlaying]);
 
-  // When the user scrubs the timeline while paused, seek the audio to match.
+  // Keep paused audio aligned with the playhead (e.g. cue-row jumps). While a
+  // drag is mid-flight the media element is left alone — seeking it at 15Hz
+  // forces repeated decodes — and commitScrub seeks it once on release.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || isPlaying) return;
+    if (pendingScrubRef.current != null) return;
     if (Math.abs(audio.currentTime - elapsed) > 0.1) {
       audio.currentTime = elapsed;
     }
   }, [elapsed, isPlaying]);
 
-  // While playing, the RAF loop owns elapsedRef and writes it at 60Hz; mirroring
-  // 15Hz React state back on top would create a backward jitter on the engine.
+  // While playing, the RAF loop owns elapsedRef and writes it at 60Hz, and
+  // while scrubbing the drag handler owns it at input rate; mirroring the
+  // throttled 15Hz React state back on top in either case would step the
+  // engine backwards mid-gesture and force spurious snapshot restores.
   useEffect(() => {
-    if (!isPlaying) {
+    if (!isPlaying && pendingScrubRef.current == null) {
       elapsedRef.current = elapsed;
       lastUIElapsedRef.current = elapsed;
-      setDisplayElapsed(elapsed);
     }
   }, [elapsed, isPlaying]);
 
@@ -309,9 +313,10 @@ export function FireworkReplayViewer({
         return;
       }
       const next = Math.min(duration, playheadStart.current + dtFromStart);
-      // 60Hz drive for the engine and timeline, with heavier cue/table state throttled.
+      // 60Hz drive for the engine and timeline via the ref; React state
+      // (active cue, table highlight) is throttled to ~15Hz. The transport
+      // thumb self-animates from the same ref, so no per-frame state here.
       elapsedRef.current = next;
-      setDisplayElapsed(next);
       if (next >= duration || next - lastUIElapsedRef.current >= 0.067) {
         lastUIElapsedRef.current = next;
         setElapsed(next);
@@ -430,7 +435,6 @@ export function FireworkReplayViewer({
       playheadStart.current = pauseAt;
       lastUIElapsedRef.current = pauseAt;
       elapsedRef.current = pauseAt;
-      setDisplayElapsed(pauseAt);
       setElapsed(pauseAt);
       setIsPlaying(false);
       return;
@@ -448,7 +452,6 @@ export function FireworkReplayViewer({
     const next = Math.max(0, Math.min(duration, timeSeconds));
     elapsedRef.current = next;
     lastUIElapsedRef.current = next;
-    setDisplayElapsed(next);
     playheadStart.current = next;
     startedAt.current = continuePlaying ? performance.now() : null;
     if (audioRef.current && Math.abs(audioRef.current.currentTime - next) > 0.1) {
@@ -459,13 +462,13 @@ export function FireworkReplayViewer({
 
   function scrubTo(timeSeconds: number) {
     const next = Math.max(0, Math.min(duration, timeSeconds));
-    // Engine + slider thumb track the drag at full rate via the ref and the
-    // lightweight display state; the heavyweight `elapsed` state (active cue,
-    // table highlight, canvas prop) is coalesced to ~15Hz so a fast drag does
-    // not re-render the whole viewer on every input event.
+    // Engine + slider thumb track the drag at full rate via the ref (the
+    // transport owns its thumb while dragging); the heavyweight `elapsed`
+    // state (active cue, table highlight, canvas prop) is coalesced to ~15Hz
+    // so a fast drag does not re-render the whole viewer on every input event.
     elapsedRef.current = next;
-    setDisplayElapsed(next);
     pendingScrubRef.current = next;
+    setIsScrubbing(true);
     const now = performance.now();
     if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
       lastScrubCommitRef.current = now;
@@ -475,6 +478,7 @@ export function FireworkReplayViewer({
   }
 
   function commitScrub() {
+    setIsScrubbing(false);
     const pending = pendingScrubRef.current;
     if (pending == null) return;
     pendingScrubRef.current = null;
@@ -493,7 +497,6 @@ export function FireworkReplayViewer({
     autoplayStartedRef.current = true;
     elapsedRef.current = 0;
     lastUIElapsedRef.current = 0;
-    setDisplayElapsed(0);
     playheadStart.current = 0;
     startedAt.current = performance.now();
     if (audioRef.current && Math.abs(audioRef.current.currentTime) > 0.1) {
@@ -633,6 +636,7 @@ export function FireworkReplayViewer({
               cues={sortedCues}
               elapsed={elapsed}
               playbackRef={elapsedRef}
+              scrubbing={isScrubbing}
               launchPositions={launchPositions}
               muted={!isPlaying}
               controlsVisible={isSceneReady && playbackControlsVisible}
@@ -664,7 +668,8 @@ export function FireworkReplayViewer({
                 )}
               >
                 <ReplayTransportControls
-                  elapsed={displayElapsed}
+                  elapsed={elapsed}
+                  playheadRef={elapsedRef}
                   duration={duration}
                   isPlaying={isPlaying}
                   disabled={!hasReplayCues}

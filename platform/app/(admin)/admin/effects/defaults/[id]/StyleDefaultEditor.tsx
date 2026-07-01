@@ -66,7 +66,7 @@ const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
-    loading: () => <ReplayCanvasSkeleton />,
+    loading: () => <ReplayStageBackdrop />,
   },
 );
 
@@ -100,10 +100,6 @@ const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
   split: Sparkles,
   sound: Volume2,
 };
-
-function ReplayCanvasSkeleton() {
-  return <ReplayStageBackdrop />;
-}
 
 function parseJsonObject(text: string): ParsedJson {
   try {

@@ -64,11 +64,13 @@ export function Star4({
   size = 18,
   color = 'var(--hl)',
   float = true,
+  className,
   style,
 }: {
   size?: number;
   color?: string;
   float?: boolean;
+  className?: string;
   style?: CSSProperties;
 }) {
   return (
@@ -76,7 +78,9 @@ export function Star4({
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      className={float ? 'lp-spark-float' : undefined}
+      className={
+        [float ? 'lp-spark-float' : null, className].filter(Boolean).join(' ') || undefined
+      }
       fill="none"
       stroke={color}
       strokeWidth={1.7}
@@ -191,7 +195,9 @@ export function EnergyWaveform({
     >
       {buckets.map((value, index) => {
         const clamped = Math.max(0.08, Math.min(1, value));
-        const barHeight = 5 + clamped * (height - 7);
+        // Round to avoid server/client floating-point drift in Math.sin output,
+        // which otherwise causes hydration attribute mismatches.
+        const barHeight = Math.round((5 + clamped * (height - 7)) * 100) / 100;
         const isFinale = index > buckets.length * 0.82;
         const fill =
           isFinale || clamped > 0.68
