@@ -15,10 +15,12 @@ import { useRouter } from 'next/navigation';
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   useTransition,
+  type FocusEvent as ReactFocusEvent,
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -53,6 +55,7 @@ import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert } from '@/app/components/ui/Feedback';
+import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -65,6 +68,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import type { AdminMultishotDetail } from '@/lib/admin.types';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
@@ -107,17 +111,9 @@ const TILT_PRESETS = [
   { value: 50, label: 'F 50°', title: 'Deep front tilt' },
 ];
 const SHOT_SELECTION_KEEP_SELECTOR = [
-  'a',
-  'button',
-  'input',
-  'select',
-  'textarea',
-  '[role="button"]',
-  '[role="combobox"]',
-  '[role="listbox"]',
-  '[role="menuitem"]',
-  '[role="slider"]',
   '[data-preserve-shot-selection]',
+  '[data-slot="select-content"]',
+  '[data-slot="select-item"]',
 ].join(',');
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -726,12 +722,18 @@ export function MultishotEditor({
         </InlineAlert>
       ) : null}
 
-      <div className="grid min-h-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div
+        className={cn(
+          'grid min-h-0 items-stretch gap-5',
+          selectedShot ? 'xl:grid-cols-[minmax(0,1fr)_340px]' : 'grid-cols-1',
+        )}
+      >
         <PreviewStage
           cues={previewCues}
           elapsed={elapsed}
           playbackRef={playbackRef}
           duration={duration}
+          fullWidth={!selectedShot}
           isPlaying={isPlaying}
           isLooping={isLooping}
           fullscreen={isFullscreen}
@@ -757,28 +759,25 @@ export function MultishotEditor({
           }}
         />
 
-        <Inspector
-          shot={selectedShot}
-          hasShots={shots.length > 0}
-          fireworkOptions={fireworkOptions}
-          duration={duration}
-          onChangeFirework={(fireworkId) =>
-            selectedShot && updateShot(selectedShot.uid, { fireworkId }, { immediate: true })
-          }
-          onChangeTime={(seconds) =>
-            selectedShot && updateShot(selectedShot.uid, { timeOffsetSeconds: seconds })
-          }
-          onChangePan={(panDegrees, options) =>
-            selectedShot &&
-            updateShot(selectedShot.uid, { panDegrees }, { immediate: options?.immediate })
-          }
-          onChangeTilt={(tiltDegrees, options) =>
-            selectedShot &&
-            updateShot(selectedShot.uid, { tiltDegrees }, { immediate: options?.immediate })
-          }
-          onDuplicate={() => selectedShot && duplicateShot(selectedShot.uid)}
-          onDelete={() => selectedShot && void deleteShot(selectedShot.uid)}
-        />
+        {selectedShot ? (
+          <Inspector
+            shot={selectedShot}
+            fireworkOptions={fireworkOptions}
+            duration={duration}
+            onChangeFirework={(fireworkId) =>
+              updateShot(selectedShot.uid, { fireworkId }, { immediate: true })
+            }
+            onChangeTime={(seconds) => updateShot(selectedShot.uid, { timeOffsetSeconds: seconds })}
+            onChangePan={(panDegrees, options) =>
+              updateShot(selectedShot.uid, { panDegrees }, { immediate: options?.immediate })
+            }
+            onChangeTilt={(tiltDegrees, options) =>
+              updateShot(selectedShot.uid, { tiltDegrees }, { immediate: options?.immediate })
+            }
+            onDuplicate={() => duplicateShot(selectedShot.uid)}
+            onDelete={() => void deleteShot(selectedShot.uid)}
+          />
+        ) : null}
       </div>
 
       <Timeline
@@ -935,6 +934,7 @@ function PreviewStage({
   elapsed,
   playbackRef,
   duration,
+  fullWidth,
   isPlaying,
   isLooping,
   fullscreen,
@@ -957,6 +957,7 @@ function PreviewStage({
   elapsed: number;
   playbackRef: MutableRefObject<number>;
   duration: number;
+  fullWidth: boolean;
   isPlaying: boolean;
   isLooping: boolean;
   fullscreen: boolean;
@@ -976,44 +977,61 @@ function PreviewStage({
   onPreviewReady: () => void;
 }) {
   const [transportActive, setTransportActive] = useState(true);
+  const [previewActive, setPreviewActive] = useState(false);
   const transportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const transportVisible = !isPlaying || transportActive;
+  const transportVisible = previewActive && (!isPlaying || transportActive);
+
+  const clearTransportIdleTimer = useCallback(() => {
+    if (transportIdleTimer.current) {
+      clearTimeout(transportIdleTimer.current);
+      transportIdleTimer.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
+    clearTransportIdleTimer();
 
     if (!isPlaying) {
       setTransportActive(true);
-      return () => {
-        if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
-      };
+      return clearTransportIdleTimer;
     }
 
     setTransportActive(false);
-
-    return () => {
-      if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
-    };
-  }, [isPlaying]);
+    return clearTransportIdleTimer;
+  }, [clearTransportIdleTimer, isPlaying]);
 
   function wakePreviewTransport() {
+    setPreviewActive(true);
+    clearTransportIdleTimer();
+
     if (!isPlaying) {
       setTransportActive(true);
       return;
     }
 
     setTransportActive(true);
-    if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
     transportIdleTimer.current = setTimeout(
       () => setTransportActive(false),
       PREVIEW_TRANSPORT_IDLE_MS,
     );
   }
 
+  function hidePreviewTransport() {
+    setPreviewActive(false);
+    setTransportActive(false);
+    clearTransportIdleTimer();
+  }
+
+  function handlePreviewBlur(event: ReactFocusEvent<HTMLElement>) {
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+    hidePreviewTransport();
+  }
+
   function handleTransportPlayPause() {
     if (!isPlaying) {
       setTransportActive(false);
-      if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
+      clearTransportIdleTimer();
     }
     onPlayPause();
   }
@@ -1023,8 +1041,11 @@ function PreviewStage({
       <section
         data-preserve-shot-selection
         onFocusCapture={wakePreviewTransport}
+        onBlurCapture={handlePreviewBlur}
+        onPointerEnter={wakePreviewTransport}
         onPointerDownCapture={wakePreviewTransport}
         onPointerMoveCapture={wakePreviewTransport}
+        onPointerLeave={hidePreviewTransport}
         className={cn(
           'overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[#05070d] text-white',
           fullscreen
@@ -1032,7 +1053,16 @@ function PreviewStage({
             : 'relative',
         )}
       >
-        <div className={cn('relative w-full', fullscreen ? 'h-full' : 'aspect-video')}>
+        <div
+          className={cn(
+            'relative w-full',
+            fullscreen
+              ? 'h-full'
+              : fullWidth
+                ? 'h-[min(560px,calc(100svh-15rem))]'
+                : 'aspect-video',
+          )}
+        >
           <LazyFireworkReplayCanvas
             cues={cues}
             elapsed={elapsed}
@@ -1123,10 +1153,7 @@ function Timeline({
   }
 
   return (
-    <section
-      data-preserve-shot-selection
-      className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4"
-    >
+    <section className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Film size={16} className="text-[color:var(--color-content-subtle)]" />
@@ -1273,6 +1300,7 @@ function ShotClip({
   return (
     <button
       type="button"
+      data-preserve-shot-selection
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -1315,7 +1343,6 @@ function ShotClip({
 
 function Inspector({
   shot,
-  hasShots,
   fireworkOptions,
   duration,
   onChangeFirework,
@@ -1325,8 +1352,7 @@ function Inspector({
   onDuplicate,
   onDelete,
 }: {
-  shot: LocalShot | null;
-  hasShots: boolean;
+  shot: LocalShot;
   fireworkOptions: { value: string; label: string; description?: string }[];
   duration: number;
   onChangeFirework: (fireworkId: string) => void;
@@ -1341,99 +1367,73 @@ function Inspector({
       data-preserve-shot-selection
       className="flex max-h-[min(560px,calc(100svh-15rem))] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
     >
-      {!shot ? (
-        <div className="p-4">
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
-            {hasShots
-              ? 'No shot selected. Choose a shot from the timeline or preview to edit it.'
-              : 'No shots yet. Add a shot to start editing its firework, timing, and direction.'}
-          </p>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pt-4 pb-3">
+        {shot.saveState !== 'idle' ? (
+          <div className="flex justify-end">
+            <SaveIndicator state={shot.saveState} />
+          </div>
+        ) : null}
+        <Field>
+          <FieldLabel>Firework</FieldLabel>
+          <SelectField
+            ariaLabel="Firework"
+            value={shot.fireworkId}
+            onChange={onChangeFirework}
+            options={fireworkOptions}
+          />
+        </Field>
+
+        <SliderField
+          label="Fires at"
+          value={shot.timeOffsetSeconds}
+          min={0}
+          max={Math.max(1, duration)}
+          step={0.1}
+          showNumberInput
+          formatValue={(value) => `${value.toFixed(1)}s`}
+          onChange={onChangeTime}
+        />
+
+        <div className="space-y-4">
+          <AnglePlaneControl
+            label="Pan plane"
+            icon={<MoveHorizontal size={14} />}
+            value={shot.panDegrees}
+            min={-MAX_PAN_DEGREES}
+            max={MAX_PAN_DEGREES}
+            presets={PAN_PRESETS}
+            hint="Pan is capped at -30° to 30°."
+            onChange={onChangePan}
+          />
+          <AnglePlaneControl
+            label="Tilt plane"
+            icon={<MoveVertical size={14} />}
+            value={shot.tiltDegrees}
+            min={-MAX_TILT_DEGREES}
+            max={MAX_TILT_DEGREES}
+            presets={TILT_PRESETS}
+            hint="Tilt is capped at -50° to 50°."
+            onChange={onChangeTilt}
+          />
         </div>
-      ) : (
-        <>
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pt-4 pb-3">
-            {shot.saveState !== 'idle' ? (
-              <div className="flex justify-end">
-                <SaveIndicator state={shot.saveState} />
-              </div>
-            ) : null}
-            <Field>
-              <FieldLabel>Firework</FieldLabel>
-              <SelectField
-                ariaLabel="Firework"
-                value={shot.fireworkId}
-                onChange={onChangeFirework}
-                options={fireworkOptions}
-              />
-            </Field>
+      </div>
 
-            <SliderField
-              label="Fires at"
-              value={shot.timeOffsetSeconds}
-              min={0}
-              max={Math.max(1, duration)}
-              step={0.1}
-              showNumberInput
-              formatValue={(value) => `${value.toFixed(1)}s`}
-              onChange={onChangeTime}
-            />
-
-            <div className="rounded-md border border-[color:var(--color-border-subtle)] p-3">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-[color:var(--color-content-emphasis)]">
-                  Aim
-                </span>
-                <span className="font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums">
-                  {Math.round(shot.panDegrees)}° / {Math.round(shot.tiltDegrees)}°
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                <AnglePlaneControl
-                  label="Pan plane"
-                  customLabel="Custom pan"
-                  icon={<MoveHorizontal size={14} />}
-                  value={shot.panDegrees}
-                  min={-MAX_PAN_DEGREES}
-                  max={MAX_PAN_DEGREES}
-                  presets={PAN_PRESETS}
-                  hint="Pan is capped at -30° to 30°."
-                  onChange={onChangePan}
-                />
-                <AnglePlaneControl
-                  label="Tilt plane"
-                  customLabel="Custom tilt"
-                  icon={<MoveVertical size={14} />}
-                  value={shot.tiltDegrees}
-                  min={-MAX_TILT_DEGREES}
-                  max={MAX_TILT_DEGREES}
-                  presets={TILT_PRESETS}
-                  hint="Tilt is capped at -50° to 50°."
-                  onChange={onChangeTilt}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
-            <Button variant="secondary" size="sm" onClick={onDuplicate} className="min-w-0 px-2">
-              <Copy size={14} />
-              <span className="truncate">Duplicate</span>
-            </Button>
-            <Button variant="destructive" size="sm" onClick={onDelete} className="min-w-0 px-2">
-              <Trash2 size={14} />
-              <span className="truncate">Delete</span>
-            </Button>
-          </div>
-        </>
-      )}
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
+        <Button variant="secondary" size="sm" onClick={onDuplicate} className="min-w-0 px-2">
+          <Copy size={14} />
+          <span className="truncate">Duplicate</span>
+        </Button>
+        <Button variant="destructive" size="sm" onClick={onDelete} className="min-w-0 px-2">
+          <Trash2 size={14} />
+          <span className="truncate">Delete</span>
+        </Button>
+      </div>
     </aside>
   );
 }
 
 function AnglePlaneControl({
   label,
-  customLabel,
   icon,
   value,
   min,
@@ -1443,7 +1443,6 @@ function AnglePlaneControl({
   onChange,
 }: {
   label: string;
-  customLabel: string;
   icon: ReactNode;
   value: number;
   min: number;
@@ -1452,12 +1451,22 @@ function AnglePlaneControl({
   hint: string;
   onChange: (value: number, options?: { immediate?: boolean }) => void;
 }) {
+  const id = useId();
+  const sliderValue = Math.min(max, Math.max(min, value));
+
+  function setNumberValue(next: number) {
+    if (!Number.isFinite(next)) return;
+    const clamped = Math.min(max, Math.max(min, next));
+    onChange(Math.round(clamped));
+  }
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-[color:var(--color-content-emphasis)]">
           <span className="text-[color:var(--color-content-subtle)]">{icon}</span>
           <span className="truncate">{label}</span>
+          <InfoTooltip text={hint} />
         </span>
         <span className="rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
           {Math.round(value)}°
@@ -1485,17 +1494,33 @@ function AnglePlaneControl({
           );
         })}
       </div>
-      <SliderField
-        label={customLabel}
-        hint={hint}
-        value={value}
-        min={min}
-        max={max}
-        step={1}
-        showNumberInput
-        formatValue={(next) => `${Math.round(next)}°`}
-        onChange={(next) => onChange(next)}
-      />
+      <div className="flex items-center gap-3">
+        <Slider
+          id={id}
+          value={[sliderValue]}
+          min={min}
+          max={max}
+          step={1}
+          onValueChange={(next) => onChange(next[0] ?? value)}
+          aria-label={`${label} angle`}
+          className="min-w-0 flex-1 py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
+        />
+        <Input
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step="any"
+          value={value}
+          aria-label={`${label} value`}
+          className="h-7 w-14 shrink-0 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          onFocus={(event) => event.currentTarget.select()}
+          onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
+          onBlur={(event) => {
+            if (event.currentTarget.value === '') setNumberValue(min);
+          }}
+        />
+      </div>
     </div>
   );
 }

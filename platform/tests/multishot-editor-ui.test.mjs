@@ -46,28 +46,72 @@ test('multishot metadata keeps summary badges beside the title', () => {
   assert.ok(editButtonIndex > descriptionIndex);
 });
 
-test('multishot inspector keeps controls inside the card and supports deselection', () => {
+test('multishot inspector only opens for a selected shot', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
   const inspector = editor.slice(editor.indexOf('function Inspector('));
 
   assert.doesNotMatch(inspector, /Shot inspector/);
-  assert.match(inspector, /No shot selected/);
+  assert.doesNotMatch(inspector, /No shot selected/);
+  assert.match(editor, /selectedShot \? 'xl:grid-cols-\[minmax\(0,1fr\)_340px\]' : 'grid-cols-1'/);
+  assert.match(editor, /selectedShot \? \(\s*<Inspector/);
+  assert.match(editor, /fullWidth=\{!selectedShot\}/);
+  assert.match(editor, /fullWidth[\s\S]*h-\[min\(560px,calc\(100svh-15rem\)\)\]/);
+  assert.doesNotMatch(editor, /hasShots=\{shots\.length > 0\}/);
   assert.doesNotMatch(inspector, /Select a clip on the timeline/);
   assert.match(inspector, /overflow-y-auto/);
   assert.match(inspector, /grid shrink-0 grid-cols-2/);
   assert.match(editor, /const PAN_PRESETS = \[/);
   assert.match(editor, /const TILT_PRESETS = \[/);
+  assert.match(
+    inspector,
+    /<SliderField[\s\S]*\/>\s*<div className="space-y-4">\s*<AnglePlaneControl/,
+  );
   assert.match(inspector, /label="Pan plane"/);
   assert.match(inspector, /label="Tilt plane"/);
-  assert.match(inspector, /customLabel="Custom pan"/);
-  assert.match(inspector, /customLabel="Custom tilt"/);
+  assert.doesNotMatch(inspector, />\s*Aim\s*</);
+  assert.doesNotMatch(inspector, /Custom pan/);
+  assert.doesNotMatch(inspector, /Custom tilt/);
+  assert.match(
+    inspector,
+    /<span className="truncate">\{label\}<\/span>\s*<InfoTooltip text=\{hint\} \/>/,
+  );
+  assert.match(inspector, /<Slider[\s\S]*aria-label=\{`\$\{label\} angle`\}/);
   assert.match(inspector, /hint="Pan is capped at -30[^"]*30[^"]*"/);
   assert.match(inspector, /hint="Tilt is capped at -50[^"]*50[^"]*"/);
   assert.doesNotMatch(inspector, /Reposition/);
   assert.doesNotMatch(editor, /repositioning/);
   assert.doesNotMatch(editor, /repositionUid/);
   assert.match(editor, /onPointerDownCapture=\{handleEditorPointerDownCapture\}/);
-  assert.match(editor, /data-preserve-shot-selection/);
+  assert.match(inspector, /<aside\s+data-preserve-shot-selection/);
+});
+
+test('multishot selection stays active on preview, clips, inspector controls, and firework menu items', () => {
+  const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const keepSelector = editor.slice(
+    editor.indexOf('const SHOT_SELECTION_KEEP_SELECTOR = ['),
+    editor.indexOf('type SaveState'),
+  );
+  const previewStage = editor.slice(
+    editor.indexOf('function PreviewStage('),
+    editor.indexOf('// --- Timeline'),
+  );
+  const timeline = editor.slice(
+    editor.indexOf('function Timeline('),
+    editor.indexOf('function ShotClip('),
+  );
+  const clip = editor.slice(
+    editor.indexOf('function ShotClip('),
+    editor.indexOf('// --- Inspector'),
+  );
+
+  assert.match(keepSelector, /\[data-preserve-shot-selection\]/);
+  assert.match(keepSelector, /\[data-slot="select-content"\]/);
+  assert.match(keepSelector, /\[data-slot="select-item"\]/);
+  assert.doesNotMatch(keepSelector, /'button'/);
+  assert.doesNotMatch(keepSelector, /'input'/);
+  assert.match(previewStage, /<section\s+data-preserve-shot-selection/);
+  assert.doesNotMatch(timeline, /<section\s+data-preserve-shot-selection/);
+  assert.match(clip, /<button[\s\S]*data-preserve-shot-selection/);
 });
 
 test('multishot timeline packs compact clips into four overlap rows', () => {
@@ -115,13 +159,23 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /onPrimeProgress=\{onPreviewLoadingProgress\}/);
   assert.match(previewStage, /onReady=\{onPreviewReady\}/);
   assert.match(editor, /const PREVIEW_TRANSPORT_IDLE_MS = 2000;/);
-  assert.match(previewStage, /const transportVisible = !isPlaying \|\| transportActive/);
+  assert.match(
+    previewStage,
+    /const transportVisible = previewActive && \(!isPlaying \|\| transportActive\)/,
+  );
+  assert.match(previewStage, /const \[previewActive, setPreviewActive\] = useState\(false\)/);
+  assert.match(previewStage, /function hidePreviewTransport\(\)/);
+  assert.match(previewStage, /setPreviewActive\(false\)/);
   assert.match(previewStage, /setTransportActive\(false\)/);
   assert.match(previewStage, /function handleTransportPlayPause\(\)/);
   assert.match(previewStage, /onPlayPause=\{handleTransportPlayPause\}/);
+  assert.match(previewStage, /onPointerEnter=\{wakePreviewTransport\}/);
   assert.match(previewStage, /onPointerMoveCapture=\{wakePreviewTransport\}/);
+  assert.match(previewStage, /onPointerLeave=\{hidePreviewTransport\}/);
   assert.match(previewStage, /transition-all duration-300/);
-  assert.match(previewStage, /bottom-5 z-30/);
+  assert.match(previewStage, /fullWidth/);
+  assert.match(previewStage, /h-\[min\(560px,calc\(100svh-15rem\)\)\]/);
+  assert.match(previewStage, /absolute inset-x-0 bottom-5 z-30/);
   assert.match(previewStage, /fullscreen=\{fullscreen\}/);
   assert.match(previewStage, /loading=\{loading\}/);
   assert.match(previewStage, /onFullscreenToggle=\{onFullscreenToggle\}/);
