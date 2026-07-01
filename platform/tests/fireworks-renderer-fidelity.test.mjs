@@ -340,6 +340,12 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
   assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 2850\)/);
   assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 1000, 0\)/);
+  assert.match(canvas, /renderOverscanPx\?: number/);
+  assert.match(canvas, /const renderOverscan = Math\.max\(0, renderOverscanPx\)/);
+  assert.match(canvas, /const renderSurfaceLeft = renderOverscan > 0 \? -renderOverscan \/ 2 : 0/);
+  assert.match(canvas, /renderOverscan > 0 \? `calc\(100% \+ \$\{renderOverscan\}px\)` : '100%'/);
+  assert.match(canvas, /style=\{\{ left: renderSurfaceLeft, width: renderSurfaceWidth \}\}/);
+  assert.doesNotMatch(canvas, /cameraViewOffset|setViewOffset|clearViewOffset/);
   assert.match(canvas, /trailWidthGuideDesign\?: FireworkDesign \| null/);
   assert.match(canvas, /TRAIL_WIDTH_GUIDE_STAR_INDEX = 0/);
   assert.match(canvas, /function buildTrailWidthGuideVelocity\(design: FireworkDesign\)/);

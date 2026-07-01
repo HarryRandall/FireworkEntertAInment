@@ -94,6 +94,9 @@ const DEFAULT_FIREWORK_DURATION = 2.4;
 const SAVE_DEBOUNCE_MS = 650;
 const SCRUB_COMMIT_MS = 60;
 const PREVIEW_TRANSPORT_IDLE_MS = 2000;
+const INSPECTOR_RAIL_WIDTH_PX = 340;
+const INSPECTOR_RAIL_GAP_PX = 20;
+const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX + INSPECTOR_RAIL_GAP_PX;
 const MAX_PAN_DEGREES = 30;
 const MAX_TILT_DEGREES = 50;
 const PAN_PRESETS = [
@@ -700,22 +703,6 @@ export function MultishotEditor({
       className="flex min-h-0 flex-1 flex-col gap-5"
       onPointerDownCapture={handleEditorPointerDownCapture}
     >
-      <MetaBar
-        open={metaDialogOpen}
-        dirty={metaDirty}
-        name={name}
-        description={description}
-        durationSeconds={durationSeconds}
-        saving={isSavingMeta}
-        error={metaError}
-        shotCount={shots.length}
-        onOpenChange={setMetaDialogOpen}
-        onName={setName}
-        onDescription={setDescription}
-        onDuration={setDurationSeconds}
-        onSave={saveMeta}
-      />
-
       {!hasFireworks ? (
         <InlineAlert tone="info" title="No fireworks yet">
           Create a firework first, then come back to place it in this multishot.
@@ -724,7 +711,7 @@ export function MultishotEditor({
 
       <div
         className={cn(
-          'grid min-h-0 items-stretch gap-5',
+          'grid shrink-0 items-stretch gap-5',
           selectedShot ? 'xl:grid-cols-[minmax(0,1fr)_340px]' : 'grid-cols-1',
         )}
       >
@@ -780,22 +767,42 @@ export function MultishotEditor({
         ) : null}
       </div>
 
-      <Timeline
-        shots={shots}
-        specsById={specsById}
-        duration={duration}
-        elapsed={elapsed}
-        selectedUid={selectedUid}
-        disabled={!hasFireworks}
-        onSelect={(uid) => {
-          setSelectedUid(uid);
-        }}
-        onSeek={handleScrub}
-        onMoveShot={(uid, seconds, commit) =>
-          updateShot(uid, { timeOffsetSeconds: seconds }, { save: commit, immediate: commit })
-        }
-        onAdd={addShot}
-      />
+      <div className="min-w-0">
+        <Timeline
+          shots={shots}
+          specsById={specsById}
+          duration={duration}
+          elapsed={elapsed}
+          selectedUid={selectedUid}
+          disabled={!hasFireworks}
+          onSelect={(uid) => {
+            setSelectedUid(uid);
+          }}
+          onSeek={handleScrub}
+          onMoveShot={(uid, seconds, commit) =>
+            updateShot(uid, { timeOffsetSeconds: seconds }, { save: commit, immediate: commit })
+          }
+          onAdd={addShot}
+        />
+      </div>
+
+      <div className="min-w-0">
+        <MetaBar
+          open={metaDialogOpen}
+          dirty={metaDirty}
+          name={name}
+          description={description}
+          durationSeconds={durationSeconds}
+          saving={isSavingMeta}
+          error={metaError}
+          shotCount={shots.length}
+          onOpenChange={setMetaDialogOpen}
+          onName={setName}
+          onDescription={setDescription}
+          onDuration={setDurationSeconds}
+          onSave={saveMeta}
+        />
+      </div>
     </div>
   );
 }
@@ -835,7 +842,7 @@ function MetaBar({
 
   return (
     <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 py-2.5 sm:px-4">
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
@@ -1038,74 +1045,68 @@ function PreviewStage({
 
   return (
     <>
-      <section
-        data-preserve-shot-selection
-        onFocusCapture={wakePreviewTransport}
-        onBlurCapture={handlePreviewBlur}
-        onPointerEnter={wakePreviewTransport}
-        onPointerDownCapture={wakePreviewTransport}
-        onPointerMoveCapture={wakePreviewTransport}
-        onPointerLeave={hidePreviewTransport}
-        className={cn(
-          'overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[#05070d] text-white',
-          fullscreen
-            ? 'fixed inset-[5vmin] z-[100] rounded-2xl border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
-            : 'relative',
-        )}
-      >
-        <div
+      <div className={fullscreen ? 'contents' : 'relative'}>
+        <section
+          data-preserve-shot-selection
+          onFocusCapture={wakePreviewTransport}
+          onBlurCapture={handlePreviewBlur}
+          onPointerEnter={wakePreviewTransport}
+          onPointerDownCapture={wakePreviewTransport}
+          onPointerMoveCapture={wakePreviewTransport}
+          onPointerLeave={hidePreviewTransport}
           className={cn(
-            'relative w-full',
+            'overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[#05070d] text-white',
             fullscreen
-              ? 'h-full'
-              : fullWidth
-                ? 'h-[min(560px,calc(100svh-15rem))]'
-                : 'aspect-video',
+              ? 'fixed inset-[5vmin] z-[100] rounded-2xl border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
+              : 'relative h-[560px]',
           )}
         >
-          <LazyFireworkReplayCanvas
-            cues={cues}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            launchPositions={SINGLE_MORTAR}
-            muted={!isPlaying}
-            interactive
-            controlsVisible={!loading}
-            primeSnapshots
-            primeOnCueChanges={false}
-            showLoadingBar={false}
-            onPrimeProgress={onPreviewLoadingProgress}
-            onReady={onPreviewReady}
-            aimMarkers={aimMarkers}
-            selectedMarkerId={selectedUid}
-            onSelectMarker={onSelectMarker}
-          />
-          <div
-            className={cn(
-              'pointer-events-none absolute inset-x-0 bottom-5 z-30 transition-all duration-300',
-              transportVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
-            )}
-          >
-            <div className={transportVisible ? 'pointer-events-auto' : 'pointer-events-none'}>
-              <EditorPreviewTransport
-                elapsed={elapsed}
-                duration={duration}
-                isPlaying={isPlaying}
-                isLooping={isLooping}
-                fullscreen={fullscreen}
-                loading={loading}
-                loadingProgress={loadingProgress}
-                ticks={ticks}
-                onPlayPause={handleTransportPlayPause}
-                onReset={onReset}
-                onLoopToggle={onLoopToggle}
-                onFullscreenToggle={onFullscreenToggle}
-                onScrub={onScrub}
-              />
+          <div className="relative h-full w-full">
+            <LazyFireworkReplayCanvas
+              cues={cues}
+              elapsed={elapsed}
+              playbackRef={playbackRef}
+              launchPositions={SINGLE_MORTAR}
+              muted={!isPlaying}
+              interactive
+              controlsVisible={!loading}
+              primeSnapshots
+              primeOnCueChanges={false}
+              showLoadingBar={false}
+              renderOverscanPx={!fullscreen && !fullWidth ? INSPECTOR_RENDER_OVERSCAN_PX : 0}
+              onPrimeProgress={onPreviewLoadingProgress}
+              onReady={onPreviewReady}
+              aimMarkers={aimMarkers}
+              selectedMarkerId={selectedUid}
+              onSelectMarker={onSelectMarker}
+            />
+            <div
+              className={cn(
+                'pointer-events-none absolute inset-x-0 bottom-5 z-30 transition-all duration-300',
+                transportVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
+              )}
+            >
+              <div className={transportVisible ? 'pointer-events-auto' : 'pointer-events-none'}>
+                <EditorPreviewTransport
+                  elapsed={elapsed}
+                  duration={duration}
+                  isPlaying={isPlaying}
+                  isLooping={isLooping}
+                  fullscreen={fullscreen}
+                  loading={loading}
+                  loadingProgress={loadingProgress}
+                  ticks={ticks}
+                  onPlayPause={handleTransportPlayPause}
+                  onReset={onReset}
+                  onLoopToggle={onLoopToggle}
+                  onFullscreenToggle={onFullscreenToggle}
+                  onScrub={onScrub}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
       {fullscreen ? <PreviewFullscreenBackdrop onExit={onExitFullscreen} /> : null}
     </>
   );
@@ -1365,7 +1366,7 @@ function Inspector({
   return (
     <aside
       data-preserve-shot-selection
-      className="flex max-h-[min(560px,calc(100svh-15rem))] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
+      className="flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
     >
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pt-4 pb-3">
         {shot.saveState !== 'idle' ? (

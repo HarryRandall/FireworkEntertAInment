@@ -38,7 +38,14 @@ test('multishot metadata keeps summary badges beside the title', () => {
   const shotBadgeIndex = metaBar.indexOf('{shotCount}');
   const descriptionIndex = metaBar.indexOf('{description ?');
   const editButtonIndex = metaBar.indexOf('Edit details');
+  const previewGridIndex = editor.indexOf("'grid shrink-0 items-stretch gap-5'");
+  const timelineIndex = editor.indexOf('<Timeline');
+  const metaBarIndex = editor.indexOf('<MetaBar');
 
+  assert.match(metaBar, /sm:flex-row sm:items-end sm:justify-between/);
+  assert.ok(previewGridIndex > -1);
+  assert.ok(timelineIndex > previewGridIndex);
+  assert.ok(metaBarIndex > timelineIndex);
   assert.ok(titleIndex > -1);
   assert.ok(durationBadgeIndex > titleIndex);
   assert.ok(shotBadgeIndex > durationBadgeIndex);
@@ -55,7 +62,6 @@ test('multishot inspector only opens for a selected shot', () => {
   assert.match(editor, /selectedShot \? 'xl:grid-cols-\[minmax\(0,1fr\)_340px\]' : 'grid-cols-1'/);
   assert.match(editor, /selectedShot \? \(\s*<Inspector/);
   assert.match(editor, /fullWidth=\{!selectedShot\}/);
-  assert.match(editor, /fullWidth[\s\S]*h-\[min\(560px,calc\(100svh-15rem\)\)\]/);
   assert.doesNotMatch(editor, /hasShots=\{shots\.length > 0\}/);
   assert.doesNotMatch(inspector, /Select a clip on the timeline/);
   assert.match(inspector, /overflow-y-auto/);
@@ -159,6 +165,25 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /onPrimeProgress=\{onPreviewLoadingProgress\}/);
   assert.match(previewStage, /onReady=\{onPreviewReady\}/);
   assert.match(editor, /const PREVIEW_TRANSPORT_IDLE_MS = 2000;/);
+  assert.match(editor, /const INSPECTOR_RAIL_WIDTH_PX = 340;/);
+  assert.match(editor, /const INSPECTOR_RAIL_GAP_PX = 20;/);
+  assert.match(
+    editor,
+    /const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX \+ INSPECTOR_RAIL_GAP_PX/,
+  );
+  assert.match(
+    previewStage,
+    /renderOverscanPx=\{!fullscreen && !fullWidth \? INSPECTOR_RENDER_OVERSCAN_PX : 0\}/,
+  );
+  assert.match(previewStage, /: 'relative h-\[560px\]'/);
+  assert.match(previewStage, /<div className="relative h-full w-full">/);
+  assert.doesNotMatch(previewStage, /aspect-video|cameraViewOffset/);
+  assert.doesNotMatch(editor, /data-multishot-/);
+  assert.match(editor, /'grid shrink-0 items-stretch gap-5'/);
+  assert.match(previewStage, /<div className=\{fullscreen \? 'contents' : 'relative'\}>/);
+  assert.doesNotMatch(previewStage, /h-32 shrink-0/);
+  assert.match(editor, /className="flex flex-col gap-3 rounded-lg/);
+  assert.doesNotMatch(editor, /mt-\[28rem\]|mt-40|mb-32|mb-14/);
   assert.match(
     previewStage,
     /const transportVisible = previewActive && \(!isPlaying \|\| transportActive\)/,
@@ -174,7 +199,8 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /onPointerLeave=\{hidePreviewTransport\}/);
   assert.match(previewStage, /transition-all duration-300/);
   assert.match(previewStage, /fullWidth/);
-  assert.match(previewStage, /h-\[min\(560px,calc\(100svh-15rem\)\)\]/);
+  assert.match(previewStage, /h-\[560px\]/);
+  assert.match(editor, /max-h-\[560px\]/);
   assert.match(previewStage, /absolute inset-x-0 bottom-5 z-30/);
   assert.match(previewStage, /fullscreen=\{fullscreen\}/);
   assert.match(previewStage, /loading=\{loading\}/);

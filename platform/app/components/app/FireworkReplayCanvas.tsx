@@ -154,6 +154,12 @@ type Props = {
   headStyle?: Partial<FireworkHeadStyle>;
   trailWidthGuideDesign?: FireworkDesign | null;
   /**
+   * Render extra horizontal WebGL width while the visible frame clips the middle.
+   * Multishot uses this so opening the side inspector keeps the scene scale
+   * stable without pushing the mortar off-centre.
+   */
+  renderOverscanPx?: number;
+  /**
    * Fired once after the canvas mounts and the empty scene is first rendered,
    * before any fireworks are loaded. Parents can use this to drop a placeholder
    * so the user can see (and orbit) the scene while cues are still priming.
@@ -797,6 +803,7 @@ export function FireworkReplayCanvas({
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
   headStyle = DEFAULT_FIREWORK_HEAD_STYLE,
   trailWidthGuideDesign = null,
+  renderOverscanPx = 0,
   onSceneReady,
   onPrimeProgress,
   cuesFinal = true,
@@ -1719,9 +1726,17 @@ export function FireworkReplayCanvas({
     renderFor(360);
   }
 
+  const renderOverscan = Math.max(0, renderOverscanPx);
+  const renderSurfaceLeft = renderOverscan > 0 ? -renderOverscan / 2 : 0;
+  const renderSurfaceWidth = renderOverscan > 0 ? `calc(100% + ${renderOverscan}px)` : '100%';
+
   return (
     <>
-      <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" />
+      <div
+        ref={containerRef}
+        className="absolute top-0 bottom-0 h-full bg-black"
+        style={{ left: renderSurfaceLeft, width: renderSurfaceWidth }}
+      />
       {showFpsOverlay ? (
         <FpsGraph fps={fps} samples={fpsSamples} onClose={() => setShowFpsOverlay(false)} />
       ) : null}
