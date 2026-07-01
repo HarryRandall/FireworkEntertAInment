@@ -5,9 +5,10 @@
  * does not cause large layout shifts.
  */
 import { Fragment } from 'react';
-import { ListFilter, Search } from 'lucide-react';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { ListFilter, Plus, Search } from 'lucide-react';
+import { ReplayPanelLoadingStage } from '@/app/components/app/ReplayPanelLoadingStage';
 import { Button } from '@/app/components/ui/Button';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import {
   DataTableShell,
   tableCellClasses,
@@ -72,10 +73,14 @@ export function TableSkeleton({
 /** Filter bar placeholder for list routes. */
 export function FilterSkeleton({
   searchPlaceholder = 'Search...',
+  actionLabel,
 }: {
   searchPlaceholder?: string;
+  actionLabel?: string;
 }) {
-  return <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} />;
+  return (
+    <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} actionLabel={actionLabel} />
+  );
 }
 
 /** Skeleton for the `/library` template grid. */
@@ -560,6 +565,7 @@ export function AdminTableRouteSkeleton({
   tableClassName,
   rowSize = 'default',
   hasAction = false,
+  filterActionLabel,
   ariaLabel = 'Loading admin table',
 }: {
   rows?: number;
@@ -568,6 +574,7 @@ export function AdminTableRouteSkeleton({
   tableClassName?: string;
   rowSize?: AdminTableSkeletonRowSize;
   hasAction?: boolean;
+  filterActionLabel?: string;
   ariaLabel?: string;
 }) {
   return (
@@ -577,7 +584,10 @@ export function AdminTableRouteSkeleton({
           <Skeleton className="h-11 w-36 rounded-full" />
         </div>
       ) : null}
-      <AdminFilterControlsSkeleton searchPlaceholder={searchPlaceholder} />
+      <AdminFilterControlsSkeleton
+        searchPlaceholder={searchPlaceholder}
+        actionLabel={filterActionLabel}
+      />
       <div className="min-h-0 flex-1 overflow-hidden">
         <AdminTableRowsSkeleton
           headers={headers}
@@ -677,69 +687,26 @@ export function AdminFireworkEditorSkeleton() {
 }
 
 function AdminVisualEditorSkeleton({ label }: { label: string }) {
-  const previewSkeleton = 'bg-white/16 dark:bg-white/12';
-  const railSkeleton = 'bg-[color:var(--color-bg-emphasis)] dark:bg-white/10';
-
   return (
     <div
-      className="h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[color:var(--color-bg-default)]"
+      className="h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[#05070d]"
       aria-label={label}
     >
-      <div className="grid h-full min-h-0 lg:grid-cols-[minmax(0,1fr)_60px]">
-        <div className="relative flex min-h-[520px] flex-col overflow-hidden bg-[#05070d] p-5 lg:min-h-0">
-          <div
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,#05070d_0%,#090d18_58%,#020307_100%)]"
-            aria-hidden
-          />
-          <div className="relative z-10 flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-3">
-              <Skeleton className={cn('h-3 w-28', previewSkeleton)} />
-              <Skeleton className={cn('h-7 w-64 max-w-full', previewSkeleton)} />
-              <div className="flex gap-2">
-                <Skeleton className={cn('h-6 w-20 rounded-md', previewSkeleton)} />
-                <Skeleton className={cn('h-6 w-24 rounded-md', previewSkeleton)} />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Skeleton className={cn('h-8 w-20 rounded-md', previewSkeleton)} />
-              <Skeleton className={cn('h-8 w-16 rounded-md', previewSkeleton)} />
-            </div>
-          </div>
-          <Skeleton className="relative z-10 mt-8 min-h-[360px] flex-1 rounded-lg bg-white/10 dark:bg-white/8" />
-          <div className="relative z-10 mt-5 flex flex-wrap items-center gap-3">
-            <Skeleton className={cn('h-10 w-10 rounded-md', previewSkeleton)} />
-            <Skeleton className={cn('h-10 w-10 rounded-md', previewSkeleton)} />
-            <Skeleton className={cn('h-3 min-w-40 flex-1 rounded-full', previewSkeleton)} />
-            <Skeleton className={cn('h-4 w-20', previewSkeleton)} />
-          </div>
-        </div>
-        <div className="grid min-h-0 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] lg:grid-cols-[60px] lg:border-t-0 lg:border-l">
-          <div className="flex min-w-0 gap-1 overflow-x-auto border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-2 lg:flex-col lg:items-center lg:overflow-x-visible lg:overflow-y-auto lg:border-b-0 lg:px-0 lg:py-2.5">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton
-                key={index}
-                className={cn('h-[46px] w-[58px] rounded-md lg:h-[52px] lg:w-12', railSkeleton)}
-              />
-            ))}
-            <div className="hidden flex-1 lg:block" aria-hidden />
-            <div
-              className="hidden h-px w-full shrink-0 bg-[color:var(--color-border-subtle)] lg:block"
-              aria-hidden
-            />
-            {Array.from({ length: 2 }).map((_, index) => (
-              <Skeleton
-                key={`utility-${index}`}
-                className={cn('h-[46px] w-[58px] rounded-md lg:h-[52px] lg:w-12', railSkeleton)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      <div
+        className="h-full min-h-[520px] bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.035),transparent_44%),linear-gradient(180deg,#05070d_0%,#070b14_58%,#020307_100%)]"
+        aria-hidden
+      />
     </div>
   );
 }
 
-function AdminFilterControlsSkeleton({ searchPlaceholder }: { searchPlaceholder: string }) {
+function AdminFilterControlsSkeleton({
+  searchPlaceholder,
+  actionLabel,
+}: {
+  searchPlaceholder: string;
+  actionLabel?: string;
+}) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -753,17 +720,30 @@ function AdminFilterControlsSkeleton({ searchPlaceholder }: { searchPlaceholder:
             aria-label="Search"
           />
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          tabIndex={-1}
-          aria-disabled
-          className="pointer-events-none"
-        >
-          <ListFilter size={16} />
-          Filter
-        </Button>
+        {actionLabel ? (
+          <Button
+            type="button"
+            size="md"
+            tabIndex={-1}
+            aria-disabled
+            className="pointer-events-none"
+          >
+            <Plus size={16} />
+            {actionLabel}
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            tabIndex={-1}
+            aria-disabled
+            className="pointer-events-none"
+          >
+            <ListFilter size={16} />
+            Filter
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -881,14 +861,15 @@ function AdminFormCardSkeleton({ rows }: { rows: number }) {
 export function ReplayPanelSkeleton() {
   return (
     <div className="space-y-6" aria-label="Loading replay">
-      <div className="border-outline-variant/35 bg-surface-container-low relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-xl border">
-        <div className="bg-muted absolute inset-0" />
-        <div className="absolute top-6 left-6 space-y-3">
-          <Skeleton className="h-10 w-72 max-w-[calc(100vw-5rem)]" />
-          <Skeleton className="h-4 w-64 max-w-[calc(100vw-5rem)]" />
+      <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xs">
+        <div className="relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden bg-[#020409]">
+          <ReplayPanelLoadingStage />
+          <div className="absolute top-6 left-6 z-20 space-y-3">
+            <Skeleton className="h-10 w-72 max-w-[calc(100vw-5rem)] bg-white/15" />
+            <Skeleton className="h-4 w-64 max-w-[calc(100vw-5rem)] bg-white/12" />
+          </div>
+          <Skeleton className="absolute top-6 right-6 z-20 h-9 w-9 rounded-full bg-white/12" />
         </div>
-        <Skeleton className="absolute top-6 right-6 h-9 w-9 rounded-full" />
-        <Skeleton className="absolute bottom-6 left-1/2 h-[4.5rem] w-[min(620px,calc(100%-2rem))] -translate-x-1/2 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">

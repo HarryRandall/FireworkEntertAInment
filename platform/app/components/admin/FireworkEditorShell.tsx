@@ -1,9 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { PanelRightClose, Pause, Play, Repeat, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { Loader2, PanelRightClose, Save, Undo2 } from 'lucide-react';
 import { PreviewFullscreenBackdrop } from '@/app/components/admin/previewFullscreen';
+import {
+  ReplayTransportControls,
+  type ReplayTransportTick,
+} from '@/app/components/app/ReplayTransportControls';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { InlineAlert } from '@/app/components/ui/Feedback';
@@ -25,20 +29,21 @@ export type FireworkEditorShellTab = {
   content: ReactNode;
 };
 
-export type EditorPreviewTick = {
-  timeSeconds: number;
-  label: string;
-};
+export type EditorPreviewTick = ReplayTransportTick;
 
 export function EditorPreviewTransport({
   elapsed,
   duration,
   isPlaying,
   isLooping,
+  fullscreen,
+  loading = false,
+  loadingProgress = null,
   ticks = [],
   onPlayPause,
   onReset,
   onLoopToggle,
+  onFullscreenToggle,
   onScrub,
   onScrubEnd,
 }: {
@@ -46,129 +51,107 @@ export function EditorPreviewTransport({
   duration: number;
   isPlaying: boolean;
   isLooping: boolean;
+  fullscreen?: boolean;
+  loading?: boolean;
+  loadingProgress?: number | null;
   ticks?: EditorPreviewTick[];
   onPlayPause: () => void;
   onReset: () => void;
   onLoopToggle: () => void;
+  onFullscreenToggle?: () => void;
   onScrub: (seconds: number) => void;
   onScrubEnd?: () => void;
 }) {
-  const safeDuration = Math.max(0.1, duration);
-  // The transport owns the slider thumb so a fast drag does not re-render the
-  // whole editor on every input event. `localElapsed` tracks the pointer at
-  // full rate while the parent's heavyweight `elapsed` state is coalesced; the
-  // sync effect keeps it in step with playback when a drag is not in flight.
-  const scrubbingRef = useRef(false);
-  const [localElapsed, setLocalElapsed] = useState(elapsed);
-  useEffect(() => {
-    if (!scrubbingRef.current) setLocalElapsed(elapsed);
-  }, [elapsed]);
-  const safeElapsed = Math.min(safeDuration, Math.max(0, localElapsed));
-  const progress = (safeElapsed / safeDuration) * 100;
-  const visibleTicks = ticks.filter(
-    (tick) => tick.timeSeconds > 0 && tick.timeSeconds < safeDuration,
-  );
-
-  function commitScrub() {
-    scrubbingRef.current = false;
-    onScrubEnd?.();
-  }
-
-  function tickKey(tick: EditorPreviewTick) {
-    return `${tick.label}-${tick.timeSeconds}`;
+  if (loading) {
+    return (
+      <EditorPreviewTransportLoading
+        progress={loadingProgress}
+        hasLoop={Boolean(onLoopToggle)}
+        hasFullscreen={Boolean(onFullscreenToggle)}
+      />
+    );
   }
 
   return (
-    <div className="mx-auto flex w-[min(40rem,calc(100%-3rem))] items-center gap-3 rounded-[14px] border border-white/12 bg-[#0b1020]/82 px-4 py-2.5 shadow-[0_18px_40px_-16px_rgba(0,0,0,.75)] backdrop-blur-xl">
-      <button
-        type="button"
-        onClick={onPlayPause}
-        aria-label={isPlaying ? 'Pause preview' : 'Play preview'}
-        className="grid size-[42px] shrink-0 place-items-center rounded-full bg-[color:var(--hl)] text-[#05231a] shadow-[0_0_0_4px_rgba(21,189,139,.18)] transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[color:var(--hl)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b1020] focus-visible:outline-none"
-      >
-        {isPlaying ? <Pause size={18} /> : <Play size={18} className="translate-x-0.5" />}
-      </button>
-      <button
-        type="button"
-        onClick={onReset}
-        aria-label="Reset preview"
-        className="grid size-8 shrink-0 place-items-center rounded-full border border-white/12 bg-transparent text-white/72 transition hover:bg-white/8 hover:text-white focus-visible:ring-2 focus-visible:ring-[color:var(--hl)] focus-visible:outline-none"
-      >
-        <RotateCcw size={16} />
-      </button>
-      <span className="min-w-12 text-right font-mono text-xs text-white/58 tabular-nums">
-        {formatClock(safeElapsed)}
-      </span>
-      <div className="group relative flex h-6 min-w-28 flex-1 items-center rounded-full outline-none select-none has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[color:var(--hl)] has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-[#0b1020]">
-        <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/16" />
-        <div
-          className="absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full bg-[color:var(--hl)]"
-          style={{ width: `${progress}%` }}
-          aria-hidden
-        />
-        {visibleTicks.map((tick) => (
-          <button
-            key={tickKey(tick)}
-            type="button"
-            aria-label={`Jump to ${tick.label}`}
-            onClick={() => onScrub(tick.timeSeconds)}
-            className="group/tick pointer-events-auto absolute top-1/2 z-20 flex h-4 w-5 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--hl)]"
-            style={{ left: `${(tick.timeSeconds / safeDuration) * 100}%` }}
-          >
-            <span className="h-4 w-0.5 rounded-full bg-white/42" />
-            <span className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 rounded-md border border-white/12 bg-[#0b1020]/95 px-2 py-1 text-[10px] leading-none font-semibold whitespace-nowrap text-white/86 opacity-0 shadow-[0_10px_24px_-14px_rgba(0,0,0,.9)] backdrop-blur-sm transition-opacity duration-150 group-hover/tick:opacity-100 group-focus-visible/tick:opacity-100">
-              {tick.label}
-            </span>
-          </button>
-        ))}
-        <span
-          className="absolute top-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,.45)]"
-          style={{ left: `${progress}%` }}
-          aria-hidden
-        />
-        <input
-          type="range"
-          min={0}
-          max={safeDuration}
-          step={0.05}
-          value={safeElapsed}
-          onChange={(event) => {
-            scrubbingRef.current = true;
-            const seconds = Number(event.currentTarget.value);
-            setLocalElapsed(seconds);
-            onScrub(seconds);
-          }}
-          onPointerUp={commitScrub}
-          onKeyUp={commitScrub}
-          aria-label="Preview timeline"
-          className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 focus:outline-none"
-        />
-      </div>
-      <span className="min-w-12 font-mono text-xs text-white/58 tabular-nums">
-        {formatClock(safeDuration)}
-      </span>
-      <button
-        type="button"
-        onClick={onLoopToggle}
-        aria-pressed={isLooping}
-        aria-label={isLooping ? 'Disable looping' : 'Enable looping'}
-        className={cn(
-          'grid size-8 shrink-0 place-items-center rounded-full border transition focus-visible:ring-2 focus-visible:ring-[color:var(--hl)] focus-visible:outline-none',
-          isLooping
-            ? 'border-transparent bg-[color:var(--hl)] text-[#05231a]'
-            : 'border-white/12 bg-transparent text-white/72 hover:bg-white/8 hover:text-white',
-        )}
-      >
-        <Repeat size={16} />
-      </button>
-    </div>
+    <ReplayTransportControls
+      elapsed={elapsed}
+      duration={duration}
+      isPlaying={isPlaying}
+      isLooping={isLooping}
+      fullscreen={fullscreen}
+      ticks={ticks}
+      onPlayPause={onPlayPause}
+      onReset={onReset}
+      onLoopToggle={onLoopToggle}
+      onFullscreenToggle={onFullscreenToggle}
+      onScrub={onScrub}
+      onScrubEnd={onScrubEnd}
+    />
   );
 }
 
-function formatClock(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}:${remainder.toFixed(1).padStart(4, '0')}`;
+function EditorPreviewTransportLoading({
+  progress,
+  hasLoop,
+  hasFullscreen,
+}: {
+  progress: number | null;
+  hasLoop: boolean;
+  hasFullscreen: boolean;
+}) {
+  const determinate = progress != null;
+  const pct = determinate ? Math.max(2, Math.round(progress * 100)) : 100;
+  const label = determinate ? 'Loading fireworks' : 'Preparing preview';
+
+  return (
+    <div className="mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md">
+      <span className="size-11 shrink-0 animate-pulse rounded-full bg-white/20" aria-hidden />
+      <span
+        className="size-10 shrink-0 animate-pulse rounded-full border border-white/15 bg-white/6"
+        aria-hidden
+      />
+      {hasLoop ? (
+        <span
+          className="size-10 shrink-0 animate-pulse rounded-full bg-[color:var(--hl,#10b981)]/70"
+          aria-hidden
+        />
+      ) : null}
+
+      <div
+        className="flex h-7 min-w-0 flex-1 items-center gap-3"
+        role="status"
+        aria-live="polite"
+        aria-label={label}
+      >
+        <Loader2
+          className="h-4 w-4 shrink-0 animate-spin text-[color:var(--hl,#10b981)]"
+          strokeWidth={2.5}
+        />
+        <span className="hidden shrink-0 text-[10px] font-bold tracking-widest text-white/68 uppercase sm:inline">
+          {label}
+        </span>
+        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/20">
+          <span
+            className={cn(
+              'absolute inset-y-0 left-0 rounded-full bg-[color:var(--hl,#10b981)] transition-[width] duration-150 ease-out',
+              !determinate && 'animate-pulse opacity-80',
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="w-9 shrink-0 text-right font-mono text-[11px] text-white/62 tabular-nums">
+          {determinate ? `${pct}%` : ''}
+        </span>
+      </div>
+
+      {hasFullscreen ? (
+        <span
+          className="size-10 shrink-0 animate-pulse rounded-full border border-white/15 bg-white/6"
+          aria-hidden
+        />
+      ) : null}
+    </div>
+  );
 }
 
 type FireworkEditorShellProps = {
@@ -289,7 +272,7 @@ export function FireworkEditorShell({
           <div className="absolute inset-0 z-0">{preview}</div>
 
           {!fullscreen ? (
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 p-4 sm:p-5">
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-6 pb-4 sm:px-5 sm:pb-5">
               <div
                 className={cn(
                   'flex flex-wrap items-start gap-3 pr-16 sm:pr-[4.5rem]',

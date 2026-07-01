@@ -35,9 +35,12 @@ export function TemplateLikeButton({
     <button
       type="button"
       onClick={toggleLike}
-      className="focus-glow-action border-outline/20 text-on-surface-variant hover:bg-surface-container-highest/60 hover:text-primary inline-flex h-11 items-center justify-center gap-2 rounded-full border px-5 text-sm font-bold transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
+      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
     >
-      <Heart size={17} className={liked ? 'fill-primary text-primary' : 'text-primary'} />
+      <Heart
+        size={16}
+        className={liked ? 'fill-destructive text-destructive' : 'text-destructive'}
+      />
       {initialCount + (liked ? 1 : 0)}
     </button>
   );

@@ -8,6 +8,7 @@ export default function AdminFireworksLoading() {
       headers={['Preview', 'Firework', 'Base effect', 'Colour', 'Calibre', 'Duration', 'Open']}
       tableClassName="min-w-[960px]"
       rows={8}
+      filterActionLabel="New firework"
       ariaLabel="Loading fireworks"
     />
   );

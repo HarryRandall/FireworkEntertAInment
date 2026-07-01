@@ -11,14 +11,16 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('proxy gates private route prefixes, leaves browse routes public, and redirects to /login?next=', () => {
+test('proxy gates private prefixes to /login?next= and sends guests from the app surface to /', () => {
   assert.equal(existsSync(join(root, 'middleware.ts')), false);
   assert.equal(existsSync(join(root, 'proxy.ts')), true);
 
   const proxy = read('proxy.ts');
   assert.match(proxy, /PROTECTED_PREFIXES/);
+  assert.match(proxy, /APP_SURFACE_PREFIXES/);
 
-  // The protected list must keep the private prefixes and drop the browse ones.
+  // Protected list keeps the private prefixes; app-surface routes are gated
+  // separately (to /, not /login) so they stay out of PROTECTED_PREFIXES.
   const protectedMatch = proxy.match(/PROTECTED_PREFIXES = (\[[\s\S]*?\]);/);
   assert.ok(protectedMatch, 'PROTECTED_PREFIXES array is declared');
   const protectedArray = protectedMatch[1];
@@ -35,9 +37,21 @@ test('proxy gates private route prefixes, leaves browse routes public, and redir
     assert.doesNotMatch(protectedArray, new RegExp(browse));
   }
 
-  // Must honour the login ?next= round-trip and resolve the user from claims.
+  // App surface list covers the routes guests used to reach; they now redirect
+  // unauthenticated visitors to the marketing root instead of /login.
+  const appSurfaceMatch = proxy.match(/APP_SURFACE_PREFIXES = (\[[\s\S]*?\]);/);
+  assert.ok(appSurfaceMatch, 'APP_SURFACE_PREFIXES array is declared');
+  const appSurfaceArray = appSurfaceMatch[1];
+  for (const prefix of ["'/home'", "'/catalogue'", "'/library'", "'/dashboard'"]) {
+    assert.match(appSurfaceArray, new RegExp(prefix));
+  }
+
+  // Protected routes honour the login ?next= round-trip; app surface sends
+  // guests to / and resolves the user from claims.
   assert.match(proxy, /url\.pathname = '\/login'/);
   assert.match(proxy, /searchParams\.set\('next'/);
+  assert.match(proxy, /isAppSurface && !userId/);
+  assert.match(proxy, /url\.pathname = '\/'/);
   assert.match(proxy, /supabase\.auth\.getClaims\(\)/);
   assert.match(proxy, /matcher:/);
 

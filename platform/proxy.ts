@@ -1,13 +1,16 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerEnv } from '@/utils/supabase/env';
+import { supabaseFetch } from '@/utils/supabase/fetch';
 
-// Private route prefixes that require an authenticated session. Browse routes
-// (/home, /catalogue, /library, /library/[id]) are intentionally public so
-// guests can explore the catalogue and templates; /dashboard is also public
-// because it only redirects to /home. Creation and account routes stay gated.
-// Dev-only diagnostics are blocked in production before auth handling.
+// Private route prefixes that require an authenticated session; guests are sent
+// to /login with a next= round-trip. Creation and account routes stay gated.
 const PROTECTED_PREFIXES = ['/exports', '/shows', '/recommendations', '/admin', '/settings'];
+// App surface prefixes that are authenticated-only but should NOT send guests to
+// /login. Unauthenticated visitors are redirected to the marketing root (/) so
+// they never see the app shell flash guest-then-authed chrome. Authed users pass
+// through to the (app) layout, which server-renders their chrome directly.
+const APP_SURFACE_PREFIXES = ['/home', '/library', '/catalogue', '/dashboard'];
 const AUTH_ONLY_PATHS = ['/login', '/signup'];
 
 function matchesPathPrefix(pathname: string, prefix: string) {
@@ -42,10 +45,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const isProtected = PROTECTED_PREFIXES.some((p) => matchesPathPrefix(pathname, p));
+  const isAppSurface = APP_SURFACE_PREFIXES.some((p) => matchesPathPrefix(pathname, p));
   const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
   const isRoot = pathname === '/';
 
-  if (!isProtected && !isAuthPage && !isRoot) {
+  if (!isProtected && !isAuthPage && !isRoot && !isAppSurface) {
     return supabaseResponse;
   }
 
@@ -61,6 +65,7 @@ export async function proxy(request: NextRequest) {
 
   // Build a Supabase client that refreshes the session cookie on every request.
   const supabase = createServerClient(env.url, env.key, {
+    global: { fetch: supabaseFetch },
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -94,6 +99,15 @@ export async function proxy(request: NextRequest) {
   if ((isAuthPage || isRoot) && userId) {
     const url = request.nextUrl.clone();
     url.pathname = '/home';
+    return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
+  }
+
+  // App surface is authenticated-only. Send guests to the marketing root
+  // instead of /login so they never see the app shell.
+  if (isAppSurface && !userId) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    url.search = '';
     return copySupabaseCookies(supabaseResponse, NextResponse.redirect(url));
   }
 

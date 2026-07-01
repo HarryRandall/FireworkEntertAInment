@@ -2,18 +2,20 @@
 
 import { Suspense } from 'react';
 import type { ReactNode } from 'react';
-import { Box, Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
+import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { TablePagination } from '@/app/components/ui/TablePagination';
 import { listFireworkProducts } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
 import { CatalogueToolbar } from './CatalogueToolbar';
 
 type PageProps = {
-  searchParams?: Promise<{ kind?: string; q?: string }>;
+  searchParams?: Promise<{ kind?: string; page?: string; q?: string }>;
 };
 
 type CatalogueProduct = Awaited<ReturnType<typeof listFireworkProducts>>[number];
+const CATALOGUE_PAGE_SIZE = 15;
 
 function matchesProduct(product: CatalogueProduct, query: string, kind: string) {
   const shotCount = product.shotCount ?? 1;
@@ -33,6 +35,11 @@ function matchesProduct(product: CatalogueProduct, query: string, kind: string) 
     .some((value) => value!.toLowerCase().includes(q));
 }
 
+function parsePage(value: string | undefined) {
+  const parsed = Number.parseInt(value ?? '1', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export default async function CataloguePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q ?? '';
@@ -43,22 +50,24 @@ export default async function CataloguePage({ searchParams }: PageProps) {
       <CatalogueToolbar kind={kind} query={query} />
 
       <Suspense fallback={<CatalogueSkeleton />}>
-        <CatalogueList kind={kind} query={query} />
+        <CatalogueList kind={kind} page={params.page} query={query} />
       </Suspense>
     </div>
   );
 }
 
-async function CatalogueList({ kind, query }: { kind: string; query: string }) {
+async function CatalogueList({
+  kind,
+  page,
+  query,
+}: {
+  kind: string;
+  page?: string;
+  query: string;
+}) {
   const products = (await listFireworkProducts()).filter((product) =>
     matchesProduct(product, query, kind),
   );
-  const visibleProducts = products.slice(0, 96);
-  const effectCount = new Set(products.map((product) => product.baseEffect?.name).filter(Boolean))
-    .size;
-  const averageDuration =
-    products.reduce((total, product) => total + (product.durationSeconds ?? 0), 0) /
-    Math.max(1, products.filter((product) => product.durationSeconds !== null).length);
 
   if (products.length === 0) {
     return (
@@ -68,33 +77,13 @@ async function CatalogueList({ kind, query }: { kind: string; query: string }) {
     );
   }
 
+  const totalPages = Math.ceil(products.length / CATALOGUE_PAGE_SIZE);
+  const currentPage = Math.min(parsePage(page), totalPages);
+  const pageStart = (currentPage - 1) * CATALOGUE_PAGE_SIZE;
+  const visibleProducts = products.slice(pageStart, pageStart + CATALOGUE_PAGE_SIZE);
+
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Metric
-          label="Products"
-          value={products.length.toLocaleString()}
-          icon={<Box size={16} />}
-        />
-        <Metric
-          label="Effect families"
-          value={effectCount.toLocaleString()}
-          icon={<Sparkles size={16} />}
-        />
-        <Metric
-          label="Avg duration"
-          value={formatDuration(averageDuration)}
-          icon={<Clock3 size={16} />}
-        />
-      </div>
-
-      {products.length > visibleProducts.length ? (
-        <p className="text-on-surface-variant text-sm">
-          Showing the first {visibleProducts.length.toLocaleString()} matches. Refine search to
-          narrow the catalogue.
-        </p>
-      ) : null}
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visibleProducts.map((product) => (
           <article
@@ -148,6 +137,15 @@ async function CatalogueList({ kind, query }: { kind: string; query: string }) {
           </article>
         ))}
       </div>
+
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        searchParams={{ kind: kind || undefined, q: query || undefined }}
+        visibleItems={visibleProducts.length}
+        totalItems={products.length}
+        itemLabel="product"
+      />
     </div>
   );
 }
@@ -155,25 +153,13 @@ async function CatalogueList({ kind, query }: { kind: string; query: string }) {
 function CatalogueSkeleton() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 9 }).map((_, index) => (
+      {Array.from({ length: CATALOGUE_PAGE_SIZE }).map((_, index) => (
         <div key={index} className="border-border bg-card rounded-xl border p-4">
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="mt-2 h-4 w-24" />
           <Skeleton className="mt-5 h-16 w-full" />
         </div>
       ))}
-    </div>
-  );
-}
-
-function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return (
-    <div className="border-outline-variant/50 bg-card rounded-xl border p-4">
-      <div className="text-on-surface-variant flex items-center gap-2 text-xs font-medium">
-        {icon}
-        {label}
-      </div>
-      <div className="text-on-surface mt-2 text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }

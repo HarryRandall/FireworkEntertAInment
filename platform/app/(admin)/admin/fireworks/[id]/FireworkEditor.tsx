@@ -32,26 +32,23 @@ import {
   EditorHistoryPanel,
   JsonReadOnlyPanel,
 } from '@/app/components/admin/EditorInspectorPanels';
-import {
-  EditorStyleDefaultControls,
-  EditorTrailPanel,
-} from '@/app/components/admin/EditorSectionPanels';
+import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSectionPanels';
 import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
+import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
+import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import {
   FireworkRenderControls,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
-import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { Button } from '@/app/components/ui/Button';
 import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -68,14 +65,12 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-  type FireworkStarLayer,
   type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
   NO_STYLE_DEFAULT_VALUE,
-  clearNestedStarBurstTrails,
   emptyStyleDefaultIdMap,
   orderedStyleDefaultValues,
   removeStyleDefaultOverridesFromRecord,
@@ -90,7 +85,6 @@ type ParsedJson = { ok: true; value: JsonRecord } | { ok: false; error: string }
 type StarColourMode = 'solid' | 'random' | 'bands' | 'stripes';
 type StarColourAxis = 'vertical' | 'horizontal';
 type ColourStop = { id: string; hex: string; share: number };
-type BurstTrail = FireworkStarLayer['burstTrail'];
 type LocalStyleDefaultOptions = Partial<
   Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
 >;
@@ -193,6 +187,20 @@ function initialStyleDefaultIds(
 
 function cloneRecord(value: JsonRecord): JsonRecord {
   return JSON.parse(JSON.stringify(value)) as JsonRecord;
+}
+
+function cloneJsonValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function mergeRecordInto(target: JsonRecord, source: JsonRecord) {
+  for (const [key, value] of Object.entries(source)) {
+    if (isRecord(value)) {
+      mergeRecordInto(ensureRecord(target, key), value);
+    } else {
+      target[key] = cloneJsonValue(value);
+    }
+  }
 }
 
 function readRecord(parent: JsonRecord, key: string): JsonRecord {
@@ -580,7 +588,7 @@ function ColourPatternBar({
 }
 
 function ReplayCanvasSkeleton() {
-  return <Skeleton className="absolute inset-0 h-full w-full rounded-none bg-[#0b1020]" />;
+  return <ReplayStageBackdrop />;
 }
 
 function buildInitialColourStops(
@@ -626,18 +634,19 @@ function buildInitialColourStops(
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const colourToggleId = useId();
   const [isPending, startTransition] = useTransition();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [previewLoadingProgress, setPreviewLoadingProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
-
   const initialOverrides = useMemo<JsonRecord>(
     () => (isRecord(firework.renderOverridesJson) ? firework.renderOverridesJson : {}),
     [firework.renderOverridesJson],
@@ -1001,6 +1010,41 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setOverridesText(JSON.stringify(draft, null, 2));
   }
 
+  function markStyleDefaultCustom(kind: FireworkStyleDefaultKind) {
+    setStyleDefaultIds((current) => {
+      if (current[kind] === NO_STYLE_DEFAULT_VALUE) return current;
+      return { ...current, [kind]: NO_STYLE_DEFAULT_VALUE };
+    });
+  }
+
+  function shouldMaterialiseStyleDefault(kind: FireworkStyleDefaultKind): boolean {
+    return (
+      styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE || selectedEffectStyleDefaults[kind] != null
+    );
+  }
+
+  function materialiseStyleDefault(kind: FireworkStyleDefaultKind, defaults: JsonRecord) {
+    if (!shouldMaterialiseStyleDefault(kind)) return false;
+    mergeRecordInto(defaults, extractStyleDefaultsFromDesign(previewDesign, kind));
+    return styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE;
+  }
+
+  function mutateOverridesForStyle(
+    kind: FireworkStyleDefaultKind,
+    updater: (defaults: JsonRecord) => void,
+  ) {
+    if (!parsedOverrides.ok) return;
+    const draft = cloneRecord(parsedOverrides.value);
+    const shouldMarkCustom = materialiseStyleDefault(kind, draft);
+    updater(draft);
+    setOverridesText(JSON.stringify(draft, null, 2));
+    if (shouldMarkCustom) markStyleDefaultCustom(kind);
+  }
+
+  function materialiseStyleDefaultInOverrides(kind: FireworkStyleDefaultKind) {
+    mutateOverridesForStyle(kind, () => {});
+  }
+
   function setColourEnabled(value: boolean) {
     mutateOverrides((draft) => {
       const colour = ensureRecord(draft, 'colour');
@@ -1009,16 +1053,19 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }
 
   function updateColourStopHex(id: string, hex: string) {
+    materialiseStyleDefaultInOverrides('star');
     setColourStops((stops) =>
       stops.map((stop) => (stop.id === id ? { ...stop, hex: hex.toLowerCase() } : stop)),
     );
   }
 
   function updateColourStopShare(id: string, share: number) {
+    materialiseStyleDefaultInOverrides('star');
     setColourStops((stops) => rebalanceColourShare(stops, id, share));
   }
 
   function updateColourStopShares(nextStops: ColourStop[]) {
+    materialiseStyleDefaultInOverrides('star');
     const shareById = new Map(nextStops.map((stop) => [stop.id, stop.share]));
     setColourStops((stops) =>
       normaliseColourShares(
@@ -1032,18 +1079,23 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
 
   function updateColourMode(value: string) {
     if (!isStarColourMode(value)) return;
+    materialiseStyleDefaultInOverrides('star');
     setColourMode(value);
   }
 
   function updateColourAxis(value: string) {
-    if (isStarColourAxis(value)) setColourAxis(value);
+    if (!isStarColourAxis(value)) return;
+    materialiseStyleDefaultInOverrides('star');
+    setColourAxis(value);
   }
 
   function removeColourStop(id: string) {
+    materialiseStyleDefaultInOverrides('star');
     setColourStops((stops) => normaliseColourShares(stops.filter((stop) => stop.id !== id)));
   }
 
   function addColor() {
+    materialiseStyleDefaultInOverrides('star');
     const id = `added-${nextColourStopIdRef.current}`;
     nextColourStopIdRef.current += 1;
     setColourStops((stops) => {
@@ -1256,22 +1308,9 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     });
   }
 
-  function updateBurstTrail(updater: (trail: BurstTrail) => BurstTrail, custom = true) {
-    const next = updater(JSON.parse(JSON.stringify(previewDesign.burstTrail)) as BurstTrail);
-    mutateOverrides((draft) => {
-      draft.burstTrail = custom ? { ...next, preset: 'custom' } : next;
-      clearNestedStarBurstTrails(draft);
-    });
-  }
-
-  function setBurstTrail(next: BurstTrail, custom = true) {
-    updateBurstTrail(() => next, custom);
-  }
-
   const effectOptions = firework.effectOptions.map((option) => ({
     value: option.id,
     label: option.name,
-    description: option.family,
   }));
   const canAddColor = colourStops.length < MAX_STAR_COLOURS;
   const starColourControls = (
@@ -1491,15 +1530,20 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       launchPositions={PREVIEW_LAUNCH_POSITIONS}
       muted={!isPlaying}
       interactive
-      controlsVisible
+      controlsVisible={previewReady}
+      showStarfield={false}
       showFps
-      allowFullscreen
-      fullscreen={isFullscreen}
-      onToggleFullscreen={toggleFullscreen}
       primeSnapshots
       primeOnCueChanges={false}
-      showLoadingBar
-      loadingBarPosition="center"
+      showLoadingBar={false}
+      onPrimeProgress={(progress) => {
+        setPreviewLoadingProgress(progress);
+        if (progress !== null) setPreviewReady(false);
+      }}
+      onReady={() => {
+        setPreviewReady(true);
+        setPreviewLoadingProgress(null);
+      }}
       renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
       headStyle={{
         coreSoftness,
@@ -1520,6 +1564,9 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       duration={previewDuration}
       isPlaying={isPlaying}
       isLooping={isLooping}
+      fullscreen={isFullscreen}
+      loading={!previewReady}
+      loadingProgress={previewLoadingProgress}
       ticks={previewTicks}
       onPlayPause={() => {
         if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
@@ -1532,6 +1579,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         setPreviewTime(PREVIEW_START_SECONDS);
       }}
       onLoopToggle={() => setIsLooping((looping) => !looping)}
+      onFullscreenToggle={toggleFullscreen}
       onScrub={(seconds) => {
         setIsPlaying(false);
         scrubTo(seconds);
@@ -1621,7 +1669,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: SlidersHorizontal,
       eyebrow: 'Catalogue',
       title: 'Details',
-      description: 'Name, base effect and physical specs for this firework.',
       content: detailsContent,
     },
     {
@@ -1630,7 +1677,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Palette,
       eyebrow: 'Appearance',
       title: 'Colour',
-      description: 'How the stars are coloured across the burst.',
       content: starColourControls,
     },
     {
@@ -1639,14 +1685,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Sparkles,
       eyebrow: 'Appearance',
       title: 'Star & glow',
-      description: 'Size, life and the glow around each burning star.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('star', updater)}
             disabled={!parsedOverrides.ok}
             showStarCount
             controlScope="star"
@@ -1661,7 +1706,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: CircleDot,
       eyebrow: 'Appearance',
       title: 'Star Inner',
-      description: 'The smaller core burst inside the main star break.',
       content: (
         <FireworkRenderControls
           design={previewDesign}
@@ -1680,13 +1724,15 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Wind,
       eyebrow: 'Appearance',
       title: 'Trail',
-      description: 'The brocade streaks that hang behind each star.',
       content: (
         <div className="space-y-5">
-          <EditorTrailPanel
-            trail={previewDesign.burstTrail}
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('trail', updater)}
             disabled={!parsedOverrides.ok}
-            onChange={setBurstTrail}
+            controlScope="trail"
           />
           {renderStyleDefaultControls('trail')}
         </div>
@@ -1698,14 +1744,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Rocket,
       eyebrow: 'Ascent',
       title: 'Launch',
-      description: 'How the shell rises before it bursts.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
             disabled={!parsedOverrides.ok}
             showLaunch
             controlScope="launch"
@@ -1720,14 +1765,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Zap,
       eyebrow: 'Effects',
       title: 'Spark effects',
-      description: 'Optional strobe, crackle and split-shell effects.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('strobe', updater)}
             disabled={!parsedOverrides.ok}
             controlScope="strobe"
           />
@@ -1736,7 +1780,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('crackle', updater)}
             disabled={!parsedOverrides.ok}
             controlScope="crackle"
           />
@@ -1745,7 +1789,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('split', updater)}
             disabled={!parsedOverrides.ok}
             controlScope="split"
           />
@@ -1759,14 +1803,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Cloud,
       eyebrow: 'Atmosphere',
       title: 'Smoke',
-      description: 'Launch smoke that lingers after the lift.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('smoke', updater)}
             disabled={!parsedOverrides.ok}
             controlScope="smoke"
           />
@@ -1780,14 +1823,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Volume2,
       eyebrow: 'Audio',
       title: 'Sound',
-      description: 'The report heard on launch and at the burst.',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
             calibrationDefaults={calibrationDefaults}
-            mutate={mutateOverrides}
+            mutate={(updater) => mutateOverridesForStyle('sound', updater)}
             disabled={!parsedOverrides.ok}
             controlScope="sound"
           />
@@ -1818,12 +1860,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Braces,
       eyebrow: 'Advanced',
       title: 'Render overrides JSON',
-      content: (
-        <JsonReadOnlyPanel
-          label="Read-only v1 view of the firework render_overrides_json payload."
-          value={mergedOverrides as Json}
-        />
-      ),
+      content: <JsonReadOnlyPanel value={mergedOverrides as Json} />,
     },
   ];
 

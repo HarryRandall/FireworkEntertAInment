@@ -114,7 +114,12 @@ function AdminOverviewData({
   return (
     <AdminOverviewTabs
       controls={<AdminOverviewTabControls range={range} />}
-      pendingFallback={<AdminOverviewContentSkeleton />}
+      pendingFallbacks={{
+        overview: <AdminOverviewContentSkeleton tab="overview" />,
+        catalogue: <AdminOverviewContentSkeleton tab="catalogue" />,
+        imports: <AdminOverviewContentSkeleton tab="imports" />,
+        generation: <AdminOverviewContentSkeleton tab="generation" />,
+      }}
       tab={tab}
     >
       <Suspense key={`${range.key}:${tab}`} fallback={<AdminOverviewContentSkeleton tab={tab} />}>

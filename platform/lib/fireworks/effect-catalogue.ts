@@ -16,7 +16,12 @@
  */
 import type { FireworkGeometry, FireworkTrailProfile } from './design';
 
-export type CatalogueFamily = 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound';
+export type CatalogueEffectCategory =
+  | 'aerial_burst'
+  | 'ascending'
+  | 'ground'
+  | 'noise'
+  | 'compound';
 
 type HeadSpec = {
   visible?: boolean;
@@ -38,7 +43,7 @@ type BurstTrailSpec = {
 export type CatalogueEffect = {
   slug: string;
   name: string;
-  family: CatalogueFamily;
+  category: CatalogueEffectCategory;
   patternKey: string;
   sortOrder: number;
   description: string;
@@ -193,7 +198,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'peony',
     name: 'Peony',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'peony',
     sortOrder: 10,
     description: 'Round radial burst of glowing stars without persistent trails.',
@@ -255,7 +260,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'chrysanthemum',
     name: 'Chrysanthemum',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'chrysanthemum',
     sortOrder: 20,
     description: 'Round flower burst whose stars carry long visible spark trails to the tips.',
@@ -299,7 +304,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'brocade',
     name: 'Brocade',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'brocade',
     sortOrder: 30,
     description:
@@ -344,7 +349,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'kamuro',
     name: 'Kamuro',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'kamuro',
     sortOrder: 35,
     description:
@@ -391,7 +396,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'willow',
     name: 'Willow',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'willow',
     sortOrder: 40,
     description: 'Long-burning gold stars that droop and hang like weeping willow branches.',
@@ -441,7 +446,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'palm',
     name: 'Palm',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'palm',
     sortOrder: 50,
     description:
@@ -483,7 +488,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'ring',
     name: 'Ring',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'ring',
     sortOrder: 60,
     description: 'A perfectly symmetrical halo of stars expanding as a flat tilted circle.',
@@ -523,7 +528,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'saturn',
     name: 'Saturn',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'saturn',
     sortOrder: 65,
     description: 'A central peony planet core framed by a separate equatorial ring of stars.',
@@ -570,7 +575,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'crossette',
     name: 'Crossette',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'crossette',
     sortOrder: 70,
     description:
@@ -613,7 +618,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'double_break',
     name: 'Double Break',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'double_break',
     sortOrder: 75,
     description:
@@ -660,7 +665,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'bowtie',
     name: 'Bow Tie',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'bowtie',
     sortOrder: 78,
     description: 'Two opposed lobes fired in a flat plane, a cross or figure-eight shell.',
@@ -706,7 +711,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'horsetail',
     name: 'Horsetail',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'horsetail',
     sortOrder: 80,
     description:
@@ -750,7 +755,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'comet',
     name: 'Comet',
-    family: 'ascending',
+    category: 'ascending',
     patternKey: 'comet',
     sortOrder: 90,
     description:
@@ -792,7 +797,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'mine',
     name: 'Mine',
-    family: 'ground',
+    category: 'ground',
     patternKey: 'mine',
     sortOrder: 100,
     description:
@@ -835,7 +840,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'pearls',
     name: 'Pearls',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'pearls',
     sortOrder: 105,
     description: 'Large slow-burning stars arranged in a ring, each a glowing pearl.',
@@ -875,7 +880,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'pistil',
     name: 'Pistil',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'pistil',
     sortOrder: 108,
     description:
@@ -923,7 +928,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'nishiki',
     name: 'Nishiki',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'nishiki',
     sortOrder: 110,
     description:
@@ -974,7 +979,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'strobe',
     name: 'Strobe',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'strobe',
     sortOrder: 115,
     description:
@@ -1012,7 +1017,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'crackle',
     name: 'Crackle',
-    family: 'noise',
+    category: 'noise',
     patternKey: 'crackle',
     sortOrder: 120,
     description:
@@ -1055,7 +1060,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'silverFish',
     name: 'Silver Fish',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'silverFish',
     sortOrder: 125,
     description:
@@ -1093,7 +1098,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'waterfall',
     name: 'Waterfall',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'waterfall',
     sortOrder: 130,
     description:
@@ -1135,7 +1140,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'whirl',
     name: 'Whirl',
-    family: 'aerial_burst',
+    category: 'aerial_burst',
     patternKey: 'whirl',
     sortOrder: 135,
     description:
@@ -1176,7 +1181,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'roman_candle',
     name: 'Roman Candle',
-    family: 'ascending',
+    category: 'ascending',
     patternKey: 'roman_candle',
     sortOrder: 140,
     description:
@@ -1218,7 +1223,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
   build({
     slug: 'fountain',
     name: 'Fountain',
-    family: 'ground',
+    category: 'ground',
     patternKey: 'fountain',
     sortOrder: 145,
     description:
@@ -1331,7 +1336,7 @@ const CATALOGUE_CONTRAST_COLOURS: CatalogueVariantColour[] = [
 /** Shared physics per effect, applied to every coloured variant of that effect. */
 function catalogueFireworkPhysics(effect: CatalogueEffect) {
   // Ground/ascending effects run longer and lower; aerial bursts higher.
-  const isGround = effect.family === 'ground' || effect.slug === 'roman_candle';
+  const isGround = effect.category === 'ground' || effect.slug === 'roman_candle';
   const durationSeconds = isGround ? 6 : effect.slug === 'comet' ? 3.4 : 5;
   const heightMeters = isGround ? 60 : effect.slug === 'comet' ? 160 : 220;
   const spreadSize =

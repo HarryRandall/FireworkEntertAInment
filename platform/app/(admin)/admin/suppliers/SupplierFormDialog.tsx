@@ -101,8 +101,8 @@ export function SupplierFormDialog({
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : controlledOpen === undefined ? (
         <DialogTrigger asChild>
-          <Button size="sm">
-            <Plus size={14} /> New supplier
+          <Button>
+            <Plus size={16} /> New supplier
           </Button>
         </DialogTrigger>
       ) : null}

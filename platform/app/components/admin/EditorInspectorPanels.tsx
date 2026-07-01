@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
 const CHANGE_LABELS: Record<string, string> = {
   name: 'Name',
   description: 'Description',
-  family: 'Family',
   patternKey: 'Pattern',
   sortOrder: 'Sort order',
   fireworkEffectId: 'Base effect',
@@ -156,25 +155,33 @@ export function EditorHistoryPanel({
         {versions.map((version, index) => {
           const selected = selectedVersionId === version.id;
           const initials = authorInitials(version.createdByLabel);
+          const showTimelineMarker = versions.length > 1;
           return (
             <li
               key={version.id}
-              className="grid grid-cols-[1.5rem_2.25rem_minmax(0,1fr)] gap-3 pb-7 last:pb-0"
+              className={cn(
+                'grid gap-3 pb-7 last:pb-0',
+                showTimelineMarker
+                  ? 'grid-cols-[1.5rem_2.25rem_minmax(0,1fr)]'
+                  : 'grid-cols-[2.25rem_minmax(0,1fr)]',
+              )}
             >
-              <div className="relative flex justify-center">
-                {index < versions.length - 1 ? (
-                  <span className="absolute top-6 bottom-[-1.75rem] w-px bg-[color:var(--color-border-subtle)]" />
-                ) : null}
-                <span
-                  className={cn(
-                    'mt-2 h-3 w-3 rounded-full border-2 bg-[color:var(--color-bg-default)]',
-                    selected
-                      ? 'border-[color:var(--hl)]'
-                      : 'border-[color:var(--color-border-strong)]',
-                  )}
-                  aria-hidden="true"
-                />
-              </div>
+              {showTimelineMarker ? (
+                <div className="relative flex justify-center">
+                  {index < versions.length - 1 ? (
+                    <span className="absolute top-6 bottom-[-1.75rem] w-px bg-[color:var(--color-border-subtle)]" />
+                  ) : null}
+                  <span
+                    className={cn(
+                      'mt-2 h-3 w-3 rounded-full border-2 bg-[color:var(--color-bg-default)]',
+                      selected
+                        ? 'border-[color:var(--hl)]'
+                        : 'border-[color:var(--color-border-strong)]',
+                    )}
+                    aria-hidden="true"
+                  />
+                </div>
+              ) : null}
 
               <div
                 className={cn(
@@ -210,32 +217,24 @@ export function EditorHistoryPanel({
                   {versionDetail(version)}
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-[color:var(--color-bg-subtle)] px-2 py-1 text-[10px] font-semibold tracking-[0.12em] text-[color:var(--color-content-muted)] uppercase">
-                    {version.action === 'restore' ? 'Restored' : 'Saved'}
-                  </span>
-                  {selected ? (
-                    <span className="rounded-full border border-[color:var(--hl)] px-2 py-1 text-[10px] font-semibold tracking-[0.12em] text-[color:var(--hl)] uppercase">
-                      Previewing
-                    </span>
-                  ) : null}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-full px-2.5"
-                    onClick={() => onPreview(version)}
-                  >
-                    <Eye size={14} />
-                    Preview
-                  </Button>
+                <div className="mt-2 flex items-center gap-1.5">
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-8 rounded-full px-2.5"
+                    className="h-7 rounded-md border-[color:var(--color-border-subtle)] px-2.5 text-xs font-semibold shadow-none"
+                    onClick={() => onPreview(version)}
+                  >
+                    <Eye size={13} />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold text-[#05231a] shadow-none hover:bg-[color:var(--hl)]/85"
                     loading={restoringVersionId === version.id}
                     onClick={() => onRestore(version)}
                   >
-                    <RotateCcw size={14} />
+                    <RotateCcw size={13} />
                     Revert to here
                   </Button>
                 </div>
@@ -267,7 +266,7 @@ function JsonCodeBlock({
   );
 }
 
-export function JsonReadOnlyPanel({ value, label }: { value: Json; label: string }) {
+export function JsonReadOnlyPanel({ value, label }: { value: Json; label?: string }) {
   const [fullScreen, setFullScreen] = useState(false);
   const formattedJson = useMemo(() => JSON.stringify(value, null, 2), [value]);
 
@@ -282,25 +281,28 @@ export function JsonReadOnlyPanel({ value, label }: { value: Json; label: string
 
   return (
     <div className="flex min-h-[420px] flex-1 flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
+      {label ? (
         <p className="text-sm leading-relaxed text-[color:var(--color-content-subtle)]">{label}</p>
+      ) : null}
+      <div className="relative flex min-h-0 flex-1">
+        <JsonCodeBlock formattedJson={formattedJson} className="pr-14" />
         <Button
           variant="secondary"
-          size="sm"
-          className="shrink-0"
+          size="icon"
+          className="absolute top-3 right-3 h-9 w-9 shadow-sm"
+          aria-label="Expand JSON"
+          title="Expand JSON"
           onClick={() => setFullScreen(true)}
         >
-          <Maximize2 size={14} />
-          Fullscreen
+          <Maximize2 size={15} />
         </Button>
       </div>
-      <JsonCodeBlock formattedJson={formattedJson} />
       {fullScreen ? (
         <div
           className="fixed inset-0 z-[80] bg-[color:var(--color-bg-muted)]/95 p-3 backdrop-blur-sm sm:p-5"
           role="dialog"
           aria-modal="true"
-          aria-label="Fullscreen JSON"
+          aria-label="Expanded JSON"
         >
           <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] shadow-2xl">
             <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3">
@@ -308,12 +310,16 @@ export function JsonReadOnlyPanel({ value, label }: { value: Json; label: string
                 <p className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
                   JSON
                 </p>
-                <p className="truncate text-xs text-[color:var(--color-content-subtle)]">{label}</p>
+                {label ? (
+                  <p className="truncate text-xs text-[color:var(--color-content-subtle)]">
+                    {label}
+                  </p>
+                ) : null}
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Close fullscreen JSON"
+                aria-label="Close expanded JSON"
                 title="Close"
                 onClick={() => setFullScreen(false)}
               >

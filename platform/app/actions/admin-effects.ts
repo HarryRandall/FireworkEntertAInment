@@ -34,7 +34,6 @@ import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
 type ActionSupabase = ReturnType<typeof createClient>;
 
-const BaseEffectFamilySchema = z.enum(['aerial_burst', 'ascending', 'ground', 'noise', 'compound']);
 const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
 const StyleDefaultAssignmentsSchema = z.partialRecord(
   StyleDefaultKindSchema,
@@ -88,7 +87,6 @@ const EffectPatchSchema = z.object({
   expectedUpdatedAt: z.string().trim().min(1),
   name: z.string().trim().min(1).max(180),
   description: z.string().trim().max(1200).optional().nullable(),
-  family: BaseEffectFamilySchema,
   patternKey: z.string().trim().min(1).max(80),
   sortOrder: z.coerce.number().int().min(0).max(10_000),
   starStyleDefaultId: z.string().uuid().optional().nullable(),
@@ -166,7 +164,6 @@ function summariseEffectChanges(changesJson: Json): string {
   const labels: Record<string, string> = {
     name: 'name',
     description: 'description',
-    family: 'family',
     patternKey: 'pattern',
     sortOrder: 'sort order',
     styleDefaultIds: 'style defaults',
@@ -186,7 +183,7 @@ async function loadEffectEditorSnapshot(
   const { data, error } = await supabase
     .from('firework_effects')
     .select(
-      'id, name, description, family, pattern_key, sort_order, model_json, star_style_default_id, trail_style_default_id, updated_at',
+      'id, name, description, pattern_key, sort_order, model_json, star_style_default_id, trail_style_default_id, updated_at',
     )
     .eq('id', effectId)
     .maybeSingle();
@@ -217,7 +214,6 @@ async function loadEffectEditorSnapshot(
       id: data.id,
       name: data.name,
       description: data.description,
-      family: data.family,
       patternKey: data.pattern_key,
       sortOrder: data.sort_order,
       styleDefaultIds: assignments,
@@ -284,7 +280,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   const patch = {
     name: parsed.data.name,
     description: parsed.data.description || null,
-    family: parsed.data.family,
     pattern_key: parsed.data.patternKey,
     sort_order: parsed.data.sortOrder,
     star_style_default_id: assignments.star,
@@ -316,7 +311,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     id: parsed.data.id,
     name: parsed.data.name,
     description: parsed.data.description || null,
-    family: parsed.data.family,
     patternKey: parsed.data.patternKey,
     sortOrder: parsed.data.sortOrder,
     styleDefaultIds: assignments,
@@ -326,7 +320,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
     'name',
     'description',
-    'family',
     'patternKey',
     'sortOrder',
     'styleDefaultIds',
@@ -403,7 +396,6 @@ export async function restoreEffectEditorVersion(
   const patch = {
     name: snapshot.name,
     description: snapshot.description,
-    family: snapshot.family,
     pattern_key: snapshot.patternKey,
     sort_order: snapshot.sortOrder,
     star_style_default_id: assignments.star,
@@ -413,7 +405,6 @@ export async function restoreEffectEditorVersion(
   const fallbackPatch = {
     name: snapshot.name,
     description: snapshot.description,
-    family: snapshot.family,
     pattern_key: snapshot.patternKey,
     sort_order: snapshot.sortOrder,
     model_json: snapshot.modelJson,
@@ -460,7 +451,6 @@ export async function restoreEffectEditorVersion(
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
     'name',
     'description',
-    'family',
     'patternKey',
     'sortOrder',
     'styleDefaultIds',
@@ -494,10 +484,6 @@ export async function createCustomStarEffect(formData?: FormData): Promise<void>
     redirect('/admin/effects');
   }
 
-  const familyInput = formData?.get('family');
-  const family = BaseEffectFamilySchema.catch('aerial_burst').parse(
-    typeof familyInput === 'string' ? familyInput : 'aerial_burst',
-  );
   const nameInput = formData?.get('name');
   const name =
     typeof nameInput === 'string' && nameInput.trim()
@@ -512,7 +498,6 @@ export async function createCustomStarEffect(formData?: FormData): Promise<void>
       slug,
       name,
       description: 'Manual custom star effect.',
-      family,
       pattern_key: 'custom-star',
       source: 'manual',
       sort_order: 9000,

@@ -1,7 +1,15 @@
 'use client';
 
 /** FilterBar — search + filter chips bound to URL searchParams — use atop any paginated list route. */
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ListFilter, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,6 +48,7 @@ type FilterBarProps = {
   searchKey?: string;
   searchPlaceholder?: string;
   filters?: FilterConfig[];
+  action?: ReactNode;
   className?: string;
 };
 
@@ -47,6 +56,7 @@ export function FilterBar({
   searchKey = 'q',
   searchPlaceholder = 'Search…',
   filters = [],
+  action,
   className,
 }: FilterBarProps) {
   const router = useRouter();
@@ -137,7 +147,7 @@ export function FilterBar({
   return (
     <div className={cn('flex flex-col gap-3', className)} data-pending={isPending || undefined}>
       <div className="flex items-center gap-2">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Input
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -146,7 +156,9 @@ export function FilterBar({
             aria-label="Search"
           />
         </div>
-        {filters.length > 0 ? (
+        {action ? (
+          <div className="shrink-0">{action}</div>
+        ) : filters.length > 0 ? (
           <FilterPopover
             filters={filters}
             updateParams={updateParams}

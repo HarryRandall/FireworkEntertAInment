@@ -4,6 +4,7 @@ import 'server-only';
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import { supabaseFetchLong } from '@/utils/supabase/fetch';
 
 /**
  * Browserless Supabase client using the service role key.
@@ -17,6 +18,7 @@ export function createServiceRoleSupabase() {
   if (!url || !key) return null;
 
   return createClient<Database>(url, key, {
+    global: { fetch: supabaseFetchLong },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

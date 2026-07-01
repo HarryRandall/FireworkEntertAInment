@@ -15,7 +15,7 @@ import { SupplierFormDialog } from './SupplierFormDialog';
 import { SuppliersTableBody } from './SuppliersTableBody';
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 };
 type SuppliersSearchParams = Awaited<PageProps['searchParams']>;
 
@@ -24,25 +24,9 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <div className="flex justify-end">
-        <SupplierFormDialog />
-      </div>
-
       <FilterBar
         searchPlaceholder="Search name, email, phone, website…"
-        filters={[
-          {
-            key: 'status',
-            label: 'Status',
-            type: 'select',
-            options: [
-              { value: 'draft', label: 'Draft' },
-              { value: 'active', label: 'Active' },
-              { value: 'suspended', label: 'Suspended' },
-              { value: 'archived', label: 'Archived' },
-            ],
-          },
-        ]}
+        action={<SupplierFormDialog />}
       />
 
       <Suspense
@@ -64,7 +48,6 @@ export default async function AdminSuppliersPage({ searchParams }: PageProps) {
 
 async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
   const query = (params.q ?? '').trim().toLowerCase();
-  const statusFilter = params.status;
   const requestedPage = Number(params.page ?? '1');
 
   const suppliers = await listSuppliers();
@@ -74,8 +57,7 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
       .join(' ')
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
-    const matchesStatus = !statusFilter || s.status === statusFilter;
-    return matchesQuery && matchesStatus;
+    return matchesQuery;
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
@@ -92,7 +74,7 @@ async function SuppliersTable({ params }: { params: SuppliersSearchParams }) {
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
-            searchParams={params}
+            searchParams={{ q: params.q, page: params.page }}
             visibleItems={paginated.length}
             totalItems={filtered.length}
             itemLabel="supplier"

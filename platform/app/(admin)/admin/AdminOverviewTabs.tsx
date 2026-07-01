@@ -12,12 +12,12 @@ import {
 export function AdminOverviewTabs({
   children,
   controls,
-  pendingFallback,
+  pendingFallbacks,
   tab,
 }: {
   children: ReactNode;
   controls: ReactNode;
-  pendingFallback: ReactNode;
+  pendingFallbacks: Record<AdminOverviewTabKey, ReactNode>;
   tab?: AdminOverviewTabKey;
 }) {
   const pathname = usePathname();
@@ -62,7 +62,7 @@ export function AdminOverviewTabs({
       data-pending={isPending || undefined}
     >
       {controls}
-      {isPending ? pendingFallback : children}
+      {isPending ? pendingFallbacks[selectedTab] : children}
     </Tabs>
   );
 }

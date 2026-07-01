@@ -1,8 +1,8 @@
 'use client';
 
-import { type FormEvent, useCallback, useEffect, useState, useTransition } from 'react';
-import { Check, ChevronDown, ListFilter, Plus, Search, X } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { Check, ChevronDown, ListFilter, Search, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
 import {
   Command,
@@ -23,24 +23,23 @@ type ShowsSortOption = {
 
 type ShowsToolbarProps = {
   query: string;
-  resultCount: number;
   sort: ShowsSortKey;
   sorts: ShowsSortOption[];
 };
 
-function resultLabel(count: number) {
-  return `${count.toLocaleString()} ${count === 1 ? 'show' : 'shows'}`;
-}
+// Search-as-you-type debounce: the URL (and the streamed grid) updates shortly
+// after the user stops typing, without a separate "Search" button.
+const SEARCH_DEBOUNCE_MS = 250;
 
-export function ShowsToolbar({ query, resultCount, sort, sorts }: ShowsToolbarProps) {
+export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [draftQuery, setDraftQuery] = useState(query);
   const [selectedSort, setSelectedSort] = useState(sort);
+  const [sortOpen, setSortOpen] = useState(false);
   const [, startTransition] = useTransition();
-  const hasQuery = draftQuery.trim().length > 0;
   const selectedSortOption = sorts.find((item) => item.key === selectedSort) ?? sorts[0];
+  const hasQuery = draftQuery.trim().length > 0;
 
   useEffect(() => {
     setDraftQuery(query);
@@ -50,62 +49,58 @@ export function ShowsToolbar({ query, resultCount, sort, sorts }: ShowsToolbarPr
     setSelectedSort(sort);
   }, [sort]);
 
+  // Build the target URL from only q + sort (page resets to 1 on a search/sort
+  // change). Deliberately does NOT read useSearchParams() so the callback stays
+  // stable across renders, otherwise the debounce effect below would re-fire on
+  // every URL change and spin into a navigation loop.
   const buildHref = useCallback(
     (nextQuery: string, nextSort: ShowsSortKey) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams();
       const normalisedQuery = nextQuery.trim();
-      params.delete('page');
-
       if (normalisedQuery) params.set('q', normalisedQuery);
-      else params.delete('q');
-
       if (nextSort !== 'updated') params.set('sort', nextSort);
-      else params.delete('sort');
-
       const queryString = params.toString();
       return queryString ? `${pathname}?${queryString}` : pathname;
     },
-    [pathname, searchParams],
+    [pathname],
   );
+
+  // Keep the URL in sync with the draft query + sort shortly after either
+  // changes. The guard compares the draft to the current URL state (the query
+  // and sort props) and skips when they already match, so a navigation that
+  // updates the props does not re-trigger another navigation (no loop). Page
+  // changes don't touch q/sort, so pagination is left intact.
+  const skipFirstRender = useRef(true);
+  useEffect(() => {
+    if (skipFirstRender.current) {
+      skipFirstRender.current = false;
+      return;
+    }
+    if (draftQuery.trim() === query.trim() && selectedSort === sort) return;
+    const timer = setTimeout(() => {
+      startTransition(() => {
+        router.replace(buildHref(draftQuery, selectedSort), { scroll: false });
+      });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [draftQuery, selectedSort, query, sort, buildHref, router]);
 
   function changeQuery(nextQuery: string) {
     setDraftQuery(nextQuery);
   }
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    startTransition(() => {
-      router.replace(buildHref(draftQuery, selectedSort), { scroll: false });
-    });
-  }
-
   function changeSort(nextSort: ShowsSortKey) {
     setSelectedSort(nextSort);
-    startTransition(() => {
-      router.replace(buildHref(draftQuery, nextSort), { scroll: false });
-    });
+    setSortOpen(false);
   }
 
   function clearSearch() {
     setDraftQuery('');
-    startTransition(() => {
-      router.replace(buildHref('', selectedSort), { scroll: false });
-    });
   }
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-on-surface-variant text-sm">{resultLabel(resultCount)}</p>
-        </div>
-        <Button href="/shows/new" className="h-11 w-full rounded-full px-5 sm:w-fit">
-          <Plus size={16} />
-          New show
-        </Button>
-      </div>
-
-      <form onSubmit={submitSearch} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <label className="relative min-w-0">
           <span className="sr-only">Search shows</span>
           <Search
@@ -130,12 +125,7 @@ export function ShowsToolbar({ query, resultCount, sort, sorts }: ShowsToolbarPr
           ) : null}
         </label>
 
-        <Button type="submit" variant="secondary" className="h-11 rounded-xl px-4">
-          <Search size={16} />
-          Search
-        </Button>
-
-        <Popover>
+        <Popover open={sortOpen} onOpenChange={setSortOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
@@ -148,7 +138,6 @@ export function ShowsToolbar({ query, resultCount, sort, sorts }: ShowsToolbarPr
                   size={16}
                   className="shrink-0 text-[color:var(--color-content-subtle)]"
                 />
-                <span className="shrink-0 text-[color:var(--color-content-muted)]">Sort</span>
                 <span className="min-w-0 truncate">{selectedSortOption.label}</span>
               </span>
               <ChevronDown
@@ -186,7 +175,7 @@ export function ShowsToolbar({ query, resultCount, sort, sorts }: ShowsToolbarPr
             </Command>
           </PopoverContent>
         </Popover>
-      </form>
+      </div>
     </section>
   );
 }

@@ -78,7 +78,7 @@ function stringField(value: unknown): string | null {
 
 export function buildEffectPreview(
   specJson: Json,
-  fallback: { type?: string | null; name?: string | null } = {},
+  fallback: { pattern?: string | null; name?: string | null } = {},
 ): AdminEffectPreview {
   const colors: string[] = [];
   collectColorCandidates(specJson, colors);
@@ -88,13 +88,12 @@ export function buildEffectPreview(
     pattern =
       stringField(specJson.pattern) ??
       stringField(specJson.shellType) ??
-      (isRecord(specJson.shell) ? stringField(specJson.shell.family) : null) ??
-      stringField(specJson.type);
+      (isRecord(specJson.shell) ? stringField(specJson.shell.family) : null);
   }
 
   return {
     colors: colors.length > 0 ? colors : FALLBACK_COLORS,
-    label: fallback.name ?? pattern ?? fallback.type ?? 'Effect',
-    pattern: pattern ?? fallback.type ?? null,
+    label: fallback.name ?? pattern ?? fallback.pattern ?? 'Effect',
+    pattern: pattern ?? fallback.pattern ?? null,
   };
 }

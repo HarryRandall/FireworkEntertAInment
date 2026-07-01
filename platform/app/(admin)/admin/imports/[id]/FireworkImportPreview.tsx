@@ -4,10 +4,14 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pause, Play, RotateCcw } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/app/components/admin/previewFullscreen';
+import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
+import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
 import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
-import { formatDuration } from '@/lib/show-domain';
+import { cn } from '@/lib/utils';
 
 type FireworkImportPreviewProps = {
   videoUrl: string | null;
@@ -19,7 +23,9 @@ type FireworkImportPreviewProps = {
 
 function ReplayCanvasSkeleton() {
   return (
-    <div className="absolute inset-0 h-full w-full animate-pulse bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]" />
+    <div className="absolute inset-0 h-full w-full animate-pulse overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]">
+      <ReplayLoadingBar progress={null} position="bottom" />
+    </div>
   );
 }
 
@@ -37,6 +43,7 @@ export function FireworkImportPreview({
   spec,
   fallbackDuration,
 }: FireworkImportPreviewProps) {
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const cues = useMemo(() => (spec ? importedSpecToReplayCues(spec) : []), [spec]);
 
   const canControlPlayback = Boolean(videoUrl || spec);
@@ -228,7 +235,13 @@ export function FireworkImportPreview({
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        'space-y-4',
+        isFullscreen &&
+          'fixed inset-[5vmin] z-[100] overflow-auto rounded-2xl border border-white/12 bg-black p-4 shadow-[var(--shadow-modal)]',
+      )}
+    >
       <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
         <div className="border-outline-variant/35 relative aspect-video w-full overflow-hidden rounded-xl border bg-black">
           {videoUrl ? (
@@ -328,57 +341,29 @@ export function FireworkImportPreview({
         </div>
       </div>
 
-      <div className="border-outline-variant/25 bg-surface-container-low flex flex-col gap-3 rounded-xl border p-4 md:flex-row md:items-center">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            size="icon"
-            disabled={!canControlPlayback}
-            onClick={togglePlayback}
-            aria-label={playing ? 'Pause comparison preview' : 'Play comparison preview'}
-          >
-            {playing ? <Pause size={16} /> : <Play size={16} />}
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            disabled={!canControlPlayback}
-            onClick={restart}
-            aria-label="Restart comparison preview"
-          >
-            <RotateCcw size={16} />
-          </Button>
-        </div>
-        <div className="flex flex-1 items-center gap-3">
-          <span className="text-tertiary min-w-12 font-mono text-xs tabular-nums">
-            {formatDuration(elapsed)}
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={timelineDuration}
-            step={0.02}
-            value={Math.min(elapsed, timelineDuration)}
-            disabled={!canControlPlayback}
-            onInput={(event) => {
-              setPlaying(false);
-              videoRef.current?.pause();
-              seek(Number((event.target as HTMLInputElement).value));
-            }}
-            onChange={(event) => {
-              setPlaying(false);
-              videoRef.current?.pause();
-              seek(Number(event.target.value));
-            }}
-            className="accent-tertiary h-2 flex-1 disabled:opacity-40"
-            aria-label="Synced source and generated preview timeline"
-          />
-          <span className="text-tertiary min-w-12 text-right font-mono text-xs tabular-nums">
-            {formatDuration(timelineDuration)}
-          </span>
-        </div>
+      <div className="border-outline-variant/25 bg-surface-container-low rounded-xl border p-4">
+        <ReplayTransportControls
+          elapsed={elapsed}
+          duration={timelineDuration}
+          isPlaying={playing}
+          disabled={!canControlPlayback}
+          step={0.02}
+          playLabel="Play comparison preview"
+          pauseLabel="Pause comparison preview"
+          resetLabel="Restart comparison preview"
+          timelineLabel="Synced source and generated preview timeline"
+          fullscreen={isFullscreen}
+          onPlayPause={togglePlayback}
+          onReset={restart}
+          onFullscreenToggle={toggleFullscreen}
+          onScrub={(next) => {
+            setPlaying(false);
+            videoRef.current?.pause();
+            seek(next);
+          }}
+        />
       </div>
+      {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
     </div>
   );
 }

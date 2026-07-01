@@ -30,13 +30,10 @@ export default async function AdminMultishotsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-8">
-      <div className="flex justify-end">
-        <NewMultishotButton />
-      </div>
       <Suspense
         fallback={
           <>
-            <FilterSkeleton searchPlaceholder="Search multishot..." />
+            <FilterSkeleton searchPlaceholder="Search multishot..." actionLabel="New multishot" />
             <div className="min-h-0 flex-1 overflow-hidden">
               <TableSkeleton
                 rows={TABLE_PAGE_SIZE}
@@ -72,7 +69,7 @@ async function MultishotsData({ params }: { params: MultishotsSearchParams }) {
 
   return (
     <>
-      <FilterBar searchPlaceholder="Search multishot…" filters={[]} />
+      <FilterBar searchPlaceholder="Search multishot…" action={<NewMultishotButton />} />
 
       <DataTableShell
         viewport

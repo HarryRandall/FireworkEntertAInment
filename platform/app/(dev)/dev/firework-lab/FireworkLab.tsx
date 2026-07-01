@@ -15,7 +15,7 @@
  */
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Eye, EyeOff, Pause, Play, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { Eye, EyeOff, RotateCcw, Save, Undo2 } from 'lucide-react';
 import {
   CATALOGUE_BY_SLUG,
   FIREWORK_EFFECT_CATALOGUE,
@@ -31,6 +31,11 @@ import {
 import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
 import type { ReplayCue } from '@/lib/show-domain';
 import { updateEffect } from '@/app/actions/admin-effects';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/app/components/admin/previewFullscreen';
+import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
 import { Button } from '@/app/components/ui/Button';
 import { toast } from '@/app/components/ui/toast';
 import { cn } from '@/lib/utils';
@@ -43,7 +48,6 @@ const LazyFireworkReplayCanvas = dynamic(
 );
 
 type JsonRecord = Record<string, unknown>;
-type BaseEffectFamily = 'aerial_burst' | 'ascending' | 'ground' | 'noise' | 'compound';
 
 const CUE_TIME_SECONDS = 0.05;
 const LAB_LAUNCH_POSITIONS: LaunchPosition[] = [
@@ -127,24 +131,13 @@ function buildCue(
   };
 }
 
-const FAMILY_COLOURS: Record<string, string> = {
-  aerial_burst: 'text-sky-300',
-  ascending: 'text-amber-300',
-  ground: 'text-emerald-300',
-  noise: 'text-fuchsia-300',
-  compound: 'text-violet-300',
-};
-
-function formatTime(seconds: number): string {
-  return `${Math.max(0, seconds).toFixed(1)}s`;
-}
-
 // Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
 // fast scrub does not re-render the lab on every input event. The engine ref
 // still updates at full input rate so the 3D seeks immediately.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 
 export function FireworkLab() {
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [selectedSlug, setSelectedSlug] = useState<string>('peony');
   const [showReference, setShowReference] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -411,7 +404,6 @@ export function FireworkLab() {
       expectedUpdatedAt: dbEffect.updatedAt,
       name: dbEffect.name,
       description: dbEffect.description ?? '',
-      family: dbEffect.family as BaseEffectFamily,
       patternKey: dbEffect.patternKey,
       sortOrder: dbEffect.sortOrder,
       starStyleDefaultId: dbEffect.starStyleDefaultId ?? null,
@@ -505,14 +497,6 @@ export function FireworkLab() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{effect.name}</span>
-                      <span
-                        className={cn(
-                          'text-[10px] tracking-wide uppercase',
-                          FAMILY_COLOURS[effect.family] ?? 'text-on-surface/50',
-                        )}
-                      >
-                        {effect.family.replace('_', ' ')}
-                      </span>
                     </div>
                     <span className="text-on-surface/55 mt-0.5 block text-xs">{effect.slug}</span>
                   </button>
@@ -523,7 +507,11 @@ export function FireworkLab() {
         </aside>
 
         <main
-          className="relative min-h-0 flex-1"
+          className={cn(
+            'relative min-h-0 flex-1',
+            isFullscreen &&
+              'fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border border-white/12 bg-black shadow-[var(--shadow-modal)]',
+          )}
           onMouseMove={armHide}
           onMouseEnter={() => setHovered(true)}
         >
@@ -563,35 +551,24 @@ export function FireworkLab() {
               controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
-            <div className="border-outline-variant/15 flex items-center gap-3 rounded-full border bg-black/70 px-3 py-2 backdrop-blur">
-              <button
-                type="button"
-                onClick={togglePlay}
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-                className="focus-glow-action text-on-surface border-outline-variant/20 bg-surface-container-high/80 flex h-8 w-8 items-center justify-center rounded-full border transition-transform active:scale-95"
-              >
-                {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-              </button>
-              <span className="text-on-surface/80 w-12 text-right font-mono text-[11px] tabular-nums">
-                {formatTime(elapsed)}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={previewDuration}
-                step={0.01}
-                value={Math.min(elapsed, previewDuration)}
-                onChange={(event) => onScrub(parseFloat(event.target.value))}
-                onPointerUp={commitScrub}
-                onKeyUp={commitScrub}
-                aria-label="Scrub timeline"
-                className="accent-primary h-1.5 w-56 cursor-pointer sm:w-72"
-              />
-              <span className="text-on-surface/50 w-12 font-mono text-[11px] tabular-nums">
-                {formatTime(previewDuration)}
-              </span>
-            </div>
+            <ReplayTransportControls
+              elapsed={elapsed}
+              duration={previewDuration}
+              isPlaying={isPlaying}
+              step={0.01}
+              playLabel="Play lab preview"
+              pauseLabel="Pause lab preview"
+              resetLabel="Restart lab preview"
+              timelineLabel="Lab preview timeline"
+              fullscreen={isFullscreen}
+              onPlayPause={togglePlay}
+              onReset={restart}
+              onFullscreenToggle={toggleFullscreen}
+              onScrub={onScrub}
+              onScrubEnd={commitScrub}
+            />
           </div>
+          {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
         </main>
 
         <section className="border-outline-variant/15 flex w-[440px] shrink-0 flex-col border-l">

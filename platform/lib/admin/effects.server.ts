@@ -38,7 +38,6 @@ type BaseEffectRow = Pick<
   | 'slug'
   | 'name'
   | 'description'
-  | 'family'
   | 'pattern_key'
   | 'model_json'
   | 'sort_order'
@@ -71,7 +70,6 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
     slug: row.slug,
     name: row.name,
     description: row.description,
-    family: row.family,
     patternKey: row.pattern_key,
     source: row.source,
     sortOrder: row.sort_order,
@@ -80,7 +78,7 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
     trailStyleDefaultId: row.trail_style_default_id ?? null,
     styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
     preview: buildEffectPreview(row.model_json, {
-      type: row.pattern_key,
+      pattern: row.pattern_key,
       name: row.name,
     }),
     updatedAt: row.updated_at,
@@ -116,9 +114,9 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
 }
 
 const BASE_EFFECT_SELECT =
-  'id, slug, name, description, family, pattern_key, model_json, sort_order, source, star_style_default_id, trail_style_default_id, updated_at, fireworks(id), star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
+  'id, slug, name, description, pattern_key, model_json, sort_order, source, star_style_default_id, trail_style_default_id, updated_at, fireworks(id), star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
 const LEGACY_BASE_EFFECT_SELECT =
-  'id, slug, name, description, family, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
+  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
 
 async function selectBaseEffects(supabase: ServerClient) {
   const result = await supabase

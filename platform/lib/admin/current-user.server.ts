@@ -10,6 +10,7 @@ import 'server-only';
 
 import { cache } from 'react';
 import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCachedJson, setCachedJson, deleteCachedKeys } from '@/lib/server-cache';
 import type { CurrentProfile, PermissionKey, RoleKey } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
@@ -25,6 +26,23 @@ import {
   type UserRoleRow,
 } from './mappers';
 import { getServerClient } from './supabase';
+
+// Cross-request cache for the RBAC profile. The `current_user_access` RPC takes
+// ~1s and runs on every (app) navigation via the layout; caching it for 30s
+// makes subsequent navigations near-instant. Role/permission changes (admin,
+// rare) propagate within this TTL. Keyed per user so one user's profile can
+// never leak into another's cache entry.
+const PROFILE_CACHE_PREFIX = 'showcrafter:profile:v1';
+const PROFILE_CACHE_TTL_SECONDS = 30;
+
+function profileCacheKey(userId: string): string {
+  return `${PROFILE_CACHE_PREFIX}:${userId}`;
+}
+
+/** Drop the cached RBAC profile for a user (e.g. after a role/permission change). */
+export async function invalidateUserProfileCache(userId: string): Promise<void> {
+  await deleteCachedKeys([profileCacheKey(userId)]);
+}
 
 /**
  * Parse the JSON returned by the `current_user_access` RPC into a
@@ -68,11 +86,18 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
+  const cacheKey = profileCacheKey(userId);
+  const cached = await getCachedJson<CurrentProfile>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await getServerClient();
   const { data: accessData, error: accessError } = await supabase.rpc('current_user_access');
   if (!accessError) {
     const parsed = parseAccessRpc(accessData);
-    if (parsed) return parsed;
+    if (parsed) {
+      await setCachedJson(cacheKey, parsed, PROFILE_CACHE_TTL_SECONDS);
+      return parsed;
+    }
   }
 
   const [
@@ -132,7 +157,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     else granted.delete(permission.key);
   }
 
-  return {
+  const result: CurrentProfile = {
     id: profile.id,
     email: profile.email,
     fullName: profile.full_name,
@@ -147,6 +172,8 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     roles: roleKeys.length > 0 ? roleKeys : ['user'],
     permissions: Array.from(granted),
   };
+  await setCachedJson(cacheKey, result, PROFILE_CACHE_TTL_SECONDS);
+  return result;
 });
 
 /**

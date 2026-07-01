@@ -19,7 +19,7 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        'border-border bg-background overflow-hidden rounded-lg border shadow-xs',
+        'border-border bg-background relative overflow-hidden rounded-lg border shadow-xs',
         viewport && 'min-h-0 md:flex md:flex-1 md:flex-col',
         className,
       )}
@@ -29,14 +29,22 @@ export function DataTableShell({
           {caption}
         </div>
       ) : null}
-      <div
-        className={cn(
-          'isolate overflow-x-auto overscroll-x-contain',
-          viewport &&
-            'md:min-h-0 md:flex-1 md:overflow-x-auto md:overflow-y-auto md:overscroll-none',
-        )}
-      >
-        {children}
+      <div className={cn('relative min-h-0', viewport && 'md:flex md:flex-1')}>
+        <div
+          className={cn(
+            'isolate overflow-x-auto overscroll-x-contain',
+            viewport &&
+              'data-table-scrollport md:min-h-0 md:flex-1 md:overflow-x-auto md:overflow-y-auto md:overscroll-none',
+          )}
+        >
+          {children}
+        </div>
+        {viewport ? (
+          <div
+            aria-hidden="true"
+            className="border-border/50 bg-background pointer-events-auto absolute top-0 right-0 z-30 hidden h-11 w-4 border-b border-l md:block"
+          />
+        ) : null}
       </div>
       {footer ? <div className="border-border/50 shrink-0 border-t px-4 py-3">{footer}</div> : null}
     </div>

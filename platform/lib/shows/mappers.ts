@@ -55,6 +55,7 @@ export function mapShow(row: ShowProjection): Show {
     generationCompletedAt: row.generation_completed_at,
     launchPositions: parseLaunchPositions(row.launch_positions_json),
     coverShader: parseShaderCover(row.cover_shader),
+    coverImagePath: row.cover_image_path ?? null,
     updatedAt: row.updated_at,
   };
 }

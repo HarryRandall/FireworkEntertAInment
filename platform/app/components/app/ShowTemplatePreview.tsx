@@ -37,7 +37,7 @@ export function ShowTemplatePreview({
   return (
     <Link
       href={`/library/${template.slug}`}
-      prefetch
+      prefetch={false}
       className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative block h-full touch-manipulation rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       aria-label={`Open template: ${template.title}`}
       style={accentStyle}

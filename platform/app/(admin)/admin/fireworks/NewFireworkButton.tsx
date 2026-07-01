@@ -75,7 +75,6 @@ export function NewFireworkButton({ effects }: { effects: AdminEffectOption[] })
               options={effects.map((effect) => ({
                 value: effect.id,
                 label: effect.name,
-                description: effect.family,
               }))}
               ariaLabel="Base effect"
             />

@@ -21,7 +21,8 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(dashboard, /ExploreRow title="Explore"/);
   assert.match(dashboard, /getDashboardSummaryWithTemplates/);
   assert.match(dashboard, /featuredShowTemplates = exploreTemplates\.slice\(0, 2\)/);
-  assert.match(dashboard, /explorePreviewTemplates = exploreTemplates\.slice\(0, 10\)/);
+  // Featured pair is excluded from the explore row to dedupe prefetches.
+  assert.match(dashboard, /explorePreviewTemplates = exploreTemplates\.slice\(2, 12\)/);
   assert.match(dashboard, /EmptyShowsPanel/);
   assert.doesNotMatch(dashboard, /Recent shows/);
   assert.doesNotMatch(dashboard, /ShowSummaryRow/);
@@ -51,11 +52,12 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(homeDiscovery, /Finale moments/);
   assert.match(homeDiscovery, /Crowd favourites/);
   assert.match(homeDiscovery, /Watch replay/);
-  assert.match(homeDiscovery, /ShaderCover/);
+  assert.match(homeDiscovery, /CoverPoster/);
   assert.match(homeDiscovery, /shaderCoverFromSeed/);
-  assert.match(homeDiscovery, /showSkeletonUntilReady/);
-  assert.match(homeDiscovery, /absolute top-2 left-5/);
+  assert.match(homeDiscovery, /shaderCoverGradient/);
+  assert.match(homeDiscovery, /absolute top-4 left-4/);
   assert.match(homeDiscovery, /h-6 items-center rounded-full/);
+  assert.match(homeDiscovery, /bg-white\/14/);
   assert.match(homeDiscovery, /text-\[11px\]/);
 });
 
@@ -88,12 +90,14 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const showsPage = read('app/(app)/shows/page.tsx');
   assert.match(showsPage, /ShowReplayCoverCard/);
-  assert.match(showsPage, /listReplayCuesForShow/);
+  // Cues load lazily on hover (via the card's server action), not pre-fetched in
+  // the page, so the grid can stream in without waiting on per-show cues.
+  assert.doesNotMatch(showsPage, /listReplayCuesForShows/);
   assert.match(showsPage, /grid grid-cols-2/);
   assert.match(showsPage, /ShowsToolbar/);
   assert.match(showsPage, /sortShows/);
   assert.match(showsPage, /filterShows/);
-  assert.match(showsPage, /SHOWS_PAGE_SIZE = 12/);
+  assert.match(showsPage, /SHOWS_PAGE_SIZE = 24/);
   assert.match(showsPage, /shouldPaginate = shows\.length > SHOWS_PAGE_SIZE/);
   assert.match(showsPage, /paginatedShows/);
   assert.match(showsPage, /<TablePagination/);
@@ -104,22 +108,29 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
 
   const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
-  assert.match(showReplayCard, /ShaderCover/);
+  assert.match(showReplayCard, /CoverPoster/);
   assert.match(showReplayCard, /show\.coverShader \?\? shaderCoverFromSeed/);
   assert.match(showReplayCard, /FireworkReplayCanvas/);
   assert.match(showReplayCard, /onPointerEnter/);
-  assert.match(showReplayCard, /showSkeletonUntilReady/);
-  assert.match(
-    showReplayCard,
-    /loading: \(\) => <Skeleton className="h-full w-full rounded-none" \/>/,
-  );
+  assert.match(showReplayCard, /imagePath=\{show\.coverImagePath\}/);
+  assert.match(showReplayCard, /getShowReplayCues/);
+  assert.match(showReplayCard, /loading: \(\) => <ReplayCanvasSkeleton \/>/);
+  assert.match(showReplayCard, /h-\[16%\]/);
+  assert.match(showReplayCard, /backdrop-blur-md/);
+  assert.doesNotMatch(showReplayCard, /rgba\(0,0,0,0\.48\)_100%/);
 
   const showsToolbar = read('app/(app)/shows/ShowsToolbar.tsx');
   assert.match(showsToolbar, /Search shows or songs/);
   assert.match(showsToolbar, /PopoverTrigger/);
   assert.match(showsToolbar, /CommandItem/);
-  assert.match(showsToolbar, /New show/);
-  assert.match(showsToolbar, /resultLabel/);
+  assert.match(showsToolbar, /open=\{sortOpen\}/);
+  assert.match(showsToolbar, /setSortOpen\(false\)/);
+  // The "New show" button and the "N shows" count were removed; search is now
+  // instant (debounced URL updates) with no separate Search button.
+  assert.doesNotMatch(showsToolbar, /New show/);
+  assert.doesNotMatch(showsToolbar, /resultLabel/);
+  assert.match(showsToolbar, /SEARCH_DEBOUNCE_MS/);
+  assert.doesNotMatch(showsToolbar, /type="submit"/);
   assert.doesNotMatch(showsToolbar, /All shows/);
   assert.doesNotMatch(showsToolbar, /Search results/);
   assert.doesNotMatch(showsToolbar, /<select/);
@@ -167,7 +178,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const templatePreview = read('app/components/app/TemplateReplayPreview.tsx');
   assert.match(templatePreview, /absolute inset-x-0 bottom-0/);
-  assert.match(templatePreview, /bg-black\/70/);
+  assert.match(templatePreview, /bg-black\/55/);
   assert.match(templatePreview, /relative h-44 overflow-hidden/);
   assert.doesNotMatch(templatePreview, /relative h-64 overflow-hidden/);
   assert.match(templatePreview, /top-3 right-3/);

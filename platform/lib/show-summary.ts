@@ -21,6 +21,7 @@ export type ShowSummaryCard = {
   palette: VisualPalette;
   energySeries: number[];
   coverShader: ShaderCover | null;
+  coverImagePath: string | null;
 };
 
 export type TemplateSummaryCard = {
@@ -42,6 +43,24 @@ export type WorkspaceSummary = {
   totalRuntimeSeconds: number;
   totalCatalogueValueCents: number;
   recentShows: ShowSummaryCard[];
+};
+
+/** Sidebar-sized AI credit usage subset. The full `AiCreditSummary` adds cost
+ * definitions and recent transactions that the shell does not need, so the
+ * `/api/me/summary` payload ships only these fields to the client. */
+export type AiUsageSummary = {
+  balance: number;
+  reserved: number;
+  available: number;
+  includedCredits: number;
+  hourlyLimit: number;
+  weeklyLimit: number;
+  hourlyUsed: number;
+  weeklyUsed: number;
+  hourlyRemaining: number;
+  weeklyRemaining: number;
+  totalGranted: number;
+  totalSpent: number;
 };
 
 export type DashboardSummary = WorkspaceSummary & {
@@ -138,6 +157,7 @@ export function mapShowToSummary(show: Show): ShowSummaryCard {
     palette: buildVisualPalette(seed),
     energySeries: buildEnergySeries(seed, cueCount),
     coverShader: show.coverShader,
+    coverImagePath: show.coverImagePath,
   };
 }
 

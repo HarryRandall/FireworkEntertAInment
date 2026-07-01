@@ -63,7 +63,7 @@ export default function AdminLoading() {
         headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
         rowSize="relaxed"
         rows={8}
-        hasAction
+        filterActionLabel="New supplier"
         ariaLabel="Loading suppliers"
       />
     );
@@ -94,20 +94,11 @@ export default function AdminLoading() {
   if (/^\/admin\/fireworks\/?$/.test(currentPathname)) {
     return (
       <AdminTableRouteSkeleton
-        searchPlaceholder="Search product, part number, effect..."
-        headers={[
-          'Preview',
-          'Product',
-          'Manufacturer',
-          'Type',
-          'Effects',
-          'Calibre',
-          'Shots',
-          'Duration',
-          'Open',
-        ]}
-        tableClassName="min-w-[1120px]"
+        searchPlaceholder="Search firework, effect, colour..."
+        headers={['Preview', 'Firework', 'Base effect', 'Colour', 'Calibre', 'Duration', 'Open']}
+        tableClassName="min-w-[960px]"
         rows={8}
+        filterActionLabel="New firework"
         ariaLabel="Loading fireworks"
       />
     );
@@ -125,19 +116,28 @@ export default function AdminLoading() {
     return (
       <AdminTableRouteSkeleton
         searchPlaceholder="Search name, slug, description..."
-        headers={[
-          'Preview',
-          'Effect',
-          'Family',
-          'Pattern',
-          'Source',
-          'Variants',
-          'Updated',
-          'Open',
-        ]}
-        tableClassName="min-w-[1080px]"
+        headers={['Effect', 'Pattern', 'Source', 'Variants', 'Updated', '']}
+        tableClassName="min-w-[820px]"
         rows={12}
+        hasAction
         ariaLabel="Loading effects"
+      />
+    );
+  }
+
+  if (/^\/admin\/multishots\/[^/]+\/?$/.test(currentPathname)) {
+    return <div className="min-h-0 flex-1" aria-label="Loading multishot" />;
+  }
+
+  if (/^\/admin\/multishots\/?$/.test(currentPathname)) {
+    return (
+      <AdminTableRouteSkeleton
+        searchPlaceholder="Search multishot..."
+        headers={['Preview', 'Multishot', 'Shots', 'Duration', 'Open']}
+        tableClassName="min-w-[820px]"
+        rows={8}
+        filterActionLabel="New multishot"
+        ariaLabel="Loading multishots"
       />
     );
   }

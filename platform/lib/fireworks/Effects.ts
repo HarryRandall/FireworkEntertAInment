@@ -60,7 +60,7 @@ const LIFT_SPARK_COLOR = new THREE.Color(1, 0.76, 0.38);
 const HOT_SPARK_COLOR = new THREE.Color(1, 0.92, 0.72);
 const BROCADE_TRAIL_PEACH = new THREE.Color(1, 0.84, 0.6);
 /** Brocade crown burst: hard cap on streak heads per shell. */
-const BROCADE_MAX_STREAKS = 64;
+const BROCADE_MAX_STREAKS = 100;
 const BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32;
 const STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS = 0.6;
 const SHELL_TRAIL_SPREAD_SCALE = 0.035;
@@ -842,6 +842,16 @@ export class Effects {
     // Star count can be tiny, but the ascending carrier still needs enough
     // size budget to survive its decay until apex and trigger detonation.
     const shellSize = Math.max(size, 110) * shell.sizeScale;
+    // The carrier dies when its size reaches zero (see Particle.update). A small
+    // shell.sizeScale (e.g. the 0.25 used by style-default previews) shrinks the
+    // carrier enough that a high random decay can exhaust it before apex, so
+    // `detonate` never fires and the whole burst silently fails to appear. Cap
+    // the decay so the carrier always outlives its estimated time to apex,
+    // regardless of scale. Full-size shells keep their original decay because
+    // their larger size budget already survives comfortably.
+    const apexSeconds = Math.max(0.1, verticalVelocity / 9.82);
+    const survivalDecay = shellSize / (apexSeconds * 1.6 + 0.5);
+    const shellDecay = Math.min(10 + rng.next() * 20, survivalDecay);
     let liftPreviousPosition: Pos | null = null;
     this.pp.new({
       x: position.x,
@@ -860,7 +870,7 @@ export class Effects {
       g: shellColor.g,
       b: shellColor.b,
       life: design.shellLife,
-      decay: 10 + rng.next() * 20,
+      decay: shellDecay,
       effect: (p, dt, t) => {
         const previousPosition = liftPreviousPosition;
         this.shellEffect(
@@ -1480,23 +1490,22 @@ export class Effects {
     let count: number;
     switch (design.geometry) {
       case 'radial_arms':
-        count = Math.max(44, Math.round(layer.count * 0.46));
+        count = Math.max(1, Math.round(layer.count * 0.46));
         break;
       case 'falling_tail':
-        count = Math.max(52, Math.round(layer.count * 0.62));
+        count = Math.max(1, Math.round(layer.count * 0.62));
         break;
       case 'pearls':
-        count = Math.max(18, Math.round(layer.count * 0.18));
+        count = Math.max(1, Math.round(layer.count * 0.18));
         break;
       case 'ring':
-        count = Math.max(72, Math.round(layer.count * 0.72));
+        count = Math.max(1, Math.round(layer.count * 0.72));
         break;
       case 'bowtie':
-        // Two opposed lobes: keep enough stars per lobe to read as a clean shape.
-        count = Math.max(60, Math.round(layer.count * 0.82));
+        count = Math.max(1, Math.round(layer.count * 0.82));
         break;
       case 'fragment_cloud':
-        count = Math.max(90, Math.round(layer.count * 0.9));
+        count = Math.max(1, Math.round(layer.count * 0.9));
         break;
       default:
         count = layer.count;
@@ -2219,7 +2228,7 @@ export class Effects {
     const originX = particle.x;
     const originY = particle.y;
     const originZ = particle.z;
-    const count = clamp(Math.round(brocade.streakCount ?? design.size), 8, BROCADE_MAX_STREAKS);
+    const count = clamp(Math.round(brocade.streakCount ?? design.size), 1, BROCADE_MAX_STREAKS);
     const burstSpeed = rangeRand(design.burst.speed, rng);
     const brocadeTrail = design.burstTrail;
     const trailBudget = burstTrailParticlesPerStar(brocadeTrail);
@@ -2488,7 +2497,7 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
   ): void {
-    const count = Math.max(80, Math.round(design.size * 0.72));
+    const count = Math.max(1, Math.round(design.size * 0.72));
     for (let i = 0; i < count; i++) {
       const direction = fibonacciDirection(i, count).multiplyScalar(
         rangeRand(design.burst.speed, rng),
@@ -2527,7 +2536,7 @@ export class Effects {
     rng: RandomSource,
     audible: boolean,
   ): void {
-    const count = Math.max(90, Math.round(design.size * 0.78));
+    const count = Math.max(1, Math.round(design.size * 0.78));
     for (let i = 0; i < count; i++) {
       const curtain = (i / count - 0.5) * design.size * 2.2;
       this.spawnEffectStar({
