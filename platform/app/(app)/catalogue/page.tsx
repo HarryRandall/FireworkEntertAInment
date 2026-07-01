@@ -84,14 +84,14 @@ async function CatalogueList({
         {visibleProducts.map((product) => (
           <article
             key={product.id}
-            className="border-outline-variant/50 bg-card rounded-xl border p-4 shadow-sm transition-colors hover:border-[color:var(--color-border-strong)]"
+            className="border-border bg-card rounded-xl border p-4 shadow-xs transition-colors hover:border-[color:var(--color-border-strong)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-on-surface line-clamp-2 text-sm leading-5 font-semibold">
+                <h2 className="text-foreground line-clamp-2 text-sm leading-5 font-semibold">
                   {product.name}
                 </h2>
-                <p className="text-on-surface-variant mt-1 font-mono text-xs">{product.slug}</p>
+                <p className="text-muted-foreground mt-1 font-mono text-xs">{product.slug}</p>
               </div>
               {product.caliber ? (
                 <Badge tone="neutral" className="shrink-0">
@@ -100,11 +100,11 @@ async function CatalogueList({
               ) : null}
             </div>
 
-            <p className="text-on-surface-variant mt-3 line-clamp-2 text-sm leading-relaxed">
+            <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed">
               {product.description ?? product.baseEffect?.name ?? 'Uncategorised firework'}
             </p>
 
-            <div className="text-on-surface-variant mt-4 grid grid-cols-2 gap-2 text-xs">
+            <div className="text-muted-foreground mt-4 grid grid-cols-2 gap-2 text-xs">
               <CatalogueMeta icon={<Sparkles size={13} />} label="Effect">
                 {product.baseEffect?.name ?? 'Uncategorised'}
               </CatalogueMeta>
@@ -170,12 +170,12 @@ function CatalogueMeta({
   children: ReactNode;
 }) {
   return (
-    <div className="bg-surface-container-low rounded-lg px-2.5 py-2">
+    <div className="bg-muted/60 rounded-lg px-2.5 py-2">
       <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-[0.08em] text-[color:var(--color-content-muted)] uppercase">
         {icon}
         {label}
       </div>
-      <div className="text-on-surface mt-1 truncate text-xs font-medium">{children}</div>
+      <div className="text-foreground mt-1 truncate text-xs font-medium">{children}</div>
     </div>
   );
 }

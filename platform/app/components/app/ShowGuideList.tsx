@@ -43,9 +43,9 @@ export function ShowGuideList({ steps }: ShowGuideListProps) {
                   <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-mono text-sm font-bold tabular-nums">
                     {formatCueTime(step.timeSeconds)}
                   </div>
-                  {!isLast ? <div className="bg-outline-variant/20 mt-2 w-0.5 flex-grow" /> : null}
+                  {!isLast ? <div className="bg-border mt-2 w-0.5 flex-grow" /> : null}
                 </div>
-                <p className="text-on-surface pb-8 leading-relaxed">{step.description}</p>
+                <p className="text-foreground pb-8 leading-relaxed">{step.description}</p>
               </li>
             );
           })}
