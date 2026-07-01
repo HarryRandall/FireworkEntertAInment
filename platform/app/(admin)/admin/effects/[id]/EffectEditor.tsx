@@ -35,7 +35,6 @@ import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
-import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';

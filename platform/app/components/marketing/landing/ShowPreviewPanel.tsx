@@ -189,7 +189,7 @@ export function ShowPreviewPanel({
           }}
           aria-label={active ? 'Pause live preview' : 'Play live preview'}
           disabled={reducedMotion}
-          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#09090b] transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className="text-stage-night inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {active ? (
             <Pause size={16} fill="currentColor" strokeWidth={0} />

@@ -15,7 +15,7 @@ export function SongMock() {
   return (
     <div className={`${cardClass} p-[18px]`}>
       <div className="flex items-center gap-3.5">
-        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7a3df0,#e8447f_60%,#efb93f)] text-white">
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,var(--show-violet),var(--show-rose)_60%,var(--show-gold))] text-white">
           <Music4 size={22} strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1">
@@ -100,10 +100,14 @@ export function BudgetMock() {
 
 export function ChoreoMock() {
   const cues = [
-    { t: '00:14', name: 'Comet rise', pal: ['#efb93f', '#fb7185'] },
-    { t: '01:02', name: 'Crossette fan', pal: ['#2ec487', '#38bdf8'] },
-    { t: '02:48', name: 'Willow drop', pal: ['#8f7be8', '#38bdf8'] },
-    { t: '05:31', name: 'Gold finale wall', pal: ['#efb93f', '#fb7185', '#8f7be8'] },
+    { t: '00:14', name: 'Comet rise', pal: ['var(--show-gold)', 'var(--show-rose)'] },
+    { t: '01:02', name: 'Crossette fan', pal: ['var(--show-green)', 'var(--show-sky)'] },
+    { t: '02:48', name: 'Willow drop', pal: ['var(--show-violet)', 'var(--show-sky)'] },
+    {
+      t: '05:31',
+      name: 'Gold finale wall',
+      pal: ['var(--show-gold)', 'var(--show-rose)', 'var(--show-violet)'],
+    },
   ];
   return (
     <div className={`${cardClass} p-[18px]`}>
@@ -166,7 +170,7 @@ export function ShopMock() {
 
 export function FireMock() {
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-[radial-gradient(120%_120%_at_50%_0%,#16161c,#09090b)] p-5">
+    <div className="w-full rounded-2xl border border-white/10 bg-[radial-gradient(120%_120%_at_50%_0%,#161a24,var(--stage-night))] p-5">
       <div className="flex items-center justify-between text-white">
         <span className="inline-flex items-center gap-2 text-xs font-semibold">
           <span className="lp-live-dot" /> Firing live
@@ -182,10 +186,10 @@ export function FireMock() {
         </div>
       </div>
       <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full w-[62%] rounded-full bg-[linear-gradient(90deg,var(--hl),#38bdf8)]" />
+        <div className="h-full w-[62%] rounded-full bg-[linear-gradient(90deg,var(--hl),var(--show-sky))]" />
       </div>
       <div className="mt-4 flex justify-center">
-        <span className="inline-flex h-[46px] w-[46px] items-center justify-center rounded-full bg-white text-[#09090b]">
+        <span className="text-stage-night inline-flex h-[46px] w-[46px] items-center justify-center rounded-full bg-white">
           <Play size={20} fill="currentColor" strokeWidth={0} />
         </span>
       </div>

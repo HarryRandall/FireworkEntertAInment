@@ -15,28 +15,28 @@ const GALLERY = [
   {
     title: 'Bohemian Rhapsody',
     theme: 'Gold finale · large yard',
-    palette: ['#efb93f', '#fb7185', '#8f7be8'],
+    palette: ['var(--show-gold)', 'var(--show-rose)', 'var(--show-violet)'],
     likes: 1280,
     budget: '$742',
   },
   {
     title: 'Midnight City',
     theme: 'Cool blues · lakeside',
-    palette: ['#38bdf8', '#8f7be8', '#15bd8b'],
+    palette: ['var(--show-sky)', 'var(--show-violet)', 'var(--show-green)'],
     likes: 864,
     budget: '$520',
   },
   {
     title: 'Sweet Caroline',
     theme: 'Warm rose · backyard',
-    palette: ['#fb7185', '#efb93f', '#8f7be8'],
+    palette: ['var(--show-rose)', 'var(--show-gold)', 'var(--show-violet)'],
     likes: 1530,
     budget: '$610',
   },
   {
     title: 'Mr Brightside',
     theme: 'Violet strobes · rooftop',
-    palette: ['#8f7be8', '#38bdf8', '#fb7185'],
+    palette: ['var(--show-violet)', 'var(--show-sky)', 'var(--show-rose)'],
     likes: 998,
     budget: '$480',
   },
@@ -59,7 +59,7 @@ export function Showcase() {
         </Reveal>
 
         <Reveal delay={0.12} className="relative">
-          <Star4 size={22} style={{ position: 'absolute', top: -14, left: -8, zIndex: 3 }} />
+          <Star4 size={22} className="absolute -top-3.5 -left-2 z-[3]" />
           <ShowPreviewPanel height={520} />
         </Reveal>
 
