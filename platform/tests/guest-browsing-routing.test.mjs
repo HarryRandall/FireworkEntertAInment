@@ -67,6 +67,18 @@ test('(app) layout no longer hard-redirects guests to /login', () => {
   const layout = read('app/(app)/layout.tsx');
   assert.doesNotMatch(layout, /redirect\('\/login'\)/);
   assert.doesNotMatch(layout, /import \{ redirect \} from 'next\/navigation'/);
+  assert.match(layout, /isAuthenticated=\{Boolean\(userId\)\}/);
+});
+
+test('show detail layout requires a session before rendering tabs or children', () => {
+  const layout = read('app/(app)/shows/[id]/layout.tsx');
+  assert.match(layout, /getCurrentUserId/);
+  assert.match(layout, /if \(!userId\)/);
+  assert.match(
+    layout,
+    /redirect\(`\/login\?next=\$\{encodeURIComponent\(`\/shows\/\$\{id\}`\)\}`\)/,
+  );
+  assert.match(layout, /getShowBySlug/);
 });
 
 test('AppShell renders a guest-aware nav and sign-in footer without removing shipped links', () => {
@@ -79,6 +91,8 @@ test('AppShell renders a guest-aware nav and sign-in footer without removing shi
   assert.match(shell, /href: '\/catalogue', label: 'Catalogue'/);
 
   // Guest nav allow-list and sign-in / create-account footer.
+  assert.match(shell, /isAuthenticated = Boolean\(profile\)/);
+  assert.match(shell, /const isGuest = !isAuthenticated/);
   assert.match(shell, /GUEST_NAV_HREFS/);
   assert.match(shell, /isGuest && !GUEST_NAV_HREFS\.has\(link\.href\)/);
   assert.match(shell, /SidebarGuestFooter/);

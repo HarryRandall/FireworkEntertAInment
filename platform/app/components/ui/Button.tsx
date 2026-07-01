@@ -14,7 +14,8 @@ const button = cva(
         secondary:
           'border-border bg-background text-foreground shadow-xs hover:bg-muted hover:text-foreground',
         ghost: 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
-        accent: 'bg-accent text-accent-foreground hover:bg-accent/80',
+        accent:
+          'bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:bg-[color-mix(in_srgb,var(--accent)_84%,var(--foreground)_16%)]',
         destructive:
           'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20',
       },

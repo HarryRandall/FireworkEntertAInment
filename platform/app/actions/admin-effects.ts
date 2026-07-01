@@ -75,6 +75,9 @@ const CUSTOM_STAR_EFFECT_MODEL = canonicaliseEffectModelJson({
         motion: {
           swirlStrength: 0,
           swirlRadius: 0,
+          swirlLoopCount: 0,
+          swirlLoopLength: 100,
+          swirlLoopHeight: 0,
           swirlRate: 4,
         },
       },

@@ -64,6 +64,11 @@ const BROCADE_MAX_STREAKS = 100;
 const BROCADE_MAX_TRAIL_EMISSIONS_PER_STEP = 32;
 const STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS = 0.6;
 const SHELL_TRAIL_SPREAD_SCALE = 0.035;
+const SHELL_TRAIL_CLEAR_AGE_START = 0.06;
+const SHELL_TRAIL_CLEAR_AGE_END = 0.24;
+const LIFT_SWIRL_START_AGE = 0.16;
+const LIFT_SWIRL_FULL_AGE = 0.36;
+const LIFT_LOOP_MIN_SPAN = 0.05;
 const BURST_TRAIL_MAX_SPREAD_ANGLE = 80;
 const BURST_TRAIL_SPREAD_SCALE = 0.055;
 const BURST_TRAIL_MAX_SPREAD = 180;
@@ -88,6 +93,11 @@ function clampStarGravity(gravity: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = clamp((value - edge0) / Math.max(0.0001, edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
 }
 
 function estimateShellRiseHeight(initialVelocityY: number, shellLife: number): number {
@@ -307,35 +317,105 @@ function applyLiftSwirlToShell(
   dt: number,
   time: number,
   liftParticles: LiftParticles,
+  liftAge: number,
 ): void {
   const strength = clamp(liftParticles.motion.swirlStrength, 0, 4);
   if (strength <= 0) return;
 
-  const rate = clamp(liftParticles.motion.swirlRate, 0, 16);
-  const phase = time * rate * Math.PI * 2;
-  const force = strength * 0.55;
+  const launchClearance = smoothstep(LIFT_SWIRL_START_AGE, LIFT_SWIRL_FULL_AGE, liftAge);
+  if (launchClearance <= 0) return;
+
+  const phase = liftSwirlPhase(liftParticles, liftAge, time);
+  const loopCount = clamp(liftParticles.motion.swirlLoopCount, 0, 6);
+  const force = strength * (loopCount > 0 ? 0.38 : 0.55) * launchClearance;
   particle.vx += Math.cos(phase) * force * dt;
-  particle.vz += Math.sin(phase) * force * dt;
+}
+
+function liftLoopSpan(liftParticles: LiftParticles): { start: number; end: number } {
+  const loopLength = clamp(liftParticles.motion.swirlLoopLength / 100, LIFT_LOOP_MIN_SPAN, 1);
+  const start = LIFT_SWIRL_START_AGE;
+  return {
+    start,
+    end: clamp(start + loopLength, start + LIFT_LOOP_MIN_SPAN, 1),
+  };
+}
+
+function liftLoopProgress(liftParticles: LiftParticles, age: number): number {
+  const { start, end } = liftLoopSpan(liftParticles);
+  return smoothstep(start, end, age);
+}
+
+function liftSwirlPhase(liftParticles: LiftParticles, age: number, time: number): number {
+  const rate = clamp(liftParticles.motion.swirlRate, 0, 16);
+  const loopCount = clamp(liftParticles.motion.swirlLoopCount, 0, 6);
+  const pathPhase = loopCount > 0 ? liftLoopProgress(liftParticles, age) * loopCount : 0;
+  return (time * rate + pathPhase) * Math.PI * 2;
 }
 
 function liftSwirlOffset(
   liftParticles: LiftParticles,
   age: number,
   time: number,
-  progress: number,
-): { x: number; z: number } {
+): { x: number; y: number; z: number } {
   const strength = clamp(liftParticles.motion.swirlStrength, 0, 4);
-  const radius = clamp(liftParticles.motion.swirlRadius, 0, 90);
-  if (strength <= 0 && radius <= 0) return { x: 0, z: 0 };
+  const radius = clamp(liftParticles.motion.swirlRadius, 0, 180);
+  const loopHeight = clamp(liftParticles.motion.swirlLoopHeight, 0, 180);
+  if (strength <= 0 && radius <= 0 && loopHeight <= 0) return { x: 0, y: 0, z: 0 };
 
-  const rate = clamp(liftParticles.motion.swirlRate, 0, 16);
-  const headProgress = 1 - clamp(progress, 0, 1);
-  const headAge = 1 - clamp(age, 0, 1);
-  const phase = time * rate * Math.PI * 2 + headProgress * Math.PI * 2 + headAge * rate * Math.PI;
-  const visibleRadius = radius * (0.22 + age * 0.78) + strength * 8;
+  const loopProgress = liftLoopProgress(liftParticles, age);
+  const phase = liftSwirlPhase(liftParticles, age, time);
+  const launchClearance = smoothstep(LIFT_SWIRL_START_AGE, LIFT_SWIRL_FULL_AGE, age);
+  const loopAge = clamp(Math.max(age, loopProgress), 0, 1);
+  const visibleRadius = (radius * (0.22 + loopAge * 0.78) + strength * 8) * launchClearance;
+  const visibleLoopHeight = loopHeight * (0.22 + loopAge * 0.78) * launchClearance;
+  const loopRadius =
+    loopHeight > 0 ? Math.max(visibleRadius, visibleLoopHeight * 0.55) : visibleRadius;
+  const loopCount = clamp(liftParticles.motion.swirlLoopCount, 0, 6);
+  if (loopCount > 0) {
+    return {
+      x: Math.sin(phase) * loopRadius,
+      y: (1 - Math.cos(phase)) * visibleLoopHeight * 0.5,
+      z: 0,
+    };
+  }
+
   return {
-    x: Math.cos(phase) * visibleRadius,
-    z: Math.sin(phase) * visibleRadius,
+    x: Math.cos(phase) * loopRadius,
+    y: Math.sin(phase) * visibleLoopHeight,
+    z: 0,
+  };
+}
+
+function usesGuidedLiftPath(liftParticles: LiftParticles): boolean {
+  return (
+    clamp(liftParticles.motion.swirlStrength, 0, 4) > 0 ||
+    clamp(liftParticles.motion.swirlRadius, 0, 180) > 0 ||
+    clamp(liftParticles.motion.swirlLoopCount, 0, 6) > 0 ||
+    clamp(liftParticles.motion.swirlLoopHeight, 0, 180) > 0
+  );
+}
+
+function liftPathAge(y: number, liftOriginY: number, liftStopY: number): number {
+  return liftStopY > liftOriginY
+    ? clamp((y - liftOriginY) / Math.max(1, liftStopY - liftOriginY), 0, 1)
+    : 1;
+}
+
+function liftGuidedPosition(
+  base: Pos,
+  liftParticles: LiftParticles,
+  time: number,
+  liftOriginY: number,
+  liftStopY: number,
+): LiftPathPoint {
+  const age = liftPathAge(base.y, liftOriginY, liftStopY);
+  const swirl = liftSwirlOffset(liftParticles, age, time);
+  return {
+    x: base.x + swirl.x,
+    y: Math.max(liftOriginY, base.y + swirl.y),
+    z: base.z + swirl.z,
+    progress: 1,
+    age,
   };
 }
 
@@ -347,6 +427,7 @@ function liftPathPoint(
   liftParticles: LiftParticles,
   liftRng: RandomSource,
   time: number,
+  dt: number,
   liftOriginY: number,
   liftStopY: number,
 ): LiftPathPoint {
@@ -361,17 +442,10 @@ function liftPathPoint(
         z: from.z + (to.z - from.z) * progress,
       }
     : to;
-  const age =
-    liftStopY > liftOriginY
-      ? clamp((base.y - liftOriginY) / Math.max(1, liftStopY - liftOriginY), 0, 1)
-      : 1;
-  const swirl = liftSwirlOffset(liftParticles, age, time, progress);
+  const sampleTime = from ? time - (1 - progress) * dt : time;
   return {
-    x: base.x + swirl.x,
-    y: base.y,
-    z: base.z + swirl.z,
+    ...liftGuidedPosition(base, liftParticles, sampleTime, liftOriginY, liftStopY),
     progress,
-    age,
   };
 }
 
@@ -465,7 +539,11 @@ function burstTrailSpreadRadius(
 
 function shellTrailSpreadAngle(shellTrail: ShellTrail, age: number): number {
   const tailProgress = Math.pow(clamp(1 - age, 0, 1), shellTrail.curve);
-  return shellTrail.frontAngle + (shellTrail.tailAngle - shellTrail.frontAngle) * tailProgress;
+  const clearance = smoothstep(SHELL_TRAIL_CLEAR_AGE_START, SHELL_TRAIL_CLEAR_AGE_END, age);
+  return (
+    (shellTrail.frontAngle + (shellTrail.tailAngle - shellTrail.frontAngle) * tailProgress) *
+    clearance
+  );
 }
 
 function shellTrailTubeRadius(shellTrail: ShellTrail, age: number, liftRiseHeight: number): number {
@@ -497,7 +575,21 @@ function liftParticleBalancedAge(liftParticles: LiftParticles, headAge: number):
 function liftParticleDensityScale(liftParticles: LiftParticles, headAge: number): number {
   const balanced = liftParticleBalancedAge(liftParticles, headAge);
   const centred = balanced - 0.5;
-  return clamp(1 + centred * 1.2, 0.35, 1.85);
+  const baseDensity = 1 + centred * 1.2;
+  const clusterStrength = clamp(liftParticles.spacing.clusterStrength / 100, 0, 1);
+  if (clusterStrength <= 0) return clamp(baseDensity, 0.35, 1.85);
+
+  const loopCount = clamp(liftParticles.motion.swirlLoopCount, 0, 6);
+  const clusterLoops = Math.max(
+    1.15,
+    loopCount || clamp(liftParticles.motion.swirlRate, 0, 16) * 0.45,
+  );
+  const pocket = Math.pow(
+    (Math.sin(headAge * clusterLoops * Math.PI * 2) + 1) * 0.5,
+    1.15 + (1 - clusterStrength) * 2.35,
+  );
+  const clusterDensity = 0.32 + pocket * 2.7;
+  return clamp(baseDensity * (1 + (clusterDensity - 1) * clusterStrength), 0.2, 3.4);
 }
 
 function burstTrailSegmentProgress(
@@ -733,6 +825,20 @@ function burstTrailScatterOffset(
   return scaleTrailScatter(burstTrailScatterVector(headVx, headVy, headVz, rng), radius);
 }
 
+function flatLiftScatterOffset(
+  radius: number,
+  rng: RandomSource,
+): { x: number; y: number; z: number } {
+  if (radius <= 0) return { x: 0, y: 0, z: 0 };
+  const theta = rng.next() * Math.PI * 2;
+  const distance = Math.sqrt(rng.next()) * radius;
+  return {
+    x: Math.cos(theta) * distance,
+    y: Math.sin(theta) * distance,
+    z: 0,
+  };
+}
+
 function chooseBurstTrailShape(
   weights: { circle: number; square: number; triangle: number },
   rng: RandomSource,
@@ -852,6 +958,7 @@ export class Effects {
     const apexSeconds = Math.max(0.1, verticalVelocity / 9.82);
     const survivalDecay = shellSize / (apexSeconds * 1.6 + 0.5);
     const shellDecay = Math.min(10 + rng.next() * 20, survivalDecay);
+    const guidedShellVisible = shell.visible && usesGuidedLiftPath(design.launch.liftParticles);
     let liftPreviousPosition: Pos | null = null;
     this.pp.new({
       x: position.x,
@@ -865,7 +972,8 @@ export class Effects {
       h: 0.9,
       s: 0.5,
       l: 0.5,
-      shape: launchShellShapeValue(shell),
+      shape:
+        shell.visible && !guidedShellVisible ? launchShellShapeValue(shell) : HIDDEN_PARTICLE_SHAPE,
       r: shellColor.r,
       g: shellColor.g,
       b: shellColor.b,
@@ -885,12 +993,30 @@ export class Effects {
           smokeRng,
           position.y,
           liftRiseHeight,
+          shellColor,
+          shellSize,
           previousPosition,
         );
         liftPreviousPosition = { x: p.x, y: p.y, z: p.z };
       },
       condition: (p) => p.vy <= 0,
-      action: (p, dt, t) => this.detonate(p, dt, t, design, color, seed, rng, this.audible),
+      action: (p, dt, t) => {
+        if (guidedShellVisible) {
+          const liftStopY =
+            position.y + liftRiseHeight * clamp(design.launch.liftParticles.height / 100, 0, 1);
+          const guided = liftGuidedPosition(
+            p,
+            design.launch.liftParticles,
+            t,
+            position.y,
+            liftStopY,
+          );
+          p.x = guided.x;
+          p.y = guided.y;
+          p.z = guided.z;
+        }
+        this.detonate(p, dt, t, design, color, seed, rng, this.audible);
+      },
     });
   }
 
@@ -1122,6 +1248,36 @@ export class Effects {
     }
   }
 
+  private spawnGuidedLaunchShell(
+    point: Pos,
+    design: FireworkDesign,
+    shellColor: THREE.Color,
+    shellSize: number,
+    dt: number,
+  ): void {
+    const shell = design.launch.shell;
+    const life = Math.max(0.032, dt * 1.8);
+    const size = clamp(shellSize * 0.28, 8, 34);
+    this.pp.new({
+      x: point.x,
+      y: point.y,
+      z: point.z,
+      mass: 0.5,
+      gravity: 0,
+      drag: 0,
+      size,
+      shape: launchShellShapeValue(shell),
+      r: shellColor.r,
+      g: shellColor.g,
+      b: shellColor.b,
+      h: 0.9,
+      s: 0.5,
+      l: 0.5,
+      life,
+      decay: size / life,
+    });
+  }
+
   private shellEffect(
     particle: Particle,
     dt: number,
@@ -1134,6 +1290,8 @@ export class Effects {
     smokeRng: RandomSource,
     liftOriginY: number,
     liftRiseHeight: number,
+    shellColor: THREE.Color,
+    shellSize: number,
     previousPosition: Pos | null = null,
   ): void {
     let max = 1;
@@ -1159,7 +1317,6 @@ export class Effects {
         vz = 2 - rng.next() * 4;
         break;
     }
-    applyLiftSwirlToShell(particle, dt, time, liftParticles);
     const streakLift = isBrocadeCrown(design) || usesStreakTrails(design);
     const liftTrailMultiplier = streakLift
       ? design.geometry === 'single_tail'
@@ -1176,10 +1333,15 @@ export class Effects {
     const baseCount = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY * liftTrailMultiplier));
     const liftHeightPercent = clamp(liftParticles.height / 100, 0, 1);
     const liftStopY = liftOriginY + liftRiseHeight * liftHeightPercent;
-    const liftAge =
-      liftStopY > liftOriginY
-        ? clamp((particle.y - liftOriginY) / Math.max(1, liftStopY - liftOriginY), 0, 1)
-        : 1;
+    const liftAge = liftPathAge(particle.y, liftOriginY, liftStopY);
+    const guidedShellPoint =
+      design.launch.shell.visible && usesGuidedLiftPath(liftParticles)
+        ? liftGuidedPosition(particle, liftParticles, time, liftOriginY, liftStopY)
+        : null;
+    if (guidedShellPoint) {
+      this.spawnGuidedLaunchShell(guidedShellPoint, design, shellColor, shellSize, dt);
+    }
+    applyLiftSwirlToShell(particle, dt, time, liftParticles, liftAge);
     const liftDensity = liftParticleDensityScale(liftParticles, liftAge);
     const liftDensityJitter =
       1 + (liftRng.next() * 2 - 1) * (liftParticles.spacing.jitterPercent / 100) * 0.25;
@@ -1217,6 +1379,7 @@ export class Effects {
         liftParticles,
         liftRng,
         time,
+        dt,
         liftOriginY,
         liftStopY,
       );
@@ -1277,13 +1440,9 @@ export class Effects {
         const shape = brocadeLift
           ? TRAIL_SHAPE_SQUARE
           : burstTrailShapeValue(chooseBurstTrailShape(liftParticles.shapeWeights, liftRng));
-        const scatter = burstTrailScatterOffset(
-          particle.vx,
-          particle.vy,
-          particle.vz,
-          liftTubeRadius,
-          liftRng,
-        );
+        const scatter = brocadeLift
+          ? burstTrailScatterOffset(particle.vx, particle.vy, particle.vz, liftTubeRadius, liftRng)
+          : flatLiftScatterOffset(liftTubeRadius, liftRng);
         this.pp.new({
           x: pathPoint.x + scatter.x,
           y: pathPoint.y + scatter.y,
@@ -2057,7 +2216,8 @@ export class Effects {
     rng: RandomSource,
   ): number {
     if (maxRemaining <= 0) return 0;
-    const pathPosition = clamp(headAge, 0, 1) * 100;
+    const pathAge = clamp(headAge, 0, 1);
+    const pathPosition = pathAge * 100;
     const stop = sampleBurstTrailStop(trail, pathPosition);
     if (!stop || stop.density <= 0) return 0;
     const lifeScale = trailLifeScale;
@@ -2085,11 +2245,11 @@ export class Effects {
     if (life <= 0.015) return 0;
     const agedLife = life - ageOffset;
     if (agedLife <= 0.015) return 0;
-    const pathAge = clamp(headAge, 0, 1);
     const age = clamp(ageOffset / life, 0, 1);
     const closingLifeReference = Math.max(0.01, headLifeReference);
     const closingElapsedSeconds = Math.max(0, ageOffset);
     const initialSpreadPosition = clamp(spreadPositionPercent, 0, 100);
+    const initialFadePosition = pathPosition;
     const inherited = motion.inheritedVelocity;
     const turbulence = motion.turbulence;
     const headSpeed = Math.sqrt(headVx * headVx + headVy * headVy + headVz * headVz);
@@ -2139,7 +2299,7 @@ export class Effects {
     );
     const spreadBirthAge = age;
     const spin = clamp(motion.spin, 0, 8);
-    const initialAlpha = burstTrailWideTailAlpha(trail, initialSpreadPosition);
+    const initialAlpha = burstTrailWideTailAlpha(trail, initialFadePosition);
     const particle = this.pp.new({
       x: x + headGap.x + currentSpreadX,
       y: y + headGap.y + currentSpreadY,
@@ -2172,7 +2332,8 @@ export class Effects {
           1,
         );
         const spreadPosition = initialSpreadPosition * (1 - spreadProgress);
-        p.alpha = burstTrailWideTailAlpha(trail, spreadPosition);
+        const fadePosition = initialFadePosition * (1 - spreadProgress);
+        p.alpha = burstTrailWideTailAlpha(trail, fadePosition);
         const elapsedSinceBirth = Math.max(0, particleAge - spreadBirthAge) * life;
         const distanceBehindHead =
           initialDistanceBehindHead + elapsedSinceBirth * relativeHeadSpeed * 100;

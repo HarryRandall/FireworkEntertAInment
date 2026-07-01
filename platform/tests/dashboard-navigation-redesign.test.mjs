@@ -110,14 +110,32 @@ test('supporting app routes and workspace summary API are shipped', () => {
   const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
   assert.match(showReplayCard, /CoverPoster/);
   assert.match(showReplayCard, /show\.coverShader \?\? shaderCoverFromSeed/);
-  assert.match(showReplayCard, /FireworkReplayCanvas/);
   assert.match(showReplayCard, /onPointerEnter/);
   assert.match(showReplayCard, /imagePath=\{show\.coverImagePath\}/);
-  assert.match(showReplayCard, /getShowReplayCues/);
-  assert.match(showReplayCard, /loading: \(\) => <ReplayCanvasSkeleton \/>/);
-  assert.match(showReplayCard, /h-\[16%\]/);
-  assert.match(showReplayCard, /backdrop-blur-md/);
+  assert.match(showReplayCard, /ReplayCanvasSkeleton/);
+  assert.match(showReplayCard, /loadingBarPosition="center"/);
+  assert.match(showReplayCard, /loadingBarVariant="compact"/);
   assert.doesNotMatch(showReplayCard, /rgba\(0,0,0,0\.48\)_100%/);
+
+  const showReplayProvider = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
+  assert.match(showReplayProvider, /FireworkReplayCanvas/);
+  assert.match(showReplayProvider, /getShowReplayPreviewCues/);
+  assert.match(showReplayProvider, /SHOW_CARD_PREVIEW_WINDOW_SECONDS/);
+  assert.match(showReplayProvider, /const previewStart = 0/);
+  assert.match(showReplayProvider, /showLoadingBar=\{false\}/);
+  assert.match(showReplayProvider, /formatEditedAt\(mountedPreview\.show\.lastEditedAt\)/);
+  assert.match(showReplayProvider, /<Play size=\{16\} fill="currentColor" \/>/);
+
+  const showReplayAction = read('app/actions/show-replay-cues.ts');
+  assert.match(showReplayAction, /listReplayPreviewCuesForShow/);
+  assert.match(showReplayAction, /SHOW_CARD_PREVIEW_WINDOW_SECONDS/);
+
+  const showsQueries = read('lib/shows/queries.server.ts');
+  assert.match(showsQueries, /listReplayPreviewCuesForShow/);
+  assert.match(showsQueries, /const previewEnd = previewWindowSeconds/);
+  assert.match(showsQueries, /\.lte\('time_seconds', previewEnd\)/);
+  assert.match(showsQueries, /cue\.timeSeconds <= previewEnd \+ 0\.001/);
+  assert.doesNotMatch(showsQueries, /firstData/);
 
   const showsToolbar = read('app/(app)/shows/ShowsToolbar.tsx');
   assert.match(showsToolbar, /Search shows or songs/);
@@ -178,7 +196,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const templatePreview = read('app/components/app/TemplateReplayPreview.tsx');
   assert.match(templatePreview, /absolute inset-x-0 bottom-0/);
-  assert.match(templatePreview, /bg-black\/55/);
+  assert.match(templatePreview, /bg-black\/45/);
   assert.match(templatePreview, /relative h-44 overflow-hidden/);
   assert.doesNotMatch(templatePreview, /relative h-64 overflow-hidden/);
   assert.match(templatePreview, /top-3 right-3/);

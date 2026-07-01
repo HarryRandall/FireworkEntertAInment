@@ -254,11 +254,8 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(shell, /const \[inspectorCollapsed, setInspectorCollapsed\] = useState\(true\)/);
   assert.doesNotMatch(shell, /collapsedCurrent/);
   assert.match(shell, /inspectorCollapsed \? 'lg:border-l-0' : 'lg:border-l'/);
-  assert.match(shell, /lg:w-full lg:flex-1 lg:flex-col lg:items-center/);
-  assert.match(
-    shell,
-    /hidden h-px w-full shrink-0 bg-\[color:var\(--color-border-subtle\)\] lg:block/,
-  );
+  assert.match(shell, /lg:h-full lg:w-full lg:flex-col lg:items-center/);
+  assert.match(shell, /mb-1 h-px w-full shrink-0 bg-\[color:var\(--color-border-subtle\)\]/);
   assert.match(shell, /h-full min-h-0 w-full min-w-0 flex-1/);
   assert.match(shell, /eyebrow\?: string \| null/);
   assert.match(shell, /dirty/);
@@ -360,8 +357,13 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /controlScope="starInner"/);
   assert.match(fireworkEditor, /id: 'trail'/);
   assert.match(fireworkEditor, /controlScope="trail"/);
-  assert.match(fireworkEditor, /id: 'launch'/);
-  assert.match(fireworkEditor, /id: 'fx'/);
+  assert.match(fireworkEditor, /id: 'launch-dot'/);
+  assert.match(fireworkEditor, /controlScope="launchShell"/);
+  assert.match(fireworkEditor, /id: 'launch-trail'/);
+  assert.match(fireworkEditor, /controlScope="launchTrail"/);
+  assert.match(fireworkEditor, /id: 'fx-strobe'/);
+  assert.match(fireworkEditor, /id: 'fx-crackle'/);
+  assert.match(fireworkEditor, /id: 'fx-split'/);
   assert.match(fireworkEditor, /id: 'smoke'/);
   assert.match(fireworkEditor, /id: 'sound'/);
   assert.match(fireworkEditor, /id: 'history'/);

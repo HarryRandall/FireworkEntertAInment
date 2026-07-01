@@ -39,6 +39,7 @@ import {
   invalidateAdminImportsCache,
   requirePermission,
 } from '@/lib/admin.server';
+import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
 import { slugifyTitle } from '@/lib/show-domain';
 import {
   DEFAULT_OPENROUTER_MODEL,
@@ -347,6 +348,7 @@ export async function updateProfileAction(
     console.error('[updateProfileAction] failed:', error);
     return { ok: false, error: 'Could not save changes' };
   }
+  await invalidateUserProfileCache(userId);
   revalidatePath('/settings/profile');
   revalidatePath('/home');
   return { ok: true };

@@ -4,8 +4,28 @@
  * mirrors the layout of a specific page so the swap to real content
  * does not cause large layout shifts.
  */
-import { Fragment } from 'react';
-import { ListFilter, Plus, Search } from 'lucide-react';
+import { Fragment, type ComponentType } from 'react';
+import {
+  CircleDot,
+  Cloud,
+  History,
+  ListFilter,
+  Maximize2,
+  Play,
+  Plus,
+  Repeat,
+  Rocket,
+  RotateCcw,
+  Save,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
+  Undo2,
+  Volume2,
+  Wind,
+  Zap,
+} from 'lucide-react';
 import { ReplayPanelLoadingStage } from '@/app/components/app/ReplayPanelLoadingStage';
 import { Button } from '@/app/components/ui/Button';
 import { Skeleton } from '@/app/components/ui/Feedback';
@@ -686,16 +706,197 @@ export function AdminFireworkEditorSkeleton() {
   return <AdminVisualEditorSkeleton label="Loading firework editor" />;
 }
 
-function AdminVisualEditorSkeleton({ label }: { label: string }) {
+/** Skeleton for style-default editor pages, which expose a narrow section rail. */
+export function AdminStyleDefaultEditorSkeleton() {
+  return (
+    <AdminVisualEditorSkeleton
+      label="Loading style default editor"
+      primaryTabs={[
+        { label: 'Details', icon: SlidersHorizontal },
+        { label: 'Trail', icon: Wind },
+      ]}
+      utilityTabs={[{ label: 'JSON', icon: BracesSkeletonIcon }]}
+    />
+  );
+}
+
+function AdminVisualEditorSkeleton({
+  label,
+  primaryTabs = [
+    { label: 'Details', icon: SlidersHorizontal },
+    { label: 'Star', icon: Sparkles },
+    { label: 'Star Inner', icon: CircleDot },
+    { label: 'Trail', icon: Wind },
+    { label: 'Launch', icon: Rocket },
+    { label: 'FX', icon: Zap },
+    { label: 'Smoke', icon: Cloud },
+    { label: 'Sound', icon: Volume2 },
+  ],
+  utilityTabs = [
+    { label: 'History', icon: History },
+    { label: 'JSON', icon: BracesSkeletonIcon },
+  ],
+}: {
+  label: string;
+  primaryTabs?: EditorSkeletonTab[];
+  utilityTabs?: EditorSkeletonTab[];
+}) {
   return (
     <div
-      className="h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[#05070d]"
+      className="grid h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[color:var(--color-bg-default)] lg:grid-cols-[minmax(0,1fr)_60px]"
       aria-label={label}
     >
-      <div
-        className="h-full min-h-[520px] bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.035),transparent_44%),linear-gradient(180deg,#05070d_0%,#070b14_58%,#020307_100%)]"
-        aria-hidden
-      />
+      <section className="relative min-h-[520px] overflow-hidden bg-[#05070d] text-white lg:min-h-0">
+        <div
+          className="h-full bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.035),transparent_44%),linear-gradient(180deg,#05070d_0%,#070b14_58%,#020307_100%)]"
+          aria-hidden
+        />
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-6 pb-4 sm:px-5 sm:pb-5">
+          <div className="flex flex-wrap items-start justify-end gap-3 pr-16 sm:pr-[4.5rem]">
+            <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                tabIndex={-1}
+                aria-disabled
+                className="pointer-events-none h-9 rounded-[10px] border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
+              >
+                <Undo2 size={14} />
+                Revert
+              </Button>
+              <Button
+                type="button"
+                tabIndex={-1}
+                aria-disabled
+                className="pointer-events-none h-9 rounded-[10px] bg-[color:var(--hl)] px-4 text-xs font-semibold text-[#05231a] hover:bg-[color:var(--hl)]/85"
+              >
+                <Save size={14} />
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute top-6 right-6 z-30">
+          <div className="focus-glow-action border-outline-variant/15 bg-surface-container-low/80 text-on-surface flex h-9 w-9 items-center justify-center rounded-full border transition-colors duration-150 ease-out">
+            <Settings size={16} strokeWidth={2} aria-hidden />
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">
+          <EditorTransportSkeleton />
+        </div>
+      </section>
+
+      <aside className="grid min-h-0 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] lg:grid-cols-[60px] lg:border-t-0 lg:border-l">
+        <div className="order-1 flex min-w-0 gap-1 overflow-x-auto bg-[color:var(--color-bg-muted)] p-2 lg:order-2 lg:flex-col lg:items-center lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:px-0 lg:py-2.5">
+          <nav
+            className="flex min-w-0 gap-1 lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col lg:items-center"
+            aria-label="Editor sections"
+          >
+            {primaryTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <div
+                  key={tab.label}
+                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-[52px] lg:w-12 lg:min-w-12 lg:px-1"
+                >
+                  <Icon size={18} />
+                  <span className="max-h-[1.25rem] max-w-full overflow-hidden text-[9px] leading-[1.05] font-semibold tracking-normal">
+                    {tab.label}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="hidden flex-1 lg:block" aria-hidden />
+            <div
+              className="hidden h-px w-full shrink-0 bg-[color:var(--color-border-subtle)] lg:block"
+              aria-hidden
+            />
+            {utilityTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <div
+                  key={tab.label}
+                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-[52px] lg:w-12 lg:min-w-12 lg:px-1"
+                >
+                  <Icon size={18} />
+                  <span className="max-h-[1.25rem] max-w-full overflow-hidden text-[9px] leading-[1.05] font-semibold tracking-normal">
+                    {tab.label}
+                  </span>
+                </div>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+type EditorSkeletonTab = {
+  label: string;
+  icon: ComponentType<{ size?: number }>;
+};
+
+function BracesSkeletonIcon({ size = 18 }: { size?: number }) {
+  return (
+    <span
+      className="font-mono text-[18px] leading-none text-current"
+      style={{ fontSize: size }}
+      aria-hidden
+    >
+      {'{}'}
+    </span>
+  );
+}
+
+function EditorTransportSkeleton() {
+  return (
+    <div
+      className="pointer-events-auto mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md"
+      aria-label="Loading preview controls"
+    >
+      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-[var(--shadow-cta)]">
+        <Play size={17} className="translate-x-0.5" fill="currentColor" strokeWidth={2.5} />
+      </div>
+      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
+        <RotateCcw size={15} strokeWidth={2} />
+      </div>
+      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-transparent bg-[color:var(--hl,#10b981)] text-black">
+        <Repeat size={15} strokeWidth={2} />
+      </div>
+
+      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
+        <span className="min-w-[2.55rem] text-right font-mono text-[11px] text-white/75 tabular-nums">
+          0:00
+        </span>
+        <div className="relative flex h-7 min-w-0 items-center rounded-full">
+          <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/90" />
+          {[28, 54, 82].map((left) => (
+            <span
+              key={left}
+              className="absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm"
+              style={{ left: `${left}%` }}
+              aria-hidden
+            >
+              <span className="h-4 w-px rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,.42)]" />
+            </span>
+          ))}
+          <span
+            className="absolute top-1/2 left-0 z-30 size-4 -translate-y-1/2 rounded-full border-2 border-[color:var(--hl,#10b981)] bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
+            aria-hidden
+          />
+        </div>
+        <span className="min-w-[2.55rem] font-mono text-[11px] text-white/75 tabular-nums">
+          0:05
+        </span>
+      </div>
+
+      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
+        <Maximize2 size={15} strokeWidth={2} />
+      </div>
     </div>
   );
 }
@@ -864,10 +1065,6 @@ export function ReplayPanelSkeleton() {
       <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xs">
         <div className="relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden bg-[#020409]">
           <ReplayPanelLoadingStage />
-          <div className="absolute top-6 left-6 z-20 space-y-3">
-            <Skeleton className="h-10 w-72 max-w-[calc(100vw-5rem)] bg-white/15" />
-            <Skeleton className="h-4 w-64 max-w-[calc(100vw-5rem)] bg-white/12" />
-          </div>
           <Skeleton className="absolute top-6 right-6 z-20 h-9 w-9 rounded-full bg-white/12" />
         </div>
       </div>

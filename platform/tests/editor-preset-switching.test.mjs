@@ -69,9 +69,8 @@ test('writing a top-level burstTrail clears nested star layer burstTrails', () =
   );
   assert.match(styleDefaults, /delete layer\.burstTrail/);
 
-  for (const source of [fireworkEditor, effectEditor]) {
-    assert.match(source, /function updateBurstTrail[\s\S]*?clearNestedStarBurstTrails\(/);
-  }
+  assert.match(fireworkEditor, /mutateOverridesForStyle\('trail'/);
+  assert.match(effectEditor, /updateModelDefaultsForStyle\('trail'/);
 
   assert.match(
     controls,

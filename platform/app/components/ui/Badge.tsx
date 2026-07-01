@@ -49,20 +49,24 @@ const dotClasses: Record<Tone, string> = {
 // saturated tone-coloured text, leading tone icon. Uses explicit color-mix so
 // the background opacity renders reliably on every theme. Applied when `solid` is true.
 const solidClasses: Record<Tone, string> = {
-  neutral: 'border-transparent bg-muted text-muted-foreground',
+  neutral:
+    'border-transparent bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]',
   success:
     'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  danger: 'border-transparent bg-destructive/10 text-destructive',
+  danger:
+    'border-transparent bg-[color-mix(in_srgb,var(--color-status-danger)_18%,transparent)] text-[color:var(--color-status-danger)]',
   warning:
     'border-transparent bg-[color-mix(in_srgb,var(--color-status-warning)_18%,transparent)] text-[color:var(--color-status-warning)]',
   info: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-info)_18%,transparent)] text-[color:var(--color-status-info)]',
-  accent: 'border-transparent bg-accent text-accent-foreground',
+  accent:
+    'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
   violet: 'border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300',
   sky: 'border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300',
   'amber-soft': 'border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300',
-  primary: 'border-transparent bg-primary/10 text-foreground',
+  primary:
+    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
   live: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  wow: 'border-transparent bg-accent text-accent-foreground',
+  wow: 'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
 };
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;

@@ -44,6 +44,7 @@ const BLUE_SPHERE_HEAD = {
 function makeNeutralLaunchDefaults(): JsonRecord {
   return {
     shell: {
+      visible: false,
       shape: 'circle',
       sizeScale: 0.25,
       brightness: 0,
@@ -194,6 +195,25 @@ function makeHiddenTrailCarrierStarLayers(): JsonRecord {
   return stars;
 }
 
+function makeLaunchPreviewStarLayers(): JsonRecord {
+  const disabledBurstTrail = makeBurstTrailPreset('none');
+
+  return {
+    outer: {
+      enabled: false,
+      count: 1,
+      head: {
+        visible: false,
+      },
+      burstTrail: disabledBurstTrail,
+    },
+    core: {
+      enabled: false,
+      burstTrail: disabledBurstTrail,
+    },
+  };
+}
+
 export function makeTrailPreviewStarDefaults(): JsonRecord {
   return {
     stars: makeTrailPreviewStarLayers(),
@@ -205,7 +225,11 @@ export function makeStyleDefaultPreviewBaseModel(
 ): JsonRecord | undefined {
   const disabledBurstTrail = makeBurstTrailPreset('none');
   const starLayers =
-    kind === 'trail' ? makeHiddenTrailCarrierStarLayers() : makeNeutralStarPreviewLayers();
+    kind === 'trail'
+      ? makeHiddenTrailCarrierStarLayers()
+      : kind === 'launch'
+        ? makeLaunchPreviewStarLayers()
+        : makeNeutralStarPreviewLayers();
   const launchDefaults = makeNeutralLaunchDefaults();
   if (kind === 'launch') {
     launchDefaults.shell = cloneJson(DEFAULT_DESIGN.launch.shell);

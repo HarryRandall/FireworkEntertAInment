@@ -13,17 +13,32 @@ const root = process.cwd();
 const adminListPages = [
   'app/(admin)/admin/catalogue/page.tsx',
   'app/(admin)/admin/fireworks/page.tsx',
+  'app/(admin)/admin/multishots/page.tsx',
   'app/(admin)/admin/suppliers/page.tsx',
   'app/(admin)/admin/users/page.tsx',
 ];
 
 test('shared data table uses the reference table chrome', () => {
   const source = readFileSync(join(root, 'app/components/ui/DataTable.tsx'), 'utf8');
+  const stickyViewport = readFileSync(
+    join(root, 'app/components/ui/StickyTableViewport.tsx'),
+    'utf8',
+  );
 
-  assert.match(source, /border-border bg-background overflow-hidden rounded-lg border shadow-xs/);
+  assert.match(
+    source,
+    /border-border bg-background relative overflow-hidden rounded-lg border shadow-xs/,
+  );
   assert.match(source, /isolate overflow-x-auto overscroll-x-contain/);
-  assert.match(source, /md:overflow-x-auto md:overflow-y-auto md:overscroll-none/);
+  assert.match(source, /StickyTableViewport/);
+  assert.match(
+    stickyViewport,
+    /md:min-h-0 md:flex-1 md:overflow-x-auto md:overflow-y-auto md:overscroll-none/,
+  );
+  assert.match(stickyViewport, /header\.scrollLeft = scroll\.scrollLeft/);
+  assert.match(stickyViewport, /hideRealHead\(\)/);
   assert.doesNotMatch(source, /md:overflow-auto/);
+  assert.doesNotMatch(source, /absolute top-0 right-0 z-30/);
   assert.match(source, /caption-bottom border-separate border-spacing-0 text-left text-sm/);
   assert.match(
     source,

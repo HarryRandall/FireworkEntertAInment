@@ -23,6 +23,8 @@ type SliderFieldProps = {
   /** Optional maximum for the number input. Use null when typed values may exceed the slider range. */
   numberInputMax?: number | null;
   inputAriaLabel?: string;
+  /** Span the full width of the surrounding control grid, for fields with no natural pair. */
+  fullWidth?: boolean;
   onChange: (value: number) => void;
 };
 
@@ -38,6 +40,7 @@ export function SliderField({
   showNumberInput = false,
   numberInputMax,
   inputAriaLabel,
+  fullWidth = false,
   onChange,
 }: SliderFieldProps) {
   const id = useId();
@@ -54,14 +57,25 @@ export function SliderField({
   }
 
   return (
-    <Field className="space-y-1.5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <FieldLabel htmlFor={id} className="truncate text-xs">
-            {label}
-          </FieldLabel>
-          {hint ? <InfoTooltip text={hint} /> : null}
-        </div>
+    <Field className={fullWidth ? 'col-span-full space-y-1.5' : 'space-y-1.5'}>
+      <div className="flex items-center gap-1.5">
+        <FieldLabel htmlFor={id} className="text-xs whitespace-nowrap">
+          {label}
+        </FieldLabel>
+        {hint ? <InfoTooltip text={hint} /> : null}
+      </div>
+      <div className="flex items-center gap-3">
+        <Slider
+          id={id}
+          value={[sliderValue]}
+          min={min}
+          max={max}
+          step={step}
+          disabled={disabled}
+          onValueChange={(next) => onChange(next[0] ?? value)}
+          aria-label={typeof label === 'string' ? label : undefined}
+          className="min-w-0 flex-1 py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
+        />
         {showNumberInput ? (
           <Input
             type="number"
@@ -74,7 +88,7 @@ export function SliderField({
             aria-label={
               inputAriaLabel ?? (typeof label === 'string' ? `${label} value` : undefined)
             }
-            className="h-7 w-14 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="h-7 w-14 shrink-0 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             onFocus={(event) => event.currentTarget.select()}
             onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
             onBlur={(event) => {
@@ -82,22 +96,11 @@ export function SliderField({
             }}
           />
         ) : (
-          <span className="rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
+          <span className="shrink-0 rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-emphasis)] tabular-nums">
             {display}
           </span>
         )}
       </div>
-      <Slider
-        id={id}
-        value={[sliderValue]}
-        min={min}
-        max={max}
-        step={step}
-        disabled={disabled}
-        onValueChange={(next) => onChange(next[0] ?? value)}
-        aria-label={typeof label === 'string' ? label : undefined}
-        className="py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
-      />
     </Field>
   );
 }

@@ -11,15 +11,15 @@
  * visibility flags decide which sections an editor exposes.
  */
 import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown, RotateCcw } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { ColorField } from '@/app/components/admin/ColorField';
-import { Button } from '@/app/components/ui/Button';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Switch } from '@/components/ui/switch';
 import {
+  BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX,
   BURST_TRAIL_PARTICLES_PER_STAR_MAX,
   makeBurstTrailPreset,
   type BurstTrailPreset,
@@ -131,7 +131,6 @@ const STAR_OPENING_COLOUR_HEX = '#ff6b14';
 const STAR_OPENING_PERCENT_MIN = 1;
 const STAR_OPENING_PERCENT_MAX = 100;
 const STAR_CLOSING_COLOUR_HEX = '#ffd666';
-const TRAIL_CLOSING_COLOUR_HEX = '#ff5714';
 const STAR_CLOSING_PERCENT_MIN = 1;
 const STAR_CLOSING_PERCENT_MAX = 100;
 const STAR_CLOSING_END_PERCENT_MIN = 0;
@@ -145,6 +144,8 @@ const TRAIL_PARTICLE_LIFE_MAX = 2;
 const TRAIL_OPENING_BRIGHTNESS_MAX = 300;
 const SHELL_TRAIL_SPREAD_ANGLE_MAX = 60;
 const TRAIL_SPREAD_ANGLE_MAX = 80;
+const TRAIL_FRONT_SPREAD_ANGLE_MIN = 1;
+const TRAIL_FRONT_SPREAD_ANGLE_MAX = BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX;
 const TRAIL_BIAS_MIN = -100;
 const TRAIL_BIAS_MAX = 100;
 const TRAIL_HEAD_GAP_MAX = 300;
@@ -155,12 +156,16 @@ const LAUNCH_SHELL_SIZE_SCALE_MIN = 0.25;
 const LAUNCH_SHELL_SIZE_SCALE_MAX = 4;
 const LAUNCH_SHELL_BRIGHTNESS_MAX = 3;
 const SHELL_TRAIL_TUBE_DIAMETER_MAX = 90;
-const LIFT_PARTICLE_AMOUNT_MAX = 240;
+const LIFT_PARTICLE_AMOUNT_MAX = 1000;
 const LIFT_PARTICLE_SIZE_MAX = 180;
 const LIFT_PARTICLE_HEIGHT_PERCENT_MAX = 100;
 const LIFT_PATH_SAMPLES_MAX = 12;
 const LIFT_SWIRL_STRENGTH_MAX = 4;
-const LIFT_SWIRL_RADIUS_MAX = 90;
+const LIFT_SWIRL_RADIUS_MAX = 180;
+const LIFT_SWIRL_LOOP_COUNT_MAX = 6;
+const LIFT_SWIRL_LOOP_LENGTH_MIN = 5;
+const LIFT_SWIRL_LOOP_LENGTH_MAX = 100;
+const LIFT_SWIRL_LOOP_HEIGHT_MAX = 180;
 const LIFT_SWIRL_RATE_MAX = 16;
 const LAUNCH_SMOKE_PARTICLES_MAX = 500;
 const LAUNCH_SMOKE_SIZE_MAX = 220;
@@ -318,6 +323,12 @@ function formatTurns(value: number): string {
   return `${value.toFixed(value % 1 === 0 ? 0 : 1)} r/s`;
 }
 
+function formatLoopCount(value: number): string {
+  if (value <= 0) return 'Off';
+  const formatted = value.toFixed(value % 1 === 0 ? 0 : 1);
+  return `${formatted} ${value === 1 ? 'loop' : 'loops'}`;
+}
+
 function trailBiasFromFrontClump(frontClump: number): number {
   return round2((frontClump - 0.5) * 200);
 }
@@ -408,6 +419,7 @@ function CalibratedSliderField({
   range,
   disabled,
   hint,
+  fullWidth,
   onChange,
 }: {
   label: string;
@@ -415,6 +427,7 @@ function CalibratedSliderField({
   range: CalibratedRange;
   disabled?: boolean;
   hint: ReactNode;
+  fullWidth?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -426,6 +439,7 @@ function CalibratedSliderField({
       value={rawToCalibrated(value, range)}
       formatValue={formatPercent}
       disabled={disabled}
+      fullWidth={fullWidth}
       hint={hint}
       onChange={(next) => onChange(calibratedToRaw(next, range))}
     />
@@ -710,6 +724,8 @@ export type RenderControlsProps = {
     | 'starInner'
     | 'trail'
     | 'launch'
+    | 'launchShell'
+    | 'launchTrail'
     | 'smoke'
     | 'strobe'
     | 'crackle'
@@ -988,130 +1004,152 @@ export function FireworkRenderControls({
     );
   }
 
-  function renderLaunchShellControls() {
-    if (!showLaunch) return null;
+  function renderLaunchShellParticleControls() {
+    if (!showLaunch && controlScope !== 'launchShell') return null;
 
     const shell = design.launch.shell;
-    const shellTrail = shell.trail;
+    const shellVisible = shell.visible;
+
+    const content = (
+      <div className={CONTROL_GRID_CLASS}>
+        <SwitchField
+          label="Show shell particle"
+          checked={shellVisible}
+          disabled={disabled}
+          hint="Draw the rising carrier particle. Turning it off keeps the hidden physics carrier for timing and lift effects."
+          onChange={(value) => setLaunchValue('shell', 'visible', value)}
+        />
+        <Field>
+          <div className="flex items-center gap-1.5">
+            <FieldLabel>Shell shape</FieldLabel>
+            <InfoTooltip text="Shape of the visible carrier particle that rises before the burst." />
+          </div>
+          <SelectField
+            value={shell.shape}
+            onChange={(value) => setLaunchValue('shell', 'shape', value as LaunchShellShape)}
+            options={LAUNCH_SHELL_SHAPE_OPTIONS}
+            ariaLabel="Shell particle shape"
+            disabled={disabled || !shellVisible}
+          />
+        </Field>
+        <ColorField
+          label="Shell colour"
+          value={rgbObjectToHex(shell.colour)}
+          allowClear
+          disabled={disabled || !shellVisible}
+          hint="Leave clear to inherit the warmed launch colour."
+          onChange={(value) =>
+            setLaunchValue('shell', 'colour', value ? hexToRgbObject(value) : undefined)
+          }
+        />
+        <SliderField
+          label="Shell size"
+          min={LAUNCH_SHELL_SIZE_SCALE_MIN}
+          max={LAUNCH_SHELL_SIZE_SCALE_MAX}
+          step={0.05}
+          value={shell.sizeScale}
+          formatValue={formatMultiplier}
+          showNumberInput
+          inputAriaLabel="Shell particle size value"
+          disabled={disabled || !shellVisible}
+          hint="Size multiplier for the rising carrier particle."
+          onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
+        />
+        <SliderField
+          label="Shell brightness"
+          min={0}
+          max={LAUNCH_SHELL_BRIGHTNESS_MAX}
+          step={0.05}
+          value={shell.brightness}
+          formatValue={formatMultiplier}
+          showNumberInput
+          inputAriaLabel="Shell particle brightness value"
+          disabled={disabled || !shellVisible}
+          hint="Colour intensity of the rising carrier particle."
+          onChange={(value) => setLaunchValue('shell', 'brightness', round2(value))}
+        />
+        <SliderField
+          label="Shell glow"
+          min={MIN_HEAD_GLOW_STRENGTH}
+          max={MAX_HEAD_GLOW_STRENGTH}
+          step={0.05}
+          value={shell.glowStrength}
+          formatValue={formatMultiplier}
+          showNumberInput
+          inputAriaLabel="Shell particle glow value"
+          disabled={disabled || !shellVisible || shell.shape !== 'orb'}
+          hint="Halo strength for the Soft orb shape."
+          onChange={(value) => setLaunchValue('shell', 'glowStrength', round2(value))}
+        />
+      </div>
+    );
+
+    if (controlScope === 'launchShell') return content;
 
     return (
-      <>
-        <SubSection title="Shell particle" defaultExpanded>
-          <div className={CONTROL_GRID_CLASS}>
-            <Field>
-              <div className="flex items-center gap-1.5">
-                <FieldLabel>Shell shape</FieldLabel>
-                <InfoTooltip text="Shape of the visible carrier particle that rises before the burst." />
-              </div>
-              <SelectField
-                value={shell.shape}
-                onChange={(value) => setLaunchValue('shell', 'shape', value as LaunchShellShape)}
-                options={LAUNCH_SHELL_SHAPE_OPTIONS}
-                ariaLabel="Shell particle shape"
-                disabled={disabled}
-              />
-            </Field>
-            <ColorField
-              label="Shell colour"
-              value={rgbObjectToHex(shell.colour)}
-              allowClear
-              disabled={disabled}
-              hint="Leave clear to inherit the warmed launch colour."
-              onChange={(value) =>
-                setLaunchValue('shell', 'colour', value ? hexToRgbObject(value) : undefined)
-              }
-            />
-            <SliderField
-              label="Shell size"
-              min={LAUNCH_SHELL_SIZE_SCALE_MIN}
-              max={LAUNCH_SHELL_SIZE_SCALE_MAX}
-              step={0.05}
-              value={shell.sizeScale}
-              formatValue={formatMultiplier}
-              showNumberInput
-              inputAriaLabel="Shell particle size value"
-              disabled={disabled}
-              hint="Size multiplier for the rising carrier particle."
-              onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
-            />
-            <SliderField
-              label="Shell brightness"
-              min={0}
-              max={LAUNCH_SHELL_BRIGHTNESS_MAX}
-              step={0.05}
-              value={shell.brightness}
-              formatValue={formatMultiplier}
-              showNumberInput
-              inputAriaLabel="Shell particle brightness value"
-              disabled={disabled}
-              hint="Colour intensity of the rising carrier particle."
-              onChange={(value) => setLaunchValue('shell', 'brightness', round2(value))}
-            />
-            <SliderField
-              label="Shell glow"
-              min={MIN_HEAD_GLOW_STRENGTH}
-              max={MAX_HEAD_GLOW_STRENGTH}
-              step={0.05}
-              value={shell.glowStrength}
-              formatValue={formatMultiplier}
-              showNumberInput
-              inputAriaLabel="Shell particle glow value"
-              disabled={disabled || shell.shape !== 'orb'}
-              hint="Halo strength for the Soft orb shape."
-              onChange={(value) => setLaunchValue('shell', 'glowStrength', round2(value))}
-            />
-          </div>
-        </SubSection>
+      <SubSection title="Shell particle" defaultExpanded>
+        {content}
+      </SubSection>
+    );
+  }
 
-        <SubSection title="Shell trail" defaultExpanded>
-          <div className={CONTROL_GRID_CLASS}>
-            <SliderField
-              label="Tube diameter"
-              min={0}
-              max={SHELL_TRAIL_TUBE_DIAMETER_MAX}
-              step={1}
-              value={shellTrail.tubeDiameter}
-              showNumberInput
-              inputAriaLabel="Shell trail tube diameter value"
-              disabled={disabled}
-              hint="Maximum diameter of the rising shell trail. 0 keeps particles on the exact shell path."
-              onChange={(value) =>
-                setLaunchNestedValue('shell', 'trail', 'tubeDiameter', round2(value))
-              }
-            />
-            <SliderField
-              label="Front angle"
-              min={0}
-              max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
-              step={1}
-              value={shellTrail.frontAngle}
-              formatValue={formatDegrees}
-              showNumberInput
-              inputAriaLabel="Shell trail front angle value"
-              disabled={disabled}
-              hint="Spread angle near the shell head of the rising streak. The tube diameter remains the hard cap."
-              onChange={(value) =>
-                setLaunchNestedValue('shell', 'trail', 'frontAngle', round2(value))
-              }
-            />
-            <SliderField
-              label="Tail angle"
-              min={0}
-              max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
-              step={1}
-              value={shellTrail.tailAngle}
-              formatValue={formatDegrees}
-              showNumberInput
-              inputAriaLabel="Shell trail tail angle value"
-              disabled={disabled}
-              hint="Spread angle near the old tail of the rising streak, closer to launch. The tube diameter remains the hard cap."
-              onChange={(value) =>
-                setLaunchNestedValue('shell', 'trail', 'tailAngle', round2(value))
-              }
-            />
-          </div>
-        </SubSection>
-      </>
+  function renderLaunchShellTrailControls() {
+    if (!showLaunch && controlScope !== 'launchTrail') return null;
+
+    const shellTrail = design.launch.shell.trail;
+
+    const content = (
+      <div className={CONTROL_GRID_CLASS}>
+        <SliderField
+          label="Tube diameter"
+          min={0}
+          max={SHELL_TRAIL_TUBE_DIAMETER_MAX}
+          step={1}
+          value={shellTrail.tubeDiameter}
+          showNumberInput
+          inputAriaLabel="Shell trail tube diameter value"
+          disabled={disabled}
+          hint="Maximum diameter of the rising shell trail. 0 keeps particles on the exact shell path."
+          onChange={(value) =>
+            setLaunchNestedValue('shell', 'trail', 'tubeDiameter', round2(value))
+          }
+        />
+        <SliderField
+          label="Front angle"
+          min={0}
+          max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
+          step={1}
+          value={shellTrail.frontAngle}
+          formatValue={formatDegrees}
+          showNumberInput
+          inputAriaLabel="Shell trail front angle value"
+          disabled={disabled}
+          hint="Spread angle near the shell head of the rising streak. The tube diameter remains the hard cap."
+          onChange={(value) => setLaunchNestedValue('shell', 'trail', 'frontAngle', round2(value))}
+        />
+        <SliderField
+          label="Tail angle"
+          min={0}
+          max={SHELL_TRAIL_SPREAD_ANGLE_MAX}
+          step={1}
+          value={shellTrail.tailAngle}
+          formatValue={formatDegrees}
+          showNumberInput
+          inputAriaLabel="Shell trail tail angle value"
+          disabled={disabled}
+          fullWidth
+          hint="Spread angle in the older lift trail after it clears the mortar. The launch starts straight and the tube diameter remains the hard cap."
+          onChange={(value) => setLaunchNestedValue('shell', 'trail', 'tailAngle', round2(value))}
+        />
+      </div>
+    );
+
+    if (controlScope === 'launchTrail') return content;
+
+    return (
+      <SubSection title="Shell trail" defaultExpanded>
+        {content}
+      </SubSection>
     );
   }
 
@@ -1197,6 +1235,7 @@ export function FireworkRenderControls({
                 showNumberInput
                 inputAriaLabel="Lift particle size value"
                 disabled={controlDisabled}
+                fullWidth
                 hint="Global size for every lift particle before head and tail scaling."
                 onChange={(value) =>
                   setLaunchNestedValue('liftParticles', 'particleSize', 'base', round2(value))
@@ -1339,6 +1378,26 @@ export function FireworkRenderControls({
                   hint="Seeded irregularity in lift-particle spacing."
                   onChange={(value) =>
                     setLaunchNestedValue('liftParticles', 'spacing', 'jitterPercent', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Cluster strength"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={liftParticles.spacing.clusterStrength}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Lift cluster strength value"
+                  disabled={controlDisabled}
+                  hint="Bunches the particle budget into brighter pockets along the loop."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'spacing',
+                      'clusterStrength',
+                      round2(value),
+                    )
                   }
                 />
                 <SliderField
@@ -1503,16 +1562,60 @@ export function FireworkRenderControls({
                 }
               />
               <SliderField
-                label="Swirl rate"
+                label="Loop count"
+                min={0}
+                max={LIFT_SWIRL_LOOP_COUNT_MAX}
+                step={0.1}
+                value={liftParticles.motion.swirlLoopCount}
+                formatValue={formatLoopCount}
+                showNumberInput
+                inputAriaLabel="Lift loop count value"
+                disabled={controlDisabled}
+                hint="How many full loopdy-loop turns the lift path draws after it clears the mortar."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlLoopCount', round2(value))
+                }
+              />
+              <SliderField
+                label="Loop length"
+                min={LIFT_SWIRL_LOOP_LENGTH_MIN}
+                max={LIFT_SWIRL_LOOP_LENGTH_MAX}
+                step={1}
+                value={liftParticles.motion.swirlLoopLength}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Lift loop length value"
+                disabled={controlDisabled}
+                hint="How much of the rise is used for the loop section. Shorter lengths make tighter arcs."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlLoopLength', round2(value))
+                }
+              />
+              <SliderField
+                label="Loop height"
+                min={0}
+                max={LIFT_SWIRL_LOOP_HEIGHT_MAX}
+                step={1}
+                value={liftParticles.motion.swirlLoopHeight}
+                showNumberInput
+                inputAriaLabel="Lift loop height value"
+                disabled={controlDisabled}
+                hint="Adds a flat vertical curl after the lift clears the mortar."
+                onChange={(value) =>
+                  setLaunchNestedValue('liftParticles', 'motion', 'swirlLoopHeight', round2(value))
+                }
+              />
+              <SliderField
+                label="Loop speed"
                 min={0}
                 max={LIFT_SWIRL_RATE_MAX}
                 step={0.1}
                 value={liftParticles.motion.swirlRate}
                 formatValue={formatTurns}
                 showNumberInput
-                inputAriaLabel="Lift swirl rate value"
+                inputAriaLabel="Lift loop speed value"
                 disabled={controlDisabled}
-                hint="How fast the lift trail spins around the ascent path."
+                hint="How quickly the loop phase rotates over time. Keep this low for slow loopdy-loop launches."
                 onChange={(value) =>
                   setLaunchNestedValue('liftParticles', 'motion', 'swirlRate', round2(value))
                 }
@@ -2165,6 +2268,7 @@ export function FireworkRenderControls({
               range={coreOpacityRange}
               value={heads.coreOpacityFalloff}
               disabled={controlDisabled}
+              fullWidth
               hint="Opacity falloff for the coloured core. 0% keeps the edge solid; higher fades the core into the surrounding glow."
               onChange={(value) =>
                 setLayerNestedValue(layerKey, 'head', 'coreOpacityFalloff', value)
@@ -2231,6 +2335,7 @@ export function FireworkRenderControls({
               range={backgroundGlowOpacityRange}
               value={heads.backgroundGlowOpacityFalloff}
               disabled={controlDisabled}
+              fullWidth
               hint="Opacity falloff for the large background wash. Higher values fade the outside to nothing before it reaches the sprite edge."
               onChange={(value) =>
                 setLayerNestedValue(layerKey, 'head', 'backgroundGlowOpacityFalloff', value)
@@ -2438,7 +2543,6 @@ export function FireworkRenderControls({
     const trailsEnabled = trail.enabled;
     const controlDisabled =
       disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
-    const colourEnabled = closing.colour.enabled;
     const sizeEnabled = closing.size.enabled;
     const spreadFadeEnabled = closing.spreadFade.enabled;
 
@@ -2476,13 +2580,6 @@ export function FireworkRenderControls({
             }
           />
           <SwitchField
-            label="Fade colour"
-            checked={colourEnabled}
-            disabled={controlDisabled}
-            hint="Fade each trail particle into a chosen colour at the end of its burn."
-            onChange={(value) => setBurstTrailClosingValue(layerKey, 'colour', 'enabled', value)}
-          />
-          <SwitchField
             label="Size close"
             checked={sizeEnabled}
             disabled={controlDisabled}
@@ -2498,35 +2595,36 @@ export function FireworkRenderControls({
               setBurstTrailClosingValue(layerKey, 'spreadFade', 'enabled', value)
             }
           />
-          {colourEnabled ? (
+          {sizeEnabled ? (
             <>
-              <ColorField
-                label="Closing colour"
-                value={rgbObjectToHex(closing.colour.color) ?? TRAIL_CLOSING_COLOUR_HEX}
+              <SliderField
+                label="Final size"
+                min={STAR_CLOSING_END_PERCENT_MIN}
+                max={STAR_CLOSING_END_PERCENT_MAX}
+                step={1}
+                value={closing.size.endPercent}
+                formatValue={formatPercent}
+                showNumberInput
+                inputAriaLabel="Trail closing final size value"
                 disabled={controlDisabled}
-                hint="Colour each trail particle reaches as it dies."
+                hint="Trail particle size at the moment it dies, as a percentage of normal size."
                 onChange={(value) =>
-                  setBurstTrailClosingValue(
-                    layerKey,
-                    'colour',
-                    'color',
-                    hexToRgbObject(value ?? TRAIL_CLOSING_COLOUR_HEX),
-                  )
+                  setBurstTrailClosingValue(layerKey, 'size', 'endPercent', round2(value))
                 }
               />
               <SliderField
-                label="Colour close time"
+                label="Shrink time"
                 min={STAR_CLOSING_PERCENT_MIN}
                 max={STAR_CLOSING_PERCENT_MAX}
                 step={1}
-                value={closing.colour.fadePercent}
+                value={closing.size.shrinkPercent}
                 formatValue={formatPercent}
                 showNumberInput
-                inputAriaLabel="Trail closing colour fade time value"
+                inputAriaLabel="Trail closing shrink time value"
                 disabled={controlDisabled}
-                hint="Percentage of the star life used after each trail particle appears to fade into the closing colour."
+                hint="Percentage of the star life used after each trail particle appears to shrink into the final size."
                 onChange={(value) =>
-                  setBurstTrailClosingValue(layerKey, 'colour', 'fadePercent', round2(value))
+                  setBurstTrailClosingValue(layerKey, 'size', 'shrinkPercent', round2(value))
                 }
               />
             </>
@@ -2570,40 +2668,6 @@ export function FireworkRenderControls({
               />
             </>
           ) : null}
-          {sizeEnabled ? (
-            <>
-              <SliderField
-                label="Final size"
-                min={STAR_CLOSING_END_PERCENT_MIN}
-                max={STAR_CLOSING_END_PERCENT_MAX}
-                step={1}
-                value={closing.size.endPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Trail closing final size value"
-                disabled={controlDisabled}
-                hint="Trail particle size at the moment it dies, as a percentage of normal size."
-                onChange={(value) =>
-                  setBurstTrailClosingValue(layerKey, 'size', 'endPercent', round2(value))
-                }
-              />
-              <SliderField
-                label="Shrink time"
-                min={STAR_CLOSING_PERCENT_MIN}
-                max={STAR_CLOSING_PERCENT_MAX}
-                step={1}
-                value={closing.size.shrinkPercent}
-                formatValue={formatPercent}
-                showNumberInput
-                inputAriaLabel="Trail closing shrink time value"
-                disabled={controlDisabled}
-                hint="Percentage of the star life used after each trail particle appears to shrink into the final size."
-                onChange={(value) =>
-                  setBurstTrailClosingValue(layerKey, 'size', 'shrinkPercent', round2(value))
-                }
-              />
-            </>
-          ) : null}
         </div>
       </SubSection>
     );
@@ -2627,10 +2691,6 @@ export function FireworkRenderControls({
     const particleShape = shapeOptionFromStops(editableStops);
     const trailBias = trailBiasFromFrontClump(burstTrail.frontClump);
     const showTrailPresetSelect = controlScope !== 'trail';
-
-    function resetToPreset() {
-      setBurstTrailPreset(layerKey, fallbackPreset);
-    }
 
     function patchBurstTrailStops(updater: (stop: BurstTrailStop) => BurstTrailStop) {
       patchBurstTrail(layerKey, (trail) => {
@@ -2748,6 +2808,7 @@ export function FireworkRenderControls({
                 showNumberInput
                 inputAriaLabel="Particle size value"
                 disabled={controlDisabled}
+                fullWidth
                 hint="Global size for every trail particle before head and tail scaling."
                 onChange={(value) =>
                   setBurstTrailNested(layerKey, 'particleSize', 'base', round2(value))
@@ -2831,6 +2892,7 @@ export function FireworkRenderControls({
                 value={trailBias}
                 formatValue={formatTrailBias}
                 disabled={controlDisabled}
+                fullWidth
                 hint="Where the total particle budget lands along each star path. This redistributes placement without changing the amount."
                 onChange={(value) => setTrailBias(layerKey, round2(value))}
               />
@@ -2882,8 +2944,8 @@ export function FireworkRenderControls({
                 />
                 <SliderField
                   label="Front angle"
-                  min={0}
-                  max={TRAIL_SPREAD_ANGLE_MAX}
+                  min={TRAIL_FRONT_SPREAD_ANGLE_MIN}
+                  max={TRAIL_FRONT_SPREAD_ANGLE_MAX}
                   step={1}
                   value={burstTrail.width.front}
                   formatValue={formatDegrees}
@@ -2924,6 +2986,7 @@ export function FireworkRenderControls({
                 value={burstTrail.intensity.brightness}
                 showNumberInput
                 disabled={controlDisabled}
+                fullWidth
                 hint="How brightly the trail burns. 1 is standard; push higher for a hot, glowing trail."
                 onChange={(value) =>
                   setBurstTrailNested(layerKey, 'intensity', 'brightness', round2(value))
@@ -2960,17 +3023,6 @@ export function FireworkRenderControls({
               </AdvancedControls>
             </div>
           </SubSection>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={resetToPreset}
-            disabled={controlDisabled}
-            className="w-full"
-          >
-            <RotateCcw size={16} />
-            Reset to preset
-          </Button>
         </div>
       </PanelSection>
     );
@@ -3113,13 +3165,29 @@ export function FireworkRenderControls({
     return <>{renderStarLayerControls('core', 'Star Inner')}</>;
   }
 
+  if (controlScope === 'launchShell') {
+    return (
+      <div className="space-y-5">
+        {renderLiftVelocityControl(
+          'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
+        )}
+        {renderLaunchShellParticleControls()}
+      </div>
+    );
+  }
+
+  if (controlScope === 'launchTrail') {
+    return <>{renderLaunchShellTrailControls()}</>;
+  }
+
   function renderLaunchControls(includeLiftParticles = false) {
     const launchContent = (
       <div className="space-y-5">
         {renderLiftVelocityControl(
           'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
         )}
-        {renderLaunchShellControls()}
+        {renderLaunchShellParticleControls()}
+        {renderLaunchShellTrailControls()}
       </div>
     );
 
@@ -3260,28 +3328,30 @@ export function FireworkRenderControls({
           />
         }
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <SliderField
-            label="Split fragments"
-            min={2}
-            max={8}
-            step={1}
-            value={design.split.fragments}
-            disabled={sectionDisabled.split}
-            hint="How many pieces each crossette star splits into."
-            onChange={(value) => setNestedRenderValue('split', 'fragments', value)}
-          />
-          <SliderField
-            label="Split speed"
-            min={0.4}
-            max={4}
-            step={0.05}
-            value={design.split.speed}
-            disabled={sectionDisabled.split}
-            hint="How hard the fragments kick away from the split."
-            onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
-          />
-        </div>
+        {design.split.enabled ? (
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <SliderField
+              label="Split fragments"
+              min={2}
+              max={8}
+              step={1}
+              value={design.split.fragments}
+              disabled={sectionDisabled.split}
+              hint="How many pieces each crossette star splits into."
+              onChange={(value) => setNestedRenderValue('split', 'fragments', value)}
+            />
+            <SliderField
+              label="Split speed"
+              min={0.4}
+              max={4}
+              step={0.05}
+              value={design.split.speed}
+              disabled={sectionDisabled.split}
+              hint="How hard the fragments kick away from the split."
+              onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
+            />
+          </div>
+        ) : null}
       </PanelSection>
     );
   }
@@ -3350,7 +3420,8 @@ export function FireworkRenderControls({
               {showLaunch ? renderLaunchSoundControl() : null}
               {showLaunch ? renderBoomControl() : null}
             </div>
-            {showLaunch ? renderLaunchShellControls() : null}
+            {showLaunch ? renderLaunchShellParticleControls() : null}
+            {showLaunch ? renderLaunchShellTrailControls() : null}
           </div>
         </PanelSection>
 

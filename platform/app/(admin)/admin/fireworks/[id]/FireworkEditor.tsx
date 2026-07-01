@@ -4,15 +4,17 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   Braces,
+  Circle,
   CircleDot,
   Cloud,
+  GanttChartSquare,
   History,
   Palette,
   Plus,
-  Rocket,
   SlidersHorizontal,
   Sparkles,
   Volume2,
+  Waves,
   Wind,
   X,
   Zap,
@@ -49,6 +51,7 @@ import {
 import { Button } from '@/app/components/ui/Button';
 import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -1167,13 +1170,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     return true;
   }
 
-  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind) {
+  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
     setError(null);
     startTransition(async () => {
       const result = await createStyleDefault({
         kind,
-        name: `${name || firework.name} ${styleDefaultKindLabel(kind).toLowerCase()} style`,
-        description: `Created from ${name || firework.name}.`,
+        name: styleName,
+        description: '',
         defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
       });
 
@@ -1530,7 +1533,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       launchPositions={PREVIEW_LAUNCH_POSITIONS}
       muted={!isPlaying}
       interactive
-      controlsVisible={previewReady}
+      controlsVisible
       showStarfield={false}
       showFps
       primeSnapshots
@@ -1601,7 +1604,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         inheritedLabel={inherited ? `Effect default: ${inherited.name}` : null}
         disabled={!parsedOverrides.ok}
         saveDisabled={kind === 'star' && !mainColor}
-        onSave={() => saveCurrentStyleAsDefault(kind)}
+        onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
         onReset={() => resetLocalStyleDefaults(kind)}
       />
     );
@@ -1680,6 +1683,65 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       content: starColourControls,
     },
     {
+      id: 'launch-dot',
+      label: 'Launch Dot',
+      icon: Circle,
+      eyebrow: 'Ascent',
+      title: 'Launch dot',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
+            disabled={!parsedOverrides.ok}
+            showLaunch
+            controlScope="launchShell"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
+      ),
+    },
+    {
+      id: 'launch-trail',
+      label: 'Launch Trail',
+      icon: Waves,
+      eyebrow: 'Ascent',
+      title: 'Launch trail',
+      content: (
+        <FireworkRenderControls
+          design={previewDesign}
+          defaults={overridesRecord}
+          calibrationDefaults={calibrationDefaults}
+          mutate={(updater) => mutateOverridesForStyle('launch', updater)}
+          disabled={!parsedOverrides.ok}
+          showLaunch
+          controlScope="launchTrail"
+        />
+      ),
+    },
+    {
+      id: 'smoke',
+      label: 'Smoke',
+      icon: Cloud,
+      eyebrow: 'Atmosphere',
+      title: 'Smoke',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('smoke', updater)}
+            disabled={!parsedOverrides.ok}
+            controlScope="smoke"
+          />
+          {renderStyleDefaultControls('smoke')}
+        </div>
+      ),
+    },
+    {
       id: 'star',
       label: 'Star',
       icon: Sparkles,
@@ -1739,32 +1801,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       ),
     },
     {
-      id: 'launch',
-      label: 'Launch',
-      icon: Rocket,
-      eyebrow: 'Ascent',
-      title: 'Launch',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
-            disabled={!parsedOverrides.ok}
-            showLaunch
-            controlScope="launch"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx',
-      label: 'FX',
+      id: 'fx-strobe',
+      label: 'Strobe',
       icon: Zap,
       eyebrow: 'Effects',
-      title: 'Spark effects',
+      title: 'Strobe',
       content: (
         <div className="space-y-5">
           <FireworkRenderControls
@@ -1776,6 +1817,17 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             controlScope="strobe"
           />
           {renderStyleDefaultControls('strobe')}
+        </div>
+      ),
+    },
+    {
+      id: 'fx-crackle',
+      label: 'Crackle',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Crackle',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
@@ -1785,6 +1837,17 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             controlScope="crackle"
           />
           {renderStyleDefaultControls('crackle')}
+        </div>
+      ),
+    },
+    {
+      id: 'fx-split',
+      label: 'Split',
+      icon: Zap,
+      eyebrow: 'Effects',
+      title: 'Split',
+      content: (
+        <div className="space-y-5">
           <FireworkRenderControls
             design={previewDesign}
             defaults={overridesRecord}
@@ -1793,27 +1856,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
             disabled={!parsedOverrides.ok}
             controlScope="split"
           />
-          {renderStyleDefaultControls('split')}
-        </div>
-      ),
-    },
-    {
-      id: 'smoke',
-      label: 'Smoke',
-      icon: Cloud,
-      eyebrow: 'Atmosphere',
-      title: 'Smoke',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('smoke', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="smoke"
-          />
-          {renderStyleDefaultControls('smoke')}
+          {previewDesign.split.enabled ? renderStyleDefaultControls('split') : null}
         </div>
       ),
     },
@@ -1835,6 +1878,19 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           />
           {renderStyleDefaultControls('sound')}
         </div>
+      ),
+    },
+    {
+      id: 'timeline',
+      label: 'Timeline',
+      icon: GanttChartSquare,
+      eyebrow: 'Timing',
+      title: 'Timeline',
+      content: (
+        <InlineAlert tone="info" title="Coming soon">
+          A master timeline for extending individual sections and the overall firework length will
+          live here.
+        </InlineAlert>
       ),
     },
     {
@@ -1880,6 +1936,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       tabs={tabs}
       preview={preview}
       transport={transport}
+      transportPlaying={isPlaying}
       error={error}
       previewNotice={previewNotice}
       fullscreen={isFullscreen}

@@ -10,7 +10,10 @@ import {
   getShowBySlug,
   listFireworkProducts,
   listReplayCuesForShow,
+  ShowsNetworkError,
 } from '@/lib/shows.server';
+
+const EMPTY_REPLAY_DATA = { cues: [], specifications: [], audioUrl: null };
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -42,7 +45,12 @@ async function ShowPreviewReplay(props: PageProps) {
     listReplayCuesForShow(show.id),
     listFireworkProducts(),
     getAudioSignedUrl(show.audioPath),
-  ]).then(([cues, specifications, audioUrl]) => ({ cues, specifications, audioUrl }));
+  ])
+    .then(([cues, specifications, audioUrl]) => ({ cues, specifications, audioUrl }))
+    .catch((error: unknown) => {
+      if (error instanceof ShowsNetworkError) return EMPTY_REPLAY_DATA;
+      throw error;
+    });
   const currentProfile = await currentProfilePromise;
   const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
 
