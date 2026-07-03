@@ -13,7 +13,8 @@ import {
   ShowsNetworkError,
 } from '@/lib/shows.server';
 
-const EMPTY_REPLAY_DATA = { cues: [], specifications: [], audioUrl: null };
+const EMPTY_CUES: never[] = [];
+const EMPTY_EXTRAS = { specifications: [], audioUrl: null };
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -35,20 +36,24 @@ async function ShowPreviewReplay(props: PageProps) {
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
   const currentProfilePromise = getCurrentProfile();
 
-  // Stream the heavy replay data (cues, catalogue, audio URL) into the client
-  // viewer as a promise rather than awaiting it here. The viewer mounts the 3D
-  // canvas immediately with no fireworks, shows a loading bar while this
-  // resolves, and only reveals the timeline slider once the data has landed and
-  // the engine is ready. The show row itself is awaited so notFound/redirect
-  // still run on the server before anything renders.
-  const replayDataPromise = Promise.all([
-    listReplayCuesForShow(show.id),
+  // Stream the replay data into the client viewer as promises rather than
+  // awaiting it here. The cues are the payload the user is waiting on, so they
+  // stream on their own and populate the timeline the moment they land; the
+  // much heavier full catalogue (only needed for the add-firework dialog) and
+  // the signed audio URL stream separately so they never gate the fireworks.
+  // The show row itself is awaited so notFound/redirect still run on the
+  // server before anything renders.
+  const replayCuesPromise = listReplayCuesForShow(show.id).catch((error: unknown) => {
+    if (error instanceof ShowsNetworkError) return EMPTY_CUES;
+    throw error;
+  });
+  const replayExtrasPromise = Promise.all([
     listFireworkProducts(),
     getAudioSignedUrl(show.audioPath),
   ])
-    .then(([cues, specifications, audioUrl]) => ({ cues, specifications, audioUrl }))
+    .then(([specifications, audioUrl]) => ({ specifications, audioUrl }))
     .catch((error: unknown) => {
-      if (error instanceof ShowsNetworkError) return EMPTY_REPLAY_DATA;
+      if (error instanceof ShowsNetworkError) return EMPTY_EXTRAS;
       throw error;
     });
   const currentProfile = await currentProfilePromise;
@@ -63,7 +68,8 @@ async function ShowPreviewReplay(props: PageProps) {
       totalCents={show.totalCents}
       launchPositions={show.launchPositions}
       canEditFireworks={canEditFireworks}
-      replayDataPromise={replayDataPromise}
+      replayCuesPromise={replayCuesPromise}
+      replayExtrasPromise={replayExtrasPromise}
     />
   );
 }

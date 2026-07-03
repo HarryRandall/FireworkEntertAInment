@@ -14,6 +14,7 @@ import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton'
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
 import { formatDuration } from '@/lib/show-domain';
 import { shaderCoverFromSeed } from '@/lib/shader-cover';
+import { cn } from '@/lib/utils';
 import type { ShowTemplate } from '@/lib/admin.types';
 
 function hashString(value: string): number {
@@ -42,7 +43,14 @@ function formatCount(value: number): string {
   return String(value);
 }
 
-export const ExploreCard = memo(function ExploreCard({ template }: { template: ShowTemplate }) {
+export const ExploreCard = memo(function ExploreCard({
+  template,
+  className,
+}: {
+  template: ShowTemplate;
+  /** Width override: shelves use the default fixed width, grids pass w-full. */
+  className?: string;
+}) {
   const preview = useExplorePreview();
   const coverRef = useRef<HTMLDivElement | null>(null);
   const previewId = useId();
@@ -65,7 +73,10 @@ export const ExploreCard = memo(function ExploreCard({ template }: { template: S
     <Link
       href={`/library/${template.slug}`}
       prefetch={false}
-      className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative z-0 block w-44 shrink-0 cursor-pointer touch-manipulation rounded-xl transition-transform duration-200 ease-out hover:z-20 hover:translate-x-1 hover:-translate-y-2 focus:outline-none focus-visible:z-20 focus-visible:translate-x-1 focus-visible:-translate-y-2 focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-x-0 motion-reduce:focus-visible:translate-y-0 sm:w-48"
+      className={cn(
+        'group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative z-0 block w-44 shrink-0 cursor-pointer touch-manipulation rounded-xl transition-transform duration-200 ease-out hover:z-20 hover:translate-x-1 hover:-translate-y-2 focus:outline-none focus-visible:z-20 focus-visible:translate-x-1 focus-visible:-translate-y-2 focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-x-0 motion-reduce:focus-visible:translate-y-0 sm:w-48',
+        className,
+      )}
       aria-label={`Open template: ${template.title}`}
       style={accentStyle}
       onPointerEnter={() => {
@@ -79,7 +90,10 @@ export const ExploreCard = memo(function ExploreCard({ template }: { template: S
     >
       <div
         ref={coverRef}
-        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 [content-visibility:auto] group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
+        // No content-visibility here: skipped-then-painted covers made whole
+        // rows flash in as they scrolled into the render band. The cover is a
+        // cheap CSS gradient + lazy image, so eager paint is fine.
+        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
       >
         <ReplayCanvasSkeleton
           className={`transition-opacity duration-200 ease-out ${

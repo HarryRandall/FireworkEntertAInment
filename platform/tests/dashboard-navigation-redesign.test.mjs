@@ -55,10 +55,13 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(homeDiscovery, /CoverPoster/);
   assert.match(homeDiscovery, /shaderCoverFromSeed/);
   assert.match(homeDiscovery, /shaderCoverGradient/);
-  assert.match(homeDiscovery, /absolute top-4 left-4/);
-  assert.match(homeDiscovery, /h-6 items-center rounded-full/);
+  assert.match(
+    homeDiscovery,
+    /absolute top-3 left-3 z-10 inline-flex h-5 items-center rounded-full/,
+  );
   assert.match(homeDiscovery, /bg-white\/14/);
-  assert.match(homeDiscovery, /text-\[11px\]/);
+  assert.match(homeDiscovery, /tracking-\[0\.12em\]/);
+  assert.match(homeDiscovery, /uppercase/);
 });
 
 test('app shell exposes only shipped V1 navigation routes', () => {

@@ -9,6 +9,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -175,10 +176,11 @@ type SidebarAiUsage = {
 };
 
 const SIDEBAR_FREE_SHOWS_INCLUDED = 3;
+// Used segments keep the sidebar background but pick up faint grey stripes so
+// they read as "spent" at a glance.
 const SIDEBAR_USED_SHOW_SEGMENT_STYLE = {
-  backgroundColor: 'color-mix(in srgb, var(--sidebar-foreground) 10%, var(--sidebar))',
   backgroundImage:
-    'repeating-linear-gradient(90deg, color-mix(in srgb, var(--sidebar-foreground) 18%, transparent) 0, color-mix(in srgb, var(--sidebar-foreground) 18%, transparent) 4px, transparent 4px, transparent 8px)',
+    'repeating-linear-gradient(90deg, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 0, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 4px, transparent 4px, transparent 8px)',
 };
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
@@ -194,6 +196,37 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
   { value: 'dark', label: 'Dark', icon: Moon },
   { value: 'system', label: 'System', icon: Laptop },
 ];
+
+type CachedWorkspaceSummary = WorkspaceSummary & { aiUsage?: SidebarAiUsage | null };
+
+const WORKSPACE_SUMMARY_CACHE_KEY = 'sc:workspace-summary:v1';
+
+// Safe pre-paint effect: layout effect on the client, plain effect during SSR
+// so React doesn't warn about useLayoutEffect on the server.
+const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+function readCachedWorkspaceSummary(): CachedWorkspaceSummary | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(WORKSPACE_SUMMARY_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CachedWorkspaceSummary) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedWorkspaceSummary(summary: CachedWorkspaceSummary | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (summary) {
+      window.sessionStorage.setItem(WORKSPACE_SUMMARY_CACHE_KEY, JSON.stringify(summary));
+    } else {
+      window.sessionStorage.removeItem(WORKSPACE_SUMMARY_CACHE_KEY);
+    }
+  } catch {
+    // Ignore storage failures; the sidebar just falls back to fetching.
+  }
+}
 
 function isThemePreference(value: string | undefined): value is ThemePreference {
   return value === 'dark' || value === 'light' || value === 'system';
@@ -518,7 +551,7 @@ function ProfileThemeMenu() {
     >
       <Sun className="size-4 shrink-0 opacity-90" />
       <span className="min-w-0 flex-1 truncate">Theme</span>
-      <div className="border-border bg-background ml-auto grid h-7 w-[6.75rem] shrink-0 grid-cols-3 items-center rounded-full border p-0.5">
+      <div className="bg-muted ml-auto flex shrink-0 items-center gap-0.5 rounded-full p-0.5">
         {PROFILE_THEME_OPTIONS.map((option) => {
           const Icon = option.icon;
           const active = selectedTheme === option.value;
@@ -533,13 +566,13 @@ function ProfileThemeMenu() {
                   aria-label={`${option.label} theme`}
                   onClick={() => chooseTheme(option.value)}
                   className={cn(
-                    'focus-visible:ring-ring/50 text-muted-foreground flex h-full w-full items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2',
+                    'focus-visible:ring-ring/50 flex h-6 w-6 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2',
                     active
-                      ? 'bg-muted text-foreground shadow-xs'
-                      : 'group-hover/theme:text-muted-foreground',
+                      ? 'bg-background text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
-                  <Icon size={12} strokeWidth={2.2} />
+                  <Icon size={13} strokeWidth={2.2} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" collisionPadding={12}>
@@ -606,17 +639,22 @@ function SidebarAiUsageMeter({
 
 function SidebarCreditSegments({ remaining, total }: { remaining: number; total: number }) {
   const safeRemaining = Math.min(Math.max(remaining, 0), total);
-  const used = total - safeRemaining;
 
   return (
     <div className="flex gap-1" aria-hidden>
-      {Array.from({ length: total }).map((_, index) => (
-        <span
-          key={index}
-          className={cn('h-1.5 flex-1 rounded-full', index < used ? '' : 'bg-[color:var(--hl)]')}
-          style={index < used ? SIDEBAR_USED_SHOW_SEGMENT_STYLE : undefined}
-        />
-      ))}
+      {Array.from({ length: total }).map((_, index) => {
+        const isRemaining = index < safeRemaining;
+        return (
+          <span
+            key={index}
+            className={cn(
+              'h-1.5 flex-1 rounded-full',
+              isRemaining ? 'bg-[color:var(--hl)]' : 'border-sidebar-border bg-sidebar border',
+            )}
+            style={isRemaining ? undefined : SIDEBAR_USED_SHOW_SEGMENT_STYLE}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -950,9 +988,22 @@ export function AppShell({
   const router = useRouter();
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  // Initial state must match the server render (no cached summary) to avoid a
+  // hydration mismatch; the cached copy is applied pre-paint just below.
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
   const [aiUsageLoading, setAiUsageLoading] = useState(isAuthenticated);
+
+  // Seed the sidebar from the sessionStorage cache before first paint so usage
+  // and recent shows appear instantly while the background refetch runs.
+  useHydrationLayoutEffect(() => {
+    if (!isAuthenticated) return;
+    const cached = readCachedWorkspaceSummary();
+    if (!cached) return;
+    setWorkspaceSummary((current) => current ?? cached);
+    setAiUsage((current) => current ?? cached.aiUsage ?? null);
+    setAiUsageLoading(false);
+  }, [isAuthenticated]);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -1009,27 +1060,18 @@ export function AppShell({
           headers: { Accept: 'application/json' },
         });
         if (!response.ok) {
-          if (active) {
-            setWorkspaceSummary(null);
-            setAiUsage(null);
-            setAiUsageLoading(false);
-          }
+          if (active) setAiUsageLoading(false);
           return;
         }
-        const nextSummary = (await response.json()) as WorkspaceSummary & {
-          aiUsage?: SidebarAiUsage | null;
-        };
+        const nextSummary = (await response.json()) as CachedWorkspaceSummary;
+        writeCachedWorkspaceSummary(nextSummary);
         if (active) {
           setWorkspaceSummary(nextSummary);
           setAiUsage(nextSummary.aiUsage ?? null);
           setAiUsageLoading(false);
         }
       } catch {
-        if (active) {
-          setWorkspaceSummary(null);
-          setAiUsage(null);
-          setAiUsageLoading(false);
-        }
+        if (active) setAiUsageLoading(false);
       }
     }
 
@@ -1041,6 +1083,7 @@ export function AppShell({
   }, [pathname, isGuest]);
 
   const handleSignOut = async () => {
+    writeCachedWorkspaceSummary(null);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');

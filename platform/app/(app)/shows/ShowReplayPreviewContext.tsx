@@ -12,12 +12,27 @@ import {
   type ReactNode,
 } from 'react';
 import { Play } from 'lucide-react';
-import { getShowReplayPreviewCues } from '@/app/actions/show-replay-cues';
 import type { ReplayCue } from '@/lib/show-domain';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 
 const HOVER_INTENT_MS = 500;
+
+/**
+ * Fetches the opening card-preview cues via a plain GET route handler rather
+ * than a server action: in-flight actions are serialised with navigations, so
+ * an action here made clicking a card mid-load feel stuck. A route-handler
+ * fetch never blocks the click.
+ */
+async function getShowReplayPreviewCues(showId: string): Promise<ReplayCue[]> {
+  const response = await fetch(
+    `/api/shows/${encodeURIComponent(showId)}/replay-cues?window=${SHOW_CARD_PREVIEW_WINDOW_SECONDS}`,
+    { credentials: 'same-origin', headers: { Accept: 'application/json' } },
+  );
+  if (!response.ok) throw new Error(`replay-cues responded ${response.status}`);
+  const payload = (await response.json()) as { cues?: ReplayCue[] };
+  return payload.cues ?? [];
+}
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),

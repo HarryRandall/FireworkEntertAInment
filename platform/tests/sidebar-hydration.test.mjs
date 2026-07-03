@@ -70,13 +70,13 @@ test('app profile theme picker stays compact and border-only', () => {
   assert.match(themeBlock, /flex h-8 items-center gap-2 rounded-sm px-2/);
   assert.match(
     themeBlock,
-    /bg-background[\s\S]*grid h-7 w-\[6\.75rem\] shrink-0 grid-cols-3 items-center rounded-full border p-0\.5/,
+    /bg-muted ml-auto flex shrink-0 items-center gap-0\.5 rounded-full p-0\.5/,
   );
-  assert.match(themeBlock, /flex h-full w-full items-center justify-center rounded-full/);
-  assert.match(themeBlock, /bg-muted text-foreground shadow-xs/);
+  assert.match(themeBlock, /flex h-6 w-6 items-center justify-center rounded-full/);
+  assert.match(themeBlock, /bg-background text-foreground shadow-xs/);
   assert.doesNotMatch(themeBlock, /before:right-\[/);
   assert.doesNotMatch(themeBlock, /ring-border\/80/);
-  assert.doesNotMatch(themeBlock, /hover:text-foreground/);
+  assert.doesNotMatch(themeBlock, /w-\[6\.75rem\]/);
 
   assert.match(source, /<ProfileMenuButton profile=\{profile\} onSignOut=\{onSignOut\} \/>/);
   assert.doesNotMatch(source, /!\s*inSettings\s*\? <ProfileMenuButton/);

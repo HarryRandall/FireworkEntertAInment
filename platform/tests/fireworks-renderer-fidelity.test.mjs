@@ -50,7 +50,7 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(engine, /this\.advanceTo\(target, false\)/);
   assert.match(
     engine,
-    /if \(this\.scheduler\.size\(\) > 1 && !this\.scrubbing && cursor >= this\.nextSnapshotAt\)/,
+    /this\.scheduler\.size\(\) > 1 &&\s*!this\.scrubbing &&\s*!this\.primed &&\s*cursor >= this\.nextSnapshotAt/,
   );
   assert.match(engine, /const SCRUB_DT = 1 \/ 24/);
   // Timeline-drag scrub mode: lossy restores are accepted (never a from-zero
@@ -61,11 +61,56 @@ test('firework replay is deterministic and silent when rebuilding after scrub', 
   assert.match(engine, /if \(this\.scrubbing\) this\.needsAccurateReseek = true/);
   assert.match(
     engine,
-    /const snapUsable = snapExact \|\| \(this\.scrubbing && snap && snap\.time <= target\)/,
+    /if \(!restore && this\.scrubbing && snap && snap\.time <= target\) restore = snap/,
   );
+  // Accurate seeks whose nearest snapshot is lossy resimulate from the nearest
+  // clean snapshot instead of rebuilding from zero, and a from-zero rebuild
+  // never wipes a primed snapshot cache.
+  // Accurate (non-scrub) seeks never accept a lossy restore: they fall back to
+  // the nearest clean snapshot so behaviour-driven effects (launch trails,
+  // brocade heads) replay exactly.
   assert.match(
     engine,
-    /if \(!active && this\.needsAccurateReseek\) \{[\s\S]*this\.seekTo\(this\.elapsed/,
+    /if \(!restore && snap\) restore = this\.findCleanSnapshotAtOrBefore\(target\)/,
+  );
+  // Lossy-snapshot detection must count hidden heads (shape <=
+  // HIDDEN_PARTICLE_SHAPE): they fly invisibly while their effect callback
+  // emits trail particles, so a snapshot taken while they are alive restores
+  // without their trails.
+  assert.match(
+    engine,
+    /p\.mass >= 0\.1 \|\| p\.shape > 1\.5 \|\| p\.shape <= HIDDEN_PARTICLE_SHAPE/,
+  );
+  // The post-drag repair is asynchronous (budgeted slices driven by the render
+  // loop) and fully accurate; geometry sync is suppressed until it lands.
+  assert.match(engine, /isRepairing\(\): boolean/);
+  assert.match(engine, /stepRepair\(budgetMs: number, target\?: number\): \{ done: boolean \}/);
+  assert.match(engine, /this\.beginRepair\(this\.elapsed\)/);
+  // Priming plants a clean snapshot at the end of every lossy stretch so
+  // repairs resimulate at most the overlapping burst.
+  assert.match(engine, /\(!lossyNow && this\.lastPrimeCaptureLossy\)/);
+  // Pausing the show suspends the effect-audio context: in-flight booms and
+  // crackles cut off with the timeline and resume their remainder on play,
+  // and the audio-unlock gesture handler cannot un-suspend a paused context.
+  assert.match(sound, /setPlaybackPaused\(paused: boolean\): void/);
+  assert.match(sound, /if \(this\.playbackPaused\) return;/);
+  assert.match(sound, /if \(this\.muted \|\| this\.playbackPaused\) return;/);
+  const canvas = read('app/components/app/FireworkReplayCanvas.tsx');
+  assert.match(canvas, /engine\.setPlaybackPaused\(muted\)/);
+  assert.match(canvas, /eng\.isRepairing\(\)/);
+  // The repair chases the live playhead so play-during-repair needs no
+  // follow-up synchronous catch-up seek.
+  assert.match(canvas, /eng\.stepRepair\(REPAIR_BUDGET_MS, repairTarget\)/);
+  // Content-identical cue arrays from parent re-renders must not re-clear the
+  // scene (visible particle blink on play/pause spam).
+  assert.match(canvas, /appliedCuesSignatureRef\.current === applySignature\) return/);
+  // Dense snapshot cache: every seek resimulates at most half a second.
+  assert.match(engine, /SNAPSHOT_INTERVAL = 0\.5/);
+  assert.match(engine, /MAX_SNAPSHOTS = 1200/);
+  assert.match(engine, /if \(!this\.primed\) \{\s*this\.snapshots\.length = 0/);
+  assert.match(
+    engine,
+    /if \(!this\.needsAccurateReseek\) return;[\s\S]*this\.beginRepair\(this\.elapsed\)/,
   );
   assert.match(engine, /poolHasLiveCallbackParticles/);
   assert.match(engine, /p\.mass >= 0\.1 \|\| p\.shape > 1\.5/);

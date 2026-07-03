@@ -66,8 +66,7 @@ import { cn } from '@/lib/utils';
 
 const REFINEMENT_CREDIT_COST = 2;
 
-type ReplayData = {
-  cues: ReplayCue[];
+type ReplayExtras = {
   specifications: FireworkSpecification[];
   audioUrl: string | null;
 };
@@ -80,10 +79,14 @@ type FireworkReplayViewerProps = {
   totalCents?: number | null;
   launchPositions: LaunchPosition[];
   canEditFireworks?: boolean;
-  /** Server-streamed cues, catalogue, and audio URL. Resolved on the client
-   * via `use()` so the canvas can mount with an empty scene immediately and
-   * populate fireworks once this resolves. */
-  replayDataPromise: Promise<ReplayData>;
+  /** Server-streamed replay cues. Resolved on the client via `use()` so the
+   * canvas can mount with an empty scene immediately and populate fireworks
+   * the moment the cues land, without waiting on the heavier catalogue. */
+  replayCuesPromise: Promise<ReplayCue[]>;
+  /** Server-streamed catalogue specifications and signed audio URL. These are
+   * only needed for the add-firework dialog and audio playback, so they stream
+   * separately and never gate the fireworks. */
+  replayExtrasPromise: Promise<ReplayExtras>;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -142,16 +145,16 @@ function isTubeBusyError(result: CueActionResult): boolean {
 }
 
 /**
- * Resolves the streamed replay promise inside a Suspense boundary and pushes
- * the result up to the viewer once it lands, so the canvas can mount with an
- * empty scene immediately and populate fireworks when the data is ready.
+ * Resolves a streamed promise inside a Suspense boundary and pushes the
+ * result up to the viewer once it lands, so the canvas can mount with an
+ * empty scene immediately and populate when each payload is ready.
  */
-function ReplayDataReader({
+function StreamedDataReader<T>({
   promise,
   onLoaded,
 }: {
-  promise: Promise<ReplayData>;
-  onLoaded: (data: ReplayData) => void;
+  promise: Promise<T>;
+  onLoaded: (data: T) => void;
 }) {
   const data = use(promise);
   useEffect(() => {
@@ -168,16 +171,21 @@ export function FireworkReplayViewer({
   totalCents = null,
   launchPositions,
   canEditFireworks = false,
-  replayDataPromise,
+  replayCuesPromise,
+  replayExtrasPromise,
 }: FireworkReplayViewerProps) {
-  const [replayData, setReplayData] = useState<ReplayData | null>(null);
-  const cues = replayData?.cues ?? EMPTY_CUES;
-  const specifications = replayData?.specifications ?? EMPTY_SPECS;
-  const audioUrl = replayData?.audioUrl ?? null;
-  const replayDataReady = replayData !== null;
+  const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
+  const [replayExtras, setReplayExtras] = useState<ReplayExtras | null>(null);
+  const cues = streamedCues ?? EMPTY_CUES;
+  const specifications = replayExtras?.specifications ?? EMPTY_SPECS;
+  const audioUrl = replayExtras?.audioUrl ?? null;
+  const replayDataReady = streamedCues !== null;
   const hasFireworkSpecifications = specifications.length > 0;
-  const handleReplayDataLoaded = useCallback((data: ReplayData) => {
-    setReplayData(data);
+  const handleReplayCuesLoaded = useCallback((data: ReplayCue[]) => {
+    setStreamedCues(data);
+  }, []);
+  const handleReplayExtrasLoaded = useCallback((data: ReplayExtras) => {
+    setReplayExtras(data);
   }, []);
   const [optimisticCues, addOptimisticCue] = useOptimistic(
     cues,
@@ -606,7 +614,10 @@ export function FireworkReplayViewer({
   return (
     <>
       <Suspense fallback={null}>
-        <ReplayDataReader promise={replayDataPromise} onLoaded={handleReplayDataLoaded} />
+        <StreamedDataReader promise={replayCuesPromise} onLoaded={handleReplayCuesLoaded} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StreamedDataReader promise={replayExtrasPromise} onLoaded={handleReplayExtrasLoaded} />
       </Suspense>
       <div className="space-y-6">
         <Card

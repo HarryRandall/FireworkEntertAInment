@@ -87,7 +87,9 @@ const SCRUB_DT = 1 / 24;
 const SCRUB_DRAG_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
 const SNAPSHOT_STRIDE = 21;
-const MAX_SNAPSHOTS = 600;
+// Sized for SNAPSHOT_INTERVAL below: 1200 half-second snapshots covers a
+// 10-minute show before eviction starts dropping the earliest entries.
+const MAX_SNAPSHOTS = 1200;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
 const SMOKE_BRIGHTNESS_BOOST = 1.8;
@@ -155,12 +157,25 @@ export class FireworksEngine {
   private time = 0;
   /** Snapshots keyed by elapsed seconds, used for fast backward seeks. */
   private snapshots: { time: number; state: PoolSnapshot; lossy: boolean }[] = [];
-  private readonly SNAPSHOT_INTERVAL = 1.0;
+  // Half-second stride: every seek resimulates at most this much show time to
+  // catch up from the restored snapshot, so a denser cache directly buys a
+  // snappier timeline (at ~2x the cache memory of the old 1s stride).
+  private readonly SNAPSHOT_INTERVAL = 0.5;
   // When the nearest snapshot to a seek is lossy (captured while callback-driven
   // heads/flashes were alive), prefer a nearby accurate snapshot if one sits
   // within this window. Keeps restores faithful when cheap, without falling back
   // to the from-zero rebuilds that froze scrubbing on busy shows.
   private readonly PREFER_CLEAN_SNAPSHOT_WINDOW = 1.5;
+  // Async post-drag repair state: when active, `stepRepair` resimulates from
+  // the nearest clean snapshot to the release playhead in budgeted slices,
+  // with geometry sync suppressed so the last (lossy) frame stays on screen
+  // until the accurate state lands. Never trades accuracy away: lossy
+  // restores are display-only transients during the drag itself.
+  private repairActive = false;
+  private repairTarget = 0;
+  // Whether the last snapshot captured during priming was lossy, so the prime
+  // can plant an extra clean capture at the end of each lossy stretch.
+  private lastPrimeCaptureLossy = false;
   private nextSnapshotAt = 0;
   private primed = false;
   private cueSignature = '';
@@ -692,6 +707,11 @@ export class FireworksEngine {
     this.sound.setMuted(muted);
   }
 
+  /** Freeze/unfreeze in-flight effect sounds to match a paused timeline. */
+  setPlaybackPaused(paused: boolean): void {
+    this.sound.setPlaybackPaused(paused);
+  }
+
   resumeAudio(): void {
     void this.sound.resume();
   }
@@ -705,8 +725,10 @@ export class FireworksEngine {
     const cuesChanged = nextCueSignature !== this.cueSignature;
     this.cueSignature = nextCueSignature;
     this.scheduler.setCues(cues);
-    // Cancel any in-flight async prime so a fresh cue set restarts cleanly.
+    // Cancel any in-flight async prime or repair so a fresh cue set restarts
+    // cleanly.
     this.primingActive = false;
+    this.repairActive = false;
     this.needsAccurateReseek = false;
     if (cuesChanged) {
       this.primed = false;
@@ -818,12 +840,19 @@ export class FireworksEngine {
       for (const cue of due) this.fireCue(cue, false);
       this.tickPhysics(next - this.primingCursor);
       this.primingCursor = next;
-      if (this.primingCursor >= this.nextSnapshotAt) {
+      // Capture on the regular stride, and additionally the moment the pool
+      // transitions back to callback-free after a lossy stretch. That plants a
+      // clean snapshot right at the end of every burst, so accurate repairs
+      // resimulate at most the overlapping burst instead of the whole gap back
+      // to the last stride capture that happened to land in a quiet moment.
+      const lossyNow = this.poolHasLiveCallbackParticles();
+      if (this.primingCursor >= this.nextSnapshotAt || (!lossyNow && this.lastPrimeCaptureLossy)) {
         this.snapshots.push({
           time: this.primingCursor,
           state: this.captureSnapshot(),
-          lossy: this.poolHasLiveCallbackParticles(),
+          lossy: lossyNow,
         });
+        this.lastPrimeCaptureLossy = lossyNow;
         if (this.snapshots.length > MAX_SNAPSHOTS) this.snapshots.shift();
         this.nextSnapshotAt = this.primingCursor + this.SNAPSHOT_INTERVAL;
       }
@@ -865,6 +894,7 @@ export class FireworksEngine {
     // Seed an empty t=0 snapshot so a seek back to the start restores instead
     // of falling through to the from-zero rebuild, which would wipe the cache.
     this.snapshots.push({ time: 0, state: this.captureSnapshot(), lossy: false });
+    this.lastPrimeCaptureLossy = false;
     this.nextSnapshotAt = this.SNAPSHOT_INTERVAL;
     this.syncGeometry();
     this.primingCursor = 0;
@@ -886,6 +916,8 @@ export class FireworksEngine {
    * busy timelines do not freeze on every scrub.
    */
   setElapsed(target: number): void {
+    // An explicit seek supersedes any in-flight post-drag repair.
+    this.repairActive = false;
     const next = Math.max(0, target);
     const delta = next - this.elapsed;
     const isBackwardSeek = delta < -0.0001;
@@ -905,18 +937,94 @@ export class FireworksEngine {
   /**
    * Toggle timeline-scrub mode. While active, seeks accept lossy snapshot
    * restores instead of falling back to a from-zero rebuild, so dragging the
-   * thumb across a busy show stays responsive. Turning it off runs an accurate
-   * re-seek to the current playhead when a lossy restore happened mid-drag,
-   * so behaviour-driven effects (brocade heads, flashes) replay correctly
-   * before playback resumes.
+   * thumb across a busy show stays responsive. Turning it off arms an accurate
+   * repair to the release playhead when a lossy restore happened mid-drag, so
+   * behaviour-driven effects (brocade heads, launch trails, flashes) replay
+   * correctly. The repair is asynchronous: the caller's render loop drives
+   * {@link stepRepair} in budgeted slices, so releasing the thumb never blocks
+   * the main thread, and geometry sync stays suppressed until the accurate
+   * state lands.
    */
   setScrubbing(active: boolean): void {
     if (this.scrubbing === active) return;
     this.scrubbing = active;
-    if (!active && this.needsAccurateReseek) {
-      this.needsAccurateReseek = false;
-      this.seekTo(this.elapsed, { useSnapshots: this.scheduler.size() > 1 });
+    if (active) {
+      // Grabbing the thumb again abandons any in-flight repair; the next
+      // scrub seek restores from a snapshot and supersedes it.
+      this.repairActive = false;
+      return;
     }
+    if (!this.needsAccurateReseek) return;
+    this.needsAccurateReseek = false;
+    this.beginRepair(this.elapsed);
+  }
+
+  /** True while an async post-drag repair is mid-flight (see `setScrubbing`). */
+  isRepairing(): boolean {
+    return this.repairActive;
+  }
+
+  /**
+   * Arm an accurate resimulation from the nearest clean snapshot up to
+   * `target`. Restores the snapshot immediately (without syncing geometry, so
+   * the on-screen frame is untouched) and leaves the catch-up to `stepRepair`.
+   * Falls back to a synchronous accurate seek when no clean snapshot exists
+   * (unprimed engines), whose cost is bounded by the same from-zero rebuild
+   * the old path used.
+   */
+  private beginRepair(target: number): void {
+    const clean = this.findCleanSnapshotAtOrBefore(target);
+    if (!clean) {
+      this.seekTo(target, { useSnapshots: this.scheduler.size() > 1 });
+      return;
+    }
+    this.restoreSnapshot(clean.state);
+    this.elapsed = clean.time;
+    this.time = clean.time;
+    this.scheduler.resetFiredAfter(clean.time);
+    this.nextSnapshotAt = clean.time + this.SNAPSHOT_INTERVAL;
+    if (clean.time + 0.0001 >= target) {
+      // Snapshot lands exactly on the playhead: nothing to resimulate.
+      this.syncGeometry();
+      return;
+    }
+    this.repairTarget = target;
+    this.repairActive = true;
+  }
+
+  /**
+   * Advance the in-flight repair by up to `budgetMs` of wall-clock work.
+   * Geometry is only synced when the repair completes, so intermediate states
+   * never flash on screen; until then the last rendered (lossy) frame stays
+   * up, which is visually indistinguishable at a paused playhead.
+   *
+   * `target` lets the caller chase a moving playhead: if the user presses
+   * play while the repair is in flight, extending the target means the repair
+   * lands exactly at the live playhead — without it, completion would be
+   * followed by a second large (and synchronous) catch-up seek.
+   */
+  stepRepair(budgetMs: number, target?: number): { done: boolean } {
+    if (!this.repairActive) return { done: true };
+    if (target !== undefined && target > this.repairTarget) this.repairTarget = target;
+    const start = performance.now();
+    this.effects.setAudible(false);
+    let cursor = this.elapsed;
+    while (cursor + 0.0001 < this.repairTarget) {
+      const next = Math.min(this.repairTarget, cursor + SCRUB_DT);
+      const due = this.scheduler.pop(cursor, next);
+      for (const cue of due) this.fireCue(cue, false);
+      this.tickPhysics(next - cursor);
+      cursor = next;
+      if (performance.now() - start >= budgetMs) break;
+    }
+    this.elapsed = cursor;
+    if (cursor + 0.0001 >= this.repairTarget) {
+      this.elapsed = this.repairTarget;
+      this.repairActive = false;
+      this.syncGeometry();
+      return { done: true };
+    }
+    return { done: false };
   }
 
   /** Drop all live particles & flash lights — used at end-of-show flush. */
@@ -969,24 +1077,30 @@ export class FireworksEngine {
     // A lossy snapshot's particles lose their behaviour callbacks on restore
     // (see restoreSnapshot), so head colour-evolution freezes if we advance
     // past it. When the nearest snapshot is lossy and the target sits beyond
-    // it, rebuild from zero so opening/closing colours replay correctly.
+    // it, restore the nearest accurate snapshot instead — however far back —
+    // and resimulate forward, so opening/closing colours replay correctly.
+    // Priming seeds a clean t=0 snapshot, so a primed engine always has one;
+    // this is strictly cheaper than the old from-zero rebuild, which stalled
+    // the main thread for seconds on long shows and wiped the primed cache.
     // While scrubbing, accept the lossy restore anyway: a from-zero rebuild on
     // every drag tick froze the timeline on busy shows, and the slight fidelity
     // loss is repaired by the accurate re-seek when the drag ends.
     const snapExact = snap && snap.time <= target && !(snap.lossy && target > snap.time + 0.0001);
-    const snapUsable = snapExact || (this.scrubbing && snap && snap.time <= target);
     // Any scrub-mode seek is approximate (lossy restores are accepted and the
     // catch-up advance runs at the coarse drag step), so flag it for the
     // accurate repair re-seek when the drag ends.
     if (this.scrubbing) this.needsAccurateReseek = true;
-    if (snapUsable) {
-      this.restoreSnapshot(snap.state);
-      this.elapsed = snap.time;
-      this.time = snap.time;
-      this.scheduler.resetFiredAfter(snap.time);
-      this.nextSnapshotAt = snap.time + this.SNAPSHOT_INTERVAL;
+    let restore = snapExact ? snap : null;
+    if (!restore && this.scrubbing && snap && snap.time <= target) restore = snap;
+    if (!restore && snap) restore = this.findCleanSnapshotAtOrBefore(target);
+    if (restore) {
+      this.restoreSnapshot(restore.state);
+      this.elapsed = restore.time;
+      this.time = restore.time;
+      this.scheduler.resetFiredAfter(restore.time);
+      this.nextSnapshotAt = restore.time + this.SNAPSHOT_INTERVAL;
       this.syncGeometry();
-      if (target > snap.time) this.advanceTo(target, false);
+      if (target > restore.time) this.advanceTo(target, false);
       return;
     }
     this.pool.reset();
@@ -994,8 +1108,14 @@ export class FireworksEngine {
     this.scheduler.resetAll();
     this.elapsed = 0;
     this.time = 0;
-    this.snapshots.length = 0;
-    this.nextSnapshotAt = 0;
+    // Keep a primed snapshot cache alive across a from-zero rebuild: its
+    // entries are deterministic states for their times and stay valid. Wiping
+    // them here left every subsequent scrub without snapshots, so each drag
+    // rebuilt the whole show from zero and the timeline turned to treacle.
+    if (!this.primed) {
+      this.snapshots.length = 0;
+      this.nextSnapshotAt = 0;
+    }
     this.syncGeometry();
     if (target > 0) this.advanceTo(target, false);
   }
@@ -1023,8 +1143,16 @@ export class FireworksEngine {
       // particle buffers on every from-zero rebuild made dense brocade scrubbing
       // janky. Scrub-mode drags also skip capture: they can advance from a
       // lossy restore, and captures taken from that state would poison the
-      // primed cache with degraded snapshots.
-      if (this.scheduler.size() > 1 && !this.scrubbing && cursor >= this.nextSnapshotAt) {
+      // primed cache with degraded snapshots. Primed engines skip capture too:
+      // the cache already covers the show, and duplicate pushes would grow the
+      // array past MAX_SNAPSHOTS and shift out the earliest entries (including
+      // the clean t=0 snapshot accurate re-seeks fall back to).
+      if (
+        this.scheduler.size() > 1 &&
+        !this.scrubbing &&
+        !this.primed &&
+        cursor >= this.nextSnapshotAt
+      ) {
         this.snapshots.push({
           time: cursor,
           state: this.captureSnapshot(),
@@ -1308,7 +1436,18 @@ export class FireworksEngine {
     this.pool.aliveMax = state.aliveMax;
   }
 
-  /** Live callbacks are intentionally not serialised into snapshots. */
+  /**
+   * Live callbacks are intentionally not serialised into snapshots. Callback
+   * carriers are: heavy particles (ascending shells and the hidden ground
+   * emitters for candles/fountains, mass >= 0.1), visible star/brocade heads
+   * (shape >= 2), and hidden heads (shape <= HIDDEN_PARTICLE_SHAPE) — which
+   * exist precisely to fly invisibly while their effect callback emits trail
+   * particles, so missing them here tagged trail-only bursts as clean and
+   * accurate restores silently killed their trails. Light cosmetic callbacks
+   * (trail-square spread/fade, smoke wiggle) are deliberately not counted:
+   * their loss is imperceptible and counting them would leave busy shows with
+   * no clean snapshots at all.
+   */
   private poolHasLiveCallbackParticles(): boolean {
     const ps = this.pool.particles;
     const live = this.pool.aliveIndices;
@@ -1316,7 +1455,7 @@ export class FireworksEngine {
     for (let slot = 0; slot < count; slot++) {
       const p = ps[live[slot]];
       if (!p.alive) continue;
-      if (p.mass >= 0.1 || p.shape > 1.5) return true;
+      if (p.mass >= 0.1 || p.shape > 1.5 || p.shape <= HIDDEN_PARTICLE_SHAPE) return true;
     }
     return false;
   }
@@ -1339,6 +1478,22 @@ export class FireworksEngine {
         if (!clean || s.time > clean.time) clean = s;
       }
       if (clean) best = clean;
+    }
+    return best;
+  }
+
+  /**
+   * Nearest accurate (non-lossy) snapshot at or before `target`, at any
+   * distance. Accurate seeks fall back to this when the nearest snapshot is
+   * lossy: restoring it and resimulating forward replays behaviour-driven
+   * effects correctly at strictly less cost than a from-zero rebuild.
+   */
+  private findCleanSnapshotAtOrBefore(
+    target: number,
+  ): { time: number; state: PoolSnapshot; lossy: boolean } | null {
+    let best: { time: number; state: PoolSnapshot; lossy: boolean } | null = null;
+    for (const s of this.snapshots) {
+      if (!s.lossy && s.time <= target && (!best || s.time > best.time)) best = s;
     }
     return best;
   }
