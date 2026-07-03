@@ -47,13 +47,17 @@ import { cn } from '@/lib/utils';
 // Wall-clock budget per frame for the async snapshot prime, balancing how fast
 // fireworks load against keeping the loop responsive while the bar animates.
 const PRIME_BUDGET_MS = 8;
+// The post-drag repair gets a larger slice than the prime: it gates playback
+// resuming at full fidelity, so finishing a frame or two sooner matters more
+// than the small hit to interaction smoothness while it runs.
+const REPAIR_BUDGET_MS = 12;
 
 // Module-level cache of primed snapshot caches, keyed by a content signature of
 // the cue set. The canvas module stays loaded across client navigations within
 // a tab, so this lets a quick leave-and-return to the same show skip the silent
 // full-show prime entirely (no loading bar) instead of re-running it on every
 // mount. Capped at one entry to bound memory: each entry holds the packed
-// particle buffers for every second of a show, which can run to tens of MB.
+// particle buffers for every half-second of a show, which can run to tens of MB.
 const MAX_CACHED_SHOWS = 1;
 const CAMERA_MENU_ANIMATION_MS = 180;
 const snapshotCacheByKey = new Map<string, SnapshotCacheData>();
@@ -863,6 +867,9 @@ export function FireworkReplayCanvas({
   // Cache key for the prime currently in flight, so the RAF loop can store the
   // finished snapshot cache under the right signature when priming completes.
   const primeCacheKeyRef = useRef<string>('');
+  // Signature of the last cue set + options actually applied to the engine, so
+  // referential churn from parent re-renders cannot re-clear the scene.
+  const appliedCuesSignatureRef = useRef<string>('');
   const onSceneReadyRef = useRef(onSceneReady);
   const onPrimeProgressRef = useRef(onPrimeProgress);
   const cuesFinalRef = useRef(cuesFinal);
@@ -1190,6 +1197,9 @@ export function FireworkReplayCanvas({
       backgroundGlowSoftness,
     });
     engineRef.current = engine;
+    // A fresh engine has no cues yet; clear the applied-signature guard so the
+    // cues effect re-applies them even if this is a remount with the same set.
+    appliedCuesSignatureRef.current = '';
     function unlockAudio() {
       engine.resumeAudio();
     }
@@ -1275,6 +1285,22 @@ export function FireworkReplayCanvas({
           setLoadingProgress(progress);
         }
         forceRenderRef.current = true;
+      } else if (eng.isRepairing()) {
+        // Post-drag accurate repair: advance a budgeted slice per frame while
+        // the last-rendered frame stays on screen, so releasing the scrubber
+        // never blocks orbiting or the transport. The repair chases the live
+        // playhead, so pressing play mid-repair lands it exactly at the
+        // current time with no follow-up catch-up seek; the NaN reset then
+        // just re-syncs the loop's notion of where the engine is.
+        const repairTarget = Math.max(
+          0,
+          playbackRef ? playbackRef.current : internalElapsedRef.current,
+        );
+        if (eng.stepRepair(REPAIR_BUDGET_MS, repairTarget).done) {
+          renderedElapsed = Number.NaN;
+          lastEngineUpdate = now;
+          forceRenderRef.current = true;
+        }
       } else {
         const targetElapsed = Math.max(
           0,
@@ -1404,6 +1430,13 @@ export function FireworkReplayCanvas({
     if (!engine) return;
     const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
     const cacheKey = cuesCacheKey(cues);
+    // Re-renders can re-fire this effect with content-identical cues (array
+    // identity churn from parent state like play/pause). Re-applying would
+    // clear() the live particles and re-seek — a visible blink — so skip when
+    // nothing that affects the simulated show has actually changed.
+    const applySignature = `${cacheKey}#${primeSnapshots}#${primeOnCueChanges}#${cuesFinal}`;
+    if (appliedCuesSignatureRef.current === applySignature) return;
+    appliedCuesSignatureRef.current = applySignature;
     // Reuse a previously primed snapshot cache for this exact cue set so a
     // quick leave-and-return skips the silent full-show prime (and the loading
     // bar) instead of re-running it on every mount.
@@ -1645,8 +1678,15 @@ export function FireworkReplayCanvas({
   }, [sceneReady, aimEnabled]);
 
   useEffect(() => {
-    engineRef.current?.setMuted(muted);
-    if (!muted) engineRef.current?.resumeAudio();
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.setMuted(muted);
+    // Every player drives `muted` from its play state, so muting doubles as
+    // the pause signal: suspend the effect-audio context so in-flight booms
+    // and crackles cut off with the timeline and resume from where they
+    // stopped on play.
+    engine.setPlaybackPaused(muted);
+    if (!muted) engine.resumeAudio();
   }, [muted]);
 
   useEffect(() => {

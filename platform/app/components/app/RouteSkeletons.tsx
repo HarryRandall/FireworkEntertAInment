@@ -133,6 +133,34 @@ export function LibraryCardsSkeleton() {
   );
 }
 
+/** Skeleton for a `/library?sort=...` see-all grid; keeps the shelf title chrome. */
+export function LibraryGridSkeleton({ title }: { title: string }) {
+  return (
+    <section className="space-y-4" aria-label="Loading library templates">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-on-surface text-xl font-semibold tracking-tight">{title}</h2>
+          <Skeleton className="mt-1 h-4 w-20" />
+        </div>
+        <Skeleton className="h-10 w-40 rounded-full" />
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
+        {Array.from({ length: 12 }).map((_, index) => (
+          <div key={index}>
+            <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+            <div className="mt-2.5 flex items-center gap-2">
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-5 w-10 rounded-md" />
+            </div>
+            <Skeleton className="mt-2 h-3 w-24" />
+            <Skeleton className="mt-2 h-3 w-32" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** Skeleton for the `/admin` overview dashboard. */
 export function AdminOverviewSkeleton() {
   return (

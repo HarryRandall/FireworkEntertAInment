@@ -135,11 +135,14 @@ function FeaturedShowCard({
         aria-hidden
         className="pointer-events-none absolute inset-px z-20 rounded-[calc(var(--radius-2xl)-1px)] border border-white/20"
       />
-      <span className="absolute top-4 left-4 z-10 inline-flex h-6 items-center rounded-full border border-white/15 bg-white/14 px-2.5 text-[11px] leading-none font-semibold text-white/90 shadow-sm backdrop-blur-md sm:left-5">
-        {index === 0 ? 'Featured show' : 'Full replay'}
-      </span>
       <span className="absolute top-4 right-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform duration-200 group-hover:scale-105 sm:flex">
         <Play size={18} fill="currentColor" />
+      </span>
+      {/* Tucked into the top-left corner, out of the content flow. No
+          backdrop-filter: blurred layers re-rasterise on every pinch-zoom
+          step and flicker. */}
+      <span className="absolute top-3 left-3 z-10 inline-flex h-5 items-center rounded-full border border-white/15 bg-white/14 px-2.5 text-[9px] leading-none font-semibold tracking-[0.12em] text-white/90 uppercase">
+        {index === 0 ? 'Featured show' : 'Full replay'}
       </span>
       <div className="relative z-10 flex min-h-[14rem] max-w-xl flex-col justify-end p-5 text-white sm:p-6">
         <h2 className="line-clamp-1 text-xl font-semibold tracking-tight">{template.title}</h2>

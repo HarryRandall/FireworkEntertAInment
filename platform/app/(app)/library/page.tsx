@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { LibraryCardsSkeleton } from '@/app/components/app/RouteSkeletons';
+import { LibraryCardsSkeleton, LibraryGridSkeleton } from '@/app/components/app/RouteSkeletons';
 import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { ExploreRow } from '@/app/components/app/ExploreRow';
 import { ExplorePreviewProvider } from '@/app/components/app/ExplorePreviewContext';
@@ -145,7 +145,11 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 
   return (
     <div className={sort ? 'space-y-4' : 'space-y-2'}>
-      <Suspense fallback={<LibraryCardsSkeleton />}>
+      <Suspense
+        fallback={
+          sort ? <LibraryGridSkeleton title={SORT_LABELS[sort]} /> : <LibraryCardsSkeleton />
+        }
+      >
         <ExploreShelves sort={sort} />
       </Suspense>
     </div>
@@ -197,9 +201,9 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
               Back to shelves
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
             {activeShelf.templates.map((template) => (
-              <ExploreCard key={template.id} template={template} />
+              <ExploreCard key={template.id} template={template} className="w-full sm:w-full" />
             ))}
           </div>
         </section>

@@ -30,6 +30,7 @@ export class SoundHandler {
   };
   private muted = false;
   private loaded = false;
+  private playbackPaused = false;
 
   constructor() {
     this.listener = new THREE.AudioListener();
@@ -64,7 +65,26 @@ export class SoundHandler {
     this.muted = muted;
   }
 
+  /**
+   * Freeze or unfreeze in-flight effect sounds by suspending the shared
+   * AudioContext. Pausing the show cuts booms/crackles off immediately and
+   * resuming plays their remainder, keeping effect audio in step with the
+   * paused timeline. While paused, `resume()` is a no-op so the audio-unlock
+   * gesture handlers cannot un-suspend the context mid-pause.
+   */
+  setPlaybackPaused(paused: boolean): void {
+    if (this.playbackPaused === paused) return;
+    this.playbackPaused = paused;
+    const context = this.listener.context;
+    if (paused) {
+      if (context.state === 'running') void context.suspend().catch(() => undefined);
+    } else if (context.state === 'suspended') {
+      void context.resume().catch(() => undefined);
+    }
+  }
+
   async resume(): Promise<void> {
+    if (this.playbackPaused) return;
     const context = this.listener.context;
     if (context.state === 'suspended') {
       await context.resume().catch(() => undefined);
@@ -88,7 +108,9 @@ export class SoundHandler {
   }
 
   private playRandom(key: SoundKey, volume: number, rng?: RandomSource): void {
-    if (this.muted) return;
+    // Nothing new should start while paused; a suspended context would queue
+    // it silently and blast it on resume.
+    if (this.muted || this.playbackPaused) return;
     void this.resume();
     const pool = this.buffers[key];
     if (!pool.length) return;
