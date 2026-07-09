@@ -12,7 +12,7 @@ import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
 import { syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import { getShowTemplateBySlug } from '@/lib/admin.server';
-import { randomShaderCover } from '@/lib/shader-cover';
+import { randomCover } from '@/lib/cover';
 
 /** Clone a curated show template into a new user-owned show, copying preview cues, and redirect to it. */
 export async function cloneShowTemplateAction(formData: FormData): Promise<void> {
@@ -43,7 +43,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       description: template.description,
       duration_seconds: template.durationSeconds,
       budget_cents: template.budgetCents,
-      cover_shader: template.coverShader ?? randomShaderCover(),
+      cover_shader: template.coverShader ?? randomCover(),
       cover_image_path: template.coverImagePath ?? null,
       total_cents: template.totalCents,
       effects_count: template.effectsCount,

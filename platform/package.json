@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
@@ -33,6 +34,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.38.0",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^1.14.0",
     "next": "^16.2.9",
     "next-themes": "^0.4.6",

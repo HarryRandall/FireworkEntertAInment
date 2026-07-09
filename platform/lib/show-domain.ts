@@ -9,7 +9,7 @@
 
 import type { FireworkSpec } from '@/lib/fireworks/spec';
 import type { FireworkDesign, LaunchPosition } from '@/lib/fireworks/design';
-import type { ShaderCover } from '@/lib/shader-cover';
+import type { ShowCover } from '@/lib/cover';
 
 export type ShowStatus = 'draft' | 'complete';
 export type ShowGenerationStatus = 'idle' | 'running' | 'completed' | 'failed';
@@ -39,8 +39,8 @@ export type Show = {
   generationStartedAt: string | null;
   generationCompletedAt: string | null;
   launchPositions: LaunchPosition[];
-  /** Saved shader "visual identity" for this show; null for older shows. */
-  coverShader: ShaderCover | null;
+  /** Saved cover "visual identity" (CSS or legacy WebGL); null for older shows. */
+  coverShader: ShowCover | null;
   /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
   coverImagePath: string | null;
   updatedAt: string;

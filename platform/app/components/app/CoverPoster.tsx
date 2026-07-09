@@ -11,7 +11,7 @@
  * gradient remains as the cover.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { shaderCoverGradient, type ShaderCover as ShaderCoverConfig } from '@/lib/shader-cover';
+import { coverGradient, type ShowCover } from '@/lib/cover';
 import { coverPosterUrl } from '@/lib/cover-poster-url';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +22,7 @@ export function CoverPoster({
   className,
   eager = false,
 }: {
-  cover: ShaderCoverConfig;
+  cover: ShowCover;
   /** Storage path in the `covers` bucket; null/undefined falls back to the gradient. */
   imagePath?: string | null;
   alt?: string;
@@ -31,7 +31,7 @@ export function CoverPoster({
   /** Load the image eagerly (e.g. above-the-fold hero cards). */
   eager?: boolean;
 }) {
-  const gradient = useMemo(() => shaderCoverGradient(cover), [cover]);
+  const gradient = useMemo(() => coverGradient(cover), [cover]);
   const src = coverPosterUrl(imagePath);
   const [loaded, setLoaded] = useState(false);
 

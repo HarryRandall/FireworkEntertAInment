@@ -22,6 +22,7 @@ import {
   SongContextSkeleton,
 } from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { WizardLoading } from './new/_components/WizardLoading';
 
 const GENERATING_SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
 const DETAIL_TAB_LABELS = ['Live preview', 'Shopping list', 'Show guide', 'Song context'];
@@ -129,6 +130,12 @@ export default function ShowsLoading() {
         className={GENERATING_SPLASH_CLASS}
       />
     );
+  }
+
+  // `/shows/new` is the wizard, not a show detail page — without this branch
+  // it matches the detail regex below and flashes the preview skeleton.
+  if (pathname === '/shows/new' || pathname?.startsWith('/shows/new/')) {
+    return <WizardLoading />;
   }
 
   // A detail route is `/shows/<something>[/tab]`; anything else is the list.

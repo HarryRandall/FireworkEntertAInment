@@ -76,7 +76,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   // Cloning a template copies its poster path onto the new show.
   assert.match(
     cloneAction,
-    /cover_shader: template\.coverShader \?\? randomShaderCover\(\),\s+cover_image_path: template\.coverImagePath \?\? null,/,
+    /cover_shader: template\.coverShader \?\? randomCover\(\),\s+cover_image_path: template\.coverImagePath \?\? null,/,
   );
 });
 
@@ -87,9 +87,12 @@ test('cover poster render util and component exist with a gradient fallback', ()
 
   assert.match(renderUtil, /export async function renderCoverToPng/);
   assert.match(renderUtil, /canvas\.toDataURL\('image\/png'\)/);
+  // CSS covers snapshot the frozen DOM so the poster equals the live still.
+  assert.match(renderUtil, /renderCssCoverPoster/);
+  assert.match(renderUtil, /animate=\{false\}/);
   assert.match(renderUtil, /root\.unmount\(\)/);
   assert.match(poster, /export function CoverPoster/);
-  assert.match(poster, /shaderCoverGradient\(cover\)/);
+  assert.match(poster, /coverGradient\(cover\)/);
   assert.match(poster, /coverPosterUrl\(imagePath\)/);
   assert.match(poster, /<img/);
   assert.match(urlHelper, /storage\/v1\/object\/public\/covers\//);

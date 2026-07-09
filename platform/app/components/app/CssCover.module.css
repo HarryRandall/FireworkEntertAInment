@@ -1,0 +1,345 @@
+/*
+ * Keyframes and layer classes for the CSS covers.
+ *
+ * Performance rule: animate ONLY transform and opacity so every layer stays on
+ * the compositor and never triggers a per-frame repaint. Filters and
+ * background-position are set statically (rasterised once and cached), never
+ * animated. Colours and per-instance timing come from CssCover.tsx via inline
+ * styles, so a frozen cover is just the same markup paused at a fixed delay.
+ */
+
+.root {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.layer {
+  position: absolute;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Fills the frame exactly. */
+.fill {
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Bleeds well past the frame so translate/rotate/scale never expose an edge. */
+.oversized {
+  inset: -25%;
+  height: 150%;
+  width: 150%;
+}
+
+/* A large square that keeps the frame covered at every rotation angle, on both
+ * wide (landscape) and tall (portrait card) frames. */
+.wheel {
+  inset: -80%;
+  height: 260%;
+  width: 260%;
+}
+
+.animated {
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+
+/* Base wash shared by every kind (static, instant paint). */
+.base {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* Soft film grain, layered on top of any kind. Static texture. */
+.grain {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  opacity: var(--grain);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/* ---- Aurora ---------------------------------------------------------- */
+
+.auroraBlob {
+  border-radius: 50%;
+  /* Static blur: rasterised once, then transformed on the GPU. */
+  filter: blur(calc(20px + var(--blur) * 44px));
+  mix-blend-mode: screen;
+}
+
+@keyframes cc-drift-a {
+  0% {
+    transform: translate3d(-10%, -6%, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(12%, 9%, 0) scale(1.22);
+  }
+  100% {
+    transform: translate3d(-10%, -6%, 0) scale(1.05);
+  }
+}
+
+@keyframes cc-drift-b {
+  0% {
+    transform: translate3d(9%, 7%, 0) scale(1.18);
+  }
+  50% {
+    transform: translate3d(-12%, -9%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(9%, 7%, 0) scale(1.18);
+  }
+}
+
+@keyframes cc-drift-c {
+  0% {
+    transform: translate3d(5%, -10%, 0) scale(1.1);
+  }
+  50% {
+    transform: translate3d(-7%, 11%, 0) scale(1.26);
+  }
+  100% {
+    transform: translate3d(5%, -10%, 0) scale(1.1);
+  }
+}
+
+.driftA {
+  animation-name: cc-drift-a;
+}
+.driftB {
+  animation-name: cc-drift-b;
+}
+.driftC {
+  animation-name: cc-drift-c;
+}
+
+/* ---- God rays -------------------------------------------------------- */
+
+.rays {
+  mix-blend-mode: screen;
+  animation-name: cc-spin;
+  animation-timing-function: linear;
+}
+
+.raysBloom {
+  mix-blend-mode: screen;
+  animation-name: cc-pulse;
+}
+
+@keyframes cc-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cc-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+/* ---- Field kinds (low-res per-pixel buffers upscaled by the browser) --- */
+
+.fieldCanvas {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  /* Static blur hides the upscale lattice on banded fields; the slight scale
+   * pushes the blur's soft edge outside the frame. */
+  filter: blur(calc(1px + var(--blur) * 4px));
+  transform: scale(1.03);
+}
+
+/* ---- Curtain (aurora borealis bands under a vertical fade mask) ------- */
+
+.curtainA {
+  mix-blend-mode: screen;
+  filter: blur(calc(3px + var(--blur) * 12px));
+  animation-name: cc-curtain-a;
+}
+
+.curtainB {
+  mix-blend-mode: screen;
+  opacity: 0.75;
+  filter: blur(calc(5px + var(--blur) * 16px));
+  animation-name: cc-curtain-b;
+}
+
+@keyframes cc-curtain-a {
+  0% {
+    transform: translate3d(-5%, 0, 0) skewX(-10deg);
+  }
+  50% {
+    transform: translate3d(5%, -2%, 0) skewX(-15deg);
+  }
+  100% {
+    transform: translate3d(-5%, 0, 0) skewX(-10deg);
+  }
+}
+
+@keyframes cc-curtain-b {
+  0% {
+    transform: translate3d(4%, -1%, 0) skewX(-14deg);
+  }
+  50% {
+    transform: translate3d(-6%, 1%, 0) skewX(-8deg);
+  }
+  100% {
+    transform: translate3d(4%, -1%, 0) skewX(-14deg);
+  }
+}
+
+/* ---- Bloom (Canvas2D sparks over a gradient) ------------------------- */
+
+.bloomCanvas {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+
+/* ---- Plasma (fast overlapping colour blobs) -------------------------- */
+
+.plasmaBlob {
+  border-radius: 50%;
+  filter: saturate(1.25);
+  mix-blend-mode: screen;
+}
+
+@keyframes cc-plasma-a {
+  0% {
+    transform: translate3d(-14%, -10%, 0) scale(1.1) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(16%, 6%, 0) scale(1.35) rotate(60deg);
+  }
+  66% {
+    transform: translate3d(-6%, 16%, 0) scale(1.15) rotate(180deg);
+  }
+  100% {
+    transform: translate3d(-14%, -10%, 0) scale(1.1) rotate(360deg);
+  }
+}
+
+@keyframes cc-plasma-b {
+  0% {
+    transform: translate3d(14%, 12%, 0) scale(1.3) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-16%, -8%, 0) scale(1.05) rotate(-140deg);
+  }
+  100% {
+    transform: translate3d(14%, 12%, 0) scale(1.3) rotate(-360deg);
+  }
+}
+
+@keyframes cc-plasma-c {
+  0% {
+    transform: translate3d(2%, -16%, 0) scale(1.2) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-4%, 14%, 0) scale(1.4) rotate(200deg);
+  }
+  100% {
+    transform: translate3d(2%, -16%, 0) scale(1.2) rotate(360deg);
+  }
+}
+
+.plasmaA {
+  animation-name: cc-plasma-a;
+}
+.plasmaB {
+  animation-name: cc-plasma-b;
+}
+.plasmaC {
+  animation-name: cc-plasma-c;
+}
+
+/* ---- Kaleido (fast rotating colour wheel) ---------------------------- */
+
+.kaleido {
+  filter: saturate(1.2);
+  animation-name: cc-spin;
+  animation-timing-function: linear;
+}
+
+.kaleidoMirror {
+  mix-blend-mode: screen;
+  opacity: 0.65;
+  animation-name: cc-spin-reverse;
+  animation-timing-function: linear;
+}
+
+@keyframes cc-spin-reverse {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+/* ---- Grid (retro perspective grid receding to a horizon) ------------- */
+
+.gridPerspective {
+  perspective: 340px;
+  perspective-origin: 50% 44%;
+}
+
+.gridPlane {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 320%;
+  height: 320%;
+  transform: translate(-50%, -50%) rotateX(76deg);
+  transform-origin: 50% 50%;
+}
+
+.gridScroll {
+  position: absolute;
+  inset: 0;
+  animation-name: cc-grid-scroll;
+  animation-timing-function: linear;
+}
+
+@keyframes cc-grid-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    /* One grid row (see the 10% line period) so the loop is seamless. */
+    transform: translateY(10%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated {
+    animation-play-state: paused !important;
+  }
+}

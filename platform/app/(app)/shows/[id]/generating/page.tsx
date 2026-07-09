@@ -7,11 +7,12 @@ import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnim
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
+import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
 import { getShowBySlug, listReplayCuesForShow } from '@/lib/shows.server';
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ creating?: string; t?: string }>;
+  searchParams: Promise<{ creating?: string; t?: string; a?: string }>;
 };
 
 const SPLASH_CLASS =
@@ -19,7 +20,10 @@ const SPLASH_CLASS =
 
 export default async function ShowGeneratingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { creating, t } = await searchParams;
+  const { creating, t, a } = await searchParams;
+  // Soundtrack flag forwarded by the wizard so the provisional splash renders
+  // the same stage list (and phase) as the wizard's launch overlay.
+  const provisionalHasAudio = a === '1';
   const [show, warmth] = await Promise.all([getShowBySlug(id), getAnalyserWarmthState()]);
   const isWarm = warmth.active;
 
@@ -33,6 +37,8 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       return (
         <GeneratingShowAnimation
           showTitle={provisionalTitle}
+          hasAudio={provisionalHasAudio}
+          phase={provisionalHasAudio ? 'analysing' : 'generating'}
           isWarm={isWarm}
           randomiseCoverOnLoad
           persistKey={id}
@@ -43,8 +49,34 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
     notFound();
   }
 
+  const hasAudio = Boolean(show.audioPath || show.musicAnalysisId);
+
+  // Slug collision guard: while `creating=1` the wizard is still waiting on
+  // createShowAction. If the row we found is not mid-generation it predates
+  // this click (an older show with the same slug); showing or handing over to
+  // it would flash the wrong show. Keep the provisional splash up — the wizard
+  // replaces the URL with the real (suffixed) slug the moment the action
+  // returns.
+  if (creating === '1' && show.generationStatus !== 'running') {
+    const provisionalTitle = (t ?? '').trim() || 'Your show';
+    return (
+      <GeneratingShowAnimation
+        showTitle={provisionalTitle}
+        hasAudio={provisionalHasAudio}
+        phase={provisionalHasAudio ? 'analysing' : 'generating'}
+        isWarm={isWarm}
+        randomiseCoverOnLoad
+        persistKey={id}
+        className={SPLASH_CLASS}
+      />
+    );
+  }
+
   const cues = await listReplayCuesForShow(show.id);
   if (cues.length > 0 && show.generationStatus === 'completed') {
+    // Generation is done: go straight to the preview. The splash's polling
+    // refresh triggers this server render, which redirects to the firework
+    // show. No overlay handover, no intermediate stages.
     redirect(`/shows/${show.slug}/preview`);
   }
 
@@ -80,10 +112,20 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
     );
   }
 
+  // Real pipeline phase for the progress card: `analysing` while the track
+  // analysis is still running (cue generation waits on it), `generating` after.
+  const analysisStatus =
+    show.generationStatus === 'running' && show.musicAnalysisId
+      ? await getMusicAnalysisStatus(show.musicAnalysisId)
+      : null;
+  const phase = analysisStatus === 'running' ? 'analysing' : 'generating';
+
   return (
     <GeneratingShowAnimation
       showTitle={show.title}
       status={show.generationStatus === 'completed' ? 'completed' : 'running'}
+      phase={phase}
+      hasAudio={hasAudio}
       isWarm={isWarm}
       startedAt={show.generationStartedAt}
       coverShader={creating === '1' ? null : show.coverShader}

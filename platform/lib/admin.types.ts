@@ -1,6 +1,6 @@
 import type { Json } from '@/lib/database.types';
 import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
-import type { ShaderCover } from '@/lib/shader-cover';
+import type { ShowCover } from '@/lib/cover';
 
 /**
  * Shared admin / RBAC domain types.
@@ -366,7 +366,7 @@ export type ShowTemplate = {
   timeOfDay: string | null;
   moodTags: string[];
   previewCues: ShowTemplateCue[];
-  coverShader: ShaderCover | null;
+  coverShader: ShowCover | null;
   /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
   coverImagePath: string | null;
   isFeatured: boolean;

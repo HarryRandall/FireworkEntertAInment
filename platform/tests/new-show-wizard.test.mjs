@@ -67,7 +67,7 @@ test('new show wizard routes to the generation page immediately on launch', () =
 
   const launchIdx = page.indexOf('setIsLaunching(true)');
   const routeIdx = page.indexOf(
-    'router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`)',
+    "`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}${hasAudio ? '&a=1' : ''}`",
   );
   const transitionIdx = page.indexOf('startTransition(async () =>');
   assert.notEqual(launchIdx, -1, 'Generate should enter launching state immediately');

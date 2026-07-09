@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
-import { randomShaderCover } from '@/lib/shader-cover';
+import { randomCover } from '@/lib/cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
@@ -180,7 +180,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,
       music_analysis_id: musicAnalysisId,
-      cover_shader: randomShaderCover(),
+      cover_shader: randomCover(),
       status: 'draft',
       generation_status: 'running',
       generation_started_at: new Date().toISOString(),

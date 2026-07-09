@@ -4,7 +4,7 @@
  */
 import { parseLaunchPositions } from '@/lib/fireworks/design';
 import { compileFireworkDesign } from '@/lib/fireworks/design';
-import { parseShaderCover } from '@/lib/shader-cover';
+import { parseCover } from '@/lib/cover';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   isFireworkStyleDefaultKind,
@@ -55,7 +55,7 @@ export function mapShow(row: ShowProjection): Show {
     generationStartedAt: row.generation_started_at,
     generationCompletedAt: row.generation_completed_at,
     launchPositions: parseLaunchPositions(row.launch_positions_json),
-    coverShader: parseShaderCover(row.cover_shader),
+    coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
     updatedAt: row.updated_at,
   };

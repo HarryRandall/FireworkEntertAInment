@@ -78,6 +78,31 @@ function hydrateLegacyShowAnalysis(row: ShowAnalysisRow): ShowAnalysisSnapshot {
   };
 }
 
+/**
+ * Lightweight status-only lookup for the generating splash, so the progress
+ * UI can distinguish "still analysing the track" from "generating cues"
+ * without pulling the full analysis payload on every poll.
+ */
+export async function getMusicAnalysisStatus(
+  musicAnalysisId: string,
+): Promise<AnalysisStatus | null> {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from('song_analyses')
+    .select('status')
+    .eq('id', musicAnalysisId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.error('[show-analyses.server] status lookup failed:', error);
+    return null;
+  }
+  return (data?.status as AnalysisStatus) ?? null;
+}
+
 export async function getLatestAnalysisForShow(
   showId: string,
 ): Promise<ShowAnalysisSnapshot | null> {

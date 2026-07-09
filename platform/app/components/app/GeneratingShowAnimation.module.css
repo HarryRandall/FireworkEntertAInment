@@ -1,10 +1,10 @@
 /*
  * Generating-show splash.
  *
- * A calm night sky (gradient + starfield) with occasional soft firework
- * bursts behind a glassy progress card. Sky colours are deliberately
- * hard-coded (tokens cannot express the simulation backdrop); the card and
- * bar consume design-system tokens so both themes hold up.
+ * The show's animated cover (CSS engine, or legacy WebGL) fills the stage
+ * behind a glassy progress card. The base gradient is deliberately
+ * hard-coded (tokens cannot express the backdrop); the card, stage
+ * checklist, and bar consume design-system tokens so both themes hold up.
  */
 
 .stage {
@@ -14,7 +14,9 @@
   min-height: 100%;
   height: 100%;
   overflow: hidden;
-  border-radius: 16px;
+  /* The splash sits flush under the app's top bar, so only the bottom
+     corners follow the content-area rounding. */
+  border-radius: 0 0 16px 16px;
   background: linear-gradient(180deg, #03050b 0%, #0b1226 100%);
 }
 
@@ -22,13 +24,6 @@
   .stage {
     border-radius: 0;
   }
-}
-
-.container {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
 }
 
 .shaderLayer {
@@ -42,144 +37,6 @@
 
 .hasCover {
   background: var(--color-bg-default);
-}
-
-.hasCover .container {
-  z-index: 1;
-  opacity: 0.22;
-  mix-blend-mode: screen;
-}
-
-/* Far + near starfield layers. */
-.container::before,
-.container::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-repeat: repeat;
-}
-
-.container::before {
-  background-image:
-    radial-gradient(1px 1px at 22% 28%, rgba(255, 255, 255, 0.5), transparent 55%),
-    radial-gradient(1px 1px at 64% 12%, rgba(255, 255, 255, 0.38), transparent 55%),
-    radial-gradient(1px 1px at 85% 44%, rgba(255, 255, 255, 0.42), transparent 55%),
-    radial-gradient(1px 1px at 40% 66%, rgba(255, 255, 255, 0.3), transparent 55%),
-    radial-gradient(1px 1px at 8% 80%, rgba(255, 255, 255, 0.34), transparent 55%);
-  background-size: 440px 400px;
-  opacity: 0.55;
-}
-
-.container::after {
-  background-image:
-    radial-gradient(1.4px 1.4px at 15% 18%, rgba(255, 255, 255, 0.85), transparent 55%),
-    radial-gradient(1.2px 1.2px at 72% 32%, rgba(255, 255, 255, 0.65), transparent 55%),
-    radial-gradient(1.6px 1.6px at 48% 8%, rgba(255, 255, 255, 0.75), transparent 55%),
-    radial-gradient(1.2px 1.2px at 90% 72%, rgba(255, 255, 255, 0.55), transparent 55%),
-    radial-gradient(1.4px 1.4px at 30% 50%, rgba(255, 255, 255, 0.6), transparent 55%);
-  background-size: 280px 260px;
-  opacity: 0.6;
-  animation: splash-twinkle 7s ease-in-out infinite alternate;
-}
-
-@keyframes splash-twinkle {
-  from {
-    opacity: 0.3;
-  }
-  to {
-    opacity: 0.75;
-  }
-}
-
-/* Horizon glow anchoring the scene. */
-.horizon {
-  position: absolute;
-  inset-inline: 0;
-  bottom: -16%;
-  height: 60%;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(
-    60% 60% at 50% 100%,
-    rgba(0, 229, 255, 0.16) 0%,
-    rgba(59, 130, 246, 0.08) 38%,
-    transparent 72%
-  );
-  filter: blur(10px);
-}
-
-/* Soft distant firework bursts, staggered around the card. */
-.burst {
-  position: absolute;
-  z-index: 1;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  filter: blur(2px);
-  animation: splash-burst 11s linear infinite;
-}
-
-.burstA {
-  top: 6%;
-  left: 10%;
-  background: radial-gradient(
-    circle,
-    rgba(0, 229, 255, 0.55) 0%,
-    rgba(0, 229, 255, 0.16) 35%,
-    transparent 62%
-  );
-  animation-delay: 0s;
-}
-
-.burstB {
-  top: 14%;
-  right: 8%;
-  width: 180px;
-  height: 180px;
-  background: radial-gradient(
-    circle,
-    rgba(139, 92, 246, 0.55) 0%,
-    rgba(139, 92, 246, 0.16) 35%,
-    transparent 62%
-  );
-  animation-delay: 3.8s;
-}
-
-.burstC {
-  bottom: 18%;
-  left: 18%;
-  width: 150px;
-  height: 150px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 209, 102, 0.5) 0%,
-    rgba(255, 209, 102, 0.14) 35%,
-    transparent 62%
-  );
-  animation-delay: 7.4s;
-}
-
-@keyframes splash-burst {
-  0%,
-  70% {
-    opacity: 0;
-    transform: scale(0.25);
-  }
-  75% {
-    opacity: 0.5;
-    transform: scale(0.7);
-  }
-  84% {
-    opacity: 0.18;
-    transform: scale(1.05);
-  }
-  93%,
-  100% {
-    opacity: 0;
-    transform: scale(1.2);
-  }
 }
 
 /* === Card =============================================================== */
@@ -197,77 +54,55 @@
 
 .card {
   position: relative;
-  max-width: 42rem;
+  max-width: 26rem;
   width: 100%;
-  text-align: center;
   display: flex;
   flex-direction: column;
   border: 1px solid color-mix(in srgb, var(--color-border-subtle) 85%, transparent);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--color-bg-default) 78%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-bg-default) 82%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
   color: var(--color-content-default);
+  padding: 1.75rem 1.75rem 1.5rem;
 }
 
 .hasCover .card {
   border-color: rgba(245, 247, 250, 0.2);
-  background: rgba(5, 7, 13, 0.64);
+  background: rgba(5, 7, 13, 0.7);
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   color: #f5f7fa;
 }
 
-.panelTop {
-  padding: 2.25rem 2rem 1.5rem;
-}
+/* === Header ============================================================= */
 
-.panelBottom {
-  padding: 1.5rem 2rem 2rem;
-}
-
-.barRow {
-  display: flex;
-  justify-content: center;
-  padding: 0 2rem;
-}
-
-@media (max-width: 640px) {
-  .panelTop {
-    padding: 1.5rem 1.25rem 1.1rem;
-  }
-
-  .panelBottom {
-    padding: 1.1rem 1.25rem 1.5rem;
-  }
-
-  .barRow {
-    padding: 0 1.25rem;
-  }
+.header {
+  margin-bottom: 1.25rem;
 }
 
 .eyebrow {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.4rem;
   font-family: var(--font-mono, monospace);
-  font-size: 0.6875rem;
+  font-size: 0.6563rem;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--color-content-muted);
 }
 
 .hasCover .eyebrow {
-  color: #00e5ff;
+  color: rgba(245, 247, 250, 0.6);
 }
 
 .title {
-  font-size: clamp(1.9rem, 4vw, 3rem);
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1.15;
   margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
   color: var(--color-content-emphasis);
   word-break: break-word;
 }
@@ -276,125 +111,212 @@
   color: #f5f7fa;
 }
 
-.showTitle {
-  margin: 0.85rem 0 0;
-  color: var(--color-content-subtle);
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.45;
-  word-break: break-word;
+/* === Stage checklist ==================================================== */
+
+.stages {
+  list-style: none;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
-.hasCover .showTitle {
-  color: rgba(245, 247, 250, 0.74);
-}
-
-.stageLabelWrap {
-  position: relative;
-  margin: 1.25rem 0 0;
-  font-size: 0.9375rem;
-  height: 1.6em;
-  overflow: hidden;
-}
-
-.stageLabel {
-  position: absolute;
-  inset: 0;
-  margin: 0;
+.stageRow {
   display: flex;
   align-items: center;
+  gap: 0.7rem;
+  color: var(--color-content-muted);
+  font-size: 0.875rem;
+  line-height: 1.3;
+  transition: color 220ms ease;
+}
+
+.hasCover .stageRow {
+  color: rgba(245, 247, 250, 0.42);
+}
+
+.stageIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  font-size: 1em;
-  line-height: 1.4;
-  font-weight: 500;
-  color: var(--color-content-subtle);
-  font-variant-numeric: tabular-nums;
-  will-change: transform, opacity;
-  animation: stage-slide-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border-default) 80%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+  transition:
+    color 220ms ease,
+    border-color 220ms ease,
+    background-color 220ms ease;
 }
 
-.hasCover .stageLabel {
-  color: rgba(245, 247, 250, 0.82);
+.hasCover .stageIcon {
+  border-color: rgba(245, 247, 250, 0.16);
+  background: rgba(245, 247, 250, 0.06);
 }
 
-@keyframes stage-slide-in {
-  from {
-    transform: translateY(-0.45rem);
+.stageText {
+  min-width: 0;
+  flex: 1;
+  transition: color 220ms ease;
+}
+
+/* Active row: emphasised text, pulsing icon ring, trailing ellipsis dots. */
+.stageActive {
+  color: var(--color-content-emphasis);
+  font-weight: 600;
+}
+
+.hasCover .stageActive {
+  color: #f5f7fa;
+}
+
+.stageActive .stageIcon {
+  color: var(--color-content-emphasis);
+  border-color: color-mix(in srgb, var(--color-content-emphasis) 55%, transparent);
+}
+
+.hasCover .stageActive .stageIcon {
+  color: #f5f7fa;
+  border-color: rgba(245, 247, 250, 0.55);
+}
+
+.stageIconPulse {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  opacity: 0;
+  animation: stage-icon-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes stage-icon-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.55);
     opacity: 0;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+}
+
+/* Animated trailing dots on the active row. */
+.stageDots {
+  flex: none;
+  width: 1.1rem;
+  text-align: left;
+}
+
+.stageDots::after {
+  content: '';
+  animation: stage-dots 1.4s steps(4, end) infinite;
+}
+
+@keyframes stage-dots {
+  0% {
+    content: '';
   }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75%,
+  100% {
+    content: '...';
+  }
+}
+
+/* Completed row: quiet tick. */
+.stageDone {
+  color: var(--color-content-subtle);
+}
+
+.hasCover .stageDone {
+  color: rgba(245, 247, 250, 0.6);
+}
+
+.stageDone .stageIcon {
+  color: var(--color-status-success, #22c55e);
+  border-color: color-mix(in srgb, var(--color-status-success, #22c55e) 45%, transparent);
+  background: color-mix(in srgb, var(--color-status-success, #22c55e) 10%, transparent);
+}
+
+/* === Progress bar ======================================================= */
+
+.barRow {
+  display: flex;
 }
 
 .progressTrack {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: color-mix(in srgb, var(--color-border-subtle) 55%, transparent);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
 }
 
+.hasCover .progressTrack {
+  background: rgba(245, 247, 250, 0.14);
+}
+
 .progressFill {
   width: 100%;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-accent) 0%, #3b82f6 100%);
-  box-shadow: 0 0 14px -2px var(--color-accent);
+  background: var(--color-content-emphasis);
   transform: scaleX(var(--progress-scale, 0));
   transform-origin: left center;
   will-change: transform;
+  transition: transform 300ms ease-out;
 }
 
-.progressMeta {
-  margin: 1rem 0 0;
+.hasCover .progressFill {
+  background: #f5f7fa;
+}
+
+.meta {
+  margin-top: 0.7rem;
   display: flex;
   align-items: baseline;
-  justify-content: center;
+  justify-content: space-between;
   gap: 0.6rem;
 }
 
 .percent {
+  font-family: var(--font-mono, monospace);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  font-size: 1.125rem;
-  color: var(--color-content-emphasis);
-  letter-spacing: -0.01em;
-}
-
-.hint {
-  color: var(--color-content-muted);
+  font-weight: 600;
   font-size: 0.8125rem;
-}
-
-.hasCover .hint {
-  color: rgba(245, 247, 250, 0.62);
+  color: var(--color-content-emphasis);
 }
 
 .hasCover .percent {
   color: #f5f7fa;
 }
 
+.eta {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-content-muted);
+  font-size: 0.8125rem;
+}
+
+.hasCover .eta {
+  color: rgba(245, 247, 250, 0.62);
+}
+
 /* === Light theme ======================================================== */
 
 :global([data-theme='light']) .stage {
   background: linear-gradient(180deg, #f4f8fd 0%, #dde9f8 100%);
-}
-
-:global([data-theme='light']) .container::before,
-:global([data-theme='light']) .container::after {
-  opacity: 0.1;
-}
-
-:global([data-theme='light']) .horizon {
-  opacity: 0.55;
-}
-
-:global([data-theme='light']) .burst {
-  opacity: 0;
-  animation: none;
 }
 
 :global([data-theme='light']) .card {
@@ -404,13 +326,8 @@
 /* === Reduced motion ===================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  .container::after,
-  .stageLabel {
+  .stageIconPulse,
+  .stageDots::after {
     animation: none;
-  }
-
-  .burst {
-    animation: none;
-    display: none;
   }
 }

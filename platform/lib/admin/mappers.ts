@@ -20,7 +20,7 @@ import type {
   ThemePreference,
 } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
-import { parseShaderCover } from '@/lib/shader-cover';
+import { parseCover } from '@/lib/cover';
 
 export type ProfileRow = Database['public']['Tables']['users']['Row'];
 export type RoleRow = Database['public']['Tables']['roles']['Row'];
@@ -188,7 +188,7 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     timeOfDay: row.time_of_day,
     moodTags: row.mood_tags ?? [],
     previewCues: parseTemplateCues(row.preview_cues),
-    coverShader: parseShaderCover(row.cover_shader),
+    coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
     isFeatured: row.is_featured,
     likeCount: deriveTemplateLikeCount(row),

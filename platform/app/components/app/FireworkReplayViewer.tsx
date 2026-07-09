@@ -87,6 +87,10 @@ type FireworkReplayViewerProps = {
    * only needed for the add-firework dialog and audio playback, so they stream
    * separately and never gate the fireworks. */
   replayExtrasPromise: Promise<ReplayExtras>;
+  /** Fires once when the replay data has landed and the canvas has primed its
+   * fireworks — i.e. the moment the preview is genuinely watchable. Used by
+   * the post-generation handover to keep its splash up until then. */
+  onReplayReady?: () => void;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -173,6 +177,7 @@ export function FireworkReplayViewer({
   canEditFireworks = false,
   replayCuesPromise,
   replayExtrasPromise,
+  onReplayReady,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
   const [replayExtras, setReplayExtras] = useState<ReplayExtras | null>(null);
@@ -421,6 +426,16 @@ export function FireworkReplayViewer({
   // `isSceneReady`, so the stage is visible (and orbitable) while loading.
   const replayReady = replayDataReady && isCanvasReady;
   const playbackControlsVisible = !isPlaying || playbackControlsActive;
+
+  // Notify the host (post-generation handover splash) the first time the
+  // preview becomes watchable. Ref-guarded so a re-created callback prop
+  // cannot re-fire it.
+  const replayReadyNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (!replayReady || replayReadyNotifiedRef.current) return;
+    replayReadyNotifiedRef.current = true;
+    onReplayReady?.();
+  }, [replayReady, onReplayReady]);
 
   function wakePlaybackControls() {
     if (!isPlaying) {

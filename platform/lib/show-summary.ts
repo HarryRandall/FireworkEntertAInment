@@ -1,6 +1,6 @@
 import type { Show } from '@/lib/show-domain';
 import type { ShowTemplate } from '@/lib/admin.types';
-import type { ShaderCover } from '@/lib/shader-cover';
+import type { ShowCover } from '@/lib/cover';
 
 export type VisualPalette = {
   names: [string, string, string];
@@ -20,7 +20,7 @@ export type ShowSummaryCard = {
   lastEditedAt: string;
   palette: VisualPalette;
   energySeries: number[];
-  coverShader: ShaderCover | null;
+  coverShader: ShowCover | null;
   coverImagePath: string | null;
 };
 

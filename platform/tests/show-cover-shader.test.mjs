@@ -1,4 +1,4 @@
-/** Static guards for per-show shader covers on the generating splash. */
+/** Static guards for per-show covers (CSS engine + legacy WebGL) on the generating splash. */
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -46,13 +46,13 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(migration, /ARRAY\['#00e5ff', '#3b82f6', '#8b5cf6', '#ff3df2'\]/);
   assert.match(showPresetsTypes, /cover_shader: Json \| null/);
   assert.match(showPresetsTypes, /cover_shader\?: Json \| null/);
-  assert.match(adminTypes, /coverShader: ShaderCover \| null/);
+  assert.match(adminTypes, /coverShader: ShowCover \| null/);
   assert.match(adminTypes, /coverImagePath: string \| null/);
   assert.match(
     templates,
     /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path`/,
   );
-  assert.match(mapper, /coverShader: parseShaderCover\(row\.cover_shader\)/);
+  assert.match(mapper, /coverShader: parseCover\(row\.cover_shader\)/);
   assert.match(mapper, /coverImagePath: row\.cover_image_path \?\? null/);
   assert.match(exploreCard, /template\.coverShader \?\? shaderCoverFromSeed/);
   assert.match(exploreCard, /import \{ CoverPoster \}/);
@@ -75,7 +75,7 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(explorePreview, /fadeWidth = 48/);
   assert.match(explorePreview, /overlay\.style\.clipPath = `inset/);
   assert.match(libraryPage, /ExplorePreviewProvider specifications=\{specifications\}/);
-  assert.match(cloneAction, /cover_shader: template\.coverShader \?\? randomShaderCover\(\)/);
+  assert.match(cloneAction, /cover_shader: template\.coverShader \?\? randomCover\(\)/);
 });
 
 test('show reads map cover_shader into the domain model', () => {
@@ -85,24 +85,33 @@ test('show reads map cover_shader into the domain model', () => {
 
   assert.match(showTypes, /\| 'cover_shader'/);
   assert.match(showTypes, /launch_positions_json, cover_shader, updated_at/);
-  assert.match(mapper, /coverShader: parseShaderCover\(row\.cover_shader\)/);
-  assert.match(domain, /coverShader: ShaderCover \| null/);
+  assert.match(mapper, /coverShader: parseCover\(row\.cover_shader\)/);
+  assert.match(domain, /coverShader: ShowCover \| null/);
 });
 
-test('new shows receive and render their saved shader cover', () => {
+test('new shows receive a CSS cover and render it on the splash', () => {
   const action = read('app/(app)/shows/new/actions.ts');
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
   const animation = read('app/components/app/GeneratingShowAnimation.tsx');
 
-  assert.match(action, /import \{ randomShaderCover \} from '@\/lib\/shader-cover';/);
-  assert.match(action, /cover_shader: randomShaderCover\(\)/);
+  assert.match(action, /import \{ randomCover \} from '@\/lib\/cover';/);
+  assert.match(action, /cover_shader: randomCover\(\)/);
   assert.match(generatingPage, /randomiseCoverOnLoad/);
   assert.match(generatingPage, /coverShader=\{creating === '1' \? null : show\.coverShader\}/);
   assert.match(generatingPage, /randomiseCoverOnLoad=\{creating === '1' \|\| !show\.coverShader\}/);
-  assert.match(animation, /randomShaderCover/);
-  assert.match(animation, /coverShader\?: ShaderCoverConfig \| null/);
+  assert.match(animation, /randomCover/);
+  assert.match(animation, /coverShader\?: ShowCover \| null/);
   assert.match(animation, /randomiseCoverOnLoad\?: boolean/);
-  assert.match(animation, /<ShaderCover cover=\{activeCover\} \/>/);
+  // The rendered cover is the active cover with its shader clock resumed so
+  // splash remounts stay continuous.
+  assert.match(animation, /const displayCover = useMemo/);
+  assert.match(
+    animation,
+    /if \(!activeCover \|\| !coverElapsedMs \|\| !activeCover\.speed\) return activeCover;/,
+  );
+  assert.match(animation, /<Cover cover=\{displayCover\} \/>/);
+  // CSS covers resume in real seconds; legacy WebGL frames advance with speed.
+  assert.match(animation, /isCssCover\(activeCover\)/);
 });
 
 test('still covers keep the real shader visible without normal animation', () => {

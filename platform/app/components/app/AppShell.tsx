@@ -176,12 +176,6 @@ type SidebarAiUsage = {
 };
 
 const SIDEBAR_FREE_SHOWS_INCLUDED = 3;
-// Used segments keep the sidebar background but pick up faint grey stripes so
-// they read as "spent" at a glance.
-const SIDEBAR_USED_SHOW_SEGMENT_STYLE = {
-  backgroundImage:
-    'repeating-linear-gradient(90deg, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 0, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 4px, transparent 4px, transparent 8px)',
-};
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
@@ -611,10 +605,10 @@ function SidebarAiUsageMeter({
     >
       {loading ? (
         <div className="space-y-2">
-          <Skeleton className="h-1.5 w-full rounded-full" />
+          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full" />
           <div className="flex items-center justify-between gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-5 w-12 rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md" />
           </div>
         </div>
       ) : (
@@ -649,9 +643,8 @@ function SidebarCreditSegments({ remaining, total }: { remaining: number; total:
             key={index}
             className={cn(
               'h-1.5 flex-1 rounded-full',
-              isRemaining ? 'bg-[color:var(--hl)]' : 'border-sidebar-border bg-sidebar border',
+              isRemaining ? 'bg-[color:var(--hl)]' : 'bg-sidebar-foreground/25',
             )}
-            style={isRemaining ? undefined : SIDEBAR_USED_SHOW_SEGMENT_STYLE}
           />
         );
       })}
@@ -1182,7 +1175,13 @@ export function AppShell({
 
       <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border-x md:peer-data-[variant=inset]:border-t md:peer-data-[variant=inset]:shadow-none">
         <ShellTopBar pathname={effectivePath} />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10">
+        <main
+          // Positioned + tagged so full-pane overlays (the post-generation
+          // handover splash) can portal in and cover the whole content area,
+          // including any route chrome, while the app shell stays visible.
+          data-app-content
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10"
+        >
           {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
         </main>
       </SidebarInset>

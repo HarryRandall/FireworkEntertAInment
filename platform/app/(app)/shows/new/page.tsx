@@ -25,15 +25,7 @@
  */
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-  type FormEvent,
-  type KeyboardEvent,
-} from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
@@ -61,13 +53,16 @@ import {
 import { DEFAULT_SHOW_STYLE, type ShowStyleKey } from '@/lib/cue-generation/show-styles';
 import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
 import {
+  clearPersistedGenerationCover,
   clearPersistedGenerationStart,
+  copyPersistedGenerationCover,
   persistGenerationStartedAt,
 } from '@/lib/generation-progress-storage';
 import { slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { createShowAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
+import { LaunchOverlay } from './_components/LaunchOverlay';
 import { ChoiceCard, PositionDots } from './_components/cards';
 import { StepDots } from './_components/StepDots';
 import { StepPanel } from './_components/StepPanel';
@@ -145,8 +140,12 @@ export default function NewShowPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
   const [isLaunching, setIsLaunching] = useState(false);
+  // Set on Generate; renders the instant client-side splash overlay that
+  // covers the gap until the /generating route streams in.
+  const [launch, setLaunch] = useState<{ slug: string; title: string; hasAudio: boolean } | null>(
+    null,
+  );
   const [mounted, setMounted] = useState(false);
-  const [, startTransition] = useTransition();
 
   const measuredFeet = Number(measuredWidth);
   const effectiveWidthFeet =
@@ -440,8 +439,33 @@ export default function NewShowPage() {
     if (stepIndex < STEPS.length - 1) goToStep(stepIndex + 1);
   };
 
-  /** Click handler for the Generate button. Derives the title, awaits any
-   * pending upload, then submits the show via the server action. */
+  // Prefetch the generating route while the user is on the final step so the
+  // splash swap on Generate has its loading state cached and appears instantly.
+  useEffect(() => {
+    if (stepIndex !== STEPS.length - 1) return;
+    const candidateTitle =
+      title.trim() ||
+      suggestTitleFromFilename(audioFile?.name ?? '') ||
+      deriveTitleFromDescription(description) ||
+      'Untitled show';
+    router.prefetch(`/shows/${slugifyTitle(candidateTitle)}/generating`);
+  }, [stepIndex, title, audioFile, description, router]);
+
+  /**
+   * Detached runner for the post-navigation generation work. Deliberately NOT
+   * React's startTransition: an async React transition here entangles with the
+   * router.push() transition dispatched in the same tick, so the wizard sat
+   * frozen until createShowAction resolved before the generating splash could
+   * appear. Running the work outside any transition lets the navigation commit
+   * immediately while the server action continues in the background.
+   */
+  const startTransition = (work: () => Promise<void>) => {
+    void work();
+  };
+
+  /** Click handler for the Generate button. Derives the title, navigates to
+   * the generating splash immediately, awaits any pending upload, then submits
+   * the show via the server action. */
   const triggerGenerate = () => {
     setFieldError(null);
     // No manual title entry anywhere: track name first, then the brief.
@@ -461,7 +485,15 @@ export default function NewShowPage() {
     const desiredSlug = slugifyTitle(finalTitle);
     const titleParam = encodeURIComponent(finalTitle);
     const generationStartedAt = persistGenerationStartedAt(desiredSlug);
-    router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`);
+    // Show the client-side splash overlay right away; the route's own splash
+    // resumes the same persisted progress once it streams in.
+    const hasAudio = Boolean(audioFile);
+    setLaunch({ slug: desiredSlug, title: finalTitle, hasAudio });
+    // `a=1` carries the soundtrack flag so the route's provisional splash
+    // renders the same stage list as this overlay: no stage-row swap mid-run.
+    router.push(
+      `/shows/${desiredSlug}/generating?creating=1&t=${titleParam}${hasAudio ? '&a=1' : ''}`,
+    );
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
       if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
@@ -469,6 +501,7 @@ export default function NewShowPage() {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
           setIsLaunching(false);
+          setLaunch(null);
           clearPersistedGenerationStart(desiredSlug);
           router.replace('/shows/new');
           toast.error('Could not upload track', {
@@ -479,6 +512,7 @@ export default function NewShowPage() {
       }
       if (audioFile && audioUploadState === 'error') {
         setIsLaunching(false);
+        setLaunch(null);
         clearPersistedGenerationStart(desiredSlug);
         router.replace('/shows/new');
         toast.error('Could not upload track', {
@@ -506,6 +540,7 @@ export default function NewShowPage() {
       const result = await createShowAction(data);
       if (!result.ok) {
         setIsLaunching(false);
+        setLaunch(null);
         clearPersistedGenerationStart(desiredSlug);
         router.replace('/shows/new');
         toast.error(result.error);
@@ -515,10 +550,15 @@ export default function NewShowPage() {
       // one so the route stops waiting on a row that will never appear.
       if (result.slug !== desiredSlug) {
         persistGenerationStartedAt(result.slug, generationStartedAt);
+        copyPersistedGenerationCover(desiredSlug, result.slug);
         clearPersistedGenerationStart(desiredSlug);
+        clearPersistedGenerationCover(desiredSlug);
         router.replace(`/shows/${result.slug}/generating`);
       } else {
-        router.refresh();
+        // Strip the provisional `creating=1` params: the row now exists and is
+        // ours, and the completed handover only engages on the clean URL (a
+        // completed show under `creating=1` is treated as a slug collision).
+        router.replace(`/shows/${result.slug}/generating`);
       }
     });
   };
@@ -550,7 +590,15 @@ export default function NewShowPage() {
       noValidate
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className="new-show-wizard-screen -mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
+      className={cn(
+        'new-show-wizard-screen relative -mx-6 -mt-6 flex flex-1 sm:-mx-8 lg:-mx-10',
+        // While the launch splash is up, cancel all of the app main's bottom
+        // padding (the form's overflow-hidden would clip any overlay that
+        // tried to extend past it) so the splash reaches the true bottom edge
+        // and matches the /generating route splash exactly: no height jump
+        // when the route streams in.
+        launch ? '-mb-10 sm:-mb-12' : '-mb-6',
+      )}
     >
       {/* Hidden derived title — kept as a named element for focus targeting. */}
       <input type="hidden" name="title" value={title} readOnly />
@@ -571,44 +619,45 @@ export default function NewShowPage() {
 
             <div className="mt-8 w-full">
               <StepPanel active={stepIndex === 0}>
-                <div className="space-y-6">
-                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/70 shadow-xs backdrop-blur-xl">
+                {/* Mirrors the home-page PromptHero panel sizing so the wizard's
+                    describe step feels like a continuation of it. */}
+                <div className="mx-auto w-full max-w-3xl">
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
                     <Textarea
                       name="description"
-                      rows={4}
+                      rows={2}
                       autoFocus
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your show, or hit the dice to randomise."
-                      className="h-36 resize-none rounded-none border-0 bg-transparent p-4 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-lg"
+                      className="h-28 resize-none rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
                     />
                     <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <CueModelSelect
                           value={selectedCueModel}
                           onChange={setSelectedCueModel}
-                          className="sm:w-[164px]"
+                          className="min-w-0 flex-1 sm:max-w-[164px]"
                         />
-                        <div className="flex items-center gap-3">
+                        <div className="flex shrink-0 items-center gap-2.5">
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={rollDice}
                             aria-label="Randomise the brief"
                             title="Randomise the brief"
-                            className="h-12 w-12 rounded-full px-0"
+                            className="h-9 w-9 rounded-full px-0"
                           >
-                            <Dices size={18} />
+                            <Dices size={16} />
                           </Button>
                           <Button
                             type="button"
                             onClick={() => goToStep(stepIndex + 1)}
                             disabled={mounted && !stepValid}
-                            size="lg"
-                            className="rounded-full px-8"
+                            className="h-9 rounded-full px-4 text-sm"
                           >
                             Continue
-                            <ArrowRight size={16} />
+                            <ArrowRight size={15} />
                           </Button>
                         </div>
                       </div>
@@ -618,7 +667,7 @@ export default function NewShowPage() {
               </StepPanel>
 
               <StepPanel active={stepIndex === 1}>
-                <div className="space-y-4">
+                <div className="mx-auto w-full max-w-3xl space-y-4">
                   <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
                     <AudioUpload
                       file={audioFile}
@@ -643,7 +692,7 @@ export default function NewShowPage() {
                     aria-checked={soundtrackMode === 'none'}
                     onClick={chooseNoSoundtrack}
                     className={cn(
-                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99] sm:p-5',
+                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
                       soundtrackMode === 'none'
                         ? 'border-[color:var(--color-content-emphasis)]'
                         : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
@@ -841,18 +890,21 @@ export default function NewShowPage() {
         {/* === Footer: circular Back (left edge), minimal dot stepper (centre),
                 pill Skip (right edge) - spans the full content width ========== */}
         <div className="flex w-full items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-            disabled={mounted && stepIndex === 0}
-            aria-label="Back"
-            className="h-10 w-10 rounded-full px-0"
-          >
-            <ChevronLeft size={18} strokeWidth={2} />
-          </Button>
+          {stepIndex === 0 ? (
+            <span className="inline-block h-10 w-10" aria-hidden="true" />
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
+              aria-label="Back"
+              className="h-10 w-10 rounded-full px-0"
+            >
+              <ChevronLeft size={18} strokeWidth={2} />
+            </Button>
+          )}
           <StepDots stepIndex={stepIndex} total={STEPS.length} />
-          {isFinalStep ? (
+          {stepIndex === 0 || isFinalStep ? (
             <span className="inline-block h-10 w-10" aria-hidden="true" />
           ) : (
             <Button
@@ -867,6 +919,12 @@ export default function NewShowPage() {
           )}
         </div>
       </div>
+
+      {/* Instant splash: covers the round trip to the /generating route so the
+          swap on Generate has no visible gap. */}
+      {isLaunching && launch ? (
+        <LaunchOverlay slug={launch.slug} title={launch.title} hasAudio={launch.hasAudio} />
+      ) : null}
     </form>
   );
 }
