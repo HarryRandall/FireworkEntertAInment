@@ -80,7 +80,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   );
 });
 
-test('cover poster render util and component exist with a gradient fallback', () => {
+test('cover poster render util and component exist with a neutral skeleton fallback', () => {
   const renderUtil = read('lib/render-cover-poster.tsx');
   const poster = read('app/components/app/CoverPoster.tsx');
   const urlHelper = read('lib/cover-poster-url.ts');
@@ -92,7 +92,9 @@ test('cover poster render util and component exist with a gradient fallback', ()
   assert.match(renderUtil, /animate=\{false\}/);
   assert.match(renderUtil, /root\.unmount\(\)/);
   assert.match(poster, /export function CoverPoster/);
-  assert.match(poster, /coverGradient\(cover\)/);
+  assert.match(poster, /import \{ Skeleton \}/);
+  assert.match(poster, /<Skeleton className="absolute inset-0 h-full w-full rounded-none" \/>/);
+  assert.doesNotMatch(poster, /coverGradient/);
   assert.match(poster, /coverPosterUrl\(imagePath\)/);
   assert.match(poster, /<img/);
   assert.match(urlHelper, /storage\/v1\/object\/public\/covers\//);

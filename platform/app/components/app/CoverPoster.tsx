@@ -1,29 +1,25 @@
 'use client';
 
 /**
- * CoverPoster - static cover art for browse cards. Renders a pre-rendered PNG
- * from the `covers` bucket over the cheap CSS gradient fallback
- * ({@link shaderCoverGradient}). Replaces the live WebGL `ShaderCover` on
- * thumbnail surfaces so browse pages do not mount a WebGL context per card.
+ * CoverPoster - static cover art for browse cards. Renders only the
+ * pre-rendered image from the `covers` bucket.
  *
- * The CSS gradient paints instantly (no WebGL, no network), then the PNG fades
- * in once decoded. When no image path is supplied (e.g. not yet rendered), the
- * gradient remains as the cover.
+ * The neutral skeleton holds the card shape until that one image decodes. When
+ * no image path is supplied, the skeleton remains visible so missing posters do
+ * not fall back to shader-derived colours.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { coverGradient, type ShowCover } from '@/lib/cover';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import { coverPosterUrl } from '@/lib/cover-poster-url';
 import { cn } from '@/lib/utils';
 
 export function CoverPoster({
-  cover,
   imagePath,
   alt = '',
   className,
   eager = false,
 }: {
-  cover: ShowCover;
-  /** Storage path in the `covers` bucket; null/undefined falls back to the gradient. */
+  /** Storage path in the `covers` bucket; null/undefined keeps the skeleton visible. */
   imagePath?: string | null;
   alt?: string;
   /** Extra classes for the root element (position, opacity, hover scale, etc.). */
@@ -31,19 +27,22 @@ export function CoverPoster({
   /** Load the image eagerly (e.g. above-the-fold hero cards). */
   eager?: boolean;
 }) {
-  const gradient = useMemo(() => coverGradient(cover), [cover]);
-  const src = coverPosterUrl(imagePath);
-  const [loaded, setLoaded] = useState(false);
+  const src = useMemo(() => coverPosterUrl(imagePath), [imagePath]);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const loaded = Boolean(src && loadedSrc === src);
 
   useEffect(() => {
-    if (!src) setLoaded(false);
+    if (!src) setLoadedSrc(null);
   }, [src]);
 
   return (
     <div
-      className={cn('absolute inset-0 h-full w-full overflow-hidden', className)}
-      style={{ background: gradient }}
+      className={cn(
+        'bg-muted absolute inset-0 h-full w-full overflow-hidden rounded-[inherit]',
+        className,
+      )}
     >
+      {!loaded ? <Skeleton className="absolute inset-0 h-full w-full rounded-none" /> : null}
       {src ? (
         // Static CDN asset; next/image is not used to keep the public-URL path
         // simple and avoid an extra loader for a tiny poster.
@@ -55,7 +54,7 @@ export function CoverPoster({
           height={480}
           loading={eager ? 'eager' : 'lazy'}
           decoding="async"
-          onLoad={() => setLoaded(true)}
+          onLoad={() => setLoadedSrc(src)}
           className={cn(
             'absolute inset-0 h-full w-full object-cover transition-opacity duration-200',
             loaded ? 'opacity-100' : 'opacity-0',

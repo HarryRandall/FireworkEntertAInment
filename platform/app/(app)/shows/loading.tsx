@@ -14,6 +14,7 @@
 import type { ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ListFilter, Search } from 'lucide-react';
+import { GenerationHandoffSplash } from '@/app/components/app/GenerationHandoffSplash';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
 import {
   ListSkeleton,
@@ -128,6 +129,18 @@ export default function ShowsLoading() {
         showTitle={showTitle}
         persistKey={generatingKey}
         className={GENERATING_SPLASH_CLASS}
+      />
+    );
+  }
+
+  const previewHandoffMatch = pathname?.match(/^\/shows\/([^/]+)\/preview\/?$/);
+  if (previewHandoffMatch && searchParams.get('handoff') === '1') {
+    const showTitle = searchParams.get('t')?.trim() || undefined;
+    return (
+      <GenerationHandoffSplash
+        title={showTitle}
+        persistKey={decodeURIComponent(previewHandoffMatch[1] ?? '')}
+        hasAudio={searchParams.get('a') === '1'}
       />
     );
   }

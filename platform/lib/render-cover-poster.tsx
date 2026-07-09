@@ -7,9 +7,9 @@
  * a static <img> instead of a live animated cover per card.
  *
  * CSS covers are frozen on their deterministic `frame` and snapshotted with
- * html-to-image, so the stored poster is exactly the still a frozen live
- * render would show. Legacy WebGL covers keep the original path: let the
- * shader develop at true speed, then read the canvas backing buffer.
+ * html-to-image, then checked for actual visual detail. Legacy WebGL covers
+ * keep the original path: let the shader develop at true speed, then read the
+ * canvas backing buffer.
  *
  * Rendering the actual cover components (instead of a hand-rolled duplicate
  * render tree) keeps the poster visually identical to the live cover and
@@ -121,6 +121,10 @@ function captureNextFrame(canvas: HTMLCanvasElement): Promise<string> {
 const POSTER_WIDTH = 576;
 const POSTER_HEIGHT = 720;
 const POSTER_JPEG_QUALITY = 0.82;
+const DETAIL_SAMPLE_WIDTH = 32;
+const DETAIL_SAMPLE_HEIGHT = 40;
+const MIN_DETAIL_STDDEV = 4;
+const MIN_DETAIL_COLOURS = 10;
 
 /** Downscale the captured frame to the poster size and re-encode as JPEG. */
 async function downscalePoster(sourceDataUrl: string): Promise<string> {
@@ -137,6 +141,55 @@ async function downscalePoster(sourceDataUrl: string): Promise<string> {
   if (!context) return sourceDataUrl;
   context.drawImage(image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
   return scaled.toDataURL('image/jpeg', POSTER_JPEG_QUALITY);
+}
+
+async function posterHasVisualDetail(dataUrl: string): Promise<boolean> {
+  const image = new Image();
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Could not decode captured cover frame'));
+    image.src = dataUrl;
+  });
+
+  const sample = document.createElement('canvas');
+  sample.width = DETAIL_SAMPLE_WIDTH;
+  sample.height = DETAIL_SAMPLE_HEIGHT;
+  const context = sample.getContext('2d', { willReadFrequently: true });
+  if (!context) return true;
+  context.drawImage(image, 0, 0, DETAIL_SAMPLE_WIDTH, DETAIL_SAMPLE_HEIGHT);
+  const pixels = context.getImageData(0, 0, DETAIL_SAMPLE_WIDTH, DETAIL_SAMPLE_HEIGHT).data;
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  const count = pixels.length / 4;
+  const colours = new Set<string>();
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const r = pixels[i]!;
+    const g = pixels[i + 1]!;
+    const b = pixels[i + 2]!;
+    rSum += r;
+    gSum += g;
+    bSum += b;
+    colours.add(`${r >> 4}:${g >> 4}:${b >> 4}`);
+  }
+
+  const rMean = rSum / count;
+  const gMean = gSum / count;
+  const bMean = bSum / count;
+  let variance = 0;
+  for (let i = 0; i < pixels.length; i += 4) {
+    variance +=
+      (pixels[i]! - rMean) ** 2 + (pixels[i + 1]! - gMean) ** 2 + (pixels[i + 2]! - bMean) ** 2;
+  }
+  const stddev = Math.sqrt(variance / (count * 3));
+  return stddev >= MIN_DETAIL_STDDEV && colours.size >= MIN_DETAIL_COLOURS;
+}
+
+async function assertPosterHasVisualDetail(dataUrl: string, label: string): Promise<void> {
+  if (!(await posterHasVisualDetail(dataUrl))) {
+    throw new Error(`${label} produced a low-detail poster frame`);
+  }
 }
 
 function makeHiddenContainer(width: number, height: number): HTMLDivElement {
@@ -157,7 +210,7 @@ function makeHiddenContainer(width: number, height: number): HTMLDivElement {
  * config plus `frame`, the captured poster is pixel-equivalent to what a
  * frozen live render shows - no develop time, no WebGL, no drift.
  */
-async function renderCssCoverPoster(cover: CssCoverConfig): Promise<string> {
+async function captureCssCoverPoster(cover: CssCoverConfig): Promise<string> {
   const container = makeHiddenContainer(POSTER_WIDTH, POSTER_HEIGHT);
   const root = createRoot(container);
   root.render(<CssCover cover={cover} animate={false} />);
@@ -179,10 +232,20 @@ async function renderCssCoverPoster(cover: CssCoverConfig): Promise<string> {
     if (!captured.startsWith('data:image/')) {
       throw new Error('CSS cover capture produced an empty frame');
     }
+    await assertPosterHasVisualDetail(captured, 'CSS cover capture');
     return captured;
   } finally {
     root.unmount();
     container.remove();
+  }
+}
+
+async function renderCssCoverPoster(cover: CssCoverConfig): Promise<string> {
+  try {
+    return await captureCssCoverPoster(cover);
+  } catch (error) {
+    if (cover.grain <= 0.01) throw error;
+    return await captureCssCoverPoster({ ...cover, grain: 0 });
   }
 }
 
@@ -224,7 +287,9 @@ export async function renderCoverToPng(
     if (!captured.startsWith('data:image/')) {
       throw new Error('Shader cover capture produced an empty frame');
     }
-    return await downscalePoster(captured);
+    const poster = await downscalePoster(captured);
+    await assertPosterHasVisualDetail(poster, 'Shader cover capture');
+    return poster;
   } finally {
     root.unmount();
     container.remove();

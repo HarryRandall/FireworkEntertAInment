@@ -112,7 +112,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
   assert.match(showReplayCard, /CoverPoster/);
-  assert.match(showReplayCard, /show\.coverShader \?\? shaderCoverFromSeed/);
+  assert.doesNotMatch(showReplayCard, /shaderCoverFromSeed/);
   assert.match(showReplayCard, /onPointerEnter/);
   assert.match(showReplayCard, /imagePath=\{show\.coverImagePath\}/);
   assert.match(showReplayCard, /ReplayCanvasSkeleton/);

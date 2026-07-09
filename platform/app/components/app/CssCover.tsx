@@ -21,12 +21,10 @@ import { cn } from '@/lib/utils';
 import styles from './CssCover.module.css';
 
 // Tileable fractal-noise texture, reused for the grain overlay and the nebula
-// kind. Kept as a data URI so it needs no network request and no WebGL.
-const NOISE_SVG =
-  "<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>" +
-  "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter>" +
-  "<rect width='100%' height='100%' filter='url(#n)'/></svg>";
-const NOISE_URL = `url("data:image/svg+xml,${encodeURIComponent(NOISE_SVG)}")`;
+// kind. Kept as a base64 data URI so the internal SVG filter fragment
+// (`url(#n)`) cannot be misread as a page-relative `/.../#n` request.
+const NOISE_URL =
+  'url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC45JyBudW1PY3RhdmVzPScyJyBzdGl0Y2hUaWxlcz0nc3RpdGNoJy8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9JzEwMCUnIGhlaWdodD0nMTAwJScgZmlsdGVyPSd1cmwoI24pJy8+PC9zdmc+")';
 
 // Kinds that read as "light over dark" want a dark base so screen-blended
 // highlights pop; the rest sit over the bright palette gradient.

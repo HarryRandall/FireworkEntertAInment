@@ -7,7 +7,7 @@ new-show wizard. It is separate from show creation and there is no user-facing
 ## Runtime
 
 - The browser uploads audio directly to the private `audio` storage bucket.
-- `startMusicAnalysisAction` creates a `music_analyses` row and schedules
+- `startMusicAnalysisAction` creates a `song_analyses` row and schedules
   `runMusicAnalysisForUpload` with `after`.
 - `runMusicAnalysisForUpload` runs on the server, downloads the Supabase Storage
   audio object, writes it to a temporary directory, and spawns Python.
@@ -21,8 +21,8 @@ wizard while the server-side job is queued or running.
 
 ## Persistence
 
-The database stores rich structured output in `music_analyses.analysis_json`
-and a readable Markdown context in `music_analyses.markdown`. The JSON is the
+The database stores rich structured output in `song_analyses.analysis_json`
+and a readable Markdown context in `song_analyses.markdown`. The JSON is the
 source for cue generation; the Markdown exists for inspection/debugging.
 
 The Python script prints its structured result to stdout with `--no-json-file`,
@@ -32,7 +32,7 @@ so no JSON or LLM payload files are written to disk by the server runner.
 
 `POST /api/analyse` remains as a thin authenticated wrapper around the legacy
 show-scoped runner for development and repair use. The product flow uses
-upload-scoped `music_analyses` instead and does not expose the API as a button.
+upload-scoped `song_analyses` instead and does not expose the API as a button.
 
 ```http
 POST /api/analyse
@@ -61,7 +61,7 @@ The response contains:
 ## Production Notes
 
 - Supabase environment variables must be configured in the server environment.
-- The `music_analyses` / show-generation migrations must be applied.
+- The `song_analyses` / show-generation migrations must be applied.
 - The Python dependencies from `platform/analyser/requirements.txt` must be
   available wherever the Next.js server runs.
 - Production hosting must allow spawning Python, temporary filesystem writes,

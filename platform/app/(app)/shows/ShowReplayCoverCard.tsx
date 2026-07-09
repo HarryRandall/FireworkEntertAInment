@@ -7,7 +7,6 @@ import { CoverPoster } from '@/app/components/app/CoverPoster';
 import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
-import { shaderCoverFromSeed } from '@/lib/shader-cover';
 import { cn } from '@/lib/utils';
 import { useShowReplayPreview } from './ShowReplayPreviewContext';
 
@@ -30,7 +29,6 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
 }: {
   show: ShowSummaryCard;
 }) {
-  const cover = show.coverShader ?? shaderCoverFromSeed(show.id || show.slug);
   const preview = useShowReplayPreview();
   const coverRef = useRef<HTMLDivElement | null>(null);
   const isPreviewHovering = preview?.pendingId === show.id || preview?.activeId === show.id;
@@ -71,20 +69,11 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
           />
         ) : null}
         <CoverPoster
-          cover={cover}
           imagePath={show.coverImagePath}
           className={cn(
             'transition-[opacity,transform] duration-200 ease-out group-hover:scale-105',
             isPreviewHovering ? 'opacity-0' : 'opacity-100',
           )}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_92%,rgba(255,255,255,0.14),transparent_34%),linear-gradient(180deg,rgba(0,0,0,0.02)_0%,rgba(0,0,0,0.18)_100%)] opacity-75 transition-opacity duration-200 group-hover:opacity-45"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[22%] bg-gradient-to-t from-black/28 via-black/10 to-transparent transition-opacity duration-200 group-hover:opacity-60"
         />
         <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
           <Play size={16} fill="currentColor" />

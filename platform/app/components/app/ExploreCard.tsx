@@ -91,8 +91,8 @@ export const ExploreCard = memo(function ExploreCard({
       <div
         ref={coverRef}
         // No content-visibility here: skipped-then-painted covers made whole
-        // rows flash in as they scrolled into the render band. The cover is a
-        // cheap CSS gradient + lazy image, so eager paint is fine.
+        // rows flash in as they scrolled into the render band. Each poster now
+        // holds its own skeleton until the image decodes.
         className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 group-hover:shadow-[0_24px_52px_-28px_rgba(0,0,0,0.7)]"
       >
         <ReplayCanvasSkeleton
@@ -101,7 +101,6 @@ export const ExploreCard = memo(function ExploreCard({
           }`}
         />
         <CoverPoster
-          cover={cover}
           imagePath={template.coverImagePath}
           className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 ${
             isPreviewHovering ? 'opacity-0' : 'opacity-100'

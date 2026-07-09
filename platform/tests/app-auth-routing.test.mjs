@@ -1,4 +1,4 @@
-/** Static guards for guest browsing with auth-gated creation. */
+/** Static guards for app auth routing. */
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -11,16 +11,14 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('proxy gates private prefixes to /login?next= and sends guests from the app surface to /', () => {
+test('proxy gates private app prefixes to /login?next=', () => {
   assert.equal(existsSync(join(root, 'middleware.ts')), false);
   assert.equal(existsSync(join(root, 'proxy.ts')), true);
 
   const proxy = read('proxy.ts');
   assert.match(proxy, /PROTECTED_PREFIXES/);
-  assert.match(proxy, /APP_SURFACE_PREFIXES/);
+  assert.doesNotMatch(proxy, /APP_SURFACE_PREFIXES/);
 
-  // Protected list keeps the private prefixes; app-surface routes are gated
-  // separately (to /, not /login) so they stay out of PROTECTED_PREFIXES.
   const protectedMatch = proxy.match(/PROTECTED_PREFIXES = (\[[\s\S]*?\]);/);
   assert.ok(protectedMatch, 'PROTECTED_PREFIXES array is declared');
   const protectedArray = protectedMatch[1];
@@ -30,29 +28,21 @@ test('proxy gates private prefixes to /login?next= and sends guests from the app
     "'/settings'",
     "'/recommendations'",
     "'/admin'",
+    "'/home'",
+    "'/library'",
+    "'/catalogue'",
+    "'/dashboard'",
   ]) {
     assert.match(protectedArray, new RegExp(prefix));
   }
-  for (const browse of ["'/home'", "'/catalogue'", "'/library'", "'/dashboard'"]) {
-    assert.doesNotMatch(protectedArray, new RegExp(browse));
-  }
 
-  // App surface list covers the routes guests used to reach; they now redirect
-  // unauthenticated visitors to the marketing root instead of /login.
-  const appSurfaceMatch = proxy.match(/APP_SURFACE_PREFIXES = (\[[\s\S]*?\]);/);
-  assert.ok(appSurfaceMatch, 'APP_SURFACE_PREFIXES array is declared');
-  const appSurfaceArray = appSurfaceMatch[1];
-  for (const prefix of ["'/home'", "'/catalogue'", "'/library'", "'/dashboard'"]) {
-    assert.match(appSurfaceArray, new RegExp(prefix));
-  }
-
-  // Protected routes honour the login ?next= round-trip; app surface sends
-  // guests to / and resolves the user from claims.
+  // Protected routes honour the login ?next= round-trip and resolve the user
+  // from signed claims.
   assert.match(proxy, /url\.pathname = '\/login'/);
   assert.match(proxy, /searchParams\.set\('next'/);
-  assert.match(proxy, /isAppSurface && !userId/);
-  assert.match(proxy, /url\.pathname = '\/'/);
-  assert.match(proxy, /supabase\.auth\.getClaims\(\)/);
+  assert.doesNotMatch(proxy, /isAppSurface/);
+  assert.match(proxy, /new AuthClient/);
+  assert.match(proxy, /auth\.getClaims\(\)/);
   assert.match(proxy, /matcher:/);
 
   // Dev diagnostics must not be public in production.
@@ -63,11 +53,36 @@ test('proxy gates private prefixes to /login?next= and sends guests from the app
   assert.doesNotMatch(nextConfig, /supabase-example/);
 });
 
-test('(app) layout no longer hard-redirects guests to /login', () => {
+test('proxy clears stale Supabase auth cookies instead of looping refresh errors', () => {
+  const proxy = read('proxy.ts');
+
+  assert.match(proxy, /STALE_AUTH_ERROR_CODES/);
+  assert.match(proxy, /refresh_token_not_found/);
+  assert.match(proxy, /refresh_token_already_used/);
+  assert.match(proxy, /clearSupabaseAuthCookies/);
+  assert.match(proxy, /getSupabaseRelatedAuthCookieNames/);
+  assert.match(proxy, /initialAuthCookieNames/);
+  assert.match(proxy, /response\.cookies\.set\(name, '', EXPIRED_COOKIE_OPTIONS\)/);
+  assert.match(proxy, /isStaleSupabaseAuthError\(error\)/);
+  assert.match(proxy, /refresh token is not valid/);
+  assert.match(proxy, /skipAutoInitialize: true/);
+  assert.match(proxy, /syncRequestCookieHeader\(request, requestHeaders\)/);
+});
+
+test('proxy does not call Supabase Auth for plain guest requests', () => {
+  const proxy = read('proxy.ts');
+
+  assert.match(proxy, /hasSupabaseSessionCookie/);
+  assert.match(proxy, /if \(hasSupabaseSessionCookie\(request, env\.url\)\)/);
+  assert.match(proxy, /new AuthClient/);
+});
+
+test('(app) layout requires an authenticated user before rendering the app shell', () => {
   const layout = read('app/(app)/layout.tsx');
-  assert.doesNotMatch(layout, /redirect\('\/login'\)/);
-  assert.doesNotMatch(layout, /import \{ redirect \} from 'next\/navigation'/);
-  assert.match(layout, /isAuthenticated=\{Boolean\(userId\)\}/);
+  assert.match(layout, /import \{ redirect \} from 'next\/navigation'/);
+  assert.match(layout, /if \(!userId\)/);
+  assert.match(layout, /redirect\('\/login'\)/);
+  assert.doesNotMatch(layout, /isAuthenticated=/);
 });
 
 test('show detail layout requires a session before rendering tabs or children', () => {
@@ -81,27 +96,21 @@ test('show detail layout requires a session before rendering tabs or children', 
   assert.match(layout, /getShowBySlug/);
 });
 
-test('AppShell renders a guest-aware nav and sign-in footer without removing shipped links', () => {
+test('AppShell is authenticated-only and keeps shipped navigation links', () => {
   const shell = read('app/components/app/AppShell.tsx');
 
-  // Guest filtering is runtime; the full link set stays for authenticated users.
   assert.match(shell, /href: '\/home', label: 'Home'/);
   assert.match(shell, /href: '\/shows', label: 'My shows'/);
   assert.match(shell, /href: '\/library', label: 'Explore'/);
   assert.match(shell, /href: '\/catalogue', label: 'Catalogue'/);
 
-  // Guest nav allow-list and sign-in / create-account footer.
-  assert.match(shell, /isAuthenticated = Boolean\(profile\)/);
-  assert.match(shell, /const isGuest = !isAuthenticated/);
-  assert.match(shell, /GUEST_NAV_HREFS/);
-  assert.match(shell, /isGuest && !GUEST_NAV_HREFS\.has\(link\.href\)/);
-  assert.match(shell, /SidebarGuestFooter/);
-  assert.match(shell, /href="\/login"/);
-  assert.match(shell, /href="\/signup"/);
-  assert.match(shell, /isGuest \? \(/);
+  assert.doesNotMatch(shell, /isAuthenticated/);
+  assert.doesNotMatch(shell, /isGuest/);
+  assert.doesNotMatch(shell, /GUEST_NAV_HREFS/);
+  assert.doesNotMatch(shell, /SidebarGuestFooter/);
 });
 
-test('clone template action sends guests to /login and back to the template', () => {
+test('clone template action sends unauthenticated users to /login and back to the template', () => {
   const action = read('app/actions/show-templates.ts');
   assert.match(
     action,

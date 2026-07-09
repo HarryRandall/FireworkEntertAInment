@@ -8,16 +8,16 @@ import {
   HomeFeaturedShows,
 } from '@/app/components/app/HomeDiscoverySections';
 import { EmptyShowsPanel, PromptHero } from '@/app/components/app/ShowSummaryCards';
+import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { getDashboardSummaryWithTemplates } from '@/lib/show-summary.server';
 import { listFireworkSpecifications, ShowsNetworkError } from '@/lib/shows.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
-import HomeLoading from './loading';
 
 export default function HomePage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
       <PromptHero />
-      <Suspense fallback={<HomeLoading />}>
+      <Suspense fallback={<HomeSectionsSkeleton />}>
         <HomeContent />
       </Suspense>
     </div>

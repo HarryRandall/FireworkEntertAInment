@@ -74,10 +74,15 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
 
   const cues = await listReplayCuesForShow(show.id);
   if (cues.length > 0 && show.generationStatus === 'completed') {
-    // Generation is done: go straight to the preview. The splash's polling
-    // refresh triggers this server render, which redirects to the firework
-    // show. No overlay handover, no intermediate stages.
-    redirect(`/shows/${show.slug}/preview`);
+    // Generation is done: go straight to the preview, but keep the generating
+    // splash mounted as a handoff mask until the replay canvas is watchable.
+    const handoffParams = new URLSearchParams({
+      autoplay: '1',
+      handoff: '1',
+      t: show.title,
+    });
+    if (hasAudio) handoffParams.set('a', '1');
+    redirect(`/shows/${show.slug}/preview?${handoffParams.toString()}`);
   }
 
   if (show.generationStatus === 'failed') {

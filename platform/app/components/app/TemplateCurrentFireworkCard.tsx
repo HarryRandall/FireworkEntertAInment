@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Card } from '@/app/components/ui/Card';
 import {
@@ -14,12 +15,14 @@ type TemplateCurrentFireworkCardProps = {
   templateSlug: string;
   previewCues: ShowTemplateCue[];
   specifications: FireworkSpecification[];
+  canEditFireworks?: boolean;
 };
 
 export function TemplateCurrentFireworkCard({
   templateSlug,
   previewCues,
   specifications,
+  canEditFireworks = false,
 }: TemplateCurrentFireworkCardProps) {
   const cues = useMemo(
     () => buildTemplateReplayCues(previewCues, specifications),
@@ -53,8 +56,15 @@ export function TemplateCurrentFireworkCard({
 
       {activeCue ? (
         <div className="mt-3 space-y-4">
-          <TimelineCue cue={activeCue} tone="current" isLast={!nextCue} />
-          {nextCue ? <TimelineCue cue={nextCue} tone="next" isLast /> : null}
+          <TimelineCue
+            cue={activeCue}
+            tone="current"
+            isLast={!nextCue}
+            canEditFireworks={canEditFireworks}
+          />
+          {nextCue ? (
+            <TimelineCue cue={nextCue} tone="next" isLast canEditFireworks={canEditFireworks} />
+          ) : null}
         </div>
       ) : (
         <p className="text-muted-foreground mt-3 text-xs">No firework cue is ready.</p>
@@ -67,13 +77,19 @@ function TimelineCue({
   cue,
   tone,
   isLast,
+  canEditFireworks,
 }: {
   cue: ReplayCue;
   tone: 'current' | 'next';
   isLast: boolean;
+  canEditFireworks: boolean;
 }) {
   const description = cue.description || cue.firework.description;
   const isCurrent = tone === 'current';
+  const nameClassName = isCurrent
+    ? 'text-on-surface block min-w-0 text-sm leading-snug font-semibold'
+    : 'text-muted-foreground block min-w-0 text-xs leading-snug font-medium';
+  const linkedNameClassName = `${nameClassName} rounded-sm underline-offset-4 transition-colors hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card`;
 
   return (
     <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">
@@ -96,15 +112,18 @@ function TimelineCue({
       </div>
       <div className="min-w-0">
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <p
-            className={
-              isCurrent
-                ? 'text-on-surface min-w-0 text-sm leading-snug font-semibold'
-                : 'text-muted-foreground min-w-0 text-xs leading-snug font-medium'
-            }
-          >
-            {cue.firework.name}
-          </p>
+          {canEditFireworks ? (
+            <Link
+              href={`/admin/fireworks/${cue.firework.id}`}
+              prefetch={false}
+              className={linkedNameClassName}
+              aria-label={`Edit ${cue.firework.name}`}
+            >
+              {cue.firework.name}
+            </Link>
+          ) : (
+            <p className={nameClassName}>{cue.firework.name}</p>
+          )}
           <span className="text-muted-foreground shrink-0 font-mono text-[11px] tabular-nums">
             {formatDuration(cue.timeSeconds)}
           </span>

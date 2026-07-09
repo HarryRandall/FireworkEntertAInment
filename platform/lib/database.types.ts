@@ -43,7 +43,6 @@ export type Database = {
           amount: number
           created_at: string
           description: string | null
-          is_billable: boolean
           key: string
           name: string
           sort_order: number
@@ -54,7 +53,6 @@ export type Database = {
           amount: number
           created_at?: string
           description?: string | null
-          is_billable?: boolean
           key: string
           name: string
           sort_order?: number
@@ -65,7 +63,6 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string | null
-          is_billable?: boolean
           key?: string
           name?: string
           sort_order?: number
@@ -991,56 +988,10 @@ export type Database = {
         }
         Relationships: []
       }
-      shopping_list_items: {
-        Row: {
-          created_at: string
-          firework_part_number: string | null
-          id: string
-          name: string
-          position: number
-          price_cents: number
-          qty: number
-          show_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          firework_part_number?: string | null
-          id?: string
-          name: string
-          position?: number
-          price_cents?: number
-          qty?: number
-          show_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          firework_part_number?: string | null
-          id?: string
-          name?: string
-          position?: number
-          price_cents?: number
-          qty?: number
-          show_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shopping_list_items_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       show_generation_runs: {
         Row: {
           analysis_json: Json | null
-          analysis_storage_path: string | null
           audio_path: string
-          compact_payload: Json | null
           completed_at: string | null
           created_at: string
           cue_count: number | null
@@ -1050,23 +1001,18 @@ export type Database = {
           id: string
           llm_payload: Json | null
           markdown: string | null
-          markdown_storage_path: string | null
           personality: string
-          personality_preset: string | null
           runner_version: string | null
           runtime_ms: number | null
           schema_version: string
           show_id: string
-          source_audio_path: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
           audio_path?: string
-          compact_payload?: Json | null
           completed_at?: string | null
           created_at?: string
           cue_count?: number | null
@@ -1076,23 +1022,18 @@ export type Database = {
           id?: string
           llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
           personality?: string
-          personality_preset?: string | null
           runner_version?: string | null
           runtime_ms?: number | null
           schema_version?: string
           show_id: string
-          source_audio_path?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
           audio_path?: string
-          compact_payload?: Json | null
           completed_at?: string | null
           created_at?: string
           cue_count?: number | null
@@ -1102,14 +1043,11 @@ export type Database = {
           id?: string
           llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
           personality?: string
-          personality_preset?: string | null
           runner_version?: string | null
           runtime_ms?: number | null
           schema_version?: string
           show_id?: string
-          source_audio_path?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1439,7 +1377,6 @@ export type Database = {
           created_at: string
           currency: string
           id: string
-          location_id: string | null
           price_cents: number | null
           quantity_on_hand: number
           supplier_id: string
@@ -1453,7 +1390,6 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          location_id?: string | null
           price_cents?: number | null
           quantity_on_hand?: number
           supplier_id: string
@@ -1467,7 +1403,6 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          location_id?: string | null
           price_cents?: number | null
           quantity_on_hand?: number
           supplier_id?: string
@@ -1484,58 +1419,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "supplier_inventory_items_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "supplier_locations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "supplier_inventory_items_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "supplier_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      supplier_locations: {
-        Row: {
-          address: string | null
-          country: string | null
-          created_at: string
-          id: string
-          name: string
-          region: string | null
-          status: string
-          supplier_id: string
-          updated_at: string
-        }
-        Insert: {
-          address?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          region?: string | null
-          status?: string
-          supplier_id: string
-          updated_at?: string
-        }
-        Update: {
-          address?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          region?: string | null
-          status?: string
-          supplier_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "supplier_locations_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "supplier_profiles"
@@ -1649,7 +1533,6 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
-          last_seen_at: string | null
           phone: string | null
           status: string
           theme_preference: string
@@ -1660,7 +1543,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
-          last_seen_at?: string | null
           phone?: string | null
           status?: string
           theme_preference?: string
@@ -1671,7 +1553,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
-          last_seen_at?: string | null
           phone?: string | null
           status?: string
           theme_preference?: string

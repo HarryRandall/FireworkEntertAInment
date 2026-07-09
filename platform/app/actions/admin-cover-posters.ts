@@ -2,8 +2,8 @@
 
 /**
  * Admin cover-poster backfill action. The browser renders each preset's saved
- * shader cover to a PNG (via renderCoverToPng) and posts the data URL here; the
- * server uploads it to the public `covers` bucket under `presets/<id>.png` and
+ * cover to an image data URL (via renderCoverToPng) and posts it here; the
+ * server uploads it to the public `covers` bucket under `presets/<id>-v2.*` and
  * records the path on the preset row. Writes use the service role because
  * `show_presets` is admin-managed and the `presets/` storage prefix has no
  * client write policy by design.
@@ -14,10 +14,18 @@ import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 
 export type BackfillPresetCoverResult = { ok: true; path: string } | { ok: false; error: string };
 
-function decodeDataUrl(dataUrl: string): Buffer | null {
-  const match = dataUrl.match(/^data:image\/png;base64,(.+)$/);
-  if (!match?.[1]) return null;
-  return Buffer.from(match[1], 'base64');
+const COVER_POSTER_VERSION = 'v2';
+
+function decodeDataUrl(
+  dataUrl: string,
+): { buffer: Buffer; contentType: string; extension: string } | null {
+  const match = dataUrl.match(/^data:(image\/(?:jpeg|png));base64,(.+)$/);
+  if (!match?.[1] || !match[2]) return null;
+  return {
+    buffer: Buffer.from(match[2], 'base64'),
+    contentType: match[1],
+    extension: match[1] === 'image/jpeg' ? 'jpg' : 'png',
+  };
 }
 
 export async function backfillPresetCoverPoster(
@@ -29,18 +37,20 @@ export async function backfillPresetCoverPoster(
   }
   if (!presetId) return { ok: false, error: 'Missing preset id' };
 
-  const buffer = decodeDataUrl(dataUrl);
-  if (!buffer) return { ok: false, error: 'Invalid PNG data URL' };
+  const decoded = decodeDataUrl(dataUrl);
+  if (!decoded) return { ok: false, error: 'Invalid image data URL' };
 
   const supabase = createServiceRoleSupabase();
   if (!supabase) return { ok: false, error: 'Service role not configured' };
 
-  const path = `presets/${presetId}.png`;
-  const { error: uploadError } = await supabase.storage.from('covers').upload(path, buffer, {
-    contentType: 'image/png',
-    cacheControl: 'public, max-age=31536000, immutable',
-    upsert: true,
-  });
+  const path = `presets/${presetId}-${COVER_POSTER_VERSION}.${decoded.extension}`;
+  const { error: uploadError } = await supabase.storage
+    .from('covers')
+    .upload(path, decoded.buffer, {
+      contentType: decoded.contentType,
+      cacheControl: 'public, max-age=31536000, immutable',
+      upsert: true,
+    });
   if (uploadError) {
     console.error('[cover-posters] upload failed:', uploadError);
     return { ok: false, error: uploadError.message };

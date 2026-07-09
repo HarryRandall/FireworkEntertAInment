@@ -28,7 +28,6 @@ import {
   Gauge,
   Home,
   Laptop,
-  LogIn,
   LogOut,
   MessageSquareDot,
   Moon,
@@ -50,6 +49,7 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { HomePageSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -104,10 +104,6 @@ const APP_LINKS: AppNavLink[] = [
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
-// Browse-only nav shown to unauthenticated guests; creation/private routes
-// are gated by middleware and intentionally absent here.
-const GUEST_NAV_HREFS = new Set(['/home', '/library', '/catalogue']);
-
 const SETTINGS_LINKS: AppNavLink[] = [
   { href: '/settings/profile', label: 'Personal details', icon: UserRound },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
@@ -143,7 +139,6 @@ type AppShellProps = {
   children: ReactNode;
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
-  isAuthenticated?: boolean;
   impersonation?: ActiveImpersonation | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
@@ -681,49 +676,6 @@ function AppSidebarFooter({
   );
 }
 
-function SidebarGuestFooter() {
-  const { isMobile, setOpenMobile } = useSidebar();
-
-  return (
-    <SidebarFooter>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild tooltip="Sign in">
-            <Link
-              href="/login"
-              prefetch={false}
-              onClick={() => {
-                if (isMobile) setOpenMobile(false);
-              }}
-            >
-              <LogIn size={16} strokeWidth={2} />
-              <span>Sign in</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            tooltip="Create account"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground data-active:bg-primary data-active:text-primary-foreground"
-          >
-            <Link
-              href="/signup"
-              prefetch={false}
-              onClick={() => {
-                if (isMobile) setOpenMobile(false);
-              }}
-            >
-              <PlusCircle size={16} strokeWidth={2} />
-              <span>Create account</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    </SidebarFooter>
-  );
-}
-
 function formatPathSegment(segment: string) {
   return decodeURIComponent(segment)
     .replace(/[-_]+/g, ' ')
@@ -810,64 +762,7 @@ function getPendingRouteKind(pathname: string | null | undefined): PendingRouteK
 }
 
 function PendingHomeSkeleton() {
-  return (
-    <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
-      aria-label="Loading home"
-    >
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <Skeleton className="min-h-[14rem] rounded-2xl" />
-        <Skeleton className="hidden min-h-[14rem] rounded-2xl lg:block" />
-      </section>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <Skeleton key={index} className="min-h-[14rem] rounded-2xl" />
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="w-40 shrink-0 space-y-2 sm:w-48">
-              <Skeleton className="aspect-square w-full rounded-xl" />
-              <Skeleton className="h-4 w-28" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="w-44 shrink-0 space-y-2 sm:w-48">
-              <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 flex-1" />
-                <Skeleton className="h-5 w-10 rounded-md" />
-              </div>
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <HomePageSkeleton />;
 }
 
 function PendingLibrarySkeleton() {
@@ -973,7 +868,6 @@ function ShellTopBar({ pathname }: { pathname: string | null }) {
 export function AppShell({
   children,
   profile,
-  isAuthenticated = Boolean(profile),
   impersonation,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
@@ -985,18 +879,17 @@ export function AppShell({
   // hydration mismatch; the cached copy is applied pre-paint just below.
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
-  const [aiUsageLoading, setAiUsageLoading] = useState(isAuthenticated);
+  const [aiUsageLoading, setAiUsageLoading] = useState(true);
 
   // Seed the sidebar from the sessionStorage cache before first paint so usage
   // and recent shows appear instantly while the background refetch runs.
   useHydrationLayoutEffect(() => {
-    if (!isAuthenticated) return;
     const cached = readCachedWorkspaceSummary();
     if (!cached) return;
     setWorkspaceSummary((current) => current ?? cached);
     setAiUsage((current) => current ?? cached.aiUsage ?? null);
     setAiUsageLoading(false);
-  }, [isAuthenticated]);
+  }, []);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -1010,7 +903,6 @@ export function AppShell({
     });
 
   const permissions = new Set(profile?.permissions ?? []);
-  const isGuest = !isAuthenticated;
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };
@@ -1021,7 +913,6 @@ export function AppShell({
     return link;
   });
   const visibleLinks = workspaceLinks.filter((link) => {
-    if (isGuest && !GUEST_NAV_HREFS.has(link.href)) return false;
     return !link.permission || permissions.has(link.permission);
   });
   const navLinks = inSettings ? SETTINGS_LINKS : visibleLinks;
@@ -1043,7 +934,6 @@ export function AppShell({
   };
 
   useEffect(() => {
-    if (isGuest) return;
     let active = true;
 
     async function loadWorkspaceSummary() {
@@ -1073,7 +963,7 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [pathname, isGuest]);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     writeCachedWorkspaceSummary(null);
@@ -1159,18 +1049,14 @@ export function AppShell({
           )}
         </SidebarContent>
 
-        {isGuest ? (
-          <SidebarGuestFooter />
-        ) : (
-          <AppSidebarFooter
-            profile={profileSummary}
-            impersonation={impersonation}
-            aiUsage={aiUsage}
-            aiUsageLoading={aiUsageLoading}
-            inSettings={inSettings}
-            onSignOut={handleSignOut}
-          />
-        )}
+        <AppSidebarFooter
+          profile={profileSummary}
+          impersonation={impersonation}
+          aiUsage={aiUsage}
+          aiUsageLoading={aiUsageLoading}
+          inSettings={inSettings}
+          onSignOut={handleSignOut}
+        />
       </Sidebar>
 
       <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border-x md:peer-data-[variant=inset]:border-t md:peer-data-[variant=inset]:shadow-none">

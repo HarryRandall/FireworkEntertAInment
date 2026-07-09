@@ -85,6 +85,7 @@ const ANALYSIS_BAR_SHARE = 0.55;
 // Give up on capturing the cover poster after this many failed attempts so a
 // broken WebGL context can't retry forever across poll refreshes.
 const MAX_COVER_CAPTURE_ATTEMPTS = 2;
+const COVER_POSTER_VERSION = 'v2';
 
 /** Rough wall-clock estimate for a phase, in seconds. LLM cue assignment can
  * run well past a minute, so the generating estimate leans conservative and
@@ -107,6 +108,10 @@ function formatEta(seconds: number): string {
   if (seconds <= 8) return 'almost there';
   if (seconds < 90) return `about ${Math.max(10, Math.round(seconds / 5) * 5)}s left`;
   return `about ${Math.ceil(seconds / 60)} min left`;
+}
+
+function hasCurrentCoverPoster(path: string | null | undefined): boolean {
+  return Boolean(path && path.includes(`-${COVER_POSTER_VERSION}.`));
 }
 
 type ProgressUi = {
@@ -300,13 +305,13 @@ export function GeneratingShowAnimation({
 
   // Render the cover to a small poster once and persist it so browse pages can
   // show an <img> instead of a live WebGL context per card. Skipped when the
-  // show already has a cover image, or when the show row is not yet available
+  // show already has a current-version cover image, or when the show row is not yet available
   // (the creating=1 provisional splash); the polling refresh re-runs this once
   // the row exists. Failures never block generation; after
   // MAX_COVER_CAPTURE_ATTEMPTS the capture stops retrying so a broken WebGL
   // context or storage rejection cannot spam errors across poll refreshes.
   useEffect(() => {
-    if (!showId || !activeCover || coverImagePath) return;
+    if (!showId || !activeCover || hasCurrentCoverPoster(coverImagePath)) return;
     if (coverCaptureInFlightRef.current) return;
     if (coverCaptureAttemptsRef.current >= MAX_COVER_CAPTURE_ATTEMPTS) return;
     coverCaptureInFlightRef.current = true;
@@ -325,7 +330,7 @@ export function GeneratingShowAnimation({
           throw new Error(`cover capture produced unexpected mime type: ${blob.type}`);
         }
         const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png';
-        const path = `${user.id}/${showId}.${extension}`;
+        const path = `${user.id}/${showId}-${COVER_POSTER_VERSION}.${extension}`;
         const { error: uploadError } = await supabase.storage.from('covers').upload(path, blob, {
           contentType: blob.type,
           cacheControl: 'public, max-age=31536000, immutable',

@@ -8,6 +8,7 @@
  * ownership, but the explicit check keeps the failure mode quiet for guests.
  */
 import { cookies } from 'next/headers';
+import { invalidateShowCacheForUser } from '@/lib/shows.server';
 import { createClient } from '@/utils/supabase/server';
 
 export async function setShowCoverImagePath(
@@ -24,7 +25,11 @@ export async function setShowCoverImagePath(
 
   // RLS scopes this select to the caller's own shows; a missing row means the
   // show does not exist or is not theirs.
-  const { data: show } = await supabase.from('shows').select('id').eq('id', showId).maybeSingle();
+  const { data: show } = await supabase
+    .from('shows')
+    .select('id, slug')
+    .eq('id', showId)
+    .maybeSingle();
   if (!show) return { ok: false };
 
   const { error } = await supabase
@@ -35,5 +40,6 @@ export async function setShowCoverImagePath(
     console.error('[setShowCoverImagePath] update failed:', error);
     return { ok: false };
   }
+  await invalidateShowCacheForUser(user.id, { showId, showSlug: show.slug });
   return { ok: true };
 }

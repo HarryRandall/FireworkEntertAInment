@@ -1,7 +1,8 @@
-/** App shell layout for the `(app)` route group; wraps every page in `AppShell`. Browse pages render for guests too, while private routes are gated by middleware. */
+/** App shell layout for the authenticated `(app)` route group. */
 
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { AppShell } from '@/app/components/app/AppShell';
 import { getCurrentProfile } from '@/lib/admin.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
@@ -13,7 +14,7 @@ import {
 } from '@/lib/sidebar-preference';
 
 // App routes are dynamic so the profile check reflects the current session,
-// even for guest browsing.
+// with proxy handling the /login?next= round-trip before render.
 export const dynamic = 'force-dynamic';
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
@@ -24,6 +25,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     getCurrentUserId(),
   ]);
 
+  if (!userId) {
+    redirect('/login');
+  }
+
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,
   );
@@ -31,7 +36,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   return (
     <AppShell
       profile={profile}
-      isAuthenticated={Boolean(userId)}
       impersonation={impersonation}
       initialSidebarCollapsed={sidebarPreference ?? false}
       hasInitialSidebarCollapsedCookie={sidebarPreference !== null}

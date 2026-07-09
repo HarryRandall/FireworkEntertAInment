@@ -56,7 +56,7 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(mapper, /coverImagePath: row\.cover_image_path \?\? null/);
   assert.match(exploreCard, /template\.coverShader \?\? shaderCoverFromSeed/);
   assert.match(exploreCard, /import \{ CoverPoster \}/);
-  assert.match(exploreCard, /<CoverPoster\s+cover=\{cover\}/);
+  assert.doesNotMatch(exploreCard, /cover=\{cover\}/);
   assert.match(exploreCard, /imagePath=\{template\.coverImagePath\}/);
   assert.match(exploreCard, /group-hover:scale-105/);
   assert.match(exploreCard, /hover:-translate-y-2/);

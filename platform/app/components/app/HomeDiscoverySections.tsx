@@ -107,7 +107,6 @@ function FeaturedShowCard({
       onBlur={stopPreview}
     >
       <CoverPoster
-        cover={cover}
         imagePath={template.coverImagePath}
         eager
         className={`z-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 ${

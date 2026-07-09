@@ -13,7 +13,7 @@ import { Badge } from '@/app/components/ui/Badge';
 import { Card } from '@/app/components/ui/Card';
 import { Skeleton } from '@/app/components/ui/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
-import { getShowTemplateBySlug } from '@/lib/admin.server';
+import { getCurrentProfile, getShowTemplateBySlug } from '@/lib/admin.server';
 import { listFireworkSpecifications } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 
@@ -24,6 +24,7 @@ export default async function LibraryDetailPage({ params }: PageProps) {
   const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
   const specificationsPromise = listFireworkSpecifications();
+  const currentProfilePromise = getCurrentProfile();
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
@@ -97,6 +98,7 @@ export default async function LibraryDetailPage({ params }: PageProps) {
             <LibraryDetailCurrentFirework
               template={template}
               specificationsPromise={specificationsPromise}
+              currentProfilePromise={currentProfilePromise}
             />
           </Suspense>
         </aside>
@@ -147,16 +149,23 @@ async function LibraryDetailReplay({
 async function LibraryDetailCurrentFirework({
   template,
   specificationsPromise,
+  currentProfilePromise,
 }: {
   template: ShowTemplate;
   specificationsPromise: Promise<FireworkSpecification[]>;
+  currentProfilePromise: ReturnType<typeof getCurrentProfile>;
 }) {
-  const specifications = await specificationsPromise;
+  const [specifications, currentProfile] = await Promise.all([
+    specificationsPromise,
+    currentProfilePromise,
+  ]);
+  const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
   return (
     <TemplateCurrentFireworkCard
       templateSlug={template.slug}
       previewCues={template.previewCues}
       specifications={specifications}
+      canEditFireworks={canEditFireworks}
     />
   );
 }

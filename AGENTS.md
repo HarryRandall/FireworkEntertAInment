@@ -111,12 +111,11 @@ Current schema groups:
   `firework_effects`, `firework_style_defaults`, style-default link tables,
   `multishots`, and `multishot_fireworks`.
 - **Shows and generation**: `shows`, `show_timeline_items`, `show_presets`,
-  `shopping_list_items`, `song_analyses`, and `show_generation_runs`.
+  `song_analyses`, and `show_generation_runs`.
 - **AI credits**: `ai_credit_accounts`, `ai_credit_costs`,
   `ai_credit_transactions`, and reservation/settlement/refund/grant RPCs.
-- **Suppliers and imports**: `supplier_profiles`, `supplier_locations`,
-  `supplier_inventory_items`, `import_jobs`, `import_outputs`, and
-  `media_assets`.
+- **Suppliers and imports**: `supplier_profiles`, `supplier_inventory_items`,
+  `import_jobs`, `import_outputs`, and `media_assets`.
 
 Every public table must have RLS enabled with at least one policy. Follow
 `.cursor/rules/supabase-rls.mdc` for migration work. Anonymous `SELECT` is

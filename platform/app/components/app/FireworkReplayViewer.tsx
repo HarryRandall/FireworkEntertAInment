@@ -33,6 +33,7 @@ import {
 import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
+import { GenerationHandoffSplash } from '@/app/components/app/GenerationHandoffSplash';
 import { Eyebrow } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -62,6 +63,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration, formatTotal } from '@/lib/show-domain';
 import type { LaunchPosition } from '@/lib/fireworks/design';
+import {
+  clearPersistedGenerationCover,
+  clearPersistedGenerationStart,
+} from '@/lib/generation-progress-storage';
 import { cn } from '@/lib/utils';
 
 const REFINEMENT_CREDIT_COST = 2;
@@ -91,6 +96,11 @@ type FireworkReplayViewerProps = {
    * fireworks — i.e. the moment the preview is genuinely watchable. Used by
    * the post-generation handover to keep its splash up until then. */
   onReplayReady?: () => void;
+  generationHandoff?: {
+    title?: string;
+    persistKey: string;
+    hasAudio: boolean;
+  };
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -178,6 +188,7 @@ export function FireworkReplayViewer({
   replayCuesPromise,
   replayExtrasPromise,
   onReplayReady,
+  generationHandoff,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
   const [replayExtras, setReplayExtras] = useState<ReplayExtras | null>(null);
@@ -434,8 +445,12 @@ export function FireworkReplayViewer({
   useEffect(() => {
     if (!replayReady || replayReadyNotifiedRef.current) return;
     replayReadyNotifiedRef.current = true;
+    if (generationHandoff) {
+      clearPersistedGenerationStart(generationHandoff.persistKey);
+      clearPersistedGenerationCover(generationHandoff.persistKey);
+    }
     onReplayReady?.();
-  }, [replayReady, onReplayReady]);
+  }, [generationHandoff, replayReady, onReplayReady]);
 
   function wakePlaybackControls() {
     if (!isPlaying) {
@@ -628,6 +643,13 @@ export function FireworkReplayViewer({
 
   return (
     <>
+      {generationHandoff && !replayReady ? (
+        <GenerationHandoffSplash
+          title={generationHandoff.title}
+          persistKey={generationHandoff.persistKey}
+          hasAudio={generationHandoff.hasAudio}
+        />
+      ) : null}
       <Suspense fallback={null}>
         <StreamedDataReader promise={replayCuesPromise} onLoaded={handleReplayCuesLoaded} />
       </Suspense>
