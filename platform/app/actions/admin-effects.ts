@@ -194,7 +194,7 @@ async function recordEffectVersion(
     changesJson: Json;
     profile: CurrentProfile;
   },
-): Promise<Result | null> {
+): Promise<void> {
   const { error } = await supabase.from('firework_editor_versions').insert({
     target_kind: 'effect',
     firework_effect_id: input.effectId,
@@ -207,10 +207,9 @@ async function recordEffectVersion(
     created_by_label: adminLabel(input.profile),
   });
   if (error) {
-    if (isMissingEditorVersionSchemaError(error)) return null;
-    return { ok: false, error: error.message };
+    if (isMissingEditorVersionSchemaError(error)) return;
+    console.error('[recordEffectVersion] history insert failed:', error);
   }
-  return null;
 }
 
 /** Persist one base effect with optimistic conflict detection. */
@@ -272,7 +271,7 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     'sortOrder',
     'modelJson',
   ]);
-  const versionResult = await recordEffectVersion(supabase, {
+  await recordEffectVersion(supabase, {
     effectId: parsed.data.id,
     action: 'update',
     summary: summariseEffectChanges(changesJson),
@@ -281,7 +280,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     changesJson,
     profile,
   });
-  if (versionResult) return versionResult;
 
   await invalidateAdminEffectsCache(parsed.data.id);
   await invalidateAdminFireworksCache();
@@ -363,7 +361,7 @@ export async function restoreEffectEditorVersion(
     'sortOrder',
     'modelJson',
   ]);
-  const versionResult = await recordEffectVersion(supabase, {
+  await recordEffectVersion(supabase, {
     effectId: parsed.data.effectId,
     action: 'restore',
     summary: `Restored version from ${version.created_by_label}`,
@@ -372,7 +370,6 @@ export async function restoreEffectEditorVersion(
     changesJson,
     profile,
   });
-  if (versionResult) return versionResult;
 
   await invalidateAdminEffectsCache(parsed.data.effectId);
   await invalidateAdminFireworksCache();

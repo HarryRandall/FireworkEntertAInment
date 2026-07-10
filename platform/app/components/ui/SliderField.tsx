@@ -2,7 +2,7 @@
 
 /** Labelled slider with a live value readout and helper text, use for bounded numeric tuning controls. */
 import { useId, type ReactNode } from 'react';
-import { Slider } from '@/components/ui/slider';
+import { Slider as SliderPrimitive } from 'radix-ui';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input } from '@/app/components/ui/Input';
@@ -26,6 +26,8 @@ type SliderFieldProps = {
   /** Span the full width of the surrounding control grid, for fields with no natural pair. */
   fullWidth?: boolean;
   onChange: (value: number) => void;
+  /** Called when pointer or keyboard interaction commits the current value. */
+  onCommit?: (value: number) => void;
 };
 
 export function SliderField({
@@ -42,8 +44,11 @@ export function SliderField({
   inputAriaLabel,
   fullWidth = false,
   onChange,
+  onCommit,
 }: SliderFieldProps) {
-  const id = useId();
+  const generatedId = useId();
+  const labelId = `${generatedId}-label`;
+  const sliderId = `${generatedId}-slider`;
   const display = formatValue ? formatValue(value) : String(value);
   const inputMax = numberInputMax === undefined ? max : numberInputMax;
   const sliderValue = Math.min(max, Math.max(min, value));
@@ -59,23 +64,39 @@ export function SliderField({
   return (
     <Field className={fullWidth ? 'col-span-full space-y-1.5' : 'space-y-1.5'}>
       <div className="flex items-center gap-1.5">
-        <FieldLabel htmlFor={id} className="text-xs whitespace-nowrap">
+        <FieldLabel id={labelId} htmlFor={sliderId} className="text-xs whitespace-nowrap">
           {label}
         </FieldLabel>
         {hint ? <InfoTooltip text={hint} /> : null}
       </div>
       <div className="flex items-center gap-3">
-        <Slider
-          id={id}
+        <SliderPrimitive.Root
+          id={sliderId}
+          data-slot="slider"
           value={[sliderValue]}
           min={min}
           max={max}
           step={step}
           disabled={disabled}
           onValueChange={(next) => onChange(next[0] ?? value)}
-          aria-label={typeof label === 'string' ? label : undefined}
-          className="min-w-0 flex-1 py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
-        />
+          onValueCommit={(next) => onCommit?.(next[0] ?? value)}
+          className="relative flex min-w-0 flex-1 touch-none items-center py-1 select-none data-disabled:opacity-50"
+        >
+          <SliderPrimitive.Track
+            data-slot="slider-track"
+            className="bg-muted relative h-1.5 grow overflow-hidden rounded-full"
+          >
+            <SliderPrimitive.Range
+              data-slot="slider-range"
+              className="bg-primary absolute h-full"
+            />
+          </SliderPrimitive.Track>
+          <SliderPrimitive.Thumb
+            data-slot="slider-thumb"
+            aria-labelledby={labelId}
+            className="border-primary bg-background ring-ring/50 block size-3.5 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          />
+        </SliderPrimitive.Root>
         {showNumberInput ? (
           <Input
             type="number"
@@ -92,7 +113,15 @@ export function SliderField({
             onFocus={(event) => event.currentTarget.select()}
             onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
             onBlur={(event) => {
-              if (event.currentTarget.value === '') setNumberValue(min);
+              const next =
+                event.currentTarget.value === '' ? min : event.currentTarget.valueAsNumber;
+              const upperBound = inputMax == null ? Number.POSITIVE_INFINITY : inputMax;
+              const clamped = Math.min(upperBound, Math.max(min, next));
+              const committed = step >= 1 ? Math.round(clamped / step) * step : clamped;
+              if (Number.isFinite(committed)) {
+                if (event.currentTarget.value === '') onChange(committed);
+                onCommit?.(committed);
+              }
             }}
           />
         ) : (

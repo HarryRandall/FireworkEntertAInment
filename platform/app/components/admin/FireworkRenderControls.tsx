@@ -28,6 +28,7 @@ import {
   type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
+import { nonNegativeRangeFromMidpoint } from '@/lib/fireworks/editor-ranges';
 import { clearNestedStarBurstTrails } from '@/lib/fireworks/style-defaults';
 import { cn } from '@/lib/utils';
 import {
@@ -1809,7 +1810,10 @@ export function FireworkRenderControls({
 
   function setBurstRangeMid(key: 'speed' | 'gravity' | 'life', mid: number, halfWidth: number) {
     mutate((draft) => {
-      const next = [round2(mid - halfWidth), round2(mid + halfWidth)];
+      const next =
+        key === 'gravity'
+          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
+          : nonNegativeRangeFromMidpoint(mid, halfWidth);
       const burst = ensureRecord(draft, 'burst');
       burst[key] = next;
       if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst')[key] = next;
@@ -1985,7 +1989,10 @@ export function FireworkRenderControls({
       const stars = ensureRecord(draft, 'stars');
       const layer = ensureRecord(stars, layerKey);
       const burst = ensureRecord(layer, 'burst');
-      burst[key] = [round2(mid - halfWidth), round2(mid + halfWidth)];
+      burst[key] =
+        key === 'gravity'
+          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
+          : nonNegativeRangeFromMidpoint(mid, halfWidth);
     });
   }
 

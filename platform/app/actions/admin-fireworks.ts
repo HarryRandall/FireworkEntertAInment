@@ -186,7 +186,7 @@ async function recordFireworkVersion(
     changesJson: Json;
     profile: CurrentProfile;
   },
-): Promise<Result | null> {
+): Promise<void> {
   const { error } = await supabase.from('firework_editor_versions').insert({
     target_kind: 'firework',
     firework_id: input.fireworkId,
@@ -199,10 +199,9 @@ async function recordFireworkVersion(
     created_by_label: adminLabel(input.profile),
   });
   if (error) {
-    if (isMissingEditorVersionSchemaError(error)) return null;
-    return { ok: false, error: error.message };
+    if (isMissingEditorVersionSchemaError(error)) return;
+    console.error('[recordFireworkVersion] history insert failed:', error);
   }
-  return null;
 }
 
 async function refresh(fireworkId?: string) {
@@ -323,7 +322,7 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     'colorPalette',
     'renderOverridesJson',
   ]);
-  const versionError = await recordFireworkVersion(supabase, {
+  await recordFireworkVersion(supabase, {
     fireworkId: parsed.data.id,
     action: 'update',
     summary: summariseFireworkChanges(changesJson),
@@ -332,7 +331,6 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     changesJson,
     profile,
   });
-  if (versionError) return versionError;
 
   await refresh(parsed.data.id);
   return { ok: true, updatedAt: data.updated_at };
@@ -419,7 +417,7 @@ export async function restoreFireworkEditorVersion(
     'colorPalette',
     'renderOverridesJson',
   ]);
-  const versionResult = await recordFireworkVersion(supabase, {
+  await recordFireworkVersion(supabase, {
     fireworkId: parsed.data.fireworkId,
     action: 'restore',
     summary: `Restored version from ${version.created_by_label}`,
@@ -428,7 +426,6 @@ export async function restoreFireworkEditorVersion(
     changesJson,
     profile,
   });
-  if (versionResult) return versionResult;
 
   await refresh(parsed.data.fireworkId);
   return { ok: true, updatedAt: data.updated_at };

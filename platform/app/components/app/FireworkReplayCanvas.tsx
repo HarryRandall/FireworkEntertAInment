@@ -40,6 +40,7 @@ import {
   type FireworkHeadStyle,
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
+import { replaySimulationCacheKey } from '@/lib/fireworks/replay-cache-key';
 import { Button } from '@/app/components/ui/Button';
 import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
 import { cn } from '@/lib/utils';
@@ -72,49 +73,6 @@ function rememberSnapshotCache(key: string, cache: SnapshotCacheData): void {
     if (oldest === undefined) break;
     snapshotCacheByKey.delete(oldest);
   }
-}
-
-/**
- * Hash the effective firework design (`renderDesign`, falling back to the
- * legacy `rawSpec` that the engine compiles) into a short stable string. The
- * admin editors rebuild a cue's design on every slider tick while keeping the
- * same productId/caliber/duration, so the cache key has to fold the design in
- * or a colour edit would import a stale snapshot and show the wrong preview.
- */
-function hashDesign(design: unknown): string {
-  if (design == null) return '';
-  let str: string;
-  try {
-    str = JSON.stringify(design);
-  } catch {
-    str = String(design);
-  }
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) + h + str.charCodeAt(i)) | 0;
-  }
-  return (h >>> 0).toString(36);
-}
-
-/**
- * Build a stable signature for a cue set so cue edits invalidate the cache but
- * harmless re-renders do not. Covers the fields that change the simulated show
- * (timing, position, product, shot overrides, seed) plus a hash of each
- * firework's design, so editor design tweaks invalidate the cache too. The
- * cache is session-scoped and a full reload clears it.
- */
-function cuesCacheKey(cues: ReplayCue[]): string {
-  let key = '';
-  for (const cue of cues) {
-    key += `${cue.id}|${cue.timeSeconds}|${cue.productId}|${cue.launchPositionIndex}|${
-      cue.seedOverride ?? ''
-    }|${cue.shotPanDegrees ?? 0}|${cue.shotTiltDegrees ?? 0}|${
-      cue.shotPositionOverride ? '1' : '0'
-    }|${cue.firework.caliber ?? ''}|${cue.firework.durationSeconds ?? ''}|d:${hashDesign(
-      cue.firework.renderDesign ?? cue.firework.rawSpec,
-    )};`;
-  }
-  return key;
 }
 
 type Props = {
@@ -880,6 +838,7 @@ export function FireworkReplayCanvas({
   // Signature of the last cue set + options actually applied to the engine, so
   // referential churn from parent re-renders cannot re-clear the scene.
   const appliedCuesSignatureRef = useRef<string>('');
+  const appliedLaunchPositionsSignatureRef = useRef<string>('');
   const onSceneReadyRef = useRef(onSceneReady);
   const onPrimeProgressRef = useRef(onPrimeProgress);
   const cuesFinalRef = useRef(cuesFinal);
@@ -1210,6 +1169,7 @@ export function FireworkReplayCanvas({
     // A fresh engine has no cues yet; clear the applied-signature guard so the
     // cues effect re-applies them even if this is a remount with the same set.
     appliedCuesSignatureRef.current = '';
+    appliedLaunchPositionsSignatureRef.current = '';
     function unlockAudio() {
       engine.resumeAudio();
     }
@@ -1439,7 +1399,7 @@ export function FireworkReplayCanvas({
     const engine = engineRef.current;
     if (!engine) return;
     const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
-    const cacheKey = cuesCacheKey(cues);
+    const cacheKey = replaySimulationCacheKey(cues, launchPositions);
     // Re-renders can re-fire this effect with content-identical cues (array
     // identity churn from parent state like play/pause). Re-applying would
     // clear() the live particles and re-seek — a visible blink — so skip when
@@ -1447,6 +1407,10 @@ export function FireworkReplayCanvas({
     const applySignature = `${cacheKey}#${primeSnapshots}#${primeOnCueChanges}#${cuesFinal}`;
     if (appliedCuesSignatureRef.current === applySignature) return;
     appliedCuesSignatureRef.current = applySignature;
+    if (appliedLaunchPositionsSignatureRef.current !== positionsKey) {
+      engine.setLaunchPositions(launchPositions);
+      appliedLaunchPositionsSignatureRef.current = positionsKey;
+    }
     // Reuse a previously primed snapshot cache for this exact cue set so a
     // quick leave-and-return skips the silent full-show prime (and the loading
     // bar) instead of re-running it on every mount.
@@ -1499,7 +1463,15 @@ export function FireworkReplayCanvas({
       if (exported) rememberSnapshotCache(cacheKey, exported);
     }
     forceRenderRef.current = true;
-  }, [cues, playbackRef, primeSnapshots, primeOnCueChanges, cuesFinal]);
+  }, [
+    cues,
+    playbackRef,
+    primeSnapshots,
+    primeOnCueChanges,
+    cuesFinal,
+    launchPositions,
+    positionsKey,
+  ]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -1532,14 +1504,6 @@ export function FireworkReplayCanvas({
       forceRenderRef.current = true;
     };
   }, [cues, elapsed, launchPositions, playbackRef, trailWidthGuideDesign, trailWidthGuideKey]);
-
-  useEffect(() => {
-    engineRef.current?.setLaunchPositions(launchPositions);
-    forceRenderRef.current = true;
-    // positionsKey is the dependency surrogate so we don't re-fire on
-    // referentially-different but value-equal arrays.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positionsKey]);
 
   // Aim-marker overlay: rebuild the in-scene markers whenever the shot set or
   // the selection changes. Gated behind `aimMarkers` so non-editor consumers

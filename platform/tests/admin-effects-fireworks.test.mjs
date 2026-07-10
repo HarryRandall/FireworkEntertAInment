@@ -267,7 +267,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(shell, /Revert/);
   assert.match(shell, /saveLabel/);
   assert.match(shell, /pr-16 sm:pr-\[4\.5rem\]/);
-  assert.match(shell, /previewNotice/);
+  assert.doesNotMatch(shell, /previewNotice|EditorVersionPreviewNotice/);
   assert.match(inspectorPanels, /EditorHistoryPanel/);
   assert.match(inspectorPanels, /JsonReadOnlyPanel/);
   assert.doesNotMatch(
@@ -281,6 +281,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(inspectorPanels, /showTimelineMarker = versions\.length > 1/);
   assert.match(inspectorPanels, /formatDate\(version\.createdAt, now\)/);
   assert.match(inspectorPanels, /Revert to here/);
+  assert.doesNotMatch(inspectorPanels, />\s*Preview\s*<|onPreview|selectedVersionId/);
   assert.doesNotMatch(inspectorPanels, /version\.action === 'restore' \? 'Restored' : 'Saved'/);
   assert.doesNotMatch(inspectorPanels, /Previewing/);
   assert.match(inspectorPanels, /flex min-h-\[420px\] flex-1 flex-col/);
@@ -376,7 +377,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /id: 'sound'/);
   assert.match(fireworkEditor, /id: 'history'/);
   assert.match(fireworkEditor, /id: 'json'/);
-  assert.match(fireworkEditor, /EditorVersionPreviewNotice/);
+  assert.doesNotMatch(fireworkEditor, /EditorVersionPreviewNotice|previewVersion/);
   assert.doesNotMatch(fireworkEditor, /Current vs Proposed|Proposed|comparison switch/);
   assert.doesNotMatch(fireworkEditor, /eyebrow="Firework editor"/);
   assert.doesNotMatch(

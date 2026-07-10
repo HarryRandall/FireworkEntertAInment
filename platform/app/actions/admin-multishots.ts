@@ -8,10 +8,22 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import {
+  getAdminMultishotCacheKey,
   invalidateAdminCatalogueCache,
   invalidateAdminMultishotsCache,
   requirePermission,
 } from '@/lib/admin.server';
+import {
+  MULTISHOT_CALIBER_MAX_LENGTH,
+  MULTISHOT_DESCRIPTION_MAX_LENGTH,
+  MULTISHOT_MAX_DURATION_SECONDS,
+  MULTISHOT_MAX_SHOT_COUNT,
+  MULTISHOT_NAME_MAX_LENGTH,
+  MULTISHOT_NOTES_MAX_LENGTH,
+  MULTISHOT_PAN_LIMIT_DEGREES,
+  MULTISHOT_TILT_LIMIT_DEGREES,
+} from '@/lib/admin/multishot-constraints';
+import { deleteCachedKeys } from '@/lib/server-cache';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -19,27 +31,40 @@ type CreateResult = { ok: true; id: string } | { ok: false; error: string };
 type UpsertShotResult = { ok: true; id: string } | { ok: false; error: string };
 
 const CreateMultishotSchema = z.object({
-  name: z.string().trim().min(1).max(180),
+  name: z.string().trim().min(1).max(MULTISHOT_NAME_MAX_LENGTH),
 });
 
 const UpdateMultishotSchema = z.object({
   id: z.string().uuid(),
-  name: z.string().trim().min(1).max(180),
-  description: z.string().trim().max(1200).optional().nullable(),
-  durationSeconds: z.coerce.number().min(0).max(3600).optional().nullable(),
+  name: z.string().trim().min(1).max(MULTISHOT_NAME_MAX_LENGTH),
+  description: z.string().trim().max(MULTISHOT_DESCRIPTION_MAX_LENGTH).optional().nullable(),
+  durationSeconds: z.coerce
+    .number()
+    .min(0)
+    .max(MULTISHOT_MAX_DURATION_SECONDS)
+    .optional()
+    .nullable(),
 });
 
 const ShotSchema = z.object({
   id: z.string().uuid().optional().nullable(),
   multishotId: z.string().uuid(),
   fireworkId: z.string().uuid(),
-  sequenceIndex: z.coerce.number().int().min(1).max(2000),
-  timeOffsetSeconds: z.coerce.number().min(0).max(3600),
-  panDegrees: z.coerce.number().int().min(-180).max(180),
-  tiltDegrees: z.coerce.number().int().min(-90).max(90),
+  sequenceIndex: z.coerce.number().int().min(1).max(MULTISHOT_MAX_SHOT_COUNT),
+  timeOffsetSeconds: z.coerce.number().min(0).max(MULTISHOT_MAX_DURATION_SECONDS),
+  panDegrees: z.coerce
+    .number()
+    .int()
+    .min(-MULTISHOT_PAN_LIMIT_DEGREES)
+    .max(MULTISHOT_PAN_LIMIT_DEGREES),
+  tiltDegrees: z.coerce
+    .number()
+    .int()
+    .min(-MULTISHOT_TILT_LIMIT_DEGREES)
+    .max(MULTISHOT_TILT_LIMIT_DEGREES),
   launchPositionIndex: z.coerce.number().int().min(0).max(2),
-  caliber: z.string().trim().max(40).optional().nullable(),
-  notes: z.string().trim().max(500).optional().nullable(),
+  caliber: z.string().trim().max(MULTISHOT_CALIBER_MAX_LENGTH).optional().nullable(),
+  notes: z.string().trim().max(MULTISHOT_NOTES_MAX_LENGTH).optional().nullable(),
 });
 
 const DeleteShotSchema = z.object({
@@ -59,7 +84,7 @@ function slugify(value: string): string {
     .slice(0, 60);
 }
 
-async function refresh(multishotId?: string) {
+async function refreshMultishotCatalogue(multishotId?: string) {
   await invalidateAdminMultishotsCache(multishotId);
   await invalidateAdminCatalogueCache();
   await invalidateFireworkCatalogueCaches();
@@ -68,15 +93,25 @@ async function refresh(multishotId?: string) {
   revalidatePath('/admin/catalogue');
 }
 
+async function refreshMultishotDetail(multishotId: string) {
+  await deleteCachedKeys([getAdminMultishotCacheKey(multishotId)]);
+  revalidatePath(`/admin/multishots/${multishotId}`);
+}
+
 async function syncShotCount(supabase: ReturnType<typeof createClient>, multishotId: string) {
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from('multishot_fireworks')
     .select('id', { count: 'exact', head: true })
     .eq('multishot_id', multishotId);
-  await supabase
+  if (countError) {
+    console.error('[syncShotCount] count failed:', countError);
+    return;
+  }
+  const { error: updateError } = await supabase
     .from('multishots')
     .update({ shot_count: count ?? 0, updated_at: new Date().toISOString() })
     .eq('id', multishotId);
+  if (updateError) console.error('[syncShotCount] update failed:', updateError);
 }
 
 /** Create an empty multishot; a catalogue row is auto-created by trigger. */
@@ -101,7 +136,7 @@ export async function createMultishot(
 
   if (error) return { ok: false, error: error.message };
   if (!data) return { ok: false, error: 'Could not create multishot.' };
-  await refresh(data.id);
+  await refreshMultishotCatalogue(data.id);
   return { ok: true, id: data.id };
 }
 
@@ -115,7 +150,7 @@ export async function updateMultishot(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('multishots')
     .update({
       name: parsed.data.name,
@@ -123,10 +158,13 @@ export async function updateMultishot(
       duration_seconds: parsed.data.durationSeconds ?? null,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
-  await refresh(parsed.data.id);
+  if (!data) return { ok: false, error: 'That multishot was not found.' };
+  await refreshMultishotCatalogue(parsed.data.id);
   return { ok: true };
 }
 
@@ -141,13 +179,37 @@ export async function upsertMultishotShot(
 
   const supabase = createClient(await cookies());
 
-  const { data: firework, error: fireworkError } = await supabase
-    .from('fireworks')
-    .select('id')
-    .eq('id', parsed.data.fireworkId)
-    .maybeSingle();
-  if (fireworkError) return { ok: false, error: fireworkError.message };
-  if (!firework) return { ok: false, error: 'Selected firework was not found.' };
+  let nextCaliber = parsed.data.caliber || null;
+  let catalogueChanged = !parsed.data.id;
+  let shouldValidateFirework = !parsed.data.id;
+
+  if (parsed.data.id) {
+    const { data: existingShot, error: existingShotError } = await supabase
+      .from('multishot_fireworks')
+      .select('firework_id, sequence_index, caliber')
+      .eq('id', parsed.data.id)
+      .eq('multishot_id', parsed.data.multishotId)
+      .maybeSingle();
+    if (existingShotError) return { ok: false, error: existingShotError.message };
+    if (!existingShot) return { ok: false, error: 'That shot was not found in this multishot.' };
+
+    if (parsed.data.caliber === undefined) nextCaliber = existingShot.caliber;
+    shouldValidateFirework = existingShot.firework_id !== parsed.data.fireworkId;
+    catalogueChanged =
+      shouldValidateFirework ||
+      existingShot.sequence_index !== parsed.data.sequenceIndex ||
+      existingShot.caliber !== nextCaliber;
+  }
+
+  if (shouldValidateFirework) {
+    const { data: firework, error: fireworkError } = await supabase
+      .from('fireworks')
+      .select('id')
+      .eq('id', parsed.data.fireworkId)
+      .maybeSingle();
+    if (fireworkError) return { ok: false, error: fireworkError.message };
+    if (!firework) return { ok: false, error: 'Selected firework was not found.' };
+  }
 
   const payload = {
     multishot_id: parsed.data.multishotId,
@@ -158,20 +220,29 @@ export async function upsertMultishotShot(
     tilt_degrees: parsed.data.tiltDegrees,
     // A multishot fires from a single mortar; per-shot aim is pan/tilt only.
     position_override_json: { launchPositionIndex: parsed.data.launchPositionIndex },
-    caliber: parsed.data.caliber || null,
+    caliber: nextCaliber,
     notes: parsed.data.notes || null,
   };
 
   const query = parsed.data.id
-    ? supabase.from('multishot_fireworks').update(payload).eq('id', parsed.data.id).select('id')
+    ? supabase
+        .from('multishot_fireworks')
+        .update(payload)
+        .eq('id', parsed.data.id)
+        .eq('multishot_id', parsed.data.multishotId)
+        .select('id')
     : supabase.from('multishot_fireworks').insert(payload).select('id');
   const { data, error } = await query.maybeSingle();
   if (error) return { ok: false, error: error.message };
-  const id = (data?.id as string | undefined) ?? parsed.data.id ?? undefined;
+  const id = data?.id as string | undefined;
   if (!id) return { ok: false, error: 'Could not save shot.' };
 
-  await syncShotCount(supabase, parsed.data.multishotId);
-  await refresh(parsed.data.multishotId);
+  if (!parsed.data.id) await syncShotCount(supabase, parsed.data.multishotId);
+  if (catalogueChanged) {
+    await refreshMultishotCatalogue(parsed.data.multishotId);
+  } else {
+    await refreshMultishotDetail(parsed.data.multishotId);
+  }
   return { ok: true, id };
 }
 
@@ -193,6 +264,6 @@ export async function deleteMultishotShot(
   if (error) return { ok: false, error: error.message };
 
   await syncShotCount(supabase, parsed.data.multishotId);
-  await refresh(parsed.data.multishotId);
+  await refreshMultishotCatalogue(parsed.data.multishotId);
   return { ok: true };
 }

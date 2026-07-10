@@ -62,6 +62,16 @@ import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { toast } from '@/app/components/ui/toast';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -71,6 +81,17 @@ import {
 } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
 import type { AdminMultishotDetail } from '@/lib/admin.types';
+import {
+  clampMultishotPanDegrees,
+  clampMultishotTimeSeconds,
+  clampMultishotTiltDegrees,
+  MULTISHOT_DESCRIPTION_MAX_LENGTH,
+  MULTISHOT_MAX_DURATION_SECONDS,
+  MULTISHOT_MAX_SHOT_COUNT,
+  MULTISHOT_NAME_MAX_LENGTH,
+  MULTISHOT_PAN_LIMIT_DEGREES,
+  MULTISHOT_TILT_LIMIT_DEGREES,
+} from '@/lib/admin/multishot-constraints';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
@@ -98,8 +119,6 @@ const PREVIEW_TRANSPORT_IDLE_MS = 2000;
 const INSPECTOR_RAIL_WIDTH_PX = 340;
 const INSPECTOR_RAIL_GAP_PX = 20;
 const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX + INSPECTOR_RAIL_GAP_PX;
-const MAX_PAN_DEGREES = 30;
-const MAX_TILT_DEGREES = 50;
 const PAN_PRESETS = [
   { value: -30, label: 'L 30°', title: 'Hard left pan' },
   { value: -15, label: 'L 15°', title: 'Soft left pan' },
@@ -122,6 +141,10 @@ const SHOT_SELECTION_KEEP_SELECTOR = [
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
+type PersistShotOptions = {
+  updateUi?: boolean;
+};
+
 type LocalShot = {
   uid: string;
   id?: string;
@@ -130,6 +153,7 @@ type LocalShot = {
   panDegrees: number;
   tiltDegrees: number;
   sequenceIndex: number;
+  caliber: string | null;
   notes: string;
   saveState: SaveState;
 };
@@ -138,10 +162,6 @@ let uidCounter = 0;
 function makeUid(): string {
   uidCounter += 1;
   return `shot-${Date.now().toString(36)}-${uidCounter}`;
-}
-
-function clampSignedDegrees(value: number, limit: number): number {
-  return Math.max(-limit, Math.min(limit, value));
 }
 
 function shouldKeepShotSelection(target: EventTarget | null): boolean {
@@ -154,12 +174,29 @@ function toLocalShot(shot: AdminMultishotDetail['shots'][number]): LocalShot {
     id: shot.id,
     fireworkId: shot.fireworkId ?? '',
     timeOffsetSeconds: shot.timeOffsetSeconds,
-    panDegrees: clampSignedDegrees(shot.panDegrees, MAX_PAN_DEGREES),
-    tiltDegrees: clampSignedDegrees(shot.tiltDegrees, MAX_TILT_DEGREES),
+    panDegrees: clampMultishotPanDegrees(shot.panDegrees),
+    tiltDegrees: clampMultishotTiltDegrees(shot.tiltDegrees),
     sequenceIndex: shot.sequenceIndex,
+    caliber: shot.caliber,
     notes: shot.notes ?? '',
     saveState: 'idle',
   };
+}
+
+function shotPersistenceSignature(shot: LocalShot): string {
+  return JSON.stringify([
+    shot.fireworkId,
+    shot.timeOffsetSeconds,
+    shot.panDegrees,
+    shot.tiltDegrees,
+    shot.sequenceIndex,
+    shot.caliber,
+    shot.notes,
+  ]);
+}
+
+function nextShotSequenceIndex(shots: LocalShot[]): number {
+  return shots.length ? Math.max(...shots.map((shot) => shot.sequenceIndex)) + 1 : 1;
 }
 
 function fireworkDurationOf(spec: FireworkSpecification | undefined): number {
@@ -280,7 +317,7 @@ export function MultishotEditor({
   const [durationSeconds, setDurationSeconds] = useState(initialDurationSeconds);
 
   // Timeline / shot state.
-  const [shots, setShots] = useState<LocalShot[]>(() =>
+  const [shots, setShotsState] = useState<LocalShot[]>(() =>
     [...multishot.shots].sort((a, b) => a.sequenceIndex - b.sequenceIndex).map(toLocalShot),
   );
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
@@ -296,17 +333,19 @@ export function MultishotEditor({
   const selectionInitialisedRef = useRef(false);
 
   const shotsRef = useRef(shots);
-  useEffect(() => {
-    shotsRef.current = shots;
-  }, [shots]);
-
   const saveTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  useEffect(() => {
-    const timers = saveTimersRef.current;
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-      timers.clear();
-    };
+  const saveChainsRef = useRef<Map<string, Promise<void>>>(new Map());
+  const saveRevisionsRef = useRef<Map<string, number>>(new Map());
+  const persistedShotIdsRef = useRef<Map<string, string>>(
+    new Map(shots.filter((shot) => shot.id).map((shot) => [shot.uid, shot.id as string] as const)),
+  );
+  const isMountedRef = useRef(true);
+
+  const commitShots = useCallback((updater: (current: LocalShot[]) => LocalShot[]) => {
+    const next = updater(shotsRef.current);
+    shotsRef.current = next;
+    setShotsState(next);
+    return next;
   }, []);
 
   useEffect(() => {
@@ -341,10 +380,9 @@ export function MultishotEditor({
     [shots, specsById],
   );
 
-  const duration = Math.max(
-    MIN_TIMELINE_SECONDS,
-    multishot.durationSeconds ?? 0,
-    Math.ceil(contentDuration) + 1,
+  const duration = Math.min(
+    MULTISHOT_MAX_DURATION_SECONDS,
+    Math.max(MIN_TIMELINE_SECONDS, multishot.durationSeconds ?? 0, Math.ceil(contentDuration) + 1),
   );
 
   const previewCues = useMemo<ReplayCue[]>(() => {
@@ -403,9 +441,7 @@ export function MultishotEditor({
   }, [shots, specsById]);
 
   const selectedShot = shots.find((shot) => shot.uid === selectedUid) ?? null;
-  const nextSequenceIndex = shots.length
-    ? Math.max(...shots.map((shot) => shot.sequenceIndex)) + 1
-    : 1;
+  const nextSequenceIndex = nextShotSequenceIndex(shots);
 
   useEffect(() => {
     if (shots.length === 0) {
@@ -427,45 +463,97 @@ export function MultishotEditor({
 
   // --- Persistence -----------------------------------------------------------
 
-  const setShotSaveState = useCallback((uid: string, saveState: SaveState) => {
-    setShots((prev) => prev.map((shot) => (shot.uid === uid ? { ...shot, saveState } : shot)));
-  }, []);
-
-  const persistShot = useCallback(
-    async (shot: LocalShot): Promise<void> => {
-      if (!shot.fireworkId) return;
-      const panDegrees = Math.round(clampSignedDegrees(shot.panDegrees, MAX_PAN_DEGREES));
-      const tiltDegrees = Math.round(clampSignedDegrees(shot.tiltDegrees, MAX_TILT_DEGREES));
-      setShotSaveState(shot.uid, 'saving');
-      const result = await upsertMultishotShot({
-        id: shot.id,
-        multishotId: multishot.id,
-        fireworkId: shot.fireworkId,
-        sequenceIndex: shot.sequenceIndex,
-        timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(2)),
-        panDegrees,
-        tiltDegrees,
-        launchPositionIndex: 0,
-        notes: shot.notes,
-      });
-      if (!result.ok) {
-        setShotSaveState(shot.uid, 'error');
-        toast.error(result.error);
-        return;
-      }
-      setShots((prev) =>
-        prev.map((current) =>
-          current.uid === shot.uid ? { ...current, id: result.id, saveState: 'saved' } : current,
-        ),
+  const setShotSaveState = useCallback(
+    (uid: string, saveState: SaveState) => {
+      commitShots((currentShots) =>
+        currentShots.map((shot) => (shot.uid === uid ? { ...shot, saveState } : shot)),
       );
     },
-    [multishot.id, setShotSaveState],
+    [commitShots],
+  );
+
+  const persistShot = useCallback(
+    (shot: LocalShot, options: PersistShotOptions = {}): Promise<void> => {
+      if (!shot.fireworkId) return Promise.resolve();
+
+      const uid = shot.uid;
+      const revision = (saveRevisionsRef.current.get(uid) ?? 0) + 1;
+      saveRevisionsRef.current.set(uid, revision);
+      if (options.updateUi !== false && isMountedRef.current) {
+        setShotSaveState(uid, 'saving');
+      }
+
+      const previousSave = saveChainsRef.current.get(uid) ?? Promise.resolve();
+      const task = previousSave
+        .catch(() => undefined)
+        .then(async () => {
+          if (saveRevisionsRef.current.get(uid) !== revision) return;
+
+          const persistedId = persistedShotIdsRef.current.get(uid) ?? shot.id;
+          let result: Awaited<ReturnType<typeof upsertMultishotShot>>;
+          try {
+            result = await upsertMultishotShot({
+              id: persistedId,
+              multishotId: multishot.id,
+              fireworkId: shot.fireworkId,
+              sequenceIndex: shot.sequenceIndex,
+              timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(2)),
+              panDegrees: Math.round(clampMultishotPanDegrees(shot.panDegrees)),
+              tiltDegrees: Math.round(clampMultishotTiltDegrees(shot.tiltDegrees)),
+              launchPositionIndex: 0,
+              caliber: shot.caliber,
+              notes: shot.notes,
+            });
+          } catch (error) {
+            result = {
+              ok: false,
+              error: error instanceof Error ? error.message : 'Could not save shot.',
+            };
+          }
+
+          if (result.ok) {
+            // A later save for a newly inserted shot must update this row rather
+            // than creating a duplicate, even if it was queued before insertion.
+            persistedShotIdsRef.current.set(uid, result.id);
+          }
+
+          const currentShot = shotsRef.current.find((current) => current.uid === uid);
+          const canUpdateUi =
+            options.updateUi !== false &&
+            isMountedRef.current &&
+            saveRevisionsRef.current.get(uid) === revision &&
+            currentShot != null &&
+            shotPersistenceSignature(currentShot) === shotPersistenceSignature(shot) &&
+            !saveTimersRef.current.has(uid);
+
+          if (!canUpdateUi) return;
+          if (!result.ok) {
+            setShotSaveState(uid, 'error');
+            toast.error(result.error);
+            return;
+          }
+          commitShots((currentShots) =>
+            currentShots.map((current) =>
+              current.uid === uid ? { ...current, id: result.id, saveState: 'saved' } : current,
+            ),
+          );
+        });
+
+      saveChainsRef.current.set(uid, task);
+      void task.finally(() => {
+        if (saveChainsRef.current.get(uid) === task) {
+          saveChainsRef.current.delete(uid);
+        }
+      });
+      return task;
+    },
+    [commitShots, multishot.id, setShotSaveState],
   );
 
   const saveShotByUid = useCallback(
-    (uid: string) => {
+    (uid: string, options?: PersistShotOptions): Promise<void> => {
       const shot = shotsRef.current.find((current) => current.uid === uid);
-      if (shot) void persistShot(shot);
+      return shot ? persistShot(shot, options) : Promise.resolve();
     },
     [persistShot],
   );
@@ -479,26 +567,73 @@ export function MultishotEditor({
         uid,
         setTimeout(() => {
           timers.delete(uid);
-          saveShotByUid(uid);
+          void saveShotByUid(uid);
         }, SAVE_DEBOUNCE_MS),
       );
     },
     [saveShotByUid],
   );
 
+  const flushPendingSaves = useCallback(
+    async (options: PersistShotOptions = {}): Promise<void> => {
+      const pendingTimers = [...saveTimersRef.current.entries()];
+      saveTimersRef.current.clear();
+      for (const [, timer] of pendingTimers) clearTimeout(timer);
+      await Promise.allSettled(pendingTimers.map(([uid]) => saveShotByUid(uid, options)));
+    },
+    [saveShotByUid],
+  );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') void flushPendingSaves();
+    }
+
+    function handlePageHide() {
+      void flushPendingSaves({ updateUi: false });
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (saveTimersRef.current.size === 0 && saveChainsRef.current.size === 0) return;
+      void flushPendingSaves({ updateUi: false });
+      event.preventDefault();
+      event.returnValue = true;
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      isMountedRef.current = false;
+      void flushPendingSaves({ updateUi: false });
+    };
+  }, [flushPendingSaves]);
+
   const updateShot = useCallback(
     (uid: string, patch: Partial<LocalShot>, options?: { immediate?: boolean; save?: boolean }) => {
       const nextPatch = { ...patch };
       if (typeof nextPatch.panDegrees === 'number') {
-        nextPatch.panDegrees = clampSignedDegrees(nextPatch.panDegrees, MAX_PAN_DEGREES);
+        nextPatch.panDegrees = clampMultishotPanDegrees(nextPatch.panDegrees);
       }
       if (typeof nextPatch.tiltDegrees === 'number') {
-        nextPatch.tiltDegrees = clampSignedDegrees(nextPatch.tiltDegrees, MAX_TILT_DEGREES);
+        nextPatch.tiltDegrees = clampMultishotTiltDegrees(nextPatch.tiltDegrees);
       }
-      setShots((prev) =>
-        prev.map((shot) =>
-          shot.uid === uid ? { ...shot, ...nextPatch, saveState: 'idle' } : shot,
-        ),
+      if (typeof nextPatch.timeOffsetSeconds === 'number') {
+        nextPatch.timeOffsetSeconds = clampMultishotTimeSeconds(nextPatch.timeOffsetSeconds);
+      }
+      let nextShot: LocalShot | null = null;
+      commitShots((currentShots) =>
+        currentShots.map((shot) => {
+          if (shot.uid !== uid) return shot;
+          nextShot = { ...shot, ...nextPatch, saveState: 'idle' };
+          return nextShot;
+        }),
       );
       if (options?.save === false) return;
       if (options?.immediate) {
@@ -508,13 +643,12 @@ export function MultishotEditor({
           clearTimeout(existing);
           timers.delete(uid);
         }
-        // Read after the state flush so we persist the patched values.
-        setTimeout(() => saveShotByUid(uid), 0);
+        if (nextShot) void persistShot(nextShot);
       } else {
         scheduleSave(uid);
       }
     },
-    [saveShotByUid, scheduleSave],
+    [commitShots, persistShot, scheduleSave],
   );
 
   useEffect(() => {
@@ -526,6 +660,13 @@ export function MultishotEditor({
   }, [fireworkOptions, shots, updateShot]);
 
   const addShot = useCallback(() => {
+    const sequenceIndex = nextShotSequenceIndex(shotsRef.current);
+    if (sequenceIndex > MULTISHOT_MAX_SHOT_COUNT) {
+      toast.error(
+        `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`,
+      );
+      return;
+    }
     const spec = fireworkSpecs[0];
     if (!spec) {
       toast.error('Create a firework first, then add it to this multishot.');
@@ -535,56 +676,101 @@ export function MultishotEditor({
     const shot: LocalShot = {
       uid: makeUid(),
       fireworkId: spec.id,
-      timeOffsetSeconds: Number.isFinite(timeOffset) ? Math.max(0, timeOffset) : 0,
+      timeOffsetSeconds: Number.isFinite(timeOffset) ? clampMultishotTimeSeconds(timeOffset) : 0,
       panDegrees: 0,
       tiltDegrees: 0,
-      sequenceIndex: nextSequenceIndex,
+      sequenceIndex,
+      caliber: spec.caliber,
       notes: '',
       saveState: 'saving',
     };
-    setShots((prev) => [...prev, shot]);
+    commitShots((currentShots) => [...currentShots, shot]);
     setSelectedUid(shot.uid);
     void persistShot(shot);
-  }, [contentDuration, fireworkSpecs, nextSequenceIndex, persistShot]);
+  }, [commitShots, contentDuration, fireworkSpecs, persistShot]);
 
   const duplicateShot = useCallback(
     (uid: string) => {
       const source = shotsRef.current.find((shot) => shot.uid === uid);
       if (!source) return;
+      const sequenceIndex = nextShotSequenceIndex(shotsRef.current);
+      if (sequenceIndex > MULTISHOT_MAX_SHOT_COUNT) {
+        toast.error(
+          `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`,
+        );
+        return;
+      }
       const copy: LocalShot = {
         ...source,
         uid: makeUid(),
         id: undefined,
         timeOffsetSeconds: source.timeOffsetSeconds + 0.5,
-        sequenceIndex: nextSequenceIndex,
+        sequenceIndex,
         saveState: 'saving',
       };
-      setShots((prev) => [...prev, copy]);
+      commitShots((currentShots) => [...currentShots, copy]);
       setSelectedUid(copy.uid);
       void persistShot(copy);
     },
-    [nextSequenceIndex, persistShot],
+    [commitShots, persistShot],
   );
 
   const deleteShot = useCallback(
     async (uid: string) => {
       const shot = shotsRef.current.find((current) => current.uid === uid);
+      if (!shot) return;
+      const originalIndex = shotsRef.current.findIndex((current) => current.uid === uid);
+      const wasSelected = selectedUid === uid;
       const timers = saveTimersRef.current;
-      const existing = timers.get(uid);
-      if (existing) {
-        clearTimeout(existing);
+      const pendingTimer = timers.get(uid);
+      if (pendingTimer) {
+        clearTimeout(pendingTimer);
         timers.delete(uid);
       }
-      setShots((prev) => prev.filter((current) => current.uid !== uid));
-      if (selectedUid === uid) {
-        setSelectedUid(null);
+
+      // Invalidate queued saves, then wait for an active insert to expose its
+      // database ID before deleting. This prevents a save landing after delete.
+      saveRevisionsRef.current.set(uid, (saveRevisionsRef.current.get(uid) ?? 0) + 1);
+      const pendingSave = saveChainsRef.current.get(uid);
+      commitShots((currentShots) => currentShots.filter((current) => current.uid !== uid));
+      if (wasSelected) setSelectedUid(null);
+      if (pendingSave) await pendingSave;
+
+      const persistedId = persistedShotIdsRef.current.get(uid) ?? shot.id;
+      if (!persistedId) {
+        saveRevisionsRef.current.delete(uid);
+        return;
       }
-      if (shot?.id) {
-        const result = await deleteMultishotShot({ id: shot.id, multishotId: multishot.id });
-        if (!result.ok) toast.error(result.error);
+
+      let result: Awaited<ReturnType<typeof deleteMultishotShot>>;
+      try {
+        result = await deleteMultishotShot({ id: persistedId, multishotId: multishot.id });
+      } catch (error) {
+        result = {
+          ok: false,
+          error: error instanceof Error ? error.message : 'Could not delete shot.',
+        };
       }
+
+      if (!result.ok) {
+        if (isMountedRef.current) {
+          const restoredShot = { ...shot, id: persistedId, saveState: 'error' as const };
+          commitShots((currentShots) => {
+            if (currentShots.some((current) => current.uid === uid)) return currentShots;
+            const nextShots = [...currentShots];
+            nextShots.splice(Math.min(originalIndex, nextShots.length), 0, restoredShot);
+            return nextShots;
+          });
+          if (wasSelected) setSelectedUid(uid);
+          toast.error(result.error);
+        }
+        return;
+      }
+
+      persistedShotIdsRef.current.delete(uid);
+      saveRevisionsRef.current.delete(uid);
     },
-    [multishot.id, selectedUid],
+    [commitShots, multishot.id, selectedUid],
   );
 
   // --- Preview interaction ---------------------------------------------------
@@ -677,19 +863,23 @@ export function MultishotEditor({
   function saveMeta() {
     setMetaError(null);
     startMetaTransition(async () => {
-      const result = await updateMultishot({
-        id: multishot.id,
-        name,
-        description,
-        durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
-      });
-      if (!result.ok) {
-        setMetaError(result.error);
-        return;
+      try {
+        const result = await updateMultishot({
+          id: multishot.id,
+          name,
+          description,
+          durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
+        });
+        if (!result.ok) {
+          setMetaError(result.error);
+          return;
+        }
+        setMetaDialogOpen(false);
+        toast.success('Multishot saved');
+        router.refresh();
+      } catch (error) {
+        setMetaError(error instanceof Error ? error.message : 'Could not save multishot.');
       }
-      setMetaDialogOpen(false);
-      toast.success('Multishot saved');
-      router.refresh();
     });
   }
 
@@ -752,10 +942,18 @@ export function MultishotEditor({
             shot={selectedShot}
             fireworkOptions={fireworkOptions}
             duration={duration}
-            onChangeFirework={(fireworkId) =>
-              updateShot(selectedShot.uid, { fireworkId }, { immediate: true })
-            }
+            onChangeFirework={(fireworkId) => {
+              const spec = specsById.get(fireworkId);
+              updateShot(
+                selectedShot.uid,
+                { fireworkId, caliber: spec?.caliber ?? null },
+                { immediate: true },
+              );
+            }}
             onChangeTime={(seconds) => updateShot(selectedShot.uid, { timeOffsetSeconds: seconds })}
+            onCommitTime={(seconds) =>
+              updateShot(selectedShot.uid, { timeOffsetSeconds: seconds }, { immediate: true })
+            }
             onChangePan={(panDegrees, options) =>
               updateShot(selectedShot.uid, { panDegrees }, { immediate: options?.immediate })
             }
@@ -763,6 +961,7 @@ export function MultishotEditor({
               updateShot(selectedShot.uid, { tiltDegrees }, { immediate: options?.immediate })
             }
             onDuplicate={() => duplicateShot(selectedShot.uid)}
+            duplicateDisabled={nextSequenceIndex > MULTISHOT_MAX_SHOT_COUNT}
             onDelete={() => void deleteShot(selectedShot.uid)}
           />
         ) : null}
@@ -776,6 +975,7 @@ export function MultishotEditor({
           elapsed={elapsed}
           selectedUid={selectedUid}
           disabled={!hasFireworks}
+          addDisabled={!hasFireworks || nextSequenceIndex > MULTISHOT_MAX_SHOT_COUNT}
           onSelect={(uid) => {
             setSelectedUid(uid);
           }}
@@ -891,6 +1091,8 @@ function MetaBar({
                     <FieldLabel htmlFor="ms-name">Name</FieldLabel>
                     <Input
                       id="ms-name"
+                      required
+                      maxLength={MULTISHOT_NAME_MAX_LENGTH}
                       value={name}
                       onChange={(event) => onName(event.target.value)}
                     />
@@ -900,6 +1102,9 @@ function MetaBar({
                     <Input
                       id="ms-duration"
                       inputMode="decimal"
+                      min={0}
+                      max={MULTISHOT_MAX_DURATION_SECONDS}
+                      step="0.01"
                       className="font-mono tabular-nums"
                       value={durationSeconds}
                       onChange={(event) => onDuration(event.target.value)}
@@ -911,6 +1116,7 @@ function MetaBar({
                   <Textarea
                     id="ms-description"
                     rows={5}
+                    maxLength={MULTISHOT_DESCRIPTION_MAX_LENGTH}
                     value={description}
                     onChange={(event) => onDescription(event.target.value)}
                   />
@@ -1133,6 +1339,7 @@ function Timeline({
   elapsed,
   selectedUid,
   disabled,
+  addDisabled,
   onSelect,
   onSeek,
   onMoveShot,
@@ -1144,6 +1351,7 @@ function Timeline({
   elapsed: number;
   selectedUid: string | null;
   disabled: boolean;
+  addDisabled: boolean;
   onSelect: (uid: string) => void;
   onSeek: (seconds: number) => void;
   onMoveShot: (uid: string, seconds: number, commit: boolean) => void;
@@ -1177,7 +1385,17 @@ function Timeline({
             Single mortar. Drag clips to change when each firework fires.
           </span>
         </div>
-        <Button size="sm" variant="primary" onClick={onAdd} disabled={disabled}>
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={onAdd}
+          disabled={addDisabled}
+          title={
+            addDisabled && !disabled
+              ? `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`
+              : undefined
+          }
+        >
           <Plus size={15} />
           Add shot
         </Button>
@@ -1360,9 +1578,11 @@ function Inspector({
   duration,
   onChangeFirework,
   onChangeTime,
+  onCommitTime,
   onChangePan,
   onChangeTilt,
   onDuplicate,
+  duplicateDisabled,
   onDelete,
 }: {
   shot: LocalShot;
@@ -1370,11 +1590,15 @@ function Inspector({
   duration: number;
   onChangeFirework: (fireworkId: string) => void;
   onChangeTime: (seconds: number) => void;
+  onCommitTime: (seconds: number) => void;
   onChangePan: (pan: number, options?: { immediate?: boolean }) => void;
   onChangeTilt: (tilt: number, options?: { immediate?: boolean }) => void;
   onDuplicate: () => void;
+  duplicateDisabled: boolean;
   onDelete: () => void;
 }) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   return (
     <aside
       data-preserve-shot-selection
@@ -1405,6 +1629,7 @@ function Inspector({
           showNumberInput
           formatValue={(value) => `${value.toFixed(1)}s`}
           onChange={onChangeTime}
+          onCommit={onCommitTime}
         />
 
         <div className="space-y-4">
@@ -1412,8 +1637,8 @@ function Inspector({
             label="Pan plane"
             icon={<MoveHorizontal size={14} />}
             value={shot.panDegrees}
-            min={-MAX_PAN_DEGREES}
-            max={MAX_PAN_DEGREES}
+            min={-MULTISHOT_PAN_LIMIT_DEGREES}
+            max={MULTISHOT_PAN_LIMIT_DEGREES}
             presets={PAN_PRESETS}
             hint="Pan is capped at -30° to 30°."
             onChange={onChangePan}
@@ -1422,8 +1647,8 @@ function Inspector({
             label="Tilt plane"
             icon={<MoveVertical size={14} />}
             value={shot.tiltDegrees}
-            min={-MAX_TILT_DEGREES}
-            max={MAX_TILT_DEGREES}
+            min={-MULTISHOT_TILT_LIMIT_DEGREES}
+            max={MULTISHOT_TILT_LIMIT_DEGREES}
             presets={TILT_PRESETS}
             hint="Tilt is capped at -50° to 50°."
             onChange={onChangeTilt}
@@ -1432,15 +1657,48 @@ function Inspector({
       </div>
 
       <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
-        <Button variant="secondary" size="sm" onClick={onDuplicate} className="min-w-0 px-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onDuplicate}
+          disabled={duplicateDisabled}
+          title={
+            duplicateDisabled
+              ? `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`
+              : undefined
+          }
+          className="min-w-0 px-2"
+        >
           <Copy size={14} />
           <span className="truncate">Duplicate</span>
         </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete} className="min-w-0 px-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setDeleteDialogOpen(true)}
+          className="min-w-0 px-2"
+        >
           <Trash2 size={14} />
           <span className="truncate">Delete</span>
         </Button>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent size="sm" data-preserve-shot-selection>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete shot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the shot from this multishot. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onDelete}>
+              Delete shot
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }
@@ -1467,10 +1725,10 @@ function AnglePlaneControl({
   const id = useId();
   const sliderValue = Math.min(max, Math.max(min, value));
 
-  function setNumberValue(next: number) {
+  function setNumberValue(next: number, options?: { immediate?: boolean }) {
     if (!Number.isFinite(next)) return;
     const clamped = Math.min(max, Math.max(min, next));
-    onChange(Math.round(clamped));
+    onChange(Math.round(clamped), options);
   }
 
   return (
@@ -1515,6 +1773,7 @@ function AnglePlaneControl({
           max={max}
           step={1}
           onValueChange={(next) => onChange(next[0] ?? value)}
+          onValueCommit={(next) => onChange(next[0] ?? value, { immediate: true })}
           aria-label={`${label} angle`}
           className="min-w-0 flex-1 py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-track]]:h-1.5"
         />
@@ -1530,7 +1789,10 @@ function AnglePlaneControl({
           onFocus={(event) => event.currentTarget.select()}
           onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
           onBlur={(event) => {
-            if (event.currentTarget.value === '') setNumberValue(min);
+            setNumberValue(
+              event.currentTarget.value === '' ? min : event.currentTarget.valueAsNumber,
+              { immediate: true },
+            );
           }}
         />
       </div>

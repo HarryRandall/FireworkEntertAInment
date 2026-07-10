@@ -40,6 +40,7 @@ import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import type { AdminStyleDefaultDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
@@ -203,7 +204,12 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       }),
     [defaultsText, description, isArchived, kind, name, parsedDefaults, sortOrderNumber],
   );
+  const currentSignatureRef = useRef(currentSignature);
   const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    currentSignatureRef.current = currentSignature;
+  }, [currentSignature]);
 
   useEffect(() => {
     if (savedSignature === null) setSavedSignature(currentSignature);
@@ -404,6 +410,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       setError(parsedDefaults.error);
       return;
     }
+    const saveStartedFromSignature = currentSignature;
 
     startTransition(async () => {
       const result = await updateStyleDefault({
@@ -421,9 +428,13 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         return;
       }
       setLastSavedUpdatedAt(result.updatedAt);
-      setSavedSignature(currentSignature);
-      toast.success('Style default saved');
-      router.refresh();
+      setSavedSignature(saveStartedFromSignature);
+      if (canApplySavedEditorSnapshot(saveStartedFromSignature, currentSignatureRef.current)) {
+        toast.success('Style default saved');
+        router.refresh();
+      } else {
+        toast.success('Style default saved; newer edits remain unsaved');
+      }
     });
   }
 

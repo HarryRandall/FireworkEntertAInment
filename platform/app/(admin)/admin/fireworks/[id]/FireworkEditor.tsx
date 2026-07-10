@@ -39,7 +39,6 @@ import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSection
 import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
-  EditorVersionPreviewNotice,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
@@ -64,7 +63,7 @@ import type {
   AdminFireworkDetail,
   AdminStyleDefaultOption,
 } from '@/lib/admin.types';
-import { parseFireworkEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
@@ -686,7 +685,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(firework.updatedAt);
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('colour');
-  const [previewVersion, setPreviewVersion] = useState<AdminEditorVersion | null>(null);
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
 
   const parsedOverrides = useMemo(() => parseJsonObject(overridesText), [overridesText]);
@@ -811,7 +809,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       saveStyleDefaultIds,
     ],
   );
+  const currentSignatureRef = useRef(currentSignature);
   const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    currentSignatureRef.current = currentSignature;
+  }, [currentSignature]);
 
   useEffect(() => {
     if (savedSignature === null) setSavedSignature(currentSignature);
@@ -835,7 +838,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     nextColourStopIdRef.current = initialColourStops.length;
     setOverridesText(JSON.stringify(firework.renderOverridesJson ?? {}, null, 2));
     setLastSavedUpdatedAt(firework.updatedAt);
-    setPreviewVersion(null);
     setRestoringVersionId(null);
     setSavedSignature(null);
   }, [firework, initialColourStops, initialOverrides]);
@@ -1162,6 +1164,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
 
   function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
     setError(null);
+    const saveStartedFromSignature = currentSignature;
     startTransition(async () => {
       const result = await createStyleDefault({
         kind,
@@ -1201,31 +1204,38 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         colourAxis,
         validColourStops,
       });
+      const savedStateSignature = fireworkEditorSignature({
+        name,
+        description,
+        effectId,
+        caliber,
+        durationSeconds,
+        heightMeters,
+        primaryColor: mainColor,
+        secondaryColor: accentColor,
+        colorPalette: palette,
+        styleDefaultIds: clearedSaveMap,
+        renderOverridesJson: nextMerged,
+      });
 
       const ok = await persistFirework({
         styleDefaultIdsMap: clearedSaveMap,
         overrides: nextMerged,
       });
       if (!ok) return;
-      setStyleDefaultIds(clearedStyleDefaultIds);
-      setOverridesText(copiedOverridesText);
-      setSavedSignature(
-        fireworkEditorSignature({
-          name,
-          description,
-          effectId,
-          caliber,
-          durationSeconds,
-          heightMeters,
-          primaryColor: mainColor,
-          secondaryColor: accentColor,
-          colorPalette: palette,
-          styleDefaultIds: clearedSaveMap,
-          renderOverridesJson: nextMerged,
-        }),
+      const applySavedSnapshot = canApplySavedEditorSnapshot(
+        saveStartedFromSignature,
+        currentSignatureRef.current,
       );
-      toast.success('Style default created and saved');
-      router.refresh();
+      setSavedSignature(savedStateSignature);
+      if (applySavedSnapshot) {
+        setStyleDefaultIds(clearedStyleDefaultIds);
+        setOverridesText(copiedOverridesText);
+        toast.success('Style default created and saved');
+        router.refresh();
+      } else {
+        toast.success('Saved; newer firework edits remain unsaved');
+      }
     });
   }
 
@@ -1243,34 +1253,42 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       setError('Pick a main colour.');
       return;
     }
+    const saveStartedFromSignature = currentSignature;
     startTransition(async () => {
       const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
       const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
       const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+      const savedStateSignature = fireworkEditorSignature({
+        name,
+        description,
+        effectId,
+        caliber,
+        durationSeconds,
+        heightMeters,
+        primaryColor: mainColor,
+        secondaryColor: accentColor,
+        colorPalette: palette,
+        styleDefaultIds: clearedSaveMap,
+        renderOverridesJson: copiedOverrides,
+      });
       const ok = await persistFirework({
         styleDefaultIdsMap: clearedSaveMap,
         overrides: copiedOverrides,
       });
       if (!ok) return;
-      setStyleDefaultIds(clearedStyleDefaultIds);
-      setOverridesText(JSON.stringify(copiedOverrides, null, 2));
-      setSavedSignature(
-        fireworkEditorSignature({
-          name,
-          description,
-          effectId,
-          caliber,
-          durationSeconds,
-          heightMeters,
-          primaryColor: mainColor,
-          secondaryColor: accentColor,
-          colorPalette: palette,
-          styleDefaultIds: clearedSaveMap,
-          renderOverridesJson: copiedOverrides,
-        }),
+      const applySavedSnapshot = canApplySavedEditorSnapshot(
+        saveStartedFromSignature,
+        currentSignatureRef.current,
       );
-      toast.success('Firework saved');
-      router.refresh();
+      setSavedSignature(savedStateSignature);
+      if (applySavedSnapshot) {
+        setStyleDefaultIds(clearedStyleDefaultIds);
+        setOverridesText(JSON.stringify(copiedOverrides, null, 2));
+        toast.success('Firework saved');
+        router.refresh();
+      } else {
+        toast.success('Firework saved; newer edits remain unsaved');
+      }
     });
   }
 
@@ -1290,7 +1308,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setColourAxis(initialColourAxis(initialOverrides));
     nextColourStopIdRef.current = initialColourStops.length;
     setOverridesText(JSON.stringify(firework.renderOverridesJson ?? {}, null, 2));
-    setPreviewVersion(null);
     setError(null);
     setSavedSignature(null);
   }
@@ -1310,7 +1327,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         return;
       }
       setLastSavedUpdatedAt(result.updatedAt);
-      setPreviewVersion(null);
       setSavedSignature(null);
       toast.success('Version restored');
       router.refresh();
@@ -1510,15 +1526,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     </div>
   );
 
-  const previewSnapshot = previewVersion
-    ? parseFireworkEditorSnapshot(previewVersion.snapshotJson)
-    : null;
-  const previewNotice = previewVersion ? (
-    <EditorVersionPreviewNotice
-      summary={`${previewSnapshot?.name ?? previewVersion.summary} by ${previewVersion.createdByLabel}`}
-      onExit={() => setPreviewVersion(null)}
-    />
-  ) : null;
   const previewMenuActions = useMemo(
     () => [
       {
@@ -1905,10 +1912,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       content: (
         <EditorHistoryPanel
           versions={firework.history}
-          selectedVersionId={previewVersion?.id ?? null}
           restoringVersionId={restoringVersionId}
-          onPreview={setPreviewVersion}
-          onClearPreview={() => setPreviewVersion(null)}
           onRestore={restoreVersion}
         />
       ),
@@ -1941,7 +1945,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       transport={transport}
       transportPlaying={isPlaying}
       error={error}
-      previewNotice={previewNotice}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

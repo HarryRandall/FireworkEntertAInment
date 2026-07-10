@@ -33,32 +33,6 @@ export type EditorPreviewTick = ReplayTransportTick;
 
 const PREVIEW_TRANSPORT_IDLE_MS = 2000;
 
-/** Overlay banner shown while previewing an earlier saved version inside the editor stage. */
-export function EditorVersionPreviewNotice({
-  summary,
-  onExit,
-}: {
-  summary: string;
-  onExit: () => void;
-}) {
-  return (
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--hl)] bg-black/60 p-3 text-sm text-white shadow-lg">
-      <div className="min-w-0">
-        <p className="font-semibold">Viewing earlier version</p>
-        <p className="truncate text-white/68">{summary}</p>
-      </div>
-      <Button
-        variant="secondary"
-        size="sm"
-        className="border-white/15 bg-white/8 text-white hover:bg-white/14 hover:text-white"
-        onClick={onExit}
-      >
-        Live version
-      </Button>
-    </div>
-  );
-}
-
 export function EditorPreviewTransport({
   elapsed,
   duration,
@@ -129,7 +103,6 @@ type FireworkEditorShellProps = {
   transport: ReactNode;
   transportPlaying?: boolean;
   error?: string | null;
-  previewNotice?: ReactNode;
   fullscreen?: boolean;
   onExitFullscreen?: () => void;
 };
@@ -153,7 +126,6 @@ export function FireworkEditorShell({
   transport,
   transportPlaying = false,
   error,
-  previewNotice,
   fullscreen,
   onExitFullscreen,
 }: FireworkEditorShellProps) {
@@ -402,7 +374,6 @@ export function FireworkEditorShell({
                   </Button>
                 </div>
               </div>
-              {previewNotice ? <div className="pointer-events-auto">{previewNotice}</div> : null}
             </div>
           ) : null}
 

@@ -45,7 +45,9 @@ test('Save new default copies settings and clears transient selection in one cli
   assert.match(fireworkEditor, /saveCurrentStyleAsDefault[\s\S]*?overrides: nextMerged/);
   assert.match(fireworkEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
   assert.match(fireworkEditor, /setOverridesText\(copiedOverridesText\)/);
-  assert.match(fireworkEditor, /setSavedSignature\(\s*fireworkEditorSignature\(/);
+  assert.match(fireworkEditor, /const savedStateSignature = fireworkEditorSignature\(/);
+  assert.match(fireworkEditor, /setSavedSignature\(savedStateSignature\)/);
+  assert.match(fireworkEditor, /canApplySavedEditorSnapshot/);
   assert.match(fireworkEditor, /Style default created and saved/);
 
   assert.match(effectEditor, /async function persistEffect\(/);
@@ -60,7 +62,9 @@ test('Save new default copies settings and clears transient selection in one cli
   );
   assert.match(effectEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
   assert.match(effectEditor, /setModelText\(savedModelText\)/);
-  assert.match(effectEditor, /setSavedSignature\(\s*effectEditorSignature\(/);
+  assert.match(effectEditor, /const savedStateSignature = effectEditorSignature\(/);
+  assert.match(effectEditor, /setSavedSignature\(savedStateSignature\)/);
+  assert.match(effectEditor, /canApplySavedEditorSnapshot/);
   assert.match(effectEditor, /Style default created and saved/);
 });
 

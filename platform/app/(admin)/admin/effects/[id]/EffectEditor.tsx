@@ -28,7 +28,6 @@ import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSection
 import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
-  EditorVersionPreviewNotice,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
@@ -46,7 +45,7 @@ import type {
   AdminEffectDetail,
   AdminStyleDefaultOption,
 } from '@/lib/admin.types';
-import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
@@ -243,7 +242,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
   const [savedSignature, setSavedSignature] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('details');
-  const [previewVersion, setPreviewVersion] = useState<AdminEditorVersion | null>(null);
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
@@ -313,7 +311,12 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       sortOrderNumber,
     ],
   );
+  const currentSignatureRef = useRef(currentSignature);
   const isDirty = savedSignature !== null && currentSignature !== savedSignature;
+
+  useEffect(() => {
+    currentSignatureRef.current = currentSignature;
+  }, [currentSignature]);
 
   useEffect(() => {
     if (savedSignature === null) setSavedSignature(currentSignature);
@@ -328,7 +331,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setStyleDefaultIds(initialStyleDefaultIds(effect));
     setCreatedStyleDefaults({});
     setLastSavedUpdatedAt(effect.updatedAt);
-    setPreviewVersion(null);
     setRestoringVersionId(null);
     setSavedSignature(null);
   }, [effect]);
@@ -566,6 +568,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       setError(parsedModel.error);
       return;
     }
+    const saveStartedFromSignature = currentSignature;
     startTransition(async () => {
       const result = await createStyleDefault({
         kind,
@@ -591,25 +594,32 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       const savedModelText = JSON.stringify(savedModel, null, 2);
       const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
       const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+      const savedStateSignature = effectEditorSignature({
+        name,
+        description,
+        patternKey,
+        sortOrder: sortOrderNumber,
+        styleDefaultIds: clearedSaveMap,
+        modelJson: savedModel,
+      });
       const ok = await persistEffect({
         styleDefaultIdsMap: clearedSaveMap,
         modelJson: savedModelText,
       });
       if (!ok) return;
-      setStyleDefaultIds(clearedStyleDefaultIds);
-      setModelText(savedModelText);
-      setSavedSignature(
-        effectEditorSignature({
-          name,
-          description,
-          patternKey,
-          sortOrder: sortOrderNumber,
-          styleDefaultIds: clearedSaveMap,
-          modelJson: savedModel,
-        }),
+      const applySavedSnapshot = canApplySavedEditorSnapshot(
+        saveStartedFromSignature,
+        currentSignatureRef.current,
       );
-      toast.success('Style default created and saved');
-      router.refresh();
+      setSavedSignature(savedStateSignature);
+      if (applySavedSnapshot) {
+        setStyleDefaultIds(clearedStyleDefaultIds);
+        setModelText(savedModelText);
+        toast.success('Style default created and saved');
+        router.refresh();
+      } else {
+        toast.success('Saved; newer effect edits remain unsaved');
+      }
     });
   }
 
@@ -623,6 +633,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const savedModelText = JSON.stringify(savedModel, null, 2);
     const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
     const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+    const saveStartedFromSignature = currentSignature;
+    const savedStateSignature = effectEditorSignature({
+      name,
+      description,
+      patternKey,
+      sortOrder: sortOrderNumber,
+      styleDefaultIds: clearedSaveMap,
+      modelJson: savedModel,
+    });
 
     startTransition(async () => {
       const ok = await persistEffect({
@@ -630,20 +649,19 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         modelJson: savedModelText,
       });
       if (!ok) return;
-      setStyleDefaultIds(clearedStyleDefaultIds);
-      setModelText(savedModelText);
-      setSavedSignature(
-        effectEditorSignature({
-          name,
-          description,
-          patternKey,
-          sortOrder: sortOrderNumber,
-          styleDefaultIds: clearedSaveMap,
-          modelJson: savedModel,
-        }),
+      const applySavedSnapshot = canApplySavedEditorSnapshot(
+        saveStartedFromSignature,
+        currentSignatureRef.current,
       );
-      toast.success('Effect saved');
-      router.refresh();
+      setSavedSignature(savedStateSignature);
+      if (applySavedSnapshot) {
+        setStyleDefaultIds(clearedStyleDefaultIds);
+        setModelText(savedModelText);
+        toast.success('Effect saved');
+        router.refresh();
+      } else {
+        toast.success('Effect saved; newer edits remain unsaved');
+      }
     });
   }
 
@@ -654,7 +672,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setSortOrder(String(effect.sortOrder));
     setModelText(JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2));
     setStyleDefaultIds(initialStyleDefaultIds(effect));
-    setPreviewVersion(null);
     setError(null);
     setSavedSignature(null);
   }
@@ -674,22 +691,12 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         return;
       }
       setLastSavedUpdatedAt(result.updatedAt);
-      setPreviewVersion(null);
       setSavedSignature(null);
       toast.success('Version restored');
       router.refresh();
     });
   }
 
-  const previewSnapshot = previewVersion
-    ? parseEffectEditorSnapshot(previewVersion.snapshotJson)
-    : null;
-  const previewNotice = previewVersion ? (
-    <EditorVersionPreviewNotice
-      summary={`${previewSnapshot?.name ?? previewVersion.summary} by ${previewVersion.createdByLabel}`}
-      onExit={() => setPreviewVersion(null)}
-    />
-  ) : null;
   const previewMenuActions = useMemo(
     () => [
       {
@@ -1048,10 +1055,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       content: (
         <EditorHistoryPanel
           versions={effect.history}
-          selectedVersionId={previewVersion?.id ?? null}
           restoringVersionId={restoringVersionId}
-          onPreview={setPreviewVersion}
-          onClearPreview={() => setPreviewVersion(null)}
           onRestore={restoreVersion}
         />
       ),
@@ -1083,7 +1087,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       transport={transport}
       transportPlaying={isPlaying}
       error={error}
-      previewNotice={previewNotice}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />
