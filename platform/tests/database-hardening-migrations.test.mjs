@@ -31,6 +31,9 @@ const multishotMigration = read(
 const analysisCleanupMigration = read(
   'supabase/migrations/20260710020448_discard_unused_song_analyses.sql',
 );
+const rlsPerformanceMigration = read(
+  'supabase/migrations/20260710023403_optimise_remaining_rls_policies.sql',
+);
 
 test('AI credit internals are private and public wrappers deny anonymous or cross-user access', () => {
   assert.match(privilegeMigration, /create schema if not exists private/);
@@ -193,6 +196,67 @@ test('Data API grants are least privilege while anonymous browse joins remain av
       );
     }
   }
+});
+
+test('remaining app RLS policies initialise auth once and do not overlap by command', () => {
+  const policyStatements = [...rlsPerformanceMigration.matchAll(/create policy[\s\S]*?;/g)].map(
+    (match) => match[0],
+  );
+  assert.equal(policyStatements.length, 44);
+  for (const statement of policyStatements) {
+    assert.match(statement, /to authenticated/);
+    assert.doesNotMatch(statement, /for all/);
+  }
+
+  const withoutSelectedUid = rlsPerformanceMigration.replaceAll('(select auth.uid())', '');
+  assert.doesNotMatch(withoutSelectedUid, /auth\.uid\(\)/);
+  const withoutSelectedPermission = rlsPerformanceMigration.replace(
+    /\(select public\.current_user_has_permission\('[^']+'\)\)/g,
+    '',
+  );
+  assert.doesNotMatch(withoutSelectedPermission, /public\.current_user_has_permission\(/);
+
+  for (const oldPolicy of [
+    'users_admin_select_all',
+    'users_admin_update_all',
+    'role_permissions_admin_modify',
+    'user_roles_admin_modify',
+    'user_permission_overrides_admin_modify',
+    'media_assets_admin_modify',
+    'firework_style_defaults_admin_modify',
+    'import_jobs_admin_modify',
+    'import_outputs_admin_modify',
+    'supplier_profiles_modify_allowed',
+    'supplier_inventory_modify_allowed',
+    'ai_credit_costs_manage_billing_admin',
+  ]) {
+    assert.match(rlsPerformanceMigration, new RegExp(`drop policy if exists ${oldPolicy}`));
+  }
+
+  assert.match(
+    rlsPerformanceMigration,
+    /create policy users_select_own_or_admin[\s\S]*?auth\.uid\(\)[\s\S]*?admin\.manage_users/,
+  );
+  assert.match(
+    rlsPerformanceMigration,
+    /create policy users_update_own_or_admin[\s\S]*?for update to authenticated[\s\S]*?with check/,
+  );
+  assert.match(
+    rlsPerformanceMigration,
+    /create policy media_assets_insert_allowed[\s\S]*?owner_id = \(select auth\.uid\(\)\)[\s\S]*?admin\.manage_imports/,
+  );
+  for (const table of ['supplier_profiles', 'supplier_inventory']) {
+    assert.match(
+      rlsPerformanceMigration,
+      new RegExp(
+        `create policy ${table}_select_allowed[\\s\\S]*?supplier\\.view[\\s\\S]*?supplier\\.manage_stock`,
+      ),
+    );
+  }
+
+  assert.match(rlsPerformanceMigration, /'public' = any\(roles\)/);
+  assert.match(rlsPerformanceMigration, /having count\(\*\) > 1/);
+  assert.doesNotMatch(rlsPerformanceMigration, /^\s*(?:grant|revoke)\b/gm);
 });
 
 test('storage writes require a current active app user and cover upserts retain owner SELECT', () => {
