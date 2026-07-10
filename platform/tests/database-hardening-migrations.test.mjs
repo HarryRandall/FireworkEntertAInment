@@ -354,6 +354,7 @@ test('published cue canonicalisation is lossless, unambiguous and preserves time
 });
 
 test('published presets enforce complete, resolvable and overlap-free cue timing', () => {
+  assert.doesNotMatch(scheduleMigration, /declare\s+preset record;/);
   assert.match(
     scheduleMigration,
     /create or replace function private\.catalogue_item_safe_duration\([\s\S]*?0\.5::numeric/,

@@ -71,7 +71,7 @@ create temporary table repaired_published_show_preset_cues (
 
 do $$
 declare
-  preset record;
+  preset_row record;
   cue_row record;
   busy_until numeric[];
   rebuilt_cues jsonb;
@@ -109,7 +109,7 @@ begin
       using errcode = 'check_violation';
   end if;
 
-  for preset in
+  for preset_row in
     select id, preview_cues, duration_seconds, updated_at
     from public.show_presets
     where is_published
@@ -121,7 +121,7 @@ begin
 
     for cue_row in
       select cue, cue_index
-      from jsonb_array_elements(preset.preview_cues)
+      from jsonb_array_elements(preset_row.preview_cues)
         with ordinality as item(cue, cue_index)
       order by (cue->>'timeSeconds')::numeric, cue_index
     loop
@@ -183,11 +183,11 @@ begin
       cue_count
     )
     values (
-      preset.id,
+      preset_row.id,
       rebuilt_cues,
-      greatest(coalesce(preset.duration_seconds, 1), ceil(latest_end)::integer),
-      preset.updated_at,
-      jsonb_array_length(preset.preview_cues)
+      greatest(coalesce(preset_row.duration_seconds, 1), ceil(latest_end)::integer),
+      preset_row.updated_at,
+      jsonb_array_length(preset_row.preview_cues)
     );
   end loop;
 end;
