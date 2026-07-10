@@ -6,8 +6,10 @@ import { useState, type CSSProperties } from 'react';
 import { ArrowRight, Dices, Heart, Play } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
+import { CueModelSelect } from '@/app/components/app/CueModelSelect';
 import { Textarea } from '@/app/components/ui/Input';
 import { RANDOM_BRIEFS } from '@/app/(app)/shows/new/constants';
+import { FALLBACK_CUE_MODEL } from '@/lib/cue-models';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 import type { ShowSummaryCard, TemplateSummaryCard, VisualPalette } from '@/lib/show-summary';
 import { cn } from '@/lib/utils';
@@ -168,12 +170,14 @@ type PromptHeroProps = {
 
 export function PromptHero({ className }: PromptHeroProps) {
   const [prompt, setPrompt] = useState('');
+  const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
   const router = useRouter();
 
   const goToWizard = () => {
     const trimmed = prompt.trim();
     const params = new URLSearchParams();
     if (trimmed) params.set('prompt', trimmed);
+    params.set('model', selectedCueModel);
     const query = params.toString();
     router.push(query ? `/shows/new?${query}` : '/shows/new');
   };
@@ -209,7 +213,12 @@ export function PromptHero({ className }: PromptHeroProps) {
         />
         <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="ml-auto flex shrink-0 items-center gap-2.5">
+            <CueModelSelect
+              value={selectedCueModel}
+              onChange={setSelectedCueModel}
+              className="min-w-0 flex-1 sm:max-w-[164px]"
+            />
+            <div className="flex shrink-0 items-center gap-2.5">
               <Button
                 type="button"
                 variant="ghost"

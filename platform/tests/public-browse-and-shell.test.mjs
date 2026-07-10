@@ -45,16 +45,20 @@ test('home discovery does not depend on the user already having a show', () => {
   assert.match(library, /const SHOWS_PER_SHELF = 12/);
   assert.match(library, /if \(sort === 'featured'\) return template\.isFeatured/);
   assert.match(library, /if \(sort === 'shortest'\)/);
-  assert.doesNotMatch(library, /usedTemplateIds|fallbackTemplates|sort=hot|hashString/);
+  assert.match(library, /usedTemplateIds/);
+  assert.match(library, /usedFireworkSignatures/);
+  assert.match(library, /templateFireworkSignature/);
+  assert.doesNotMatch(library, /fallbackTemplates|sort=hot|hashString/);
 });
 
 test('public browse routes retain page-level chrome while their data loads', () => {
   const library = read('app/(browse)/library/page.tsx');
-  const libraryLoading = read('app/(browse)/library/loading.tsx');
   const catalogue = read('app/(browse)/catalogue/page.tsx');
 
   assert.match(library, /<h1[^>]*>Explore shows<\/h1>/);
-  assert.match(libraryLoading, /<h1[^>]*>Explore shows<\/h1>/);
+  assert.match(library, /fallback=\{/);
+  assert.match(library, /LibraryCardsSkeleton/);
+  assert.match(library, /max-w-6xl/);
   assert.match(catalogue, /<h1[^>]*>Firework catalogue<\/h1>/);
 });
 

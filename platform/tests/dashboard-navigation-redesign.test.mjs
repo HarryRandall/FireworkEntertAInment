@@ -217,7 +217,9 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(libraryPage, /templateMatchesShelf/);
   assert.match(libraryPage, /if \(sort === 'featured'\) return template\.isFeatured/);
   assert.match(libraryPage, /templates: templatesForShelf\(templates, sort\)/);
-  assert.doesNotMatch(libraryPage, /fallbackTemplates|usedTemplateIds|hashString/);
+  assert.match(libraryPage, /templateFireworkSignature/);
+  assert.match(libraryPage, /usedTemplateIds/);
+  assert.match(libraryPage, /usedFireworkSignatures/);
   assert.match(libraryPage, /activeShelf\.templates\.length\.toLocaleString\(\)/);
   assert.match(libraryPage, /activeShelf\.templates\.map/);
   assert.match(libraryPage, /href="\/library"/);
@@ -295,9 +297,13 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
 test('explore seed data supports database-managed factual library shelves', () => {
   const seedPath = 'supabase/migrations/20260629171000_seed_library_explore_shelves.sql';
+  const diversificationPath =
+    'supabase/migrations/20260710053416_diversify_explore_show_presets.sql';
   assert.equal(existsSync(join(root, seedPath)), true);
+  assert.equal(existsSync(join(root, diversificationPath)), true);
 
   const seed = read(seedPath);
+  const diversification = read(diversificationPath);
   const templateReads = read('lib/admin/templates.server.ts');
 
   for (const section of ['featured', 'popular', 'hot', 'recent', 'shortest']) {
@@ -307,6 +313,9 @@ test('explore seed data supports database-managed factual library shelves', () =
   assert.match(seed, /sort_base \+ item_order/);
   assert.match(seed, /jsonb_build_object\('kind', cover_kind, 'colors', to_jsonb\(colors\)\)/);
   assert.match(seed, /ON CONFLICT \(slug\) DO UPDATE SET/);
+  assert.match(diversification, /private\.catalogue_item_safe_duration/);
+  assert.match(diversification, /catalogueItemId/);
+  assert.match(diversification, /duplicate firework compositions/);
   assert.equal(existsSync(join(root, 'lib/library-seed-templates.ts')), false);
   assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
   assert.match(templateReads, /if \(cached\) return cached/);
@@ -320,18 +329,20 @@ test('shader-heavy app routes use neutral loading skeletons', () => {
   assert.match(showsLoading, /aspect-\[4\/5\]/);
   assert.doesNotMatch(showsLoading, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
-  const libraryLoading = read('app/(browse)/library/loading.tsx');
-  assert.match(libraryLoading, /<h1[^>]*>Explore shows<\/h1>/);
-  assert.doesNotMatch(libraryLoading, /Hover any cover to preview the show/);
-  assert.match(libraryLoading, /LibraryCardsSkeleton/);
-  assert.doesNotMatch(libraryLoading, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
+  const libraryPage = read('app/(browse)/library/page.tsx');
+  assert.match(libraryPage, /<h1[^>]*>Explore shows<\/h1>/);
+  assert.doesNotMatch(libraryPage, /Hover any cover to preview the show/);
+  assert.match(libraryPage, /LibraryCardsSkeleton/);
+  assert.doesNotMatch(libraryPage, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
   const routeSkeletons = read('app/components/app/RouteSkeletons.tsx');
-  const start = routeSkeletons.indexOf('export function LibraryCardsSkeleton()');
+  const start = routeSkeletons.indexOf('function ExploreCardSkeleton(');
   const end = routeSkeletons.indexOf('/** Skeleton for the `/admin`', start);
   const librarySkeleton = routeSkeletons.slice(start, end);
 
   assert.match(librarySkeleton, /EXPLORE_SKELETON_SHELVES/);
   assert.match(librarySkeleton, /aspect-\[4\/5\]/);
+  assert.match(librarySkeleton, /See all/);
+  assert.match(librarySkeleton, /Back to shelves/);
   assert.doesNotMatch(librarySkeleton, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 });

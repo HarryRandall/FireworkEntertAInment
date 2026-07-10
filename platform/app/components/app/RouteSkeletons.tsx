@@ -5,7 +5,10 @@
  * does not cause large layout shifts.
  */
 import { Fragment, type ComponentType } from 'react';
+import Link from 'next/link';
 import {
+  ChevronLeft,
+  ChevronRight,
   CircleDot,
   Cloud,
   History,
@@ -36,12 +39,35 @@ import { Input } from '@/app/components/ui/Input';
 import { cn } from '@/lib/utils';
 
 const EXPLORE_SKELETON_SHELVES = [
-  'Staff picks',
-  'Most liked',
-  'More to explore',
-  'Recently updated',
-  'Quick bursts',
-];
+  { title: 'Staff picks', sort: 'featured' },
+  { title: 'Most liked', sort: 'popular' },
+  { title: 'More to explore', sort: 'curated' },
+  { title: 'Recently updated', sort: 'recent' },
+  { title: 'Quick bursts', sort: 'shortest' },
+] as const;
+
+function ExploreCardSkeleton({ index, className }: { index: number; className?: string }) {
+  const titleWidths = ['w-28', 'w-36', 'w-24', 'w-32'];
+  const themeWidths = ['w-24', 'w-32', 'w-20'];
+
+  return (
+    <div className={cn('w-44 shrink-0 sm:w-48', className)} aria-hidden>
+      <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+      <div className="mt-2.5 flex items-center gap-2">
+        <Skeleton
+          className={cn('h-4 max-w-[calc(100%-3rem)]', titleWidths[index % titleWidths.length])}
+        />
+        <Skeleton className="ml-auto h-5 w-10 rounded-md" />
+      </div>
+      <Skeleton className={cn('mt-2 h-3', themeWidths[index % themeWidths.length])} />
+      <div className="mt-2 flex items-center gap-3">
+        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-3 w-9" />
+        <Skeleton className="h-3 w-12" />
+      </div>
+    </div>
+  );
+}
 
 /** Grid of card placeholders for paginated list routes. */
 export function CardGridSkeleton({
@@ -102,24 +128,22 @@ export function FilterSkeleton({
 export function LibraryCardsSkeleton() {
   return (
     <div className="space-y-8" aria-label="Loading library templates">
-      {EXPLORE_SKELETON_SHELVES.map((title) => (
-        <section key={title}>
+      {EXPLORE_SKELETON_SHELVES.map((shelf) => (
+        <section key={shelf.sort}>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
-            <Skeleton className="h-7 w-20 rounded-full" />
+            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{shelf.title}</h2>
+            <Link
+              href={`/library?sort=${shelf.sort}`}
+              className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] px-3 py-1 text-xs font-medium transition-colors"
+            >
+              See all
+              <ChevronRight size={14} />
+            </Link>
           </div>
 
           <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="w-44 shrink-0 sm:w-48">
-                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-                <div className="mt-2.5 flex items-center gap-2">
-                  <Skeleton className="h-4 flex-1" />
-                  <Skeleton className="h-5 w-10 rounded-md" />
-                </div>
-                <Skeleton className="mt-2 h-3 w-24" />
-                <Skeleton className="mt-2 h-3 w-32" />
-              </div>
+              <ExploreCardSkeleton key={index} index={index} />
             ))}
           </div>
         </section>
@@ -137,18 +161,18 @@ export function LibraryGridSkeleton({ title }: { title: string }) {
           <h2 className="text-on-surface text-xl font-semibold tracking-tight">{title}</h2>
           <Skeleton className="mt-1 h-4 w-20" />
         </div>
-        <Skeleton className="h-10 w-40 rounded-full" />
+        <Link
+          href="/library"
+          className="text-on-surface-variant hover:text-on-surface inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-border-subtle)] px-4 text-sm font-medium transition-colors"
+        >
+          <ChevronLeft size={16} />
+          Back to shelves
+        </Link>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
         {Array.from({ length: 12 }).map((_, index) => (
-          <div key={index}>
-            <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-            <div className="mt-2.5 flex items-center gap-2">
-              <Skeleton className="h-4 flex-1" />
-              <Skeleton className="h-5 w-10 rounded-md" />
-            </div>
-            <Skeleton className="mt-2 h-3 w-24" />
-            <Skeleton className="mt-2 h-3 w-32" />
+          <div key={index} className="min-w-0">
+            <ExploreCardSkeleton index={index} className="w-full sm:w-full" />
           </div>
         ))}
       </div>
@@ -1113,6 +1137,18 @@ function AdminFormCardSkeleton({ rows }: { rows: number }) {
           <Skeleton key={index} className="h-11 rounded-xl" />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Data-shaped replay fallback for an Explore template detail page. */
+export function TemplateReplaySkeleton() {
+  return (
+    <div
+      className="border-border relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-2xl border bg-[#020409] shadow-[var(--shadow-card-hover)]"
+      aria-label="Loading show replay"
+    >
+      <ReplayPanelLoadingStage />
     </div>
   );
 }

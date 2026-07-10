@@ -58,8 +58,8 @@ test('new show wizard reflects the server generation mode and live credit costs'
   assert.match(actions, /defaultCueModel/);
   assert.match(page, /selectedCueModel \?\? generationPresentation\?\.defaultCueModel/);
   assert.match(page, /generationMode === 'llm' && selectedCueModel/);
-  assert.doesNotMatch(promptHero, /params\.set\('model'/);
-  assert.doesNotMatch(promptHero, /<CueModelSelect/);
+  assert.match(promptHero, /params\.set\('model', selectedCueModel\)/);
+  assert.match(promptHero, /<CueModelSelect/);
 });
 
 test('new show wizard can prefill a prompt and continue to soundtrack', () => {
