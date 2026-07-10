@@ -26,7 +26,8 @@
 ShowCrafter lets users browse fireworks and curated templates, upload music,
 describe a show, generate a cue timeline, preview the result, and review a
 shopping list. Admins manage catalogue data, firework/effect render settings,
-style defaults, prompts, imports, users, roles, and AI credit billing.
+style defaults, Explore presets, prompts, imports, users, roles, and AI credit
+billing.
 
 ## Tech Stack
 
@@ -38,7 +39,7 @@ style defaults, prompts, imports, users, roles, and AI credit billing.
   `platform/analyser/` (`showcrafter.py`, `modal_app.py`).
 - **Cue generation**: deterministic fast planner by default. OpenRouter through
   the `openai` SDK is optional for the LLM cue-assignment path and defaults to
-  `anthropic/claude-sonnet-4.5` unless `OPENROUTER_CUE_MODEL` is set.
+  `openai/gpt-4.1-mini` unless `OPENROUTER_CUE_MODEL` is set.
 - **Renderer**: Three.js, React Three Fiber, custom firework engine.
 - **Shader covers**: `@paper-design/shaders-react`, `@firecms/neat`.
 - **Cache**: optional Upstash Redis REST, otherwise per-process memory cache.
@@ -86,6 +87,7 @@ Variables.
 | `SUPABASE_URL`                                        | optional fallback                                         | server                           | Server-only Supabase URL fallback                                                                    |
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | optional fallback                                         | server                           | Server-only public key fallbacks                                                                     |
 | `SUPABASE_SERVICE_ROLE_KEY`                           | feature-gated                                             | trusted server and import worker | Admin signing, prompt lookup, imports, impersonation, and worker writes. Never expose to the browser |
+| `APP_ORIGIN`                                          | yes when deployed                                         | trusted server                   | Canonical HTTPS app origin for server-generated authentication redirects                             |
 | `ANALYSER_URL`                                        | yes for analysis                                          | server                           | Hosted Modal song analyser URL                                                                       |
 | `ANALYSER_SHARED_SECRET`                              | yes for analysis                                          | server and Modal                 | Bearer token shared with the Modal `showcrafter` secret                                              |
 | `CRON_SECRET`                                         | deployed warm-up                                          | server                           | Authorises `/api/admin/analyser/warm`                                                                |
@@ -111,7 +113,8 @@ Current schema groups:
   `firework_effects`, `firework_style_defaults`, style-default link tables,
   `multishots`, and `multishot_fireworks`.
 - **Shows and generation**: `shows`, `show_timeline_items`, `show_presets`,
-  `song_analyses`, and `show_generation_runs`.
+  `show_preset_likes`, `show_preset_like_counts`, `song_analyses`, and
+  `show_generation_runs`.
 - **AI credits**: `ai_credit_accounts`, `ai_credit_costs`,
   `ai_credit_transactions`, and reservation/settlement/refund/grant RPCs.
 - **Suppliers and imports**: `supplier_profiles`, `supplier_inventory_items`,
@@ -120,12 +123,21 @@ Current schema groups:
 Every public table must have RLS enabled with at least one policy. Follow
 `.cursor/rules/supabase-rls.mdc` for migration work. Anonymous `SELECT` is
 intentional only for public browse tables such as `show_presets`,
-`catalogue_items`, `fireworks`, `multishots`, and `multishot_fireworks`; document
-why in the migration.
+`show_preset_like_counts`, `catalogue_items`, `fireworks`, `multishots`, and
+`multishot_fireworks`; document why in the migration.
 
 Security-definer RPCs are allowed only when they have explicit caller checks,
 revoked public execute grants, narrow role grants, and tests for the access
 path. Never use user-editable metadata for authorisation.
+
+Explore presets are database-managed content. Do not append runtime seed files
+or fabricate popularity metrics in application code. New, imported, and
+duplicated presets start as drafts. Preset cues must store canonical
+`catalogueItemId` UUIDs, resolve to catalogue products, fit inside the show, and
+avoid overlap on the same launch position before publication or cloning.
+Imported presets use `source_show_id` for durable, idempotent provenance. Likes
+come from authenticated `show_preset_likes` rows and the public aggregate, not a
+derived decoration. See `platform/docs/explore-presets.md`.
 
 ## Show Creation Flow
 
@@ -136,6 +148,10 @@ path. Never use user-editable metadata for authorisation.
 - `/api/music-analysis` validates object ownership, MIME type, and 50 MB size,
   reserves AI credits, creates a `song_analyses` row, and starts Modal analysis
   in `after()`.
+- Replacing or clearing an upload discards an unclaimed analysis through the
+  guarded cleanup RPC, resolves its active credit reservation, and removes the
+  private audio object. Cleanup must refuse an analysis already linked to a
+  show.
 - The final Generate button calls
   `platform/app/(app)/shows/new/actions.ts#createShowAction`.
 - `createShowAction` creates the `shows` row, stores a random `cover_shader`,
@@ -156,6 +172,9 @@ path. Never use user-editable metadata for authorisation.
   back to `fast` unless `CUE_GENERATION_MODE=llm`.
 - OpenRouter is used only by the optional LLM assignment path and the import
   worker.
+- The wizard must describe the active mode truthfully: show the fast planner in
+  `fast` mode and expose model selection only in `llm` mode. Revalidate the mode
+  on submit because an admin can change it while the wizard is open.
 - Beat-test show styles can force deterministic beat planning for QA.
 - Generation must settle AI credits on success and refund reservations on
   expected failure.
@@ -172,6 +191,8 @@ path. Never use user-editable metadata for authorisation.
 - Supabase clients live under `platform/utils/supabase/`.
 - Optional cache helpers live in `platform/lib/server-cache.ts`.
 - Shader cover generation and validation live in `platform/lib/shader-cover.ts`.
+- `/catalogue`, `/library`, and `/library/[id]` are public browse routes. Guests
+  use public chrome; signed-in users retain the workspace shell.
 
 ## UI Work
 
@@ -194,6 +215,20 @@ Admin firework, effect, and style-default editors share
 `FireworkEditorShell`, compact preview transport controls, history/JSON panels,
 and scoped `FireworkRenderControls`. Style-default pages intentionally expose a
 narrower rail than the main firework/effect editors.
+
+Editor correctness is part of the UI contract. Cache keys must include every
+value that changes the simulation. Saves must preserve edits made while a
+request is in flight, use the canonical returned row as the saved snapshot, and
+optional version-history writes must not block the primary save. Optimistic
+history rows need bounded database confirmation before Restore is enabled.
+Keep physical ranges non-negative and aligned across schema, actions, controls,
+and the renderer. Give the interactive slider thumb an accessible name. See
+`platform/docs/editor-integrity.md`.
+
+Filter admin navigation by the permission required for each destination, while
+still enforcing permission checks on the route and action. Password-reset and
+destructive controls must invoke the real Supabase Auth operation and describe
+its actual scope. Never show success for a no-op placeholder.
 
 ## Repository Structure
 
@@ -226,9 +261,13 @@ scripts/                        utility scripts
 - Did you avoid unrelated dirty changes?
 - Did you keep music analysis and explicit show generation separate?
 - Did any Supabase migration enable RLS, add policies, and update generated
-  types/tests when needed?
+  types/tests when needed, with explicit least-privilege grants?
+- Did Explore work remain database-managed, draft-first, canonical, and safe to
+  schedule per launch position?
 - Did UI work follow the ShowCrafter design-system skill and preserve loading
   chrome?
+- Do admin links and actions reflect the current user's real permissions and
+  the operation that will actually run?
 - Did you run the narrowest useful verification, and say honestly if a full gate
   was not run?
 
