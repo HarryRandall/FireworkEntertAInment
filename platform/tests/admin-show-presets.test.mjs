@@ -170,6 +170,7 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
 
 test('admin show preset editor exposes replay, timeline, catalogue picker and publish controls', () => {
   const editor = read('app/(admin)/admin/show-presets/[id]/ShowPresetEditor.tsx');
+  const loading = read('app/(admin)/admin/show-presets/[id]/loading.tsx');
   const detailPage = read('app/(admin)/admin/show-presets/[id]/page.tsx');
   const listPage = read('app/(admin)/admin/show-presets/page.tsx');
   const createActions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
@@ -190,14 +191,36 @@ test('admin show preset editor exposes replay, timeline, catalogue picker and pu
   assert.match(editor, /Timeline/);
   assert.match(editor, /Insert catalogue item/);
   assert.match(editor, /ProductPickerDialog/);
+  assert.match(editor, /flex min-h-0 flex-1 flex-col gap-5/);
+  assert.match(editor, /grid shrink-0 items-stretch gap-5/);
+  assert.match(editor, /max-h-\[calc\(100dvh-2rem\)\]/);
+  assert.match(editor, /lg:h-\[min\(560px,calc\(100dvh-14rem\)\)\]/);
+  assert.match(editor, /lg:grid-cols-\[minmax\(280px,1fr\)_minmax\(0,2fr\)\]/);
+  assert.match(
+    editor,
+    /initialSelectedId=\{pickerMode === 'replace' \? selectedProduct\?\.id : undefined\}/,
+  );
   assert.match(editor, /onPointerEnter=\{\(\) => setSelectedId\(product\.id\)\}/);
+  assert.match(editor, /aria-label="Filter catalogue type"/);
   assert.match(editor, /showCameraControls=\{false\}/);
+  assert.match(editor, /primeOnCueChanges=\{false\}/);
+  assert.match(editor, /setPointerCapture/);
+  assert.match(editor, /onPointerMove=\{handlePointerMove\}/);
+  assert.match(editor, /Drag a cue to change its timing/);
+  assert.match(editor, /Edit preset details/);
+  assert.match(editor, /More settings/);
+  assert.match(editor, /Cue options/);
+  assert.match(editor, /Effect preview/);
+  assert.doesNotMatch(editor, /selectedProduct\?\.description/);
   assert.match(editor, /Save timeline/);
   assert.match(editor, /Save details/);
-  assert.match(editor, /Publishing checklist/);
+  assert.match(editor, /Not ready to publish/);
   assert.match(editor, /unresolvedCueCount/);
   assert.match(editor, /saving is blocked until each one is[\s\S]*replaced or removed/);
   assert.match(editor, /replaceShowPresetCues/);
   assert.match(editor, /updateShowPresetDetails/);
   assert.match(editor, /setShowPresetPublished/);
+  assert.match(loading, /grid shrink-0 items-stretch gap-5/);
+  assert.match(loading, /grid grid-cols-2 gap-3/);
+  assert.match(loading, /sm:flex-row sm:items-center sm:justify-between/);
 });

@@ -11,8 +11,22 @@ import {
   useState,
   useTransition,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { Copy, Eye, EyeOff, PackagePlus, Search, Save, Sparkles, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  Clock3,
+  Copy,
+  Eye,
+  EyeOff,
+  PackagePlus,
+  Pencil,
+  Search,
+  Save,
+  Settings2,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import {
   replaceShowPresetCues,
   setShowPresetPublished,
@@ -81,6 +95,7 @@ type LocalCue = {
 };
 
 type ProductPickerMode = 'insert' | 'replace';
+type ProductKindFilter = 'all' | 'firework' | 'multishot';
 
 let cueUidCounter = 0;
 
@@ -355,6 +370,7 @@ export function ShowPresetEditor({
   const [selectedCueUid, setSelectedCueUid] = useState<string | null>(initialCues[0]?.uid ?? null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<ProductPickerMode>('insert');
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [insertAtSeconds, setInsertAtSeconds] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -400,10 +416,6 @@ export function ShowPresetEditor({
   const selectedProduct = selectedCue ? specsById.get(selectedCue.catalogueItemId) : undefined;
   const unresolvedCueCount = cues.filter((cue) => !specsById.has(cue.catalogueItemId)).length;
   const replayCues = useMemo(() => toReplayCues(cues, specsById), [cues, specsById]);
-  const replaySignature = useMemo(
-    () => replayCues.map((cue) => `${cue.id}:${cue.productId}:${cue.timeSeconds}`).join('|'),
-    [replayCues],
-  );
   const detailsKey = detailsSnapshot({
     title,
     slug,
@@ -437,10 +449,6 @@ export function ShowPresetEditor({
     setAdminBreadcrumb({ label: preset.title });
     return () => setAdminBreadcrumb(null);
   }, [preset.title, setAdminBreadcrumb]);
-
-  useEffect(() => {
-    setIsReplayReady(false);
-  }, [replaySignature]);
 
   useEffect(() => {
     playbackRef.current = clamp(playbackRef.current, 0, duration);
@@ -544,6 +552,18 @@ export function ShowPresetEditor({
     );
   }
 
+  function moveCue(uid: string, timeSeconds: number, commit: boolean) {
+    const nextTime = normaliseCueTime(timeSeconds);
+    setSelectedCueUid(uid);
+    setCues((current) => {
+      const updated = current.map((cue) =>
+        cue.uid === uid ? { ...cue, timeSeconds: nextTime } : cue,
+      );
+      return commit ? updated.sort((a, b) => a.timeSeconds - b.timeSeconds) : updated;
+    });
+    scrubTo(nextTime);
+  }
+
   function duplicateSelectedCue() {
     if (!selectedCue) return;
     const copy = {
@@ -586,6 +606,7 @@ export function ShowPresetEditor({
         return;
       }
       setInitialDetailsKey(detailsKey);
+      setDetailsDialogOpen(false);
       toast.success('Preset details saved');
       router.refresh();
     });
@@ -621,8 +642,8 @@ export function ShowPresetEditor({
   }
 
   return (
-    <>
-      <div className="grid min-h-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="flex min-h-0 flex-1 flex-col gap-5">
+      <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section
           className={cn(
             'bg-stage-night relative overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white',
@@ -639,6 +660,7 @@ export function ShowPresetEditor({
             interactive
             controlsVisible={isReplayReady}
             primeSnapshots
+            primeOnCueChanges={false}
             showLoadingBar
             onReady={() => setIsReplayReady(true)}
           />
@@ -690,7 +712,7 @@ export function ShowPresetEditor({
               Timeline
             </h2>
             <p className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
-              {cues.length} cues across {formatDuration(duration)}
+              {cues.length} cues across {formatDuration(duration)}. Drag a cue to change its timing.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -762,185 +784,340 @@ export function ShowPresetEditor({
               className="absolute top-0 bottom-[38px] z-20 w-px bg-[color:var(--accent)] shadow-[0_0_18px_var(--accent)]"
               style={{ left: elapsed * PX_PER_SECOND }}
             />
-            {cues.map((cue, index) => {
-              const spec = specsById.get(cue.catalogueItemId);
-              const palette = paletteOf(spec);
-              const selected = cue.uid === selectedCueUid;
-              return (
-                <button
-                  key={cue.uid}
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSelectedCueUid(cue.uid);
-                    scrubTo(cue.timeSeconds);
-                  }}
-                  className={cn(
-                    'absolute z-10 flex items-center gap-2 overflow-hidden rounded-md border px-2 text-left text-xs font-medium text-white shadow-sm transition-all',
-                    selected
-                      ? 'border-white ring-2 ring-white/50'
-                      : 'border-white/15 hover:border-white/60',
-                  )}
-                  style={{
-                    left: cue.timeSeconds * PX_PER_SECOND,
-                    top:
-                      cue.launchPositionIndex * (TIMELINE_ROW_HEIGHT_PX + TIMELINE_ROW_GAP_PX) +
-                      TIMELINE_INSET_PX,
-                    width: Math.max(MIN_CLIP_PX, cueVisualSeconds(spec) * PX_PER_SECOND),
-                    height: TIMELINE_ROW_HEIGHT_PX - TIMELINE_INSET_PX * 2,
-                    background: `linear-gradient(90deg, ${palette.primary}, ${palette.secondary})`,
-                  }}
-                  title={`${formatTimelineTimestamp(cue.timeSeconds)} ${spec?.name ?? cue.description}`}
-                >
-                  <span className="font-mono text-[10px] opacity-80">{index + 1}</span>
-                  <span className="truncate">{spec?.name ?? cue.description}</span>
-                </button>
-              );
-            })}
+            {cues.map((cue, index) => (
+              <CueTimelineClip
+                key={cue.uid}
+                cue={cue}
+                index={index}
+                spec={specsById.get(cue.catalogueItemId)}
+                duration={duration}
+                selected={cue.uid === selectedCueUid}
+                onSelect={() => {
+                  setSelectedCueUid(cue.uid);
+                  scrubTo(cue.timeSeconds);
+                }}
+                onMove={moveCue}
+              />
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="grid min-w-0 flex-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Field>
-              <FieldLabel htmlFor="preset-title">Title</FieldLabel>
-              <Input
-                id="preset-title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-slug">Slug</FieldLabel>
-              <Input
-                id="preset-slug"
-                value={slug}
-                onChange={(event) => setSlug(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-theme">Theme</FieldLabel>
-              <Input
-                id="preset-theme"
-                value={theme}
-                onChange={(event) => setTheme(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-duration">Duration seconds</FieldLabel>
-              <Input
-                id="preset-duration"
-                type="number"
-                min={1}
-                value={durationSeconds}
-                onChange={(event) => setDurationSeconds(event.target.value)}
-              />
-            </Field>
-            <Field className="md:col-span-2">
-              <FieldLabel htmlFor="preset-description">Description</FieldLabel>
-              <Textarea
-                id="preset-description"
-                rows={3}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-budget">Budget dollars</FieldLabel>
-              <Input
-                id="preset-budget"
-                type="number"
-                min={0}
-                step="0.01"
-                value={budgetDollars}
-                onChange={(event) => setBudgetDollars(event.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-time-of-day">Time of day</FieldLabel>
-              <Input
-                id="preset-time-of-day"
-                value={timeOfDay}
-                onChange={(event) => setTimeOfDay(event.target.value)}
-              />
-            </Field>
-            <Field className="md:col-span-2">
-              <FieldLabel htmlFor="preset-mood-tags">Mood tags</FieldLabel>
-              <Input
-                id="preset-mood-tags"
-                value={moodTagText}
-                onChange={(event) => setMoodTagText(event.target.value)}
-              />
-              <FieldHint>Comma-separated tags shown on Home and Explore.</FieldHint>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="preset-sort-order">Sort order</FieldLabel>
-              <Input
-                id="preset-sort-order"
-                type="number"
-                min={0}
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
-              />
-            </Field>
-            <label className="flex h-10 items-center gap-2 self-end rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] px-3 text-sm">
-              <input
-                type="checkbox"
-                checked={isFeatured}
-                onChange={(event) => setIsFeatured(event.target.checked)}
-              />
-              Featured on Home
-            </label>
+      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-4 py-3">
+        <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                {title || 'Untitled preset'}
+              </h2>
+              <Badge tone={isPublished ? 'success' : 'neutral'} solid>
+                {isPublished ? 'Published' : 'Draft'}
+              </Badge>
+              {isFeatured ? (
+                <Badge tone="accent" solid>
+                  Featured
+                </Badge>
+              ) : null}
+              {detailsDirty ? (
+                <Badge tone="warning" solid icon={null}>
+                  Unsaved details
+                </Badge>
+              ) : null}
+            </div>
+            {description ? (
+              <p className="mt-1 truncate text-xs text-[color:var(--color-content-subtle)]">
+                {description}
+              </p>
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[color:var(--color-content-subtle)]">
+              <span className="inline-flex items-center gap-1.5 font-mono tabular-nums">
+                <Clock3 size={13} /> {formatDuration(duration)}
+              </span>
+              <span>{theme || 'No theme'}</span>
+              {timeOfDay ? <span>{timeOfDay}</span> : null}
+              {budgetDollars.trim() ? <span>${budgetDollars}</span> : null}
+              {toMoodTags(moodTagText).length > 0 ? (
+                <span>{toMoodTags(moodTagText).length} mood tags</span>
+              ) : null}
+            </div>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2 xl:justify-end">
-            <Button
-              variant="secondary"
-              onClick={saveDetails}
-              loading={isDetailsPending}
-              disabled={!detailsDirty}
-            >
-              <Save size={16} /> Save details
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setDetailsDialogOpen(true)}>
+              <Pencil size={14} /> Edit details
             </Button>
             {isPublished ? (
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => publish(false)}
                 loading={isPublishPending}
                 disabled={isBusy}
               >
-                <EyeOff size={16} /> Unpublish
+                <EyeOff size={14} /> Unpublish
               </Button>
             ) : (
               <Button
+                size="sm"
                 onClick={() => publish(true)}
                 loading={isPublishPending}
                 disabled={isBusy || !canPublish}
               >
-                <Eye size={16} /> Publish
+                <Eye size={14} /> Publish
               </Button>
             )}
           </div>
         </div>
 
         {!canPublish && !isPublished ? (
-          <InlineAlert tone="info" title="Publishing checklist" className="mt-4">
-            Save pending detail and timeline changes, then add a title, theme, duration and at least
-            one resolvable catalogue cue before publishing.
+          <InlineAlert tone="info" title="Not ready to publish" className="mt-3">
+            Save the details and timeline, then resolve every catalogue cue.
           </InlineAlert>
         ) : null}
       </section>
+
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] !gap-0 overflow-hidden p-0 sm:max-w-[760px]">
+          <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 pt-6 pb-4">
+            <DialogTitle className="text-lg">Edit preset details</DialogTitle>
+            <DialogDescription>
+              Keep the public-facing information concise. Less common publishing controls are under
+              More settings.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            className="flex min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveDetails();
+            }}
+          >
+            <div className="min-h-0 space-y-4 overflow-y-auto px-6 py-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="preset-title">Title</FieldLabel>
+                  <Input
+                    id="preset-title"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="preset-theme">Theme</FieldLabel>
+                  <Input
+                    id="preset-theme"
+                    value={theme}
+                    onChange={(event) => setTheme(event.target.value)}
+                  />
+                </Field>
+              </div>
+
+              <Field>
+                <FieldLabel htmlFor="preset-description">Description</FieldLabel>
+                <Textarea
+                  id="preset-description"
+                  rows={3}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </Field>
+
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                <Field>
+                  <FieldLabel htmlFor="preset-duration">Duration seconds</FieldLabel>
+                  <Input
+                    id="preset-duration"
+                    type="number"
+                    min={1}
+                    value={durationSeconds}
+                    onChange={(event) => setDurationSeconds(event.target.value)}
+                  />
+                </Field>
+                <label className="flex h-10 items-center gap-2 self-end rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] px-3 text-sm text-[color:var(--color-content-emphasis)]">
+                  <input
+                    type="checkbox"
+                    checked={isFeatured}
+                    onChange={(event) => setIsFeatured(event.target.checked)}
+                  />
+                  Featured on Home
+                </label>
+              </div>
+
+              <details className="group rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none">
+                  <span className="inline-flex items-center gap-2">
+                    <Settings2 size={15} /> More settings
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className="text-[color:var(--color-content-subtle)] transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <div className="grid gap-4 border-t border-[color:var(--color-border-subtle)] p-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="preset-slug">Slug</FieldLabel>
+                    <Input
+                      id="preset-slug"
+                      value={slug}
+                      onChange={(event) => setSlug(event.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="preset-budget">Budget dollars</FieldLabel>
+                    <Input
+                      id="preset-budget"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={budgetDollars}
+                      onChange={(event) => setBudgetDollars(event.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="preset-time-of-day">Time of day</FieldLabel>
+                    <Input
+                      id="preset-time-of-day"
+                      value={timeOfDay}
+                      onChange={(event) => setTimeOfDay(event.target.value)}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="preset-sort-order">Sort order</FieldLabel>
+                    <Input
+                      id="preset-sort-order"
+                      type="number"
+                      min={0}
+                      value={sortOrder}
+                      onChange={(event) => setSortOrder(event.target.value)}
+                    />
+                  </Field>
+                  <Field className="sm:col-span-2">
+                    <FieldLabel htmlFor="preset-mood-tags">Mood tags</FieldLabel>
+                    <Input
+                      id="preset-mood-tags"
+                      value={moodTagText}
+                      onChange={(event) => setMoodTagText(event.target.value)}
+                    />
+                    <FieldHint>Comma-separated tags shown on Home and Explore.</FieldHint>
+                  </Field>
+                </div>
+              </details>
+            </div>
+
+            <DialogFooter className="border-t border-[color:var(--color-border-subtle)] px-6 py-4">
+              <Button type="button" variant="secondary" onClick={() => setDetailsDialogOpen(false)}>
+                Close
+              </Button>
+              <Button type="submit" loading={isDetailsPending} disabled={!detailsDirty}>
+                <Save size={15} /> Save details
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ProductPickerDialog
         open={pickerOpen}
         mode={pickerMode}
         products={fireworkSpecs}
+        initialSelectedId={pickerMode === 'replace' ? selectedProduct?.id : undefined}
         onOpenChange={setPickerOpen}
         onSelect={handlePickerSelect}
       />
-    </>
+    </div>
+  );
+}
+
+function CueTimelineClip({
+  cue,
+  index,
+  spec,
+  duration,
+  selected,
+  onSelect,
+  onMove,
+}: {
+  cue: LocalCue;
+  index: number;
+  spec: FireworkSpecification | undefined;
+  duration: number;
+  selected: boolean;
+  onSelect: () => void;
+  onMove: (uid: string, seconds: number, commit: boolean) => void;
+}) {
+  const dragRef = useRef<{ startX: number; startTime: number; moved: boolean } | null>(null);
+  const palette = paletteOf(spec);
+
+  function timeFromPointer(clientX: number): number {
+    const drag = dragRef.current;
+    if (!drag) return cue.timeSeconds;
+    return clamp(drag.startTime + (clientX - drag.startX) / PX_PER_SECOND, 0, duration);
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { startX: event.clientX, startTime: cue.timeSeconds, moved: false };
+    onSelect();
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const movedPixels = event.clientX - drag.startX;
+    if (Math.abs(movedPixels) > 3) drag.moved = true;
+    if (!drag.moved) return;
+    onMove(cue.uid, timeFromPointer(event.clientX), false);
+  }
+
+  function finishDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    const drag = dragRef.current;
+    const finalTime = drag
+      ? clamp(drag.startTime + (event.clientX - drag.startX) / PX_PER_SECOND, 0, duration)
+      : cue.timeSeconds;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragRef.current = null;
+    if (drag?.moved) onMove(cue.uid, finalTime, true);
+  }
+
+  function cancelDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragRef.current = null;
+  }
+
+  return (
+    <button
+      type="button"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishDrag}
+      onPointerCancel={cancelDrag}
+      onDoubleClick={(event) => event.stopPropagation()}
+      className={cn(
+        'absolute z-10 flex cursor-grab touch-none items-center gap-2 overflow-hidden rounded-md border px-2 text-left text-xs font-medium text-white shadow-sm transition-[border-color,box-shadow] active:cursor-grabbing',
+        selected ? 'border-white ring-2 ring-white/50' : 'border-white/15 hover:border-white/60',
+      )}
+      style={{
+        left: cue.timeSeconds * PX_PER_SECOND,
+        top:
+          cue.launchPositionIndex * (TIMELINE_ROW_HEIGHT_PX + TIMELINE_ROW_GAP_PX) +
+          TIMELINE_INSET_PX,
+        width: Math.max(MIN_CLIP_PX, cueVisualSeconds(spec) * PX_PER_SECOND),
+        height: TIMELINE_ROW_HEIGHT_PX - TIMELINE_INSET_PX * 2,
+        background: `linear-gradient(90deg, ${palette.primary}, ${palette.secondary})`,
+      }}
+      title={`${formatTimelineTimestamp(cue.timeSeconds)} ${spec?.name ?? cue.description}`}
+      aria-pressed={selected}
+      aria-label={`${spec?.name ?? cue.description} at ${cue.timeSeconds.toFixed(1)} seconds`}
+    >
+      <span className="font-mono text-[10px] opacity-80">{index + 1}</span>
+      <span className="truncate">{spec?.name ?? cue.description}</span>
+    </button>
   );
 }
 
@@ -977,90 +1154,120 @@ function CueInspector({
     );
   }
 
+  const palette = paletteOf(product);
+
   return (
-    <aside className="flex max-h-[520px] min-h-0 flex-col gap-4 overflow-y-auto rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-            Cue inspector
-          </h2>
-          <p className="mt-1 truncate text-xs text-[color:var(--color-content-subtle)]">
-            {product ? productLabel(product) : 'Unresolved catalogue item'}
-          </p>
+    <aside className="flex max-h-[520px] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+              Cue inspector
+            </h2>
+            <p className="mt-1 truncate text-xs text-[color:var(--color-content-subtle)]">
+              {product ? productLabel(product) : 'Unresolved catalogue item'}
+            </p>
+          </div>
+          {product ? (
+            <Badge tone={productKindOf(product) === 'multishot' ? 'accent' : 'info'} solid>
+              {productKindOf(product)}
+            </Badge>
+          ) : null}
         </div>
-        {product ? (
-          <Badge tone={productKindOf(product) === 'multishot' ? 'accent' : 'info'} solid>
-            {productKindOf(product)}
-          </Badge>
-        ) : null}
+
+        <div className="flex items-center gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-3">
+          <span
+            className="h-9 w-9 shrink-0 rounded-md border border-white/10"
+            style={{
+              background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`,
+            }}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
+              {product?.name ?? cue.catalogueItemSlug}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-[color:var(--color-content-subtle)]">
+              {product ? productSummary(product) : 'Needs a catalogue item'}
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="shrink-0 px-2"
+            onClick={onReplaceProduct}
+          >
+            <PackagePlus size={14} /> Change
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field>
+            <FieldLabel htmlFor="cue-time">Fires at</FieldLabel>
+            <Input
+              id="cue-time"
+              type="number"
+              min={0}
+              step="0.1"
+              className="font-mono tabular-nums"
+              value={cue.timeSeconds}
+              onChange={(event) => onCueChange({ timeSeconds: Number(event.target.value) })}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel>Position</FieldLabel>
+            <SelectField
+              value={String(cue.launchPositionIndex)}
+              onChange={(value) => onCueChange({ launchPositionIndex: Number(value) })}
+              options={[
+                { value: '0', label: 'Position 1' },
+                { value: '1', label: 'Position 2' },
+                { value: '2', label: 'Position 3' },
+              ]}
+            />
+          </Field>
+        </div>
+
+        <details className="group rounded-lg border border-[color:var(--color-border-subtle)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-medium text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none">
+            Cue options
+            <ChevronDown
+              size={15}
+              className="text-[color:var(--color-content-subtle)] transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <div className="border-t border-[color:var(--color-border-subtle)] p-3">
+            <Field>
+              <FieldLabel>Emphasis</FieldLabel>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(['normal', 'accent', 'peak'] as const).map((emphasis) => (
+                  <button
+                    key={emphasis}
+                    type="button"
+                    aria-pressed={cue.emphasis === emphasis}
+                    onClick={() => onCueChange({ emphasis })}
+                    className={cn(
+                      'focus-visible:ring-ring/50 h-8 rounded-md border px-2 text-xs font-medium capitalize transition-colors focus:outline-none focus-visible:ring-2',
+                      cue.emphasis === emphasis
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                    )}
+                  >
+                    {emphasis}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          </div>
+        </details>
       </div>
 
-      <div className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-3">
-        <p className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-          {product?.name ?? cue.catalogueItemSlug}
-        </p>
-        <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
-          {product?.description ?? 'Choose another catalogue item to repair this cue.'}
-        </p>
-        <Button variant="secondary" size="sm" className="mt-3" onClick={onReplaceProduct}>
-          <PackagePlus size={15} /> Change item
-        </Button>
-      </div>
-
-      <Field>
-        <FieldLabel htmlFor="cue-time">Time seconds</FieldLabel>
-        <Input
-          id="cue-time"
-          type="number"
-          min={0}
-          step="0.1"
-          value={cue.timeSeconds}
-          onChange={(event) => onCueChange({ timeSeconds: Number(event.target.value) })}
-        />
-      </Field>
-
-      <Field>
-        <FieldLabel>Launch position</FieldLabel>
-        <SelectField
-          value={String(cue.launchPositionIndex)}
-          onChange={(value) => onCueChange({ launchPositionIndex: Number(value) })}
-          options={[
-            { value: '0', label: 'Position 1' },
-            { value: '1', label: 'Position 2' },
-            { value: '2', label: 'Position 3' },
-          ]}
-        />
-      </Field>
-
-      <Field>
-        <FieldLabel>Emphasis</FieldLabel>
-        <SelectField
-          value={cue.emphasis}
-          onChange={(value) => onCueChange({ emphasis: value as CueEmphasis })}
-          options={[
-            { value: 'normal', label: 'Normal' },
-            { value: 'accent', label: 'Accent' },
-            { value: 'peak', label: 'Peak' },
-          ]}
-        />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="cue-description">Description</FieldLabel>
-        <Textarea
-          id="cue-description"
-          rows={4}
-          value={cue.description}
-          onChange={(event) => onCueChange({ description: event.target.value })}
-        />
-      </Field>
-
-      <div className="mt-auto grid grid-cols-2 gap-2">
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
         <Button variant="secondary" onClick={onDuplicate} disabled={busy}>
-          <Copy size={16} /> Duplicate
+          <Copy size={14} /> Duplicate
         </Button>
         <Button variant="destructive" onClick={onDelete} disabled={busy}>
-          <Trash2 size={16} /> Delete
+          <Trash2 size={14} /> Delete
         </Button>
       </div>
     </aside>
@@ -1071,40 +1278,37 @@ function ProductPickerDialog({
   open,
   mode,
   products,
+  initialSelectedId,
   onOpenChange,
   onSelect,
 }: {
   open: boolean;
   mode: ProductPickerMode;
   products: FireworkSpecification[];
+  initialSelectedId?: string;
   onOpenChange: (open: boolean) => void;
   onSelect: (product: FireworkSpecification) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [kindFilter, setKindFilter] = useState<ProductKindFilter>('all');
   const [selectedId, setSelectedId] = useState(products[0]?.id ?? '');
   const [previewElapsed, setPreviewElapsed] = useState(0.4);
   const previewRef = useRef(0.4);
-  const selectedProduct = products.find((product) => product.id === selectedId) ?? products[0];
+  const selectedProduct = products.find((product) => product.id === selectedId);
   const filteredProducts = useMemo(() => {
     const normalised = query.trim().toLowerCase();
-    if (!normalised) return products.slice(0, 80);
     return products
-      .filter((product) =>
-        [
-          product.name,
-          product.slug,
-          product.description,
-          product.baseEffect?.name,
-          product.variant?.slug,
-          productKindOf(product),
-        ]
+      .filter((product) => kindFilter === 'all' || productKindOf(product) === kindFilter)
+      .filter((product) => {
+        if (!normalised) return true;
+        return [product.name, product.slug, product.baseEffect?.name, product.variant?.slug]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
-          .includes(normalised),
-      )
+          .includes(normalised);
+      })
       .slice(0, 80);
-  }, [products, query]);
+  }, [kindFilter, products, query]);
   const previewCue: ReplayCue[] = selectedProduct
     ? [
         {
@@ -1121,9 +1325,17 @@ function ProductPickerDialog({
     : [];
 
   useEffect(() => {
-    if (!open || selectedId) return;
-    setSelectedId(products[0]?.id ?? '');
-  }, [open, products, selectedId]);
+    if (!open) return;
+    const initialProduct = products.find((product) => product.id === initialSelectedId);
+    setSelectedId(initialProduct?.id ?? products[0]?.id ?? '');
+    setQuery('');
+    setKindFilter('all');
+  }, [initialSelectedId, open, products]);
+
+  useEffect(() => {
+    if (!open || filteredProducts.some((product) => product.id === selectedId)) return;
+    setSelectedId(filteredProducts[0]?.id ?? '');
+  }, [filteredProducts, open, selectedId]);
 
   useEffect(() => {
     if (!open) return;
@@ -1141,65 +1353,103 @@ function ProductPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[980px]">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] !gap-0 overflow-y-auto p-0 sm:max-w-[min(1200px,calc(100vw-2rem))] lg:overflow-hidden">
+        <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 py-5">
+          <DialogTitle className="text-lg">
             {mode === 'insert' ? 'Insert catalogue item' : 'Replace catalogue item'}
           </DialogTitle>
-          <DialogDescription>
-            Hover or click an item to preview it before adding it to the show timeline.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid min-h-[520px] gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-h-0 flex-col gap-3">
+        <div className="flex flex-col gap-3 border-b border-[color:var(--color-border-subtle)] px-6 py-4 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
             <Input
               value={query}
               iconLeft={<Search size={16} />}
-              placeholder="Search fireworks and multishots..."
+              placeholder="Filter by name or effect..."
+              aria-label="Search catalogue"
               onChange={(event) => setQuery(event.target.value)}
             />
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-[color:var(--color-border-subtle)]">
-              {filteredProducts.map((product) => {
-                const selected = product.id === selectedProduct?.id;
-                const palette = paletteOf(product);
-                return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onPointerEnter={() => setSelectedId(product.id)}
-                    onFocus={() => setSelectedId(product.id)}
-                    onClick={() => setSelectedId(product.id)}
-                    className={cn(
-                      'grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:var(--color-border-subtle)] px-3 py-3 text-left text-sm transition-colors last:border-b-0',
-                      selected
-                        ? 'bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)]'
-                        : 'hover:bg-[color:var(--color-bg-muted)]',
-                    )}
-                  >
-                    <span
-                      className="h-4 w-4 rounded-full"
-                      style={{
-                        background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`,
-                      }}
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{product.name}</span>
-                      <span className="mt-0.5 block truncate text-xs text-[color:var(--color-content-subtle)]">
-                        {product.slug} - {product.baseEffect?.name ?? productKindOf(product)}
-                      </span>
-                    </span>
-                    <Badge tone={productKindOf(product) === 'multishot' ? 'accent' : 'neutral'}>
-                      {productKindOf(product)}
-                    </Badge>
-                  </button>
-                );
-              })}
+          </div>
+          <div
+            role="group"
+            aria-label="Filter catalogue type"
+            className="inline-flex shrink-0 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-1"
+          >
+            {(
+              [
+                { value: 'all', label: 'All' },
+                { value: 'firework', label: 'Fireworks' },
+                { value: 'multishot', label: 'Multishots' },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={kindFilter === option.value}
+                onClick={() => setKindFilter(option.value)}
+                className={cn(
+                  'focus-visible:ring-ring/50 h-8 rounded px-3 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2',
+                  kindFilter === option.value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid lg:h-[min(560px,calc(100dvh-14rem))] lg:min-h-0 lg:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
+          <div className="flex min-h-0 flex-col border-b border-[color:var(--color-border-subtle)] lg:border-r lg:border-b-0">
+            <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-xs text-[color:var(--color-content-subtle)]">
+              <span>{filteredProducts.length} items</span>
+              <span>Name and type</span>
+            </div>
+            <div
+              role="listbox"
+              aria-label="Catalogue items"
+              className="max-h-[min(360px,45dvh)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
+            >
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => {
+                  const selected = product.id === selectedProduct?.id;
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onPointerEnter={() => setSelectedId(product.id)}
+                      onFocus={() => setSelectedId(product.id)}
+                      onClick={() => setSelectedId(product.id)}
+                      className={cn(
+                        'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-left text-sm transition-colors last:border-b-0 focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-inset',
+                        selected
+                          ? 'bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)]'
+                          : 'hover:bg-[color:var(--color-bg-muted)]',
+                      )}
+                    >
+                      <span className="min-w-0 truncate font-medium">{product.name}</span>
+                      <Badge tone={productKindOf(product) === 'multishot' ? 'accent' : 'neutral'}>
+                        {productKindOf(product)}
+                      </Badge>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="flex h-40 flex-col items-center justify-center px-6 text-center">
+                  <Search size={18} className="text-[color:var(--color-content-subtle)]" />
+                  <p className="mt-2 text-sm font-medium text-[color:var(--color-content-emphasis)]">
+                    No matching items
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]">
-            <div className="bg-stage-night relative h-64 overflow-hidden">
+          <aside className="bg-stage-night relative min-h-[360px] overflow-hidden">
+            {selectedProduct ? (
               <LazyFireworkReplayCanvas
                 cues={previewCue}
                 elapsed={previewElapsed}
@@ -1211,31 +1461,29 @@ function ProductPickerDialog({
                 primeSnapshots={false}
                 showLoadingBar={false}
               />
-              <div className="pointer-events-none absolute top-3 left-3">
-                <Badge tone="accent" solid>
-                  <Sparkles size={12} /> Preview
-                </Badge>
+            ) : (
+              <div className="flex h-full min-h-[360px] items-center justify-center text-sm text-white/60">
+                Select an item to preview it
               </div>
+            )}
+            <div className="pointer-events-none absolute top-4 left-4">
+              <Badge tone="accent" solid>
+                <Sparkles size={12} /> Effect preview
+              </Badge>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
-              <div>
-                <h3 className="line-clamp-2 text-base font-semibold text-[color:var(--color-content-emphasis)]">
-                  {selectedProduct?.name ?? 'No item selected'}
-                </h3>
-                <p className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
-                  {selectedProduct
-                    ? productSummary(selectedProduct)
-                    : 'Choose an item from the list.'}
+            {selectedProduct ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-5 pt-16 pb-5 text-white">
+                <h3 className="line-clamp-2 text-base font-semibold">{selectedProduct.name}</h3>
+                <p className="mt-1 text-xs text-white/70">
+                  {productKindOf(selectedProduct)} ·{' '}
+                  {formatDuration(selectedProduct.durationSeconds)}
                 </p>
               </div>
-              <p className="min-h-0 overflow-y-auto text-sm leading-relaxed text-[color:var(--color-content-subtle)]">
-                {selectedProduct?.description ?? 'No description available.'}
-              </p>
-            </div>
+            ) : null}
           </aside>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t border-[color:var(--color-border-subtle)] px-6 py-4">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
