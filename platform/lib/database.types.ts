@@ -198,7 +198,7 @@ export type Database = {
           {
             foreignKeyName: "catalogue_items_multishot_id_fkey"
             columns: ["multishot_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "multishots"
             referencedColumns: ["id"]
           },
@@ -943,6 +943,55 @@ export type Database = {
           },
         ]
       }
+      show_preset_like_counts: {
+        Row: {
+          like_count: number
+          show_preset_id: string
+        }
+        Insert: {
+          like_count?: number
+          show_preset_id: string
+        }
+        Update: {
+          like_count?: number
+          show_preset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_preset_like_counts_show_preset_id_fkey"
+            columns: ["show_preset_id"]
+            isOneToOne: true
+            referencedRelation: "show_presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_preset_likes: {
+        Row: {
+          created_at: string
+          show_preset_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          show_preset_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          show_preset_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_preset_likes_show_preset_id_fkey"
+            columns: ["show_preset_id"]
+            isOneToOne: false
+            referencedRelation: "show_presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       show_presets: {
         Row: {
           budget_cents: number | null
@@ -960,6 +1009,7 @@ export type Database = {
           preview_cues: Json
           slug: string
           sort_order: number
+          source_show_id: string | null
           theme: string
           time_of_day: string | null
           title: string
@@ -982,6 +1032,7 @@ export type Database = {
           preview_cues?: Json
           slug: string
           sort_order?: number
+          source_show_id?: string | null
           theme: string
           time_of_day?: string | null
           title: string
@@ -1004,13 +1055,22 @@ export type Database = {
           preview_cues?: Json
           slug?: string
           sort_order?: number
+          source_show_id?: string | null
           theme?: string
           time_of_day?: string | null
           title?: string
           total_cents?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "show_presets_source_show_id_fkey"
+            columns: ["source_show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       show_timeline_items: {
         Row: {
@@ -1026,7 +1086,7 @@ export type Database = {
           position: number
           seed_override: number | null
           show_id: string
-          time_seconds: number | null
+          time_seconds: number
           track: string | null
           updated_at: string
         }
@@ -1040,10 +1100,10 @@ export type Database = {
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
-          position?: number
+          position: number
           seed_override?: number | null
           show_id: string
-          time_seconds?: number | null
+          time_seconds: number
           track?: string | null
           updated_at?: string
         }
@@ -1060,7 +1120,7 @@ export type Database = {
           position?: number
           seed_override?: number | null
           show_id?: string
-          time_seconds?: number | null
+          time_seconds?: number
           track?: string | null
           updated_at?: string
         }
@@ -1452,7 +1512,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      discard_unused_song_analysis: {
+        Args: { p_analysis_id: string; p_audio_path: string }
+        Returns: Json
+      }
       current_user_access: { Args: never; Returns: Json }
+      current_user_is_active: { Args: never; Returns: boolean }
       current_user_has_permission: {
         Args: { permission_key: string }
         Returns: boolean
@@ -1510,6 +1575,14 @@ export type Database = {
           p_reservation_key: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      sync_multishot_derived_state: {
+        Args: { p_multishot_id: string }
+        Returns: Json
+      }
+      toggle_show_preset_like: {
+        Args: { p_show_preset_id: string }
         Returns: Json
       }
     }
