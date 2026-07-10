@@ -36,6 +36,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Star,
   Store,
   Sun,
   Users,
@@ -94,6 +95,7 @@ const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin/effects', label: 'Effects', icon: Sparkles },
   { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },
   { href: '/admin/multishots', label: 'Multishots', icon: Layers },
+  { href: '/admin/show-presets', label: 'Explore shows', icon: Star },
   { href: '/admin/imports', label: 'Imports', icon: FileInput },
   { href: '/admin/prompts', label: 'Prompts', icon: MessageSquareText },
 ];

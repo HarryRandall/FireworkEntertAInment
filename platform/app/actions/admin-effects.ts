@@ -15,20 +15,13 @@ import {
 } from '@/lib/admin.server';
 import type { CurrentProfile } from '@/lib/admin.types';
 import { makeEffectEditorSnapshot, parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
-import {
-  isMissingEditorVersionSchemaError,
-  isMissingStyleDefaultSchemaError,
-} from '@/lib/admin/style-default-schema';
-import {
-  filterValidStyleDefaultAssignments,
-  normaliseStyleDefaultAssignments,
-  replaceEffectStyleDefaultLinks,
-  validateStyleDefaultAssignments,
-  type StyleDefaultAssignmentMap,
-} from '@/lib/admin/style-default-assignments';
+import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Json } from '@/lib/database.types';
 import { canonicaliseEffectModelJson } from '@/lib/fireworks/design';
-import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
+import {
+  emptyStyleDefaultIdMap,
+  FIREWORK_STYLE_DEFAULT_KINDS,
+} from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
@@ -127,23 +120,6 @@ function adminLabel(profile: CurrentProfile): string {
   return profile.fullName || profile.email || 'Platform admin';
 }
 
-function assignmentsFromRows(
-  base: StyleDefaultAssignmentMap,
-  rows: Array<{ kind: string; style_default_id: string | null }>,
-): StyleDefaultAssignmentMap {
-  const assignments = { ...base };
-  for (const row of rows) {
-    if (
-      FIREWORK_STYLE_DEFAULT_KINDS.includes(
-        row.kind as (typeof FIREWORK_STYLE_DEFAULT_KINDS)[number],
-      )
-    ) {
-      assignments[row.kind as keyof StyleDefaultAssignmentMap] = row.style_default_id;
-    }
-  }
-  return assignments;
-}
-
 function readSnapshotRecord(value: Json | null): Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -169,7 +145,6 @@ function summariseEffectChanges(changesJson: Json): string {
     description: 'description',
     patternKey: 'pattern',
     sortOrder: 'sort order',
-    styleDefaultIds: 'style defaults',
     modelJson: 'model JSON',
   };
   const fields = Object.keys(readSnapshotRecord(changesJson));
@@ -185,30 +160,12 @@ async function loadEffectEditorSnapshot(
 ): Promise<{ ok: true; snapshot: Json | null } | { ok: false; error: string }> {
   const { data, error } = await supabase
     .from('firework_effects')
-    .select(
-      'id, name, description, pattern_key, sort_order, model_json, star_style_default_id, trail_style_default_id, updated_at',
-    )
+    .select('id, name, description, pattern_key, sort_order, model_json, updated_at')
     .eq('id', effectId)
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
   if (!data) return { ok: true, snapshot: null };
-
-  let assignments = normaliseStyleDefaultAssignments({
-    starStyleDefaultId: data.star_style_default_id,
-    trailStyleDefaultId: data.trail_style_default_id,
-  });
-  const linkResult = await supabase
-    .from('firework_effect_style_default_links')
-    .select('kind, style_default_id')
-    .eq('firework_effect_id', effectId);
-  if (linkResult.error) {
-    if (!isMissingStyleDefaultSchemaError(linkResult.error)) {
-      return { ok: false, error: linkResult.error.message };
-    }
-  } else {
-    assignments = assignmentsFromRows(assignments, linkResult.data ?? []);
-  }
 
   return {
     ok: true,
@@ -219,7 +176,7 @@ async function loadEffectEditorSnapshot(
       description: data.description,
       patternKey: data.pattern_key,
       sortOrder: data.sort_order,
-      styleDefaultIds: assignments,
+      styleDefaultIds: emptyStyleDefaultIdMap(),
       modelJson: data.model_json ?? {},
       updatedAt: data.updated_at,
     }),
@@ -270,13 +227,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   if (!model.ok) return { ok: false, error: model.error };
 
   const supabase = createClient(await cookies());
-  const assignments = normaliseStyleDefaultAssignments({
-    styleDefaultIds: parsed.data.styleDefaultIds,
-    starStyleDefaultId: parsed.data.starStyleDefaultId,
-    trailStyleDefaultId: parsed.data.trailStyleDefaultId,
-  });
-  const validatedAssignments = await validateStyleDefaultAssignments(supabase, assignments);
-  if (!validatedAssignments.ok) return validatedAssignments;
   const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -285,8 +235,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     description: parsed.data.description || null,
     pattern_key: parsed.data.patternKey,
     sort_order: parsed.data.sortOrder,
-    star_style_default_id: assignments.star,
-    trail_style_default_id: assignments.trail,
     model_json: model.value,
   };
   const result = await supabase
@@ -306,9 +254,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     };
   }
 
-  const linksResult = await replaceEffectStyleDefaultLinks(supabase, parsed.data.id, assignments);
-  if (!linksResult.ok) return { ok: false, error: linksResult.error };
-
   const snapshotJson = makeEffectEditorSnapshot({
     kind: 'effect',
     id: parsed.data.id,
@@ -316,7 +261,7 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     description: parsed.data.description || null,
     patternKey: parsed.data.patternKey,
     sortOrder: parsed.data.sortOrder,
-    styleDefaultIds: assignments,
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     modelJson: model.value,
     updatedAt: data.updated_at,
   });
@@ -325,7 +270,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     'description',
     'patternKey',
     'sortOrder',
-    'styleDefaultIds',
     'modelJson',
   ]);
   const versionResult = await recordEffectVersion(supabase, {
@@ -383,52 +327,20 @@ export async function restoreEffectEditorVersion(
   const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.effectId);
   if (!previousSnapshot.ok) return previousSnapshot;
 
-  let assignments: StyleDefaultAssignmentMap;
-  try {
-    assignments = await filterValidStyleDefaultAssignments(
-      supabase,
-      normaliseStyleDefaultAssignments({ styleDefaultIds: snapshot.styleDefaultIds }),
-    );
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Could not validate style defaults.',
-    };
-  }
-
   const patch = {
     name: snapshot.name,
     description: snapshot.description,
     pattern_key: snapshot.patternKey,
     sort_order: snapshot.sortOrder,
-    star_style_default_id: assignments.star,
-    trail_style_default_id: assignments.trail,
     model_json: snapshot.modelJson,
   };
-  const fallbackPatch = {
-    name: snapshot.name,
-    description: snapshot.description,
-    pattern_key: snapshot.patternKey,
-    sort_order: snapshot.sortOrder,
-    model_json: snapshot.modelJson,
-  };
-  let result = await supabase
+  const result = await supabase
     .from('firework_effects')
     .update(patch)
     .eq('id', parsed.data.effectId)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
     .select('updated_at')
     .maybeSingle();
-
-  if (isMissingStyleDefaultSchemaError(result.error)) {
-    result = await supabase
-      .from('firework_effects')
-      .update(fallbackPatch)
-      .eq('id', parsed.data.effectId)
-      .eq('updated_at', parsed.data.expectedUpdatedAt)
-      .select('updated_at')
-      .maybeSingle();
-  }
 
   const { data, error } = result;
   if (error) return { ok: false, error: error.message };
@@ -439,16 +351,9 @@ export async function restoreEffectEditorVersion(
     };
   }
 
-  const linksResult = await replaceEffectStyleDefaultLinks(
-    supabase,
-    parsed.data.effectId,
-    assignments,
-  );
-  if (!linksResult.ok) return { ok: false, error: linksResult.error };
-
   const snapshotJson = makeEffectEditorSnapshot({
     ...snapshot,
-    styleDefaultIds: assignments,
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     updatedAt: data.updated_at,
   });
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
@@ -456,7 +361,6 @@ export async function restoreEffectEditorVersion(
     'description',
     'patternKey',
     'sortOrder',
-    'styleDefaultIds',
     'modelJson',
   ]);
   const versionResult = await recordEffectVersion(supabase, {

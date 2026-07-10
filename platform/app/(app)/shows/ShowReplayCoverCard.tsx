@@ -72,7 +72,7 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
           imagePath={show.coverImagePath}
           className={cn(
             'transition-[opacity,transform] duration-200 ease-out group-hover:scale-105',
-            isPreviewHovering ? 'opacity-0' : 'opacity-100',
+            isPreviewRevealed ? 'opacity-0' : 'opacity-100',
           )}
         />
         <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">

@@ -3,6 +3,7 @@ import 'server-only';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AdminEffectDetail, AdminEffectSummary } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
+import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
 import {
   ADMIN_CACHE_TTL_SECONDS,
   getAdminEffectCacheKey,
@@ -12,25 +13,10 @@ import { listEffectEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from './current-user.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
-import {
-  legacyStyleDefaultLinks,
-  listAdminStyleDefaultOptions,
-  loadEffectStyleDefaultLinkMap,
-  mapStyleDefaultOption,
-  styleDefaultIdMapFromLinks,
-} from './style-defaults.server';
+import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
-
-type StyleDefaultLinkRow = {
-  id: string;
-  kind: string;
-  name: string;
-  description: string | null;
-  defaults_json: Json;
-  is_archived: boolean;
-};
 
 type BaseEffectRow = Pick<
   Database['public']['Tables']['firework_effects']['Row'],
@@ -42,29 +28,12 @@ type BaseEffectRow = Pick<
   | 'model_json'
   | 'sort_order'
   | 'source'
-  | 'star_style_default_id'
-  | 'trail_style_default_id'
   | 'updated_at'
 > & {
   fireworks?: Array<{ id: string }> | null;
-  star_style_default?: StyleDefaultLinkRow | StyleDefaultLinkRow[] | null;
-  trail_style_default?: StyleDefaultLinkRow | StyleDefaultLinkRow[] | null;
 };
 
-function firstStyleDefault(
-  value: StyleDefaultLinkRow | StyleDefaultLinkRow[] | null | undefined,
-): StyleDefaultLinkRow | null {
-  if (!value) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
 function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
-  const starStyleDefault = mapStyleDefaultOption(firstStyleDefault(row.star_style_default));
-  const trailStyleDefault = mapStyleDefaultOption(firstStyleDefault(row.trail_style_default));
-  const styleDefaultLinks = legacyStyleDefaultLinks({
-    star: starStyleDefault,
-    trail: trailStyleDefault,
-  });
   return {
     id: row.id,
     slug: row.slug,
@@ -74,9 +43,9 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
     source: row.source,
     sortOrder: row.sort_order,
     variantCount: row.fireworks?.length ?? 0,
-    starStyleDefaultId: row.star_style_default_id ?? null,
-    trailStyleDefaultId: row.trail_style_default_id ?? null,
-    styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
+    starStyleDefaultId: null,
+    trailStyleDefaultId: null,
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     preview: buildEffectPreview(row.model_json, {
       pattern: row.pattern_key,
       name: row.name,
@@ -86,19 +55,13 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
 }
 
 function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
-  const starStyleDefault = mapStyleDefaultOption(firstStyleDefault(row.star_style_default));
-  const trailStyleDefault = mapStyleDefaultOption(firstStyleDefault(row.trail_style_default));
-  const styleDefaultLinks = legacyStyleDefaultLinks({
-    star: starStyleDefault,
-    trail: trailStyleDefault,
-  });
   return {
     ...mapBaseEffectSummary(row),
     modelJson: row.model_json as Json,
-    starStyleDefault,
-    trailStyleDefault,
-    styleDefaultLinks,
-    styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
+    starStyleDefault: null,
+    trailStyleDefault: null,
+    styleDefaultLinks: {},
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     styleDefaults: {
       star: [],
       trail: [],
@@ -114,7 +77,7 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
 }
 
 const BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, star_style_default_id, trail_style_default_id, updated_at, fireworks(id), star_style_default:firework_style_defaults!firework_effects_star_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived), trail_style_default:firework_style_defaults!firework_effects_trail_style_default_id_fkey(id, kind, name, description, defaults_json, is_archived)';
+  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
 const LEGACY_BASE_EFFECT_SELECT =
   'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
 
@@ -167,23 +130,7 @@ export async function listAdminEffects(): Promise<AdminEffectSummary[]> {
   }
 
   const rows = (data ?? []) as BaseEffectRow[];
-  const linkMap = await loadEffectStyleDefaultLinkMap(
-    supabase,
-    rows.map((row) => row.id),
-  );
-  const mapped = rows.map((row) => {
-    const legacyLinks = legacyStyleDefaultLinks({
-      star: mapStyleDefaultOption(firstStyleDefault(row.star_style_default)),
-      trail: mapStyleDefaultOption(firstStyleDefault(row.trail_style_default)),
-    });
-    const styleDefaultLinks = { ...legacyLinks, ...(linkMap[row.id] ?? {}) };
-    return {
-      ...mapBaseEffectSummary(row),
-      starStyleDefaultId: styleDefaultLinks.star?.id ?? row.star_style_default_id ?? null,
-      trailStyleDefaultId: styleDefaultLinks.trail?.id ?? row.trail_style_default_id ?? null,
-      styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
-    };
-  });
+  const mapped = rows.map(mapBaseEffectSummary);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
 }
@@ -206,24 +153,12 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
   if (!data) return null;
 
   const row = data as BaseEffectRow;
-  const legacyLinks = legacyStyleDefaultLinks({
-    star: mapStyleDefaultOption(firstStyleDefault(row.star_style_default)),
-    trail: mapStyleDefaultOption(firstStyleDefault(row.trail_style_default)),
-  });
-  const linkMap = await loadEffectStyleDefaultLinkMap(supabase, [row.id]);
-  const styleDefaultLinks = { ...legacyLinks, ...(linkMap[row.id] ?? {}) };
   const [styleDefaults, history] = await Promise.all([
     listAdminStyleDefaultOptions(),
     listEffectEditorVersions(supabase, row.id),
   ]);
   const mapped = {
     ...mapBaseEffectDetail(row),
-    starStyleDefault: styleDefaultLinks.star ?? null,
-    trailStyleDefault: styleDefaultLinks.trail ?? null,
-    starStyleDefaultId: styleDefaultLinks.star?.id ?? row.star_style_default_id ?? null,
-    trailStyleDefaultId: styleDefaultLinks.trail?.id ?? row.trail_style_default_id ?? null,
-    styleDefaultLinks,
-    styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
     styleDefaults,
     history,
   };
@@ -249,8 +184,7 @@ async function selectBaseEffectBySlug(supabase: ServerClient, slug: string) {
 
 /**
  * Returns one colourless base effect by slug. Used by the dev firework lab,
- * which keys effects by their catalogue slug and needs the live `updated_at`
- * plus existing style-default assignments so saves do not clobber links.
+ * which keys effects by their catalogue slug and needs the live `updated_at`.
  */
 export async function getAdminEffectBySlug(slug: string): Promise<AdminEffectDetail | null> {
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
@@ -265,24 +199,12 @@ export async function getAdminEffectBySlug(slug: string): Promise<AdminEffectDet
   if (!data) return null;
 
   const row = data as BaseEffectRow;
-  const legacyLinks = legacyStyleDefaultLinks({
-    star: mapStyleDefaultOption(firstStyleDefault(row.star_style_default)),
-    trail: mapStyleDefaultOption(firstStyleDefault(row.trail_style_default)),
-  });
-  const linkMap = await loadEffectStyleDefaultLinkMap(supabase, [row.id]);
-  const styleDefaultLinks = { ...legacyLinks, ...(linkMap[row.id] ?? {}) };
   const [styleDefaults, history] = await Promise.all([
     listAdminStyleDefaultOptions(),
     listEffectEditorVersions(supabase, row.id),
   ]);
   const mapped = {
     ...mapBaseEffectDetail(row),
-    starStyleDefault: styleDefaultLinks.star ?? null,
-    trailStyleDefault: styleDefaultLinks.trail ?? null,
-    starStyleDefaultId: styleDefaultLinks.star?.id ?? row.star_style_default_id ?? null,
-    trailStyleDefaultId: styleDefaultLinks.trail?.id ?? row.trail_style_default_id ?? null,
-    styleDefaultLinks,
-    styleDefaultIds: styleDefaultIdMapFromLinks(styleDefaultLinks),
     styleDefaults,
     history,
   };

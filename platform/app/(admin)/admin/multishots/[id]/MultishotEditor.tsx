@@ -34,6 +34,7 @@ import {
   MoveVertical,
   Pencil,
   Plus,
+  Repeat,
   Save,
   Trash2,
   TriangleAlert,
@@ -987,6 +988,18 @@ function PreviewStage({
   const [previewActive, setPreviewActive] = useState(false);
   const transportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transportVisible = previewActive && (!isPlaying || transportActive);
+  const previewMenuActions = useMemo(
+    () => [
+      {
+        id: 'loop',
+        label: isLooping ? 'Disable looping' : 'Enable looping',
+        active: isLooping,
+        onClick: onLoopToggle,
+        icon: <Repeat size={16} strokeWidth={2} />,
+      },
+    ],
+    [isLooping, onLoopToggle],
+  );
 
   const clearTransportIdleTimer = useCallback(() => {
     if (transportIdleTimer.current) {
@@ -1070,9 +1083,10 @@ function PreviewStage({
               muted={!isPlaying}
               interactive
               controlsVisible={!loading}
+              cameraMenuActions={previewMenuActions}
               primeSnapshots
               primeOnCueChanges={false}
-              showLoadingBar={false}
+              showLoadingBar
               renderOverscanPx={!fullscreen && !fullWidth ? INSPECTOR_RENDER_OVERSCAN_PX : 0}
               onPrimeProgress={onPreviewLoadingProgress}
               onReady={onPreviewReady}
@@ -1091,14 +1105,12 @@ function PreviewStage({
                   elapsed={elapsed}
                   duration={duration}
                   isPlaying={isPlaying}
-                  isLooping={isLooping}
                   fullscreen={fullscreen}
                   loading={loading}
                   loadingProgress={loadingProgress}
                   ticks={ticks}
                   onPlayPause={handleTransportPlayPause}
                   onReset={onReset}
-                  onLoopToggle={onLoopToggle}
                   onFullscreenToggle={onFullscreenToggle}
                   onScrub={onScrub}
                 />

@@ -268,6 +268,10 @@ function buildPreviewCues(
       timeSeconds: Math.max(2, Math.floor((durationSeconds / (effectsCount + 1)) * cueIndex)),
       fireworkSlug,
       description: `${fireworkSlug.split('-')[0]?.replace(/_/g, ' ') ?? 'Firework'} cue`,
+      catalogueItemId: null,
+      catalogueItemSlug: null,
+      launchPositionIndex: index % 3,
+      emphasis: cueIndex === effectsCount ? 'peak' : cueIndex % 4 === 0 ? 'accent' : 'normal',
     };
   });
 }
@@ -282,6 +286,10 @@ function buildSeedTemplate(section: LibrarySeedSection, index: number): ShowTemp
   const durationSeconds = durationFor(section, item);
   const effectsCount = effectsFor(section, item);
   const budgetCents = budgetFor(section, item);
+  const createdAt = new Date(
+    SEED_BASE_TIME - (section.sortBase + item) * 60 * 60 * 1000,
+  ).toISOString();
+  const updatedAt = updatedAtFor(section, item);
 
   return {
     id: `seed-${section.key}-${String(item).padStart(2, '0')}`,
@@ -306,9 +314,12 @@ function buildSeedTemplate(section: LibrarySeedSection, index: number): ShowTemp
     coverShader: shaderCoverFromSeed(slug),
     coverImagePath: null,
     isFeatured: section.isFeatured,
+    isPublished: true,
+    publishedAt: createdAt,
+    sortOrder: section.sortBase + item,
     likeCount: likeCountFor(section, item),
-    createdAt: new Date(SEED_BASE_TIME - (section.sortBase + item) * 60 * 60 * 1000).toISOString(),
-    updatedAt: updatedAtFor(section, item),
+    createdAt,
+    updatedAt,
   };
 }
 

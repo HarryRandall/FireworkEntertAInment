@@ -11,6 +11,7 @@ import {
   History,
   Palette,
   Plus,
+  Repeat,
   SlidersHorizontal,
   Sparkles,
   Volume2,
@@ -713,10 +714,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
     [effectId, firework.effectModels, firework.effectModelJson],
   );
-  const selectedEffectStyleDefaults = useMemo(
-    () => firework.effectStyleDefaultLinksByEffect[effectId] ?? firework.effectStyleDefaultLinks,
-    [effectId, firework.effectStyleDefaultLinks, firework.effectStyleDefaultLinksByEffect],
-  );
   const selectedFireworkStyleDefaults = useMemo(() => {
     const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
     for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
@@ -734,6 +731,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     firework.styleDefaults,
     styleDefaultIds,
   ]);
+  function copySelectedStyleDefaultsIntoOverrides(source: JsonRecord): JsonRecord {
+    const copiedDefaults: JsonRecord = {};
+    for (const option of orderedStyleDefaultValues(selectedFireworkStyleDefaults)) {
+      if (isRecord(option?.defaultsJson)) mergeRecordInto(copiedDefaults, option.defaultsJson);
+    }
+    mergeRecordInto(copiedDefaults, source);
+    return copiedDefaults;
+  }
   const calibrationDefaults = useMemo(() => {
     const model = isRecord(baseModel) ? baseModel : {};
     return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
@@ -839,9 +844,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     () =>
       compileFireworkDesign({
         baseModel,
-        effectStyleDefaults: orderedStyleDefaultValues(selectedEffectStyleDefaults).map(
-          (item) => item?.defaultsJson,
-        ),
         fireworkStyleDefaults: orderedStyleDefaultValues(selectedFireworkStyleDefaults).map(
           (item) => item?.defaultsJson,
         ),
@@ -849,14 +851,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         primaryColor: mainColor,
         colorPalette: palette.length ? palette : null,
       }),
-    [
-      baseModel,
-      mergedOverrides,
-      mainColor,
-      palette,
-      selectedEffectStyleDefaults,
-      selectedFireworkStyleDefaults,
-    ],
+    [baseModel, mergedOverrides, mainColor, palette, selectedFireworkStyleDefaults],
   );
 
   // Head-orb appearance is saved into the firework's render overrides, so the
@@ -1018,9 +1013,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }
 
   function shouldMaterialiseStyleDefault(kind: FireworkStyleDefaultKind): boolean {
-    return (
-      styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE || selectedEffectStyleDefaults[kind] != null
-    );
+    return styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE;
   }
 
   function materialiseStyleDefault(kind: FireworkStyleDefaultKind, defaults: JsonRecord) {
@@ -1190,22 +1183,17 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         ],
       }));
 
-      const nextStyleDefaultIds = { ...styleDefaultIds, [kind]: result.id };
-      const nextOverridesRecord = cloneRecord(overridesRecord);
-      removeStyleDefaultOverridesFromRecord(nextOverridesRecord, kind);
-
-      // Select the new preset and clear its inline overrides so the preset drives the preview
-      // instead of being shadowed by stale render_overrides_json.
-      setStyleDefaultIds(nextStyleDefaultIds);
-      setOverridesText(JSON.stringify(nextOverridesRecord, null, 2));
-
       if (!effectId || !mainColor || !parsedOverrides.ok) {
         setError('Pick a base effect and main colour, then click Save to keep this preset.');
         return;
       }
 
-      const nextSaveMap = toSaveStyleDefaultIds(nextStyleDefaultIds);
-      const nextMerged = applyColourToOverrides(nextOverridesRecord, {
+      const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+      const copiedOverridesText = JSON.stringify(copiedOverrides, null, 2);
+      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+
+      const nextMerged = applyColourToOverrides(copiedOverrides, {
         mainColor,
         accentColor,
         accentShare,
@@ -1215,10 +1203,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       });
 
       const ok = await persistFirework({
-        styleDefaultIdsMap: nextSaveMap,
+        styleDefaultIdsMap: clearedSaveMap,
         overrides: nextMerged,
       });
       if (!ok) return;
+      setStyleDefaultIds(clearedStyleDefaultIds);
+      setOverridesText(copiedOverridesText);
       setSavedSignature(
         fireworkEditorSignature({
           name,
@@ -1230,7 +1220,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           primaryColor: mainColor,
           secondaryColor: accentColor,
           colorPalette: palette,
-          styleDefaultIds: nextSaveMap,
+          styleDefaultIds: clearedSaveMap,
           renderOverridesJson: nextMerged,
         }),
       );
@@ -1254,12 +1244,31 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       return;
     }
     startTransition(async () => {
+      const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
       const ok = await persistFirework({
-        styleDefaultIdsMap: saveStyleDefaultIds,
-        overrides: mergedOverrides,
+        styleDefaultIdsMap: clearedSaveMap,
+        overrides: copiedOverrides,
       });
       if (!ok) return;
-      setSavedSignature(currentSignature);
+      setStyleDefaultIds(clearedStyleDefaultIds);
+      setOverridesText(JSON.stringify(copiedOverrides, null, 2));
+      setSavedSignature(
+        fireworkEditorSignature({
+          name,
+          description,
+          effectId,
+          caliber,
+          durationSeconds,
+          heightMeters,
+          primaryColor: mainColor,
+          secondaryColor: accentColor,
+          colorPalette: palette,
+          styleDefaultIds: clearedSaveMap,
+          renderOverridesJson: copiedOverrides,
+        }),
+      );
       toast.success('Firework saved');
       router.refresh();
     });
@@ -1510,6 +1519,18 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       onExit={() => setPreviewVersion(null)}
     />
   ) : null;
+  const previewMenuActions = useMemo(
+    () => [
+      {
+        id: 'loop',
+        label: isLooping ? 'Disable looping' : 'Enable looping',
+        active: isLooping,
+        onClick: () => setIsLooping((looping) => !looping),
+        icon: <Repeat size={16} strokeWidth={2} />,
+      },
+    ],
+    [isLooping],
+  );
   const preview = (
     <LazyFireworkReplayCanvas
       cues={previewCues}
@@ -1519,11 +1540,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       muted={!isPlaying}
       interactive
       controlsVisible
+      cameraMenuActions={previewMenuActions}
       showStarfield={false}
       showFps
       primeSnapshots
       primeOnCueChanges={false}
-      showLoadingBar={false}
+      showLoadingBar
       onPrimeProgress={(progress) => {
         setPreviewLoadingProgress(progress);
         if (progress !== null) setPreviewReady(false);
@@ -1551,7 +1573,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       elapsed={elapsed}
       duration={previewDuration}
       isPlaying={isPlaying}
-      isLooping={isLooping}
       fullscreen={isFullscreen}
       loading={!previewReady}
       loadingProgress={previewLoadingProgress}
@@ -1566,7 +1587,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         setIsPlaying(false);
         setPreviewTime(PREVIEW_START_SECONDS);
       }}
-      onLoopToggle={() => setIsLooping((looping) => !looping)}
       onFullscreenToggle={toggleFullscreen}
       onScrub={(seconds) => {
         setIsPlaying(false);
@@ -1576,7 +1596,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     />
   );
   function renderStyleDefaultControls(kind: FireworkStyleDefaultKind) {
-    const inherited = selectedEffectStyleDefaults[kind] ?? null;
     return (
       <EditorStyleDefaultControls
         label={`${styleDefaultKindLabel(kind)} style`}
@@ -1586,7 +1605,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           firework.styleDefaults[kind],
           selectedFireworkStyleDefaults[kind] ?? firework.fireworkStyleDefaultLinks[kind] ?? null,
         )}
-        inheritedLabel={inherited ? `Effect default: ${inherited.name}` : null}
         disabled={!parsedOverrides.ok}
         saveDisabled={kind === 'star' && !mainColor}
         onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}

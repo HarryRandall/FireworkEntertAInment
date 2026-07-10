@@ -8,7 +8,7 @@ import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { ExploreRow } from '@/app/components/app/ExploreRow';
 import { ExplorePreviewProvider } from '@/app/components/app/ExplorePreviewContext';
 import { listShowTemplates } from '@/lib/admin.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 
 function hashString(value: string): number {
@@ -159,7 +159,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
   const [templates, specifications] = await Promise.all([
     listShowTemplates(),
-    listFireworkSpecifications(),
+    listFireworkProducts(),
   ]);
 
   if (templates.length === 0) {

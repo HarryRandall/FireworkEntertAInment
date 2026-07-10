@@ -63,7 +63,9 @@ test('new show wizard routes to the generation page immediately on launch', () =
   assert.match(page, /const \[isLaunching, setIsLaunching\] = useState\(false\)/);
   assert.doesNotMatch(page, /<GeneratingShowAnimation/);
   assert.match(page, /persistGenerationStartedAt\(desiredSlug\)/);
+  assert.match(page, /resolvePersistedGenerationCover\(desiredSlug\)/);
   assert.match(page, /persistGenerationStartedAt\(result\.slug, generationStartedAt\)/);
+  assert.match(page, /data\.set\('coverShader', JSON\.stringify\(generationCover\)\)/);
 
   const launchIdx = page.indexOf('setIsLaunching(true)');
   const routeIdx = page.indexOf(

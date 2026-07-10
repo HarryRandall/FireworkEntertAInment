@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
-import { randomCover } from '@/lib/cover';
+import { parseCover, randomCover } from '@/lib/cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
@@ -77,12 +77,22 @@ const NewShowSchema = z.object({
   audioPath: z.string().trim().max(300).optional(),
   musicAnalysisId: z.string().uuid().optional(),
   desiredSlug: z.string().trim().max(120).optional(),
+  coverShader: z.string().trim().max(20_000).optional(),
 });
 
 export type NewShowResult = { ok: true; slug: string } | { ok: false; error: string };
 
 function isUserAudioPath(path: string, userId: string): boolean {
   return path.startsWith(`${userId}/`) && !path.includes('..');
+}
+
+function parseClientCover(value: string | undefined) {
+  if (!value) return null;
+  try {
+    return parseCover(JSON.parse(value));
+  } catch {
+    return null;
+  }
 }
 
 export async function createShowAction(formData: FormData): Promise<NewShowResult> {
@@ -112,6 +122,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     audioPath: formData.get('audioPath') ?? undefined,
     musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
     desiredSlug: formData.get('desiredSlug') ?? undefined,
+    coverShader: formData.get('coverShader') ?? undefined,
   });
 
   if (!parsed.success) {
@@ -148,6 +159,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     ? slugifyTitle(parsed.data.desiredSlug)
     : slugifyTitle(parsed.data.title);
   const durationSeconds = parseDurationSeconds(parsed.data.duration);
+  const coverShader = parseClientCover(parsed.data.coverShader) ?? randomCover();
 
   // Avoid clashing with an existing slug for the same user.
   let slug = baseSlug;
@@ -180,7 +192,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,
       music_analysis_id: musicAnalysisId,
-      cover_shader: randomCover(),
+      cover_shader: coverShader,
       status: 'draft',
       generation_status: 'running',
       generation_started_at: new Date().toISOString(),

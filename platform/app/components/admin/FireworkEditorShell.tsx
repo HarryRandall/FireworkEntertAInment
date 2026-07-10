@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Maximize2, PanelRightClose, Play, Repeat, RotateCcw, Save, Undo2 } from 'lucide-react';
+import { PanelRightClose, Save, Undo2 } from 'lucide-react';
 import { PreviewFullscreenBackdrop } from '@/app/components/admin/previewFullscreen';
 import {
   ReplayTransportControls,
@@ -77,26 +77,19 @@ export function EditorPreviewTransport({
   elapsed: number;
   duration: number;
   isPlaying: boolean;
-  isLooping: boolean;
+  isLooping?: boolean;
   fullscreen?: boolean;
   loading?: boolean;
   loadingProgress?: number | null;
   ticks?: EditorPreviewTick[];
   onPlayPause: () => void;
   onReset: () => void;
-  onLoopToggle: () => void;
+  onLoopToggle?: () => void;
   onFullscreenToggle?: () => void;
   onScrub: (seconds: number) => void;
   onScrubEnd?: () => void;
 }) {
-  if (loading) {
-    return (
-      <EditorPreviewTransportLoading
-        hasLoop={Boolean(onLoopToggle)}
-        hasFullscreen={Boolean(onFullscreenToggle)}
-      />
-    );
-  }
+  if (loading) return null;
 
   return (
     <ReplayTransportControls
@@ -113,65 +106,6 @@ export function EditorPreviewTransport({
       onScrub={onScrub}
       onScrubEnd={onScrubEnd}
     />
-  );
-}
-
-function EditorPreviewTransportLoading({
-  hasLoop,
-  hasFullscreen,
-}: {
-  hasLoop: boolean;
-  hasFullscreen: boolean;
-}) {
-  return (
-    <div
-      className="mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md"
-      aria-label="Loading preview controls"
-    >
-      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-[var(--shadow-cta)]">
-        <Play size={17} className="translate-x-0.5" fill="currentColor" strokeWidth={2.5} />
-      </div>
-      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
-        <RotateCcw size={15} strokeWidth={2} />
-      </div>
-      {hasLoop ? (
-        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-transparent bg-[color:var(--hl,#10b981)] text-black">
-          <Repeat size={15} strokeWidth={2} />
-        </div>
-      ) : null}
-
-      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
-        <span className="min-w-[2.55rem] text-right font-mono text-[11px] text-white/75 tabular-nums">
-          0:00
-        </span>
-        <div className="relative flex h-7 min-w-0 items-center rounded-full">
-          <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/90" />
-          {[28, 54, 82].map((left) => (
-            <span
-              key={left}
-              className="absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm"
-              style={{ left: `${left}%` }}
-              aria-hidden
-            >
-              <span className="h-4 w-px rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,.42)]" />
-            </span>
-          ))}
-          <span
-            className="absolute top-1/2 left-0 z-30 size-4 -translate-y-1/2 rounded-full border-2 border-[color:var(--hl,#10b981)] bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
-            aria-hidden
-          />
-        </div>
-        <span className="min-w-[2.55rem] font-mono text-[11px] text-white/75 tabular-nums">
-          0:05
-        </span>
-      </div>
-
-      {hasFullscreen ? (
-        <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
-          <Maximize2 size={15} strokeWidth={2} />
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -225,14 +159,28 @@ export function FireworkEditorShell({
 }: FireworkEditorShellProps) {
   const [inspectorCollapsed, setInspectorCollapsed] = useState(true);
   const [transportActive, setTransportActive] = useState(true);
+  const [railFadeState, setRailFadeState] = useState({ bottom: false, top: false });
+  const railNavRef = useRef<HTMLElement | null>(null);
   const transportIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+  const currentTabId = currentTab?.id;
+  const tabIdsKey = tabs.map((tab) => tab.id).join('\u0000');
+  const [mountedTabIds, setMountedTabIds] = useState<string[]>(() =>
+    currentTabId ? [currentTabId] : [],
+  );
   const utilityTabIds = new Set(['history', 'json']);
   const primaryTabs = tabs.filter((tab) => !utilityTabIds.has(tab.id));
   const utilityTabs = tabs.filter((tab) => utilityTabIds.has(tab.id));
   const visibleChips = chips.filter((chip) => chip.value);
   const hasMetadata = visibleChips.length > 0 || palette.length > 0 || Boolean(subtitle);
   const transportVisible = !transportPlaying || transportActive;
+  const renderedTabIds =
+    currentTabId && !mountedTabIds.includes(currentTabId)
+      ? [...mountedTabIds, currentTabId]
+      : mountedTabIds;
+  const renderedTabs = renderedTabIds
+    .map((tabId) => tabs.find((tab) => tab.id === tabId))
+    .filter((tab): tab is FireworkEditorShellTab => Boolean(tab));
 
   useEffect(() => {
     if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
@@ -249,6 +197,64 @@ export function FireworkEditorShell({
       if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
     };
   }, [transportPlaying]);
+
+  useEffect(() => {
+    const availableTabIds = new Set(tabIdsKey ? tabIdsKey.split('\u0000') : []);
+
+    setMountedTabIds((previousTabIds) => {
+      const nextTabIds = previousTabIds.filter((tabId) => availableTabIds.has(tabId));
+      if (currentTabId && !nextTabIds.includes(currentTabId)) {
+        nextTabIds.push(currentTabId);
+      }
+
+      if (
+        nextTabIds.length === previousTabIds.length &&
+        nextTabIds.every((tabId, index) => tabId === previousTabIds[index])
+      ) {
+        return previousTabIds;
+      }
+
+      return nextTabIds;
+    });
+  }, [currentTabId, tabIdsKey]);
+
+  useEffect(() => {
+    const node = railNavRef.current;
+    if (!node) return;
+
+    let frame = 0;
+    const updateRailFadeState = () => {
+      const maxScrollTop = node.scrollHeight - node.clientHeight;
+      const nextState = {
+        bottom: maxScrollTop > 1 && node.scrollTop < maxScrollTop - 1,
+        top: node.scrollTop > 1,
+      };
+
+      setRailFadeState((current) =>
+        current.bottom === nextState.bottom && current.top === nextState.top ? current : nextState,
+      );
+    };
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateRailFadeState);
+    };
+
+    scheduleUpdate();
+    node.addEventListener('scroll', updateRailFadeState, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleUpdate);
+    resizeObserver?.observe(node);
+    Array.from(node.children).forEach((child) => resizeObserver?.observe(child));
+
+    return () => {
+      cancelAnimationFrame(frame);
+      node.removeEventListener('scroll', updateRailFadeState);
+      window.removeEventListener('resize', scheduleUpdate);
+      resizeObserver?.disconnect();
+    };
+  }, [inspectorCollapsed, primaryTabs.length]);
 
   function wakePreviewTransport() {
     if (!transportPlaying) {
@@ -430,6 +436,7 @@ export function FireworkEditorShell({
           >
             <div className="relative min-h-0 flex-1 lg:w-full">
               <nav
+                ref={railNavRef}
                 className="no-scrollbar flex min-h-0 min-w-0 gap-1 overflow-x-auto lg:h-full lg:w-full lg:flex-col lg:items-center lg:overflow-x-visible lg:overflow-y-auto lg:pb-2"
                 aria-label="Editor sections"
                 role="tablist"
@@ -437,11 +444,17 @@ export function FireworkEditorShell({
                 {primaryTabs.map(renderRailTab)}
               </nav>
               <div
-                className="pointer-events-none absolute inset-x-0 top-0 hidden h-4 bg-gradient-to-b from-[color:var(--color-bg-muted)] to-transparent lg:block"
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 top-0 hidden h-4 bg-gradient-to-b from-[color:var(--color-bg-muted)] to-transparent opacity-0 transition-opacity duration-150 lg:block',
+                  railFadeState.top && 'opacity-100',
+                )}
                 aria-hidden
               />
               <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-6 bg-gradient-to-t from-[color:var(--color-bg-muted)] to-transparent lg:block"
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 bottom-0 hidden h-6 bg-gradient-to-t from-[color:var(--color-bg-muted)] to-transparent opacity-0 transition-opacity duration-150 lg:block',
+                  railFadeState.bottom && 'opacity-100',
+                )}
                 aria-hidden
               />
             </div>
@@ -502,7 +515,20 @@ export function FireworkEditorShell({
                   {error}
                 </InlineAlert>
               ) : null}
-              {currentTab?.content}
+              {renderedTabs.map((tab) => {
+                const selected = tab.id === currentTabId;
+                return (
+                  <div
+                    key={tab.id}
+                    role="tabpanel"
+                    aria-label={tab.label}
+                    hidden={!selected}
+                    className={cn('min-h-0 flex-1 flex-col', selected ? 'flex' : 'hidden')}
+                  >
+                    {tab.content}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </aside>

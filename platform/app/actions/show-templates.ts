@@ -87,8 +87,10 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
       const row = Array.isArray(value) ? (value[0] ?? null) : value;
       return row?.slug ?? null;
     };
+    const catalogueItemIds = new Set<string>();
     const catalogueItemBySlug = new Map<string, string>();
     for (const item of (catalogueItems ?? []) as CatalogueItemRow[]) {
+      catalogueItemIds.add(item.id);
       if (!catalogueItemBySlug.has(item.part_number)) {
         catalogueItemBySlug.set(item.part_number, item.id);
       }
@@ -106,7 +108,12 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     }
     const cueRows = template.previewCues
       .map((cue, index) => {
-        const catalogueItemId = catalogueItemBySlug.get(cue.fireworkSlug);
+        const catalogueItemId =
+          (cue.catalogueItemId && catalogueItemIds.has(cue.catalogueItemId)
+            ? cue.catalogueItemId
+            : null) ??
+          (cue.catalogueItemSlug ? catalogueItemBySlug.get(cue.catalogueItemSlug) : undefined) ??
+          (cue.fireworkSlug ? catalogueItemBySlug.get(cue.fireworkSlug) : undefined);
         if (!catalogueItemId) return null;
         return {
           show_id: show.id,
@@ -114,6 +121,8 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
           time_seconds: cue.timeSeconds,
           description: cue.description,
           catalogue_item_id: catalogueItemId,
+          launch_position_index: cue.launchPositionIndex,
+          emphasis: cue.emphasis,
         };
       })
       .filter((row): row is NonNullable<typeof row> => row != null);

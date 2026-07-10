@@ -6,7 +6,7 @@
  * TemplateReplayPreview. Owns its own renderer/engine lifecycle and
  * is intentionally `dynamic`-imported by parents to avoid SSR.
  */
-import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type MutableRefObject, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   Axis3d,
@@ -137,6 +137,7 @@ type Props = {
   allowWheelZoom?: boolean;
   controlsVisible?: boolean;
   showCameraControls?: boolean;
+  cameraMenuActions?: FireworkReplayCanvasMenuAction[];
   showFps?: boolean;
   /** Upper bound for renderer DPR. Lower values are useful for large public previews. */
   maxDevicePixelRatio?: number;
@@ -633,6 +634,14 @@ function disposeTrailWidthGuide(group: THREE.Group | null): void {
   });
 }
 
+export type FireworkReplayCanvasMenuAction = {
+  id: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+};
+
 /**
  * A single aim marker for the multishot editor: one shot's launch direction
  * from the shared mortar, described by its pan (left/right) and tilt
@@ -807,6 +816,7 @@ export function FireworkReplayCanvas({
   allowWheelZoom = true,
   controlsVisible = true,
   showCameraControls = true,
+  cameraMenuActions = [],
   showFps = false,
   maxDevicePixelRatio = MAX_DEVICE_PIXEL_RATIO,
   antialias = false,
@@ -1871,6 +1881,16 @@ export function FireworkReplayCanvas({
                   )}
                   style={{ transitionDuration: `${CAMERA_MENU_ANIMATION_MS}ms` }}
                 >
+                  {cameraMenuActions.map((action) => (
+                    <CanvasIconButton
+                      key={action.id}
+                      onClick={action.onClick}
+                      label={action.label}
+                      active={action.active}
+                    >
+                      {action.icon}
+                    </CanvasIconButton>
+                  ))}
                   <CanvasIconButton onClick={() => adjustZoom(0.85)} label="Zoom in">
                     <ZoomIn size={16} strokeWidth={2} />
                   </CanvasIconButton>

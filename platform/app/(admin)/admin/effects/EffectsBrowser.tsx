@@ -468,13 +468,11 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
             </tbody>
           </table>
         ) : (
-          <table className={tableClasses('min-w-[860px]')}>
+          <table className={tableClasses('min-w-[720px]')}>
             <thead className={tableHeadClasses()}>
               <tr>
                 <th className={tableHeaderCellClasses()}>Default</th>
                 <th className={tableHeaderCellClasses()}>Kind</th>
-                <th className={tableHeaderCellClasses('text-right')}>Linked effects</th>
-                <th className={tableHeaderCellClasses('text-right')}>Linked fireworks</th>
                 <th className={tableHeaderCellClasses()}>Updated</th>
                 <th className={tableHeaderCellClasses('w-10')}>
                   <span className="sr-only">Open</span>
@@ -483,7 +481,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
             </thead>
             <tbody>
               {filteredDefaults.length === 0 ? (
-                <EmptyRow colSpan={6} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
+                <EmptyRow colSpan={4} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
               ) : (
                 filteredDefaults.map((item) => {
                   const href = `/admin/effects/defaults/${item.id}`;
@@ -511,20 +509,6 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
                         <Badge tone={styleDefaultBadgeTone(item.kind)} solid>
                           {styleDefaultKindLabel(item.kind)}
                         </Badge>
-                      </td>
-                      <td
-                        className={tableCellClasses(
-                          'text-right font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                        )}
-                      >
-                        {item.linkedEffectCount}
-                      </td>
-                      <td
-                        className={tableCellClasses(
-                          'text-right font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                        )}
-                      >
-                        {item.linkedFireworkCount}
                       </td>
                       <td
                         className={tableCellClasses(

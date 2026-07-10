@@ -14,8 +14,8 @@
 import type { ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ListFilter, Search } from 'lucide-react';
-import { GenerationHandoffSplash } from '@/app/components/app/GenerationHandoffSplash';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
 import {
   ListSkeleton,
   ReplayPanelSkeleton,
@@ -25,7 +25,6 @@ import {
 import { Skeleton } from '@/app/components/ui/Feedback';
 import { WizardLoading } from './new/_components/WizardLoading';
 
-const GENERATING_SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
 const DETAIL_TAB_LABELS = ['Live preview', 'Shopping list', 'Show guide', 'Song context'];
 const SHOWS_LIST_SKELETON_COUNT = 24;
 
@@ -124,23 +123,14 @@ export default function ShowsLoading() {
   const generatingKey = pathname?.match(/\/shows\/([^/]+)\/generating\/?$/)?.[1];
   if (generatingKey) {
     const showTitle = searchParams.get('t')?.trim() || undefined;
+    const hasAudio = searchParams.get('a') === '1';
     return (
       <GeneratingShowAnimation
         showTitle={showTitle}
+        hasAudio={hasAudio}
+        phase={hasAudio ? 'analysing' : 'generating'}
         persistKey={generatingKey}
-        className={GENERATING_SPLASH_CLASS}
-      />
-    );
-  }
-
-  const previewHandoffMatch = pathname?.match(/^\/shows\/([^/]+)\/preview\/?$/);
-  if (previewHandoffMatch && searchParams.get('handoff') === '1') {
-    const showTitle = searchParams.get('t')?.trim() || undefined;
-    return (
-      <GenerationHandoffSplash
-        title={showTitle}
-        persistKey={decodeURIComponent(previewHandoffMatch[1] ?? '')}
-        hasAudio={searchParams.get('a') === '1'}
+        className={GENERATING_ROUTE_SPLASH_CLASS}
       />
     );
   }

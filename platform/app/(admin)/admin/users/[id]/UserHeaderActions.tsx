@@ -4,7 +4,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { KeyRound, LogIn, Trash2 } from 'lucide-react';
+import { Coins, KeyRound, LogIn, Trash2 } from 'lucide-react';
 import { RowActionsMenu, toast } from '@/app/components/ui';
 import {
   AlertDialog,
@@ -18,17 +18,25 @@ import {
 } from '@/components/ui/alert-dialog';
 import { startImpersonationAction } from '@/app/actions/impersonation';
 import { deleteUserAction } from '@/app/actions/admin-users';
+import { GrantAiCreditsDialog } from './GrantAiCreditsDialog';
 
 type Props = {
   userId: string;
   displayName: string;
   canImpersonate: boolean;
+  canManageBilling: boolean;
 };
 
-export function UserHeaderActions({ userId, displayName, canImpersonate }: Props) {
+export function UserHeaderActions({
+  userId,
+  displayName,
+  canImpersonate,
+  canManageBilling,
+}: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [grantCreditsOpen, setGrantCreditsOpen] = useState(false);
   const [impersonateConfirmOpen, setImpersonateConfirmOpen] = useState(false);
 
   const onDelete = () => {
@@ -69,6 +77,15 @@ export function UserHeaderActions({ userId, displayName, canImpersonate }: Props
             disabled: !canImpersonate,
             onSelect: () => setImpersonateConfirmOpen(true),
           },
+          ...(canManageBilling
+            ? [
+                {
+                  label: 'Grant AI credits',
+                  icon: <Coins size={14} />,
+                  onSelect: () => setGrantCreditsOpen(true),
+                },
+              ]
+            : []),
           {
             label: 'Delete user',
             icon: <Trash2 size={14} />,
@@ -77,6 +94,13 @@ export function UserHeaderActions({ userId, displayName, canImpersonate }: Props
           },
         ]}
       />
+      {canManageBilling ? (
+        <GrantAiCreditsDialog
+          userId={userId}
+          open={grantCreditsOpen}
+          onOpenChange={setGrantCreditsOpen}
+        />
+      ) : null}
       <AlertDialog open={impersonateConfirmOpen} onOpenChange={setImpersonateConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

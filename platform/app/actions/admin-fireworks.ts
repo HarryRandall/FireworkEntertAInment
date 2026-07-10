@@ -19,19 +19,12 @@ import {
   makeFireworkEditorSnapshot,
   parseFireworkEditorSnapshot,
 } from '@/lib/admin/editor-snapshots';
-import {
-  isMissingEditorVersionSchemaError,
-  isMissingStyleDefaultSchemaError,
-} from '@/lib/admin/style-default-schema';
-import {
-  filterValidStyleDefaultAssignments,
-  normaliseStyleDefaultAssignments,
-  replaceFireworkStyleDefaultLinks,
-  validateStyleDefaultAssignments,
-  type StyleDefaultAssignmentMap,
-} from '@/lib/admin/style-default-assignments';
+import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Json } from '@/lib/database.types';
-import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
+import {
+  emptyStyleDefaultIdMap,
+  FIREWORK_STYLE_DEFAULT_KINDS,
+} from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
@@ -107,29 +100,6 @@ function adminLabel(profile: CurrentProfile): string {
   return profile.fullName || profile.email || 'Platform admin';
 }
 
-function emptyAssignments(): StyleDefaultAssignmentMap {
-  return Object.fromEntries(
-    FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [kind, null]),
-  ) as StyleDefaultAssignmentMap;
-}
-
-function assignmentsFromRows(
-  base: StyleDefaultAssignmentMap,
-  rows: Array<{ kind: string; style_default_id: string | null }>,
-): StyleDefaultAssignmentMap {
-  const assignments = { ...base };
-  for (const row of rows) {
-    if (
-      FIREWORK_STYLE_DEFAULT_KINDS.includes(
-        row.kind as (typeof FIREWORK_STYLE_DEFAULT_KINDS)[number],
-      )
-    ) {
-      assignments[row.kind as keyof StyleDefaultAssignmentMap] = row.style_default_id;
-    }
-  }
-  return assignments;
-}
-
 function readSnapshotRecord(value: Json | null): Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -160,7 +130,6 @@ function summariseFireworkChanges(changesJson: Json): string {
     primaryColor: 'primary colour',
     secondaryColor: 'secondary colour',
     colorPalette: 'palette',
-    styleDefaultIds: 'style defaults',
     renderOverridesJson: 'renderer overrides',
   };
   const fields = Object.keys(readSnapshotRecord(changesJson));
@@ -177,29 +146,13 @@ async function loadFireworkEditorSnapshot(
   const { data, error } = await supabase
     .from('fireworks')
     .select(
-      'id, name, description, firework_effect_id, caliber, duration_seconds, height_meters, primary_color, secondary_color, color_palette, render_overrides_json, star_style_default_id, trail_style_default_id, updated_at',
+      'id, name, description, firework_effect_id, caliber, duration_seconds, height_meters, primary_color, secondary_color, color_palette, render_overrides_json, updated_at',
     )
     .eq('id', fireworkId)
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
   if (!data) return { ok: true, snapshot: null };
-
-  let assignments = normaliseStyleDefaultAssignments({
-    starStyleDefaultId: data.star_style_default_id,
-    trailStyleDefaultId: data.trail_style_default_id,
-  });
-  const linkResult = await supabase
-    .from('firework_style_default_links')
-    .select('kind, style_default_id')
-    .eq('firework_id', fireworkId);
-  if (linkResult.error) {
-    if (!isMissingStyleDefaultSchemaError(linkResult.error)) {
-      return { ok: false, error: linkResult.error.message };
-    }
-  } else {
-    assignments = assignmentsFromRows(assignments, linkResult.data ?? []);
-  }
 
   return {
     ok: true,
@@ -215,7 +168,7 @@ async function loadFireworkEditorSnapshot(
       primaryColor: data.primary_color,
       secondaryColor: data.secondary_color,
       colorPalette: Array.isArray(data.color_palette) ? data.color_palette : [],
-      styleDefaultIds: assignments,
+      styleDefaultIds: emptyStyleDefaultIdMap(),
       renderOverridesJson: data.render_overrides_json ?? {},
       updatedAt: data.updated_at,
     }),
@@ -310,13 +263,6 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
   if (!overrides.ok) return { ok: false, error: overrides.error };
 
   const supabase = createClient(await cookies());
-  const assignments = normaliseStyleDefaultAssignments({
-    styleDefaultIds: parsed.data.styleDefaultIds,
-    starStyleDefaultId: parsed.data.starStyleDefaultId,
-    trailStyleDefaultId: parsed.data.trailStyleDefaultId,
-  });
-  const validatedAssignments = await validateStyleDefaultAssignments(supabase, assignments);
-  if (!validatedAssignments.ok) return validatedAssignments;
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -330,8 +276,6 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     primary_color: parsed.data.primaryColor || null,
     secondary_color: parsed.data.secondaryColor || null,
     color_palette: parsed.data.colorPalette ?? [],
-    star_style_default_id: assignments.star,
-    trail_style_default_id: assignments.trail,
     render_overrides_json: overrides.value,
     updated_at: new Date().toISOString(),
   };
@@ -351,9 +295,6 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
       error: 'This firework changed in another session. Refresh before saving again.',
     };
   }
-  const linksResult = await replaceFireworkStyleDefaultLinks(supabase, parsed.data.id, assignments);
-  if (!linksResult.ok) return { ok: false, error: linksResult.error };
-
   const snapshotJson = makeFireworkEditorSnapshot({
     kind: 'firework',
     id: parsed.data.id,
@@ -366,7 +307,7 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     primaryColor: parsed.data.primaryColor || null,
     secondaryColor: parsed.data.secondaryColor || null,
     colorPalette: parsed.data.colorPalette ?? [],
-    styleDefaultIds: assignments,
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     renderOverridesJson: overrides.value,
     updatedAt: data.updated_at,
   });
@@ -380,7 +321,6 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     'primaryColor',
     'secondaryColor',
     'colorPalette',
-    'styleDefaultIds',
     'renderOverridesJson',
   ]);
   const versionError = await recordFireworkVersion(supabase, {
@@ -431,19 +371,6 @@ export async function restoreFireworkEditorVersion(
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.fireworkId);
   if (!previousSnapshot.ok) return previousSnapshot;
 
-  let assignments = emptyAssignments();
-  try {
-    assignments = await filterValidStyleDefaultAssignments(
-      supabase,
-      normaliseStyleDefaultAssignments({ styleDefaultIds: snapshot.styleDefaultIds }),
-    );
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Could not validate style defaults.',
-    };
-  }
-
   const updatedAt = new Date().toISOString();
   const patch = {
     name: snapshot.name,
@@ -455,41 +382,16 @@ export async function restoreFireworkEditorVersion(
     primary_color: snapshot.primaryColor,
     secondary_color: snapshot.secondaryColor,
     color_palette: snapshot.colorPalette,
-    star_style_default_id: assignments.star,
-    trail_style_default_id: assignments.trail,
     render_overrides_json: snapshot.renderOverridesJson,
     updated_at: updatedAt,
   };
-  const fallbackPatch = {
-    name: snapshot.name,
-    description: snapshot.description,
-    firework_effect_id: snapshot.fireworkEffectId,
-    caliber: snapshot.caliber,
-    duration_seconds: snapshot.durationSeconds,
-    height_meters: snapshot.heightMeters,
-    primary_color: snapshot.primaryColor,
-    secondary_color: snapshot.secondaryColor,
-    color_palette: snapshot.colorPalette,
-    render_overrides_json: snapshot.renderOverridesJson,
-    updated_at: updatedAt,
-  };
-  let result = await supabase
+  const result = await supabase
     .from('fireworks')
     .update(patch)
     .eq('id', parsed.data.fireworkId)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
     .select('updated_at')
     .maybeSingle();
-
-  if (isMissingStyleDefaultSchemaError(result.error)) {
-    result = await supabase
-      .from('fireworks')
-      .update(fallbackPatch)
-      .eq('id', parsed.data.fireworkId)
-      .eq('updated_at', parsed.data.expectedUpdatedAt)
-      .select('updated_at')
-      .maybeSingle();
-  }
 
   const { data, error } = result;
   if (error) return { ok: false, error: error.message };
@@ -500,16 +402,9 @@ export async function restoreFireworkEditorVersion(
     };
   }
 
-  const linksResult = await replaceFireworkStyleDefaultLinks(
-    supabase,
-    parsed.data.fireworkId,
-    assignments,
-  );
-  if (!linksResult.ok) return { ok: false, error: linksResult.error };
-
   const snapshotJson = makeFireworkEditorSnapshot({
     ...snapshot,
-    styleDefaultIds: assignments,
+    styleDefaultIds: emptyStyleDefaultIdMap(),
     updatedAt: data.updated_at,
   });
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
@@ -522,7 +417,6 @@ export async function restoreFireworkEditorVersion(
     'primaryColor',
     'secondaryColor',
     'colorPalette',
-    'styleDefaultIds',
     'renderOverridesJson',
   ]);
   const versionResult = await recordFireworkVersion(supabase, {

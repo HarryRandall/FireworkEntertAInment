@@ -171,15 +171,17 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
 test('admin user detail exposes credit balance, recent spend, and grant controls', () => {
   const shell = read('app/components/admin/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
-  const grantForm = read('app/(admin)/admin/users/[id]/GrantAiCreditsForm.tsx');
+  const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
+  const grantDialog = read('app/(admin)/admin/users/[id]/GrantAiCreditsDialog.tsx');
   const actions = read('app/actions/admin-users.ts');
   assert.doesNotMatch(shell, /\/admin\/billing/);
   assert.equal(existsSync(join(root, 'app/(admin)/admin/billing/page.tsx')), false);
   assert.match(userDetail, /AdminUserAiCreditsCard/);
-  assert.match(userDetail, /GrantAiCreditsForm/);
   assert.match(userDetail, /Recent spend/);
-  assert.match(grantForm, /grantUserAiCreditsAction/);
-  assert.match(grantForm, /Grant/);
+  assert.match(userHeaderActions, /GrantAiCreditsDialog/);
+  assert.match(userHeaderActions, /canManageBilling/);
+  assert.match(grantDialog, /grantUserAiCreditsAction/);
+  assert.match(grantDialog, /Grant AI credits/);
   assert.match(actions, /grantAiCredits/);
   assert.doesNotMatch(actions, /updateAiCreditLimits/);
 });

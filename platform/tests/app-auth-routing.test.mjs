@@ -87,6 +87,7 @@ test('(app) layout requires an authenticated user before rendering the app shell
 
 test('show detail layout requires a session before rendering tabs or children', () => {
   const layout = read('app/(app)/shows/[id]/layout.tsx');
+  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
   assert.match(layout, /getCurrentUserId/);
   assert.match(layout, /if \(!userId\)/);
   assert.match(
@@ -94,6 +95,10 @@ test('show detail layout requires a session before rendering tabs or children', 
     /redirect\(`\/login\?next=\$\{encodeURIComponent\(`\/shows\/\$\{id\}`\)\}`\)/,
   );
   assert.match(layout, /getShowBySlug/);
+  assert.match(layout, /<ShowDetailChrome/);
+  assert.match(layout, /forceContentOnly=\{show\.generationStatus === 'running'\}/);
+  assert.match(chrome, /useSelectedLayoutSegment/);
+  assert.match(chrome, /segment === 'generating'/);
 });
 
 test('AppShell is authenticated-only and keeps shipped navigation links', () => {

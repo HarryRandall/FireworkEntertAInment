@@ -19,6 +19,8 @@ const TemplateReplayPreview = dynamic(
   { ssr: false, loading: () => null },
 );
 
+const FEATURED_AUTOPLAY_MS = 5_000;
+
 const COLLECTIONS = [
   {
     title: 'Finale moments',
@@ -73,26 +75,52 @@ function FeaturedShowCard({
   index: number;
   specifications: FireworkSpecification[];
 }) {
-  const cover = template.coverShader ?? shaderCoverFromSeed(template.id || template.slug);
-  const [isPreviewActive, setIsPreviewActive] = useState(false);
+  const [isPreviewHovered, setIsPreviewHovered] = useState(false);
+  const [isAutoplayActive, setIsAutoplayActive] = useState(false);
+  const [hasPreviewMounted, setHasPreviewMounted] = useState(false);
   const [isPreviewReady, setIsPreviewReady] = useState(false);
-  const [accentStart, accentMiddle = accentStart, accentEnd = accentStart] = cover.colors;
-  const accentStyle = {
-    '--show-accent-start': accentStart,
-    '--show-accent-middle': accentMiddle,
-    '--show-accent-end': accentEnd,
-  } as CSSProperties;
-  const showReplay =
-    isPreviewActive && template.previewCues.length > 0 && specifications.length > 0;
+  const autoplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasReplay = template.previewCues.length > 0 && specifications.length > 0;
+  const isPreviewActive = isAutoplayActive || isPreviewHovered;
+  const isPreviewVisible = isPreviewReady && isPreviewActive;
+  const showReplay = hasReplay && hasPreviewMounted;
 
-  function startPreview() {
-    setIsPreviewActive(true);
-  }
+  const clearAutoplayTimer = useCallback(() => {
+    if (autoplayTimerRef.current !== null) {
+      clearTimeout(autoplayTimerRef.current);
+      autoplayTimerRef.current = null;
+    }
+  }, []);
 
-  function stopPreview() {
-    setIsPreviewActive(false);
+  useEffect(() => {
+    clearAutoplayTimer();
     setIsPreviewReady(false);
-  }
+    setHasPreviewMounted(false);
+    setIsAutoplayActive(false);
+    if (!hasReplay) return clearAutoplayTimer;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return clearAutoplayTimer;
+    setHasPreviewMounted(true);
+    setIsAutoplayActive(true);
+    return clearAutoplayTimer;
+  }, [clearAutoplayTimer, hasReplay, template.id]);
+
+  const startPreview = useCallback(() => {
+    if (hasReplay) setHasPreviewMounted(true);
+    setIsPreviewHovered(true);
+  }, [hasReplay]);
+
+  const stopPreview = useCallback(() => {
+    setIsPreviewHovered(false);
+  }, []);
+
+  const handlePreviewReady = useCallback(() => {
+    setIsPreviewReady(true);
+    if (!isAutoplayActive || autoplayTimerRef.current !== null) return;
+    autoplayTimerRef.current = setTimeout(() => {
+      autoplayTimerRef.current = null;
+      setIsAutoplayActive(false);
+    }, FEATURED_AUTOPLAY_MS);
+  }, [isAutoplayActive]);
 
   return (
     <Link
@@ -100,7 +128,6 @@ function FeaturedShowCard({
       prefetch={false}
       aria-label={`Watch ${template.title}`}
       className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative isolate min-h-[14rem] overflow-hidden rounded-2xl bg-[color:var(--color-bg-elevated)] shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={accentStyle}
       onPointerEnter={startPreview}
       onPointerLeave={stopPreview}
       onFocus={startPreview}
@@ -110,19 +137,22 @@ function FeaturedShowCard({
         imagePath={template.coverImagePath}
         eager
         className={`z-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 ${
-          isPreviewReady ? 'opacity-0' : 'opacity-100'
+          isPreviewVisible ? 'opacity-0' : 'opacity-100'
         }`}
       />
       {showReplay ? (
         <TemplateReplayPreview
           template={template}
           specifications={specifications}
-          isCardHovered={isPreviewActive}
+          isCardHovered={isPreviewHovered}
+          isCardPlaybackActive={isPreviewActive}
+          keepCardCanvasMounted={hasPreviewMounted}
+          resetCardPlayheadOnIdle={false}
           showCardOverlays={false}
           lazyHoverMount
-          onReady={() => setIsPreviewReady(true)}
-          cardClassName={`absolute inset-0 z-[1] h-full w-full overflow-hidden transition-opacity duration-200 ${
-            isPreviewReady ? 'opacity-100' : 'opacity-0'
+          onReady={handlePreviewReady}
+          cardClassName={`absolute inset-0 z-[1] h-full w-full overflow-hidden transition-opacity duration-700 ${
+            isPreviewVisible ? 'opacity-100' : 'opacity-0'
           }`}
         />
       ) : null}

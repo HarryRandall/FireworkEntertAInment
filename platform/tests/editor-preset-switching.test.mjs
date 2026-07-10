@@ -1,7 +1,7 @@
 /** Regression guards for firework/effect editor preset switching and one-click save. */
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
@@ -28,31 +28,38 @@ test('selecting a named style default clears that kind inline overrides', () => 
   }
 });
 
-test('Save new default persists the link and clears overrides in one click', () => {
+test('Save new default copies settings and clears transient selection in one click', () => {
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
 
   assert.match(fireworkEditor, /async function persistFirework\(/);
+  assert.match(fireworkEditor, /function copySelectedStyleDefaultsIntoOverrides/);
   assert.match(
     fireworkEditor,
-    /await persistFirework\(\{[\s\S]*?styleDefaultIdsMap: nextSaveMap,[\s\S]*?overrides: nextMerged,[\s\S]*?\}\)/,
+    /await persistFirework\(\{[\s\S]*?styleDefaultIdsMap: clearedSaveMap,[\s\S]*?overrides: copiedOverrides,[\s\S]*?\}\)/,
   );
   assert.match(
     fireworkEditor,
-    /saveCurrentStyleAsDefault[\s\S]*?removeStyleDefaultOverridesFromRecord\(nextOverridesRecord, kind\)/,
+    /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoOverrides\(mergedOverrides\)/,
   );
+  assert.match(fireworkEditor, /saveCurrentStyleAsDefault[\s\S]*?overrides: nextMerged/);
+  assert.match(fireworkEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
+  assert.match(fireworkEditor, /setOverridesText\(copiedOverridesText\)/);
   assert.match(fireworkEditor, /setSavedSignature\(\s*fireworkEditorSignature\(/);
   assert.match(fireworkEditor, /Style default created and saved/);
 
   assert.match(effectEditor, /async function persistEffect\(/);
+  assert.match(effectEditor, /function copySelectedStyleDefaultsIntoModel/);
   assert.match(
     effectEditor,
-    /await persistEffect\(\{[\s\S]*?styleDefaultIdsMap: nextSaveMap,[\s\S]*?modelJson: nextModelText,[\s\S]*?\}\)/,
+    /await persistEffect\(\{[\s\S]*?styleDefaultIdsMap: clearedSaveMap,[\s\S]*?modelJson: savedModelText,[\s\S]*?\}\)/,
   );
   assert.match(
     effectEditor,
-    /saveCurrentStyleAsDefault[\s\S]*?removeStyleDefaultOverridesFromRecord\(nextRenderDefaults, kind\)/,
+    /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoModel\(parsedModel\.value\)/,
   );
+  assert.match(effectEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
+  assert.match(effectEditor, /setModelText\(savedModelText\)/);
   assert.match(effectEditor, /setSavedSignature\(\s*effectEditorSignature\(/);
   assert.match(effectEditor, /Style default created and saved/);
 });
@@ -93,17 +100,14 @@ test('changing the base effect resets style defaults and clears overrides', () =
   assert.match(fireworkEditor, /onChange=\{handleEffectIdChange\}/);
 });
 
-test('style-default link writes surface errors instead of silently succeeding', () => {
-  const assignments = read('lib/admin/style-default-assignments.ts');
+test('style defaults are copied through editor JSON instead of live assignment writes', () => {
+  const effectActions = read('app/actions/admin-effects.ts');
+  const fireworkActions = read('app/actions/admin-fireworks.ts');
 
+  assert.equal(existsSync(join(root, 'lib/admin/style-default-assignments.ts')), false);
+  assert.doesNotMatch(effectActions, /style-default-assignments|replaceEffectStyleDefaultLinks/);
   assert.doesNotMatch(
-    assignments,
-    /isMissingStyleDefaultSchemaError\(deleteResult\.error\)\) return \{ ok: true \}/,
+    fireworkActions,
+    /style-default-assignments|replaceFireworkStyleDefaultLinks/,
   );
-  assert.doesNotMatch(
-    assignments,
-    /isMissingStyleDefaultSchemaError\(insertResult\.error\)\) return \{ ok: true \}/,
-  );
-  assert.match(assignments, /return \{ ok: false, error: deleteResult\.error\.message \};/);
-  assert.match(assignments, /return \{ ok: false, error: insertResult\.error\.message \};/);
 });

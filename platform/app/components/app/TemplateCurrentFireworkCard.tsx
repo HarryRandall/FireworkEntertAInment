@@ -90,6 +90,7 @@ function TimelineCue({
     ? 'text-on-surface block min-w-0 text-sm leading-snug font-semibold'
     : 'text-muted-foreground block min-w-0 text-xs leading-snug font-medium';
   const linkedNameClassName = `${nameClassName} rounded-sm underline-offset-4 transition-colors hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card`;
+  const fireworkAdminId = cue.firework.variant?.id ?? cue.firework.id;
 
   return (
     <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">
@@ -114,7 +115,7 @@ function TimelineCue({
         <div className="flex min-w-0 items-start justify-between gap-3">
           {canEditFireworks ? (
             <Link
-              href={`/admin/fireworks/${cue.firework.id}`}
+              href={`/admin/fireworks/${fireworkAdminId}`}
               prefetch={false}
               className={linkedNameClassName}
               aria-label={`Edit ${cue.firework.name}`}

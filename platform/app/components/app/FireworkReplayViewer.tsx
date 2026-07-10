@@ -33,7 +33,6 @@ import {
 import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
-import { GenerationHandoffSplash } from '@/app/components/app/GenerationHandoffSplash';
 import { Eyebrow } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -92,15 +91,6 @@ type FireworkReplayViewerProps = {
    * only needed for the add-firework dialog and audio playback, so they stream
    * separately and never gate the fireworks. */
   replayExtrasPromise: Promise<ReplayExtras>;
-  /** Fires once when the replay data has landed and the canvas has primed its
-   * fireworks — i.e. the moment the preview is genuinely watchable. Used by
-   * the post-generation handover to keep its splash up until then. */
-  onReplayReady?: () => void;
-  generationHandoff?: {
-    title?: string;
-    persistKey: string;
-    hasAudio: boolean;
-  };
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -187,8 +177,6 @@ export function FireworkReplayViewer({
   canEditFireworks = false,
   replayCuesPromise,
   replayExtrasPromise,
-  onReplayReady,
-  generationHandoff,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
   const [replayExtras, setReplayExtras] = useState<ReplayExtras | null>(null);
@@ -438,19 +426,16 @@ export function FireworkReplayViewer({
   const replayReady = replayDataReady && isCanvasReady;
   const playbackControlsVisible = !isPlaying || playbackControlsActive;
 
-  // Notify the host (post-generation handover splash) the first time the
-  // preview becomes watchable. Ref-guarded so a re-created callback prop
-  // cannot re-fire it.
-  const replayReadyNotifiedRef = useRef(false);
+  // Drop the session-scoped generating progress once an autoplayed generated
+  // preview becomes watchable. The URL cleanup effect below strips the query.
+  const replayReadyCleanupRef = useRef(false);
   useEffect(() => {
-    if (!replayReady || replayReadyNotifiedRef.current) return;
-    replayReadyNotifiedRef.current = true;
-    if (generationHandoff) {
-      clearPersistedGenerationStart(generationHandoff.persistKey);
-      clearPersistedGenerationCover(generationHandoff.persistKey);
-    }
-    onReplayReady?.();
-  }, [generationHandoff, replayReady, onReplayReady]);
+    if (!replayReady || replayReadyCleanupRef.current) return;
+    if (searchParams.get('autoplay') !== '1') return;
+    replayReadyCleanupRef.current = true;
+    clearPersistedGenerationStart(showSlug);
+    clearPersistedGenerationCover(showSlug);
+  }, [replayReady, searchParams, showSlug]);
 
   function wakePlaybackControls() {
     if (!isPlaying) {
@@ -643,13 +628,6 @@ export function FireworkReplayViewer({
 
   return (
     <>
-      {generationHandoff && !replayReady ? (
-        <GenerationHandoffSplash
-          title={generationHandoff.title}
-          persistKey={generationHandoff.persistKey}
-          hasAudio={generationHandoff.hasAudio}
-        />
-      ) : null}
       <Suspense fallback={null}>
         <StreamedDataReader promise={replayCuesPromise} onLoaded={handleReplayCuesLoaded} />
       </Suspense>

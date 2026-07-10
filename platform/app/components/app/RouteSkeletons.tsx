@@ -10,15 +10,10 @@ import {
   Cloud,
   History,
   ListFilter,
-  Maximize2,
-  Play,
   Plus,
-  Repeat,
   Rocket,
-  RotateCcw,
   Save,
   Search,
-  Settings,
   SlidersHorizontal,
   Sparkles,
   Undo2,
@@ -419,6 +414,43 @@ function ActivityChartSkeleton() {
   return <Skeleton className="h-44 rounded-md opacity-70" />;
 }
 
+/** AI credit KPI and ledger skeleton for the admin user detail page. */
+function AdminUserAiCreditsSkeleton() {
+  return (
+    <div className="border-border bg-card rounded-xl border p-5" aria-label="Loading AI credits">
+      <div className="mb-4 flex items-center gap-2">
+        <Skeleton className="h-8 w-8 rounded-lg" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-3 w-56 max-w-full" />
+        </div>
+      </div>
+      <section className="grid gap-3 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="border-border bg-card rounded-lg border px-4 py-3">
+            <Skeleton className="mb-2 h-3 w-20" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        ))}
+      </section>
+      <div className="mt-5">
+        <Skeleton className="mb-2 h-3 w-24" />
+        <div className="divide-border divide-y">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2 text-sm">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-44 max-w-full" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-5 w-12" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Role card skeleton for the admin user detail page. */
 export function AdminUserRoleSkeleton() {
   return (
@@ -475,8 +507,9 @@ export function AdminUserDetailSkeleton() {
   return (
     <div className="space-y-8" aria-label="Loading user detail">
       <AdminUserHeaderSkeleton />
-      <AdminUserActivitySkeleton />
       <AdminUserRoleSkeleton />
+      <AdminUserActivitySkeleton />
+      <AdminUserAiCreditsSkeleton />
       <AdminUserPermissionsSkeleton />
       <Skeleton className="h-3 w-44" />
     </div>
@@ -734,6 +767,66 @@ export function AdminFireworkEditorSkeleton() {
   return <AdminVisualEditorSkeleton label="Loading firework editor" />;
 }
 
+/** Skeleton for the multishot editor, preserving the preview, inspector, timeline and meta chrome. */
+export function AdminMultishotEditorSkeleton() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-5" aria-label="Loading multishot editor">
+      <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="bg-stage-night relative h-[560px] overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white">
+          <ReplayPanelLoadingStage />
+        </section>
+
+        <aside className="flex max-h-[560px] min-h-0 flex-col gap-3 overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+          <div className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-3">
+            <Skeleton className="h-10 rounded-md" />
+            <Skeleton className="h-10 rounded-md" />
+            <Skeleton className="h-10 rounded-md" />
+          </div>
+          <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] pt-3">
+            <Skeleton className="h-9 rounded-md" />
+            <Skeleton className="h-9 rounded-md" />
+          </div>
+        </aside>
+      </div>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-72 max-w-full" />
+          </div>
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+        <div className="overflow-hidden rounded-md border border-[color:var(--color-border-subtle)]">
+          <div className="h-6 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]" />
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-7 rounded-md" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 py-2.5 sm:px-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-48 max-w-full" />
+            <Skeleton className="h-3 w-64 max-w-full" />
+          </div>
+          <Skeleton className="h-8 w-28 rounded-md" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /** Skeleton for style-default editor pages, which expose a narrow section rail. */
 export function AdminStyleDefaultEditorSkeleton() {
   return (
@@ -775,10 +868,7 @@ function AdminVisualEditorSkeleton({
       aria-label={label}
     >
       <section className="bg-stage-night relative min-h-[520px] overflow-hidden text-white lg:min-h-0">
-        <div
-          className="h-full bg-[radial-gradient(ellipse_at_50%_35%,rgba(255,255,255,0.035),transparent_44%),linear-gradient(180deg,#05070d_0%,#070b14_58%,#020307_100%)]"
-          aria-hidden
-        />
+        <ReplayPanelLoadingStage />
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-6 pb-4 sm:px-5 sm:pb-5">
           <div className="flex flex-wrap items-start justify-end gap-3 pr-16 sm:pr-[4.5rem]">
@@ -804,16 +894,6 @@ function AdminVisualEditorSkeleton({
               </Button>
             </div>
           </div>
-        </div>
-
-        <div className="pointer-events-none absolute top-6 right-6 z-30">
-          <div className="focus-glow-action border-outline-variant/15 bg-surface-container-low/80 text-on-surface flex h-9 w-9 items-center justify-center rounded-full border transition-colors duration-150 ease-out">
-            <Settings size={16} strokeWidth={2} aria-hidden />
-          </div>
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex justify-center px-4">
-          <EditorTransportSkeleton />
         </div>
       </section>
 
@@ -877,55 +957,6 @@ function BracesSkeletonIcon({ size = 18 }: { size?: number }) {
     >
       {'{}'}
     </span>
-  );
-}
-
-function EditorTransportSkeleton() {
-  return (
-    <div
-      className="pointer-events-auto mx-auto flex w-[calc(100%_-_2rem)] max-w-[620px] items-center gap-2 rounded-xl border border-white/12 bg-black/55 px-4 py-3 text-white shadow-[var(--shadow-modal)] backdrop-blur-md"
-      aria-label="Loading preview controls"
-    >
-      <div className="grid size-11 shrink-0 place-items-center rounded-full bg-white text-black shadow-[var(--shadow-cta)]">
-        <Play size={17} className="translate-x-0.5" fill="currentColor" strokeWidth={2.5} />
-      </div>
-      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
-        <RotateCcw size={15} strokeWidth={2} />
-      </div>
-      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-transparent bg-[color:var(--hl,#10b981)] text-black">
-        <Repeat size={15} strokeWidth={2} />
-      </div>
-
-      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
-        <span className="min-w-[2.55rem] text-right font-mono text-[11px] text-white/75 tabular-nums">
-          0:00
-        </span>
-        <div className="relative flex h-7 min-w-0 items-center rounded-full">
-          <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/90" />
-          {[28, 54, 82].map((left) => (
-            <span
-              key={left}
-              className="absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm"
-              style={{ left: `${left}%` }}
-              aria-hidden
-            >
-              <span className="h-4 w-px rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,.42)]" />
-            </span>
-          ))}
-          <span
-            className="absolute top-1/2 left-0 z-30 size-4 -translate-y-1/2 rounded-full border-2 border-[color:var(--hl,#10b981)] bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
-            aria-hidden
-          />
-        </div>
-        <span className="min-w-[2.55rem] font-mono text-[11px] text-white/75 tabular-nums">
-          0:05
-        </span>
-      </div>
-
-      <div className="grid size-10 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-white">
-        <Maximize2 size={15} strokeWidth={2} />
-      </div>
-    </div>
   );
 }
 

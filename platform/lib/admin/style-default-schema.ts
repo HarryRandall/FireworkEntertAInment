@@ -30,11 +30,7 @@ export function isMissingStyleDefaultSchemaError(error: unknown): boolean {
 
   const text = errorText(error).toLowerCase();
   return (
-    (text.includes('firework_style_defaults') ||
-      text.includes('firework_effect_style_default_links') ||
-      text.includes('firework_style_default_links') ||
-      text.includes('star_style_default_id') ||
-      text.includes('trail_style_default_id')) &&
+    text.includes('firework_style_defaults') &&
     (text.includes('schema cache') ||
       text.includes('could not find') ||
       text.includes('does not exist') ||

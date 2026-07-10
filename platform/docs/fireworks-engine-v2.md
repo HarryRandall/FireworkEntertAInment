@@ -27,9 +27,9 @@ The current catalogue schema uses the 2026-06-14 catalogue rework plus later edi
 - `multishots` and `multishot_fireworks`: ordered composite products that expand into replay cues.
 - `catalogue_items`: purchasable items pointing at either a firework or multishot.
 - `show_timeline_items`: cue rows consumed by the replay and generation flows.
-- `firework_style_defaults`, `firework_effect_style_default_links`, and `firework_style_default_links`: admin-managed reusable defaults for editor sections.
+- `firework_style_defaults`: admin-managed saved renderer fragments for editor sections. Applying one copies its JSON into the effect/firework being edited; saved effects and fireworks do not keep a live link back to the default.
 
-Server reads should go through `lib/shows.server.ts` and `lib/shows/*` mappers so multishot expansion, style-default hydration, and cache invalidation stay consistent.
+Server reads should go through `lib/shows.server.ts` and `lib/shows/*` mappers so multishot expansion, copied render settings, and cache invalidation stay consistent.
 
 ## Video/LLM Ingestion
 

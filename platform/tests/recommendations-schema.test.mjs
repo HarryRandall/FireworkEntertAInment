@@ -48,8 +48,10 @@ test('show library templates use semi-static caching', () => {
   const cacheKeys = readFileSync(join(root, 'lib/admin/cache-keys.ts'), 'utf8');
   const templates = readFileSync(join(root, 'lib/admin/templates.server.ts'), 'utf8');
   assert.match(cacheKeys, /SHOW_TEMPLATES_TTL_SECONDS/);
+  assert.match(cacheKeys, /getShowTemplatesCacheKey/);
   assert.match(templates, /getCachedJson<ShowTemplate\[]>/);
-  assert.match(templates, /setCachedJson\(SHOW_TEMPLATES_CACHE_KEY, mapped/);
+  assert.match(templates, /const cacheKey = getShowTemplatesCacheKey\(\)/);
+  assert.match(templates, /setCachedJson\(cacheKey, mapped/);
 });
 
 test('main navigation includes show library', () => {

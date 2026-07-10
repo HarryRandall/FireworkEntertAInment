@@ -10,7 +10,7 @@ import {
 import { EmptyShowsPanel, PromptHero } from '@/app/components/app/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { getDashboardSummaryWithTemplates } from '@/lib/show-summary.server';
-import { listFireworkSpecifications, ShowsNetworkError } from '@/lib/shows.server';
+import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
 export default function HomePage() {
@@ -27,11 +27,11 @@ export default function HomePage() {
 async function HomeContent() {
   const [{ summary, templates: exploreTemplates }, specificationsResult] = await Promise.all([
     getDashboardSummaryWithTemplates(),
-    listFireworkSpecifications().then(
+    listFireworkProducts().then(
       (specifications) => ({ specifications, failed: false as const }),
       (error) => {
         if (error instanceof ShowsNetworkError) {
-          console.error('[home] listFireworkSpecifications unavailable:', error);
+          console.error('[home] listFireworkProducts unavailable:', error);
           return { specifications: [] as FireworkSpecification[], failed: true as const };
         }
         throw error;

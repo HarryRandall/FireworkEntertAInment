@@ -6,14 +6,12 @@
  * a small badge, a subtitle, and play / like / comment stats underneath.
  */
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
 import { memo, useId, useRef } from 'react';
 import { Loader2, MessageCircle, Play, ThumbsUp } from 'lucide-react';
 import { CoverPoster } from '@/app/components/app/CoverPoster';
 import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
 import { formatDuration } from '@/lib/show-domain';
-import { shaderCoverFromSeed } from '@/lib/shader-cover';
 import { cn } from '@/lib/utils';
 import type { ShowTemplate } from '@/lib/admin.types';
 
@@ -54,19 +52,12 @@ export const ExploreCard = memo(function ExploreCard({
   const preview = useExplorePreview();
   const coverRef = useRef<HTMLDivElement | null>(null);
   const previewId = useId();
-  const cover = template.coverShader ?? shaderCoverFromSeed(template.id || template.slug);
-  const [accentStart, accentMiddle = accentStart, accentEnd = accentStart] = cover.colors;
   // Hovering (dwell or active) swaps the resting poster for the static firework
   // stage; the shared overlay canvas only reveals once it has actually painted
   // for this card, so hover never flashes black during the WebGL warm-up.
   const isPreviewHovering = preview?.pendingId === previewId || preview?.activeId === previewId;
   const isPreviewRevealed = preview?.readyId === previewId;
   const isPreviewLoading = isPreviewHovering && !isPreviewRevealed;
-  const accentStyle = {
-    '--template-accent-start': accentStart,
-    '--template-accent-middle': accentMiddle,
-    '--template-accent-end': accentEnd,
-  } as CSSProperties;
   const stats = deriveStats(template);
 
   return (
@@ -78,7 +69,6 @@ export const ExploreCard = memo(function ExploreCard({
         className,
       )}
       aria-label={`Open template: ${template.title}`}
-      style={accentStyle}
       onPointerEnter={() => {
         if (coverRef.current) preview?.requestPreview(previewId, coverRef.current, template);
       }}
@@ -104,12 +94,6 @@ export const ExploreCard = memo(function ExploreCard({
           imagePath={template.coverImagePath}
           className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 ${
             isPreviewHovering ? 'opacity-0' : 'opacity-100'
-          }`}
-        />
-        <div
-          aria-hidden
-          className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_92%,rgba(255,255,255,0.18),transparent_38%),linear-gradient(180deg,transparent_10%,rgba(0,0,0,0.18)_100%)] transition-opacity duration-200 ${
-            isPreviewRevealed ? 'opacity-0' : 'opacity-70 group-hover:opacity-40'
           }`}
         />
         <span

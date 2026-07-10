@@ -18,15 +18,14 @@ const EMPTY_EXTRAS = { specifications: [], audioUrl: null };
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ handoff?: string; t?: string; a?: string }>;
 };
 
 export default function ShowPreviewPage(props: PageProps) {
-  const { params, searchParams } = props;
+  const { params } = props;
 
   return (
     <Suspense fallback={<ReplayPanelSkeleton />}>
-      <ShowPreviewReplay params={params} searchParams={searchParams} />
+      <ShowPreviewReplay params={params} />
     </Suspense>
   );
 }
@@ -34,7 +33,6 @@ export default function ShowPreviewPage(props: PageProps) {
 async function ShowPreviewReplay(props: PageProps) {
   const { params } = props;
   const { id } = await params;
-  const previewParams = (await props.searchParams) ?? {};
   const show = await getShowBySlug(id);
   if (!show) notFound();
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
@@ -74,15 +72,6 @@ async function ShowPreviewReplay(props: PageProps) {
       canEditFireworks={canEditFireworks}
       replayCuesPromise={replayCuesPromise}
       replayExtrasPromise={replayExtrasPromise}
-      generationHandoff={
-        previewParams.handoff === '1'
-          ? {
-              title: previewParams.t?.trim() || show.title,
-              persistKey: show.slug,
-              hasAudio: previewParams.a === '1' || Boolean(show.audioPath || show.musicAnalysisId),
-            }
-          : undefined
-      }
     />
   );
 }

@@ -21,6 +21,7 @@ import {
   resolvePersistedGenerationCover,
 } from '@/lib/generation-progress-storage';
 import { isCssCover, randomCover, type ShowCover } from '@/lib/cover';
+import { COVER_POSTER_VERSION, isCurrentCoverPosterPath } from '@/lib/cover-poster-url';
 import { renderCoverToPng } from '@/lib/render-cover-poster';
 import { setShowCoverImagePath } from '@/app/actions/show-cover-poster';
 import { createClient } from '@/utils/supabase/client';
@@ -85,7 +86,6 @@ const ANALYSIS_BAR_SHARE = 0.55;
 // Give up on capturing the cover poster after this many failed attempts so a
 // broken WebGL context can't retry forever across poll refreshes.
 const MAX_COVER_CAPTURE_ATTEMPTS = 2;
-const COVER_POSTER_VERSION = 'v2';
 
 /** Rough wall-clock estimate for a phase, in seconds. LLM cue assignment can
  * run well past a minute, so the generating estimate leans conservative and
@@ -110,8 +110,24 @@ function formatEta(seconds: number): string {
   return `about ${Math.ceil(seconds / 60)} min left`;
 }
 
-function hasCurrentCoverPoster(path: string | null | undefined): boolean {
-  return Boolean(path && path.includes(`-${COVER_POSTER_VERSION}.`));
+function stableJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableJson);
+  if (!value || typeof value !== 'object') return value;
+  return Object.keys(value)
+    .sort()
+    .reduce<Record<string, unknown>>((record, key) => {
+      record[key] = stableJson((value as Record<string, unknown>)[key]);
+      return record;
+    }, {});
+}
+
+function coverSignature(cover: ShowCover | null | undefined): string | null {
+  if (!cover) return null;
+  try {
+    return JSON.stringify(stableJson(cover));
+  } catch {
+    return null;
+  }
 }
 
 type ProgressUi = {
@@ -311,7 +327,10 @@ export function GeneratingShowAnimation({
   // MAX_COVER_CAPTURE_ATTEMPTS the capture stops retrying so a broken WebGL
   // context or storage rejection cannot spam errors across poll refreshes.
   useEffect(() => {
-    if (!showId || !activeCover || hasCurrentCoverPoster(coverImagePath)) return;
+    const activeCoverMatchesStored = coverSignature(activeCover) === coverSignature(coverShader);
+    const hasCurrentPosterForActiveCover =
+      isCurrentCoverPosterPath(coverImagePath) && activeCoverMatchesStored;
+    if (!showId || !activeCover || hasCurrentPosterForActiveCover) return;
     if (coverCaptureInFlightRef.current) return;
     if (coverCaptureAttemptsRef.current >= MAX_COVER_CAPTURE_ATTEMPTS) return;
     coverCaptureInFlightRef.current = true;
@@ -340,7 +359,7 @@ export function GeneratingShowAnimation({
           console.error('[cover-poster] upload failed:', uploadError);
           return;
         }
-        await setShowCoverImagePath(showId, path);
+        await setShowCoverImagePath(showId, path, activeCover);
         // Success: make sure later refreshes never re-enter.
         coverCaptureAttemptsRef.current = MAX_COVER_CAPTURE_ATTEMPTS;
       } catch (error) {
@@ -349,7 +368,7 @@ export function GeneratingShowAnimation({
         coverCaptureInFlightRef.current = false;
       }
     })();
-  }, [showId, activeCover, coverImagePath]);
+  }, [showId, activeCover, coverShader, coverImagePath]);
 
   return (
     <section

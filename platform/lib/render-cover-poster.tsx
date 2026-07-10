@@ -195,12 +195,13 @@ async function assertPosterHasVisualDetail(dataUrl: string, label: string): Prom
 function makeHiddenContainer(width: number, height: number): HTMLDivElement {
   const container = document.createElement('div');
   container.style.position = 'fixed';
-  container.style.left = '-9999px';
-  container.style.top = '-9999px';
+  container.style.left = '0';
+  container.style.top = '0';
   container.style.width = `${width}px`;
   container.style.height = `${height}px`;
   container.style.overflow = 'hidden';
   container.style.pointerEvents = 'none';
+  container.style.zIndex = '-1';
   document.body.appendChild(container);
   return container;
 }

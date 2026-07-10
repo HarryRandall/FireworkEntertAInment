@@ -1,4 +1,4 @@
-/** Static guards for live-linked firework style defaults. */
+/** Static guards for copy-on-apply firework style defaults. */
 
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -11,15 +11,19 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('style default schema supports generalised live links', () => {
+test('style default schema keeps saved defaults and prunes live links', () => {
   const baseMigrationPath = 'supabase/migrations/20260618051341_live_firework_style_defaults.sql';
   const generalisedMigrationPath =
     'supabase/migrations/20260618081656_generalised_firework_style_defaults.sql';
+  const copyMigrationPath =
+    'supabase/migrations/20260709082959_copy_style_defaults_and_clean_indexes.sql';
   assert.equal(existsSync(join(root, baseMigrationPath)), true);
   assert.equal(existsSync(join(root, generalisedMigrationPath)), true);
+  assert.equal(existsSync(join(root, copyMigrationPath)), true);
 
   const baseMigration = read(baseMigrationPath);
   const generalisedMigration = read(generalisedMigrationPath);
+  const copyMigration = read(copyMigrationPath);
   const types = read('lib/database.types.ts');
 
   assert.match(baseMigration, /create table if not exists public\.firework_style_defaults/);
@@ -41,28 +45,6 @@ test('style default schema supports generalised live links', () => {
     generalisedMigration,
     /check \(kind in \('star', 'trail', 'launch', 'smoke', 'strobe', 'crackle', 'split', 'sound'\)\)/,
   );
-  assert.match(
-    generalisedMigration,
-    /create table if not exists public\.firework_effect_style_default_links/,
-  );
-  assert.match(
-    generalisedMigration,
-    /create table if not exists public\.firework_style_default_links/,
-  );
-  assert.match(generalisedMigration, /primary key \(firework_effect_id, kind\)/);
-  assert.match(generalisedMigration, /primary key \(firework_id, kind\)/);
-  assert.match(generalisedMigration, /enable row level security/);
-  assert.match(
-    generalisedMigration,
-    /grant select, insert, update, delete on public\.firework_effect_style_default_links to authenticated/,
-  );
-  assert.match(
-    generalisedMigration,
-    /grant select, insert, update, delete on public\.firework_style_default_links to authenticated/,
-  );
-  assert.match(generalisedMigration, /firework_effect_style_default_links_admin_modify/);
-  assert.match(generalisedMigration, /firework_style_default_links_admin_modify/);
-
   for (const slug of [
     'standard-launch',
     'standard-smoke',
@@ -74,18 +56,20 @@ test('style default schema supports generalised live links', () => {
     assert.match(generalisedMigration, new RegExp(`'${slug}'`));
   }
 
-  assert.match(generalisedMigration, /select id, 'star', star_style_default_id/);
-  assert.match(generalisedMigration, /select id, 'trail', trail_style_default_id/);
-  assert.match(types, /firework_effect_style_default_links: \{/);
-  assert.match(types, /firework_style_default_links: \{/);
-  assert.match(
-    types,
-    /foreignKeyName: "firework_effect_style_default_links_style_default_id_fkey"/,
-  );
-  assert.match(types, /foreignKeyName: "firework_style_default_links_style_default_id_fkey"/);
+  assert.match(copyMigration, /deep_merge_jsonb/);
+  assert.match(copyMigration, /drop table if exists public\.firework_effect_style_default_links/);
+  assert.match(copyMigration, /drop table if exists public\.firework_style_default_links/);
+  assert.match(copyMigration, /drop column if exists star_style_default_id/);
+  assert.match(copyMigration, /drop column if exists trail_style_default_id/);
+  assert.match(copyMigration, /drop index if exists public\.show_analyses_show_latest_idx/);
+  assert.match(copyMigration, /drop index if exists public\.show_analyses_user_created_idx/);
+  assert.doesNotMatch(types, /firework_effect_style_default_links: \{/);
+  assert.doesNotMatch(types, /firework_style_default_links: \{/);
+  assert.doesNotMatch(types, /star_style_default_id:/);
+  assert.doesNotMatch(types, /trail_style_default_id:/);
 });
 
-test('resolved render designs merge linked defaults in kind order before local overrides', () => {
+test('resolved render designs use copied JSON instead of live default links', () => {
   const design = read('lib/fireworks/design.ts');
   const showTypes = read('lib/shows/types.ts');
   const showMappers = read('lib/shows/mappers.ts');
@@ -110,25 +94,24 @@ test('resolved render designs merge linked defaults in kind order before local o
     /deepMergeDesign\(\s*deepMergeDesign\(withBase, fireworkStyleDefaults\),\s*variantOverrides,\s*\)/,
   );
 
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v10'/);
-  assert.match(showTypes, /style_default_links:firework_style_default_links/);
-  assert.match(showTypes, /style_default_links:firework_effect_style_default_links/);
-  assert.match(showMappers, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);
-  assert.match(showMappers, /styleDefaultArrayFromLinks\(effect\?\.style_default_links/);
-  assert.match(showMappers, /styleDefaultArrayFromLinks\(row\.style_default_links/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v11'/);
+  assert.doesNotMatch(showTypes, /style_default_links:firework_style_default_links/);
+  assert.doesNotMatch(showTypes, /style_default_links:firework_effect_style_default_links/);
+  assert.doesNotMatch(showMappers, /styleDefaultArrayFromLinks/);
   assert.match(showMappers, /variantOverrides: row\.render_overrides_json/);
 
-  assert.match(adminEffects, /loadEffectStyleDefaultLinkMap/);
-  assert.match(adminEffects, /styleDefaultIdMapFromLinks/);
-  assert.match(adminFireworks, /loadFireworkStyleDefaultLinkMap/);
-  assert.match(adminFireworks, /effectStyleDefaultLinksByEffect/);
+  assert.doesNotMatch(adminEffects, /loadEffectStyleDefaultLinkMap/);
+  assert.doesNotMatch(adminEffects, /styleDefaultIdMapFromLinks/);
+  assert.doesNotMatch(adminFireworks, /loadFireworkStyleDefaultLinkMap/);
+  assert.match(adminFireworks, /render_overrides_json/);
 });
 
-test('admin actions validate and persist generalised style-default assignments', () => {
+test('admin actions save copied default settings without live assignments', () => {
   const styleActions = read('app/actions/admin-style-defaults.ts');
   const effectActions = read('app/actions/admin-effects.ts');
   const fireworkActions = read('app/actions/admin-fireworks.ts');
-  const assignmentHelpers = read('lib/admin/style-default-assignments.ts');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
 
   assert.match(styleActions, /z\.enum\(FIREWORK_STYLE_DEFAULT_KINDS\)/);
   assert.match(styleActions, /styleDefault: AdminStyleDefaultOption/);
@@ -139,23 +122,20 @@ test('admin actions validate and persist generalised style-default assignments',
   assert.match(styleActions, /invalidateAdminStyleDefaultsCache\(defaultId\)/);
 
   assert.match(effectActions, /StyleDefaultAssignmentsSchema/);
-  assert.match(effectActions, /normaliseStyleDefaultAssignments/);
-  assert.match(effectActions, /validateStyleDefaultAssignments/);
-  assert.match(effectActions, /replaceEffectStyleDefaultLinks/);
-  assert.match(effectActions, /star_style_default_id: assignments\.star/);
-  assert.match(effectActions, /trail_style_default_id: assignments\.trail/);
+  assert.doesNotMatch(effectActions, /normaliseStyleDefaultAssignments/);
+  assert.doesNotMatch(effectActions, /replaceEffectStyleDefaultLinks/);
+  assert.doesNotMatch(effectActions, /star_style_default_id|trail_style_default_id/);
+  assert.match(effectActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
   assert.match(fireworkActions, /StyleDefaultAssignmentsSchema/);
-  assert.match(fireworkActions, /replaceFireworkStyleDefaultLinks/);
-  assert.match(fireworkActions, /star_style_default_id: assignments\.star/);
-  assert.match(fireworkActions, /trail_style_default_id: assignments\.trail/);
+  assert.doesNotMatch(fireworkActions, /replaceFireworkStyleDefaultLinks/);
+  assert.doesNotMatch(fireworkActions, /star_style_default_id|trail_style_default_id/);
+  assert.match(fireworkActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
-  assert.match(
-    assignmentHelpers,
-    /One selected style default does not match the requested section/,
-  );
-  assert.match(assignmentHelpers, /'firework_effect_style_default_links'/);
-  assert.match(assignmentHelpers, /'firework_style_default_links'/);
+  assert.match(effectEditor, /function copySelectedStyleDefaultsIntoModel/);
+  assert.match(effectEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
+  assert.match(fireworkEditor, /function copySelectedStyleDefaultsIntoOverrides/);
+  assert.match(fireworkEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
 });
 
 test('style default admin UI exposes every kind without the black accent badge', () => {
@@ -180,8 +160,8 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.doesNotMatch(effectsBrowser, /tone=\{styleDefault\.kind === 'star' \? 'accent' : 'sky'\}/);
   assert.doesNotMatch(effectsBrowser, /formatEffectType|effect\.type|Effect type/);
   assert.doesNotMatch(effectsBrowser, /tone="accent" solid icon=\{Sparkles\}/);
-  assert.match(effectsBrowser, /Linked effects/);
-  assert.match(effectsBrowser, /Linked fireworks/);
+  assert.doesNotMatch(effectsBrowser, /Linked effects/);
+  assert.doesNotMatch(effectsBrowser, /Linked fireworks/);
 
   assert.match(defaultsEditor, /const KIND_OPTIONS = FIREWORK_STYLE_DEFAULT_KINDS\.map/);
   assert.match(defaultsEditor, /FireworkEditorShell/);
@@ -228,17 +208,17 @@ test('style default admin UI exposes every kind without the black accent badge',
   for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
     assert.match(fireworkEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
   }
-  assert.match(fireworkEditor, /Effect default: \$\{inherited\.name\}/);
+  assert.doesNotMatch(fireworkEditor, /Effect default: \$\{inherited\.name\}/);
   assert.doesNotMatch(fireworkEditor, /PanelSection title="Style defaults"/);
   assert.match(fireworkEditor, /createdStyleDefaults/);
   assert.match(fireworkEditor, /result\.styleDefault/);
   assert.match(fireworkEditor, /Style default created and saved/);
-  assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedEffectStyleDefaults\)/);
+  assert.doesNotMatch(fireworkEditor, /orderedStyleDefaultValues\(selectedEffectStyleDefaults\)/);
   assert.match(fireworkEditor, /orderedStyleDefaultValues\(selectedFireworkStyleDefaults\)/);
   assert.match(fireworkEditor, /function materialiseStyleDefault/);
   assert.match(fireworkEditor, /mutateOverridesForStyle\('star'/);
   assert.match(fireworkEditor, /mutateOverridesForStyle\('trail'/);
-  assert.match(fireworkEditor, /selectedEffectStyleDefaults\[kind\] != null/);
+  assert.doesNotMatch(fireworkEditor, /selectedEffectStyleDefaults\[kind\] != null/);
   assert.match(sectionPanels, /Save as effect/);
   assert.match(sectionPanels, /variant="destructive"/);
   assert.match(sectionPanels, /AlertDialog/);

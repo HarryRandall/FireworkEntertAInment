@@ -113,6 +113,11 @@ export function getAdminGenerationSettingsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:generation-settings`;
 }
 
+/** Cache key for public curated show presets. */
+export function getShowTemplatesCacheKey(): string {
+  return `${PLATFORM_CACHE_PREFIX}:show-templates`;
+}
+
 /**
  * Invalidate the admin user list and (optionally) a single user's detail blob.
  * Call after any mutation that affects role assignments or profile data.
@@ -198,4 +203,9 @@ export async function invalidateAdminRolePermissionsCache(): Promise<void> {
 /** Invalidate editable prompt configuration reads. */
 export async function invalidateAdminPromptConfigsCache(): Promise<void> {
   await deleteCachedKeys([getAdminPromptConfigsCacheKey(), getAdminGenerationSettingsCacheKey()]);
+}
+
+/** Invalidate public/admin curated show-preset reads. */
+export async function invalidateShowTemplatesCache(): Promise<void> {
+  await deleteCachedKeys([getShowTemplatesCacheKey()]);
 }

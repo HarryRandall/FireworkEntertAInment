@@ -79,16 +79,18 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.match(actions, /firework_editor_versions/);
   assert.doesNotMatch(actions, /hasEffectVersionHistory/);
   assert.doesNotMatch(actions, /Current version before editor changes/);
-  assert.match(actions, /filterValidStyleDefaultAssignments/);
+  assert.doesNotMatch(actions, /filterValidStyleDefaultAssignments/);
   assert.match(updateBody, /\.from\('firework_effects'\)/);
   assert.match(updateBody, /\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/);
   assert.match(updateBody, /model_json: model\.value/);
   assert.match(updateBody, /pattern_key: parsed\.data\.patternKey/);
+  assert.doesNotMatch(updateBody, /star_style_default_id|trail_style_default_id/);
   assert.doesNotMatch(updateBody, /type: parsed\.data\.type/);
   assert.match(updateBody, /recordEffectVersion/);
   assert.match(updateBody, /action: 'update'/);
   assert.match(restoreBody, /parseEffectEditorSnapshot/);
-  assert.match(restoreBody, /replaceEffectStyleDefaultLinks/);
+  assert.doesNotMatch(restoreBody, /replaceEffectStyleDefaultLinks/);
+  assert.doesNotMatch(restoreBody, /star_style_default_id|trail_style_default_id/);
   assert.match(restoreBody, /action: 'restore'/);
   assert.match(restoreBody, /Restored version from/);
   assert.match(updateBody, /invalidateAdminEffectsCache\(parsed\.data\.id\)/);
@@ -112,7 +114,7 @@ test('base effect classification column is removed from schema and migrations', 
   const dropFollowUp = read('supabase/migrations/20260701061429_drop_firework_effect_type.sql');
   const types = read('lib/database.types.ts');
   const start = types.indexOf('firework_effects: {');
-  const end = types.indexOf('firework_style_default_links: {', start);
+  const end = types.indexOf('firework_style_defaults: {', start);
   const fireworkEffectsTypes = types.slice(start, end);
 
   for (const migration of [dropDraft, dropFollowUp]) {
@@ -137,14 +139,16 @@ test('firework edits use conflict detection and immutable version history', () =
   assert.match(actions, /firework_editor_versions/);
   assert.doesNotMatch(actions, /hasFireworkVersionHistory/);
   assert.doesNotMatch(actions, /Current version before editor changes/);
-  assert.match(actions, /filterValidStyleDefaultAssignments/);
+  assert.doesNotMatch(actions, /filterValidStyleDefaultAssignments/);
   assert.match(updateBody, /\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/);
   assert.match(updateBody, /select\('updated_at'\)/);
+  assert.doesNotMatch(updateBody, /star_style_default_id|trail_style_default_id/);
   assert.match(updateBody, /recordFireworkVersion/);
   assert.match(updateBody, /action: 'update'/);
   assert.match(updateBody, /This firework changed in another session/);
   assert.match(restoreBody, /parseFireworkEditorSnapshot/);
-  assert.match(restoreBody, /replaceFireworkStyleDefaultLinks/);
+  assert.doesNotMatch(restoreBody, /replaceFireworkStyleDefaultLinks/);
+  assert.doesNotMatch(restoreBody, /star_style_default_id|trail_style_default_id/);
   assert.match(restoreBody, /action: 'restore'/);
   assert.match(restoreBody, /Restored version from/);
   assert.match(restoreBody, /refresh\(parsed\.data\.fireworkId\)/);
@@ -249,7 +253,8 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(shell, /utilityTabs\.map\(renderRailTab\)/);
   assert.match(shell, /role="tab"/);
   assert.match(shell, /ReplayTransportControls/);
-  assert.match(shell, /EditorPreviewTransportLoading/);
+  assert.match(shell, /if \(loading\) return null/);
+  assert.doesNotMatch(shell, /EditorPreviewTransportLoading|Loading preview controls/);
   assert.match(shell, /aria-selected=\{selected\}/);
   assert.match(shell, /const \[inspectorCollapsed, setInspectorCollapsed\] = useState\(true\)/);
   assert.doesNotMatch(shell, /collapsedCurrent/);
@@ -282,12 +287,13 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(inspectorPanels, /fullScreen/);
   assert.match(inspectorPanels, /Maximize2/);
   assert.match(routeSkeletons, /AdminVisualEditorSkeleton/);
+  assert.match(routeSkeletons, /ReplayPanelLoadingStage/);
   assert.doesNotMatch(
     routeSkeletons,
     /grid h-full min-h-0 lg:grid-cols-\[minmax\(0,1fr\)_minmax\(360px,408px\)\]/,
   );
   assert.match(routeSkeletons, /bg-stage-night/);
-  assert.match(routeSkeletons, /radial-gradient\(ellipse_at_50%_35%/);
+  assert.doesNotMatch(routeSkeletons, /EditorTransportSkeleton|Loading preview controls/);
   assert.doesNotMatch(routeSkeletons, /Array\.from\(\{ length: 8 \}\)/);
   assert.doesNotMatch(routeSkeletons, /Array\.from\(\{ length: 2 \}\)/);
   assert.doesNotMatch(routeSkeletons, /bg-\[color:var\(--color-bg-emphasis\)\] dark:bg-white\/10/);
@@ -345,7 +351,9 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /delete core\.colourPattern/);
   assert.match(fireworkEditor, /FireworkEditorShell/);
   assert.match(fireworkEditor, /EditorPreviewTransport/);
+  assert.match(fireworkEditor, /cameraMenuActions=\{previewMenuActions\}/);
   assert.match(fireworkEditor, /showStarfield=\{false\}/);
+  assert.match(fireworkEditor, /showLoadingBar/);
   assert.match(fireworkEditor, /estimatePreviewTicks/);
   assert.match(fireworkEditor, /EditorHistoryPanel/);
   assert.match(fireworkEditor, /JsonReadOnlyPanel/);
@@ -377,6 +385,7 @@ test('admin effects UI is wired to base effect fields', () => {
   );
   assert.doesNotMatch(fireworkEditor, /afterBurst=\{colourSection\}/);
   assert.match(editor, /PREVIEW_COLOR/);
+  assert.match(editor, /cameraMenuActions=\{previewMenuActions\}/);
   assert.doesNotMatch(editor, /refineEffectDraft|specJson|linkedProducts/);
 });
 

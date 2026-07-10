@@ -14,7 +14,7 @@ import { Card } from '@/app/components/ui/Card';
 import { Skeleton } from '@/app/components/ui/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
 import { getCurrentProfile, getShowTemplateBySlug } from '@/lib/admin.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -23,7 +23,7 @@ export default async function LibraryDetailPage({ params }: PageProps) {
   const { id } = await params;
   const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
-  const specificationsPromise = listFireworkSpecifications();
+  const specificationsPromise = listFireworkProducts();
   const currentProfilePromise = getCurrentProfile();
 
   return (

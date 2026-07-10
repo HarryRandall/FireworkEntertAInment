@@ -140,22 +140,40 @@ export function mapMediaAsset(row: MediaAssetRow): MediaAssetSummary {
   };
 }
 
+function normaliseCueEmphasis(value: unknown): ShowTemplateCue['emphasis'] {
+  return value === 'accent' || value === 'peak' ? value : 'normal';
+}
+
+function normaliseLaunchPositionIndex(value: unknown, fallback: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback % 3;
+  return Math.max(0, Math.min(2, Math.floor(n)));
+}
+
 /** Parse the JSON `preview_cues` array on a show template. Skips malformed entries. */
 export function parseTemplateCues(value: Json): ShowTemplateCue[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
+  return value.flatMap((item, index) => {
     if (!isRecord(item)) return [];
-    const timeSeconds = item.timeSeconds;
+    const timeSeconds = Number(item.timeSeconds);
     const description = item.description;
-    const fireworkSlug = item.fireworkSlug;
-    if (
-      typeof timeSeconds !== 'number' ||
-      typeof description !== 'string' ||
-      typeof fireworkSlug !== 'string'
-    ) {
-      return [];
-    }
-    return [{ timeSeconds, description, fireworkSlug }];
+    const fireworkSlug = typeof item.fireworkSlug === 'string' ? item.fireworkSlug : undefined;
+    const catalogueItemId = typeof item.catalogueItemId === 'string' ? item.catalogueItemId : null;
+    const catalogueItemSlug =
+      typeof item.catalogueItemSlug === 'string' ? item.catalogueItemSlug : null;
+    if (!Number.isFinite(timeSeconds) || typeof description !== 'string') return [];
+    if (!fireworkSlug && !catalogueItemId && !catalogueItemSlug) return [];
+    return [
+      {
+        timeSeconds,
+        description,
+        ...(fireworkSlug ? { fireworkSlug } : {}),
+        catalogueItemId,
+        catalogueItemSlug,
+        launchPositionIndex: normaliseLaunchPositionIndex(item.launchPositionIndex, index),
+        emphasis: normaliseCueEmphasis(item.emphasis),
+      },
+    ];
   });
 }
 
@@ -175,6 +193,7 @@ export function deriveTemplateLikeCount(row: ShowTemplateRow): number {
 
 /** Map a DB show-template row to the domain {@link ShowTemplate}. */
 export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
+  const maybePublished = row as Partial<ShowTemplateRow>;
   return {
     id: row.id,
     slug: row.slug,
@@ -191,6 +210,9 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
     isFeatured: row.is_featured,
+    isPublished: maybePublished.is_published ?? true,
+    publishedAt: maybePublished.published_at ?? row.created_at,
+    sortOrder: row.sort_order,
     likeCount: deriveTemplateLikeCount(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

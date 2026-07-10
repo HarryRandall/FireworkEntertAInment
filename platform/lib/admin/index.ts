@@ -48,4 +48,10 @@ export {
   getAdminShowGenerationSetting,
   listAdminPromptConfigs,
 } from './prompts.server';
-export { getShowTemplateBySlug, listShowTemplates } from './templates.server';
+export {
+  getAdminShowPresetById,
+  getShowTemplateBySlug,
+  listAdminShowPresetImportShows,
+  listAdminShowPresets,
+  listShowTemplates,
+} from './templates.server';

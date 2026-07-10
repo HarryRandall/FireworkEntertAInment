@@ -4,10 +4,9 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
 import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
-
-const GENERATING_SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
 
 export default function ShowLoading() {
   const pathname = usePathname();
@@ -16,12 +15,15 @@ export default function ShowLoading() {
 
   if (generatingPersistKey) {
     const showTitle = searchParams.get('t')?.trim() || undefined;
+    const hasAudio = searchParams.get('a') === '1';
 
     return (
       <GeneratingShowAnimation
         showTitle={showTitle}
+        hasAudio={hasAudio}
+        phase={hasAudio ? 'analysing' : 'generating'}
         persistKey={generatingPersistKey}
-        className={GENERATING_SPLASH_CLASS}
+        className={GENERATING_ROUTE_SPLASH_CLASS}
       />
     );
   }

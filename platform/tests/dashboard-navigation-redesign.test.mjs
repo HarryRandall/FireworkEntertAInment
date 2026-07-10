@@ -53,6 +53,10 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(homeDiscovery, /Crowd favourites/);
   assert.match(homeDiscovery, /Watch replay/);
   assert.match(homeDiscovery, /CoverPoster/);
+  assert.match(homeDiscovery, /FEATURED_AUTOPLAY_MS = 5_000/);
+  assert.match(homeDiscovery, /isPreviewVisible = isPreviewReady && isPreviewActive/);
+  assert.match(homeDiscovery, /duration-700/);
+  assert.doesNotMatch(homeDiscovery, /cardPlaybackRate=/);
   assert.match(homeDiscovery, /shaderCoverFromSeed/);
   assert.match(homeDiscovery, /shaderCoverGradient/);
   assert.match(
@@ -93,9 +97,10 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const showsPage = read('app/(app)/shows/page.tsx');
   assert.match(showsPage, /ShowReplayCoverCard/);
-  // Cues load lazily on hover (via the card's server action), not pre-fetched in
-  // the page, so the grid can stream in without waiting on per-show cues.
+  // Cues load lazily on hover through the shared preview overlay, not by
+  // prefetching every show's full replay data into the page.
   assert.doesNotMatch(showsPage, /listReplayCuesForShows/);
+  assert.match(showsPage, /ShowReplayPreviewProvider/);
   assert.match(showsPage, /grid grid-cols-2/);
   assert.match(showsPage, /ShowsToolbar/);
   assert.match(showsPage, /sortShows/);
@@ -118,7 +123,11 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showReplayCard, /ReplayCanvasSkeleton/);
   assert.match(showReplayCard, /loadingBarPosition="center"/);
   assert.match(showReplayCard, /loadingBarVariant="compact"/);
-  assert.doesNotMatch(showReplayCard, /rgba\(0,0,0,0\.48\)_100%/);
+  assert.match(showReplayCard, /\[content-visibility:auto\]/);
+  assert.match(showReplayCard, /group-hover:scale-105/);
+  assert.match(showReplayCard, /isPreviewRevealed \? 'opacity-0' : 'opacity-100'/);
+  assert.doesNotMatch(showReplayCard, /isPreviewHovering \? 'opacity-0' : 'opacity-100'/);
+  assert.doesNotMatch(showReplayCard, /radial-gradient/);
 
   const showReplayProvider = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
   assert.match(showReplayProvider, /FireworkReplayCanvas/);
@@ -135,10 +144,13 @@ test('supporting app routes and workspace summary API are shipped', () => {
 
   const showsQueries = read('lib/shows/queries.server.ts');
   assert.match(showsQueries, /listReplayPreviewCuesForShow/);
-  assert.match(showsQueries, /const previewEnd = previewWindowSeconds/);
+  assert.match(showsQueries, /firstData/);
+  assert.match(showsQueries, /const previewStart = Math\.max\(0, firstCueTime - 0\.3\)/);
+  assert.match(showsQueries, /const previewEnd = previewStart \+ previewWindowSeconds/);
+  assert.match(showsQueries, /\.gte\('time_seconds', previewStart\)/);
   assert.match(showsQueries, /\.lte\('time_seconds', previewEnd\)/);
-  assert.match(showsQueries, /cue\.timeSeconds <= previewEnd \+ 0\.001/);
-  assert.doesNotMatch(showsQueries, /firstData/);
+  assert.match(showsQueries, /timeSeconds: Math\.max\(0, cue\.timeSeconds - previewStart\)/);
+  assert.match(showsQueries, /cue\.timeSeconds <= previewWindowSeconds \+ 0\.001/);
 
   const showsToolbar = read('app/(app)/shows/ShowsToolbar.tsx');
   assert.match(showsToolbar, /Search shows or songs/);
@@ -161,7 +173,10 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(safetyPage, /Safety checks before firing/);
 
   const showLayout = read('app/(app)/shows/[id]/layout.tsx');
-  assert.match(showLayout, /ShowTabs/);
+  const showChrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  assert.match(showLayout, /ShowDetailChrome/);
+  assert.match(showChrome, /ShowTabs/);
+  assert.match(showChrome, /segment === 'generating'/);
   assert.doesNotMatch(showLayout, /AppPageHeader/);
 
   const cataloguePage = read('app/(app)/catalogue/page.tsx');
@@ -205,6 +220,12 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(templatePreview, /top-3 right-3/);
   assert.match(templatePreview, /fill-current text-\[color:var\(--destructive\)\]/);
   assert.match(templatePreview, /formatBudget\(template\.totalCents\)/);
+  assert.match(templatePreview, /cardPreviewWindowStart/);
+  assert.match(templatePreview, /firstCueTimeFor\(template\.previewCues\) - 0\.3/);
+  assert.match(
+    templatePreview,
+    /timeSeconds: Math\.max\(0, c\.timeSeconds - cardPreviewWindowStart\)/,
+  );
   assert.match(templatePreview, /translate-y-full/);
   assert.match(templatePreview, /opacity-0 transition-all/);
   assert.match(templatePreview, /duration-\[1800ms\]/);

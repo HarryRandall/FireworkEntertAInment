@@ -4,19 +4,17 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
-import { getShowBySlug, listReplayCuesForShow } from '@/lib/shows.server';
+import { getShowBySlug } from '@/lib/shows.server';
 
 type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ creating?: string; t?: string; a?: string }>;
 };
-
-const SPLASH_CLASS =
-  '-mx-6 -mt-6 -mb-10 min-h-[calc(100svh-3.5rem)] flex-1 sm:-mx-8 sm:-mb-12 lg:-mx-10';
 
 export default async function ShowGeneratingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -42,7 +40,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
           isWarm={isWarm}
           randomiseCoverOnLoad
           persistKey={id}
-          className={SPLASH_CLASS}
+          className={GENERATING_ROUTE_SPLASH_CLASS}
         />
       );
     }
@@ -67,22 +65,13 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
         isWarm={isWarm}
         randomiseCoverOnLoad
         persistKey={id}
-        className={SPLASH_CLASS}
+        className={GENERATING_ROUTE_SPLASH_CLASS}
       />
     );
   }
 
-  const cues = await listReplayCuesForShow(show.id);
-  if (cues.length > 0 && show.generationStatus === 'completed') {
-    // Generation is done: go straight to the preview, but keep the generating
-    // splash mounted as a handoff mask until the replay canvas is watchable.
-    const handoffParams = new URLSearchParams({
-      autoplay: '1',
-      handoff: '1',
-      t: show.title,
-    });
-    if (hasAudio) handoffParams.set('a', '1');
-    redirect(`/shows/${show.slug}/preview?${handoffParams.toString()}`);
+  if (show.generationStatus === 'completed') {
+    redirect(`/shows/${show.slug}/preview?autoplay=1`);
   }
 
   if (show.generationStatus === 'failed') {
@@ -128,7 +117,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
   return (
     <GeneratingShowAnimation
       showTitle={show.title}
-      status={show.generationStatus === 'completed' ? 'completed' : 'running'}
+      status="running"
       phase={phase}
       hasAudio={hasAudio}
       isWarm={isWarm}
@@ -138,7 +127,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       persistKey={show.slug}
       showId={show.id}
       coverImagePath={show.coverImagePath}
-      className={SPLASH_CLASS}
+      className={GENERATING_ROUTE_SPLASH_CLASS}
     />
   );
 }

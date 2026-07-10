@@ -9,6 +9,7 @@ import {
   Cloud,
   GanttChartSquare,
   History,
+  Repeat,
   SlidersHorizontal,
   Sparkles,
   Volume2,
@@ -275,6 +276,17 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     }
     return selected;
   }, [createdStyleDefaults, effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
+  function copySelectedStyleDefaultsIntoModel(source: JsonRecord): JsonRecord {
+    const draft = cloneRecord(canonicaliseEffectModelJson(source));
+    const existingDefaults = cloneRecord(readRecord(draft, 'renderDefaults'));
+    const copiedDefaults: JsonRecord = {};
+    for (const option of orderedStyleDefaultValues(selectedStyleDefaults)) {
+      if (isRecord(option?.defaultsJson)) mergeRecordInto(copiedDefaults, option.defaultsJson);
+    }
+    mergeRecordInto(copiedDefaults, existingDefaults);
+    draft.renderDefaults = copiedDefaults;
+    return draft;
+  }
   const saveStyleDefaultIds = useMemo(
     () => toSaveStyleDefaultIds(styleDefaultIds),
     [styleDefaultIds],
@@ -575,31 +587,25 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         ],
       }));
 
-      const nextStyleDefaultIds = { ...styleDefaultIds, [kind]: result.id };
-      const nextModel = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
-      const nextRenderDefaults = ensureRecord(nextModel, 'renderDefaults');
-      removeStyleDefaultOverridesFromRecord(nextRenderDefaults, kind);
-      const nextModelText = JSON.stringify(nextModel, null, 2);
-
-      // Select the new preset and clear its inline overrides so the preset drives the preview
-      // instead of being shadowed by stale renderDefaults.
-      setStyleDefaultIds(nextStyleDefaultIds);
-      setModelText(nextModelText);
-
-      const nextSaveMap = toSaveStyleDefaultIds(nextStyleDefaultIds);
+      const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
+      const savedModelText = JSON.stringify(savedModel, null, 2);
+      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
       const ok = await persistEffect({
-        styleDefaultIdsMap: nextSaveMap,
-        modelJson: nextModelText,
+        styleDefaultIdsMap: clearedSaveMap,
+        modelJson: savedModelText,
       });
       if (!ok) return;
+      setStyleDefaultIds(clearedStyleDefaultIds);
+      setModelText(savedModelText);
       setSavedSignature(
         effectEditorSignature({
           name,
           description,
           patternKey,
           sortOrder: sortOrderNumber,
-          styleDefaultIds: nextSaveMap,
-          modelJson: nextModel,
+          styleDefaultIds: clearedSaveMap,
+          modelJson: savedModel,
         }),
       );
       toast.success('Style default created and saved');
@@ -613,20 +619,29 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       setError(parsedModel.error);
       return;
     }
-    const canonicalModelText = JSON.stringify(
-      canonicaliseEffectModelJson(parsedModel.value),
-      null,
-      2,
-    );
+    const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
+    const savedModelText = JSON.stringify(savedModel, null, 2);
+    const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+    const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
 
     startTransition(async () => {
       const ok = await persistEffect({
-        styleDefaultIdsMap: saveStyleDefaultIds,
-        modelJson: canonicalModelText,
+        styleDefaultIdsMap: clearedSaveMap,
+        modelJson: savedModelText,
       });
       if (!ok) return;
-      setModelText(canonicalModelText);
-      setSavedSignature(currentSignature);
+      setStyleDefaultIds(clearedStyleDefaultIds);
+      setModelText(savedModelText);
+      setSavedSignature(
+        effectEditorSignature({
+          name,
+          description,
+          patternKey,
+          sortOrder: sortOrderNumber,
+          styleDefaultIds: clearedSaveMap,
+          modelJson: savedModel,
+        }),
+      );
       toast.success('Effect saved');
       router.refresh();
     });
@@ -675,6 +690,18 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       onExit={() => setPreviewVersion(null)}
     />
   ) : null;
+  const previewMenuActions = useMemo(
+    () => [
+      {
+        id: 'loop',
+        label: isLooping ? 'Disable looping' : 'Enable looping',
+        active: isLooping,
+        onClick: () => setIsLooping((looping) => !looping),
+        icon: <Repeat size={16} strokeWidth={2} />,
+      },
+    ],
+    [isLooping],
+  );
   const preview = (
     <LazyFireworkReplayCanvas
       cues={previewCues}
@@ -684,11 +711,12 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       muted={!isPlaying}
       interactive
       controlsVisible
+      cameraMenuActions={previewMenuActions}
       showStarfield={false}
       showFps
       primeSnapshots
       primeOnCueChanges={false}
-      showLoadingBar={false}
+      showLoadingBar
       onPrimeProgress={(progress) => {
         setPreviewLoadingProgress(progress);
         if (progress !== null) setPreviewReady(false);
@@ -716,7 +744,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       elapsed={elapsed}
       duration={previewDuration}
       isPlaying={isPlaying}
-      isLooping={isLooping}
       fullscreen={isFullscreen}
       loading={!previewReady}
       loadingProgress={previewLoadingProgress}
@@ -731,7 +758,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         setIsPlaying(false);
         setPreviewTime(PREVIEW_START_SECONDS);
       }}
-      onLoopToggle={() => setIsLooping((looping) => !looping)}
       onFullscreenToggle={toggleFullscreen}
       onScrub={(seconds) => {
         setIsPlaying(false);

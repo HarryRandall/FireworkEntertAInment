@@ -57,6 +57,7 @@ import {
   clearPersistedGenerationStart,
   copyPersistedGenerationCover,
   persistGenerationStartedAt,
+  resolvePersistedGenerationCover,
 } from '@/lib/generation-progress-storage';
 import { slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
@@ -485,6 +486,7 @@ export default function NewShowPage() {
     const desiredSlug = slugifyTitle(finalTitle);
     const titleParam = encodeURIComponent(finalTitle);
     const generationStartedAt = persistGenerationStartedAt(desiredSlug);
+    const generationCover = resolvePersistedGenerationCover(desiredSlug);
     // Show the client-side splash overlay right away; the route's own splash
     // resumes the same persisted progress once it streams in.
     const hasAudio = Boolean(audioFile);
@@ -531,6 +533,7 @@ export default function NewShowPage() {
       data.set('selectedCueModel', selectedCueModel);
       data.set('siteWidthFeet', String(effectiveWidthFeet));
       data.set('desiredSlug', desiredSlug);
+      data.set('coverShader', JSON.stringify(generationCover));
       fireworkTypes.forEach((type) => data.append('fireworkTypes', type));
       if (finalUploadedAudio) {
         data.set('audioPath', finalUploadedAudio.audioPath);

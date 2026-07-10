@@ -54,7 +54,7 @@ test('library presets persist and expose JSON shader covers', () => {
   );
   assert.match(mapper, /coverShader: parseCover\(row\.cover_shader\)/);
   assert.match(mapper, /coverImagePath: row\.cover_image_path \?\? null/);
-  assert.match(exploreCard, /template\.coverShader \?\? shaderCoverFromSeed/);
+  assert.doesNotMatch(exploreCard, /shaderCoverFromSeed/);
   assert.match(exploreCard, /import \{ CoverPoster \}/);
   assert.doesNotMatch(exploreCard, /cover=\{cover\}/);
   assert.match(exploreCard, /imagePath=\{template\.coverImagePath\}/);
@@ -94,8 +94,9 @@ test('new shows receive a CSS cover and render it on the splash', () => {
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
   const animation = read('app/components/app/GeneratingShowAnimation.tsx');
 
-  assert.match(action, /import \{ randomCover \} from '@\/lib\/cover';/);
-  assert.match(action, /cover_shader: randomCover\(\)/);
+  assert.match(action, /import \{ parseCover, randomCover \} from '@\/lib\/cover';/);
+  assert.match(action, /parseClientCover\(parsed\.data\.coverShader\) \?\? randomCover\(\)/);
+  assert.match(action, /cover_shader: coverShader/);
   assert.match(generatingPage, /randomiseCoverOnLoad/);
   assert.match(generatingPage, /coverShader=\{creating === '1' \? null : show\.coverShader\}/);
   assert.match(generatingPage, /randomiseCoverOnLoad=\{creating === '1' \|\| !show\.coverShader\}/);
