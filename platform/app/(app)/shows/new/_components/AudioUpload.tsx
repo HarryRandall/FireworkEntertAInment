@@ -8,7 +8,7 @@
  */
 'use client';
 
-import { Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
@@ -41,15 +41,17 @@ export function AudioUpload({
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-lg border p-4',
+          'flex items-center gap-3 rounded-xl border p-4',
           uploadState === 'error'
             ? 'border-[color:var(--color-status-danger)]/40 bg-[color-mix(in_srgb,var(--color-status-danger)_8%,transparent)]'
             : 'border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)]',
         )}
+        role={uploadState === 'error' ? 'alert' : 'status'}
+        aria-live="polite"
       >
         <span
           className={cn(
-            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[color:var(--color-bg-default)]',
+            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-bg-default)]',
             uploadState === 'error'
               ? 'text-[color:var(--color-status-danger)]'
               : 'text-[color:var(--color-status-success)]',
@@ -57,22 +59,33 @@ export function AudioUpload({
         >
           {uploadState === 'uploading' ? (
             <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+          ) : uploadState === 'error' ? (
+            <AlertTriangle size={18} strokeWidth={1.75} />
           ) : (
             <Music4 size={18} strokeWidth={1.75} />
           )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Check
-              size={14}
-              strokeWidth={2.5}
-              className={cn(
-                'shrink-0',
-                uploadState === 'error'
-                  ? 'text-[color:var(--color-status-danger)]'
-                  : 'text-[color:var(--color-status-success)]',
-              )}
-            />
+            {uploadState === 'uploading' ? (
+              <Loader2
+                size={14}
+                strokeWidth={2}
+                className="shrink-0 animate-spin text-[color:var(--color-content-muted)]"
+              />
+            ) : uploadState === 'error' ? (
+              <AlertTriangle
+                size={14}
+                strokeWidth={2.5}
+                className="shrink-0 text-[color:var(--color-status-danger)]"
+              />
+            ) : (
+              <Check
+                size={14}
+                strokeWidth={2.5}
+                className="shrink-0 text-[color:var(--color-status-success)]"
+              />
+            )}
             <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
               {file.name}
             </span>
@@ -111,13 +124,11 @@ export function AudioUpload({
   }
 
   return (
-    <label className="group relative flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] hover:border-[color:var(--color-content-emphasis)]/40 hover:shadow-md active:scale-[0.99]">
-      <CloudUpload
-        size={28}
-        strokeWidth={1.5}
-        className="mb-3 text-[color:var(--color-content-subtle)]"
-      />
-      <span className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
+    <label className="group relative flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] hover:border-[color:var(--color-content-emphasis)]/40 hover:shadow-md active:scale-[0.99]">
+      <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-muted)] transition-colors group-hover:text-[color:var(--color-content-emphasis)]">
+        <CloudUpload size={19} strokeWidth={1.75} />
+      </span>
+      <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
         Drop track or click to browse
       </span>
       <span className="mt-1 text-xs text-[color:var(--color-content-subtle)]">

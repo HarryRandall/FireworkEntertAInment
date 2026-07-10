@@ -20,18 +20,33 @@ export function toTemplateReplayCue(
   cue: ShowTemplateCue,
   index: number,
   specBySlug: Map<string, FireworkSpecification>,
+  specById: Map<string, FireworkSpecification>,
 ): ReplayCue | null {
+  const specs = [...specById.values()];
+  const byLegacySlug = (slug: string | undefined): FireworkSpecification | undefined => {
+    if (!slug) return undefined;
+    return (
+      specBySlug.get(slug) ??
+      specs.find((spec) => spec.variant?.slug === slug) ??
+      specs.find((spec) => spec.baseEffect?.slug === slug)
+    );
+  };
+  const aliasSlug = cue.fireworkSlug ? FIREWORK_SLUG_ALIASES[cue.fireworkSlug] : undefined;
   const firework =
-    specBySlug.get(cue.fireworkSlug) ??
-    specBySlug.get(FIREWORK_SLUG_ALIASES[cue.fireworkSlug] ?? '');
+    (cue.catalogueItemId ? specById.get(cue.catalogueItemId) : undefined) ??
+    (cue.catalogueItemSlug ? specBySlug.get(cue.catalogueItemSlug) : undefined) ??
+    byLegacySlug(cue.fireworkSlug) ??
+    byLegacySlug(aliasSlug);
   if (!firework) return null;
+  const cueKey = cue.catalogueItemId ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? firework.slug;
   return {
-    id: `${cue.fireworkSlug}-${cue.timeSeconds}-${index}`,
+    id: `${cueKey}-${cue.timeSeconds}-${index}`,
     position: index + 1,
     timeSeconds: cue.timeSeconds,
     description: cue.description,
     productId: firework.id,
-    launchPositionIndex: index % 3,
+    launchPositionIndex: cue.launchPositionIndex,
+    emphasis: cue.emphasis,
     firework,
   };
 }
@@ -41,8 +56,9 @@ export function buildTemplateReplayCues(
   specifications: FireworkSpecification[],
 ): ReplayCue[] {
   const specBySlug = new Map(specifications.map((spec) => [spec.slug, spec]));
+  const specById = new Map(specifications.map((spec) => [spec.id, spec]));
   return templateCues
-    .map((cue, index) => toTemplateReplayCue(cue, index, specBySlug))
+    .map((cue, index) => toTemplateReplayCue(cue, index, specBySlug, specById))
     .filter((cue): cue is ReplayCue => Boolean(cue))
     .sort((a, b) => a.timeSeconds - b.timeSeconds);
 }

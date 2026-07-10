@@ -7,13 +7,13 @@ import 'server-only';
  */
 import { requirePermission } from './current-user.server';
 import { getServerClient } from './supabase';
-import { parseShaderCover, type ShaderCover } from '@/lib/shader-cover';
+import { parseCover, type ShowCover } from '@/lib/cover';
 
 export type CoverBackfillPreset = {
   id: string;
   slug: string;
   title: string;
-  cover: ShaderCover | null;
+  cover: ShowCover | null;
   coverImagePath: string | null;
 };
 
@@ -45,7 +45,7 @@ export async function listShowPresetsForCoverBackfill(): Promise<CoverBackfillPr
       id: row.id,
       slug: row.slug,
       title: row.title,
-      cover: parseShaderCover(row.cover_shader),
+      cover: parseCover(row.cover_shader),
       coverImagePath: row.cover_image_path ?? null,
     })) ?? []
   );

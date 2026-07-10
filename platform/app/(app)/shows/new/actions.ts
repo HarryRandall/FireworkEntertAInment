@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
-import { randomShaderCover } from '@/lib/shader-cover';
+import { parseCover, randomCover } from '@/lib/cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
@@ -19,12 +19,15 @@ import {
   MIN_SITE_WIDTH_FEET,
 } from '@/lib/cue-generation/show-options';
 import { DEFAULT_CUE_MODEL } from '@/lib/openrouter.server';
-import { normaliseCueModel } from '@/lib/cue-models';
+import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
 import {
   creditActionForGenerationMode,
+  getAiCreditCost,
   reserveAiCredits,
   showGenerationReservationKey,
+  type AiCreditActionKey,
 } from '@/lib/ai-credits.server';
+import type { ShowGenerationPresentation } from './types';
 
 const DURATION_TO_SECONDS: Record<string, number> = {
   '1 minute': 60,
@@ -73,16 +76,72 @@ const NewShowSchema = z.object({
     .max(MAX_SITE_WIDTH_FEET)
     .optional(),
   selectedCueModel: z.string().trim().max(120).optional(),
+  expectedGenerationMode: z.enum(['fast', 'llm']).optional(),
   fireworkTypes: z.array(z.enum(FIREWORK_TYPE_KEYS)).max(FIREWORK_TYPE_KEYS.length).optional(),
   audioPath: z.string().trim().max(300).optional(),
   musicAnalysisId: z.string().uuid().optional(),
   desiredSlug: z.string().trim().max(120).optional(),
+  coverShader: z.string().trim().max(20_000).optional(),
 });
 
 export type NewShowResult = { ok: true; slug: string } | { ok: false; error: string };
 
+export type ShowGenerationPresentationResult =
+  | { ok: true; presentation: ShowGenerationPresentation }
+  | { ok: false; error: string };
+
+/** Return only the customer-facing generation mode and current credit costs.
+ * Prompt text and other admin settings remain server-only. */
+export async function getShowGenerationPresentationAction(): Promise<ShowGenerationPresentationResult> {
+  const supabase = createClient(await cookies());
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { ok: false, error: 'Sign in again to load generation options.' };
+  }
+
+  const generationSettings = await getShowCueGenerationSettings();
+  const defaultCueModel = DEFAULT_CUE_MODEL.trim().slice(0, 120) || FALLBACK_CUE_MODEL;
+  const modelActionKeys = new Map(
+    [...new Set([...CUE_MODEL_OPTIONS.map((option) => option.value), defaultCueModel])].map(
+      (model) => [model, creditActionForGenerationMode('llm', model)],
+    ),
+  );
+  const actionKeys = Array.from(
+    new Set<AiCreditActionKey>(['show_generation_fast', ...modelActionKeys.values()]),
+  );
+  const costs = await Promise.all(actionKeys.map((key) => getAiCreditCost(supabase, key)));
+  const costByAction = new Map(costs.map((cost) => [cost.key, cost.amount]));
+
+  return {
+    ok: true,
+    presentation: {
+      generationMode: generationSettings.generationMode,
+      defaultCueModel,
+      fastCreditCost: costByAction.get('show_generation_fast') ?? 1,
+      modelCreditCosts: Object.fromEntries(
+        Array.from(modelActionKeys, ([model, actionKey]) => [
+          model,
+          costByAction.get(actionKey) ?? 1,
+        ]),
+      ),
+    },
+  };
+}
+
 function isUserAudioPath(path: string, userId: string): boolean {
   return path.startsWith(`${userId}/`) && !path.includes('..');
+}
+
+function parseClientCover(value: string | undefined) {
+  if (!value) return null;
+  try {
+    return parseCover(JSON.parse(value));
+  } catch {
+    return null;
+  }
 }
 
 export async function createShowAction(formData: FormData): Promise<NewShowResult> {
@@ -108,10 +167,12 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     showStyle: formData.get('showStyle') ?? DEFAULT_SHOW_STYLE,
     siteWidthFeet: formData.get('siteWidthFeet') ?? undefined,
     selectedCueModel: formData.get('selectedCueModel') ?? undefined,
+    expectedGenerationMode: formData.get('expectedGenerationMode') ?? undefined,
     fireworkTypes: formData.getAll('fireworkTypes').map(String),
     audioPath: formData.get('audioPath') ?? undefined,
     musicAnalysisId: formData.get('musicAnalysisId') ?? undefined,
     desiredSlug: formData.get('desiredSlug') ?? undefined,
+    coverShader: formData.get('coverShader') ?? undefined,
   });
 
   if (!parsed.success) {
@@ -124,7 +185,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
 
   let audioPath = parsed.data.audioPath || null;
   const musicAnalysisId = parsed.data.musicAnalysisId || null;
-  const selectedCueModel = normaliseCueModel(parsed.data.selectedCueModel, DEFAULT_CUE_MODEL);
+  const requestedCueModel = normaliseCueModel(parsed.data.selectedCueModel, DEFAULT_CUE_MODEL);
 
   if (musicAnalysisId) {
     const { data: analysis, error: analysisError } = await supabase
@@ -148,6 +209,23 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     ? slugifyTitle(parsed.data.desiredSlug)
     : slugifyTitle(parsed.data.title);
   const durationSeconds = parseDurationSeconds(parsed.data.duration);
+  const coverShader = parseClientCover(parsed.data.coverShader) ?? randomCover();
+  const generationSettings = await getShowCueGenerationSettings();
+  if (
+    parsed.data.expectedGenerationMode &&
+    parsed.data.expectedGenerationMode !== generationSettings.generationMode
+  ) {
+    return {
+      ok: false,
+      error:
+        'Generation settings changed while this show was being prepared. Review and try again.',
+    };
+  }
+  const generationMode =
+    SHOW_STYLES[parsed.data.showStyle].engine === 'beat'
+      ? 'beat'
+      : generationSettings.generationMode;
+  const selectedCueModel = generationMode === 'llm' ? requestedCueModel : null;
 
   // Avoid clashing with an existing slug for the same user.
   let slug = baseSlug;
@@ -180,7 +258,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,
       music_analysis_id: musicAnalysisId,
-      cover_shader: randomShaderCover(),
+      cover_shader: coverShader,
       status: 'draft',
       generation_status: 'running',
       generation_started_at: new Date().toISOString(),
@@ -193,14 +271,9 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     return { ok: false, error: 'Could not save your show. Please try again.' };
   }
 
-  const generationSettings = await getShowCueGenerationSettings();
-  const generationMode =
-    SHOW_STYLES[parsed.data.showStyle].engine === 'beat'
-      ? 'beat'
-      : generationSettings.generationMode;
   const reservation = await reserveAiCredits(supabase, {
     userId: user.id,
-    actionKey: creditActionForGenerationMode(generationMode, selectedCueModel),
+    actionKey: creditActionForGenerationMode(generationMode, selectedCueModel ?? undefined),
     referenceType: 'shows',
     referenceId: show.id,
     reservationKey: showGenerationReservationKey(show.id),
@@ -213,7 +286,31 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
   });
 
   if (!reservation.ok) {
-    await supabase.from('shows').delete().eq('id', show.id).eq('user_id', user.id);
+    const { data: removedShow, error: cleanupError } = await supabase
+      .from('shows')
+      .delete()
+      .eq('id', show.id)
+      .eq('user_id', user.id)
+      .select('id')
+      .maybeSingle();
+    if (cleanupError || !removedShow) {
+      console.error('[createShowAction] credit reservation cleanup failed:', cleanupError);
+      const { error: failedStateError } = await supabase
+        .from('shows')
+        .update({
+          generation_status: 'failed',
+          generation_error: 'Credit reservation failed before generation started.',
+          generation_completed_at: new Date().toISOString(),
+        })
+        .eq('id', show.id)
+        .eq('user_id', user.id);
+      if (failedStateError) {
+        console.error(
+          '[createShowAction] failed to mark unreserved show as failed:',
+          failedStateError,
+        );
+      }
+    }
     return {
       ok: false,
       error: reservation.error ?? 'You do not have enough AI credits to generate this show.',
@@ -237,6 +334,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       showId: show.id,
       musicAnalysisId,
       selectedCueModel,
+      generationMode,
     });
     if (!result.ok) {
       console.error('[createShowAction] background generation failed:', result.error);

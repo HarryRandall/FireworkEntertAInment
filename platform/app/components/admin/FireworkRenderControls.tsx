@@ -28,6 +28,7 @@ import {
   type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
+import { nonNegativeRangeFromMidpoint } from '@/lib/fireworks/editor-ranges';
 import { clearNestedStarBurstTrails } from '@/lib/fireworks/style-defaults';
 import { cn } from '@/lib/utils';
 import {
@@ -1809,7 +1810,10 @@ export function FireworkRenderControls({
 
   function setBurstRangeMid(key: 'speed' | 'gravity' | 'life', mid: number, halfWidth: number) {
     mutate((draft) => {
-      const next = [round2(mid - halfWidth), round2(mid + halfWidth)];
+      const next =
+        key === 'gravity'
+          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
+          : nonNegativeRangeFromMidpoint(mid, halfWidth);
       const burst = ensureRecord(draft, 'burst');
       burst[key] = next;
       if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst')[key] = next;
@@ -1985,7 +1989,10 @@ export function FireworkRenderControls({
       const stars = ensureRecord(draft, 'stars');
       const layer = ensureRecord(stars, layerKey);
       const burst = ensureRecord(layer, 'burst');
-      burst[key] = [round2(mid - halfWidth), round2(mid + halfWidth)];
+      burst[key] =
+        key === 'gravity'
+          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
+          : nonNegativeRangeFromMidpoint(mid, halfWidth);
     });
   }
 
@@ -2470,7 +2477,7 @@ export function FireworkRenderControls({
       disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
 
     return (
-      <SubSection title="Opening" defaultExpanded={controlScope === 'trail'}>
+      <SubSection title="Opening" defaultExpanded={false}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <SliderField
             label="Start particles"
@@ -2547,7 +2554,7 @@ export function FireworkRenderControls({
     const spreadFadeEnabled = closing.spreadFade.enabled;
 
     return (
-      <SubSection title="Closing" defaultExpanded={controlScope === 'trail'}>
+      <SubSection title="Closing" defaultExpanded={false}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <SliderField
             label="Particle life"
@@ -2718,7 +2725,7 @@ export function FireworkRenderControls({
       <PanelSection
         title={title}
         collapsible
-        defaultExpanded={controlScope === 'trail'}
+        defaultExpanded={false}
         inactive={!trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false)}
         titleAccessory={
           <InfoTooltip text="Master switch for burst trail particles behind the star paths." />
@@ -2770,7 +2777,7 @@ export function FireworkRenderControls({
             </Field>
           </div>
 
-          <SubSection title="Particles" defaultExpanded={controlScope === 'trail'}>
+          <SubSection title="Particles" defaultExpanded={false}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Amount"
@@ -2814,7 +2821,7 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'particleSize', 'base', round2(value))
                 }
               />
-              <AdvancedControls defaultOpen={controlScope === 'trail'}>
+              <AdvancedControls defaultOpen={false}>
                 <SliderField
                   label="Head scale"
                   min={0}
@@ -2882,7 +2889,7 @@ export function FireworkRenderControls({
           {renderBurstTrailOpeningControls(layerKey)}
           {renderBurstTrailClosingControls(layerKey)}
 
-          <SubSection title="Placement" defaultExpanded={controlScope === 'trail'}>
+          <SubSection title="Placement" defaultExpanded={false}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Head-tail balance"
@@ -2896,7 +2903,7 @@ export function FireworkRenderControls({
                 hint="Where the total particle budget lands along each star path. This redistributes placement without changing the amount."
                 onChange={(value) => setTrailBias(layerKey, round2(value))}
               />
-              <AdvancedControls defaultOpen={controlScope === 'trail'}>
+              <AdvancedControls defaultOpen={false}>
                 <SliderField
                   label="Spacing curve"
                   min={TRAIL_SPACING_CURVE_MIN}
@@ -2976,7 +2983,7 @@ export function FireworkRenderControls({
             </div>
           </SubSection>
 
-          <SubSection title="Glow" defaultExpanded={controlScope === 'trail'}>
+          <SubSection title="Glow" defaultExpanded={false}>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <SliderField
                 label="Brightness"
@@ -2992,7 +2999,7 @@ export function FireworkRenderControls({
                   setBurstTrailNested(layerKey, 'intensity', 'brightness', round2(value))
                 }
               />
-              <AdvancedControls defaultOpen={controlScope === 'trail'}>
+              <AdvancedControls defaultOpen={false}>
                 <SliderField
                   label="Fade softness"
                   min={0.2}

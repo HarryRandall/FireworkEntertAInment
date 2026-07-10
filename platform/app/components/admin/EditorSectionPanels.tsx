@@ -113,7 +113,7 @@ export function EditorStyleDefaultControls({
       <Field>
         <div className="flex items-center gap-1.5">
           <FieldLabel>{label}</FieldLabel>
-          <InfoTooltip text="Save these settings as a reusable effect, or pick a saved effect to apply here instead." />
+          <InfoTooltip text="Save these settings as a reusable effect, or pick a saved effect to copy its settings into this editor." />
         </div>
         <SelectField
           value={value}

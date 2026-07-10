@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Maximize2, RotateCcw, X } from 'lucide-react';
+import { Maximize2, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
-import { EmptyState } from '@/app/components/ui/Feedback';
+import { EmptyState, InlineAlert } from '@/app/components/ui/Feedback';
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
@@ -118,17 +118,15 @@ function versionDetail(version: AdminEditorVersion): string {
 
 export function EditorHistoryPanel({
   versions,
-  selectedVersionId,
+  pendingVersionIds,
+  warning,
   restoringVersionId,
-  onPreview,
-  onClearPreview,
   onRestore,
 }: {
   versions: AdminEditorVersion[];
-  selectedVersionId: string | null;
+  pendingVersionIds?: ReadonlySet<string>;
+  warning?: string | null;
   restoringVersionId: string | null;
-  onPreview: (version: AdminEditorVersion) => void;
-  onClearPreview: () => void;
   onRestore: (version: AdminEditorVersion) => void;
 }) {
   const [now, setNow] = useState<Date | null>(null);
@@ -141,10 +139,10 @@ export function EditorHistoryPanel({
 
   return (
     <div className="space-y-5">
-      {selectedVersionId ? (
-        <Button variant="ghost" size="sm" className="rounded-full" onClick={onClearPreview}>
-          Return to live version
-        </Button>
+      {warning ? (
+        <InlineAlert tone="warning" title="Version history needs attention">
+          {warning}
+        </InlineAlert>
       ) : null}
       {versions.length === 0 ? (
         <EmptyState title="No saved versions yet" className="p-6">
@@ -153,9 +151,9 @@ export function EditorHistoryPanel({
       ) : null}
       <ol className="space-y-0">
         {versions.map((version, index) => {
-          const selected = selectedVersionId === version.id;
           const initials = authorInitials(version.createdByLabel);
           const showTimelineMarker = versions.length > 1;
+          const isPending = pendingVersionIds?.has(version.id) ?? false;
           return (
             <li
               key={version.id}
@@ -172,35 +170,20 @@ export function EditorHistoryPanel({
                     <span className="absolute top-6 bottom-[-1.75rem] w-px bg-[color:var(--color-border-subtle)]" />
                   ) : null}
                   <span
-                    className={cn(
-                      'mt-2 h-3 w-3 rounded-full border-2 bg-[color:var(--color-bg-default)]',
-                      selected
-                        ? 'border-[color:var(--hl)]'
-                        : 'border-[color:var(--color-border-strong)]',
-                    )}
+                    className="mt-2 h-3 w-3 rounded-full border-2 border-[color:var(--color-border-strong)] bg-[color:var(--color-bg-default)]"
                     aria-hidden="true"
                   />
                 </div>
               ) : null}
 
               <div
-                className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
-                  selected
-                    ? 'border-[color:var(--hl)] bg-[color:var(--hl-soft)] text-[color:var(--hl)]'
-                    : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]',
-                )}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-xs font-semibold text-[color:var(--color-content-emphasis)]"
                 aria-hidden="true"
               >
                 {initials}
               </div>
 
-              <div
-                className={cn(
-                  'min-w-0 rounded-lg',
-                  selected ? 'bg-[color:var(--hl-soft)] p-3' : 'pt-1',
-                )}
-              >
+              <div className="min-w-0 rounded-lg pt-1">
                 <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
                     {version.createdByLabel}
@@ -214,28 +197,20 @@ export function EditorHistoryPanel({
                 </div>
 
                 <p className="mt-1 text-sm leading-6 text-[color:var(--color-content-subtle)]">
-                  {versionDetail(version)}
+                  {isPending ? 'Recording version history...' : versionDetail(version)}
                 </p>
 
                 <div className="mt-2 flex items-center gap-1.5">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-7 rounded-md border-[color:var(--color-border-subtle)] px-2.5 text-xs font-semibold shadow-none"
-                    onClick={() => onPreview(version)}
-                  >
-                    <Eye size={13} />
-                    Preview
-                  </Button>
                   <Button
                     variant="primary"
                     size="sm"
                     className="text-hl-contrast h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold shadow-none hover:bg-[color:var(--hl)]/85"
                     loading={restoringVersionId === version.id}
+                    disabled={isPending}
                     onClick={() => onRestore(version)}
                   >
                     <RotateCcw size={13} />
-                    Revert to here
+                    {isPending ? 'Recording...' : 'Revert to here'}
                   </Button>
                 </div>
               </div>

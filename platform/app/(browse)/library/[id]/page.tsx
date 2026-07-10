@@ -2,31 +2,41 @@
 
 import { notFound } from 'next/navigation';
 import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wand2, Wallet } from 'lucide-react';
+import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import type * as React from 'react';
 import { cloneShowTemplateAction } from '@/app/actions/show-templates';
-import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
+import { TemplateReplaySkeleton } from '@/app/components/app/RouteSkeletons';
 import { TemplateCurrentFireworkCard } from '@/app/components/app/TemplateCurrentFireworkCard';
 import { TemplateLikeButton } from '@/app/components/app/TemplateLikeButton';
 import { TemplateReplayPreview } from '@/app/components/app/TemplateReplayPreview';
 import { Badge } from '@/app/components/ui/Badge';
 import { Card } from '@/app/components/ui/Card';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
-import { getShowTemplateBySlug } from '@/lib/admin.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import {
+  getCurrentProfile,
+  getCurrentShowPresetLikeState,
+  getShowTemplateBySlug,
+} from '@/lib/admin.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ cloneError?: string }>;
+};
 
-export default async function LibraryDetailPage({ params }: PageProps) {
+export default async function LibraryDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { cloneError } = (await searchParams) ?? {};
   const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
-  const specificationsPromise = listFireworkSpecifications();
+  const specificationsPromise = listFireworkProducts();
+  const currentProfilePromise = getCurrentProfile();
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-on-surface text-2xl font-semibold tracking-tight md:text-3xl">
@@ -38,6 +48,7 @@ export default async function LibraryDetailPage({ params }: PageProps) {
         </div>
         <form action={cloneShowTemplateAction} className="w-full sm:w-fit">
           <input type="hidden" name="slug" value={template.slug} />
+          <input type="hidden" name="cloneToken" value={randomUUID()} />
           <button className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-all active:scale-[0.98] sm:w-fit">
             <Wand2 size={16} />
             Use this show
@@ -45,8 +56,15 @@ export default async function LibraryDetailPage({ params }: PageProps) {
         </form>
       </header>
 
+      {cloneError ? (
+        <InlineAlert tone="danger" title="This show could not be copied">
+          Its catalogue or timeline needs attention. Please try another show while an administrator
+          reviews it.
+        </InlineAlert>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <Suspense fallback={<ReplayPanelSkeleton />}>
+        <Suspense fallback={<TemplateReplaySkeleton />}>
           <LibraryDetailReplay template={template} specificationsPromise={specificationsPromise} />
         </Suspense>
 
@@ -61,7 +79,9 @@ export default async function LibraryDetailPage({ params }: PageProps) {
               ))}
             </div>
             <div className="mt-4">
-              <TemplateLikeButton templateSlug={template.slug} initialCount={template.likeCount} />
+              <Suspense fallback={<Skeleton className="h-10 w-24 rounded-full" />}>
+                <LibraryDetailLikeButton template={template} />
+              </Suspense>
             </div>
           </Card>
 
@@ -97,11 +117,24 @@ export default async function LibraryDetailPage({ params }: PageProps) {
             <LibraryDetailCurrentFirework
               template={template}
               specificationsPromise={specificationsPromise}
+              currentProfilePromise={currentProfilePromise}
             />
           </Suspense>
         </aside>
       </div>
     </div>
+  );
+}
+
+async function LibraryDetailLikeButton({ template }: { template: ShowTemplate }) {
+  const initialLiked = await getCurrentShowPresetLikeState(template.id);
+  return (
+    <TemplateLikeButton
+      templateId={template.id}
+      templateSlug={template.slug}
+      initialCount={template.likeCount}
+      initialLiked={initialLiked}
+    />
   );
 }
 
@@ -147,16 +180,23 @@ async function LibraryDetailReplay({
 async function LibraryDetailCurrentFirework({
   template,
   specificationsPromise,
+  currentProfilePromise,
 }: {
   template: ShowTemplate;
   specificationsPromise: Promise<FireworkSpecification[]>;
+  currentProfilePromise: ReturnType<typeof getCurrentProfile>;
 }) {
-  const specifications = await specificationsPromise;
+  const [specifications, currentProfile] = await Promise.all([
+    specificationsPromise,
+    currentProfilePromise,
+  ]);
+  const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
   return (
     <TemplateCurrentFireworkCard
       templateSlug={template.slug}
       previewCues={template.previewCues}
       specifications={specifications}
+      canEditFireworks={canEditFireworks}
     />
   );
 }

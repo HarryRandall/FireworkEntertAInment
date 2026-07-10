@@ -8,9 +8,9 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 test('show library routes and clone action exist', () => {
-  assert.equal(existsSync(join(root, 'app/(app)/library/page.tsx')), true);
-  assert.equal(existsSync(join(root, 'app/(app)/library/[id]/page.tsx')), true);
-  assert.equal(existsSync(join(root, 'app/(app)/library/loading.tsx')), true);
+  assert.equal(existsSync(join(root, 'app/(browse)/library/page.tsx')), true);
+  assert.equal(existsSync(join(root, 'app/(browse)/library/[id]/page.tsx')), true);
+  assert.equal(existsSync(join(root, 'app/(browse)/library/loading.tsx')), true);
   assert.equal(existsSync(join(root, 'app/(app)/recommendations/page.tsx')), true);
   assert.equal(existsSync(join(root, 'app/(app)/recommendations/[id]/page.tsx')), true);
   const legacyPage = readFileSync(join(root, 'app/(app)/recommendations/page.tsx'), 'utf8');
@@ -48,8 +48,11 @@ test('show library templates use semi-static caching', () => {
   const cacheKeys = readFileSync(join(root, 'lib/admin/cache-keys.ts'), 'utf8');
   const templates = readFileSync(join(root, 'lib/admin/templates.server.ts'), 'utf8');
   assert.match(cacheKeys, /SHOW_TEMPLATES_TTL_SECONDS/);
+  assert.match(cacheKeys, /getShowTemplatesCacheKey/);
+  assert.match(cacheKeys, /show-templates:database-v3/);
   assert.match(templates, /getCachedJson<ShowTemplate\[]>/);
-  assert.match(templates, /setCachedJson\(SHOW_TEMPLATES_CACHE_KEY, mapped/);
+  assert.match(templates, /const cacheKey = getShowTemplatesCacheKey\(\)/);
+  assert.match(templates, /setCachedJson\(cacheKey, mapped/);
 });
 
 test('main navigation includes show library', () => {

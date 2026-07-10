@@ -46,6 +46,7 @@ import {
   type FireworkHeadStyle,
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
+import { replayCuesSimulationKey } from '@/lib/fireworks/replay-cache-key';
 
 export type PoolSnapshot = {
   indices: Uint32Array;
@@ -759,25 +760,7 @@ export class FireworksEngine {
   }
 
   private createCueSignature(cues: ReplayCue[]): string {
-    return cues
-      .map((cue) =>
-        [
-          cue.id,
-          cue.position,
-          cue.timeSeconds,
-          cue.productId,
-          cue.firework.id,
-          cue.launchPositionIndex,
-          cue.seedOverride ?? '',
-          cue.emphasis ?? 'normal',
-          cue.shotPanDegrees ?? '',
-          cue.shotTiltDegrees ?? '',
-          cue.shotPositionOverride?.x ?? '',
-          cue.shotPositionOverride?.y ?? '',
-          cue.shotPositionOverride?.z ?? '',
-        ].join(':'),
-      )
-      .join('|');
+    return replayCuesSimulationKey(cues);
   }
 
   /**

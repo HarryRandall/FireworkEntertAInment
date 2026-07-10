@@ -14,7 +14,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { archiveStyleDefault, updateStyleDefault } from '@/app/actions/admin-style-defaults';
 import { JsonReadOnlyPanel } from '@/app/components/admin/EditorInspectorPanels';
 import {
@@ -40,6 +40,7 @@ import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import type { AdminStyleDefaultDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
@@ -132,11 +133,105 @@ function compileStyleDefaultPreviewDesign(
   });
 }
 
+function styleDefaultEditorSignature(fields: {
+  name: string;
+  description: string;
+  kind: FireworkStyleDefaultKind;
+  sortOrder: number;
+  isArchived: boolean;
+  defaultsJson: Record<string, unknown> | string;
+}): string {
+  return JSON.stringify({
+    name: fields.name,
+    description: fields.description,
+    kind: fields.kind,
+    sortOrder: fields.sortOrder,
+    isArchived: fields.isArchived,
+    defaultsJson: fields.defaultsJson,
+  });
+}
+
+type StyleDefaultEditorSavedSnapshot = {
+  id: string;
+  updatedAt: string;
+  name: string;
+  description: string;
+  kind: FireworkStyleDefaultKind;
+  sortOrder: string;
+  isArchived: boolean;
+  defaultsText: string;
+  signature: string;
+};
+
+type StyleDefaultEditorSnapshotFields = {
+  id: string;
+  updatedAt: string;
+  name: string;
+  description: string | null;
+  kind: FireworkStyleDefaultKind;
+  sortOrder: number;
+  isArchived: boolean;
+  defaultsJson: unknown;
+};
+
+function styleDefaultSavedSnapshotFromFields(
+  fields: StyleDefaultEditorSnapshotFields,
+): StyleDefaultEditorSavedSnapshot {
+  const defaultsJson = normaliseStyleDefaultJson(fields.kind, fields.defaultsJson);
+  return {
+    id: fields.id,
+    updatedAt: fields.updatedAt,
+    name: fields.name,
+    description: fields.description ?? '',
+    kind: fields.kind,
+    sortOrder: String(fields.sortOrder),
+    isArchived: fields.isArchived,
+    defaultsText: JSON.stringify(defaultsJson, null, 2),
+    signature: styleDefaultEditorSignature({
+      name: fields.name,
+      description: fields.description ?? '',
+      kind: fields.kind,
+      sortOrder: fields.sortOrder,
+      isArchived: fields.isArchived,
+      defaultsJson,
+    }),
+  };
+}
+
+function styleDefaultSavedSnapshotFromDetail(
+  styleDefault: AdminStyleDefaultDetail,
+): StyleDefaultEditorSavedSnapshot {
+  return styleDefaultSavedSnapshotFromFields({
+    id: styleDefault.id,
+    updatedAt: styleDefault.updatedAt,
+    name: styleDefault.name,
+    description: styleDefault.description,
+    kind: styleDefault.kind,
+    sortOrder: styleDefault.sortOrder,
+    isArchived: styleDefault.isArchived,
+    defaultsJson: styleDefault.defaultsJson,
+  });
+}
+
+function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
+  const candidateTime = Date.parse(candidate);
+  const referenceTime = Date.parse(reference);
+  return (
+    Number.isFinite(candidateTime) &&
+    Number.isFinite(referenceTime) &&
+    candidateTime < referenceTime
+  );
+}
+
 export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleDefaultDetail }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
+  const incomingSavedSnapshot = useMemo(
+    () => styleDefaultSavedSnapshotFromDetail(styleDefault),
+    [styleDefault],
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
   const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
@@ -159,7 +254,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       2,
     ),
   );
-  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
+  const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
+  const savedSignatureRef = useRef(savedSignature);
   const [activeTab, setActiveTab] = useState<string>(styleDefault.kind);
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
@@ -191,7 +288,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
   const currentSignature = useMemo(
     () =>
-      JSON.stringify({
+      styleDefaultEditorSignature({
         name,
         description,
         kind,
@@ -203,32 +300,42 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       }),
     [defaultsText, description, isArchived, kind, name, parsedDefaults, sortOrderNumber],
   );
+  const currentSignatureRef = useRef(currentSignature);
   const isDirty = savedSignature !== null && currentSignature !== savedSignature;
 
-  useEffect(() => {
-    if (savedSignature === null) setSavedSignature(currentSignature);
+  useLayoutEffect(() => {
+    currentSignatureRef.current = currentSignature;
+    savedSignatureRef.current = savedSignature;
   }, [currentSignature, savedSignature]);
 
   useEffect(() => {
-    setName(styleDefault.name);
-    setDescription(styleDefault.description ?? '');
-    setKind(styleDefault.kind);
-    setSortOrder(String(styleDefault.sortOrder));
-    setIsArchived(styleDefault.isArchived);
-    setLastSavedUpdatedAt(styleDefault.updatedAt);
+    const incomingSnapshot = incomingSavedSnapshot;
+    const savedSnapshot = savedSnapshotRef.current;
+    const sameStyleDefault = incomingSnapshot.id === savedSnapshot.id;
+    if (sameStyleDefault && incomingSnapshot.updatedAt === savedSnapshot.updatedAt) return;
+    if (
+      sameStyleDefault &&
+      isEarlierUpdatedAt(incomingSnapshot.updatedAt, savedSnapshot.updatedAt)
+    ) {
+      return;
+    }
+    if (sameStyleDefault && currentSignatureRef.current !== savedSignatureRef.current) return;
+
+    savedSnapshotRef.current = incomingSnapshot;
+    savedSignatureRef.current = incomingSnapshot.signature;
+    setName(incomingSnapshot.name);
+    setDescription(incomingSnapshot.description);
+    setKind(incomingSnapshot.kind);
+    setSortOrder(incomingSnapshot.sortOrder);
+    setIsArchived(incomingSnapshot.isArchived);
+    setLastSavedUpdatedAt(incomingSnapshot.updatedAt);
     setTrailPreviewStarMode('none');
     setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
-    setDefaultsText(
-      JSON.stringify(
-        normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
-        null,
-        2,
-      ),
-    );
-    setActiveTab(styleDefault.kind);
+    setDefaultsText(incomingSnapshot.defaultsText);
+    setActiveTab(incomingSnapshot.kind);
     setError(null);
-    setSavedSignature(null);
-  }, [styleDefault]);
+    setSavedSignature(incomingSnapshot.signature);
+  }, [incomingSavedSnapshot]);
 
   useEffect(() => {
     setAdminBreadcrumb({ label: name || styleDefault.name });
@@ -404,6 +511,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       setError(parsedDefaults.error);
       return;
     }
+    const saveStartedFromSignature = currentSignature;
+    const savedDefaultsText = JSON.stringify(parsedDefaults.value, null, 2);
 
     startTransition(async () => {
       const result = await updateStyleDefault({
@@ -414,52 +523,86 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         kind,
         sortOrder: sortOrderNumber,
         isArchived,
-        defaultsJson: defaultsText,
+        defaultsJson: savedDefaultsText,
       });
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setLastSavedUpdatedAt(result.updatedAt);
-      setSavedSignature(currentSignature);
-      toast.success('Style default saved');
+      const savedSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
+      setLastSavedUpdatedAt(savedSnapshot.updatedAt);
+      savedSnapshotRef.current = savedSnapshot;
+      savedSignatureRef.current = savedSnapshot.signature;
+      setSavedSignature(savedSnapshot.signature);
+      if (canApplySavedEditorSnapshot(saveStartedFromSignature, currentSignatureRef.current)) {
+        setName(savedSnapshot.name);
+        setDescription(savedSnapshot.description);
+        setKind(savedSnapshot.kind);
+        setSortOrder(savedSnapshot.sortOrder);
+        setIsArchived(savedSnapshot.isArchived);
+        setDefaultsText(savedSnapshot.defaultsText);
+        setActiveTab(savedSnapshot.kind);
+        toast.success('Style default saved');
+      } else {
+        toast.success('Style default saved; newer edits remain unsaved');
+      }
       router.refresh();
     });
   }
 
   function archiveDefault() {
     setError(null);
+    const archiveStartedFromSignature = currentSignature;
+    const archiveStartedClean = archiveStartedFromSignature === savedSignatureRef.current;
     startTransition(async () => {
-      const result = await archiveStyleDefault({ id: styleDefault.id });
+      const result = await archiveStyleDefault({
+        id: styleDefault.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
+      });
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setIsArchived(true);
-      setSavedSignature(null);
-      toast.success('Style default archived');
+      const savedSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
+      const applySavedSnapshot =
+        archiveStartedClean &&
+        canApplySavedEditorSnapshot(archiveStartedFromSignature, currentSignatureRef.current);
+      savedSnapshotRef.current = savedSnapshot;
+      savedSignatureRef.current = savedSnapshot.signature;
+      setLastSavedUpdatedAt(savedSnapshot.updatedAt);
+      setSavedSignature(savedSnapshot.signature);
+      if (applySavedSnapshot) {
+        setName(savedSnapshot.name);
+        setDescription(savedSnapshot.description);
+        setKind(savedSnapshot.kind);
+        setSortOrder(savedSnapshot.sortOrder);
+        setIsArchived(savedSnapshot.isArchived);
+        setDefaultsText(savedSnapshot.defaultsText);
+        setActiveTab(savedSnapshot.kind);
+        toast.success('Style default archived');
+      } else {
+        setIsArchived(savedSnapshot.isArchived);
+        toast.success('Style default archived; newer edits remain unsaved');
+      }
       router.refresh();
     });
   }
 
   function revertLocalChanges() {
-    setName(styleDefault.name);
-    setDescription(styleDefault.description ?? '');
-    setKind(styleDefault.kind);
-    setSortOrder(String(styleDefault.sortOrder));
-    setIsArchived(styleDefault.isArchived);
+    const savedSnapshot = savedSnapshotRef.current;
+    setName(savedSnapshot.name);
+    setDescription(savedSnapshot.description);
+    setKind(savedSnapshot.kind);
+    setSortOrder(savedSnapshot.sortOrder);
+    setIsArchived(savedSnapshot.isArchived);
+    setLastSavedUpdatedAt(savedSnapshot.updatedAt);
     setTrailPreviewStarMode('none');
     setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
-    setDefaultsText(
-      JSON.stringify(
-        normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
-        null,
-        2,
-      ),
-    );
-    setActiveTab(styleDefault.kind);
+    setDefaultsText(savedSnapshot.defaultsText);
+    setActiveTab(savedSnapshot.kind);
     setError(null);
-    setSavedSignature(null);
+    savedSignatureRef.current = savedSnapshot.signature;
+    setSavedSignature(savedSnapshot.signature);
   }
 
   const preview = (

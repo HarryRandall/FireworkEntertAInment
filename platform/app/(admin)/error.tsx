@@ -7,7 +7,6 @@ import { Button } from '@/app/components/ui/Button';
 import { InlineAlert } from '@/app/components/ui/Feedback';
 
 export default function AdminError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -17,8 +16,7 @@ export default function AdminError({
     <div className="flex min-h-[calc(100vh-8rem)] w-full flex-1 items-start justify-center px-4 py-8">
       <div className="flex w-full max-w-xl flex-col items-start gap-3">
         <InlineAlert tone="danger" title="Admin data failed to load" className="w-full">
-          {error.message ||
-            'Retry the request. If it continues, check database permissions and the latest migration.'}
+          Something went wrong while loading the admin workspace. Try again in a moment.
         </InlineAlert>
         <Button type="button" onClick={reset} variant="secondary" size="md">
           <RotateCcw size={16} />

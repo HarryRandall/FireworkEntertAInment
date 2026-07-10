@@ -512,9 +512,9 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
 }
 
 /**
- * Lists only the opening card-preview window for a show. The `/shows` grid
- * hover preview should feel light and responsive, so it does not need the full
- * replay cue set that the dedicated preview page uses.
+ * Lists only a short card-preview window for a show. The `/shows` grid hover
+ * preview should feel light and responsive, so it does not need the full replay
+ * cue set that the dedicated preview page uses.
  */
 export async function listReplayPreviewCuesForShow(
   showId: string,
@@ -525,12 +525,33 @@ export async function listReplayPreviewCuesForShow(
 
   const previewWindowSeconds = Math.max(1, Math.min(90, windowSeconds));
   const supabase = await getServerClient();
-  const previewEnd = previewWindowSeconds;
+
+  const { data: firstData, error: firstError } = await supabase
+    .from('show_timeline_items')
+    .select('time_seconds')
+    .eq('show_id', showId)
+    .not('time_seconds', 'is', null)
+    .order('time_seconds', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (firstError) {
+    if (isSupabaseTransientNetworkError(firstError)) throw new ShowsNetworkError(firstError);
+    console.error('[shows.server] listReplayPreviewCuesForShow first cue failed:', firstError);
+    return [];
+  }
+
+  const firstCueTime = Number(firstData?.time_seconds);
+  if (!Number.isFinite(firstCueTime)) return [];
+
+  const previewStart = Math.max(0, firstCueTime - 0.3);
+  const previewEnd = previewStart + previewWindowSeconds;
   const { data, error } = await supabase
     .from('show_timeline_items')
     .select(SHOW_CUE_SELECT)
     .eq('show_id', showId)
     .not('time_seconds', 'is', null)
+    .gte('time_seconds', previewStart)
     .lte('time_seconds', previewEnd)
     .order('time_seconds', { ascending: true })
     .order('position', { ascending: true });
@@ -546,9 +567,12 @@ export async function listReplayPreviewCuesForShow(
     ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
   ];
   const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
-  return expandReplayCues(rows, shotsByCatalogueItem).filter(
-    (cue) => cue.timeSeconds <= previewEnd + 0.001,
-  );
+  return expandReplayCues(rows, shotsByCatalogueItem)
+    .map((cue) => ({
+      ...cue,
+      timeSeconds: Math.max(0, cue.timeSeconds - previewStart),
+    }))
+    .filter((cue) => cue.timeSeconds <= previewWindowSeconds + 0.001);
 }
 
 /**

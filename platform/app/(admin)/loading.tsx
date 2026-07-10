@@ -1,155 +1,18 @@
-'use client';
+/**
+ * Group-level loading fallback for admin routes.
+ *
+ * Every admin subroute defines its own route-shaped `loading.tsx`, so this
+ * boundary only shows while the admin shell itself cold-loads (e.g. first
+ * entry into /admin from the app). It is deliberately neutral: the previous
+ * version picked a skeleton with `usePathname()`, but during a transition the
+ * hook still reports the old route, so leaving /admin flashed the overview
+ * skeleton on the way to every subpage. Neutral placeholders cannot flash the
+ * wrong page shape.
+ */
 
-/** Loading skeleton for admin routes. */
-
-import type { ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
-import {
-  AdminEffectEditorSkeleton,
-  AdminFireworkEditorSkeleton,
-  AdminImportDetailSkeleton,
-  AdminImportsSkeleton,
-  AdminOverviewRouteSkeleton,
-  AdminPromptsSkeleton,
-  AdminRolesSkeleton,
-  AdminTableRouteSkeleton,
-  AdminUserDetailSkeleton,
-} from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
 
-function AdminEditorLoadingFrame({ children }: { children: ReactNode }) {
-  return (
-    <div className="-mx-6 -my-6 flex h-[calc(100svh-3.5rem)] min-h-0 flex-1 sm:-mx-8 md:h-[calc(100svh-4.5rem)] lg:-mx-10">
-      {children}
-    </div>
-  );
-}
-
 export default function AdminLoading() {
-  const pathname = usePathname();
-  const currentPathname = pathname ?? '';
-
-  if (/^\/admin\/?$/.test(currentPathname)) {
-    return <AdminOverviewRouteSkeleton />;
-  }
-
-  if (/^\/admin\/users\/[^/]+\/?$/.test(currentPathname)) {
-    return <AdminUserDetailSkeleton />;
-  }
-
-  if (/^\/admin\/users\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search name, email, phone..."
-        headers={['User', 'Role', 'Status', 'Updated', 'Actions']}
-        rows={8}
-        ariaLabel="Loading admin users"
-      />
-    );
-  }
-
-  if (/^\/admin\/roles\/?$/.test(currentPathname)) {
-    return <AdminRolesSkeleton />;
-  }
-
-  if (/^\/admin\/prompts\/?$/.test(currentPathname)) {
-    return <AdminPromptsSkeleton />;
-  }
-
-  if (/^\/admin\/suppliers\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search name, email, phone, website..."
-        headers={['Name', 'Email', 'Phone', 'Website', 'Status', 'Actions']}
-        rowSize="relaxed"
-        rows={8}
-        filterActionLabel="New supplier"
-        ariaLabel="Loading suppliers"
-      />
-    );
-  }
-
-  if (/^\/admin\/catalogue\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search part #, name, manufacturer..."
-        headers={['Part', 'Product', 'Manufacturer', 'Type', 'Duration', 'Actions']}
-        tableClassName="min-w-[960px]"
-        rowSize="relaxed"
-        rows={8}
-        hasAction
-        ariaLabel="Loading catalogue"
-      />
-    );
-  }
-
-  if (/^\/admin\/fireworks\/[^/]+\/?$/.test(currentPathname)) {
-    return (
-      <AdminEditorLoadingFrame>
-        <AdminFireworkEditorSkeleton />
-      </AdminEditorLoadingFrame>
-    );
-  }
-
-  if (/^\/admin\/fireworks\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search firework, effect, colour..."
-        headers={['Preview', 'Firework', 'Base effect', 'Colour', 'Calibre', 'Duration', 'Open']}
-        tableClassName="min-w-[960px]"
-        rows={8}
-        filterActionLabel="New firework"
-        ariaLabel="Loading fireworks"
-      />
-    );
-  }
-
-  if (/^\/admin\/effects\/[^/]+\/?$/.test(currentPathname)) {
-    return (
-      <AdminEditorLoadingFrame>
-        <AdminEffectEditorSkeleton />
-      </AdminEditorLoadingFrame>
-    );
-  }
-
-  if (/^\/admin\/effects\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search name, slug, description..."
-        headers={['Effect', 'Pattern', 'Source', 'Variants', 'Updated', '']}
-        tableClassName="min-w-[820px]"
-        rows={12}
-        hasAction
-        ariaLabel="Loading effects"
-      />
-    );
-  }
-
-  if (/^\/admin\/multishots\/[^/]+\/?$/.test(currentPathname)) {
-    return <div className="min-h-0 flex-1" aria-label="Loading multishot" />;
-  }
-
-  if (/^\/admin\/multishots\/?$/.test(currentPathname)) {
-    return (
-      <AdminTableRouteSkeleton
-        searchPlaceholder="Search multishot..."
-        headers={['Preview', 'Multishot', 'Shots', 'Duration', 'Open']}
-        tableClassName="min-w-[820px]"
-        rows={8}
-        filterActionLabel="New multishot"
-        ariaLabel="Loading multishots"
-      />
-    );
-  }
-
-  if (/^\/admin\/imports\/[^/]+\/?$/.test(currentPathname)) {
-    return <AdminImportDetailSkeleton />;
-  }
-
-  if (/^\/admin\/imports\/?$/.test(currentPathname)) {
-    return <AdminImportsSkeleton />;
-  }
-
   return (
     <div className="space-y-6" aria-label="Loading admin data">
       <div className="space-y-3">

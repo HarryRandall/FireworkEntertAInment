@@ -23,7 +23,14 @@ Every `CREATE TABLE` in `public` must also include:
    Supabase Data API by `anon` or `authenticated`.
 
 RLS controls rows after the table is reachable. It does not replace Data API
-grants.
+grants. Do not rely on broad historical schema defaults. Revoke unnecessary
+`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, and `TRIGGER`
+privileges, then grant only the operations used by a documented path.
+
+Set safe default privileges for future objects as part of a privilege-hardening
+migration. Table defaults must not silently give `anon` or `authenticated`
+write or maintenance privileges, and function defaults must not expose new
+helpers to `public`.
 
 ## Standard Policy Patterns
 
@@ -56,8 +63,9 @@ create policy <table>_update_own
   with check ((select auth.uid()) = user_id);
 ```
 
-Use this shape for owner-scoped tables such as `shows`, `song_analyses`,
-`shopping_list_items`, `ai_credit_accounts`, and `ai_credit_transactions`.
+Use this shape for owner-scoped tables such as `shows` and `song_analyses`.
+AI credit ledger writes must use their guarded RPCs rather than direct table
+mutations.
 
 ### Show-owned child rows
 
@@ -88,15 +96,31 @@ create policy <table>_select_authenticated
   to authenticated
   using (true);
 
-create policy <table>_admin_modify
+create policy <table>_admin_insert
   on public.<table>
-  for all
+  for insert
   to authenticated
-  using (public.current_user_has_permission('admin.manage_catalogue'))
-  with check (public.current_user_has_permission('admin.manage_catalogue'));
+  with check ((select public.current_user_has_permission('admin.manage_catalogue')));
+
+create policy <table>_admin_update
+  on public.<table>
+  for update
+  to authenticated
+  using ((select public.current_user_has_permission('admin.manage_catalogue')))
+  with check ((select public.current_user_has_permission('admin.manage_catalogue')));
+
+create policy <table>_admin_delete
+  on public.<table>
+  for delete
+  to authenticated
+  using ((select public.current_user_has_permission('admin.manage_catalogue')));
 ```
 
-Use permission checks for admin tables. Current permission keys include
+Use command-specific write policies when a table also has a read policy. A
+permissive `FOR ALL` policy also applies to `SELECT`, which creates a redundant
+per-row policy plan. Wrap stable authorisation helpers in `select` so Postgres
+initialises them once per statement. Use permission checks for admin tables.
+Current permission keys include
 `admin.view`, `admin.manage_users`, `admin.manage_billing`,
 `admin.impersonate_users`, `admin.manage_suppliers`, `admin.manage_catalogue`,
 `admin.manage_imports`, and `admin.manage_prompts`.
@@ -107,8 +131,10 @@ Anonymous `SELECT` is intentional only when the data is public product or
 template content. Current examples:
 
 - `show_presets`
+- `show_preset_like_counts`
 - `catalogue_items`
 - `fireworks`
+- `firework_effects`
 - `multishots`
 - `multishot_fireworks`
 
@@ -128,6 +154,14 @@ create policy <table>_select_anyone
 Add a SQL comment explaining the public surface, for example `/catalogue`,
 `/library`, or `/home` template browsing.
 
+If a public table also has admin-only columns, revoke the table-wide anonymous
+grant and grant only the explicit public columns. In particular,
+`show_presets.source_show_id` is provenance and must remain admin-only.
+
+`show_preset_likes` is not public social data. Authenticated users may read only
+their own row and must mutate likes through the guarded toggle RPC. Anonymous
+visitors read the aggregate count table, which must not expose user identities.
+
 ## Security-definer RPCs
 
 `SECURITY DEFINER` bypasses RLS. Use it only when the function is deliberately
@@ -135,13 +169,18 @@ the access boundary.
 
 Every security-definer function must:
 
-- Set a fixed `search_path`.
+- Set `search_path = ''` and schema-qualify referenced objects.
 - Check `auth.uid()` or `public.current_user_has_permission(...)` inside the
   function body.
 - Be idempotent when it writes user-facing state.
 - Revoke execute from `public`.
 - Grant execute only to the exact role that needs it.
 - Have a focused test for allowed and denied paths.
+
+Trigger-only and internal helper functions should have execute revoked from
+`public`, `anon`, and `authenticated`. If one security-definer function must
+call another internal helper, grant that helper only to the owning database
+role or replace the call with a checked public wrapper.
 
 The AI credit RPCs and `replace_show_timeline_items` are examples of functions
 that need explicit grants and caller checks. Never add `SECURITY DEFINER` just
@@ -159,10 +198,35 @@ Storage policies live on `storage.objects`, not the app table.
 
 - The `audio` bucket is private and owner-scoped by the first path segment,
   `<user id>/...`.
+- Audio and cover owner writes must also require a current active app user so a
+  deleted or suspended account cannot reuse an unexpired access JWT.
 - The `audio` bucket should keep the 50 MB limit and MP3, WAV, AAC, M4A MIME
   allow-list aligned with `/api/music-analysis`.
 - The `import-videos` bucket is admin-only and is used by queued import jobs.
 - Upsert-style storage writes need `INSERT`, `SELECT`, and `UPDATE`.
+
+## Schema Integrity And Delivery
+
+- Create migrations with `supabase migration new <name>` so timestamp prefixes
+  remain unique and chronological. Never edit a migration that has reached a
+  linked environment.
+- Preflight existing rows before adding a check, unique index, `NOT NULL`, or
+  foreign key. Repair data explicitly or fail with a useful assertion.
+- Index foreign-key columns used for joins, cascades, ownership checks, or RLS.
+  Do not retain a redundant index when a unique or primary-key index has the
+  same useful leading columns.
+- Use `source_show_id` as the nullable, unique provenance link for imported
+  Explore presets. Do not infer identity from a title or slug after import.
+- Keep new `show_presets` draft-first. Preset JSON writes use canonical
+  `catalogueItemId` UUIDs; publication and cloning must reject unresolved,
+  out-of-duration, or same-launch-position overlapping cues.
+- Enforce the published-preset contract in Postgres as well as the server
+  action, because a permitted Data API update can bypass application code.
+- Regenerate `platform/lib/database.types.ts` after the migration is applied to
+  the target schema. Review the type diff rather than hand-editing it.
+- Before applying remotely, run the relevant tests, `supabase migration list
+--linked`, and `supabase db push --linked --dry-run`. After applying, rerun
+  the list, database lint, and focused read-only verification queries.
 
 ## Review Checklist
 
@@ -174,11 +238,16 @@ When reviewing a migration PR, confirm:
 - [ ] Permission checks use `public.current_user_has_permission(...)`.
 - [ ] Anonymous `SELECT` has a clear SQL comment explaining the public surface.
 - [ ] Data API grants match the intended `anon` / `authenticated` access.
+- [ ] Unused write, maintenance, and function execute privileges are revoked.
 - [ ] Storage bucket and object policies are updated when storage behaviour
       changes.
 - [ ] Security-definer functions revoke `public` execute and grant only the
       required role.
+- [ ] Internal and trigger functions are not executable through the Data API.
 - [ ] `platform/lib/database.types.ts` is regenerated when schema changes.
 - [ ] Tests cover any changed access path or RPC behaviour.
+- [ ] Foreign keys and common RLS/join paths have suitable indexes without
+      redundant duplicates.
+- [ ] Constraints were checked against existing data before enforcement.
 - [ ] The migration filename prefix is unique across
       `platform/supabase/migrations/`.

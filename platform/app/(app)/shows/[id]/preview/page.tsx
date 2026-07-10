@@ -16,7 +16,9 @@ import {
 const EMPTY_CUES: never[] = [];
 const EMPTY_EXTRAS = { specifications: [], audioUrl: null };
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
 
 export default function ShowPreviewPage(props: PageProps) {
   const { params } = props;

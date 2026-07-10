@@ -27,7 +27,6 @@ import {
 } from '@/lib/ai-credits.server';
 import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
 import type { PermissionOverrideOption } from './AddPermissionOverrideDialog';
-import { GrantAiCreditsForm } from './GrantAiCreditsForm';
 import {
   PermissionExceptionsPanel,
   type PermissionExceptionState,
@@ -72,11 +71,6 @@ function creditDeltaClass(transaction: AiCreditTransactionSummary) {
   if (amount > 0) return 'text-[color:var(--color-status-success)]';
   if (amount < 0) return 'text-[color:var(--color-content-emphasis)]';
   return 'text-[color:var(--color-content-subtle)]';
-}
-
-function usagePercent(used: number, limit: number) {
-  if (limit <= 0) return 0;
-  return Math.min(100, Math.max(0, (used / limit) * 100));
 }
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
@@ -128,10 +122,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           userId={user.id}
           displayName={user.fullName || user.email || 'this user'}
           canImpersonate={canImpersonate}
+          canManageBilling={canManageBilling}
         />
       </header>
-
-      {canManageBilling ? <AdminUserAiCreditsCard userId={user.id} /> : null}
 
       <Suspense fallback={<AdminUserRoleSkeleton />}>
         <AdminUserRoleCard user={user} />
@@ -140,6 +133,8 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       <Suspense fallback={<AdminUserActivitySkeleton />}>
         <AdminUserActivity userId={user.id} />
       </Suspense>
+
+      {canManageBilling ? <AdminUserAiCreditsCard userId={user.id} /> : null}
 
       <Suspense fallback={<AdminUserPermissionsSkeleton />}>
         <AdminUserPermissionsCard user={user} />
@@ -154,8 +149,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
 async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
   const summary = await getAiCreditSummaryForUser(userId);
-  const creditPool = Math.max(summary.totalGranted, summary.includedCredits, summary.balance);
-  const committedCredits = summary.totalSpent + summary.reserved;
 
   return (
     <Card elevation="low" radius="lg" className="p-5">
@@ -170,43 +163,21 @@ async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
                 AI credits
               </h2>
               <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-                Credit balance, recent spend, and manual grants for this user.
+                Credit KPIs and recent spend for this user.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <section className="mb-5 grid gap-3 md:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-4">
         <StatTile label="Available" value={formatCredits(summary.available)} />
         <StatTile label="Balance" value={formatCredits(summary.balance)} />
         <StatTile label="Spent" value={formatCredits(summary.totalSpent)} />
         <StatTile label="Reserved" value={formatCredits(summary.reserved)} />
       </section>
 
-      <div className="mb-5 space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-medium text-[color:var(--color-content-subtle)]">
-            Spend against granted credits
-          </p>
-          <p className="font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums">
-            {formatCredits(committedCredits)} spent or reserved
-          </p>
-        </div>
-        <div
-          aria-hidden
-          className="h-1.5 overflow-hidden rounded-full bg-[color:var(--color-border-subtle)]"
-        >
-          <div
-            className="h-full rounded-full bg-[color:var(--color-primary)]"
-            style={{ width: `${usagePercent(committedCredits, creditPool)}%` }}
-          />
-        </div>
-      </div>
-
-      <GrantAiCreditsForm userId={userId} />
-
-      <div className="mt-5 border-t border-[color:var(--color-border-subtle)] pt-4">
+      <div className="mt-5">
         <h3 className="mb-2 text-xs font-semibold tracking-wide text-[color:var(--color-content-subtle)] uppercase">
           Recent spend
         </h3>

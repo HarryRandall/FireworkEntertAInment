@@ -42,7 +42,7 @@ test('package and root README expose platform-local quality commands', () => {
 test('app and admin routes have granular loading coverage and streaming boundaries', () => {
   for (const path of [
     'app/(app)/home/loading.tsx',
-    'app/(app)/library/loading.tsx',
+    'app/(browse)/library/loading.tsx',
     'app/(app)/settings/loading.tsx',
     'app/(app)/shows/[id]/loading.tsx',
     'app/(app)/shows/[id]/preview/loading.tsx',
@@ -62,7 +62,7 @@ test('app and admin routes have granular loading coverage and streaming boundari
 
   for (const path of [
     'app/(app)/home/page.tsx',
-    'app/(app)/library/page.tsx',
+    'app/(browse)/library/page.tsx',
     'app/(app)/shows/[id]/preview/page.tsx',
     'app/(app)/shows/[id]/shopping-list/page.tsx',
     'app/(app)/shows/[id]/show-guide/page.tsx',
@@ -169,6 +169,14 @@ test('admin mutations harden self actions roles supplier URLs and product durati
   assert.match(users, /You cannot suspend your own account/);
   assert.match(users, /You cannot delete your own account/);
   assert.match(users, /\.from\(['"]roles['"]\)[\s\S]*\.eq\(['"]id['"], parsed\.data\.roleId\)/);
+  assert.match(users, /\.from\(['"]user_roles['"]\)\.upsert\([\s\S]*onConflict: ['"]user_id['"]/);
+  assert.doesNotMatch(users, /\.from\(['"]user_roles['"]\)[\s\S]{0,80}\.delete\(\)/);
+  assert.match(users, /sendUserPasswordResetAction/);
+  assert.match(users, /resetPasswordForEmail/);
+  assert.match(users, /process\.env\.APP_ORIGIN/);
+  assert.match(users, /VERCEL_PROJECT_PRODUCTION_URL/);
+  assert.doesNotMatch(users, /x-forwarded-host|requestHeaders\.get\(['"]host/);
+  assert.match(users, /service\.auth\.admin\.deleteUser/);
   assert.match(suppliers, /url\.protocol === ['"]http:['"] \|\| url\.protocol === ['"]https:['"]/);
   assert.match(catalogue, /MAX_PRODUCT_DURATION_SECONDS = 60 \* 60/);
   assert.match(catalogue, /clampProductDurationSeconds/);

@@ -25,15 +25,7 @@
  */
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-  type FormEvent,
-  type KeyboardEvent,
-} from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
@@ -42,6 +34,7 @@ import {
   Dices,
   Hourglass,
   MicOff,
+  RotateCcw,
   Sparkles,
   Timer,
   Waves,
@@ -49,6 +42,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { CueModelSelect } from '@/app/components/app/CueModelSelect';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
@@ -61,13 +55,17 @@ import {
 import { DEFAULT_SHOW_STYLE, type ShowStyleKey } from '@/lib/cue-generation/show-styles';
 import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
 import {
+  clearPersistedGenerationCover,
   clearPersistedGenerationStart,
+  copyPersistedGenerationCover,
   persistGenerationStartedAt,
+  resolvePersistedGenerationCover,
 } from '@/lib/generation-progress-storage';
 import { slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
-import { createShowAction } from './actions';
+import { createShowAction, getShowGenerationPresentationAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
+import { LaunchOverlay } from './_components/LaunchOverlay';
 import { ChoiceCard, PositionDots } from './_components/cards';
 import { StepDots } from './_components/StepDots';
 import { StepPanel } from './_components/StepPanel';
@@ -80,7 +78,12 @@ import {
   STEPS,
   WIDTH_PRESETS,
 } from './constants';
-import type { AudioUploadState, FieldError as FieldErrorKey, UploadedAudio } from './types';
+import type {
+  AudioUploadState,
+  FieldError as FieldErrorKey,
+  ShowGenerationPresentation,
+  UploadedAudio,
+} from './types';
 import {
   deriveTitleFromDescription,
   formatDuration,
@@ -97,7 +100,54 @@ type LengthChoice = 'match' | (typeof SHOW_LENGTH_PRESETS)[number]['minutes'];
 
 /** Diagram icon for each preset, in SHOW_LENGTH_PRESETS order. */
 const LENGTH_PRESET_ICONS = [Zap, Timer, Hourglass] as const;
-const DEFAULT_GENERATE_CREDIT_COST = 3;
+
+type MusicAnalysisResponse = { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+
+function parseMusicAnalysisResponse(value: unknown, responseOk: boolean): MusicAnalysisResponse {
+  if (
+    responseOk &&
+    typeof value === 'object' &&
+    value !== null &&
+    'ok' in value &&
+    value.ok === true &&
+    'musicAnalysisId' in value &&
+    typeof value.musicAnalysisId === 'string'
+  ) {
+    return { ok: true, musicAnalysisId: value.musicAnalysisId };
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof value.error === 'string' &&
+    value.error.trim()
+  ) {
+    return { ok: false, error: value.error };
+  }
+  return { ok: false, error: 'Could not start music analysis. Please try again.' };
+}
+
+async function cleanupUnusedMusicAnalysis(uploaded: UploadedAudio): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch('/api/music-analysis', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          musicAnalysisId: uploaded.musicAnalysisId,
+          audioPath: uploaded.audioPath,
+        }),
+      });
+      if (response.ok) return;
+      lastError = new Error(`Unused audio cleanup returned HTTP ${response.status}.`);
+      if (response.status < 500) break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Unused audio cleanup failed.');
+}
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -107,7 +157,13 @@ export default function NewShowPage() {
   // === Step 0: describe ====================================================
   const [description, setDescription] = useState('');
   const [styleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
-  const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
+  const [selectedCueModel, setSelectedCueModel] = useState<string | null>(null);
+  const [generationPresentation, setGenerationPresentation] =
+    useState<ShowGenerationPresentation | null>(null);
+  const [generationPresentationError, setGenerationPresentationError] = useState<string | null>(
+    null,
+  );
+  const [generationPresentationRequest, setGenerationPresentationRequest] = useState(0);
   const promptPrefilledRef = useRef(false);
   const modelPrefilledRef = useRef(false);
 
@@ -145,8 +201,12 @@ export default function NewShowPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
   const [isLaunching, setIsLaunching] = useState(false);
+  // Set on Generate; renders the instant client-side splash overlay that
+  // covers the gap until the /generating route streams in.
+  const [launch, setLaunch] = useState<{ slug: string; title: string; hasAudio: boolean } | null>(
+    null,
+  );
   const [mounted, setMounted] = useState(false);
-  const [, startTransition] = useTransition();
 
   const measuredFeet = Number(measuredWidth);
   const effectiveWidthFeet =
@@ -154,11 +214,21 @@ export default function NewShowPage() {
       ? Math.min(Math.round(measuredFeet), 2000)
       : widthFeet;
   const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
+  const effectiveCueModel =
+    selectedCueModel ?? generationPresentation?.defaultCueModel ?? FALLBACK_CUE_MODEL;
   const selectedCueModelOption = CUE_MODEL_OPTIONS.find(
-    (option) => option.value === selectedCueModel,
+    (option) => option.value === effectiveCueModel,
   );
-  const selectedCueModelLabel = selectedCueModelOption?.label ?? 'selected model';
-  const selectedCueModelCost = selectedCueModelOption?.creditCost ?? DEFAULT_GENERATE_CREDIT_COST;
+  const selectedCueModelLabel =
+    selectedCueModelOption?.label ?? effectiveCueModel.split('/').at(-1) ?? 'configured model';
+  const selectedCueModelCost =
+    generationPresentation?.modelCreditCosts[effectiveCueModel] ??
+    selectedCueModelOption?.creditCost ??
+    1;
+  const displayedGenerationCost =
+    generationPresentation?.generationMode === 'fast'
+      ? generationPresentation.fastCreditCost
+      : selectedCueModelCost;
 
   // "Match the track" sends the audio's exact duration in seconds so the show
   // runs for the whole song; presets send the round-minute form the action's
@@ -175,6 +245,33 @@ export default function NewShowPage() {
   const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let active = true;
+    setGenerationPresentation(null);
+    setGenerationPresentationError(null);
+    void getShowGenerationPresentationAction()
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) {
+          setGenerationPresentation(result.presentation);
+          return;
+        }
+        setGenerationPresentationError(result.error);
+      })
+      .catch(() => {
+        if (active) {
+          setGenerationPresentationError('Could not load generation options. Please try again.');
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [generationPresentationRequest]);
+
+  const retryGenerationPresentation = () => {
+    setGenerationPresentationRequest((request) => request + 1);
+  };
 
   useEffect(() => {
     let shouldCleanUrl = false;
@@ -261,8 +358,15 @@ export default function NewShowPage() {
     });
   };
 
+  const discardUploadedAudio = (audio: UploadedAudio) => {
+    void cleanupUnusedMusicAnalysis(audio).catch((error) => {
+      console.error('[shows/new] unused audio cleanup failed:', error);
+    });
+  };
+
   const onFilePicked = (file: File | null) => {
     if (!file) {
+      if (uploadedAudio) discardUploadedAudio(uploadedAudio);
       uploadTokenRef.current += 1;
       setAudioFile(null);
       setUploadedAudio(null);
@@ -280,6 +384,7 @@ export default function NewShowPage() {
       toast.error('Unsupported file', { description: 'Please pick an audio file.' });
       return;
     }
+    if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     // Nothing else to type: the title comes from the track name (editable
     // later on the show page).
     if (!titleRef.current.trim()) {
@@ -307,6 +412,7 @@ export default function NewShowPage() {
   };
 
   const clearAudio = () => {
+    if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     uploadTokenRef.current += 1;
     setAudioFile(null);
     setUploadedAudio(null);
@@ -364,7 +470,12 @@ export default function NewShowPage() {
       throw new Error(uploadError.message || 'Upload failed.');
     }
 
-    let analysisResult: { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+    if (uploadTokenRef.current !== token) {
+      await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
+      throw new Error('Audio selection changed before the upload completed.');
+    }
+
+    let analysisResult: MusicAnalysisResponse;
     try {
       const response = await fetch('/api/music-analysis', {
         method: 'POST',
@@ -376,10 +487,8 @@ export default function NewShowPage() {
           sizeBytes: file.size,
         }),
       });
-      const json = (await response.json()) as
-        | { ok: true; musicAnalysisId: string }
-        | { ok: false; error: string };
-      analysisResult = json;
+      const json: unknown = await response.json();
+      analysisResult = parseMusicAnalysisResponse(json, response.ok);
     } catch (error) {
       analysisResult = {
         ok: false,
@@ -404,6 +513,14 @@ export default function NewShowPage() {
       sizeBytes: file.size,
       contentType,
     };
+    if (uploadTokenRef.current !== token) {
+      try {
+        await cleanupUnusedMusicAnalysis(uploaded);
+      } catch (error) {
+        console.error('[shows/new] stale audio cleanup failed:', error);
+      }
+      throw new Error('Audio selection changed before analysis was attached.');
+    }
     if (uploadTokenRef.current === token) {
       setUploadedAudio(uploaded);
       setAudioUploadState('ready');
@@ -440,10 +557,43 @@ export default function NewShowPage() {
     if (stepIndex < STEPS.length - 1) goToStep(stepIndex + 1);
   };
 
-  /** Click handler for the Generate button. Derives the title, awaits any
-   * pending upload, then submits the show via the server action. */
+  // Prefetch the generating route while the user is on the final step so the
+  // splash swap on Generate has its loading state cached and appears instantly.
+  useEffect(() => {
+    if (stepIndex !== STEPS.length - 1) return;
+    const candidateTitle =
+      title.trim() ||
+      suggestTitleFromFilename(audioFile?.name ?? '') ||
+      deriveTitleFromDescription(description) ||
+      'Untitled show';
+    router.prefetch(`/shows/${slugifyTitle(candidateTitle)}/generating`);
+  }, [stepIndex, title, audioFile, description, router]);
+
+  /**
+   * Detached runner for the post-navigation generation work. Deliberately NOT
+   * React's startTransition: an async React transition here entangles with the
+   * router.push() transition dispatched in the same tick, so the wizard sat
+   * frozen until createShowAction resolved before the generating splash could
+   * appear. Running the work outside any transition lets the navigation commit
+   * immediately while the server action continues in the background.
+   */
+  const startTransition = (work: () => Promise<void>) => {
+    void work();
+  };
+
+  /** Click handler for the Generate button. Derives the title, navigates to
+   * the generating splash immediately, awaits any pending upload, then submits
+   * the show via the server action. */
   const triggerGenerate = () => {
     setFieldError(null);
+    if (!generationPresentation) {
+      toast.error('Generation options are not ready', {
+        description:
+          generationPresentationError ?? 'Wait a moment, then try generating the show again.',
+      });
+      if (generationPresentationError) retryGenerationPresentation();
+      return;
+    }
     // No manual title entry anywhere: track name first, then the brief.
     const finalTitle =
       title.trim() ||
@@ -461,7 +611,16 @@ export default function NewShowPage() {
     const desiredSlug = slugifyTitle(finalTitle);
     const titleParam = encodeURIComponent(finalTitle);
     const generationStartedAt = persistGenerationStartedAt(desiredSlug);
-    router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`);
+    const generationCover = resolvePersistedGenerationCover(desiredSlug);
+    // Show the client-side splash overlay right away; the route's own splash
+    // resumes the same persisted progress once it streams in.
+    const hasAudio = Boolean(audioFile);
+    setLaunch({ slug: desiredSlug, title: finalTitle, hasAudio });
+    // `a=1` carries the soundtrack flag so the route's provisional splash
+    // renders the same stage list as this overlay: no stage-row swap mid-run.
+    router.push(
+      `/shows/${desiredSlug}/generating?creating=1&t=${titleParam}${hasAudio ? '&a=1' : ''}`,
+    );
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
       if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
@@ -469,6 +628,7 @@ export default function NewShowPage() {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
           setIsLaunching(false);
+          setLaunch(null);
           clearPersistedGenerationStart(desiredSlug);
           router.replace('/shows/new');
           toast.error('Could not upload track', {
@@ -479,6 +639,7 @@ export default function NewShowPage() {
       }
       if (audioFile && audioUploadState === 'error') {
         setIsLaunching(false);
+        setLaunch(null);
         clearPersistedGenerationStart(desiredSlug);
         router.replace('/shows/new');
         toast.error('Could not upload track', {
@@ -494,9 +655,13 @@ export default function NewShowPage() {
       data.set('title', finalTitle);
       data.set('description', description);
       data.set('showStyle', styleKey);
-      data.set('selectedCueModel', selectedCueModel);
+      data.set('expectedGenerationMode', generationPresentation.generationMode);
+      if (generationPresentation.generationMode === 'llm' && selectedCueModel) {
+        data.set('selectedCueModel', selectedCueModel);
+      }
       data.set('siteWidthFeet', String(effectiveWidthFeet));
       data.set('desiredSlug', desiredSlug);
+      data.set('coverShader', JSON.stringify(generationCover));
       fireworkTypes.forEach((type) => data.append('fireworkTypes', type));
       if (finalUploadedAudio) {
         data.set('audioPath', finalUploadedAudio.audioPath);
@@ -505,8 +670,17 @@ export default function NewShowPage() {
 
       const result = await createShowAction(data);
       if (!result.ok) {
+        if (finalUploadedAudio) {
+          try {
+            await cleanupUnusedMusicAnalysis(finalUploadedAudio);
+          } catch (error) {
+            console.error('[shows/new] failed generation audio cleanup failed:', error);
+          }
+        }
         setIsLaunching(false);
+        setLaunch(null);
         clearPersistedGenerationStart(desiredSlug);
+        retryGenerationPresentation();
         router.replace('/shows/new');
         toast.error(result.error);
         return;
@@ -515,10 +689,15 @@ export default function NewShowPage() {
       // one so the route stops waiting on a row that will never appear.
       if (result.slug !== desiredSlug) {
         persistGenerationStartedAt(result.slug, generationStartedAt);
+        copyPersistedGenerationCover(desiredSlug, result.slug);
         clearPersistedGenerationStart(desiredSlug);
+        clearPersistedGenerationCover(desiredSlug);
         router.replace(`/shows/${result.slug}/generating`);
       } else {
-        router.refresh();
+        // Strip the provisional `creating=1` params: the row now exists and is
+        // ours, and the completed handover only engages on the clean URL (a
+        // completed show under `creating=1` is treated as a slug collision).
+        router.replace(`/shows/${result.slug}/generating`);
       }
     });
   };
@@ -550,7 +729,15 @@ export default function NewShowPage() {
       noValidate
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className="new-show-wizard-screen -mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
+      className={cn(
+        'new-show-wizard-screen relative -mx-6 -mt-6 flex flex-1 sm:-mx-8 lg:-mx-10',
+        // While the launch splash is up, cancel all of the app main's bottom
+        // padding (the form's overflow-hidden would clip any overlay that
+        // tried to extend past it) so the splash reaches the true bottom edge
+        // and matches the /generating route splash exactly: no height jump
+        // when the route streams in.
+        launch ? '-mb-10 sm:-mb-12' : '-mb-6',
+      )}
     >
       {/* Hidden derived title — kept as a named element for focus targeting. */}
       <input type="hidden" name="title" value={title} readOnly />
@@ -571,44 +758,74 @@ export default function NewShowPage() {
 
             <div className="mt-8 w-full">
               <StepPanel active={stepIndex === 0}>
-                <div className="space-y-6">
-                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/70 shadow-xs backdrop-blur-xl">
+                {/* Mirrors the home-page PromptHero panel sizing so the wizard's
+                    describe step feels like a continuation of it. */}
+                <div className="mx-auto w-full max-w-3xl">
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
                     <Textarea
                       name="description"
-                      rows={4}
+                      rows={2}
                       autoFocus
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Describe your show, or hit the dice to randomise."
-                      className="h-36 resize-none rounded-none border-0 bg-transparent p-4 text-base shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:text-lg"
+                      className="h-28 resize-none rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
                     />
                     <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <CueModelSelect
-                          value={selectedCueModel}
-                          onChange={setSelectedCueModel}
-                          className="sm:w-[164px]"
-                        />
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between gap-3">
+                        {generationPresentation ? (
+                          generationPresentation.generationMode === 'llm' ? (
+                            <CueModelSelect
+                              value={effectiveCueModel}
+                              onChange={setSelectedCueModel}
+                              creditCosts={generationPresentation.modelCreditCosts}
+                              className="min-w-0 flex-1 sm:max-w-[164px]"
+                            />
+                          ) : (
+                            <span
+                              className="border-border bg-background/80 text-foreground inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full border px-2 text-[13px] shadow-sm backdrop-blur-xl"
+                              aria-label={`Fast planner, ${generationPresentation.fastCreditCost} AI credit${generationPresentation.fastCreditCost === 1 ? '' : 's'}`}
+                            >
+                              <Zap size={14} aria-hidden="true" />
+                              <span className="truncate font-medium">Fast planner</span>
+                              <span className="bg-muted text-muted-foreground inline-flex h-[1.125rem] min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] leading-none font-medium tabular-nums">
+                                {generationPresentation.fastCreditCost}
+                              </span>
+                            </span>
+                          )
+                        ) : generationPresentationError ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={retryGenerationPresentation}
+                            className="h-7 rounded-full px-2 text-xs"
+                          >
+                            <RotateCcw size={13} aria-hidden="true" />
+                            Retry options
+                          </Button>
+                        ) : (
+                          <Skeleton className="h-7 w-40 rounded-full" />
+                        )}
+                        <div className="flex shrink-0 items-center gap-2.5">
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={rollDice}
                             aria-label="Randomise the brief"
                             title="Randomise the brief"
-                            className="h-12 w-12 rounded-full px-0"
+                            className="h-9 w-9 rounded-full px-0"
                           >
-                            <Dices size={18} />
+                            <Dices size={16} />
                           </Button>
                           <Button
                             type="button"
                             onClick={() => goToStep(stepIndex + 1)}
                             disabled={mounted && !stepValid}
-                            size="lg"
-                            className="rounded-full px-8"
+                            className="h-9 rounded-full px-4 text-sm"
                           >
                             Continue
-                            <ArrowRight size={16} />
+                            <ArrowRight size={15} />
                           </Button>
                         </div>
                       </div>
@@ -618,7 +835,7 @@ export default function NewShowPage() {
               </StepPanel>
 
               <StepPanel active={stepIndex === 1}>
-                <div className="space-y-4">
+                <div className="mx-auto w-full max-w-3xl space-y-4">
                   <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
                     <AudioUpload
                       file={audioFile}
@@ -643,7 +860,7 @@ export default function NewShowPage() {
                     aria-checked={soundtrackMode === 'none'}
                     onClick={chooseNoSoundtrack}
                     className={cn(
-                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99] sm:p-5',
+                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
                       soundtrackMode === 'none'
                         ? 'border-[color:var(--color-content-emphasis)]'
                         : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
@@ -817,19 +1034,44 @@ export default function NewShowPage() {
                     {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
                   </div>
                   <div className="flex flex-col items-center pt-2">
-                    <Button
-                      type="button"
-                      onClick={triggerGenerate}
-                      disabled={mounted && isLaunching}
-                      size="lg"
-                      className="rounded-full px-8"
-                    >
-                      <Sparkles size={16} strokeWidth={2} />
-                      Generate show
-                    </Button>
+                    {generationPresentationError && !generationPresentation ? (
+                      <Button
+                        type="button"
+                        onClick={retryGenerationPresentation}
+                        size="lg"
+                        variant="secondary"
+                        className="rounded-full px-8"
+                      >
+                        <RotateCcw size={16} aria-hidden="true" />
+                        Retry generation options
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={triggerGenerate}
+                        disabled={mounted && (isLaunching || !generationPresentation)}
+                        size="lg"
+                        className="rounded-full px-8"
+                      >
+                        <Sparkles size={16} strokeWidth={2} />
+                        Generate show
+                      </Button>
+                    )}
                     <p className="mt-3 text-center text-xs text-[color:var(--color-content-subtle)]">
-                      This will use {selectedCueModelCost} AI credit
-                      {selectedCueModelCost === 1 ? '' : 's'} with {selectedCueModelLabel}.
+                      {generationPresentation ? (
+                        <>
+                          This will use {displayedGenerationCost} AI credit
+                          {displayedGenerationCost === 1 ? '' : 's'} with{' '}
+                          {generationPresentation.generationMode === 'fast'
+                            ? "ShowCrafter's fast planner"
+                            : selectedCueModelLabel}
+                          .
+                        </>
+                      ) : generationPresentationError ? (
+                        'Generation options could not be loaded. Retry before generating.'
+                      ) : (
+                        'Checking the current generation cost...'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -841,18 +1083,21 @@ export default function NewShowPage() {
         {/* === Footer: circular Back (left edge), minimal dot stepper (centre),
                 pill Skip (right edge) - spans the full content width ========== */}
         <div className="flex w-full items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
-            disabled={mounted && stepIndex === 0}
-            aria-label="Back"
-            className="h-10 w-10 rounded-full px-0"
-          >
-            <ChevronLeft size={18} strokeWidth={2} />
-          </Button>
+          {stepIndex === 0 ? (
+            <span className="inline-block h-10 w-10" aria-hidden="true" />
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setStepIndex((index) => Math.max(0, index - 1))}
+              aria-label="Back"
+              className="h-10 w-10 rounded-full px-0"
+            >
+              <ChevronLeft size={18} strokeWidth={2} />
+            </Button>
+          )}
           <StepDots stepIndex={stepIndex} total={STEPS.length} />
-          {isFinalStep ? (
+          {stepIndex === 0 || isFinalStep ? (
             <span className="inline-block h-10 w-10" aria-hidden="true" />
           ) : (
             <Button
@@ -867,6 +1112,12 @@ export default function NewShowPage() {
           )}
         </div>
       </div>
+
+      {/* Instant splash: covers the round trip to the /generating route so the
+          swap on Generate has no visible gap. */}
+      {isLaunching && launch ? (
+        <LaunchOverlay slug={launch.slug} title={launch.title} hasAudio={launch.hasAudio} />
+      ) : null}
     </form>
   );
 }

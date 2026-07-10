@@ -8,14 +8,8 @@ import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { ExploreRow } from '@/app/components/app/ExploreRow';
 import { ExplorePreviewProvider } from '@/app/components/app/ExplorePreviewContext';
 import { listShowTemplates } from '@/lib/admin.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash;
-}
 
 type Shelf = {
   sort: LibrarySort;
@@ -24,24 +18,28 @@ type Shelf = {
   templates: ShowTemplate[];
 };
 
-type LibrarySort = 'featured' | 'popular' | 'hot' | 'recent' | 'shortest';
+type LibrarySort = 'featured' | 'popular' | 'curated' | 'recent' | 'shortest' | 'budget';
 
 const SORT_LABELS: Record<LibrarySort, string> = {
   featured: 'Staff picks',
-  popular: 'Popular this month',
-  hot: 'Hot right now',
-  recent: 'Fresh drops',
+  popular: 'Most liked',
+  curated: 'More to explore',
+  recent: 'Recently updated',
   shortest: 'Quick bursts',
+  budget: 'Highest budgets',
 };
-const SHOWS_PER_SHELF = 30;
+// Keep the landing route responsive on mobile. Full collections remain
+// available through each shelf's factual "See all" route.
+const SHOWS_PER_SHELF = 12;
 
 function parseSort(value: string | undefined): LibrarySort | null {
   if (
     value === 'featured' ||
     value === 'popular' ||
-    value === 'hot' ||
+    value === 'curated' ||
     value === 'recent' ||
-    value === 'shortest'
+    value === 'shortest' ||
+    value === 'budget'
   ) {
     return value;
   }
@@ -65,72 +63,76 @@ function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTempla
         (b.durationSeconds ?? Number.MAX_SAFE_INTEGER),
     );
   }
-  return [...templates].sort((a, b) => hashString(b.id + 'hot') - hashString(a.id + 'hot'));
+  if (sort === 'budget') {
+    return [...templates].sort((a, b) => b.totalCents - a.totalCents);
+  }
+  return [...templates].sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 }
 
 function templateMatchesShelf(template: ShowTemplate, sort: LibrarySort): boolean {
-  const shelfLabel = SORT_LABELS[sort].toLowerCase();
-  const moodTags = template.moodTags.map((tag) => tag.toLowerCase());
-  if (moodTags.includes(shelfLabel)) return true;
   if (sort === 'featured') return template.isFeatured;
   if (sort === 'shortest') return (template.durationSeconds ?? Number.MAX_SAFE_INTEGER) <= 75;
-  return false;
+  return true;
 }
 
-/** Build several distinctly ordered shelves from the available templates. */
-function buildShelves(templates: ShowTemplate[]): Shelf[] {
-  const usedTemplateIds = new Set<string>();
+function templateFireworkSignature(template: ShowTemplate): string {
+  const catalogueItemIds = Array.from(
+    new Set(
+      template.previewCues
+        .map((cue) => cue.catalogueItemId ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? null)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort();
 
-  function takeUniqueShelfTemplates(sort: LibrarySort): ShowTemplate[] {
-    const selected: ShowTemplate[] = [];
-    const sortedTemplates = sortTemplates(templates, sort);
-    const preferredTemplates = sortedTemplates.filter((template) =>
-      templateMatchesShelf(template, sort),
-    );
-    const fallbackTemplates = sortedTemplates.filter(
-      (template) => !templateMatchesShelf(template, sort),
-    );
-    for (const template of [...preferredTemplates, ...fallbackTemplates]) {
-      if (usedTemplateIds.has(template.id)) continue;
-      usedTemplateIds.add(template.id);
-      selected.push(template);
-      if (selected.length === SHOWS_PER_SHELF) break;
+  return catalogueItemIds.length > 0
+    ? catalogueItemIds.join('|')
+    : `template-without-cues:${template.id}`;
+}
+
+function templatesForShelf(
+  templates: ShowTemplate[],
+  sort: LibrarySort,
+  limit?: number,
+  usedTemplateIds = new Set<string>(),
+  usedFireworkSignatures = new Set<string>(),
+): ShowTemplate[] {
+  const matching = sortTemplates(templates, sort).filter((template) =>
+    templateMatchesShelf(template, sort),
+  );
+  const selected: ShowTemplate[] = [];
+
+  for (const template of matching) {
+    const fireworkSignature = templateFireworkSignature(template);
+    if (usedTemplateIds.has(template.id) || usedFireworkSignatures.has(fireworkSignature)) {
+      continue;
     }
-    return selected;
+
+    selected.push(template);
+    usedTemplateIds.add(template.id);
+    usedFireworkSignatures.add(fireworkSignature);
+    if (limit != null && selected.length >= limit) break;
   }
 
-  const shelves: Shelf[] = [
-    {
-      sort: 'featured',
-      title: SORT_LABELS.featured,
-      seeAllHref: '/library?sort=featured',
-      templates: takeUniqueShelfTemplates('featured'),
-    },
-    {
-      sort: 'popular',
-      title: SORT_LABELS.popular,
-      seeAllHref: '/library?sort=popular',
-      templates: takeUniqueShelfTemplates('popular'),
-    },
-    {
-      sort: 'hot',
-      title: SORT_LABELS.hot,
-      seeAllHref: '/library?sort=hot',
-      templates: takeUniqueShelfTemplates('hot'),
-    },
-    {
-      sort: 'recent',
-      title: SORT_LABELS.recent,
-      seeAllHref: '/library?sort=recent',
-      templates: takeUniqueShelfTemplates('recent'),
-    },
-    {
-      sort: 'shortest',
-      title: SORT_LABELS.shortest,
-      seeAllHref: '/library?sort=shortest',
-      templates: takeUniqueShelfTemplates('shortest'),
-    },
-  ];
+  return selected;
+}
+
+/** Build factual shelves without repeating a show or its firework composition. */
+function buildShelves(templates: ShowTemplate[]): Shelf[] {
+  const usedTemplateIds = new Set<string>();
+  const usedFireworkSignatures = new Set<string>();
+  const shelfSorts: LibrarySort[] = ['featured', 'popular', 'curated', 'recent', 'shortest'];
+  const shelves = shelfSorts.map((sort) => ({
+    sort,
+    title: SORT_LABELS[sort],
+    seeAllHref: `/library?sort=${sort}`,
+    templates: templatesForShelf(
+      templates,
+      sort,
+      SHOWS_PER_SHELF,
+      usedTemplateIds,
+      usedFireworkSignatures,
+    ),
+  }));
 
   return shelves.filter((shelf) => shelf.templates.length > 0);
 }
@@ -144,7 +146,14 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   const sort = parseSort(params.sort);
 
   return (
-    <div className={sort ? 'space-y-4' : 'space-y-2'}>
+    <div className={`mx-auto w-full max-w-6xl ${sort ? 'space-y-6' : 'space-y-4'}`}>
+      <header>
+        <h1 className="text-on-surface text-2xl font-bold tracking-tight">Explore shows</h1>
+        <p className="text-on-surface-variant mt-1 max-w-2xl text-sm leading-relaxed">
+          Preview complete, ready-to-use firework shows and choose one as the starting point for
+          your own display.
+        </p>
+      </header>
       <Suspense
         fallback={
           sort ? <LibraryGridSkeleton title={SORT_LABELS[sort]} /> : <LibraryCardsSkeleton />
@@ -159,7 +168,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
   const [templates, specifications] = await Promise.all([
     listShowTemplates(),
-    listFireworkSpecifications(),
+    listFireworkProducts(),
   ]);
 
   if (templates.length === 0) {
@@ -172,12 +181,12 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
 
   const shelves = buildShelves(templates);
   const activeShelf = sort
-    ? (shelves.find((shelf) => shelf.sort === sort) ?? {
+    ? {
         sort,
         title: SORT_LABELS[sort],
         seeAllHref: `/library?sort=${sort}`,
-        templates: sortTemplates(templates, sort).slice(0, SHOWS_PER_SHELF),
-      })
+        templates: templatesForShelf(templates, sort),
+      }
     : null;
 
   return (

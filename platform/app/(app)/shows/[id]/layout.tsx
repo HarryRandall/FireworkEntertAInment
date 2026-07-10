@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Button } from '@/app/components/ui/Button';
-import { ShowTabs } from './ShowTabs';
+import { ShowDetailChrome } from './ShowDetailChrome';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getShowBySlug } from '@/lib/shows.server';
 
@@ -26,36 +25,9 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
     return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
   }
 
-  // While the show is still being generated, hide the metadata row, the
-  // Refine/Export actions, and the tab nav, those controls point at pages
-  // that have no data yet. The splash rendered by the /generating route
-  // takes over the space instead.
-  const isGenerating = show.generationStatus === 'running';
-
-  if (isGenerating) {
-    return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ShowTabs id={show.slug} />
-        <div className="flex items-center gap-2">
-          <Button
-            href={`/shows/${show.slug}/preview?cueDialog=ai`}
-            prefetch={false}
-            variant="secondary"
-            size="sm"
-          >
-            Refine
-          </Button>
-          <Button href={`/api/shows/${show.slug}/export`} prefetch={false} size="sm">
-            Export
-          </Button>
-        </div>
-      </div>
-
+    <ShowDetailChrome showSlug={show.slug} forceContentOnly={show.generationStatus === 'running'}>
       {children}
-    </div>
+    </ShowDetailChrome>
   );
 }

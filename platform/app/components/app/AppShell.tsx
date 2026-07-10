@@ -28,7 +28,6 @@ import {
   Gauge,
   Home,
   Laptop,
-  LogIn,
   LogOut,
   MessageSquareDot,
   Moon,
@@ -50,6 +49,7 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { HomePageSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -104,10 +104,6 @@ const APP_LINKS: AppNavLink[] = [
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
-// Browse-only nav shown to unauthenticated guests; creation/private routes
-// are gated by middleware and intentionally absent here.
-const GUEST_NAV_HREFS = new Set(['/home', '/library', '/catalogue']);
-
 const SETTINGS_LINKS: AppNavLink[] = [
   { href: '/settings/profile', label: 'Personal details', icon: UserRound },
   { href: '/settings/notifications', label: 'Notifications', icon: Bell },
@@ -143,7 +139,6 @@ type AppShellProps = {
   children: ReactNode;
   containerWidth?: 'default' | 'wide' | 'fluid';
   profile?: CurrentProfile | null;
-  isAuthenticated?: boolean;
   impersonation?: ActiveImpersonation | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
@@ -176,12 +171,6 @@ type SidebarAiUsage = {
 };
 
 const SIDEBAR_FREE_SHOWS_INCLUDED = 3;
-// Used segments keep the sidebar background but pick up faint grey stripes so
-// they read as "spent" at a glance.
-const SIDEBAR_USED_SHOW_SEGMENT_STYLE = {
-  backgroundImage:
-    'repeating-linear-gradient(90deg, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 0, color-mix(in srgb, var(--sidebar-foreground) 14%, transparent) 4px, transparent 4px, transparent 8px)',
-};
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
@@ -611,10 +600,10 @@ function SidebarAiUsageMeter({
     >
       {loading ? (
         <div className="space-y-2">
-          <Skeleton className="h-1.5 w-full rounded-full" />
+          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full" />
           <div className="flex items-center justify-between gap-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-5 w-12 rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md" />
           </div>
         </div>
       ) : (
@@ -649,9 +638,8 @@ function SidebarCreditSegments({ remaining, total }: { remaining: number; total:
             key={index}
             className={cn(
               'h-1.5 flex-1 rounded-full',
-              isRemaining ? 'bg-[color:var(--hl)]' : 'border-sidebar-border bg-sidebar border',
+              isRemaining ? 'bg-[color:var(--hl)]' : 'bg-sidebar-foreground/25',
             )}
-            style={isRemaining ? undefined : SIDEBAR_USED_SHOW_SEGMENT_STYLE}
           />
         );
       })}
@@ -684,49 +672,6 @@ function AppSidebarFooter({
       ) : null}
       {!inSettings ? <SidebarAiUsageMeter usage={aiUsage} loading={aiUsageLoading} /> : null}
       <ProfileMenuButton profile={profile} onSignOut={onSignOut} />
-    </SidebarFooter>
-  );
-}
-
-function SidebarGuestFooter() {
-  const { isMobile, setOpenMobile } = useSidebar();
-
-  return (
-    <SidebarFooter>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild tooltip="Sign in">
-            <Link
-              href="/login"
-              prefetch={false}
-              onClick={() => {
-                if (isMobile) setOpenMobile(false);
-              }}
-            >
-              <LogIn size={16} strokeWidth={2} />
-              <span>Sign in</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            tooltip="Create account"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground data-active:bg-primary data-active:text-primary-foreground"
-          >
-            <Link
-              href="/signup"
-              prefetch={false}
-              onClick={() => {
-                if (isMobile) setOpenMobile(false);
-              }}
-            >
-              <PlusCircle size={16} strokeWidth={2} />
-              <span>Create account</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
     </SidebarFooter>
   );
 }
@@ -817,72 +762,15 @@ function getPendingRouteKind(pathname: string | null | undefined): PendingRouteK
 }
 
 function PendingHomeSkeleton() {
-  return (
-    <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
-      aria-label="Loading home"
-    >
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <Skeleton className="min-h-[14rem] rounded-2xl" />
-        <Skeleton className="hidden min-h-[14rem] rounded-2xl lg:block" />
-      </section>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <Skeleton key={index} className="min-h-[14rem] rounded-2xl" />
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="w-40 shrink-0 space-y-2 sm:w-48">
-              <Skeleton className="aspect-square w-full rounded-xl" />
-              <Skeleton className="h-4 w-28" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-7 w-20 rounded-full" />
-        </div>
-        <div className="flex gap-4 overflow-hidden">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="w-44 shrink-0 space-y-2 sm:w-48">
-              <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 flex-1" />
-                <Skeleton className="h-5 w-10 rounded-md" />
-              </div>
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <HomePageSkeleton />;
 }
 
 function PendingLibrarySkeleton() {
   const shelves = [
     'Staff picks',
-    'Popular this month',
-    'Hot right now',
-    'Fresh drops',
+    'Most liked',
+    'More to explore',
+    'Recently updated',
     'Quick bursts',
   ];
 
@@ -960,18 +848,17 @@ function ShellBreadcrumbs({ breadcrumbs }: { breadcrumbs: ShellBreadcrumb[] }) {
 }
 
 function ShellTopBar({ pathname }: { pathname: string | null }) {
-  if (isHomePath(pathname)) {
-    return null;
-  }
-
+  const home = isHomePath(pathname);
   const breadcrumbs = getAppBreadcrumbs(pathname);
 
   return (
     <header
       className={cn(
         'bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 overflow-hidden border-b px-4 backdrop-blur sm:px-6',
+        home && 'md:hidden',
       )}
     >
+      <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open navigation" />
       <ShellBreadcrumbs breadcrumbs={breadcrumbs} />
     </header>
   );
@@ -980,7 +867,6 @@ function ShellTopBar({ pathname }: { pathname: string | null }) {
 export function AppShell({
   children,
   profile,
-  isAuthenticated = Boolean(profile),
   impersonation,
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
@@ -992,18 +878,17 @@ export function AppShell({
   // hydration mismatch; the cached copy is applied pre-paint just below.
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
-  const [aiUsageLoading, setAiUsageLoading] = useState(isAuthenticated);
+  const [aiUsageLoading, setAiUsageLoading] = useState(true);
 
   // Seed the sidebar from the sessionStorage cache before first paint so usage
   // and recent shows appear instantly while the background refetch runs.
   useHydrationLayoutEffect(() => {
-    if (!isAuthenticated) return;
     const cached = readCachedWorkspaceSummary();
     if (!cached) return;
     setWorkspaceSummary((current) => current ?? cached);
     setAiUsage((current) => current ?? cached.aiUsage ?? null);
     setAiUsageLoading(false);
-  }, [isAuthenticated]);
+  }, []);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -1017,7 +902,6 @@ export function AppShell({
     });
 
   const permissions = new Set(profile?.permissions ?? []);
-  const isGuest = !isAuthenticated;
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };
@@ -1028,7 +912,6 @@ export function AppShell({
     return link;
   });
   const visibleLinks = workspaceLinks.filter((link) => {
-    if (isGuest && !GUEST_NAV_HREFS.has(link.href)) return false;
     return !link.permission || permissions.has(link.permission);
   });
   const navLinks = inSettings ? SETTINGS_LINKS : visibleLinks;
@@ -1050,7 +933,6 @@ export function AppShell({
   };
 
   useEffect(() => {
-    if (isGuest) return;
     let active = true;
 
     async function loadWorkspaceSummary() {
@@ -1080,7 +962,7 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [pathname, isGuest]);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     writeCachedWorkspaceSummary(null);
@@ -1166,23 +1048,25 @@ export function AppShell({
           )}
         </SidebarContent>
 
-        {isGuest ? (
-          <SidebarGuestFooter />
-        ) : (
-          <AppSidebarFooter
-            profile={profileSummary}
-            impersonation={impersonation}
-            aiUsage={aiUsage}
-            aiUsageLoading={aiUsageLoading}
-            inSettings={inSettings}
-            onSignOut={handleSignOut}
-          />
-        )}
+        <AppSidebarFooter
+          profile={profileSummary}
+          impersonation={impersonation}
+          aiUsage={aiUsage}
+          aiUsageLoading={aiUsageLoading}
+          inSettings={inSettings}
+          onSignOut={handleSignOut}
+        />
       </Sidebar>
 
       <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border-x md:peer-data-[variant=inset]:border-t md:peer-data-[variant=inset]:shadow-none">
         <ShellTopBar pathname={effectivePath} />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10">
+        <main
+          // Positioned + tagged so full-pane overlays (the post-generation
+          // handover splash) can portal in and cover the whole content area,
+          // including any route chrome, while the app shell stays visible.
+          data-app-content
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10"
+        >
           {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
         </main>
       </SidebarInset>

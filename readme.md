@@ -12,8 +12,10 @@ ShowCrafter helps non-experts turn a song, budget, site width, style brief, and
 retailer firework catalogue into a timed show plan. The app supports:
 
 - Public browsing for catalogue items and curated show presets.
-- Authenticated show creation, library, previews, shopping lists, exports, and
-  account settings.
+- Database-managed Explore presets with draft publication, source-show
+  provenance, authenticated likes, and public aggregate counts.
+- Authenticated show creation, personal show management, previews, shopping
+  lists, exports, and account settings.
 - Quiet upload-scoped music analysis before final show generation.
 - Deterministic fast cue planning by default, with an optional OpenRouter LLM
   assignment mode for higher-cost generation paths.
@@ -46,8 +48,9 @@ platform/                       Next.js app, deploy root for Vercel
     (app)/                      Authenticated customer workspace
     (admin)/                    Platform admin console
     (auth)/                     Login and signup pages
+    (browse)/                   Guest and signed-in catalogue/Explore routes
     (dev)/dev/                  Local visual and shader playgrounds
-    (marketing)/                Public marketing and browse pages
+    (marketing)/                Public marketing pages
     api/                        Health, analysis, admin, user, and show APIs
     components/                 App, admin, marketing, theme, and UI components
   components/ui/                Generated Radix/shadcn primitives
@@ -132,12 +135,13 @@ real secrets.
 | `SUPABASE_URL`                                        | Optional server fallback                                  | Server-only Supabase URL fallback.                                                                                                     |
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | Optional server fallback                                  | Server-only public key fallbacks.                                                                                                      |
 | `SUPABASE_SERVICE_ROLE_KEY`                           | Feature-gated                                             | Trusted server and worker operations, admin media signing, imports, prompt lookups, and impersonation. Never expose it to the browser. |
+| `APP_ORIGIN`                                          | Yes when deployed                                         | Canonical HTTPS app origin for trusted server-generated authentication redirects.                                                      |
 | `ANALYSER_URL`                                        | Yes for analysis                                          | Modal analyser URL printed by `modal deploy`.                                                                                          |
 | `ANALYSER_SHARED_SECRET`                              | Yes for analysis                                          | Bearer token shared by Next.js and the Modal secret.                                                                                   |
 | `CRON_SECRET`                                         | Required in deployed warm-up                              | Authorises `/api/admin/analyser/warm`; development allows calls without it.                                                            |
 | `CUE_GENERATION_MODE`                                 | Optional                                                  | Defaults to `fast`. Set to `llm` to use OpenRouter cue assignment.                                                                     |
 | `OPENROUTER_API_KEY`                                  | Optional for default generation, required for LLM/imports | Enables optional LLM cue assignment and firework-video reconstruction.                                                                 |
-| `OPENROUTER_CUE_MODEL`                                | Optional                                                  | Cue model override, defaulting to `anthropic/claude-sonnet-4.5`.                                                                       |
+| `OPENROUTER_CUE_MODEL`                                | Optional                                                  | Cue model override, defaulting to `openai/gpt-4.1-mini`.                                                                               |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME`         | Optional                                                  | OpenRouter ranking headers.                                                                                                            |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Optional                                                  | Shared cache for dynamic server reads. Missing or placeholder values fall back to memory cache.                                        |
 | `SHOWCRAFTER_SLOW_LOG_MS`                             | Optional                                                  | Development slow-log threshold for server timing diagnostics.                                                                          |
@@ -191,7 +195,9 @@ show generation:
 6. The fast deterministic planner is the default. The optional LLM path is
    enabled only when the generation setting or `CUE_GENERATION_MODE` selects
    `llm`.
-7. Accepted cues are written to `show_timeline_items` through the
+7. The wizard shows the fast planner in `fast` mode and model selection only in
+   `llm` mode. The server revalidates the mode when Generate is submitted.
+8. Accepted cues are written to `show_timeline_items` through the
    `replace_show_timeline_items` RPC. AI credits are settled on success and
    refunded on expected failure.
 
@@ -209,21 +215,39 @@ Current major groups:
   `firework_effects`, `firework_style_defaults`, style-default link tables,
   `multishots`, and `multishot_fireworks`.
 - **Shows and generation**: `shows`, `show_timeline_items`, `show_presets`,
-  `shopping_list_items`, `song_analyses`, and `show_generation_runs`.
+  `show_preset_likes`, `show_preset_like_counts`, `song_analyses`, and
+  `show_generation_runs`.
 - **AI credits**: `ai_credit_accounts`, `ai_credit_costs`, and
   `ai_credit_transactions`.
-- **Suppliers and imports**: `supplier_profiles`, `supplier_locations`,
-  `supplier_inventory_items`, `import_jobs`, `import_outputs`, and
-  `media_assets`.
+- **Suppliers and imports**: `supplier_profiles`, `supplier_inventory_items`,
+  `import_jobs`, `import_outputs`, and `media_assets`.
 
 Every public table must have RLS enabled with policies. Public browse tables
-such as `show_presets`, `catalogue_items`, `fireworks`, `multishots`, and
-`multishot_fireworks` intentionally allow anonymous `SELECT`; document any new
-anonymous policy in the migration.
+such as `show_presets`, `show_preset_like_counts`, `catalogue_items`,
+`fireworks`, `multishots`, and `multishot_fireworks` intentionally allow
+anonymous `SELECT`; document any new anonymous policy in the migration.
+
+RLS is paired with explicit Data API grants. Security-definer functions must
+check the caller, use a fixed empty search path with qualified objects, revoke
+public execution, and grant only the required roles. Migration changes should
+also add needed foreign-key indexes, avoid redundant indexes, and preflight
+existing rows before enforcing constraints.
 
 When schema changes are made, regenerate `platform/lib/database.types.ts` with
 the Supabase MCP `generate_typescript_types` tool or the approved project
 workflow, then update tests that assert schema-dependent behaviour.
+
+### Explore Presets
+
+`show_presets` is the only runtime source for Explore. New, imported, and
+duplicated presets start unpublished. Imported presets retain a unique nullable
+`source_show_id`, so import identity does not depend on a mutable title or slug.
+
+Preset cues use canonical `catalogueItemId` UUIDs. Publication and cloning
+require every cue to resolve, remain inside the show duration, and avoid overlap
+on the same launch position. Likes are persisted per authenticated user in
+`show_preset_likes`; guests see only aggregate counts. See
+[`platform/docs/explore-presets.md`](platform/docs/explore-presets.md).
 
 ## Storage
 
@@ -236,12 +260,23 @@ workflow, then update tests that assert schema-dependent behaviour.
 ## Admin And Worker Flows
 
 The admin area under `/admin` covers overview, catalogue, fireworks,
-multishots, effects, style defaults, prompts, imports, suppliers, users, roles,
-and billing.
+multishots, effects, style defaults, Explore presets, prompts, imports,
+suppliers, users, roles, and billing. Navigation is filtered by each
+destination's permission, while route and action checks remain authoritative.
+
+User password-reset controls send a real Supabase Auth recovery email. User
+deletion removes the Auth user and relies on database cascades for owned app
+data; the confirmation copy must state that scope.
 
 Firework and effect editors share `FireworkEditorShell`, `FireworkRenderControls`,
 history panels, JSON panels, and compact preview transport controls. Style
 defaults use the same shell but keep a narrower side rail.
+
+Editor saves preserve newer local changes made while a request is in flight.
+Replay caches include every simulation input and launch-position coordinate,
+version-history recording is best-effort, physical ranges remain non-negative,
+and slider thumbs carry their accessible names. See
+[`platform/docs/editor-integrity.md`](platform/docs/editor-integrity.md).
 
 Start the import worker from `platform`:
 
@@ -273,6 +308,22 @@ Loading states should keep stable route chrome visible, including page titles,
 descriptions, labels, table headers, and form section headings. Use neutral
 `Skeleton` placeholders only for data-driven values and controls whose value is
 still loading.
+
+`/catalogue`, `/library`, and `/library/[id]` are public browse URLs. Guests see
+marketing navigation and footer chrome; authenticated visitors keep the
+workspace shell. Mobile shells keep their sidebar trigger reachable and render
+one main landmark.
+
+## Platform Documentation
+
+- [`platform/README.md`](platform/README.md): platform setup and operational
+  entry points.
+- [`platform/docs/explore-presets.md`](platform/docs/explore-presets.md):
+  Explore lifecycle, cue contract, provenance, and likes.
+- [`platform/docs/editor-integrity.md`](platform/docs/editor-integrity.md):
+  editor save, preview cache, ranges, history, and accessibility rules.
+- [`platform/docs/database-safety.md`](platform/docs/database-safety.md):
+  migration, RLS, grants, types, and linked-environment verification.
 
 ## Notes For Agents
 

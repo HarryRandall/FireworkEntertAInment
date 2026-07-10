@@ -12,6 +12,8 @@ const audioUpload = readFileSync(
   join(root, 'app/(app)/shows/new/_components/AudioUpload.tsx'),
   'utf8',
 );
+const actions = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
+const promptHero = readFileSync(join(root, 'app/components/app/ShowSummaryCards.tsx'), 'utf8');
 
 test('new show wizard only creates a draft from an explicit Generate click', () => {
   // The form's onSubmit advances the wizard but must never call createShowAction.
@@ -33,6 +35,31 @@ test('new show wizard uploads audio before final submit', () => {
   assert.match(page, /uploadAudioAndStartAnalysis/);
   assert.match(page, /data\.set\('musicAnalysisId'/);
   assert.doesNotMatch(page, /data\.set\('audio', audioFile\)/);
+  assert.match(page, /parseMusicAnalysisResponse\(json, response\.ok\)/);
+  assert.match(page, /uploadTokenRef\.current !== token/);
+  assert.match(page, /storage\.from\(AUDIO_BUCKET\)\.remove\(\[audioPath\]\)/);
+});
+
+test('new show wizard reflects the server generation mode and live credit costs', () => {
+  assert.match(page, /getShowGenerationPresentationAction/);
+  assert.match(page, /generationPresentation\.generationMode === 'llm'/);
+  assert.match(page, /Fast planner/);
+  assert.match(page, /generationPresentation\.fastCreditCost/);
+  assert.match(page, /creditCosts=\{generationPresentation\.modelCreditCosts\}/);
+  assert.match(page, /isLaunching \|\| !generationPresentation/);
+  assert.match(page, /Retry generation options/);
+  assert.match(
+    page,
+    /data\.set\('expectedGenerationMode', generationPresentation\.generationMode\)/,
+  );
+  assert.match(actions, /getAiCreditCost/);
+  assert.match(actions, /expectedGenerationMode !== generationSettings\.generationMode/);
+  assert.match(actions, /generationMode === 'llm' \? requestedCueModel : null/);
+  assert.match(actions, /defaultCueModel/);
+  assert.match(page, /selectedCueModel \?\? generationPresentation\?\.defaultCueModel/);
+  assert.match(page, /generationMode === 'llm' && selectedCueModel/);
+  assert.match(promptHero, /params\.set\('model', selectedCueModel\)/);
+  assert.match(promptHero, /<CueModelSelect/);
 });
 
 test('new show wizard can prefill a prompt and continue to soundtrack', () => {
@@ -63,11 +90,13 @@ test('new show wizard routes to the generation page immediately on launch', () =
   assert.match(page, /const \[isLaunching, setIsLaunching\] = useState\(false\)/);
   assert.doesNotMatch(page, /<GeneratingShowAnimation/);
   assert.match(page, /persistGenerationStartedAt\(desiredSlug\)/);
+  assert.match(page, /resolvePersistedGenerationCover\(desiredSlug\)/);
   assert.match(page, /persistGenerationStartedAt\(result\.slug, generationStartedAt\)/);
+  assert.match(page, /data\.set\('coverShader', JSON\.stringify\(generationCover\)\)/);
 
   const launchIdx = page.indexOf('setIsLaunching(true)');
   const routeIdx = page.indexOf(
-    'router.push(`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}`)',
+    "`/shows/${desiredSlug}/generating?creating=1&t=${titleParam}${hasAudio ? '&a=1' : ''}`",
   );
   const transitionIdx = page.indexOf('startTransition(async () =>');
   assert.notEqual(launchIdx, -1, 'Generate should enter launching state immediately');
@@ -116,4 +145,6 @@ test('new show audio drop zone uses the bright card surface', () => {
   assert.match(audioUpload, /hover:border-\[color:var\(--color-content-emphasis\)\]\/40/);
   assert.doesNotMatch(audioUpload, /bg-\[color:var\(--color-bg-subtle\)\]\/40/);
   assert.doesNotMatch(audioUpload, /hover:bg-\[color:var\(--color-bg-subtle\)\]/);
+  assert.match(audioUpload, /role=\{uploadState === 'error' \? 'alert' : 'status'\}/);
+  assert.match(audioUpload, /<AlertTriangle/);
 });

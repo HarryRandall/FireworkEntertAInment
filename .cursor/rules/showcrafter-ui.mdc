@@ -47,12 +47,50 @@ value is still loading. Match loaded dimensions closely.
 
 - `AppShell` owns the authenticated customer shell.
 - `AdminShell` owns admin chrome.
+- `/catalogue`, `/library`, and `/library/[id]` are guest browse routes. Use
+  marketing chrome for guests and `AppShell` for authenticated visitors.
+- Filter every admin navigation item by the permission required by its route.
+  Keep route and server-action authorisation as the security boundary.
+- Give mobile users a visible sidebar trigger outside the closed sheet. Render
+  one main landmark per page shell.
 - Firework, effect, and style-default editors share `FireworkEditorShell`,
   compact preview transport controls, history/JSON panels, and scoped
   `FireworkRenderControls`.
 - Style-default pages should keep a narrower side rail than the full
   firework/effect editors.
 - Heavy WebGL, shader, and editor components should not be imported globally.
+
+## Product Truthfulness
+
+- Keep upload analysis quiet. The final Generate control is the explicit action
+  that creates the show and starts cue generation.
+- In `fast` mode, identify the fast planner and hide LLM model selection. Expose
+  model choice and model cost only in `llm` mode. The server must revalidate the
+  current mode on submit.
+- Explore content comes from database-managed `show_presets`. New, imported,
+  and duplicated presets are drafts until an admin publishes them.
+- Show persisted like state and aggregate counts. Never invent likes, views,
+  popularity, or social proof from IDs, sort order, or seeded constants.
+- Use factual shelf names and build See all from the complete matching query,
+  not a deduplicated landing-shelf partition. Query failures belong in a safe
+  retry boundary rather than an empty-state message.
+- Reset and delete controls must describe and invoke the real backend action.
+  Confirm destructive Auth deletion and never toast success for a no-op.
+
+## Editor Correctness
+
+- Include every simulation input and launch-position coordinate in replay cache
+  keys. A visually relevant edit must invalidate the preview.
+- Snapshot the editor signature when a save starts. Apply the returned snapshot
+  only if local state still matches it, preserving newer edits. Update the
+  latest-signature ref in a layout effect, not a passive effect or render.
+- Treat version-history recording as best-effort. A history write failure must
+  not turn a successful primary save into a failure.
+- Centralise physical ranges, clamp invalid negative speed and life values, and
+  keep controls, validation, actions, defaults, and renderer bounds aligned.
+- Put accessible names on slider thumbs and other interactive primitives, not
+  only on non-interactive wrappers. Put the label target ID on the focusable
+  thumb. Do not expose a Preview action unless it performs a real preview.
 
 ## Shader Covers
 

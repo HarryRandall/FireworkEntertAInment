@@ -5,7 +5,7 @@ description: >-
   app/**, creating pages, components, or styling. Triggers: design, palette,
   hero, button, card, navbar, page, redesign, theme, tokens, Tailwind,
   ShowCrafter brand, fireworks UI, admin UI, shader covers, dark theme,
-  loading states.
+  loading states, public browse, editor controls, mobile navigation.
 ---
 
 # ShowCrafter Design System
@@ -79,6 +79,8 @@ directly.
   useful, and readable mobile fallbacks.
 - Destructive actions need the destructive variant and a clear confirmation
   when the action is hard to undo.
+- Describe destructive and password-reset actions by their real backend scope.
+  Invoke the actual operation, and never report success for a placeholder.
 - Empty states should explain what is missing and provide a recovery action when
   one exists.
 
@@ -102,11 +104,32 @@ not shift layout.
 - Customer workspace chrome belongs in `AppShell`.
 - Admin chrome belongs in `AdminShell`.
 - Public browse pages (`/catalogue`, `/library`, `/library/[id]`) can be
-  available to anonymous visitors; avoid auth-only UI assumptions there.
+  available to anonymous visitors. Use marketing chrome for guests and
+  `AppShell` for signed-in visitors; avoid auth-only UI assumptions there.
+- Keep one main landmark per shell and keep a mobile sidebar trigger visible
+  outside a closed sheet.
+- Filter admin navigation by each destination's required permission. Continue
+  to enforce permission checks in routes and server actions.
 - The show wizard must preserve the product boundary: upload starts quiet music
   analysis, Generate creates the show and starts cue generation.
+- In `fast` mode, identify the fast planner and hide model selection. In `llm`
+  mode, show the selected model and its cost. Revalidate the mode on submit.
 - Do not add visible copy that explains hidden background processing unless an
   error blocks the user.
+
+## Explore Patterns
+
+- Render Explore from database-managed `show_presets`; do not append runtime
+  seed files.
+- Treat new, imported, and duplicated presets as drafts until an admin
+  publishes them.
+- Render persisted like state and aggregate counts. Do not fabricate likes,
+  views, popularity, or social proof.
+- Use factual shelf names and build See all from the complete matching set.
+  Database failures use a safe retry boundary, not an empty-state message.
+- Keep unresolved legacy cues visible in admin for repair. Block save,
+  publication, and cloning until every cue has a canonical catalogue UUID and a
+  safe launch-position schedule.
 
 ## Firework And Editor Patterns
 
@@ -122,11 +145,26 @@ not shift layout.
   rather than decorative.
 - AI-generated analysis should include clear confidence/status indicators and an
   "AI-generated content may be incorrect" notice where relevant.
+- Include every simulation input and launch-position coordinate in preview
+  cache keys so a visual edit invalidates cached frames.
+- Preserve edits made during an in-flight save. Apply the returned snapshot
+  only when local state still matches the signature captured at save start.
+  Keep the latest signature ref current in a layout effect, and treat the
+  server-returned canonical values as the saved snapshot.
+- Treat version-history recording as best-effort after the primary save. Do not
+  refresh a history panel before the deferred write can be observed. Confirm an
+  optimistic history ID with a short bounded check before enabling Restore;
+  remove it with a history-only warning if recording never confirms.
+- Keep speed, life, duration, and other physical ranges non-negative and aligned
+  across controls, validation, actions, defaults, and renderer behaviour.
+- Label the interactive slider thumb, put the visible label's target ID on that
+  focusable thumb, and do not show a history Preview action unless it performs
+  a real preview.
 
 ## Shader Covers
 
-Shows and presets store a serialisable `cover_shader` JSON identity. Use
-`platform/lib/shader-cover.ts` helpers for:
+Shows and presets store a serialisable `cover_shader` JSON identity. Use the
+`platform/lib/cover.ts` dispatcher plus the CSS and legacy shader helpers for:
 
 - Random covers at show creation.
 - Deterministic covers for seeded templates.
@@ -134,7 +172,9 @@ Shows and presets store a serialisable `cover_shader` JSON identity. Use
 - Backdrop colours and readable fallback palettes.
 
 Do not hand-roll incompatible cover objects in routes. Keep shader controls
-bounded and aligned with the dev playground behaviour.
+bounded and aligned with the dev playground behaviour. Browse cards should use
+their pre-rendered poster, with the saved cover's static CSS gradient as the
+missing-poster fallback. Never mount one live WebGL cover per card.
 
 ## Accessibility
 
@@ -143,6 +183,8 @@ bounded and aligned with the dev playground behaviour.
 - Every interactive control must be keyboard accessible.
 - All controls need visible focus states.
 - Forms need labels or explicit `aria-label`s.
+- Slider thumbs and other interactive primitive parts need their own accessible
+  names.
 - Tables need semantic markup for dense admin data.
 - Text must not overflow its parent at mobile or desktop widths.
 
@@ -158,3 +200,10 @@ bounded and aligned with the dev playground behaviour.
 - UI feels like a precise work tool, not a neon landing page.
 - No brown, parchment, burnt-orange, or ember palette regressions.
 - Show creation still separates upload analysis from explicit generation.
+- Generation model and cost UI matches the active fast or LLM mode.
+- Explore metrics are persisted data, and draft presets never leak into public
+  browse results.
+- Admin navigation reflects route permissions, while route checks remain in
+  place.
+- Editor saves preserve newer edits and preview caches invalidate on every
+  simulation input.

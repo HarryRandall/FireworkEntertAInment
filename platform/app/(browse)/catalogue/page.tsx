@@ -6,7 +6,7 @@ import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { EmptyNotice, Skeleton } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
-import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
 import { CatalogueToolbar } from './CatalogueToolbar';
 
@@ -47,6 +47,12 @@ export default async function CataloguePage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+      <header>
+        <h1 className="text-on-surface text-2xl font-bold tracking-tight">Firework catalogue</h1>
+        <p className="text-on-surface-variant mt-1 max-w-2xl text-sm leading-relaxed">
+          Browse the products and effects available for ShowCrafter timelines.
+        </p>
+      </header>
       <CatalogueToolbar kind={kind} query={query} />
 
       <Suspense fallback={<CatalogueSkeleton />}>
@@ -65,22 +71,9 @@ async function CatalogueList({
   page?: string;
   query: string;
 }) {
-  let products: CatalogueProduct[];
-  try {
-    products = (await listFireworkProducts({ lightweight: true })).filter((product) =>
-      matchesProduct(product, query, kind),
-    );
-  } catch (error) {
-    if (error instanceof ShowsNetworkError) {
-      console.error('[catalogue] listFireworkProducts unavailable:', error);
-      return (
-        <EmptyNotice>
-          The catalogue is temporarily unavailable. Please retry in a moment.
-        </EmptyNotice>
-      );
-    }
-    throw error;
-  }
+  const products = (await listFireworkProducts({ lightweight: true })).filter((product) =>
+    matchesProduct(product, query, kind),
+  );
 
   if (products.length === 0) {
     return <EmptyNotice>No catalogue products match that search.</EmptyNotice>;
@@ -97,7 +90,7 @@ async function CatalogueList({
         {visibleProducts.map((product) => (
           <article
             key={product.id}
-            className="border-border bg-card rounded-xl border p-4 shadow-xs transition-colors hover:border-[color:var(--color-border-strong)]"
+            className="border-border bg-card min-w-0 rounded-xl border p-4 shadow-xs transition-colors hover:border-[color:var(--color-border-strong)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -113,7 +106,7 @@ async function CatalogueList({
               ) : null}
             </div>
 
-            <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed">
+            <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed [overflow-wrap:anywhere]">
               {product.description ?? product.baseEffect?.name ?? 'Uncategorised firework'}
             </p>
 

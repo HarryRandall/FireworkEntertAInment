@@ -19,10 +19,19 @@ const envExample = readFileSync(join(root, '.env.example'), 'utf8');
 test('cue generation defaults to GPT-4.1 Mini via OpenRouter while keeping env override', () => {
   assert.match(
     openrouter,
-    /DEFAULT_CUE_MODEL = process\.env\.OPENROUTER_CUE_MODEL \?\? FALLBACK_CUE_MODEL/,
+    /normalisePersistedCueModel\(\s*process\.env\.OPENROUTER_CUE_MODEL,\s*FALLBACK_CUE_MODEL/,
   );
+  assert.match(cueModels, /trimmed\.length === 0 \|\| trimmed\.length > 120/);
   assert.match(cueModels, /FALLBACK_CUE_MODEL = 'openai\/gpt-4\.1-mini'/);
   assert.match(envExample, /defaults to openai\/gpt-4\.1-mini/);
+});
+
+test('persisted configured cue models survive static wizard option changes', async () => {
+  const { FALLBACK_CUE_MODEL, normalisePersistedCueModel } = await import('../lib/cue-models.ts');
+
+  assert.equal(normalisePersistedCueModel('vendor/custom-model-v7'), 'vendor/custom-model-v7');
+  assert.equal(normalisePersistedCueModel('bad model'), FALLBACK_CUE_MODEL);
+  assert.equal(normalisePersistedCueModel('vendor/' + 'x'.repeat(121)), FALLBACK_CUE_MODEL);
 });
 
 test('cue generation defaults to local fast planning instead of waiting on OpenRouter', () => {

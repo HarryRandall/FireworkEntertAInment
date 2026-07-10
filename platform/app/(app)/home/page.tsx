@@ -7,17 +7,17 @@ import {
   HomeCollectionsSection,
   HomeFeaturedShows,
 } from '@/app/components/app/HomeDiscoverySections';
-import { EmptyShowsPanel, PromptHero } from '@/app/components/app/ShowSummaryCards';
-import { getDashboardSummaryWithTemplates } from '@/lib/show-summary.server';
-import { listFireworkSpecifications, ShowsNetworkError } from '@/lib/shows.server';
+import { PromptHero } from '@/app/components/app/ShowSummaryCards';
+import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
+import { listShowTemplates } from '@/lib/admin.server';
+import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
-import HomeLoading from './loading';
 
 export default function HomePage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
       <PromptHero />
-      <Suspense fallback={<HomeLoading />}>
+      <Suspense fallback={<HomeSectionsSkeleton />}>
         <HomeContent />
       </Suspense>
     </div>
@@ -25,13 +25,13 @@ export default function HomePage() {
 }
 
 async function HomeContent() {
-  const [{ summary, templates: exploreTemplates }, specificationsResult] = await Promise.all([
-    getDashboardSummaryWithTemplates(),
-    listFireworkSpecifications().then(
+  const [exploreTemplates, specificationsResult] = await Promise.all([
+    listShowTemplates(),
+    listFireworkProducts().then(
       (specifications) => ({ specifications, failed: false as const }),
       (error) => {
         if (error instanceof ShowsNetworkError) {
-          console.error('[home] listFireworkSpecifications unavailable:', error);
+          console.error('[home] listFireworkProducts unavailable:', error);
           return { specifications: [] as FireworkSpecification[], failed: true as const };
         }
         throw error;
@@ -39,11 +39,10 @@ async function HomeContent() {
     ),
   ]);
   const { specifications } = specificationsResult;
-  const hasShows = summary.recentShows.length > 0;
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
   const explorePreviewTemplates = exploreTemplates.slice(2, 12);
 
-  return hasShows ? (
+  return (
     <>
       <HomeFeaturedShows templates={featuredShowTemplates} specifications={specifications} />
       <HomeCollectionsSection />
@@ -54,7 +53,5 @@ async function HomeContent() {
         </ExplorePreviewProvider>
       ) : null}
     </>
-  ) : (
-    <EmptyShowsPanel includePromptHero={false} />
   );
 }

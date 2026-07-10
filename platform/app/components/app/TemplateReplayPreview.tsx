@@ -31,6 +31,12 @@ type TemplateReplayPreviewProps = {
   specifications: FireworkSpecification[];
   mode?: 'card' | 'detail';
   isCardHovered?: boolean;
+  /** Card mode only: override whether the replay playhead is currently advancing. */
+  isCardPlaybackActive?: boolean;
+  /** Card mode only: keep the Three.js preview mounted after playback pauses. */
+  keepCardCanvasMounted?: boolean;
+  /** Card mode only: reset to the poster frame when playback stops. */
+  resetCardPlayheadOnIdle?: boolean;
   /** Override the card-mode container classes (e.g. for a portrait cover). */
   cardClassName?: string;
   /** Hide the built-in like/budget badge and bottom accent strip in card mode. */
@@ -79,11 +85,22 @@ function hoverStartTimeFor(cues: ShowTemplateCue[]): number {
   return Math.max(0, (firstCueTime ?? 0) - 0.3);
 }
 
+function firstCueTimeFor(cues: ShowTemplateCue[]): number {
+  const firstCueTime = cues.reduce<number | null>(
+    (earliest, cue) => (earliest == null ? cue.timeSeconds : Math.min(earliest, cue.timeSeconds)),
+    null,
+  );
+  return firstCueTime ?? 0;
+}
+
 export function TemplateReplayPreview({
   template,
   specifications,
   mode = 'card',
   isCardHovered = false,
+  isCardPlaybackActive,
+  keepCardCanvasMounted = false,
+  resetCardPlayheadOnIdle = true,
   cardClassName,
   showCardOverlays = true,
   lazyHoverMount = false,
@@ -91,15 +108,27 @@ export function TemplateReplayPreview({
 }: TemplateReplayPreviewProps) {
   const isDetail = mode === 'detail';
 
-  // In card mode, only simulate the first CARD_PREVIEW_SECONDS of the show.
-  // This keeps poster seeks and hover playback near-instant regardless of
-  // how long the full template is.
+  // In card mode, simulate a short window around the first cue. This keeps
+  // hover playback near-instant even when the source show starts later.
+  const cardPreviewWindowStart = useMemo(
+    () => Math.max(0, firstCueTimeFor(template.previewCues) - 0.3),
+    [template.previewCues],
+  );
   const visibleCues = useMemo(
     () =>
       isDetail
         ? template.previewCues
-        : template.previewCues.filter((c) => c.timeSeconds <= CARD_PREVIEW_SECONDS),
-    [isDetail, template.previewCues],
+        : template.previewCues
+            .filter(
+              (c) =>
+                c.timeSeconds >= cardPreviewWindowStart &&
+                c.timeSeconds <= cardPreviewWindowStart + CARD_PREVIEW_SECONDS,
+            )
+            .map((c) => ({
+              ...c,
+              timeSeconds: Math.max(0, c.timeSeconds - cardPreviewWindowStart),
+            })),
+    [cardPreviewWindowStart, isDetail, template.previewCues],
   );
 
   const duration = isDetail ? Math.max(template.durationSeconds ?? 30, 30) : CARD_PREVIEW_SECONDS;
@@ -125,7 +154,10 @@ export function TemplateReplayPreview({
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
   const detailAutoplayRef = useRef(false);
-  const active = isDetail ? isPlaying : isCardHovered;
+  const cardPlaybackActive = isCardPlaybackActive ?? isCardHovered;
+  const cardWasPlaybackActiveRef = useRef(false);
+  const cardHasStartedPlaybackRef = useRef(false);
+  const active = isDetail ? isPlaying : cardPlaybackActive;
   const playbackRate = isDetail ? 1 : 1.15;
 
   const setPlayhead = useCallback(
@@ -188,8 +220,36 @@ export function TemplateReplayPreview({
 
   useEffect(() => {
     if (isDetail) return;
-    setPlayhead(isCardHovered ? hoverStartTime : posterTime);
-  }, [hoverStartTime, isCardHovered, isDetail, posterTime, setPlayhead]);
+    cardWasPlaybackActiveRef.current = false;
+    cardHasStartedPlaybackRef.current = false;
+  }, [isDetail, template.slug]);
+
+  useEffect(() => {
+    if (isDetail) return;
+    if (resetCardPlayheadOnIdle) {
+      setPlayhead(isCardHovered ? hoverStartTime : posterTime);
+      return;
+    }
+
+    if (cardPlaybackActive && !cardWasPlaybackActiveRef.current) {
+      if (!cardHasStartedPlaybackRef.current) {
+        cardHasStartedPlaybackRef.current = true;
+        setPlayhead(hoverStartTime);
+      } else if (elapsedRef.current >= duration) {
+        setPlayhead(0);
+      }
+    }
+    cardWasPlaybackActiveRef.current = cardPlaybackActive;
+  }, [
+    cardPlaybackActive,
+    duration,
+    hoverStartTime,
+    isCardHovered,
+    isDetail,
+    posterTime,
+    resetCardPlayheadOnIdle,
+    setPlayhead,
+  ]);
 
   useEffect(() => {
     detailAutoplayRef.current = false;
@@ -282,7 +342,10 @@ export function TemplateReplayPreview({
   }
 
   const shouldMountCanvas =
-    isDetail || (lazyHoverMount ? isCardHovered : isVisible || isCardHovered);
+    isDetail ||
+    (lazyHoverMount
+      ? cardPlaybackActive || keepCardCanvasMounted
+      : isVisible || cardPlaybackActive);
 
   return (
     <div

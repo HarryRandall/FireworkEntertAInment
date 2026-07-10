@@ -1,6 +1,6 @@
 import type { Json } from '@/lib/database.types';
 import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
-import type { ShaderCover } from '@/lib/shader-cover';
+import type { ShowCover } from '@/lib/cover';
 
 /**
  * Shared admin / RBAC domain types.
@@ -198,8 +198,6 @@ export type AdminStyleDefaultSummary = AdminStyleDefaultOption & {
   slug: string;
   sortOrder: number;
   isArchived: boolean;
-  linkedEffectCount: number;
-  linkedFireworkCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -350,7 +348,11 @@ export type AdminMultishotDetail = AdminMultishotSummary & {
 export type ShowTemplateCue = {
   timeSeconds: number;
   description: string;
-  fireworkSlug: string;
+  fireworkSlug?: string;
+  catalogueItemId?: string | null;
+  catalogueItemSlug?: string | null;
+  launchPositionIndex: number;
+  emphasis: 'normal' | 'accent' | 'peak';
 };
 
 export type ShowTemplate = {
@@ -366,11 +368,50 @@ export type ShowTemplate = {
   timeOfDay: string | null;
   moodTags: string[];
   previewCues: ShowTemplateCue[];
-  coverShader: ShaderCover | null;
+  coverShader: ShowCover | null;
   /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
   coverImagePath: string | null;
   isFeatured: boolean;
+  isPublished: boolean;
+  publishedAt: string | null;
+  sortOrder: number;
   likeCount: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type AdminShowPresetSummary = ShowTemplate & {
+  sourceShowId: string | null;
+  cueCount: number;
+  resolvableCueCount: number;
+};
+
+export type AdminShowPresetCatalogueItem = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  durationSeconds: number | null;
+  shotCount: number | null;
+  kind: string;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  colorPalette: string[];
+  effectName: string | null;
+};
+
+export type AdminShowPresetImportShow = {
+  id: string;
+  slug: string;
+  title: string;
+  ownerEmail: string | null;
+  durationSeconds: number | null;
+  effectsCount: number;
+  totalCents: number;
+  updatedAt: string;
+};
+
+export type AdminShowPresetDetail = AdminShowPresetSummary & {
+  catalogueItems: AdminShowPresetCatalogueItem[];
+  importableShows: AdminShowPresetImportShow[];
 };

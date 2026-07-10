@@ -4,11 +4,7 @@
  */
 import { parseLaunchPositions } from '@/lib/fireworks/design';
 import { compileFireworkDesign } from '@/lib/fireworks/design';
-import { parseShaderCover } from '@/lib/shader-cover';
-import {
-  FIREWORK_STYLE_DEFAULT_KINDS,
-  isFireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
+import { parseCover } from '@/lib/cover';
 import { safeParseFireworkSpec } from '@/lib/fireworks/spec';
 import type {
   FireworkSpecification,
@@ -20,8 +16,6 @@ import type {
 import type {
   CatalogueFireworkCardProjection,
   FireworkEffectProjection,
-  FireworkStyleDefaultLinkProjection,
-  FireworkStyleDefaultProjection,
   FireworkVariantProjection,
   ReplayCueRow,
   ShowCueProjection,
@@ -55,7 +49,7 @@ export function mapShow(row: ShowProjection): Show {
     generationStartedAt: row.generation_started_at,
     generationCompletedAt: row.generation_completed_at,
     launchPositions: parseLaunchPositions(row.launch_positions_json),
-    coverShader: parseShaderCover(row.cover_shader),
+    coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
     updatedAt: row.updated_at,
   };
@@ -91,37 +85,6 @@ function firstEffect(
 ): FireworkEffectProjection | null {
   if (!effect) return null;
   return Array.isArray(effect) ? (effect[0] ?? null) : effect;
-}
-
-function firstStyleDefault(
-  styleDefault:
-    | FireworkStyleDefaultProjection
-    | FireworkStyleDefaultProjection[]
-    | null
-    | undefined,
-): FireworkStyleDefaultProjection | null {
-  if (!styleDefault) return null;
-  return Array.isArray(styleDefault) ? (styleDefault[0] ?? null) : styleDefault;
-}
-
-function styleDefaultArrayFromLinks(
-  links: FireworkStyleDefaultLinkProjection[] | null | undefined,
-  legacy: {
-    star?: FireworkStyleDefaultProjection | null;
-    trail?: FireworkStyleDefaultProjection | null;
-  },
-): Array<unknown> {
-  const byKind = new Map<string, FireworkStyleDefaultProjection>();
-  if (legacy.star) byKind.set('star', legacy.star);
-  if (legacy.trail) byKind.set('trail', legacy.trail);
-
-  for (const link of links ?? []) {
-    if (!isFireworkStyleDefaultKind(link.kind)) continue;
-    const styleDefault = firstStyleDefault(link.style_default);
-    if (styleDefault) byKind.set(link.kind, styleDefault);
-  }
-
-  return FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => byKind.get(kind)?.defaults_json);
 }
 
 function firstCatalogueEffect(
@@ -179,22 +142,8 @@ export function mapFireworkVariantSpecification(
 ): FireworkSpecification {
   const effect = firstEffect(row.firework_effects);
   const caliber = shotCaliber ?? row.caliber;
-  const effectStarStyleDefault = firstStyleDefault(effect?.star_style_default);
-  const effectTrailStyleDefault = firstStyleDefault(effect?.trail_style_default);
-  const fireworkStarStyleDefault = firstStyleDefault(row.star_style_default);
-  const fireworkTrailStyleDefault = firstStyleDefault(row.trail_style_default);
-  const effectStyleDefaults = styleDefaultArrayFromLinks(effect?.style_default_links, {
-    star: effectStarStyleDefault,
-    trail: effectTrailStyleDefault,
-  });
-  const fireworkStyleDefaults = styleDefaultArrayFromLinks(row.style_default_links, {
-    star: fireworkStarStyleDefault,
-    trail: fireworkTrailStyleDefault,
-  });
   const renderDesign = compileFireworkDesign({
     baseModel: effect?.model_json,
-    effectStyleDefaults,
-    fireworkStyleDefaults,
     variantOverrides: row.render_overrides_json,
     primaryColor: row.primary_color,
     colorPalette: row.color_palette,

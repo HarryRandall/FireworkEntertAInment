@@ -1,25 +1,26 @@
 /** Interstitial route rendered while the cue-generation pipeline runs for a newly-created show. */
 
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
-import { getShowBySlug, listReplayCuesForShow } from '@/lib/shows.server';
+import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
+import { getShowBySlug } from '@/lib/shows.server';
 
 type PageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ creating?: string; t?: string }>;
+  searchParams: Promise<{ creating?: string; t?: string; a?: string }>;
 };
-
-const SPLASH_CLASS =
-  '-mx-6 -mt-6 -mb-10 min-h-[calc(100svh-3.5rem)] flex-1 sm:-mx-8 sm:-mb-12 lg:-mx-10';
 
 export default async function ShowGeneratingPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { creating, t } = await searchParams;
+  const { creating, t, a } = await searchParams;
+  // Soundtrack flag forwarded by the wizard so the provisional splash renders
+  // the same stage list (and phase) as the wizard's launch overlay.
+  const provisionalHasAudio = a === '1';
   const [show, warmth] = await Promise.all([getShowBySlug(id), getAnalyserWarmthState()]);
   const isWarm = warmth.active;
 
@@ -33,46 +34,71 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       return (
         <GeneratingShowAnimation
           showTitle={provisionalTitle}
+          hasAudio={provisionalHasAudio}
+          phase={provisionalHasAudio ? 'analysing' : 'generating'}
           isWarm={isWarm}
           randomiseCoverOnLoad
           persistKey={id}
-          className={SPLASH_CLASS}
+          className={GENERATING_ROUTE_SPLASH_CLASS}
         />
       );
     }
     notFound();
   }
 
-  const cues = await listReplayCuesForShow(show.id);
-  if (cues.length > 0 && show.generationStatus === 'completed') {
-    redirect(`/shows/${show.slug}/preview`);
+  const hasAudio = Boolean(show.audioPath || show.musicAnalysisId);
+
+  // Slug collision guard: while `creating=1` the wizard is still waiting on
+  // createShowAction. If the row we found is not mid-generation it predates
+  // this click (an older show with the same slug); showing or handing over to
+  // it would flash the wrong show. Keep the provisional splash up — the wizard
+  // replaces the URL with the real (suffixed) slug the moment the action
+  // returns.
+  if (creating === '1' && show.generationStatus !== 'running') {
+    const provisionalTitle = (t ?? '').trim() || 'Your show';
+    return (
+      <GeneratingShowAnimation
+        showTitle={provisionalTitle}
+        hasAudio={provisionalHasAudio}
+        phase={provisionalHasAudio ? 'analysing' : 'generating'}
+        isWarm={isWarm}
+        randomiseCoverOnLoad
+        persistKey={id}
+        className={GENERATING_ROUTE_SPLASH_CLASS}
+      />
+    );
+  }
+
+  if (show.generationStatus === 'completed') {
+    redirect(`/shows/${show.slug}/preview?autoplay=1`);
   }
 
   if (show.generationStatus === 'failed') {
+    console.error('[shows/generating] generation failed:', {
+      showId: show.id,
+      error: show.generationError,
+    });
     return (
       <Card elevation="high" radius="lg" className="mx-auto max-w-2xl p-8">
         <div className="flex items-start gap-4">
-          <span className="bg-error/10 text-error rounded-xl p-3">
-            <AlertTriangle size={22} />
+          <span className="bg-destructive/10 text-destructive rounded-lg p-3">
+            <AlertTriangle size={22} aria-hidden="true" />
           </span>
           <div className="space-y-4">
             <div>
-              <h2 className="text-on-surface text-2xl font-black">Show generation failed</h2>
-              <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-                {show.generationError ??
-                  'The generator could not finish this run. Adjust the brief and try again.'}
+              <h1 className="text-foreground text-2xl font-semibold">Show generation failed</h1>
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                We could not finish this show. Review it, then adjust the brief or start another
+                show.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button href={`/shows/${show.slug}/preview`} size="sm">
-                Back to preview
+                Review show
               </Button>
-              <Link
-                href={`/shows/${show.slug}/preview`}
-                className="border-outline/20 text-primary hover:bg-surface-container-highest inline-flex items-center rounded-full border px-4 py-2 text-sm font-semibold"
-              >
-                Open preview
-              </Link>
+              <Button href="/shows/new" size="sm" variant="secondary">
+                Start another show
+              </Button>
             </div>
           </div>
         </div>
@@ -80,10 +106,20 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
     );
   }
 
+  // Real pipeline phase for the progress card: `analysing` while the track
+  // analysis is still running (cue generation waits on it), `generating` after.
+  const analysisStatus =
+    show.generationStatus === 'running' && show.musicAnalysisId
+      ? await getMusicAnalysisStatus(show.musicAnalysisId)
+      : null;
+  const phase = analysisStatus === 'running' ? 'analysing' : 'generating';
+
   return (
     <GeneratingShowAnimation
       showTitle={show.title}
-      status={show.generationStatus === 'completed' ? 'completed' : 'running'}
+      status="running"
+      phase={phase}
+      hasAudio={hasAudio}
       isWarm={isWarm}
       startedAt={show.generationStartedAt}
       coverShader={creating === '1' ? null : show.coverShader}
@@ -91,7 +127,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       persistKey={show.slug}
       showId={show.id}
       coverImagePath={show.coverImagePath}
-      className={SPLASH_CLASS}
+      className={GENERATING_ROUTE_SPLASH_CLASS}
     />
   );
 }

@@ -22,7 +22,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v10'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v11'/);
   assert.match(showDomain, /rawSpec: unknown/);
   assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
   assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);
@@ -1041,7 +1041,11 @@ test('effect editor canonicalises render defaults for shared controls', () => {
     editor,
     /const draft = cloneRecord\(canonicaliseEffectModelJson\(parsedModel\.value\)\)/,
   );
-  assert.match(editor, /modelJson: canonicalModelText/);
+  assert.match(
+    editor,
+    /const savedModel = copySelectedStyleDefaultsIntoModel\(parsedModel\.value\)/,
+  );
+  assert.match(editor, /modelJson: savedModelText/);
   assert.match(controls, /const STAR_COUNT_MAX = 100/);
   assert.match(controls, /const STAR_SIZE_MIN = 10/);
   assert.match(controls, /const STAR_SIZE_MAX = 1000/);

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ai_credit_accounts: {
@@ -43,7 +68,6 @@ export type Database = {
           amount: number
           created_at: string
           description: string | null
-          is_billable: boolean
           key: string
           name: string
           sort_order: number
@@ -54,7 +78,6 @@ export type Database = {
           amount: number
           created_at?: string
           description?: string | null
-          is_billable?: boolean
           key: string
           name: string
           sort_order?: number
@@ -65,7 +88,6 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string | null
-          is_billable?: boolean
           key?: string
           name?: string
           sort_order?: number
@@ -201,7 +223,7 @@ export type Database = {
           {
             foreignKeyName: "catalogue_items_multishot_id_fkey"
             columns: ["multishot_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "multishots"
             referencedColumns: ["id"]
           },
@@ -267,45 +289,6 @@ export type Database = {
           },
         ]
       }
-      firework_effect_style_default_links: {
-        Row: {
-          created_at: string
-          firework_effect_id: string
-          kind: string
-          style_default_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          firework_effect_id: string
-          kind: string
-          style_default_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          firework_effect_id?: string
-          kind?: string
-          style_default_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "firework_effect_style_default_links_firework_effect_id_fkey"
-            columns: ["firework_effect_id"]
-            isOneToOne: false
-            referencedRelation: "firework_effects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "firework_effect_style_default_links_style_default_id_fkey"
-            columns: ["style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       firework_effects: {
         Row: {
           created_at: string
@@ -317,8 +300,6 @@ export type Database = {
           slug: string
           sort_order: number
           source: string
-          star_style_default_id: string | null
-          trail_style_default_id: string | null
           updated_at: string
         }
         Insert: {
@@ -331,8 +312,6 @@ export type Database = {
           slug: string
           sort_order?: number
           source?: string
-          star_style_default_id?: string | null
-          trail_style_default_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -345,65 +324,9 @@ export type Database = {
           slug?: string
           sort_order?: number
           source?: string
-          star_style_default_id?: string | null
-          trail_style_default_id?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "firework_effects_star_style_default_id_fkey"
-            columns: ["star_style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "firework_effects_trail_style_default_id_fkey"
-            columns: ["trail_style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      firework_style_default_links: {
-        Row: {
-          created_at: string
-          firework_id: string
-          kind: string
-          style_default_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          firework_id: string
-          kind: string
-          style_default_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          firework_id?: string
-          kind?: string
-          style_default_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "firework_style_default_links_firework_id_fkey"
-            columns: ["firework_id"]
-            isOneToOne: false
-            referencedRelation: "fireworks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "firework_style_default_links_style_default_id_fkey"
-            columns: ["style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       firework_style_defaults: {
         Row: {
@@ -461,8 +384,6 @@ export type Database = {
           secondary_color: string | null
           slug: string
           source: string
-          star_style_default_id: string | null
-          trail_style_default_id: string | null
           updated_at: string
           variant_json: Json
         }
@@ -482,8 +403,6 @@ export type Database = {
           secondary_color?: string | null
           slug: string
           source?: string
-          star_style_default_id?: string | null
-          trail_style_default_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
@@ -503,8 +422,6 @@ export type Database = {
           secondary_color?: string | null
           slug?: string
           source?: string
-          star_style_default_id?: string | null
-          trail_style_default_id?: string | null
           updated_at?: string
           variant_json?: Json
         }
@@ -514,20 +431,6 @@ export type Database = {
             columns: ["firework_effect_id"]
             isOneToOne: false
             referencedRelation: "firework_effects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fireworks_star_style_default_id_fkey"
-            columns: ["star_style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fireworks_trail_style_default_id_fkey"
-            columns: ["trail_style_default_id"]
-            isOneToOne: false
-            referencedRelation: "firework_style_defaults"
             referencedColumns: ["id"]
           },
         ]
@@ -991,56 +894,10 @@ export type Database = {
         }
         Relationships: []
       }
-      shopping_list_items: {
-        Row: {
-          created_at: string
-          firework_part_number: string | null
-          id: string
-          name: string
-          position: number
-          price_cents: number
-          qty: number
-          show_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          firework_part_number?: string | null
-          id?: string
-          name: string
-          position?: number
-          price_cents?: number
-          qty?: number
-          show_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          firework_part_number?: string | null
-          id?: string
-          name?: string
-          position?: number
-          price_cents?: number
-          qty?: number
-          show_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shopping_list_items_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       show_generation_runs: {
         Row: {
           analysis_json: Json | null
-          analysis_storage_path: string | null
           audio_path: string
-          compact_payload: Json | null
           completed_at: string | null
           created_at: string
           cue_count: number | null
@@ -1050,23 +907,18 @@ export type Database = {
           id: string
           llm_payload: Json | null
           markdown: string | null
-          markdown_storage_path: string | null
           personality: string
-          personality_preset: string | null
           runner_version: string | null
           runtime_ms: number | null
           schema_version: string
           show_id: string
-          source_audio_path: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
           audio_path?: string
-          compact_payload?: Json | null
           completed_at?: string | null
           created_at?: string
           cue_count?: number | null
@@ -1076,23 +928,18 @@ export type Database = {
           id?: string
           llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
           personality?: string
-          personality_preset?: string | null
           runner_version?: string | null
           runtime_ms?: number | null
           schema_version?: string
           show_id: string
-          source_audio_path?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           analysis_json?: Json | null
-          analysis_storage_path?: string | null
           audio_path?: string
-          compact_payload?: Json | null
           completed_at?: string | null
           created_at?: string
           cue_count?: number | null
@@ -1102,14 +949,11 @@ export type Database = {
           id?: string
           llm_payload?: Json | null
           markdown?: string | null
-          markdown_storage_path?: string | null
           personality?: string
-          personality_preset?: string | null
           runner_version?: string | null
           runtime_ms?: number | null
           schema_version?: string
           show_id?: string
-          source_audio_path?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1120,6 +964,55 @@ export type Database = {
             columns: ["show_id"]
             isOneToOne: false
             referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_preset_like_counts: {
+        Row: {
+          like_count: number
+          show_preset_id: string
+        }
+        Insert: {
+          like_count?: number
+          show_preset_id: string
+        }
+        Update: {
+          like_count?: number
+          show_preset_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_preset_like_counts_show_preset_id_fkey"
+            columns: ["show_preset_id"]
+            isOneToOne: true
+            referencedRelation: "show_presets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_preset_likes: {
+        Row: {
+          created_at: string
+          show_preset_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          show_preset_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          show_preset_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_preset_likes_show_preset_id_fkey"
+            columns: ["show_preset_id"]
+            isOneToOne: false
+            referencedRelation: "show_presets"
             referencedColumns: ["id"]
           },
         ]
@@ -1135,10 +1028,13 @@ export type Database = {
           effects_count: number
           id: string
           is_featured: boolean
+          is_published: boolean
           mood_tags: string[]
           preview_cues: Json
+          published_at: string | null
           slug: string
           sort_order: number
+          source_show_id: string | null
           theme: string
           time_of_day: string | null
           title: string
@@ -1155,10 +1051,13 @@ export type Database = {
           effects_count?: number
           id?: string
           is_featured?: boolean
+          is_published?: boolean
           mood_tags?: string[]
           preview_cues?: Json
+          published_at?: string | null
           slug: string
           sort_order?: number
+          source_show_id?: string | null
           theme: string
           time_of_day?: string | null
           title: string
@@ -1175,17 +1074,28 @@ export type Database = {
           effects_count?: number
           id?: string
           is_featured?: boolean
+          is_published?: boolean
           mood_tags?: string[]
           preview_cues?: Json
+          published_at?: string | null
           slug?: string
           sort_order?: number
+          source_show_id?: string | null
           theme?: string
           time_of_day?: string | null
           title?: string
           total_cents?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "show_presets_source_show_id_fkey"
+            columns: ["source_show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       show_timeline_items: {
         Row: {
@@ -1201,7 +1111,7 @@ export type Database = {
           position: number
           seed_override: number | null
           show_id: string
-          time_seconds: number | null
+          time_seconds: number
           track: string | null
           updated_at: string
         }
@@ -1215,10 +1125,10 @@ export type Database = {
           launch_position_index?: number
           layer?: string | null
           locked?: boolean
-          position?: number
+          position: number
           seed_override?: number | null
           show_id: string
-          time_seconds?: number | null
+          time_seconds: number
           track?: string | null
           updated_at?: string
         }
@@ -1235,7 +1145,7 @@ export type Database = {
           position?: number
           seed_override?: number | null
           show_id?: string
-          time_seconds?: number | null
+          time_seconds?: number
           track?: string | null
           updated_at?: string
         }
@@ -1439,7 +1349,6 @@ export type Database = {
           created_at: string
           currency: string
           id: string
-          location_id: string | null
           price_cents: number | null
           quantity_on_hand: number
           supplier_id: string
@@ -1453,7 +1362,6 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          location_id?: string | null
           price_cents?: number | null
           quantity_on_hand?: number
           supplier_id: string
@@ -1467,7 +1375,6 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
-          location_id?: string | null
           price_cents?: number | null
           quantity_on_hand?: number
           supplier_id?: string
@@ -1484,58 +1391,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "supplier_inventory_items_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "supplier_locations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "supplier_inventory_items_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "supplier_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      supplier_locations: {
-        Row: {
-          address: string | null
-          country: string | null
-          created_at: string
-          id: string
-          name: string
-          region: string | null
-          status: string
-          supplier_id: string
-          updated_at: string
-        }
-        Insert: {
-          address?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          region?: string | null
-          status?: string
-          supplier_id: string
-          updated_at?: string
-        }
-        Update: {
-          address?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          region?: string | null
-          status?: string
-          supplier_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "supplier_locations_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "supplier_profiles"
@@ -1649,7 +1505,6 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
-          last_seen_at: string | null
           phone: string | null
           status: string
           theme_preference: string
@@ -1660,7 +1515,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
-          last_seen_at?: string | null
           phone?: string | null
           status?: string
           theme_preference?: string
@@ -1671,7 +1525,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
-          last_seen_at?: string | null
           phone?: string | null
           status?: string
           theme_preference?: string
@@ -1684,19 +1537,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ai_credit_usage_payload: { Args: { p_user_id: string }; Returns: Json }
       current_user_access: { Args: never; Returns: Json }
       current_user_has_permission: {
         Args: { permission_key: string }
         Returns: boolean
       }
-      ai_credit_usage_payload: {
-        Args: { p_user_id: string }
+      current_user_is_active: { Args: never; Returns: boolean }
+      discard_unused_song_analysis: {
+        Args: { p_analysis_id: string; p_audio_path: string }
         Returns: Json
       }
-      ensure_ai_credit_account: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      ensure_ai_credit_account: { Args: { p_user_id: string }; Returns: Json }
       grant_ai_credits: {
         Args: {
           p_amount: number
@@ -1742,6 +1594,14 @@ export type Database = {
           p_reservation_key: string
           p_user_id: string
         }
+        Returns: Json
+      }
+      sync_multishot_derived_state: {
+        Args: { p_multishot_id: string }
+        Returns: Json
+      }
+      toggle_show_preset_like: {
+        Args: { p_show_preset_id: string }
         Returns: Json
       }
     }
@@ -1872,6 +1732,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

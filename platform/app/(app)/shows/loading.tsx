@@ -15,6 +15,7 @@ import type { ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ListFilter, Search } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
 import {
   ListSkeleton,
   ReplayPanelSkeleton,
@@ -22,8 +23,8 @@ import {
   SongContextSkeleton,
 } from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { WizardLoading } from './new/_components/WizardLoading';
 
-const GENERATING_SPLASH_CLASS = '-mx-6 -my-6 flex-1 sm:-mx-8 lg:-mx-10';
 const DETAIL_TAB_LABELS = ['Live preview', 'Shopping list', 'Show guide', 'Song context'];
 const SHOWS_LIST_SKELETON_COUNT = 24;
 
@@ -122,13 +123,22 @@ export default function ShowsLoading() {
   const generatingKey = pathname?.match(/\/shows\/([^/]+)\/generating\/?$/)?.[1];
   if (generatingKey) {
     const showTitle = searchParams.get('t')?.trim() || undefined;
+    const hasAudio = searchParams.get('a') === '1';
     return (
       <GeneratingShowAnimation
         showTitle={showTitle}
+        hasAudio={hasAudio}
+        phase={hasAudio ? 'analysing' : 'generating'}
         persistKey={generatingKey}
-        className={GENERATING_SPLASH_CLASS}
+        className={GENERATING_ROUTE_SPLASH_CLASS}
       />
     );
+  }
+
+  // `/shows/new` is the wizard, not a show detail page — without this branch
+  // it matches the detail regex below and flashes the preview skeleton.
+  if (pathname === '/shows/new' || pathname?.startsWith('/shows/new/')) {
+    return <WizardLoading />;
   }
 
   // A detail route is `/shows/<something>[/tab]`; anything else is the list.

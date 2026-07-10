@@ -151,6 +151,8 @@ test('multishot timeline packs compact clips into four overlap rows', () => {
 
 test('multishot preview uses shared admin transport fullscreen and loading chrome', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const loading = read('app/(admin)/admin/multishots/[id]/loading.tsx');
+  const routeSkeletons = read('app/components/app/RouteSkeletons.tsx');
   const previewStage = editor.slice(
     editor.indexOf('function PreviewStage('),
     editor.indexOf('// --- Timeline'),
@@ -159,11 +161,13 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(editor, /usePreviewFullscreen/);
   assert.match(previewStage, /fixed inset-\[5vmin\] z-\[100\]/);
   assert.match(previewStage, /PreviewFullscreenBackdrop/);
-  assert.match(previewStage, /showLoadingBar=\{false\}/);
+  assert.match(previewStage, /showLoadingBar/);
   assert.match(previewStage, /primeSnapshots/);
   assert.match(previewStage, /primeOnCueChanges=\{false\}/);
   assert.match(previewStage, /onPrimeProgress=\{onPreviewLoadingProgress\}/);
   assert.match(previewStage, /onReady=\{onPreviewReady\}/);
+  assert.match(previewStage, /cameraMenuActions=\{previewMenuActions\}/);
+  assert.match(previewStage, /onClick: onLoopToggle/);
   assert.match(editor, /const PREVIEW_TRANSPORT_IDLE_MS = 2000;/);
   assert.match(editor, /const INSPECTOR_RAIL_WIDTH_PX = 340;/);
   assert.match(editor, /const INSPECTOR_RAIL_GAP_PX = 20;/);
@@ -205,4 +209,9 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /fullscreen=\{fullscreen\}/);
   assert.match(previewStage, /loading=\{loading\}/);
   assert.match(previewStage, /onFullscreenToggle=\{onFullscreenToggle\}/);
+  assert.doesNotMatch(previewStage, /onLoopToggle=\{onLoopToggle\}/);
+  assert.match(loading, /AdminMultishotEditorSkeleton/);
+  assert.match(routeSkeletons, /export function AdminMultishotEditorSkeleton/);
+  assert.match(routeSkeletons, /Loading multishot editor/);
+  assert.match(routeSkeletons, /ReplayPanelLoadingStage/);
 });

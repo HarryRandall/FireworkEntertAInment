@@ -4,52 +4,77 @@
  *  and the library card grid flashes when opening a template. This mirrors the
  *  detail layout: header, the replay panel, and the info aside. */
 
-import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
+import { CalendarDays, Clock, Heart, Moon, RefreshCw, Sparkles, Wand2, Wallet } from 'lucide-react';
+import { TemplateReplaySkeleton } from '@/app/components/app/RouteSkeletons';
 import { Card } from '@/app/components/ui/Card';
 import { Skeleton } from '@/app/components/ui/Feedback';
 
+const DETAIL_ROWS = [
+  { label: 'Duration', icon: Clock, valueWidth: 'w-12' },
+  { label: 'Est. retail', icon: Wallet, valueWidth: 'w-16' },
+  { label: 'Effects', icon: Sparkles, valueWidth: 'w-8' },
+  { label: 'Time of day', icon: Moon, valueWidth: 'w-12' },
+  { label: 'Added', icon: CalendarDays, valueWidth: 'w-20' },
+  { label: 'Updated', icon: RefreshCw, valueWidth: 'w-20' },
+] as const;
+
 export default function LibraryDetailLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5" aria-label="Loading template">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5" aria-label="Loading template">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 space-y-2">
           <Skeleton className="h-9 w-72 max-w-full" />
           <Skeleton className="h-5 w-96 max-w-full" />
         </div>
-        <Skeleton className="h-11 w-full rounded-full sm:w-40" />
+        <button
+          type="button"
+          disabled
+          className="bg-primary text-primary-foreground inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold opacity-70 sm:w-fit"
+        >
+          <Wand2 size={16} />
+          Use this show
+        </button>
       </header>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
-        <ReplayPanelSkeleton />
+        <TemplateReplaySkeleton />
 
         <aside className="space-y-3">
           <Card elevation="high" radius="md" className="p-4">
-            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-5 w-40" aria-label="Loading show theme" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {Array.from({ length: 4 }).map((_, index) => (
                 <Skeleton key={index} className="h-6 w-16 rounded-full" />
               ))}
             </div>
-            <div className="mt-4 space-y-2.5">
-              <Skeleton className="h-10 w-full rounded-full" />
-              <Skeleton className="h-10 w-full rounded-full" />
-            </div>
+            <button
+              type="button"
+              disabled
+              className="border-border/70 bg-background/70 text-on-surface-variant mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold"
+              aria-label="Loading saved show count"
+            >
+              <Heart size={16} className="text-destructive" />
+              <Skeleton className="h-4 w-8" />
+            </button>
           </Card>
 
           <Card elevation="low" radius="md" className="p-4">
-            <Skeleton className="h-5 w-28" />
+            <h2 className="text-on-surface text-sm font-semibold">Show details</h2>
             <div className="mt-3 space-y-2">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="flex items-center justify-between gap-3">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-4 w-14" />
+              {DETAIL_ROWS.map(({ label, icon: Icon, valueWidth }) => (
+                <div key={label} className="flex items-center justify-between gap-3 text-[13px]">
+                  <span className="text-on-surface-variant flex items-center gap-2">
+                    <Icon size={14} className="text-on-surface-variant/70" />
+                    {label}
+                  </span>
+                  <Skeleton className={`h-4 ${valueWidth}`} />
                 </div>
               ))}
             </div>
           </Card>
 
           <Card elevation="low" radius="md" className="p-4">
-            <Skeleton className="h-5 w-32" />
+            <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
             <div className="mt-3 space-y-4">
               <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">
                 <div className="relative flex justify-center">

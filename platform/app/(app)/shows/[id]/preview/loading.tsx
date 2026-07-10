@@ -1,3 +1,5 @@
+'use client';
+
 /** Loading skeleton for the show preview tab. */
 
 import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';

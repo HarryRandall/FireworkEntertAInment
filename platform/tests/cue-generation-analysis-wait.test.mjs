@@ -34,6 +34,44 @@ test('music analysis completion resumes linked running show generation', () => {
   assert.match(route, /\.eq\('generation_status', 'running'\)/);
   assert.match(route, /\.is\('generation_completed_at', null\)/);
   assert.match(route, /await resumeCueGenerationForCompletedAnalysis/);
+  assert.match(route, /selected_cue_model, show_style/);
+  assert.match(route, /\.from\('ai_credit_transactions'\)/);
+  assert.match(route, /reservationAction === 'show_generation_fast'/);
+  assert.match(route, /show\.show_style === 'beat_test'\s+\? 'beat'/);
+  assert.match(route, /show\.selected_cue_model\s+\? 'llm'\s+: 'fast'/s);
+});
+
+test('show creation pins its effective generation mode for the runner', () => {
+  const action = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
+  const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
+
+  assert.match(action, /generationMode,/);
+  assert.match(runner, /generationMode\?: GenerationMode \| 'beat'/);
+  assert.match(runner, /params\.generationMode \?\? generationSettings\.generationMode/);
+});
+
+test('resumed generation preserves a configured model that is not in the wizard list', () => {
+  const models = readFileSync(join(root, 'lib/cue-models.ts'), 'utf8');
+  const openrouter = readFileSync(join(root, 'lib/openrouter.server.ts'), 'utf8');
+  const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
+
+  assert.match(models, /export function normalisePersistedCueModel/);
+  assert.match(models, /trimmed\.length > 120/);
+  assert.match(runner, /normalisePersistedCueModel/);
+  assert.match(runner, /brief\.selected_cue_model \?\? selectedCueModel/);
+  assert.doesNotMatch(runner, /normaliseCueModel\(/);
+  assert.match(openrouter, /normalisePersistedCueModel/);
+});
+
+test('failed generation uses a safe, recoverable customer error state', () => {
+  const page = readFileSync(join(root, 'app/(app)/shows/[id]/generating/page.tsx'), 'utf8');
+
+  assert.match(page, /console\.error\('\[shows\/generating\] generation failed:'/);
+  assert.doesNotMatch(page, /\{show\.generationError \?\?/);
+  assert.match(page, /Review show/);
+  assert.match(page, /Start another show/);
+  assert.doesNotMatch(page, /Open preview/);
+  assert.doesNotMatch(page, /bg-error|text-on-surface|text-primary/);
 });
 
 test('music analysis failure marks linked running show generation failed', () => {

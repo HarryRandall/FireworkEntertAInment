@@ -62,6 +62,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration, formatTotal } from '@/lib/show-domain';
 import type { LaunchPosition } from '@/lib/fireworks/design';
+import {
+  clearPersistedGenerationCover,
+  clearPersistedGenerationStart,
+} from '@/lib/generation-progress-storage';
 import { cn } from '@/lib/utils';
 
 const REFINEMENT_CREDIT_COST = 2;
@@ -421,6 +425,17 @@ export function FireworkReplayViewer({
   // `isSceneReady`, so the stage is visible (and orbitable) while loading.
   const replayReady = replayDataReady && isCanvasReady;
   const playbackControlsVisible = !isPlaying || playbackControlsActive;
+
+  // Drop the session-scoped generating progress once an autoplayed generated
+  // preview becomes watchable. The URL cleanup effect below strips the query.
+  const replayReadyCleanupRef = useRef(false);
+  useEffect(() => {
+    if (!replayReady || replayReadyCleanupRef.current) return;
+    if (searchParams.get('autoplay') !== '1') return;
+    replayReadyCleanupRef.current = true;
+    clearPersistedGenerationStart(showSlug);
+    clearPersistedGenerationCover(showSlug);
+  }, [replayReady, searchParams, showSlug]);
 
   function wakePlaybackControls() {
     if (!isPlaying) {
