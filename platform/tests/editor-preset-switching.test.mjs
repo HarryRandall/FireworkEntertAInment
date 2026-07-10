@@ -43,10 +43,10 @@ test('Save new default copies settings and clears transient selection in one cli
     /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoOverrides\(mergedOverrides\)/,
   );
   assert.match(fireworkEditor, /saveCurrentStyleAsDefault[\s\S]*?overrides: nextMerged/);
-  assert.match(fireworkEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
-  assert.match(fireworkEditor, /setOverridesText\(copiedOverridesText\)/);
-  assert.match(fireworkEditor, /const savedStateSignature = fireworkEditorSignature\(/);
-  assert.match(fireworkEditor, /setSavedSignature\(savedStateSignature\)/);
+  assert.match(fireworkEditor, /fireworkSavedSnapshotFromFields\(\{/);
+  assert.match(fireworkEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
+  assert.match(fireworkEditor, /setOverridesText\(savedSnapshot\.overridesText\)/);
+  assert.match(fireworkEditor, /setSavedSignature\(savedSnapshot\.signature\)/);
   assert.match(fireworkEditor, /canApplySavedEditorSnapshot/);
   assert.match(fireworkEditor, /Style default created and saved/);
 
@@ -60,10 +60,10 @@ test('Save new default copies settings and clears transient selection in one cli
     effectEditor,
     /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoModel\(parsedModel\.value\)/,
   );
-  assert.match(effectEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
-  assert.match(effectEditor, /setModelText\(savedModelText\)/);
-  assert.match(effectEditor, /const savedStateSignature = effectEditorSignature\(/);
-  assert.match(effectEditor, /setSavedSignature\(savedStateSignature\)/);
+  assert.match(effectEditor, /effectSavedSnapshotFromFields\(\{/);
+  assert.match(effectEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
+  assert.match(effectEditor, /setModelText\(savedSnapshot\.modelText\)/);
+  assert.match(effectEditor, /setSavedSignature\(savedSnapshot\.signature\)/);
   assert.match(effectEditor, /canApplySavedEditorSnapshot/);
   assert.match(effectEditor, /Style default created and saved/);
 });

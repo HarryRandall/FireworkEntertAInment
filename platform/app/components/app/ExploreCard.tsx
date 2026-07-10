@@ -3,35 +3,17 @@
 /**
  * ExploreCard — Suno-style media card for the Explore (`/library`) route.
  * A portrait cover plays the inline firework replay on hover, with the title,
- * a small badge, a subtitle, and play / like / comment stats underneath.
+ * a small badge, a subtitle, and factual show stats underneath.
  */
 import Link from 'next/link';
 import { memo, useId, useRef } from 'react';
-import { Loader2, MessageCircle, Play, ThumbsUp } from 'lucide-react';
+import { Heart, Loader2, Play, Sparkles, Wallet } from 'lucide-react';
 import { CoverPoster } from '@/app/components/app/CoverPoster';
 import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
-import { formatDuration } from '@/lib/show-domain';
+import { formatBudget, formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import type { ShowTemplate } from '@/lib/admin.types';
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash;
-}
-
-/**
- * Deterministic engagement numbers. Likes are real; plays and comments are
- * derived from a stable hash so a template shows the same figures everywhere.
- */
-function deriveStats(template: ShowTemplate) {
-  const seed = hashString(template.id || template.slug);
-  const plays = 9000 + (seed % 130000);
-  const likes = template.likeCount || 400 + ((seed >>> 3) % 1900);
-  const comments = 18 + ((seed >>> 7) % 360);
-  return { plays, likes, comments };
-}
 
 function formatCount(value: number): string {
   if (value >= 1000) {
@@ -58,8 +40,6 @@ export const ExploreCard = memo(function ExploreCard({
   const isPreviewHovering = preview?.pendingId === previewId || preview?.activeId === previewId;
   const isPreviewRevealed = preview?.readyId === previewId;
   const isPreviewLoading = isPreviewHovering && !isPreviewRevealed;
-  const stats = deriveStats(template);
-
   return (
     <Link
       href={`/library/${template.slug}`}
@@ -92,6 +72,7 @@ export const ExploreCard = memo(function ExploreCard({
         />
         <CoverPoster
           imagePath={template.coverImagePath}
+          fallbackCover={template.coverShader}
           className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 ${
             isPreviewHovering ? 'opacity-0' : 'opacity-100'
           }`}
@@ -123,16 +104,16 @@ export const ExploreCard = memo(function ExploreCard({
 
       <div className="text-on-surface-variant mt-1.5 flex items-center gap-3 text-xs">
         <span className="inline-flex items-center gap-1">
-          <Play size={12} className="fill-current" />
-          <span className="tabular-nums">{formatCount(stats.plays)}</span>
+          <Heart size={12} />
+          <span className="tabular-nums">{formatCount(template.likeCount)}</span>
         </span>
         <span className="inline-flex items-center gap-1">
-          <ThumbsUp size={12} />
-          <span className="tabular-nums">{formatCount(stats.likes)}</span>
+          <Sparkles size={12} />
+          <span className="tabular-nums">{template.effectsCount}</span>
         </span>
         <span className="inline-flex items-center gap-1">
-          <MessageCircle size={12} />
-          <span className="tabular-nums">{formatCount(stats.comments)}</span>
+          <Wallet size={12} />
+          <span className="tabular-nums">{formatBudget(template.totalCents)}</span>
         </span>
       </div>
     </Link>

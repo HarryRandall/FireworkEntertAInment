@@ -11,12 +11,6 @@ import { listShowTemplates } from '@/lib/admin.server';
 import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 
-function hashString(value: string): number {
-  let hash = 0;
-  for (const char of value) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash;
-}
-
 type Shelf = {
   sort: LibrarySort;
   title: string;
@@ -24,24 +18,28 @@ type Shelf = {
   templates: ShowTemplate[];
 };
 
-type LibrarySort = 'featured' | 'popular' | 'hot' | 'recent' | 'shortest';
+type LibrarySort = 'featured' | 'popular' | 'curated' | 'recent' | 'shortest' | 'budget';
 
 const SORT_LABELS: Record<LibrarySort, string> = {
   featured: 'Staff picks',
-  popular: 'Popular this month',
-  hot: 'Hot right now',
-  recent: 'Fresh drops',
+  popular: 'Most liked',
+  curated: 'More to explore',
+  recent: 'Recently updated',
   shortest: 'Quick bursts',
+  budget: 'Highest budgets',
 };
-const SHOWS_PER_SHELF = 30;
+// Keep the landing route responsive on mobile. Full collections remain
+// available through each shelf's factual "See all" route.
+const SHOWS_PER_SHELF = 12;
 
 function parseSort(value: string | undefined): LibrarySort | null {
   if (
     value === 'featured' ||
     value === 'popular' ||
-    value === 'hot' ||
+    value === 'curated' ||
     value === 'recent' ||
-    value === 'shortest'
+    value === 'shortest' ||
+    value === 'budget'
   ) {
     return value;
   }
@@ -65,70 +63,61 @@ function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTempla
         (b.durationSeconds ?? Number.MAX_SAFE_INTEGER),
     );
   }
-  return [...templates].sort((a, b) => hashString(b.id + 'hot') - hashString(a.id + 'hot'));
+  if (sort === 'budget') {
+    return [...templates].sort((a, b) => b.totalCents - a.totalCents);
+  }
+  return [...templates].sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 }
 
 function templateMatchesShelf(template: ShowTemplate, sort: LibrarySort): boolean {
-  const shelfLabel = SORT_LABELS[sort].toLowerCase();
-  const moodTags = template.moodTags.map((tag) => tag.toLowerCase());
-  if (moodTags.includes(shelfLabel)) return true;
   if (sort === 'featured') return template.isFeatured;
   if (sort === 'shortest') return (template.durationSeconds ?? Number.MAX_SAFE_INTEGER) <= 75;
-  return false;
+  return true;
 }
 
-/** Build several distinctly ordered shelves from the available templates. */
+function templatesForShelf(
+  templates: ShowTemplate[],
+  sort: LibrarySort,
+  limit?: number,
+): ShowTemplate[] {
+  const matching = sortTemplates(templates, sort).filter((template) =>
+    templateMatchesShelf(template, sort),
+  );
+  return limit == null ? matching : matching.slice(0, limit);
+}
+
+/** Build factual, independently ordered shelves from the available templates. */
 function buildShelves(templates: ShowTemplate[]): Shelf[] {
-  const usedTemplateIds = new Set<string>();
-
-  function takeUniqueShelfTemplates(sort: LibrarySort): ShowTemplate[] {
-    const selected: ShowTemplate[] = [];
-    const sortedTemplates = sortTemplates(templates, sort);
-    const preferredTemplates = sortedTemplates.filter((template) =>
-      templateMatchesShelf(template, sort),
-    );
-    const fallbackTemplates = sortedTemplates.filter(
-      (template) => !templateMatchesShelf(template, sort),
-    );
-    for (const template of [...preferredTemplates, ...fallbackTemplates]) {
-      if (usedTemplateIds.has(template.id)) continue;
-      usedTemplateIds.add(template.id);
-      selected.push(template);
-      if (selected.length === SHOWS_PER_SHELF) break;
-    }
-    return selected;
-  }
-
   const shelves: Shelf[] = [
     {
       sort: 'featured',
       title: SORT_LABELS.featured,
       seeAllHref: '/library?sort=featured',
-      templates: takeUniqueShelfTemplates('featured'),
+      templates: templatesForShelf(templates, 'featured', SHOWS_PER_SHELF),
     },
     {
       sort: 'popular',
       title: SORT_LABELS.popular,
       seeAllHref: '/library?sort=popular',
-      templates: takeUniqueShelfTemplates('popular'),
+      templates: templatesForShelf(templates, 'popular', SHOWS_PER_SHELF),
     },
     {
-      sort: 'hot',
-      title: SORT_LABELS.hot,
-      seeAllHref: '/library?sort=hot',
-      templates: takeUniqueShelfTemplates('hot'),
+      sort: 'curated',
+      title: SORT_LABELS.curated,
+      seeAllHref: '/library?sort=curated',
+      templates: templatesForShelf(templates, 'curated', SHOWS_PER_SHELF),
     },
     {
       sort: 'recent',
       title: SORT_LABELS.recent,
       seeAllHref: '/library?sort=recent',
-      templates: takeUniqueShelfTemplates('recent'),
+      templates: templatesForShelf(templates, 'recent', SHOWS_PER_SHELF),
     },
     {
       sort: 'shortest',
       title: SORT_LABELS.shortest,
       seeAllHref: '/library?sort=shortest',
-      templates: takeUniqueShelfTemplates('shortest'),
+      templates: templatesForShelf(templates, 'shortest', SHOWS_PER_SHELF),
     },
   ];
 
@@ -144,7 +133,14 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   const sort = parseSort(params.sort);
 
   return (
-    <div className={sort ? 'space-y-4' : 'space-y-2'}>
+    <div className={sort ? 'space-y-6' : 'space-y-4'}>
+      <header>
+        <h1 className="text-on-surface text-2xl font-bold tracking-tight">Explore shows</h1>
+        <p className="text-on-surface-variant mt-1 max-w-2xl text-sm leading-relaxed">
+          Preview complete, ready-to-use firework shows and choose one as the starting point for
+          your own display.
+        </p>
+      </header>
       <Suspense
         fallback={
           sort ? <LibraryGridSkeleton title={SORT_LABELS[sort]} /> : <LibraryCardsSkeleton />
@@ -172,12 +168,12 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
 
   const shelves = buildShelves(templates);
   const activeShelf = sort
-    ? (shelves.find((shelf) => shelf.sort === sort) ?? {
+    ? {
         sort,
         title: SORT_LABELS[sort],
         seeAllHref: `/library?sort=${sort}`,
-        templates: sortTemplates(templates, sort).slice(0, SHOWS_PER_SHELF),
-      })
+        templates: templatesForShelf(templates, sort),
+      }
     : null;
 
   return (

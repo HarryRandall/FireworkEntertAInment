@@ -7,9 +7,9 @@ import {
   HomeCollectionsSection,
   HomeFeaturedShows,
 } from '@/app/components/app/HomeDiscoverySections';
-import { EmptyShowsPanel, PromptHero } from '@/app/components/app/ShowSummaryCards';
+import { PromptHero } from '@/app/components/app/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
-import { getDashboardSummaryWithTemplates } from '@/lib/show-summary.server';
+import { listShowTemplates } from '@/lib/admin.server';
 import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
@@ -25,8 +25,8 @@ export default function HomePage() {
 }
 
 async function HomeContent() {
-  const [{ summary, templates: exploreTemplates }, specificationsResult] = await Promise.all([
-    getDashboardSummaryWithTemplates(),
+  const [exploreTemplates, specificationsResult] = await Promise.all([
+    listShowTemplates(),
     listFireworkProducts().then(
       (specifications) => ({ specifications, failed: false as const }),
       (error) => {
@@ -39,11 +39,10 @@ async function HomeContent() {
     ),
   ]);
   const { specifications } = specificationsResult;
-  const hasShows = summary.recentShows.length > 0;
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
   const explorePreviewTemplates = exploreTemplates.slice(2, 12);
 
-  return hasShows ? (
+  return (
     <>
       <HomeFeaturedShows templates={featuredShowTemplates} specifications={specifications} />
       <HomeCollectionsSection />
@@ -54,7 +53,5 @@ async function HomeContent() {
         </ExplorePreviewProvider>
       ) : null}
     </>
-  ) : (
-    <EmptyShowsPanel includePromptHero={false} />
   );
 }

@@ -25,6 +25,7 @@ import {
   CreditCard,
   Database,
   FileInput,
+  ImageIcon,
   Laptop,
   Layers,
   LayoutDashboard,
@@ -77,27 +78,74 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
-import type { CurrentProfile, ThemePreference } from '@/lib/admin.types';
+import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 
 type AdminNavLink = {
   href: string;
   label: string;
   icon: LucideIcon;
+  permission: PermissionKey;
 };
 
 const ADMIN_LINKS: AdminNavLink[] = [
-  { href: '/admin', label: 'Overview', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/roles', label: 'Roles', icon: ShieldCheck },
-  { href: '/admin/suppliers', label: 'Suppliers', icon: Store },
-  { href: '/admin/catalogue', label: 'Catalogue', icon: Database },
-  { href: '/admin/effects', label: 'Effects', icon: Sparkles },
-  { href: '/admin/fireworks', label: 'Fireworks', icon: Rocket },
-  { href: '/admin/multishots', label: 'Multishots', icon: Layers },
-  { href: '/admin/show-presets', label: 'Explore shows', icon: Star },
-  { href: '/admin/imports', label: 'Imports', icon: FileInput },
-  { href: '/admin/prompts', label: 'Prompts', icon: MessageSquareText },
+  { href: '/admin', label: 'Overview', icon: LayoutDashboard, permission: 'admin.view' },
+  { href: '/admin/users', label: 'Users', icon: Users, permission: 'admin.manage_users' },
+  { href: '/admin/roles', label: 'Roles', icon: ShieldCheck, permission: 'admin.manage_users' },
+  {
+    href: '/admin/suppliers',
+    label: 'Suppliers',
+    icon: Store,
+    permission: 'admin.manage_suppliers',
+  },
+  {
+    href: '/admin/catalogue',
+    label: 'Catalogue',
+    icon: Database,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/effects',
+    label: 'Effects',
+    icon: Sparkles,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/fireworks',
+    label: 'Fireworks',
+    icon: Rocket,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/multishots',
+    label: 'Multishots',
+    icon: Layers,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/show-presets',
+    label: 'Explore shows',
+    icon: Star,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/cover-posters',
+    label: 'Cover posters',
+    icon: ImageIcon,
+    permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/imports',
+    label: 'Imports',
+    icon: FileInput,
+    permission: 'admin.manage_imports',
+  },
+  {
+    href: '/admin/prompts',
+    label: 'Prompts',
+    icon: MessageSquareText,
+    permission: 'admin.manage_prompts',
+  },
 ];
 
 const SIDEBAR_HEADER_TRIGGER_CLASS =
@@ -236,7 +284,7 @@ function SidebarNavItem({
 function BackToAppItem({ onNavigate }: { onNavigate: (href: string) => void }) {
   return (
     <SidebarNavItem
-      link={{ href: '/home', label: 'Back to app', icon: ArrowLeft }}
+      link={{ href: '/home', label: 'Back to app', icon: ArrowLeft, permission: 'admin.view' }}
       active={false}
       onNavigate={onNavigate}
     />
@@ -425,6 +473,7 @@ function AdminSidebarFooter({
 function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
+      <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open admin navigation" />
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm"
@@ -526,14 +575,16 @@ export function AdminShell({
             <SidebarGroupLabel>Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
-                {ADMIN_LINKS.map((link) => (
-                  <SidebarNavItem
-                    key={link.href}
-                    link={link}
-                    active={isActivePath(effectivePath, link.href)}
-                    onNavigate={setPendingHref}
-                  />
-                ))}
+                {ADMIN_LINKS.filter((link) => profile.permissions.includes(link.permission)).map(
+                  (link) => (
+                    <SidebarNavItem
+                      key={link.href}
+                      link={link}
+                      active={isActivePath(effectivePath, link.href)}
+                      onNavigate={setPendingHref}
+                    />
+                  ),
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

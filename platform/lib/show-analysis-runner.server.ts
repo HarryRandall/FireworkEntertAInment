@@ -47,7 +47,8 @@ type MusicAnalysisRow = {
 
 export type RunShowAnalysisResult =
   | { ok: true; analysisId: string; contextMarkdown: string }
-  | { ok: false; error: string; analysisId?: string };
+  | { ok: false; error: string; analysisId?: string; cancelled?: false }
+  | { ok: false; error: string; analysisId: string; cancelled: true };
 
 class AnalyseError extends Error {
   constructor(
@@ -230,18 +231,23 @@ async function markMusicAnalysisFailed(params: {
   analysisId: string;
   runtimeMs: number;
   errorMessage: string;
-}) {
-  const { error } = await params.supabase
+}): Promise<'updated' | 'missing' | 'error'> {
+  const { data, error } = await params.supabase
     .from('song_analyses')
     .update({
       status: 'failed',
       runtime_ms: params.runtimeMs,
       error_message: truncate(params.errorMessage, 2000),
     })
-    .eq('id', params.analysisId);
+    .eq('id', params.analysisId)
+    .eq('status', 'running')
+    .select('id')
+    .maybeSingle();
   if (error) {
     console.error('[show-analysis-runner] failed to persist music failure state:', error);
+    return 'error';
   }
+  return data ? 'updated' : 'missing';
 }
 
 async function markShowAnalysisFailed(params: {
@@ -286,7 +292,7 @@ export async function runMusicAnalysisForUpload(params: {
   const personality = params.personality ?? typedRow.personality ?? 'balanced';
   const startedAt = Date.now();
 
-  await params.supabase
+  const { data: claimed, error: claimError } = await params.supabase
     .from('song_analyses')
     .update({
       status: 'running',
@@ -295,7 +301,24 @@ export async function runMusicAnalysisForUpload(params: {
       schema_version: ANALYSER_SCHEMA_VERSION,
       personality,
     })
-    .eq('id', typedRow.id);
+    .eq('id', typedRow.id)
+    .eq('user_id', params.userId)
+    .eq('status', 'running')
+    .select('id')
+    .maybeSingle();
+
+  if (claimError) {
+    console.error('[show-analysis-runner] music analysis claim failed:', claimError);
+    return { ok: false, analysisId: typedRow.id, error: 'Could not start music analysis.' };
+  }
+  if (!claimed) {
+    return {
+      ok: false,
+      analysisId: typedRow.id,
+      cancelled: true,
+      error: 'Music analysis was discarded.',
+    };
+  }
 
   try {
     const analysis = await runHostedAnalyser({
@@ -310,7 +333,7 @@ export async function runMusicAnalysisForUpload(params: {
     });
     const runtimeMs = Date.now() - startedAt;
 
-    const { error: updateError } = await params.supabase
+    const { data: completed, error: updateError } = await params.supabase
       .from('song_analyses')
       .update({
         status: 'completed',
@@ -321,21 +344,41 @@ export async function runMusicAnalysisForUpload(params: {
         markdown: contextMarkdown,
         error_message: null,
       })
-      .eq('id', typedRow.id);
+      .eq('id', typedRow.id)
+      .eq('user_id', params.userId)
+      .eq('status', 'running')
+      .select('id')
+      .maybeSingle();
     if (updateError) {
       throw new AnalyseError(`Could not save analysis output: ${updateError.message}`, 500);
+    }
+    if (!completed) {
+      return {
+        ok: false,
+        analysisId: typedRow.id,
+        cancelled: true,
+        error: 'Music analysis was discarded.',
+      };
     }
 
     return { ok: true, analysisId: typedRow.id, contextMarkdown };
   } catch (error) {
     const runtimeMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : String(error);
-    await markMusicAnalysisFailed({
+    const failureState = await markMusicAnalysisFailed({
       supabase: params.supabase,
       analysisId: typedRow.id,
       runtimeMs,
       errorMessage: message,
     });
+    if (failureState === 'missing') {
+      return {
+        ok: false,
+        analysisId: typedRow.id,
+        cancelled: true,
+        error: 'Music analysis was discarded.',
+      };
+    }
     return { ok: false, analysisId: typedRow.id, error: message };
   }
 }

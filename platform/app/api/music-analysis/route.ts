@@ -34,6 +34,29 @@ const BodySchema = z.object({
   sizeBytes: z.coerce.number().int().min(1).max(MAX_AUDIO_BYTES),
 });
 
+const DeleteBodySchema = z.object({
+  musicAnalysisId: z.string().uuid(),
+  audioPath: z.string().trim().min(1).max(300),
+});
+
+type DiscardAnalysisResult = {
+  ok: boolean;
+  code?: string;
+  audioPath?: string;
+};
+
+function parseDiscardAnalysisResult(value: unknown): DiscardAnalysisResult | null {
+  if (typeof value !== 'object' || value === null || !('ok' in value)) return null;
+  const ok = value.ok;
+  if (typeof ok !== 'boolean') return null;
+  return {
+    ok,
+    code: 'code' in value && typeof value.code === 'string' ? value.code : undefined,
+    audioPath:
+      'audioPath' in value && typeof value.audioPath === 'string' ? value.audioPath : undefined,
+  };
+}
+
 function isUserAudioPath(path: string, userId: string): boolean {
   return path.startsWith(`${userId}/`) && !path.includes('..');
 }
@@ -87,7 +110,7 @@ async function listRunningShowsForAnalysis(params: {
 }) {
   const { data: shows, error } = await params.supabase
     .from('shows')
-    .select('id')
+    .select('id, selected_cue_model, show_style')
     .eq('user_id', params.userId)
     .eq('music_analysis_id', params.musicAnalysisId)
     .eq('generation_status', 'running')
@@ -107,13 +130,43 @@ async function resumeCueGenerationForCompletedAnalysis(params: {
   musicAnalysisId: string;
 }) {
   const shows = await listRunningShowsForAnalysis(params);
+  const showIds = shows.map((show) => show.id);
+  const { data: reservations, error: reservationsError } = showIds.length
+    ? await params.supabase
+        .from('ai_credit_transactions')
+        .select('reference_id, action_key, created_at')
+        .eq('user_id', params.userId)
+        .eq('reference_type', 'shows')
+        .eq('transaction_type', 'reserve')
+        .in('reference_id', showIds)
+        .order('created_at', { ascending: false })
+    : { data: [], error: null };
+  if (reservationsError) {
+    console.error('[api/music-analysis] generation reservation lookup failed:', reservationsError);
+  }
+  const actionByShowId = new Map<string, string>();
+  for (const reservation of reservations ?? []) {
+    if (reservation.reference_id && !actionByShowId.has(reservation.reference_id)) {
+      actionByShowId.set(reservation.reference_id, reservation.action_key);
+    }
+  }
 
   for (const show of shows ?? []) {
+    const reservationAction = actionByShowId.get(show.id);
     const result = await generateCuesForShow({
       supabase: params.supabase,
       userId: params.userId,
       showId: show.id,
       musicAnalysisId: params.musicAnalysisId,
+      selectedCueModel: show.selected_cue_model,
+      generationMode:
+        show.show_style === 'beat_test'
+          ? 'beat'
+          : reservationAction === 'show_generation_fast'
+            ? 'fast'
+            : show.selected_cue_model
+              ? 'llm'
+              : 'fast',
     });
     if (!result.ok) {
       console.error('[api/music-analysis] resumed cue generation failed:', result.error);
@@ -215,6 +268,7 @@ export async function POST(request: Request) {
     referenceId: analysisId,
     reservationKey,
     metadata: {
+      audioPath: parsed.data.audioPath,
       contentType: storedAudio.contentType,
       originalFilename: parsed.data.originalFilename ?? null,
       sizeBytes: storedAudio.sizeBytes,
@@ -269,6 +323,14 @@ export async function POST(request: Request) {
       personality: 'balanced',
     });
     if (!result.ok) {
+      if (result.cancelled) {
+        await refundAiCreditReservation(supabase, {
+          userId: user.id,
+          reservationKey,
+          metadata: { reason: 'Unused music analysis discarded.' },
+        });
+        return;
+      }
       console.error('[api/music-analysis] background analysis failed:', result.error);
       await refundAiCreditReservation(supabase, {
         userId: user.id,
@@ -296,4 +358,84 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ ok: true, musicAnalysisId: data.id });
+}
+
+export async function DELETE(request: Request) {
+  const supabase = createClient(await cookies());
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json(
+      { ok: false, error: 'You must be signed in to remove uploaded music.' },
+      { status: 401 },
+    );
+  }
+
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid JSON body.' }, { status: 400 });
+  }
+  const parsed = DeleteBodySchema.safeParse(json);
+  if (!parsed.success || !isUserAudioPath(parsed.data.audioPath, user.id)) {
+    return NextResponse.json(
+      { ok: false, error: 'Uploaded audio details are invalid.' },
+      { status: 400 },
+    );
+  }
+
+  const { data, error } = await supabase.rpc('discard_unused_song_analysis', {
+    p_analysis_id: parsed.data.musicAnalysisId,
+    p_audio_path: parsed.data.audioPath,
+  });
+  if (error) {
+    console.error('[api/music-analysis] discard failed:', error);
+    return NextResponse.json(
+      { ok: false, error: 'Could not remove the unused track.' },
+      { status: 500 },
+    );
+  }
+
+  const result = parseDiscardAnalysisResult(data);
+  if (!result?.ok) {
+    if (result?.code === 'in_use') {
+      return NextResponse.json(
+        { ok: false, error: 'This track is already attached to a show.' },
+        { status: 409 },
+      );
+    }
+    if (result?.code === 'credit_race') {
+      return NextResponse.json(
+        { ok: false, error: 'The track is still finishing. Try again.' },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json(
+      { ok: false, error: 'Uploaded audio details are invalid.' },
+      { status: result?.code === 'not_permitted' ? 403 : 400 },
+    );
+  }
+
+  const audioPath = result.audioPath ?? parsed.data.audioPath;
+  if (!isUserAudioPath(audioPath, user.id) || audioPath !== parsed.data.audioPath) {
+    console.error('[api/music-analysis] discard returned an unexpected audio path.');
+    return NextResponse.json(
+      { ok: false, error: 'Could not remove the unused track.' },
+      { status: 500 },
+    );
+  }
+
+  const { error: storageError } = await supabase.storage.from('audio').remove([audioPath]);
+  if (storageError) {
+    console.error('[api/music-analysis] audio cleanup failed:', storageError);
+    return NextResponse.json(
+      { ok: false, error: 'Could not remove the unused track.' },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }

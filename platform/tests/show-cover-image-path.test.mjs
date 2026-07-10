@@ -58,7 +58,6 @@ test('cover image path flows through domain types, mappers, and select lists', (
   const showMapper = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
   const templates = read('lib/admin/templates.server.ts');
-  const seedTemplates = read('lib/library-seed-templates.ts');
   const cloneAction = read('app/actions/show-templates.ts');
 
   assert.match(adminTypes, /coverImagePath: string \| null/);
@@ -71,10 +70,8 @@ test('cover image path flows through domain types, mappers, and select lists', (
   assert.match(showTypes, /cover_shader, updated_at, cover_image_path'/);
   assert.match(
     templates,
-    /SHOW_TEMPLATES_SELECT = `\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path`/,
+    /SHOW_TEMPLATES_SELECT = `\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,
   );
-  // Seeded (no DB row) templates default to no poster.
-  assert.match(seedTemplates, /coverShader: shaderCoverFromSeed\(slug\),\s+coverImagePath: null,/);
   // Cloning a template copies its poster path onto the new show.
   assert.match(
     cloneAction,
@@ -82,7 +79,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   );
 });
 
-test('cover poster render util and component exist with a neutral skeleton fallback', () => {
+test('cover poster render util keeps loading neutral and falls back to the saved cover', () => {
   const renderUtil = read('lib/render-cover-poster.tsx');
   const poster = read('app/components/app/CoverPoster.tsx');
   const urlHelper = read('lib/cover-poster-url.ts');
@@ -102,7 +99,9 @@ test('cover poster render util and component exist with a neutral skeleton fallb
   assert.match(poster, /export function CoverPoster/);
   assert.match(poster, /import \{ Skeleton \}/);
   assert.match(poster, /<Skeleton className="absolute inset-0 h-full w-full rounded-none" \/>/);
-  assert.doesNotMatch(poster, /coverGradient/);
+  assert.match(poster, /coverGradient/);
+  assert.match(poster, /fallbackCover\?: ShowCover \| null/);
+  assert.match(poster, /!src && fallbackBackground/);
   assert.match(poster, /coverPosterUrl\(imagePath\)/);
   assert.match(poster, /<img/);
   assert.match(urlHelper, /export const COVER_POSTER_VERSION = 'v2'/);

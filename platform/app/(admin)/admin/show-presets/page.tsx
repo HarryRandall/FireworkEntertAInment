@@ -133,6 +133,7 @@ async function ShowPresetsData({
             <tr>
               <th className={tableHeaderCellClasses()}>Status</th>
               <th className={tableHeaderCellClasses()}>Show</th>
+              <th className={tableHeaderCellClasses()}>Source</th>
               <th className={tableHeaderCellClasses()}>Featured</th>
               <th className={tableHeaderCellClasses()}>Cues</th>
               <th className={tableHeaderCellClasses()}>Duration</th>
@@ -156,6 +157,11 @@ async function ShowPresetsData({
                   <div className="mt-1 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums">
                     {preset.slug}
                   </div>
+                </td>
+                <td className={tableCellClasses()}>
+                  <Badge tone={preset.sourceShowId ? 'sky' : 'neutral'}>
+                    {preset.sourceShowId ? 'Imported' : 'Curated'}
+                  </Badge>
                 </td>
                 <td className={tableCellClasses()}>
                   {preset.isFeatured ? <Badge tone="accent">Featured</Badge> : '-'}

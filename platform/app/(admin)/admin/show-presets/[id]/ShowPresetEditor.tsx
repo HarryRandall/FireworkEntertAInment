@@ -168,15 +168,16 @@ function toLocalCue(
   cue: ShowTemplateCue,
   index: number,
   lookup: Map<string, FireworkSpecification>,
-): LocalCue | null {
+): LocalCue {
   const product = resolveProduct(cue, lookup);
-  if (!product) return null;
+  const unresolvedKey =
+    cue.catalogueItemId ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? `unresolved-${index + 1}`;
   return {
     uid: makeCueUid(),
-    catalogueItemId: product.id,
-    catalogueItemSlug: product.slug,
+    catalogueItemId: product?.id ?? unresolvedKey,
+    catalogueItemSlug: product?.slug ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? unresolvedKey,
     timeSeconds: normaliseCueTime(cue.timeSeconds),
-    description: cue.description || product.name,
+    description: cue.description || product?.name || 'Unresolved catalogue item',
     launchPositionIndex: normaliseLaunchPositionIndex(cue.launchPositionIndex ?? index % 3),
     emphasis: cue.emphasis ?? 'normal',
   };
@@ -318,13 +319,22 @@ export function ShowPresetEditor({
     [fireworkSpecs],
   );
   const initialCues = useMemo(
-    () =>
-      preset.previewCues
-        .map((cue, index) => toLocalCue(cue, index, lookup))
-        .filter((cue): cue is LocalCue => Boolean(cue)),
+    () => preset.previewCues.map((cue, index) => toLocalCue(cue, index, lookup)),
     [lookup, preset.previewCues],
   );
-  const unresolvedCueCount = Math.max(0, preset.previewCues.length - initialCues.length);
+  const initialCuesNeedCanonicalisation = useMemo(
+    () =>
+      preset.previewCues.some((cue, index) => {
+        const resolved = initialCues[index];
+        return (
+          !cue.catalogueItemId ||
+          !cue.catalogueItemSlug ||
+          cue.catalogueItemId !== resolved.catalogueItemId ||
+          cue.catalogueItemSlug !== resolved.catalogueItemSlug
+        );
+      }),
+    [initialCues, preset.previewCues],
+  );
 
   const [title, setTitle] = useState(preset.title);
   const [slug, setSlug] = useState(preset.slug);
@@ -366,7 +376,9 @@ export function ShowPresetEditor({
       sortOrder: String(preset.sortOrder),
     }),
   );
-  const [initialCuesKey, setInitialCuesKey] = useState(() => serialiseCues(initialCues));
+  const [initialCuesKey, setInitialCuesKey] = useState(() =>
+    initialCuesNeedCanonicalisation ? '__needs-canonical-cue-save__' : serialiseCues(initialCues),
+  );
   const playbackRef = useRef(0);
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
 
@@ -386,6 +398,7 @@ export function ShowPresetEditor({
     TIMELINE_ROW_COUNT * TIMELINE_ROW_HEIGHT_PX + (TIMELINE_ROW_COUNT - 1) * TIMELINE_ROW_GAP_PX;
   const selectedCue = cues.find((cue) => cue.uid === selectedCueUid) ?? null;
   const selectedProduct = selectedCue ? specsById.get(selectedCue.catalogueItemId) : undefined;
+  const unresolvedCueCount = cues.filter((cue) => !specsById.has(cue.catalogueItemId)).length;
   const replayCues = useMemo(() => toReplayCues(cues, specsById), [cues, specsById]);
   const replaySignature = useMemo(
     () => replayCues.map((cue) => `${cue.id}:${cue.productId}:${cue.timeSeconds}`).join('|'),
@@ -408,11 +421,13 @@ export function ShowPresetEditor({
   const cuesDirty = cuesKey !== initialCuesKey;
   const isBusy = isDetailsPending || isCuesPending || isPublishPending;
   const canPublish =
+    !detailsDirty &&
+    !cuesDirty &&
     title.trim().length > 0 &&
     theme.trim().length > 0 &&
     duration > 0 &&
     cues.length > 0 &&
-    cues.every((cue) => specsById.has(cue.catalogueItemId));
+    unresolvedCueCount === 0;
   const transportTicks = cues
     .slice()
     .sort((a, b) => a.timeSeconds - b.timeSeconds)
@@ -686,7 +701,7 @@ export function ShowPresetEditor({
               size="sm"
               onClick={saveCues}
               loading={isCuesPending}
-              disabled={!cuesDirty || cues.length === 0}
+              disabled={!cuesDirty || unresolvedCueCount > 0 || (isPublished && cues.length === 0)}
             >
               <Save size={15} /> Save timeline
             </Button>
@@ -700,7 +715,8 @@ export function ShowPresetEditor({
             className="mt-4"
           >
             {unresolvedCueCount} saved cue{unresolvedCueCount === 1 ? '' : 's'} could not be matched
-            to a product and will be skipped until replaced.
+            to a product. These cues remain on the timeline, and saving is blocked until each one is
+            replaced or removed.
           </InlineAlert>
         ) : null}
 
@@ -911,8 +927,8 @@ export function ShowPresetEditor({
 
         {!canPublish && !isPublished ? (
           <InlineAlert tone="info" title="Publishing checklist" className="mt-4">
-            Add a title, theme, duration and at least one resolvable catalogue cue before
-            publishing.
+            Save pending detail and timeline changes, then add a title, theme, duration and at least
+            one resolvable catalogue cue before publishing.
           </InlineAlert>
         ) : null}
       </section>

@@ -1,33 +1,43 @@
 'use client';
 
 /**
- * TemplateLikeButton — heart toggle on template cards / detail pages
- * in the `/library` route. Persists state to localStorage only — this
- * is intentionally not a server-backed like count.
+ * TemplateLikeButton - authenticated heart toggle for published Explore shows.
  */
-import { useEffect, useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Heart } from 'lucide-react';
+import { toggleShowPresetLikeAction } from '@/app/actions/show-preset-likes';
+import { toast } from '@/app/components/ui';
 
 export function TemplateLikeButton({
+  templateId,
   templateSlug,
   initialCount,
+  initialLiked,
 }: {
+  templateId: string;
   templateSlug: string;
   initialCount: number;
+  initialLiked: boolean;
 }) {
-  const storageKey = `showcrafter:template-like:${templateSlug}`;
-  const [liked, setLiked] = useState(false);
-
-  useEffect(() => {
-    setLiked(window.localStorage.getItem(storageKey) === '1');
-  }, [storageKey]);
+  const router = useRouter();
+  const [liked, setLiked] = useState(initialLiked);
+  const [likeCount, setLikeCount] = useState(initialCount);
+  const [isPending, startTransition] = useTransition();
 
   function toggleLike() {
-    setLiked((current) => {
-      const next = !current;
-      if (next) window.localStorage.setItem(storageKey, '1');
-      else window.localStorage.removeItem(storageKey);
-      return next;
+    startTransition(async () => {
+      const result = await toggleShowPresetLikeAction({ presetId: templateId, slug: templateSlug });
+      if (!result.ok) {
+        if (result.requiresAuth) {
+          router.push(`/login?next=${encodeURIComponent(`/library/${templateSlug}`)}`);
+          return;
+        }
+        toast.error(result.error);
+        return;
+      }
+      setLiked(result.liked);
+      setLikeCount(result.likeCount);
     });
   }
 
@@ -35,13 +45,16 @@ export function TemplateLikeButton({
     <button
       type="button"
       onClick={toggleLike}
-      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98]"
+      disabled={isPending}
+      aria-pressed={liked}
+      aria-label={liked ? 'Remove show from saved shows' : 'Save show'}
+      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
     >
       <Heart
         size={16}
         className={liked ? 'fill-destructive text-destructive' : 'text-destructive'}
       />
-      {initialCount + (liked ? 1 : 0)}
+      {likeCount.toLocaleString('en-AU')}
     </button>
   );
 }

@@ -33,7 +33,9 @@ export type SupplierRow = Database['public']['Tables']['supplier_profiles']['Row
 export type ImportJobRow = Database['public']['Tables']['import_jobs']['Row'];
 export type ImportOutputRow = Database['public']['Tables']['import_outputs']['Row'];
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row'];
-export type ShowTemplateRow = Database['public']['Tables']['show_presets']['Row'];
+export type ShowTemplateRow = Database['public']['Tables']['show_presets']['Row'] & {
+  show_preset_like_counts?: { like_count: number } | Array<{ like_count: number }> | null;
+};
 
 const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user'];
 
@@ -144,51 +146,68 @@ function normaliseCueEmphasis(value: unknown): ShowTemplateCue['emphasis'] {
   return value === 'accent' || value === 'peak' ? value : 'normal';
 }
 
-function normaliseLaunchPositionIndex(value: unknown, fallback: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback % 3;
-  return Math.max(0, Math.min(2, Math.floor(n)));
+function unresolvedTemplateCue(index: number, description?: unknown): ShowTemplateCue {
+  return {
+    timeSeconds: 0,
+    description:
+      typeof description === 'string' && description.trim()
+        ? `${description.trim()} (stored cue needs repair)`
+        : `Unresolved cue ${index + 1} (stored value needs repair)`,
+    catalogueItemId: null,
+    catalogueItemSlug: `invalid-cue-${index + 1}`,
+    launchPositionIndex: index % 3,
+    emphasis: 'normal',
+  };
 }
 
-/** Parse the JSON `preview_cues` array on a show template. Skips malformed entries. */
+/** Parse template cues without hiding malformed stored entries from admin repair or clone guards. */
 export function parseTemplateCues(value: Json): ShowTemplateCue[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item, index) => {
-    if (!isRecord(item)) return [];
+  return value.map((item, index) => {
+    if (!isRecord(item)) return unresolvedTemplateCue(index);
     const timeSeconds = Number(item.timeSeconds);
     const description = item.description;
     const fireworkSlug = typeof item.fireworkSlug === 'string' ? item.fireworkSlug : undefined;
     const catalogueItemId = typeof item.catalogueItemId === 'string' ? item.catalogueItemId : null;
     const catalogueItemSlug =
       typeof item.catalogueItemSlug === 'string' ? item.catalogueItemSlug : null;
-    if (!Number.isFinite(timeSeconds) || typeof description !== 'string') return [];
-    if (!fireworkSlug && !catalogueItemId && !catalogueItemSlug) return [];
-    return [
-      {
-        timeSeconds,
-        description,
-        ...(fireworkSlug ? { fireworkSlug } : {}),
-        catalogueItemId,
-        catalogueItemSlug,
-        launchPositionIndex: normaliseLaunchPositionIndex(item.launchPositionIndex, index),
-        emphasis: normaliseCueEmphasis(item.emphasis),
-      },
-    ];
+    const launchPositionIndex = Number(item.launchPositionIndex ?? index % 3);
+    const emphasisIsValid =
+      item.emphasis == null ||
+      item.emphasis === 'normal' ||
+      item.emphasis === 'accent' ||
+      item.emphasis === 'peak';
+    if (
+      !Number.isFinite(timeSeconds) ||
+      timeSeconds < 0 ||
+      timeSeconds > 60 * 60 ||
+      typeof description !== 'string' ||
+      !description.trim() ||
+      description.trim().length > 180 ||
+      !Number.isInteger(launchPositionIndex) ||
+      launchPositionIndex < 0 ||
+      launchPositionIndex > 2 ||
+      !emphasisIsValid ||
+      (!fireworkSlug && !catalogueItemId && !catalogueItemSlug)
+    ) {
+      return unresolvedTemplateCue(index, description);
+    }
+    return {
+      timeSeconds,
+      description,
+      ...(fireworkSlug ? { fireworkSlug } : {}),
+      catalogueItemId,
+      catalogueItemSlug,
+      launchPositionIndex,
+      emphasis: normaliseCueEmphasis(item.emphasis),
+    };
   });
 }
 
-/**
- * Synthesises a stable "like count" for a template based on its slug, featured
- * flag, and effect count. Pure decorative — replace with a real counter when
- * social interactions ship.
- */
-export function deriveTemplateLikeCount(row: ShowTemplateRow): number {
-  let hash = 0;
-  for (const char of row.slug) {
-    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  }
-  const featuredBoost = row.is_featured ? 140 : 40;
-  return featuredBoost + row.effects_count * 6 + (hash % 95);
+function showPresetLikeCount(row: ShowTemplateRow): number {
+  const joined = row.show_preset_like_counts;
+  const count = Array.isArray(joined) ? joined[0]?.like_count : joined?.like_count;
+  return Number.isInteger(count) && Number(count) >= 0 ? Number(count) : 0;
 }
 
 /** Map a DB show-template row to the domain {@link ShowTemplate}. */
@@ -213,7 +232,7 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     isPublished: maybePublished.is_published ?? true,
     publishedAt: maybePublished.published_at ?? row.created_at,
     sortOrder: row.sort_order,
-    likeCount: deriveTemplateLikeCount(row),
+    likeCount: showPresetLikeCount(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

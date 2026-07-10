@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Copy, FileInput, Loader2, Plus } from 'lucide-react';
+import { Copy, FileInput, ImageIcon, Loader2, Plus } from 'lucide-react';
 import {
   createShowPreset,
   duplicateShowPreset,
@@ -33,6 +33,9 @@ export function ShowPresetCreateActions({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Button href="/admin/cover-posters" variant="secondary">
+        <ImageIcon size={16} /> Cover posters
+      </Button>
       <ImportAllShowPresetsButton disabled={importableShows.length === 0} />
       <ImportShowPresetButton importableShows={importableShows} />
       <NewShowPresetButton />

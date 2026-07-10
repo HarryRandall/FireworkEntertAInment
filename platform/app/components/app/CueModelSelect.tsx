@@ -6,16 +6,37 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL } from '@/lib/cue-models';
+import { CUE_MODEL_OPTIONS } from '@/lib/cue-models';
 import { cn } from '@/lib/utils';
 
 type CueModelSelectProps = {
   value: string;
   onChange: (value: string) => void;
+  creditCosts?: Partial<Record<string, number>>;
   className?: string;
 };
 
 type Provider = (typeof CUE_MODEL_OPTIONS)[number]['provider'];
+type CueModelOption = {
+  value: string;
+  label: string;
+  provider: Provider;
+  creditCost: number;
+};
+
+function configuredModelOption(value: string): CueModelOption {
+  const provider: Provider = value.startsWith('anthropic/')
+    ? 'anthropic'
+    : value.startsWith('google/')
+      ? 'google'
+      : 'openai';
+  return {
+    value,
+    label: value.split('/').at(-1)?.replaceAll('-', ' ') || 'Configured model',
+    provider,
+    creditCost: 1,
+  };
+}
 
 function creditLabel(credits: number) {
   return `${credits} credit${credits === 1 ? '' : 's'}`;
@@ -76,24 +97,27 @@ function ProviderIcon({ provider, className }: { provider: Provider; className?:
   return <OpenAiIcon className={className} />;
 }
 
-const SORTED_MODEL_OPTIONS = [...CUE_MODEL_OPTIONS].sort((a, b) => a.creditCost - b.creditCost);
-
 function triggerLabel(label: string, provider: Provider) {
   return provider === 'anthropic' ? label.replace(/^Claude\s+/, '') : label;
 }
 
-export function CueModelSelect({ value, onChange, className }: CueModelSelectProps) {
-  const selected =
-    CUE_MODEL_OPTIONS.find((option) => option.value === value) ??
-    CUE_MODEL_OPTIONS.find((option) => option.value === FALLBACK_CUE_MODEL) ??
-    CUE_MODEL_OPTIONS[0];
+export function CueModelSelect({ value, onChange, creditCosts, className }: CueModelSelectProps) {
+  const knownSelected = CUE_MODEL_OPTIONS.find((option) => option.value === value);
+  const selected: CueModelOption = knownSelected ?? configuredModelOption(value);
+  const selectedCreditCost = creditCosts?.[selected.value] ?? selected.creditCost;
+  const modelOptions: CueModelOption[] = knownSelected
+    ? [...CUE_MODEL_OPTIONS]
+    : [selected, ...CUE_MODEL_OPTIONS];
+  const sortedModelOptions = modelOptions.sort(
+    (a, b) => (creditCosts?.[a.value] ?? a.creditCost) - (creditCosts?.[b.value] ?? b.creditCost),
+  );
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          aria-label="Cue model"
+          aria-label={`Cue model: ${selected.label}, ${creditLabel(selectedCreditCost)}`}
           className={cn(
             'border-border bg-background/80 text-foreground hover:bg-background focus-visible:ring-ring/40 grid h-7 w-full max-w-[164px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-full border px-2 text-[13px] shadow-sm backdrop-blur-xl transition-colors focus:outline-none focus-visible:ring-3 sm:min-w-[160px]',
             className,
@@ -104,7 +128,7 @@ export function CueModelSelect({ value, onChange, className }: CueModelSelectPro
             {triggerLabel(selected.label, selected.provider)}
           </span>
           <span className="bg-muted text-muted-foreground inline-flex h-[1.125rem] min-w-5 shrink-0 items-center justify-center rounded-md px-1.5 text-[10px] leading-none font-medium tabular-nums">
-            {selected.creditCost}
+            {selectedCreditCost}
           </span>
         </button>
       </DropdownMenuTrigger>
@@ -113,8 +137,9 @@ export function CueModelSelect({ value, onChange, className }: CueModelSelectPro
         sideOffset={6}
         className="border-border bg-popover/97 text-popover-foreground w-[min(248px,calc(100vw-2rem))] rounded-xl border p-1.5 shadow-xl backdrop-blur-xl"
       >
-        {SORTED_MODEL_OPTIONS.map((option) => {
+        {sortedModelOptions.map((option) => {
           const isSelected = option.value === selected.value;
+          const optionCreditCost = creditCosts?.[option.value] ?? option.creditCost;
 
           return (
             <DropdownMenuItem
@@ -133,7 +158,7 @@ export function CueModelSelect({ value, onChange, className }: CueModelSelectPro
                   isSelected ? 'bg-background text-foreground' : 'bg-muted text-muted-foreground',
                 )}
               >
-                {creditLabel(option.creditCost)}
+                {creditLabel(optionCreditCost)}
               </span>
             </DropdownMenuItem>
           );

@@ -29,7 +29,7 @@ export function WizardLoading() {
               </div>
               <div className="px-4 pt-2 pb-3">
                 <div className="flex items-center justify-between gap-3">
-                  <Skeleton className="h-9 w-40 rounded-md" />
+                  <Skeleton className="h-7 w-40 rounded-full" />
                   <div className="flex items-center gap-2.5">
                     <Skeleton className="h-9 w-9 rounded-full" />
                     <Skeleton className="h-9 w-28 rounded-full" />

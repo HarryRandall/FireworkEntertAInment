@@ -37,9 +37,9 @@ import { cn } from '@/lib/utils';
 
 const EXPLORE_SKELETON_SHELVES = [
   'Staff picks',
-  'Popular this month',
-  'Hot right now',
-  'Fresh drops',
+  'Most liked',
+  'More to explore',
+  'Recently updated',
   'Quick bursts',
 ];
 

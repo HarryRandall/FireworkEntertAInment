@@ -33,7 +33,7 @@ test('library presets persist and expose JSON shader covers', () => {
   const exploreCard = read('app/components/app/ExploreCard.tsx');
   const explorePreview = read('app/components/app/ExplorePreviewContext.tsx');
   const exploreRow = read('app/components/app/ExploreRow.tsx');
-  const libraryPage = read('app/(app)/library/page.tsx');
+  const libraryPage = read('app/(browse)/library/page.tsx');
   const cloneAction = read('app/actions/show-templates.ts');
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
 
@@ -50,7 +50,7 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(adminTypes, /coverImagePath: string \| null/);
   assert.match(
     templates,
-    /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path`/,
+    /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,
   );
   assert.match(mapper, /coverShader: parseCover\(row\.cover_shader\)/);
   assert.match(mapper, /coverImagePath: row\.cover_image_path \?\? null/);

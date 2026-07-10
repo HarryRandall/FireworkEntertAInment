@@ -12,8 +12,6 @@ const PROTECTED_PREFIXES = [
   '/admin',
   '/settings',
   '/home',
-  '/library',
-  '/catalogue',
   '/dashboard',
 ];
 const AUTH_ONLY_PATHS = ['/login', '/signup'];

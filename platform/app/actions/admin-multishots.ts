@@ -23,12 +23,32 @@ import {
   MULTISHOT_PAN_LIMIT_DEGREES,
   MULTISHOT_TILT_LIMIT_DEGREES,
 } from '@/lib/admin/multishot-constraints';
+import { MIN_PRODUCT_DURATION_SECONDS } from '@/lib/cue-overlap.server';
 import { deleteCachedKeys } from '@/lib/server-cache';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };
 type UpsertShotResult = { ok: true; id: string } | { ok: false; error: string };
+type DerivedMultishotState =
+  | { ok: true; minimumDurationSeconds: number; shotCount: number }
+  | { ok: false; error: string };
+
+type DurationShotRow = {
+  time_offset_seconds: number | string | null;
+  fireworks:
+    | {
+        duration_seconds: number | string | null;
+        catalogue_items: Array<{ duration_seconds: number | string | null }> | null;
+      }
+    | Array<{
+        duration_seconds: number | string | null;
+        catalogue_items: Array<{ duration_seconds: number | string | null }> | null;
+      }>
+    | null;
+};
+
+const DERIVED_SHOT_PAGE_SIZE = 500;
 
 const CreateMultishotSchema = z.object({
   name: z.string().trim().min(1).max(MULTISHOT_NAME_MAX_LENGTH),
@@ -84,6 +104,78 @@ function slugify(value: string): string {
     .slice(0, 60);
 }
 
+function finiteNumber(value: unknown): number | null {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function firstJoinedFirework(value: DurationShotRow['fireworks']) {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+async function deriveMultishotState(
+  supabase: ReturnType<typeof createClient>,
+  multishotId: string,
+): Promise<DerivedMultishotState> {
+  const shots: DurationShotRow[] = [];
+  for (let from = 0; from < MULTISHOT_MAX_SHOT_COUNT; from += DERIVED_SHOT_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('multishot_fireworks')
+      .select('time_offset_seconds, fireworks(duration_seconds, catalogue_items(duration_seconds))')
+      .eq('multishot_id', multishotId)
+      .order('sequence_index', { ascending: true })
+      .range(from, from + DERIVED_SHOT_PAGE_SIZE - 1);
+    if (error) return { ok: false, error: error.message };
+
+    const page = (data ?? []) as unknown as DurationShotRow[];
+    shots.push(...page);
+    if (page.length < DERIVED_SHOT_PAGE_SIZE) break;
+  }
+
+  let maximumEndSeconds = 0;
+  for (const shot of shots) {
+    const firework = firstJoinedFirework(shot.fireworks);
+    const catalogueDurations = (firework?.catalogue_items ?? [])
+      .map((item) => finiteNumber(item.duration_seconds))
+      .filter((duration): duration is number => duration !== null);
+    const productDuration = Math.max(
+      MIN_PRODUCT_DURATION_SECONDS,
+      finiteNumber(firework?.duration_seconds) ?? 0,
+      ...catalogueDurations,
+    );
+    const endSeconds = (finiteNumber(shot.time_offset_seconds) ?? 0) + productDuration;
+    maximumEndSeconds = Math.max(maximumEndSeconds, endSeconds);
+  }
+
+  return {
+    ok: true,
+    minimumDurationSeconds: Math.ceil(maximumEndSeconds * 100) / 100,
+    shotCount: shots.length,
+  };
+}
+
+async function resynchroniseMultishotDerivedState(
+  supabase: ReturnType<typeof createClient>,
+  multishotId: string,
+): Promise<Result> {
+  const { data, error } = await supabase.rpc('sync_multishot_derived_state', {
+    p_multishot_id: multishotId,
+  });
+  if (error) return { ok: false, error: error.message };
+  const payload =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null;
+  if (!payload || payload.ok !== true) {
+    const message =
+      payload && typeof payload.error === 'string'
+        ? payload.error
+        : 'Could not synchronise multishot timing.';
+    return { ok: false, error: message };
+  }
+  return { ok: true };
+}
+
 async function refreshMultishotCatalogue(multishotId?: string) {
   await invalidateAdminMultishotsCache(multishotId);
   await invalidateAdminCatalogueCache();
@@ -96,22 +188,6 @@ async function refreshMultishotCatalogue(multishotId?: string) {
 async function refreshMultishotDetail(multishotId: string) {
   await deleteCachedKeys([getAdminMultishotCacheKey(multishotId)]);
   revalidatePath(`/admin/multishots/${multishotId}`);
-}
-
-async function syncShotCount(supabase: ReturnType<typeof createClient>, multishotId: string) {
-  const { count, error: countError } = await supabase
-    .from('multishot_fireworks')
-    .select('id', { count: 'exact', head: true })
-    .eq('multishot_id', multishotId);
-  if (countError) {
-    console.error('[syncShotCount] count failed:', countError);
-    return;
-  }
-  const { error: updateError } = await supabase
-    .from('multishots')
-    .update({ shot_count: count ?? 0, updated_at: new Date().toISOString() })
-    .eq('id', multishotId);
-  if (updateError) console.error('[syncShotCount] update failed:', updateError);
 }
 
 /** Create an empty multishot; a catalogue row is auto-created by trigger. */
@@ -150,12 +226,35 @@ export async function updateMultishot(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
+  const derived = await deriveMultishotState(supabase, parsed.data.id);
+  if (!derived.ok) return derived;
+  if (derived.minimumDurationSeconds > MULTISHOT_MAX_DURATION_SECONDS) {
+    return {
+      ok: false,
+      error: `The final shot ends at ${derived.minimumDurationSeconds} seconds, above the supported ${MULTISHOT_MAX_DURATION_SECONDS} second duration.`,
+    };
+  }
+
+  const requestedDuration = parsed.data.durationSeconds ?? null;
+  if (
+    requestedDuration !== null &&
+    requestedDuration + Number.EPSILON < derived.minimumDurationSeconds
+  ) {
+    return {
+      ok: false,
+      error: `Duration must be at least ${derived.minimumDurationSeconds} seconds to include every shot.`,
+    };
+  }
+  const durationSeconds =
+    requestedDuration ??
+    (derived.minimumDurationSeconds > 0 ? derived.minimumDurationSeconds : null);
+
   const { data, error } = await supabase
     .from('multishots')
     .update({
       name: parsed.data.name,
       description: parsed.data.description || null,
-      duration_seconds: parsed.data.durationSeconds ?? null,
+      duration_seconds: durationSeconds,
       updated_at: new Date().toISOString(),
     })
     .eq('id', parsed.data.id)
@@ -186,7 +285,7 @@ export async function upsertMultishotShot(
   if (parsed.data.id) {
     const { data: existingShot, error: existingShotError } = await supabase
       .from('multishot_fireworks')
-      .select('firework_id, sequence_index, caliber')
+      .select('firework_id, sequence_index, time_offset_seconds, caliber')
       .eq('id', parsed.data.id)
       .eq('multishot_id', parsed.data.multishotId)
       .maybeSingle();
@@ -198,6 +297,7 @@ export async function upsertMultishotShot(
     catalogueChanged =
       shouldValidateFirework ||
       existingShot.sequence_index !== parsed.data.sequenceIndex ||
+      Number(existingShot.time_offset_seconds) !== parsed.data.timeOffsetSeconds ||
       existingShot.caliber !== nextCaliber;
   }
 
@@ -237,7 +337,8 @@ export async function upsertMultishotShot(
   const id = data?.id as string | undefined;
   if (!id) return { ok: false, error: 'Could not save shot.' };
 
-  if (!parsed.data.id) await syncShotCount(supabase, parsed.data.multishotId);
+  const syncResult = await resynchroniseMultishotDerivedState(supabase, parsed.data.multishotId);
+  if (!syncResult.ok) return syncResult;
   if (catalogueChanged) {
     await refreshMultishotCatalogue(parsed.data.multishotId);
   } else {
@@ -263,7 +364,8 @@ export async function deleteMultishotShot(
     .eq('multishot_id', parsed.data.multishotId);
   if (error) return { ok: false, error: error.message };
 
-  await syncShotCount(supabase, parsed.data.multishotId);
+  const syncResult = await resynchroniseMultishotDerivedState(supabase, parsed.data.multishotId);
+  if (!syncResult.ok) return syncResult;
   await refreshMultishotCatalogue(parsed.data.multishotId);
   return { ok: true };
 }

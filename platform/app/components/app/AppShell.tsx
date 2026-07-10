@@ -768,9 +768,9 @@ function PendingHomeSkeleton() {
 function PendingLibrarySkeleton() {
   const shelves = [
     'Staff picks',
-    'Popular this month',
-    'Hot right now',
-    'Fresh drops',
+    'Most liked',
+    'More to explore',
+    'Recently updated',
     'Quick bursts',
   ];
 
@@ -848,18 +848,17 @@ function ShellBreadcrumbs({ breadcrumbs }: { breadcrumbs: ShellBreadcrumb[] }) {
 }
 
 function ShellTopBar({ pathname }: { pathname: string | null }) {
-  if (isHomePath(pathname)) {
-    return null;
-  }
-
+  const home = isHomePath(pathname);
   const breadcrumbs = getAppBreadcrumbs(pathname);
 
   return (
     <header
       className={cn(
         'bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 overflow-hidden border-b px-4 backdrop-blur sm:px-6',
+        home && 'md:hidden',
       )}
     >
+      <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open navigation" />
       <ShellBreadcrumbs breadcrumbs={breadcrumbs} />
     </header>
   );

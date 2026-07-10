@@ -29,12 +29,12 @@ test('proxy gates private app prefixes to /login?next=', () => {
     "'/recommendations'",
     "'/admin'",
     "'/home'",
-    "'/library'",
-    "'/catalogue'",
     "'/dashboard'",
   ]) {
     assert.match(protectedArray, new RegExp(prefix));
   }
+  assert.doesNotMatch(protectedArray, /'\/library'/);
+  assert.doesNotMatch(protectedArray, /'\/catalogue'/);
 
   // Protected routes honour the login ?next= round-trip and resolve the user
   // from signed claims.
@@ -83,6 +83,25 @@ test('(app) layout requires an authenticated user before rendering the app shell
   assert.match(layout, /if \(!userId\)/);
   assert.match(layout, /redirect\('\/login'\)/);
   assert.doesNotMatch(layout, /isAuthenticated=/);
+});
+
+test('browse routes allow guests and retain the app shell for signed-in users', () => {
+  for (const path of [
+    'app/(browse)/layout.tsx',
+    'app/(browse)/library/page.tsx',
+    'app/(browse)/library/[id]/page.tsx',
+    'app/(browse)/catalogue/page.tsx',
+  ]) {
+    assert.equal(existsSync(join(root, path)), true, `${path} exists`);
+  }
+
+  const layout = read('app/(browse)/layout.tsx');
+  assert.match(layout, /getCurrentUserId/);
+  assert.match(layout, /if \(!userId\)/);
+  assert.match(layout, /<MarketingNavBar \/>/);
+  assert.match(layout, /<MarketingFooter \/>/);
+  assert.match(layout, /<AppShell/);
+  assert.doesNotMatch(layout, /redirect\('\/login'/);
 });
 
 test('show detail layout requires a session before rendering tabs or children', () => {

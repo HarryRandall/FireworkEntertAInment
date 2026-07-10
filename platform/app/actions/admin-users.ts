@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server';
 import { grantAiCredits } from '@/lib/ai-credits.server';
 
@@ -42,6 +43,26 @@ const GrantAiCreditsSchema = z.object({
   amount: z.coerce.number().int().min(1).max(100_000),
   note: z.string().trim().max(280).optional(),
 });
+
+function trustedAppOrigin(): string | null {
+  const configured = process.env.APP_ORIGIN?.trim();
+  const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  const candidate =
+    configured ||
+    (vercelProductionHost ? `https://${vercelProductionHost}` : null) ||
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null);
+  if (!candidate) return null;
+
+  try {
+    const url = new URL(candidate);
+    const isLocalHttp =
+      url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname);
+    if (url.username || url.password || (url.protocol !== 'https:' && !isLocalHttp)) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
 
 /** Set a user's `users.status` (active / suspended); refuses to suspend the current admin. */
 export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>): Promise<Result> {
@@ -85,18 +106,15 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   if (roleError) return { ok: false, error: roleError.message };
   if (!role) return { ok: false, error: 'Choose a valid role.' };
 
-  const { error: deleteError } = await supabase
-    .from('user_roles')
-    .delete()
-    .eq('user_id', parsed.data.userId);
-  if (deleteError) return { ok: false, error: deleteError.message };
-
-  const { error: insertError } = await supabase.from('user_roles').insert({
-    user_id: parsed.data.userId,
-    role_id: parsed.data.roleId,
-    assigned_by: admin.id,
-  });
-  if (insertError) return { ok: false, error: insertError.message };
+  const { error: roleAssignmentError } = await supabase.from('user_roles').upsert(
+    {
+      user_id: parsed.data.userId,
+      role_id: parsed.data.roleId,
+      assigned_by: admin.id,
+    },
+    { onConflict: 'user_id' },
+  );
+  if (roleAssignmentError) return { ok: false, error: roleAssignmentError.message };
 
   await invalidateAdminUsersCache(parsed.data.userId);
   revalidatePath('/admin/users');
@@ -104,7 +122,35 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   return { ok: true };
 }
 
-/** Delete a user's `users` row; refuses to delete the current admin. */
+/** Send a real Supabase password-reset email; refuses unknown users. */
+export async function sendUserPasswordResetAction(
+  input: z.infer<typeof DeleteUserSchema>,
+): Promise<Result> {
+  const admin = await requirePermission('admin.manage_users');
+  if (!admin) return { ok: false, error: 'Not permitted.' };
+  const parsed = DeleteUserSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+
+  const supabase = createClient(await cookies());
+  const { data: target, error: targetError } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', parsed.data.userId)
+    .maybeSingle();
+  if (targetError) return { ok: false, error: targetError.message };
+  if (!target?.email) return { ok: false, error: 'This user does not have an email address.' };
+
+  const appOrigin = trustedAppOrigin();
+  if (!appOrigin) {
+    return { ok: false, error: 'Password reset is unavailable until APP_ORIGIN is configured.' };
+  }
+  const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+  const { error } = await supabase.auth.resetPasswordForEmail(target.email, { redirectTo });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Delete the Supabase Auth identity and its cascading app data; refuses self-deletion. */
 export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>): Promise<Result> {
   const admin = await requirePermission('admin.manage_users');
   if (!admin) return { ok: false, error: 'Not permitted.' };
@@ -114,8 +160,9 @@ export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>):
     return { ok: false, error: 'You cannot delete your own account.' };
   }
 
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from('users').delete().eq('id', parsed.data.userId);
+  const service = createServiceRoleSupabase();
+  if (!service) return { ok: false, error: 'Service role is not configured.' };
+  const { error } = await service.auth.admin.deleteUser(parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
   await invalidateAdminUsersCache(parsed.data.userId);

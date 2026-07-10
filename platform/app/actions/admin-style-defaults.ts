@@ -13,7 +13,7 @@ import {
   invalidateAdminStyleDefaultsCache,
   requirePermission,
 } from '@/lib/admin.server';
-import type { Json } from '@/lib/database.types';
+import type { Database, Json } from '@/lib/database.types';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   INITIAL_STYLE_DEFAULT_JSON,
@@ -25,8 +25,34 @@ import type { AdminStyleDefaultOption } from '@/lib/admin.types';
 type CreateResult =
   | { ok: true; id: string; styleDefault: AdminStyleDefaultOption }
   | { ok: false; error: string };
-type UpdateResult = { ok: true; updatedAt: string } | { ok: false; error: string };
-type Result = { ok: true } | { ok: false; error: string };
+type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
+type StyleDefaultMutationRow = Pick<
+  StyleDefaultRow,
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'kind'
+  | 'sort_order'
+  | 'is_archived'
+  | 'defaults_json'
+  | 'updated_at'
+>;
+type SavedStyleDefault = {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: (typeof FIREWORK_STYLE_DEFAULT_KINDS)[number];
+  sortOrder: number;
+  isArchived: boolean;
+  defaultsJson: Json;
+  updatedAt: string;
+};
+type UpdateResult =
+  | { ok: true; saved: SavedStyleDefault; updatedAt: string }
+  | { ok: false; error: string };
+
+const STYLE_DEFAULT_MUTATION_SELECT =
+  'id, name, description, kind, sort_order, is_archived, defaults_json, updated_at';
 
 const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
 
@@ -46,6 +72,7 @@ const UpdateStyleDefaultSchema = CreateStyleDefaultSchema.extend({
 
 const ArchiveStyleDefaultSchema = z.object({
   id: z.string().uuid(),
+  expectedUpdatedAt: z.string().trim().min(1),
 });
 
 function firstError(error: z.ZodError): string {
@@ -71,6 +98,20 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 60);
+}
+
+function mapSavedStyleDefault(row: StyleDefaultMutationRow): SavedStyleDefault {
+  const kind = FIREWORK_STYLE_DEFAULT_KINDS.find((candidate) => candidate === row.kind) ?? 'star';
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    kind,
+    sortOrder: row.sort_order,
+    isArchived: row.is_archived,
+    defaultsJson: row.defaults_json ?? {},
+    updatedAt: row.updated_at,
+  };
 }
 
 async function refresh(defaultId?: string) {
@@ -173,7 +214,7 @@ export async function updateStyleDefault(
     })
     .eq('id', parsed.data.id)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select('updated_at')
+    .select(STYLE_DEFAULT_MUTATION_SELECT)
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
@@ -184,13 +225,14 @@ export async function updateStyleDefault(
     };
   }
 
+  const saved = mapSavedStyleDefault(data as StyleDefaultMutationRow);
   await refresh(parsed.data.id);
-  return { ok: true, updatedAt: data.updated_at };
+  return { ok: true, saved, updatedAt: saved.updatedAt };
 }
 
 export async function archiveStyleDefault(
   input: z.infer<typeof ArchiveStyleDefaultSchema>,
-): Promise<Result> {
+): Promise<UpdateResult> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
     return { ok: false, error: 'Not permitted.' };
   }
@@ -199,12 +241,22 @@ export async function archiveStyleDefault(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('firework_style_defaults')
     .update({ is_archived: true })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .eq('updated_at', parsed.data.expectedUpdatedAt)
+    .select(STYLE_DEFAULT_MUTATION_SELECT)
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!data) {
+    return {
+      ok: false,
+      error: 'This style default changed in another session. Refresh before archiving.',
+    };
+  }
+  const saved = mapSavedStyleDefault(data as StyleDefaultMutationRow);
   await refresh(parsed.data.id);
-  return { ok: true };
+  return { ok: true, saved, updatedAt: saved.updatedAt };
 }

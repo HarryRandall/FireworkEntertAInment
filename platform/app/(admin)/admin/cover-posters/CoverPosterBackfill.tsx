@@ -93,7 +93,11 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
             <Card key={preset.id} radius="md" className="overflow-hidden">
               <div className="bg-surface-container relative aspect-[4/5] w-full">
                 {preset.cover ? (
-                  <CoverPoster imagePath={state.coverImagePath} eager />
+                  <CoverPoster
+                    imagePath={state.coverImagePath}
+                    fallbackCover={preset.cover}
+                    eager
+                  />
                 ) : (
                   <div className="text-on-surface-variant flex h-full items-center justify-center text-xs">
                     No cover

@@ -34,6 +34,7 @@ import {
   Dices,
   Hourglass,
   MicOff,
+  RotateCcw,
   Sparkles,
   Timer,
   Waves,
@@ -41,6 +42,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { CueModelSelect } from '@/app/components/app/CueModelSelect';
+import { Skeleton } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { toast } from '@/app/components/ui/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
@@ -61,7 +63,7 @@ import {
 } from '@/lib/generation-progress-storage';
 import { slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
-import { createShowAction } from './actions';
+import { createShowAction, getShowGenerationPresentationAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
 import { LaunchOverlay } from './_components/LaunchOverlay';
 import { ChoiceCard, PositionDots } from './_components/cards';
@@ -76,7 +78,12 @@ import {
   STEPS,
   WIDTH_PRESETS,
 } from './constants';
-import type { AudioUploadState, FieldError as FieldErrorKey, UploadedAudio } from './types';
+import type {
+  AudioUploadState,
+  FieldError as FieldErrorKey,
+  ShowGenerationPresentation,
+  UploadedAudio,
+} from './types';
 import {
   deriveTitleFromDescription,
   formatDuration,
@@ -93,7 +100,54 @@ type LengthChoice = 'match' | (typeof SHOW_LENGTH_PRESETS)[number]['minutes'];
 
 /** Diagram icon for each preset, in SHOW_LENGTH_PRESETS order. */
 const LENGTH_PRESET_ICONS = [Zap, Timer, Hourglass] as const;
-const DEFAULT_GENERATE_CREDIT_COST = 3;
+
+type MusicAnalysisResponse = { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+
+function parseMusicAnalysisResponse(value: unknown, responseOk: boolean): MusicAnalysisResponse {
+  if (
+    responseOk &&
+    typeof value === 'object' &&
+    value !== null &&
+    'ok' in value &&
+    value.ok === true &&
+    'musicAnalysisId' in value &&
+    typeof value.musicAnalysisId === 'string'
+  ) {
+    return { ok: true, musicAnalysisId: value.musicAnalysisId };
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof value.error === 'string' &&
+    value.error.trim()
+  ) {
+    return { ok: false, error: value.error };
+  }
+  return { ok: false, error: 'Could not start music analysis. Please try again.' };
+}
+
+async function cleanupUnusedMusicAnalysis(uploaded: UploadedAudio): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch('/api/music-analysis', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          musicAnalysisId: uploaded.musicAnalysisId,
+          audioPath: uploaded.audioPath,
+        }),
+      });
+      if (response.ok) return;
+      lastError = new Error(`Unused audio cleanup returned HTTP ${response.status}.`);
+      if (response.status < 500) break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Unused audio cleanup failed.');
+}
 
 export default function NewShowPage() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -103,7 +157,13 @@ export default function NewShowPage() {
   // === Step 0: describe ====================================================
   const [description, setDescription] = useState('');
   const [styleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
-  const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
+  const [selectedCueModel, setSelectedCueModel] = useState<string | null>(null);
+  const [generationPresentation, setGenerationPresentation] =
+    useState<ShowGenerationPresentation | null>(null);
+  const [generationPresentationError, setGenerationPresentationError] = useState<string | null>(
+    null,
+  );
+  const [generationPresentationRequest, setGenerationPresentationRequest] = useState(0);
   const promptPrefilledRef = useRef(false);
   const modelPrefilledRef = useRef(false);
 
@@ -154,11 +214,21 @@ export default function NewShowPage() {
       ? Math.min(Math.round(measuredFeet), 2000)
       : widthFeet;
   const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
+  const effectiveCueModel =
+    selectedCueModel ?? generationPresentation?.defaultCueModel ?? FALLBACK_CUE_MODEL;
   const selectedCueModelOption = CUE_MODEL_OPTIONS.find(
-    (option) => option.value === selectedCueModel,
+    (option) => option.value === effectiveCueModel,
   );
-  const selectedCueModelLabel = selectedCueModelOption?.label ?? 'selected model';
-  const selectedCueModelCost = selectedCueModelOption?.creditCost ?? DEFAULT_GENERATE_CREDIT_COST;
+  const selectedCueModelLabel =
+    selectedCueModelOption?.label ?? effectiveCueModel.split('/').at(-1) ?? 'configured model';
+  const selectedCueModelCost =
+    generationPresentation?.modelCreditCosts[effectiveCueModel] ??
+    selectedCueModelOption?.creditCost ??
+    1;
+  const displayedGenerationCost =
+    generationPresentation?.generationMode === 'fast'
+      ? generationPresentation.fastCreditCost
+      : selectedCueModelCost;
 
   // "Match the track" sends the audio's exact duration in seconds so the show
   // runs for the whole song; presets send the round-minute form the action's
@@ -175,6 +245,33 @@ export default function NewShowPage() {
   const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let active = true;
+    setGenerationPresentation(null);
+    setGenerationPresentationError(null);
+    void getShowGenerationPresentationAction()
+      .then((result) => {
+        if (!active) return;
+        if (result.ok) {
+          setGenerationPresentation(result.presentation);
+          return;
+        }
+        setGenerationPresentationError(result.error);
+      })
+      .catch(() => {
+        if (active) {
+          setGenerationPresentationError('Could not load generation options. Please try again.');
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [generationPresentationRequest]);
+
+  const retryGenerationPresentation = () => {
+    setGenerationPresentationRequest((request) => request + 1);
+  };
 
   useEffect(() => {
     let shouldCleanUrl = false;
@@ -261,8 +358,15 @@ export default function NewShowPage() {
     });
   };
 
+  const discardUploadedAudio = (audio: UploadedAudio) => {
+    void cleanupUnusedMusicAnalysis(audio).catch((error) => {
+      console.error('[shows/new] unused audio cleanup failed:', error);
+    });
+  };
+
   const onFilePicked = (file: File | null) => {
     if (!file) {
+      if (uploadedAudio) discardUploadedAudio(uploadedAudio);
       uploadTokenRef.current += 1;
       setAudioFile(null);
       setUploadedAudio(null);
@@ -280,6 +384,7 @@ export default function NewShowPage() {
       toast.error('Unsupported file', { description: 'Please pick an audio file.' });
       return;
     }
+    if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     // Nothing else to type: the title comes from the track name (editable
     // later on the show page).
     if (!titleRef.current.trim()) {
@@ -307,6 +412,7 @@ export default function NewShowPage() {
   };
 
   const clearAudio = () => {
+    if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     uploadTokenRef.current += 1;
     setAudioFile(null);
     setUploadedAudio(null);
@@ -364,7 +470,12 @@ export default function NewShowPage() {
       throw new Error(uploadError.message || 'Upload failed.');
     }
 
-    let analysisResult: { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+    if (uploadTokenRef.current !== token) {
+      await supabase.storage.from(AUDIO_BUCKET).remove([audioPath]);
+      throw new Error('Audio selection changed before the upload completed.');
+    }
+
+    let analysisResult: MusicAnalysisResponse;
     try {
       const response = await fetch('/api/music-analysis', {
         method: 'POST',
@@ -376,10 +487,8 @@ export default function NewShowPage() {
           sizeBytes: file.size,
         }),
       });
-      const json = (await response.json()) as
-        | { ok: true; musicAnalysisId: string }
-        | { ok: false; error: string };
-      analysisResult = json;
+      const json: unknown = await response.json();
+      analysisResult = parseMusicAnalysisResponse(json, response.ok);
     } catch (error) {
       analysisResult = {
         ok: false,
@@ -404,6 +513,14 @@ export default function NewShowPage() {
       sizeBytes: file.size,
       contentType,
     };
+    if (uploadTokenRef.current !== token) {
+      try {
+        await cleanupUnusedMusicAnalysis(uploaded);
+      } catch (error) {
+        console.error('[shows/new] stale audio cleanup failed:', error);
+      }
+      throw new Error('Audio selection changed before analysis was attached.');
+    }
     if (uploadTokenRef.current === token) {
       setUploadedAudio(uploaded);
       setAudioUploadState('ready');
@@ -469,6 +586,14 @@ export default function NewShowPage() {
    * the show via the server action. */
   const triggerGenerate = () => {
     setFieldError(null);
+    if (!generationPresentation) {
+      toast.error('Generation options are not ready', {
+        description:
+          generationPresentationError ?? 'Wait a moment, then try generating the show again.',
+      });
+      if (generationPresentationError) retryGenerationPresentation();
+      return;
+    }
     // No manual title entry anywhere: track name first, then the brief.
     const finalTitle =
       title.trim() ||
@@ -530,7 +655,10 @@ export default function NewShowPage() {
       data.set('title', finalTitle);
       data.set('description', description);
       data.set('showStyle', styleKey);
-      data.set('selectedCueModel', selectedCueModel);
+      data.set('expectedGenerationMode', generationPresentation.generationMode);
+      if (generationPresentation.generationMode === 'llm' && selectedCueModel) {
+        data.set('selectedCueModel', selectedCueModel);
+      }
       data.set('siteWidthFeet', String(effectiveWidthFeet));
       data.set('desiredSlug', desiredSlug);
       data.set('coverShader', JSON.stringify(generationCover));
@@ -542,9 +670,17 @@ export default function NewShowPage() {
 
       const result = await createShowAction(data);
       if (!result.ok) {
+        if (finalUploadedAudio) {
+          try {
+            await cleanupUnusedMusicAnalysis(finalUploadedAudio);
+          } catch (error) {
+            console.error('[shows/new] failed generation audio cleanup failed:', error);
+          }
+        }
         setIsLaunching(false);
         setLaunch(null);
         clearPersistedGenerationStart(desiredSlug);
+        retryGenerationPresentation();
         router.replace('/shows/new');
         toast.error(result.error);
         return;
@@ -637,11 +773,40 @@ export default function NewShowPage() {
                     />
                     <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
                       <div className="flex items-center justify-between gap-3">
-                        <CueModelSelect
-                          value={selectedCueModel}
-                          onChange={setSelectedCueModel}
-                          className="min-w-0 flex-1 sm:max-w-[164px]"
-                        />
+                        {generationPresentation ? (
+                          generationPresentation.generationMode === 'llm' ? (
+                            <CueModelSelect
+                              value={effectiveCueModel}
+                              onChange={setSelectedCueModel}
+                              creditCosts={generationPresentation.modelCreditCosts}
+                              className="min-w-0 flex-1 sm:max-w-[164px]"
+                            />
+                          ) : (
+                            <span
+                              className="border-border bg-background/80 text-foreground inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full border px-2 text-[13px] shadow-sm backdrop-blur-xl"
+                              aria-label={`Fast planner, ${generationPresentation.fastCreditCost} AI credit${generationPresentation.fastCreditCost === 1 ? '' : 's'}`}
+                            >
+                              <Zap size={14} aria-hidden="true" />
+                              <span className="truncate font-medium">Fast planner</span>
+                              <span className="bg-muted text-muted-foreground inline-flex h-[1.125rem] min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] leading-none font-medium tabular-nums">
+                                {generationPresentation.fastCreditCost}
+                              </span>
+                            </span>
+                          )
+                        ) : generationPresentationError ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={retryGenerationPresentation}
+                            className="h-7 rounded-full px-2 text-xs"
+                          >
+                            <RotateCcw size={13} aria-hidden="true" />
+                            Retry options
+                          </Button>
+                        ) : (
+                          <Skeleton className="h-7 w-40 rounded-full" />
+                        )}
                         <div className="flex shrink-0 items-center gap-2.5">
                           <Button
                             type="button"
@@ -869,19 +1034,44 @@ export default function NewShowPage() {
                     {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
                   </div>
                   <div className="flex flex-col items-center pt-2">
-                    <Button
-                      type="button"
-                      onClick={triggerGenerate}
-                      disabled={mounted && isLaunching}
-                      size="lg"
-                      className="rounded-full px-8"
-                    >
-                      <Sparkles size={16} strokeWidth={2} />
-                      Generate show
-                    </Button>
+                    {generationPresentationError && !generationPresentation ? (
+                      <Button
+                        type="button"
+                        onClick={retryGenerationPresentation}
+                        size="lg"
+                        variant="secondary"
+                        className="rounded-full px-8"
+                      >
+                        <RotateCcw size={16} aria-hidden="true" />
+                        Retry generation options
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={triggerGenerate}
+                        disabled={mounted && (isLaunching || !generationPresentation)}
+                        size="lg"
+                        className="rounded-full px-8"
+                      >
+                        <Sparkles size={16} strokeWidth={2} />
+                        Generate show
+                      </Button>
+                    )}
                     <p className="mt-3 text-center text-xs text-[color:var(--color-content-subtle)]">
-                      This will use {selectedCueModelCost} AI credit
-                      {selectedCueModelCost === 1 ? '' : 's'} with {selectedCueModelLabel}.
+                      {generationPresentation ? (
+                        <>
+                          This will use {displayedGenerationCost} AI credit
+                          {displayedGenerationCost === 1 ? '' : 's'} with{' '}
+                          {generationPresentation.generationMode === 'fast'
+                            ? "ShowCrafter's fast planner"
+                            : selectedCueModelLabel}
+                          .
+                        </>
+                      ) : generationPresentationError ? (
+                        'Generation options could not be loaded. Retry before generating.'
+                      ) : (
+                        'Checking the current generation cost...'
+                      )}
                     </p>
                   </div>
                 </div>

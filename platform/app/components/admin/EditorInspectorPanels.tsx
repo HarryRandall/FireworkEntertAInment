@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Maximize2, RotateCcw, X } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
-import { EmptyState } from '@/app/components/ui/Feedback';
+import { EmptyState, InlineAlert } from '@/app/components/ui/Feedback';
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
@@ -118,10 +118,14 @@ function versionDetail(version: AdminEditorVersion): string {
 
 export function EditorHistoryPanel({
   versions,
+  pendingVersionIds,
+  warning,
   restoringVersionId,
   onRestore,
 }: {
   versions: AdminEditorVersion[];
+  pendingVersionIds?: ReadonlySet<string>;
+  warning?: string | null;
   restoringVersionId: string | null;
   onRestore: (version: AdminEditorVersion) => void;
 }) {
@@ -135,6 +139,11 @@ export function EditorHistoryPanel({
 
   return (
     <div className="space-y-5">
+      {warning ? (
+        <InlineAlert tone="warning" title="Version history needs attention">
+          {warning}
+        </InlineAlert>
+      ) : null}
       {versions.length === 0 ? (
         <EmptyState title="No saved versions yet" className="p-6">
           Saves and restores will appear here after the first saved change.
@@ -144,6 +153,7 @@ export function EditorHistoryPanel({
         {versions.map((version, index) => {
           const initials = authorInitials(version.createdByLabel);
           const showTimelineMarker = versions.length > 1;
+          const isPending = pendingVersionIds?.has(version.id) ?? false;
           return (
             <li
               key={version.id}
@@ -187,7 +197,7 @@ export function EditorHistoryPanel({
                 </div>
 
                 <p className="mt-1 text-sm leading-6 text-[color:var(--color-content-subtle)]">
-                  {versionDetail(version)}
+                  {isPending ? 'Recording version history...' : versionDetail(version)}
                 </p>
 
                 <div className="mt-2 flex items-center gap-1.5">
@@ -196,10 +206,11 @@ export function EditorHistoryPanel({
                     size="sm"
                     className="text-hl-contrast h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold shadow-none hover:bg-[color:var(--hl)]/85"
                     loading={restoringVersionId === version.id}
+                    disabled={isPending}
                     onClick={() => onRestore(version)}
                   >
                     <RotateCcw size={13} />
-                    Revert to here
+                    {isPending ? 'Recording...' : 'Revert to here'}
                   </Button>
                 </div>
               </div>

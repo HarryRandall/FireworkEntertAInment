@@ -133,9 +133,9 @@ test('admin actions save copied default settings without live assignments', () =
   assert.match(fireworkActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
   assert.match(effectEditor, /function copySelectedStyleDefaultsIntoModel/);
-  assert.match(effectEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
+  assert.match(effectEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
   assert.match(fireworkEditor, /function copySelectedStyleDefaultsIntoOverrides/);
-  assert.match(fireworkEditor, /setStyleDefaultIds\(clearedStyleDefaultIds\)/);
+  assert.match(fireworkEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
 });
 
 test('style default admin UI exposes every kind without the black accent badge', () => {

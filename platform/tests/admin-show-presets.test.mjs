@@ -25,8 +25,13 @@ test('admin show preset routes and navigation are wired without old header bands
   }
 
   const shell = read('app/components/admin/AdminShell.tsx');
+  const actions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
   assert.match(shell, /href: '\/admin\/show-presets'/);
   assert.match(shell, /label: 'Explore shows'/);
+  assert.match(shell, /href: '\/admin\/cover-posters'/);
+  assert.match(shell, /label: 'Cover posters'/);
+  assert.match(actions, /href="\/admin\/cover-posters"/);
+  assert.match(actions, /Cover posters/);
 });
 
 test('show preset publication migration and generated types protect drafts', () => {
@@ -58,18 +63,29 @@ test('show preset publication migration and generated types protect drafts', () 
 
 test('public reads only use published presets while admin helpers include drafts', () => {
   const templates = read('lib/admin/templates.server.ts');
+  const timing = read('lib/show-preset-timing.server.ts');
   const actions = read('app/actions/admin-show-presets.ts');
   const index = read('lib/admin/index.ts');
   const homePage = read('app/(app)/home/page.tsx');
-  const libraryPage = read('app/(app)/library/page.tsx');
-  const libraryDetailPage = read('app/(app)/library/[id]/page.tsx');
+  const libraryPage = read('app/(browse)/library/page.tsx');
+  const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
 
   assert.match(templates, /getShowTemplatesCacheKey\(\)/);
   assert.match(templates, /\.eq\('is_published', true\)/);
   assert.match(templates, /listAdminShowPresets/);
   assert.match(templates, /getAdminShowPresetById/);
   assert.match(templates, /listAdminShowPresetImportShows/);
+  assert.match(templates, /catalogueResolutionKeys/);
+  assert.doesNotMatch(templates, /async function mapAdminSummary/);
   assert.match(templates, /requirePermission\('admin\.manage_catalogue'\)/);
+  assert.match(templates, /SHOW_TEMPLATES_FALLBACK_SELECTS/);
+  assert.doesNotMatch(templates, /SHOW_TEMPLATES_LEGACY_SELECT/);
+  assert.ok(
+    (templates.match(/\.eq\('is_published', true\)/g) ?? []).length >= 4,
+    'every public list and detail fallback remains publication-scoped',
+  );
+  assert.match(timing, /const endSeconds = cue\.timeSeconds \+ durationSeconds/);
+  assert.match(timing, /ends at.*show duration/);
 
   for (const action of [
     'createShowPreset',
@@ -86,6 +102,10 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(index, /listAdminShowPresets/);
   assert.match(index, /listAdminShowPresetImportShows/);
   assert.match(actions, /validatePublishablePreset/);
+  assert.match(
+    actions,
+    /currentPreset\.is_published[\s\S]*validatePresetTimeline\([\s\S]*parsed\.data\.durationSeconds/,
+  );
   assert.match(actions, /is_published: false/);
   assert.match(actions, /published_at: null/);
   assert.match(actions, /createServiceRoleSupabase/);
@@ -97,7 +117,7 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(actions, /catalogue_items\(part_number, name\)/);
   assert.match(actions, /catalogueItemId: cue\.catalogue_item_id/);
   assert.match(actions, /catalogueItemSlug: item\.part_number/);
-  assert.doesNotMatch(actions, /source_show_id/);
+  assert.match(actions, /source_show_id: show\.id/);
 
   assert.match(homePage, /listFireworkProducts/);
   assert.match(libraryPage, /listFireworkProducts/);
@@ -108,13 +128,16 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   const mappers = read('lib/admin/mappers.ts');
   const replayCues = read('app/components/app/template-replay-cues.ts');
   const cloneAction = read('app/actions/show-templates.ts');
-  const seedTemplates = read('lib/library-seed-templates.ts');
+  const presetActions = read('app/actions/admin-show-presets.ts');
+  const seedMigration = read('supabase/migrations/20260629171000_seed_library_explore_shelves.sql');
 
   assert.match(mappers, /catalogueItemId/);
   assert.match(mappers, /catalogueItemSlug/);
   assert.match(mappers, /fireworkSlug/);
   assert.match(mappers, /normaliseCueEmphasis/);
-  assert.match(mappers, /normaliseLaunchPositionIndex/);
+  assert.match(mappers, /unresolvedTemplateCue/);
+  assert.match(mappers, /return value\.map\(\(item, index\)/);
+  assert.match(mappers, /launchPositionIndex < 0[\s\S]*launchPositionIndex > 2/);
 
   assert.match(replayCues, /FIREWORK_SLUG_ALIASES/);
   assert.match(replayCues, /spec\.variant\?\.slug === slug/);
@@ -122,18 +145,27 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   assert.match(replayCues, /cue\.catalogueItemId/);
   assert.match(replayCues, /cue\.catalogueItemSlug/);
 
-  assert.match(cloneAction, /catalogueItemIds/);
+  assert.match(cloneAction, /validatePresetTimeline/);
+  assert.match(cloneAction, /resolvedCues/);
   assert.match(cloneAction, /cue\.catalogueItemId/);
   assert.match(cloneAction, /cue\.catalogueItemSlug/);
   assert.match(cloneAction, /cue\.fireworkSlug/);
-  assert.match(cloneAction, /multishots/);
+  assert.match(cloneAction, /FIREWORK_SLUG_ALIASES/);
   assert.match(cloneAction, /launch_position_index: cue\.launchPositionIndex/);
   assert.match(cloneAction, /emphasis: cue\.emphasis/);
+  assert.match(cloneAction, /cloneToken/);
+  assert.match(cloneAction, /existingShow/);
+  assert.match(cloneAction, /cloneCueCount/);
+  assert.match(cloneAction, /removeIncompleteClone/);
+  assert.match(cloneAction, /INCOMPLETE_CLONE_GRACE_MS/);
+  assert.match(cloneAction, /redirectToCloneError/);
 
-  assert.match(seedTemplates, /catalogueItemId: null/);
-  assert.match(seedTemplates, /catalogueItemSlug: null/);
-  assert.match(seedTemplates, /launchPositionIndex/);
-  assert.match(seedTemplates, /emphasis/);
+  assert.match(presetActions, /Timeline cue \$\{cue\.position\} has no usable catalogue item/);
+  assert.doesNotMatch(presetActions, /\.not\('time_seconds', 'is', null\)/);
+  assert.match(presetActions, /if \(!convertedCues\.ok\)/);
+
+  assert.match(seedMigration, /'fireworkSlug'/);
+  assert.match(seedMigration, /'timeSeconds'/);
 });
 
 test('admin show preset editor exposes replay, timeline, catalogue picker and publish controls', () => {
@@ -163,6 +195,8 @@ test('admin show preset editor exposes replay, timeline, catalogue picker and pu
   assert.match(editor, /Save timeline/);
   assert.match(editor, /Save details/);
   assert.match(editor, /Publishing checklist/);
+  assert.match(editor, /unresolvedCueCount/);
+  assert.match(editor, /saving is blocked until each one is[\s\S]*replaced or removed/);
   assert.match(editor, /replaceShowPresetCues/);
   assert.match(editor, /updateShowPresetDetails/);
   assert.match(editor, /setShowPresetPublished/);

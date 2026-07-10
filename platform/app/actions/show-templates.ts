@@ -8,11 +8,78 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@/utils/supabase/server';
+import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
-import { syncShowDerivedFieldsForUser } from '@/lib/shows.server';
+import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
+import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import { getShowTemplateBySlug } from '@/lib/admin.server';
 import { randomCover } from '@/lib/cover';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const INCOMPLETE_CLONE_GRACE_MS = 30_000;
+const FIREWORK_SLUG_ALIASES: Record<string, string> = {
+  chrysanthemum: 'gold-chrysanthemum',
+  comet: 'comet-gold',
+  finale_barrage: 'white-strobe',
+  peony: 'gold-chrysanthemum',
+  willow: 'willow-gold',
+};
+
+function redirectToCloneError(slug: string): never {
+  redirect(`/library/${encodeURIComponent(slug)}?cloneError=1`);
+}
+
+function productLookup(products: FireworkSpecification[]): Map<string, FireworkSpecification> {
+  const lookup = new Map<string, FireworkSpecification>();
+  for (const product of products) {
+    const keys = [
+      product.id,
+      product.slug,
+      product.variant?.id,
+      product.variant?.slug,
+      product.baseEffect?.id,
+      product.baseEffect?.slug,
+    ].filter((key): key is string => Boolean(key));
+    for (const key of keys) if (!lookup.has(key)) lookup.set(key, product);
+  }
+  return lookup;
+}
+
+async function cloneCueCount(
+  supabase: ReturnType<typeof createClient>,
+  showId: string,
+): Promise<number | null> {
+  const { count, error } = await supabase
+    .from('show_timeline_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('show_id', showId);
+  if (error) {
+    console.error('[cloneShowTemplateAction] cue count failed:', error);
+    return null;
+  }
+  return count ?? 0;
+}
+
+async function removeIncompleteClone(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  showId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('shows')
+    .delete()
+    .eq('id', showId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) {
+    console.error('[cloneShowTemplateAction] incomplete clone cleanup failed:', error);
+    return false;
+  }
+  return true;
+}
 
 /** Clone a curated show template into a new user-owned show, copying preview cues, and redirect to it. */
 export async function cloneShowTemplateAction(formData: FormData): Promise<void> {
@@ -32,8 +99,66 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   const template = await getShowTemplateBySlug(slug);
   if (!template) return;
 
+  const products = await listFireworkProducts({ lightweight: true });
+  const productsByKey = productLookup(products);
+  const resolvedCues = template.previewCues.flatMap((cue, index) => {
+    const alias = cue.fireworkSlug ? FIREWORK_SLUG_ALIASES[cue.fireworkSlug] : undefined;
+    const keys = [cue.catalogueItemId, cue.catalogueItemSlug, cue.fireworkSlug, alias].filter(
+      (key): key is string => Boolean(key),
+    );
+    const product = keys.map((key) => productsByKey.get(key)).find(Boolean);
+    if (!product) return [];
+    return [
+      {
+        position: index + 1,
+        timeSeconds: cue.timeSeconds,
+        description: cue.description || product.name,
+        catalogueItemId: product.id,
+        launchPositionIndex: cue.launchPositionIndex,
+        emphasis: cue.emphasis,
+      },
+    ];
+  });
+  if (resolvedCues.length !== template.previewCues.length) {
+    console.error('[cloneShowTemplateAction] template contains unresolved catalogue cues:', slug);
+    redirectToCloneError(slug);
+  }
+  const timingValidation = validatePresetTimeline(
+    resolvedCues,
+    new Map(products.map((product) => [product.id, product.durationSeconds])),
+    template.durationSeconds,
+  );
+  if (!timingValidation.ok) {
+    console.error('[cloneShowTemplateAction] template timeline is unsafe:', timingValidation.error);
+    redirectToCloneError(slug);
+  }
+
   const baseSlug = slugifyTitle(template.title);
-  const showSlug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+  const requestedCloneToken = String(formData.get('cloneToken') ?? '');
+  const cloneToken = UUID_PATTERN.test(requestedCloneToken) ? requestedCloneToken : randomUUID();
+  const showSlug = `${baseSlug}-${cloneToken.replaceAll('-', '').slice(0, 10)}`;
+  const { data: existingShow } = await supabase
+    .from('shows')
+    .select('id, slug, created_at')
+    .eq('user_id', user.id)
+    .eq('slug', showSlug)
+    .maybeSingle();
+  if (existingShow) {
+    const existingCueCount = await cloneCueCount(supabase, existingShow.id);
+    if (existingCueCount === resolvedCues.length) {
+      redirect(`/shows/${existingShow.slug}/preview`);
+    }
+    const cloneAgeMs = Date.now() - Date.parse(existingShow.created_at);
+    if (
+      existingCueCount == null ||
+      !Number.isFinite(cloneAgeMs) ||
+      cloneAgeMs < INCOMPLETE_CLONE_GRACE_MS ||
+      !(await removeIncompleteClone(supabase, user.id, existingShow.id))
+    ) {
+      redirectToCloneError(slug);
+    }
+  }
+
   const { data: show, error: showError } = await supabase
     .from('shows')
     .insert({
@@ -55,82 +180,42 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     .single();
 
   if (showError || !show) {
-    console.error('[cloneShowTemplateAction] show insert failed:', showError);
-    return;
-  }
-
-  if (template.previewCues.length > 0) {
-    type FireworkSlugJoin = { slug: string } | { slug: string }[] | null;
-    type CatalogueItemRow = {
-      id: string;
-      part_number: string;
-      fireworks: FireworkSlugJoin;
-      multishots: {
-        multishot_fireworks: Array<{
-          sequence_index: number;
-          fireworks: FireworkSlugJoin;
-        }>;
-      } | null;
-    };
-    const { data: catalogueItems } = await supabase.from('catalogue_items').select(
-      `id, part_number,
-         fireworks (slug),
-         multishots (
-           multishot_fireworks (
-             sequence_index,
-             fireworks (slug)
-           )
-         )`,
-    );
-    const firstSlug = (value: FireworkSlugJoin): string | null => {
-      if (!value) return null;
-      const row = Array.isArray(value) ? (value[0] ?? null) : value;
-      return row?.slug ?? null;
-    };
-    const catalogueItemIds = new Set<string>();
-    const catalogueItemBySlug = new Map<string, string>();
-    for (const item of (catalogueItems ?? []) as CatalogueItemRow[]) {
-      catalogueItemIds.add(item.id);
-      if (!catalogueItemBySlug.has(item.part_number)) {
-        catalogueItemBySlug.set(item.part_number, item.id);
-      }
-      const directSlug = firstSlug(item.fireworks);
-      if (directSlug && !catalogueItemBySlug.has(directSlug)) {
-        catalogueItemBySlug.set(directSlug, item.id);
-      }
-      const firstMultishot = [...(item.multishots?.multishot_fireworks ?? [])].sort(
-        (a, b) => a.sequence_index - b.sequence_index,
-      )[0];
-      const multishotSlug = firstSlug(firstMultishot?.fireworks ?? null);
-      if (multishotSlug && !catalogueItemBySlug.has(multishotSlug)) {
-        catalogueItemBySlug.set(multishotSlug, item.id);
+    if (showError?.code === '23505') {
+      const { data: concurrentShow } = await supabase
+        .from('shows')
+        .select('id, slug')
+        .eq('user_id', user.id)
+        .eq('slug', showSlug)
+        .maybeSingle();
+      if (
+        concurrentShow &&
+        (await cloneCueCount(supabase, concurrentShow.id)) === resolvedCues.length
+      ) {
+        redirect(`/shows/${concurrentShow.slug}/preview`);
       }
     }
-    const cueRows = template.previewCues
-      .map((cue, index) => {
-        const catalogueItemId =
-          (cue.catalogueItemId && catalogueItemIds.has(cue.catalogueItemId)
-            ? cue.catalogueItemId
-            : null) ??
-          (cue.catalogueItemSlug ? catalogueItemBySlug.get(cue.catalogueItemSlug) : undefined) ??
-          (cue.fireworkSlug ? catalogueItemBySlug.get(cue.fireworkSlug) : undefined);
-        if (!catalogueItemId) return null;
-        return {
-          show_id: show.id,
-          position: index + 1,
-          time_seconds: cue.timeSeconds,
-          description: cue.description,
-          catalogue_item_id: catalogueItemId,
-          launch_position_index: cue.launchPositionIndex,
-          emphasis: cue.emphasis,
-        };
-      })
-      .filter((row): row is NonNullable<typeof row> => row != null);
-    if (cueRows.length > 0) {
-      const { error: cuesError } = await supabase.from('show_timeline_items').insert(cueRows);
-      if (cuesError) {
-        console.error('[cloneShowTemplateAction] cue insert failed:', cuesError);
-      }
+    console.error('[cloneShowTemplateAction] show insert failed:', showError);
+    redirectToCloneError(slug);
+  }
+
+  if (resolvedCues.length > 0) {
+    const { error: cuesError } = await supabase.from('show_timeline_items').insert(
+      resolvedCues.map((cue) => ({
+        show_id: show.id,
+        position: cue.position,
+        time_seconds: cue.timeSeconds,
+        description: cue.description,
+        catalogue_item_id: cue.catalogueItemId,
+        launch_position_index: cue.launchPositionIndex,
+        emphasis: cue.emphasis,
+      })),
+    );
+    if (cuesError) {
+      const removed = await removeIncompleteClone(supabase, user.id, show.id);
+      console.error('[cloneShowTemplateAction] cue insert failed:', cuesError, {
+        cleanupSucceeded: removed,
+      });
+      redirectToCloneError(slug);
     }
   }
 

@@ -71,7 +71,6 @@ export function SliderField({
       </div>
       <div className="flex items-center gap-3">
         <SliderPrimitive.Root
-          id={sliderId}
           data-slot="slider"
           value={[sliderValue]}
           min={min}
@@ -92,6 +91,7 @@ export function SliderField({
             />
           </SliderPrimitive.Track>
           <SliderPrimitive.Thumb
+            id={sliderId}
             data-slot="slider-thumb"
             aria-labelledby={labelId}
             className="border-primary bg-background ring-ring/50 block size-3.5 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"

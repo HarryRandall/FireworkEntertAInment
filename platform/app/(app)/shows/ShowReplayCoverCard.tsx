@@ -70,6 +70,7 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
         ) : null}
         <CoverPoster
           imagePath={show.coverImagePath}
+          fallbackCover={show.coverShader}
           className={cn(
             'transition-[opacity,transform] duration-200 ease-out group-hover:scale-105',
             isPreviewRevealed ? 'opacity-0' : 'opacity-100',

@@ -23,12 +23,12 @@ const FEATURED_AUTOPLAY_MS = 5_000;
 
 const COLLECTIONS = [
   {
-    title: 'Finale moments',
+    title: 'Staff picks',
     href: '/library?sort=featured',
     seed: 'finale-moments',
   },
   {
-    title: 'Crowd favourites',
+    title: 'Most liked',
     href: '/library?sort=popular',
     seed: 'crowd-favourites',
   },
@@ -38,12 +38,12 @@ const COLLECTIONS = [
     seed: 'quick-bursts',
   },
   {
-    title: 'Fresh drops',
+    title: 'Recently updated',
     href: '/library?sort=recent',
     seed: 'fresh-drops',
   },
   {
-    title: 'Big budget skies',
+    title: 'Highest budgets',
     href: '/library?sort=budget',
     seed: 'big-budget-skies',
   },
@@ -135,6 +135,7 @@ function FeaturedShowCard({
     >
       <CoverPoster
         imagePath={template.coverImagePath}
+        fallbackCover={template.coverShader}
         eager
         className={`z-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 ${
           isPreviewVisible ? 'opacity-0' : 'opacity-100'

@@ -82,7 +82,7 @@ export const STEPS = [
     key: 'sound',
     label: 'Sound',
     title: 'Add your soundtrack',
-    description: 'Analysis starts in the background while you finish the next steps.',
+    description: 'Add a track for a music-led show, or continue without one.',
   },
   {
     key: 'length',

@@ -5,6 +5,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import {
@@ -14,22 +15,57 @@ import {
   invalidateAdminStyleDefaultsCache,
   requirePermission,
 } from '@/lib/admin.server';
-import type { CurrentProfile } from '@/lib/admin.types';
+import type { AdminEditorVersion, CurrentProfile } from '@/lib/admin.types';
 import {
   makeFireworkEditorSnapshot,
   parseFireworkEditorSnapshot,
 } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
-import type { Json } from '@/lib/database.types';
+import type { Database, Json } from '@/lib/database.types';
 import {
   emptyStyleDefaultIdMap,
   FIREWORK_STYLE_DEFAULT_KINDS,
 } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
-type Result = { ok: true; updatedAt: string } | { ok: false; error: string };
+type FireworkRow = Database['public']['Tables']['fireworks']['Row'];
+type FireworkMutationRow = Pick<
+  FireworkRow,
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'firework_effect_id'
+  | 'caliber'
+  | 'duration_seconds'
+  | 'height_meters'
+  | 'primary_color'
+  | 'secondary_color'
+  | 'color_palette'
+  | 'render_overrides_json'
+  | 'updated_at'
+>;
+type SavedFirework = {
+  id: string;
+  name: string;
+  description: string | null;
+  fireworkEffectId: string;
+  caliber: string | null;
+  durationSeconds: number | null;
+  heightMeters: number | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  colorPalette: string[];
+  renderOverridesJson: Json;
+  updatedAt: string;
+};
+type Result =
+  | { ok: true; saved: SavedFirework; updatedAt: string; historyVersion: AdminEditorVersion }
+  | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };
 type ActionSupabase = ReturnType<typeof createClient>;
+
+const FIREWORK_MUTATION_SELECT =
+  'id, name, description, firework_effect_id, caliber, duration_seconds, height_meters, primary_color, secondary_color, color_palette, render_overrides_json, updated_at';
 
 const HexColor = z
   .string()
@@ -70,6 +106,10 @@ const RestoreFireworkVersionSchema = z.object({
   versionId: z.string().uuid(),
   expectedUpdatedAt: z.string().trim().min(1),
 });
+const ConfirmFireworkVersionsSchema = z.object({
+  fireworkId: z.string().uuid(),
+  versionIds: z.array(z.string().uuid()).min(1).max(10),
+});
 
 function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input.';
@@ -98,6 +138,25 @@ function slugify(value: string): string {
 
 function adminLabel(profile: CurrentProfile): string {
   return profile.fullName || profile.email || 'Platform admin';
+}
+
+function mapSavedFirework(row: FireworkMutationRow): SavedFirework {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    fireworkEffectId: row.firework_effect_id,
+    caliber: row.caliber,
+    durationSeconds: row.duration_seconds,
+    heightMeters: row.height_meters,
+    primaryColor: row.primary_color,
+    secondaryColor: row.secondary_color,
+    colorPalette: Array.isArray(row.color_palette)
+      ? row.color_palette.filter((colour): colour is string => typeof colour === 'string')
+      : [],
+    renderOverridesJson: row.render_overrides_json ?? {},
+    updatedAt: row.updated_at,
+  };
 }
 
 function readSnapshotRecord(value: Json | null): Record<string, unknown> {
@@ -177,31 +236,50 @@ async function loadFireworkEditorSnapshot(
 
 async function recordFireworkVersion(
   supabase: ActionSupabase,
-  input: {
-    fireworkId: string;
-    action: 'update' | 'restore';
-    summary: string;
-    snapshotJson: Json;
-    previousSnapshotJson: Json | null;
-    changesJson: Json;
-    profile: CurrentProfile;
-  },
+  version: AdminEditorVersion,
 ): Promise<void> {
   const { error } = await supabase.from('firework_editor_versions').insert({
+    id: version.id,
     target_kind: 'firework',
-    firework_id: input.fireworkId,
-    action: input.action,
-    summary: input.summary,
-    snapshot_json: input.snapshotJson,
-    previous_snapshot_json: input.previousSnapshotJson,
-    changes_json: input.changesJson,
-    created_by: input.profile.id,
-    created_by_label: adminLabel(input.profile),
+    firework_id: version.fireworkId,
+    action: version.action,
+    summary: version.summary,
+    snapshot_json: version.snapshotJson,
+    previous_snapshot_json: version.previousSnapshotJson,
+    changes_json: version.changesJson,
+    created_by: version.createdBy,
+    created_by_label: version.createdByLabel,
+    created_at: version.createdAt,
   });
   if (error) {
     if (isMissingEditorVersionSchemaError(error)) return;
     console.error('[recordFireworkVersion] history insert failed:', error);
   }
+}
+
+function makeFireworkVersion(input: {
+  fireworkId: string;
+  action: 'update' | 'restore';
+  summary: string;
+  snapshotJson: Json;
+  previousSnapshotJson: Json | null;
+  changesJson: Json;
+  profile: CurrentProfile;
+}): AdminEditorVersion {
+  return {
+    id: crypto.randomUUID(),
+    targetKind: 'firework',
+    fireworkId: input.fireworkId,
+    fireworkEffectId: null,
+    action: input.action,
+    summary: input.summary,
+    snapshotJson: input.snapshotJson,
+    previousSnapshotJson: input.previousSnapshotJson,
+    changesJson: input.changesJson,
+    createdBy: input.profile.id,
+    createdByLabel: adminLabel(input.profile),
+    createdAt: new Date().toISOString(),
+  };
 }
 
 async function refresh(fireworkId?: string) {
@@ -283,7 +361,7 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     .update(patch)
     .eq('id', parsed.data.id)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select('updated_at')
+    .select(FIREWORK_MUTATION_SELECT)
     .maybeSingle();
 
   const { data, error } = result;
@@ -294,21 +372,22 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
       error: 'This firework changed in another session. Refresh before saving again.',
     };
   }
+  const saved = mapSavedFirework(data as FireworkMutationRow);
   const snapshotJson = makeFireworkEditorSnapshot({
     kind: 'firework',
-    id: parsed.data.id,
-    name: parsed.data.name,
-    description: parsed.data.description || null,
-    fireworkEffectId: parsed.data.fireworkEffectId,
-    caliber: parsed.data.caliber || null,
-    durationSeconds: parsed.data.durationSeconds ?? null,
-    heightMeters: parsed.data.heightMeters ?? null,
-    primaryColor: parsed.data.primaryColor || null,
-    secondaryColor: parsed.data.secondaryColor || null,
-    colorPalette: parsed.data.colorPalette ?? [],
+    id: saved.id,
+    name: saved.name,
+    description: saved.description,
+    fireworkEffectId: saved.fireworkEffectId,
+    caliber: saved.caliber,
+    durationSeconds: saved.durationSeconds,
+    heightMeters: saved.heightMeters,
+    primaryColor: saved.primaryColor,
+    secondaryColor: saved.secondaryColor,
+    colorPalette: saved.colorPalette,
     styleDefaultIds: emptyStyleDefaultIdMap(),
-    renderOverridesJson: overrides.value,
-    updatedAt: data.updated_at,
+    renderOverridesJson: saved.renderOverridesJson,
+    updatedAt: saved.updatedAt,
   });
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
     'name',
@@ -322,8 +401,8 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     'colorPalette',
     'renderOverridesJson',
   ]);
-  await recordFireworkVersion(supabase, {
-    fireworkId: parsed.data.id,
+  const historyVersion = makeFireworkVersion({
+    fireworkId: saved.id,
     action: 'update',
     summary: summariseFireworkChanges(changesJson),
     snapshotJson,
@@ -331,9 +410,14 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     changesJson,
     profile,
   });
+  after(() =>
+    recordFireworkVersion(supabase, historyVersion).catch((historyError: unknown) => {
+      console.error('[updateFirework] version history failed:', historyError);
+    }),
+  );
 
   await refresh(parsed.data.id);
-  return { ok: true, updatedAt: data.updated_at };
+  return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion };
 }
 
 export async function restoreFireworkEditorVersion(
@@ -388,7 +472,7 @@ export async function restoreFireworkEditorVersion(
     .update(patch)
     .eq('id', parsed.data.fireworkId)
     .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select('updated_at')
+    .select(FIREWORK_MUTATION_SELECT)
     .maybeSingle();
 
   const { data, error } = result;
@@ -400,10 +484,22 @@ export async function restoreFireworkEditorVersion(
     };
   }
 
+  const saved = mapSavedFirework(data as FireworkMutationRow);
   const snapshotJson = makeFireworkEditorSnapshot({
-    ...snapshot,
+    kind: 'firework',
+    id: saved.id,
+    name: saved.name,
+    description: saved.description,
+    fireworkEffectId: saved.fireworkEffectId,
+    caliber: saved.caliber,
+    durationSeconds: saved.durationSeconds,
+    heightMeters: saved.heightMeters,
+    primaryColor: saved.primaryColor,
+    secondaryColor: saved.secondaryColor,
+    colorPalette: saved.colorPalette,
     styleDefaultIds: emptyStyleDefaultIdMap(),
-    updatedAt: data.updated_at,
+    renderOverridesJson: saved.renderOverridesJson,
+    updatedAt: saved.updatedAt,
   });
   const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
     'name',
@@ -417,8 +513,8 @@ export async function restoreFireworkEditorVersion(
     'colorPalette',
     'renderOverridesJson',
   ]);
-  await recordFireworkVersion(supabase, {
-    fireworkId: parsed.data.fireworkId,
+  const historyVersion = makeFireworkVersion({
+    fireworkId: saved.id,
     action: 'restore',
     summary: `Restored version from ${version.created_by_label}`,
     snapshotJson,
@@ -426,7 +522,37 @@ export async function restoreFireworkEditorVersion(
     changesJson,
     profile,
   });
+  after(() =>
+    recordFireworkVersion(supabase, historyVersion).catch((historyError: unknown) => {
+      console.error('[restoreFireworkEditorVersion] version history failed:', historyError);
+    }),
+  );
 
   await refresh(parsed.data.fireworkId);
-  return { ok: true, updatedAt: data.updated_at };
+  return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion };
+}
+
+export async function confirmFireworkEditorVersions(
+  input: z.infer<typeof ConfirmFireworkVersionsSchema>,
+): Promise<{ ok: true; confirmedIds: string[] } | { ok: false; error: string }> {
+  if (!(await requirePermission('admin.manage_catalogue'))) {
+    return { ok: false, error: 'Not permitted.' };
+  }
+  const parsed = ConfirmFireworkVersionsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+
+  const supabase = createClient(await cookies());
+  const { data, error } = await supabase
+    .from('firework_editor_versions')
+    .select('id')
+    .eq('target_kind', 'firework')
+    .eq('firework_id', parsed.data.fireworkId)
+    .in('id', parsed.data.versionIds);
+  if (error) {
+    if (isMissingEditorVersionSchemaError(error)) {
+      return { ok: false, error: 'Version history is not available yet.' };
+    }
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, confirmedIds: (data ?? []).map((row) => row.id) };
 }

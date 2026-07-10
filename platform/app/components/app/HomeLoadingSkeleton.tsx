@@ -27,8 +27,7 @@ function PromptHeroSkeleton() {
         </div>
         <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
           <div className="flex items-center justify-between gap-3">
-            <Skeleton className="h-9 min-w-0 flex-1 rounded-full sm:max-w-[164px]" />
-            <div className="flex shrink-0 items-center gap-2.5">
+            <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <Skeleton className="h-9 w-9 rounded-full" />
               <Skeleton className="h-9 w-[104px] rounded-full" />
             </div>

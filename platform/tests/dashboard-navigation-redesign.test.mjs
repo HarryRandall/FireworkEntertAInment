@@ -14,16 +14,17 @@ function read(path) {
 test('dashboard uses the redesigned summary layout instead of paginated show cards', () => {
   const dashboard = read('app/(app)/home/page.tsx');
 
-  assert.match(dashboard, /getDashboardSummary/);
+  assert.match(dashboard, /listShowTemplates/);
   assert.match(dashboard, /HomeFeaturedShows/);
   assert.match(dashboard, /HomeCollectionsSection/);
   assert.match(dashboard, /ExplorePreviewProvider/);
   assert.match(dashboard, /ExploreRow title="Explore"/);
-  assert.match(dashboard, /getDashboardSummaryWithTemplates/);
+  assert.doesNotMatch(dashboard, /getDashboardSummaryWithTemplates/);
   assert.match(dashboard, /featuredShowTemplates = exploreTemplates\.slice\(0, 2\)/);
   // Featured pair is excluded from the explore row to dedupe prefetches.
   assert.match(dashboard, /explorePreviewTemplates = exploreTemplates\.slice\(2, 12\)/);
-  assert.match(dashboard, /EmptyShowsPanel/);
+  assert.doesNotMatch(dashboard, /EmptyShowsPanel/);
+  assert.doesNotMatch(dashboard, /hasShows/);
   assert.doesNotMatch(dashboard, /Recent shows/);
   assert.doesNotMatch(dashboard, /ShowSummaryRow/);
   assert.doesNotMatch(dashboard, /TemplateSummaryCardView/);
@@ -49,8 +50,8 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(homeDiscovery, /Curated collections/);
   assert.match(homeDiscovery, /FeaturedShowCard/);
   assert.match(homeDiscovery, /COLLECTIONS/);
-  assert.match(homeDiscovery, /Finale moments/);
-  assert.match(homeDiscovery, /Crowd favourites/);
+  assert.match(homeDiscovery, /Staff picks/);
+  assert.match(homeDiscovery, /Most liked/);
   assert.match(homeDiscovery, /Watch replay/);
   assert.match(homeDiscovery, /CoverPoster/);
   assert.match(homeDiscovery, /FEATURED_AUTOPLAY_MS = 5_000/);
@@ -89,9 +90,24 @@ test('app shell exposes only shipped V1 navigation routes', () => {
   assert.doesNotMatch(shell, /Shopping lists/);
 });
 
+test('admin navigation only exposes destinations granted to the current profile', () => {
+  const shell = read('app/components/admin/AdminShell.tsx');
+
+  for (const permission of [
+    'admin.manage_users',
+    'admin.manage_suppliers',
+    'admin.manage_catalogue',
+    'admin.manage_imports',
+    'admin.manage_prompts',
+  ]) {
+    assert.match(shell, new RegExp(`permission: '${permission}'`));
+  }
+  assert.match(shell, /profile\.permissions\.includes\(link\.permission\)/);
+});
+
 test('supporting app routes and workspace summary API are shipped', () => {
   assert.equal(existsSync(join(root, 'app/(app)/shows/page.tsx')), true);
-  assert.equal(existsSync(join(root, 'app/(app)/catalogue/page.tsx')), true);
+  assert.equal(existsSync(join(root, 'app/(browse)/catalogue/page.tsx')), true);
   assert.equal(existsSync(join(root, 'app/(app)/exports/page.tsx')), true);
   assert.equal(existsSync(join(root, 'app/api/me/summary/route.ts')), true);
 
@@ -179,7 +195,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showChrome, /segment === 'generating'/);
   assert.doesNotMatch(showLayout, /AppPageHeader/);
 
-  const cataloguePage = read('app/(app)/catalogue/page.tsx');
+  const cataloguePage = read('app/(browse)/catalogue/page.tsx');
   assert.match(cataloguePage, /listFireworkProducts/);
   assert.doesNotMatch(cataloguePage, /Browse firework products available for show planning/);
   assert.doesNotMatch(cataloguePage, /Firework products/);
@@ -191,25 +207,23 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(exportsPage, /Export history will appear here once files are generated/);
   assert.doesNotMatch(exportsPage, /<h1[^>]*>\s*Exports\s*<\/h1>/);
 
-  const libraryPage = read('app/(app)/library/page.tsx');
+  const libraryPage = read('app/(browse)/library/page.tsx');
   assert.doesNotMatch(libraryPage, /AppPageHeader/);
   assert.doesNotMatch(libraryPage, /<h1[^>]*>\s*Explore\s*<\/h1>/);
   assert.doesNotMatch(libraryPage, /Hover any cover to preview the show/);
   assert.match(libraryPage, /<ExploreShelves sort=\{sort\} \/>/);
-  assert.match(libraryPage, /SHOWS_PER_SHELF = 30/);
-  assert.match(libraryPage, /const usedTemplateIds = new Set<string>\(\)/);
+  assert.match(libraryPage, /SHOWS_PER_SHELF = 12/);
+  assert.match(libraryPage, /templatesForShelf/);
   assert.match(libraryPage, /templateMatchesShelf/);
-  assert.match(libraryPage, /moodTags\.includes\(shelfLabel\)/);
-  assert.match(libraryPage, /preferredTemplates/);
-  assert.match(libraryPage, /fallbackTemplates/);
-  assert.match(libraryPage, /takeUniqueShelfTemplates/);
-  assert.match(libraryPage, /usedTemplateIds\.has\(template\.id\)/);
+  assert.match(libraryPage, /if \(sort === 'featured'\) return template\.isFeatured/);
+  assert.match(libraryPage, /templates: templatesForShelf\(templates, sort\)/);
+  assert.doesNotMatch(libraryPage, /fallbackTemplates|usedTemplateIds|hashString/);
   assert.match(libraryPage, /activeShelf\.templates\.length\.toLocaleString\(\)/);
   assert.match(libraryPage, /activeShelf\.templates\.map/);
   assert.match(libraryPage, /href="\/library"/);
   assert.match(libraryPage, /Back to shelves/);
   assert.doesNotMatch(libraryPage, /Browse ready-made pyromusical templates/);
-  const libraryDetailPage = read('app/(app)/library/[id]/page.tsx');
+  const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
   assert.doesNotMatch(libraryDetailPage, /Back to show library/);
 
   const templatePreview = read('app/components/app/TemplateReplayPreview.tsx');
@@ -279,29 +293,24 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(summaryRoute, /status: 401/);
 });
 
-test('explore seed data supports thirty unique templates per library shelf', () => {
+test('explore seed data supports database-managed factual library shelves', () => {
   const seedPath = 'supabase/migrations/20260629171000_seed_library_explore_shelves.sql';
   assert.equal(existsSync(join(root, seedPath)), true);
 
   const seed = read(seedPath);
-  const seedTemplates = read('lib/library-seed-templates.ts');
   const templateReads = read('lib/admin/templates.server.ts');
 
   for (const section of ['featured', 'popular', 'hot', 'recent', 'shortest']) {
     assert.match(seed, new RegExp(`'${section}'`));
-    assert.match(seedTemplates, new RegExp(`key: '${section}'`));
   }
   assert.match(seed, /CROSS JOIN generate_series\(1, 30\) AS item\(item_order\)/);
   assert.match(seed, /sort_base \+ item_order/);
   assert.match(seed, /jsonb_build_object\('kind', cover_kind, 'colors', to_jsonb\(colors\)\)/);
   assert.match(seed, /ON CONFLICT \(slug\) DO UPDATE SET/);
-  assert.match(seedTemplates, /SEEDED_LIBRARY_TEMPLATES/);
-  assert.match(seedTemplates, /Array\.from\(\{ length: 30 \}/);
-  assert.match(seedTemplates, /mergeSeededLibraryTemplates/);
-  assert.match(seedTemplates, /existingSlugs/);
-  assert.match(templateReads, /mergeSeededLibraryTemplates\(cached\)/);
-  assert.match(templateReads, /mergeSeededLibraryTemplates\(\[\]\)/);
-  assert.match(templateReads, /const mapped = mergeSeededLibraryTemplates\(/);
+  assert.equal(existsSync(join(root, 'lib/library-seed-templates.ts')), false);
+  assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
+  assert.match(templateReads, /if \(cached\) return cached/);
+  assert.match(templateReads, /throw new Error\('Explore shows could not be loaded\.'\)/);
   assert.match(templateReads, /map\(mapShowTemplate\)/);
 });
 
@@ -311,8 +320,8 @@ test('shader-heavy app routes use neutral loading skeletons', () => {
   assert.match(showsLoading, /aspect-\[4\/5\]/);
   assert.doesNotMatch(showsLoading, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
-  const libraryLoading = read('app/(app)/library/loading.tsx');
-  assert.doesNotMatch(libraryLoading, /Explore/);
+  const libraryLoading = read('app/(browse)/library/loading.tsx');
+  assert.match(libraryLoading, /<h1[^>]*>Explore shows<\/h1>/);
   assert.doesNotMatch(libraryLoading, /Hover any cover to preview the show/);
   assert.match(libraryLoading, /LibraryCardsSkeleton/);
   assert.doesNotMatch(libraryLoading, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);

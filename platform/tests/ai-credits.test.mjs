@@ -142,10 +142,18 @@ test('show and music generation reserve, settle, and refund credits', () => {
   assert.match(credits, /show_generation_opus/);
   assert.match(newShowAction, /reserveAiCredits/);
   assert.match(newShowAction, /selectedCueModel/);
-  assert.match(newShowAction, /creditActionForGenerationMode\(generationMode, selectedCueModel\)/);
+  assert.match(
+    newShowAction,
+    /creditActionForGenerationMode\(generationMode, selectedCueModel \?\? undefined\)/,
+  );
   assert.match(newShowAction, /showGenerationReservationKey\(show\.id\)/);
+  assert.match(newShowAction, /getShowGenerationPresentationAction/);
+  assert.match(newShowAction, /getAiCreditCost/);
+  assert.match(newShowAction, /generationMode === 'llm' \? requestedCueModel : null/);
   assert.match(newShowPage, /selectedCueModelCost/);
   assert.match(newShowPage, /selectedCueModelLabel/);
+  assert.match(newShowPage, /generationPresentation\.fastCreditCost/);
+  assert.match(newShowPage, /expectedGenerationMode/);
   assert.match(runner, /settleAiCreditReservation/);
   assert.match(runner, /refundAiCreditReservation/);
   assert.match(musicRoute, /musicAnalysisReservationKey/);

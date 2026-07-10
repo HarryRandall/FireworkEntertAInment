@@ -141,9 +141,11 @@ test('firework edits use conflict detection and immutable version history', () =
   assert.doesNotMatch(actions, /Current version before editor changes/);
   assert.doesNotMatch(actions, /filterValidStyleDefaultAssignments/);
   assert.match(updateBody, /\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/);
-  assert.match(updateBody, /select\('updated_at'\)/);
+  assert.match(updateBody, /select\(FIREWORK_MUTATION_SELECT\)/);
+  assert.match(updateBody, /mapSavedFirework\(data as FireworkMutationRow\)/);
   assert.doesNotMatch(updateBody, /star_style_default_id|trail_style_default_id/);
   assert.match(updateBody, /recordFireworkVersion/);
+  assert.match(updateBody, /historyVersion/);
   assert.match(updateBody, /action: 'update'/);
   assert.match(updateBody, /This firework changed in another session/);
   assert.match(restoreBody, /parseFireworkEditorSnapshot/);

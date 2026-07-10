@@ -8,7 +8,7 @@
  */
 'use client';
 
-import { Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
@@ -46,6 +46,8 @@ export function AudioUpload({
             ? 'border-[color:var(--color-status-danger)]/40 bg-[color-mix(in_srgb,var(--color-status-danger)_8%,transparent)]'
             : 'border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)]',
         )}
+        role={uploadState === 'error' ? 'alert' : 'status'}
+        aria-live="polite"
       >
         <span
           className={cn(
@@ -57,22 +59,33 @@ export function AudioUpload({
         >
           {uploadState === 'uploading' ? (
             <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+          ) : uploadState === 'error' ? (
+            <AlertTriangle size={18} strokeWidth={1.75} />
           ) : (
             <Music4 size={18} strokeWidth={1.75} />
           )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Check
-              size={14}
-              strokeWidth={2.5}
-              className={cn(
-                'shrink-0',
-                uploadState === 'error'
-                  ? 'text-[color:var(--color-status-danger)]'
-                  : 'text-[color:var(--color-status-success)]',
-              )}
-            />
+            {uploadState === 'uploading' ? (
+              <Loader2
+                size={14}
+                strokeWidth={2}
+                className="shrink-0 animate-spin text-[color:var(--color-content-muted)]"
+              />
+            ) : uploadState === 'error' ? (
+              <AlertTriangle
+                size={14}
+                strokeWidth={2.5}
+                className="shrink-0 text-[color:var(--color-status-danger)]"
+              />
+            ) : (
+              <Check
+                size={14}
+                strokeWidth={2.5}
+                className="shrink-0 text-[color:var(--color-status-success)]"
+              />
+            )}
             <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
               {file.name}
             </span>

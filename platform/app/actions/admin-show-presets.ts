@@ -11,7 +11,10 @@ import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { invalidateShowTemplatesCache, requirePermission } from '@/lib/admin.server';
 import { randomCover } from '@/lib/cover';
 import type { Json } from '@/lib/database.types';
+import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
+import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
+import { listFireworkProducts } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };
@@ -151,12 +154,13 @@ async function deriveCueTotals(
   const counts = new Map<string, number>();
   for (const id of catalogueItemIds) counts.set(id, (counts.get(id) ?? 0) + 1);
 
-  const { data: inventoryRows } = await supabase
+  const { data: inventoryRows, error } = await supabase
     .from('supplier_inventory_items')
     .select('catalogue_item_id, price_cents')
     .in('catalogue_item_id', Array.from(counts.keys()))
     .eq('available', true)
     .not('price_cents', 'is', null);
+  if (error) throw new Error(`Could not calculate preset totals: ${error.message}`);
 
   const cheapestPrice = new Map<string, number>();
   for (const row of inventoryRows ?? []) {
@@ -172,18 +176,22 @@ async function deriveCueTotals(
   return { totalCents, effectsCount: catalogueItemIds.length };
 }
 
-async function loadCatalogueSlugs(
-  supabase: ReturnType<typeof createClient>,
+async function loadCatalogueProducts(
   catalogueItemIds: string[],
-): Promise<Map<string, string> | null> {
+): Promise<Map<string, FireworkSpecification> | null> {
   if (catalogueItemIds.length === 0) return new Map();
-  const { data, error } = await supabase
-    .from('catalogue_items')
-    .select('id, part_number')
-    .in('id', Array.from(new Set(catalogueItemIds)));
-  if (error) return null;
-  const map = new Map((data ?? []).map((row) => [row.id, row.part_number]));
-  return map.size === new Set(catalogueItemIds).size ? map : null;
+  try {
+    const requestedIds = new Set(catalogueItemIds);
+    const products = await listFireworkProducts({ lightweight: true });
+    const map = new Map(
+      products
+        .filter((product) => requestedIds.has(product.id))
+        .map((product) => [product.id, product]),
+    );
+    return map.size === requestedIds.size ? map : null;
+  } catch {
+    return null;
+  }
 }
 
 async function validatePublishablePreset(
@@ -204,11 +212,14 @@ async function validatePublishablePreset(
   if (cues.length === 0) return { ok: false, error: 'Add at least one cue before publishing.' };
   const parsed = z.array(ShowPresetCueSchema).safeParse(cues);
   if (!parsed.success) return { ok: false, error: 'Fix unresolved cues before publishing.' };
-  const slugs = await loadCatalogueSlugs(
-    supabase,
-    parsed.data.map((cue) => cue.catalogueItemId),
+  const products = await loadCatalogueProducts(parsed.data.map((cue) => cue.catalogueItemId));
+  if (!products) return { ok: false, error: 'Fix unresolved cues before publishing.' };
+  const timelineValidation = validatePresetTimeline(
+    parsed.data,
+    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+    preset.duration_seconds,
   );
-  if (!slugs) return { ok: false, error: 'Fix unresolved cues before publishing.' };
+  if (!timelineValidation.ok) return timelineValidation;
   return { ok: true, slug: preset.slug };
 }
 
@@ -219,21 +230,35 @@ function firstJoinedCatalogueItem(
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-function previewCuesFromTimeline(cues: GeneratedShowCueRow[]): Json {
-  return cues.flatMap((cue) => {
+function previewCuesFromTimeline(
+  cues: GeneratedShowCueRow[],
+): { ok: true; cues: Json } | { ok: false; error: string } {
+  const previewCues: Json[] = [];
+  for (const cue of cues) {
     const item = firstJoinedCatalogueItem(cue.catalogue_items);
-    if (!cue.catalogue_item_id || cue.time_seconds == null || !item?.part_number) return [];
-    return [
-      {
-        catalogueItemId: cue.catalogue_item_id,
-        catalogueItemSlug: item.part_number,
-        timeSeconds: Number(cue.time_seconds),
-        description: cue.description || item.name,
-        launchPositionIndex: normaliseLaunchPositionIndex(cue.launch_position_index),
-        emphasis: cue.emphasis === 'accent' || cue.emphasis === 'peak' ? cue.emphasis : 'normal',
-      },
-    ];
-  }) as Json;
+    const timeSeconds = Number(cue.time_seconds);
+    if (
+      !cue.catalogue_item_id ||
+      cue.time_seconds == null ||
+      !Number.isFinite(timeSeconds) ||
+      timeSeconds < 0 ||
+      !item?.part_number
+    ) {
+      return {
+        ok: false,
+        error: `Timeline cue ${cue.position} has no usable catalogue item or start time.`,
+      };
+    }
+    previewCues.push({
+      catalogueItemId: cue.catalogue_item_id,
+      catalogueItemSlug: item.part_number,
+      timeSeconds,
+      description: cue.description || item.name,
+      launchPositionIndex: normaliseLaunchPositionIndex(cue.launch_position_index),
+      emphasis: cue.emphasis === 'accent' || cue.emphasis === 'peak' ? cue.emphasis : 'normal',
+    });
+  }
+  return { ok: true, cues: previewCues };
 }
 
 function presetInsertFromGeneratedShow(
@@ -261,6 +286,7 @@ function presetInsertFromGeneratedShow(
     is_published: false,
     published_at: null,
     sort_order: sortOrder,
+    source_show_id: show.id,
   };
 }
 
@@ -309,7 +335,6 @@ async function loadTimelineCuesForShows(
       .from('show_timeline_items')
       .select(GENERATED_SHOW_CUE_SELECT)
       .in('show_id', batchIds)
-      .not('time_seconds', 'is', null)
       .order('show_id', { ascending: true })
       .order('position', { ascending: true });
     if (error) throw new Error(supabaseErrorMessage(error));
@@ -407,6 +432,26 @@ export async function updateShowPresetDetails(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
+  const { data: currentPreset, error: currentPresetError } = await supabase
+    .from('show_presets')
+    .select('preview_cues, is_published')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
+  if (currentPresetError) return { ok: false, error: currentPresetError.message };
+  if (!currentPreset) return { ok: false, error: 'Preset not found.' };
+  if (currentPreset.is_published) {
+    const cues = z.array(ShowPresetCueSchema).safeParse(currentPreset.preview_cues);
+    if (!cues.success) return { ok: false, error: 'Fix unresolved cues before saving details.' };
+    const products = await loadCatalogueProducts(cues.data.map((cue) => cue.catalogueItemId));
+    if (!products) return { ok: false, error: 'Fix unresolved cues before saving details.' };
+    const timelineValidation = validatePresetTimeline(
+      cues.data,
+      new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+      parsed.data.durationSeconds,
+    );
+    if (!timelineValidation.ok) return timelineValidation;
+  }
+
   const slug = parsed.data.slug ? slugifyTitle(parsed.data.slug) : slugifyTitle(parsed.data.title);
   const { error } = await supabase
     .from('show_presets')
@@ -439,21 +484,46 @@ export async function replaceShowPresetCues(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
+  const { data: presetState, error: presetStateError } = await supabase
+    .from('show_presets')
+    .select('duration_seconds, is_published')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
+  if (presetStateError) return { ok: false, error: presetStateError.message };
+  if (!presetState) return { ok: false, error: 'Preset not found.' };
+  if (presetState.is_published && parsed.data.cues.length === 0) {
+    return { ok: false, error: 'Unpublish this preset before clearing its timeline.' };
+  }
+
   const catalogueItemIds = parsed.data.cues.map((cue) => cue.catalogueItemId);
-  const slugs = await loadCatalogueSlugs(supabase, catalogueItemIds);
-  if (!slugs) return { ok: false, error: 'One or more catalogue items could not be found.' };
+  const products = await loadCatalogueProducts(catalogueItemIds);
+  if (!products) return { ok: false, error: 'One or more catalogue items could not be found.' };
+  const timelineValidation = validatePresetTimeline(
+    parsed.data.cues,
+    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+    presetState.duration_seconds,
+  );
+  if (!timelineValidation.ok) return timelineValidation;
 
   const cuePayload = parsed.data.cues
     .sort((a, b) => a.timeSeconds - b.timeSeconds)
     .map((cue) => ({
       catalogueItemId: cue.catalogueItemId,
-      catalogueItemSlug: slugs.get(cue.catalogueItemId) ?? cue.catalogueItemSlug,
+      catalogueItemSlug: products.get(cue.catalogueItemId)?.slug ?? cue.catalogueItemSlug,
       timeSeconds: Number(cue.timeSeconds.toFixed(2)),
       description: cue.description,
       launchPositionIndex: cue.launchPositionIndex,
       emphasis: cue.emphasis,
     }));
-  const totals = await deriveCueTotals(supabase, catalogueItemIds);
+  let totals: { totalCents: number; effectsCount: number };
+  try {
+    totals = await deriveCueTotals(supabase, catalogueItemIds);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Could not calculate totals.',
+    };
+  }
 
   const { data: preset, error } = await supabase
     .from('show_presets')
@@ -488,13 +558,19 @@ export async function setShowPresetPublished(
     slug = publishable.slug;
   }
 
+  const publicationPatch = parsed.data.isPublished
+    ? {
+        is_published: true,
+        published_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    : {
+        is_published: false,
+        updated_at: new Date().toISOString(),
+      };
   const { data, error } = await supabase
     .from('show_presets')
-    .update({
-      is_published: parsed.data.isPublished,
-      published_at: parsed.data.isPublished ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(publicationPatch)
     .eq('id', parsed.data.id)
     .select('slug')
     .maybeSingle();
@@ -530,19 +606,35 @@ export async function importGeneratedShowAsPreset(
     .from('show_timeline_items')
     .select(GENERATED_SHOW_CUE_SELECT)
     .eq('show_id', show.id)
-    .not('time_seconds', 'is', null)
     .order('position', { ascending: true });
   if (cuesError) return { ok: false, error: cuesError.message };
 
-  const previewCues = previewCuesFromTimeline((cues ?? []) as GeneratedShowCueRow[]);
+  const convertedCues = previewCuesFromTimeline((cues ?? []) as GeneratedShowCueRow[]);
+  if (!convertedCues.ok) return { ok: false, error: convertedCues.error };
 
   const supabase = createClient(await cookies());
+  const { data: existingPreset, error: existingPresetError } = await supabase
+    .from('show_presets')
+    .select('id')
+    .eq('source_show_id', show.id)
+    .maybeSingle();
+  if (existingPresetError) return { ok: false, error: existingPresetError.message };
+  if (existingPreset) return { ok: true, id: existingPreset.id };
+
   const { data: preset, error } = await supabase
     .from('show_presets')
-    .insert(presetInsertFromGeneratedShow(show as GeneratedShowRow, previewCues))
+    .insert(presetInsertFromGeneratedShow(show as GeneratedShowRow, convertedCues.cues))
     .select('id')
     .maybeSingle();
 
+  if (error?.code === '23505') {
+    const { data: concurrentPreset } = await supabase
+      .from('show_presets')
+      .select('id')
+      .eq('source_show_id', show.id)
+      .maybeSingle();
+    if (concurrentPreset) return { ok: true, id: concurrentPreset.id };
+  }
   if (error) return { ok: false, error: error.message };
   if (!preset) return { ok: false, error: 'Could not import show.' };
   await refreshPresetPaths();
@@ -578,18 +670,25 @@ export async function importAllGeneratedShowsAsPresets(): Promise<BulkImportResu
   );
   if (!existingSlugs) return { ok: false, error: 'Could not check existing imported shows.' };
 
-  const rows = shows.flatMap((show, index) => {
+  const { data: importedPresets, error: importedPresetsError } = await supabase
+    .from('show_presets')
+    .select('source_show_id')
+    .not('source_show_id', 'is', null);
+  if (importedPresetsError) return { ok: false, error: importedPresetsError.message };
+  const importedShowIds = new Set(
+    (importedPresets ?? []).map((preset) => preset.source_show_id).filter(Boolean),
+  );
+
+  const rows: ReturnType<typeof presetInsertFromGeneratedShow>[] = [];
+  for (const [index, show] of shows.entries()) {
     const slug = importedGeneratedShowSlug(show);
-    if (existingSlugs.has(slug)) return [];
-    return [
-      presetInsertFromGeneratedShow(
-        show,
-        previewCuesFromTimeline(cuesByShowId.get(show.id) ?? []),
-        index,
-        slug,
-      ),
-    ];
-  });
+    if (importedShowIds.has(show.id) || existingSlugs.has(slug)) continue;
+    const convertedCues = previewCuesFromTimeline(cuesByShowId.get(show.id) ?? []);
+    if (!convertedCues.ok) {
+      return { ok: false, error: `Could not import ${show.title}: ${convertedCues.error}` };
+    }
+    rows.push(presetInsertFromGeneratedShow(show, convertedCues.cues, index, slug));
+  }
 
   let importedCount = 0;
   let firstId: string | null = null;

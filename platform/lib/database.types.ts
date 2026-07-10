@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ai_credit_accounts: {
@@ -1005,8 +1030,8 @@ export type Database = {
           is_featured: boolean
           is_published: boolean
           mood_tags: string[]
-          published_at: string | null
           preview_cues: Json
+          published_at: string | null
           slug: string
           sort_order: number
           source_show_id: string | null
@@ -1028,8 +1053,8 @@ export type Database = {
           is_featured?: boolean
           is_published?: boolean
           mood_tags?: string[]
-          published_at?: string | null
           preview_cues?: Json
+          published_at?: string | null
           slug: string
           sort_order?: number
           source_show_id?: string | null
@@ -1051,8 +1076,8 @@ export type Database = {
           is_featured?: boolean
           is_published?: boolean
           mood_tags?: string[]
-          published_at?: string | null
           preview_cues?: Json
+          published_at?: string | null
           slug?: string
           sort_order?: number
           source_show_id?: string | null
@@ -1512,24 +1537,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      discard_unused_song_analysis: {
-        Args: { p_analysis_id: string; p_audio_path: string }
-        Returns: Json
-      }
+      ai_credit_usage_payload: { Args: { p_user_id: string }; Returns: Json }
       current_user_access: { Args: never; Returns: Json }
-      current_user_is_active: { Args: never; Returns: boolean }
       current_user_has_permission: {
         Args: { permission_key: string }
         Returns: boolean
       }
-      ai_credit_usage_payload: {
-        Args: { p_user_id: string }
+      current_user_is_active: { Args: never; Returns: boolean }
+      discard_unused_song_analysis: {
+        Args: { p_analysis_id: string; p_audio_path: string }
         Returns: Json
       }
-      ensure_ai_credit_account: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      ensure_ai_credit_account: { Args: { p_user_id: string }; Returns: Json }
       grant_ai_credits: {
         Args: {
           p_amount: number
@@ -1713,6 +1732,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

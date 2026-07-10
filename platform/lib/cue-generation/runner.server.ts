@@ -30,7 +30,7 @@ import {
   settleAiCreditReservation,
   showGenerationReservationKey,
 } from '@/lib/ai-credits.server';
-import { normaliseCueModel } from '@/lib/cue-models';
+import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import {
   loadAnalysisState,
@@ -89,14 +89,16 @@ export async function generateCuesForShow(params: {
   showId: string;
   musicAnalysisId: string | null;
   selectedCueModel?: string | null;
+  generationMode?: GenerationMode | 'beat';
 }): Promise<GenerateCuesResult> {
   const { supabase, userId, showId, musicAnalysisId, selectedCueModel } = params;
   const creditReservationKey = showGenerationReservationKey(showId);
-  let model = normaliseCueModel(selectedCueModel, DEFAULT_CUE_MODEL);
+  let model = normalisePersistedCueModel(selectedCueModel, DEFAULT_CUE_MODEL);
   const generationSettings = await getShowCueGenerationSettings();
   // The global setting decides fast vs LLM for normal styles. The dedicated
   // beat-test style remains a deterministic override for QA.
-  let generationMode: GenerationMode | 'beat' = generationSettings.generationMode;
+  let generationMode: GenerationMode | 'beat' =
+    params.generationMode ?? generationSettings.generationMode;
   let showStyle: ShowStyleKey | null = null;
   /** Launch positions the site supports (capped by `shows.site_width_feet`). */
   let maxTubes: 1 | 2 | 3 = 3;
@@ -195,7 +197,10 @@ export async function generateCuesForShow(params: {
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
-    model = normaliseCueModel(brief.selected_cue_model ?? selectedCueModel, DEFAULT_CUE_MODEL);
+    model = normalisePersistedCueModel(
+      brief.selected_cue_model ?? selectedCueModel,
+      DEFAULT_CUE_MODEL,
+    );
     showStyle = isShowStyleKey(brief.show_style) ? brief.show_style : null;
     if (showStyle && SHOW_STYLES[showStyle].engine === 'beat') {
       generationMode = 'beat';

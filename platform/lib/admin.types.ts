@@ -381,6 +381,7 @@ export type ShowTemplate = {
 };
 
 export type AdminShowPresetSummary = ShowTemplate & {
+  sourceShowId: string | null;
   cueCount: number;
   resolvableCueCount: number;
 };
