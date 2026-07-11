@@ -54,8 +54,10 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.match(homeDiscovery, /Most liked/);
   assert.match(homeDiscovery, /Watch replay/);
   assert.match(homeDiscovery, /CoverPoster/);
-  assert.match(homeDiscovery, /FEATURED_AUTOPLAY_MS = 5_000/);
-  assert.match(homeDiscovery, /isPreviewVisible = isPreviewReady && isPreviewActive/);
+  assert.doesNotMatch(homeDiscovery, /FEATURED_AUTOPLAY_MS/);
+  assert.doesNotMatch(homeDiscovery, /isAutoplayActive/);
+  assert.match(homeDiscovery, /isPreviewVisible = isPreviewReady && isPreviewHovered/);
+  assert.match(homeDiscovery, /isCardPlaybackActive={isPreviewHovered}/);
   assert.match(homeDiscovery, /duration-700/);
   assert.doesNotMatch(homeDiscovery, /cardPlaybackRate=/);
   assert.match(homeDiscovery, /shaderCoverFromSeed/);

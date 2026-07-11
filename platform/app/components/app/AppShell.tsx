@@ -1043,7 +1043,7 @@ export function AppShell({
         />
       </Sidebar>
 
-      <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border-x md:peer-data-[variant=inset]:border-t md:peer-data-[variant=inset]:shadow-none">
+      <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border md:peer-data-[variant=inset]:shadow-none">
         <ShellTopBar pathname={effectivePath} />
         <main
           // Positioned + tagged so full-pane overlays (the post-generation

@@ -19,8 +19,6 @@ const TemplateReplayPreview = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const FEATURED_AUTOPLAY_MS = 5_000;
-
 const COLLECTIONS = [
   {
     title: 'Staff picks',
@@ -76,33 +74,16 @@ function FeaturedShowCard({
   specifications: FireworkSpecification[];
 }) {
   const [isPreviewHovered, setIsPreviewHovered] = useState(false);
-  const [isAutoplayActive, setIsAutoplayActive] = useState(false);
   const [hasPreviewMounted, setHasPreviewMounted] = useState(false);
   const [isPreviewReady, setIsPreviewReady] = useState(false);
-  const autoplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasReplay = template.previewCues.length > 0 && specifications.length > 0;
-  const isPreviewActive = isAutoplayActive || isPreviewHovered;
-  const isPreviewVisible = isPreviewReady && isPreviewActive;
+  const isPreviewVisible = isPreviewReady && isPreviewHovered;
   const showReplay = hasReplay && hasPreviewMounted;
 
-  const clearAutoplayTimer = useCallback(() => {
-    if (autoplayTimerRef.current !== null) {
-      clearTimeout(autoplayTimerRef.current);
-      autoplayTimerRef.current = null;
-    }
-  }, []);
-
   useEffect(() => {
-    clearAutoplayTimer();
     setIsPreviewReady(false);
     setHasPreviewMounted(false);
-    setIsAutoplayActive(false);
-    if (!hasReplay) return clearAutoplayTimer;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return clearAutoplayTimer;
-    setHasPreviewMounted(true);
-    setIsAutoplayActive(true);
-    return clearAutoplayTimer;
-  }, [clearAutoplayTimer, hasReplay, template.id]);
+  }, [template.id]);
 
   const startPreview = useCallback(() => {
     if (hasReplay) setHasPreviewMounted(true);
@@ -115,12 +96,7 @@ function FeaturedShowCard({
 
   const handlePreviewReady = useCallback(() => {
     setIsPreviewReady(true);
-    if (!isAutoplayActive || autoplayTimerRef.current !== null) return;
-    autoplayTimerRef.current = setTimeout(() => {
-      autoplayTimerRef.current = null;
-      setIsAutoplayActive(false);
-    }, FEATURED_AUTOPLAY_MS);
-  }, [isAutoplayActive]);
+  }, []);
 
   return (
     <Link
@@ -146,7 +122,7 @@ function FeaturedShowCard({
           template={template}
           specifications={specifications}
           isCardHovered={isPreviewHovered}
-          isCardPlaybackActive={isPreviewActive}
+          isCardPlaybackActive={isPreviewHovered}
           keepCardCanvasMounted={hasPreviewMounted}
           resetCardPlayheadOnIdle={false}
           showCardOverlays={false}
