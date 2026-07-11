@@ -243,6 +243,8 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(editor, /controlScope="starInner"/);
   assert.match(editor, /id: 'trail'/);
   assert.match(editor, /controlScope="trail"/);
+  assert.match(editor, /supportsGeometryTuningControls/);
+  assert.match(editor, /controlScope="geometry"/);
   assert.match(editor, /id: 'history'/);
   assert.match(editor, /id: 'json'/);
   assert.doesNotMatch(editor, /id: 'colour'/);
@@ -256,6 +258,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(shell, /role="tab"/);
   assert.match(shell, /ReplayTransportControls/);
   assert.match(shell, /if \(loading\) return null/);
+  assert.match(shell, /currentTabId !== activeTab/);
   assert.doesNotMatch(shell, /EditorPreviewTransportLoading|Loading preview controls/);
   assert.match(shell, /aria-selected=\{selected\}/);
   assert.match(shell, /const \[inspectorCollapsed, setInspectorCollapsed\] = useState\(true\)/);
@@ -368,6 +371,8 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /controlScope="starInner"/);
   assert.match(fireworkEditor, /id: 'trail'/);
   assert.match(fireworkEditor, /controlScope="trail"/);
+  assert.match(fireworkEditor, /supportsGeometryTuningControls/);
+  assert.match(fireworkEditor, /controlScope="geometry"/);
   assert.match(fireworkEditor, /id: 'launch-dot'/);
   assert.match(fireworkEditor, /controlScope="launchShell"/);
   assert.match(fireworkEditor, /id: 'launch-trail'/);

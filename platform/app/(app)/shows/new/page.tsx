@@ -61,7 +61,7 @@ import {
   persistGenerationStartedAt,
   resolvePersistedGenerationCover,
 } from '@/lib/generation-progress-storage';
-import { slugifyTitle } from '@/lib/show-domain';
+import { formatDuration, slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { createShowAction, getShowGenerationPresentationAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
@@ -86,7 +86,6 @@ import type {
 } from './types';
 import {
   deriveTitleFromDescription,
-  formatDuration,
   inferAudioContentType,
   sanitizeStorageName,
   suggestTitleFromFilename,

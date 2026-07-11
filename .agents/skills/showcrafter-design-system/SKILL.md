@@ -19,7 +19,9 @@ cheap neon landing page, or a decorative fireworks poster.
 
 - Global tokens live in `platform/app/globals.css`.
 - App UI primitives live in `platform/app/components/ui`.
-- Generated Radix/shadcn primitives live in `platform/components/ui`.
+- The low-level Radix/shadcn layer lives in `platform/components/ui`. Only files
+  explicitly marked as generated are non-editable; `sidebar.tsx` is adapted and
+  the shader helpers in that directory are custom.
 - Shared legacy class fragments live in `platform/app/components/ui/styles.ts`.
 - Theme state uses `next-themes` with the `data-theme` attribute and
   `defaultTheme="system"`.
@@ -36,24 +38,29 @@ The current product palette is neutral and shadcn-dashboard aligned:
   content, restrained system accent.
 - Dark theme: black-first surfaces, subtle neutral borders, muted raised fills,
   and sparse contrast.
-- Accent colour is neutral by default. Cyan, violet, magenta, yellow, and green
-  can appear as tiny semantic or shader highlights, not as the whole interface.
+- Marker green is the sparse brand primary for main actions, focus rings,
+  progress, and active technical markers. The `accent` token remains a neutral
+  hover or selected surface, not the brand colour.
+- Gold, violet, sky, rose, and other show-palette colours belong in covers, cue
+  visualisation, simulation, and small semantic highlights, not normal chrome.
 - A static rainbow wash is available for marketing atmosphere and small
   highlights. Do not turn normal app/admin surfaces into rainbow cards.
 - Avoid warm brown, parchment, burnt orange, ember-led visuals, and one-note
   neon gradients.
 
 Use semantic tokens such as `bg-background`, `bg-card`, `text-foreground`,
-`text-muted-foreground`, `border-border`, `ring-ring`, and the
-`--color-*` tokens from `globals.css`. Avoid hard-coded colours except inside
-WebGL, shader, or SVG simulation assets where CSS tokens cannot be consumed
-directly.
+`text-muted-foreground`, `border-border`, `bg-primary`, `text-primary-foreground`,
+`ring-ring`, and the `--color-*` tokens from `globals.css`. Use `--hl` and its
+ink/soft variants for the marker-green brand highlight. Avoid hard-coded colours
+except inside Three.js, shader, Canvas, or SVG simulation assets where CSS tokens
+cannot be consumed directly.
 
 ## Typography
 
 - Use the configured Geist font from `next/font`.
-- Use `font-mono` and `tabular-nums` for timings, product codes, prices,
-  quantities, confidence scores, IDs, and dense table metadata.
+- Use the configured Geist Mono through `font-mono`, plus `tabular-nums`, for
+  timings, product codes, prices, quantities, confidence scores, IDs, and dense
+  table metadata.
 - Avoid decorative fonts and thin low-contrast text.
 - Keep text sizes compact inside app panels, admin tables, sidebars, cards, and
   tool surfaces.
@@ -69,6 +76,8 @@ directly.
 - New repeated app-level patterns belong in `platform/app/components/ui`.
 - Buttons are `rounded-md`, have visible focus rings, and should use icon-only
   treatment for obvious compact actions.
+- Standard app controls are normally `h-10`; dense admin controls can use `h-8`
+  or `h-9`. Use `rounded-md` for controls and `rounded-xl` for normal cards.
 - Use lucide icons inside icon buttons when an icon exists.
 - Cards use token borders, neutral surfaces, and 8-16px radii. Do not nest
   cards inside cards unless the inner item is a repeated object.
@@ -182,6 +191,9 @@ missing-poster fallback. Never mount one live WebGL cover per card.
 - Do not rely on colour alone for status; pair status with text or iconography.
 - Every interactive control must be keyboard accessible.
 - All controls need visible focus states.
+- Never remove the browser focus indicator globally. A component may suppress
+  its native outline only when that same focusable element has a visible ring or
+  equivalent replacement.
 - Forms need labels or explicit `aria-label`s.
 - Slider thumbs and other interactive primitive parts need their own accessible
   names.
@@ -191,6 +203,8 @@ missing-poster fallback. Never mount one live WebGL cover per card.
 ## Review Checklist
 
 - Uses tokens rather than one-off colours.
+- Uses marker green only for primary actions, focus, progress, and technical
+  highlights; neutral `accent` remains a hover or selected surface.
 - Works in light, dark, and system theme modes.
 - Preserves stable route chrome during loading.
 - Keyboard focus is visible.

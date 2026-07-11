@@ -7,16 +7,17 @@
  * the Trail tab. The parent owns the draft `model_json` and passes a `mutate`
  * callback that writes edits back into `renderDefaults`.
  */
-import { useState, type ComponentType } from 'react';
-import { CircleDot, Cloud, Rocket, Sparkles, Volume2, Wind, Zap } from 'lucide-react';
+import { useEffect, useState, type ComponentType } from 'react';
+import { CircleDot, Cloud, Rocket, Shapes, Sparkles, Volume2, Wind, Zap } from 'lucide-react';
 import {
   FireworkRenderControls,
+  supportsGeometryTuningControls,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
 import type { FireworkDesign } from '@/lib/fireworks/design';
 import { cn } from '@/lib/utils';
 
-type TabId = 'star' | 'starInner' | 'trail' | 'launch' | 'fx' | 'smoke' | 'sound';
+type TabId = 'star' | 'starInner' | 'trail' | 'geometry' | 'launch' | 'fx' | 'smoke' | 'sound';
 
 type TabDef = { id: TabId; label: string; icon: ComponentType<{ size?: number }> };
 
@@ -24,6 +25,7 @@ const TABS: TabDef[] = [
   { id: 'star', label: 'Star', icon: Sparkles },
   { id: 'starInner', label: 'Star Inner', icon: CircleDot },
   { id: 'trail', label: 'Trail', icon: Wind },
+  { id: 'geometry', label: 'Geometry', icon: Shapes },
   { id: 'launch', label: 'Launch', icon: Rocket },
   { id: 'fx', label: 'FX', icon: Zap },
   { id: 'smoke', label: 'Smoke', icon: Cloud },
@@ -46,6 +48,15 @@ export function FireworkLabControls({
   mutate,
 }: FireworkLabControlsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('star');
+  const tabs = TABS.filter(
+    (tab) => tab.id !== 'geometry' || supportsGeometryTuningControls(design.geometry),
+  );
+
+  useEffect(() => {
+    if (activeTab === 'geometry' && !supportsGeometryTuningControls(design.geometry)) {
+      setActiveTab('star');
+    }
+  }, [activeTab, design.geometry]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -54,7 +65,7 @@ export function FireworkLabControls({
         aria-label="Firework controls"
         className="border-outline-variant/15 flex shrink-0 flex-wrap gap-1 border-b p-2"
       >
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.id === activeTab;
           return (
@@ -109,6 +120,16 @@ export function FireworkLabControls({
             mutate={mutate}
             disabled={disabled}
             controlScope="trail"
+          />
+        ) : null}
+        {activeTab === 'geometry' ? (
+          <FireworkRenderControls
+            design={design}
+            defaults={defaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={mutate}
+            disabled={disabled}
+            controlScope="geometry"
           />
         ) : null}
         {activeTab === 'launch' ? (

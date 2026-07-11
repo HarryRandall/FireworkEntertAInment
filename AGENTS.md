@@ -13,6 +13,11 @@
   upload, but the final Generate step is the explicit user action that creates
   the show and starts cue generation.
 - Do not surface hidden background processing unless an error blocks the user.
+- Comments should explain rationale, invariants, security boundaries,
+  asynchronous lifecycle constraints, coordinate systems, or non-obvious
+  exported contracts. Do not narrate the next line or restate the filename.
+- Update or remove stale comments in the same change. Code comments also use
+  British English, straight apostrophes, and no em dashes.
 
 ## Project Overview
 
@@ -40,8 +45,9 @@ billing.
 - **Cue generation**: deterministic fast planner by default. OpenRouter through
   the `openai` SDK is optional for the LLM cue-assignment path and defaults to
   `openai/gpt-4.1-mini` unless `OPENROUTER_CUE_MODEL` is set.
-- **Renderer**: Three.js, React Three Fiber, custom firework engine.
-- **Shader covers**: `@paper-design/shaders-react`, `@firecms/neat`.
+- **Renderer**: Three.js and the custom firework engine.
+- **Covers**: CSS-first covers, stored posters, and legacy
+  `@paper-design/shaders-react` / `@firecms/neat` compatibility.
 - **Cache**: optional Upstash Redis REST, otherwise per-process memory cache.
 - **Firework import worker**: Python worker in `workers/firework-import-worker/`.
 
@@ -71,6 +77,25 @@ Start the firework import worker from `platform`:
 ```bash
 npm run worker:firework-import
 ```
+
+## Delivery Workflow
+
+- Branch from the latest `main` using a typed lowercase name such as
+  `feat/fir-123-description`, `fix/fir-123-description`, or
+  `refactor/fir-123-description`.
+- Linear is the issue source of truth, GitHub is implementation and review
+  evidence, and Notion is the verified sprint summary.
+- Link each pull request to its Linear issue. Use Conventional Commit wording
+  for pull request and squash titles.
+- Treat database, authorisation, billing, ownership, and cue-safety read errors
+  as failures. Do not convert them into empty data or permissive defaults.
+- Multi-write invariants belong in a transaction or guarded RPC. Do not present
+  a partially completed workflow as success.
+- Do not hand-edit files explicitly marked as generated. The lower-level
+  `platform/components/ui` directory also contains adapted and custom source,
+  so inspect each file's header before editing.
+- Keep `AGENTS.md` and `CLAUDE.md` aligned, and keep the Codex and Claude copies
+  of the ShowCrafter design-system skill aligned.
 
 ## Required Environment Variables
 
@@ -190,7 +215,8 @@ derived decoration. See `platform/docs/explore-presets.md`.
   helpers live under `platform/lib/admin/` and related server modules.
 - Supabase clients live under `platform/utils/supabase/`.
 - Optional cache helpers live in `platform/lib/server-cache.ts`.
-- Shader cover generation and validation live in `platform/lib/shader-cover.ts`.
+- `platform/lib/cover.ts` dispatches CSS-first and legacy shader cover parsing,
+  generation, and gradient fallbacks.
 - `/catalogue`, `/library`, and `/library/[id]` are public browse routes. Guests
   use public chrome; signed-in users retain the workspace shell.
 
@@ -201,9 +227,15 @@ Use the local ShowCrafter design-system skill for any UI work:
 - Codex agents: `.agents/skills/showcrafter-design-system/SKILL.md`
 - Claude agents: `.claude/skills/showcrafter-design-system/SKILL.md`
 
-Shared app UI primitives live in `platform/app/components/ui`. Generated
-Radix/shadcn primitives live in `platform/components/ui`. Use `cn()` from
-`@/lib/utils`.
+Shared app UI primitives live in `platform/app/components/ui`. The lower-level
+Radix/shadcn layer lives in `platform/components/ui`; only files explicitly
+marked as generated are non-editable. Use `cn()` from `@/lib/utils`.
+
+Normal app/admin chrome uses neutral surfaces. Marker green is the sparse
+primary for main actions, focus rings, progress, and active technical markers;
+the `accent` token remains a neutral hover or selected surface. Use Geist Mono
+through `font-mono` with `tabular-nums` for timings, prices, quantities, product
+codes, confidence scores, and IDs. Never remove focus indicators globally.
 
 Keep stable route chrome visible while data loads: page titles, descriptions,
 labels, table headers, form section headings, and navigation should not vanish
@@ -225,6 +257,12 @@ Keep physical ranges non-negative and aligned across schema, actions, controls,
 and the renderer. Give the interactive slider thumb an accessible name. See
 `platform/docs/editor-integrity.md`.
 
+Persist shape-specific renderer settings under `geometryTuning`. A geometry
+change must keep the schema and defaults, renderer consumption, editor controls,
+effect-model canonicalisation, preview timing, and tests aligned. Ground
+emitters such as mines, roman candles, and fountains do not have a shell-lift
+phase.
+
 Filter admin navigation by the permission required for each destination, while
 still enforcing permission checks on the route and action. Password-reset and
 destructive controls must invoke the real Supabase Auth operation and describe
@@ -236,7 +274,7 @@ its actual scope. Never show success for a no-op placeholder.
 platform/                       Next.js web app, deploy root for Vercel
   app/                          App Router pages, layouts, actions, APIs
   app/components/               app shell, marketing, theme, admin, and custom UI
-  components/ui/                generated Radix/shadcn primitives
+  components/ui/                low-level Radix/shadcn and custom primitives
   analyser/                     Python song analysis runner
   lib/                          shared server, client, domain, renderer utilities
   utils/supabase/               Supabase client helpers
@@ -268,6 +306,9 @@ scripts/                        utility scripts
   chrome?
 - Do admin links and actions reflect the current user's real permissions and
   the operation that will actually run?
+- Do comments explain non-obvious reasoning instead of narrating the code?
+- Do database and cue-safety failures fail closed rather than becoming empty or
+  permissive state?
 - Did you run the narrowest useful verification, and say honestly if a full gate
   was not run?
 

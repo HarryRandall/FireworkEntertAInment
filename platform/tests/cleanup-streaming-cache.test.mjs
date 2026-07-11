@@ -55,7 +55,8 @@ test('app and admin routes have granular loading coverage and streaming boundari
     'app/(admin)/admin/catalogue/loading.tsx',
     'app/(admin)/admin/imports/loading.tsx',
     'app/(admin)/admin/imports/[id]/loading.tsx',
-    'app/(marketing)/loading.tsx',
+    // `app/(marketing)/loading.tsx` was removed intentionally: marketing routes
+    // are fully static, so a route-group skeleton never reflects real loading.
   ]) {
     assert.equal(existsSync(join(root, path)), true, `${path} exists`);
   }
@@ -195,6 +196,20 @@ test('shopping list reads are pure and derived show totals sync only after mutat
   assert.match(mutations, /effects_count: computed\.effectsCount/);
   assert.match(previewActions, /syncShowDerivedFieldsForUser/);
   assert.match(templateActions, /syncShowDerivedFieldsForUser/);
+});
+
+test('manual cue schedule validation fails closed when safety reads fail', () => {
+  const previewActions = read('app/actions/preview-cues.ts');
+  const overlap = read('lib/cue-overlap.server.ts');
+
+  assert.match(previewActions, /existingCuesError/);
+  assert.match(previewActions, /lastCueError/);
+  assert.match(previewActions, /schedule validation failed/);
+  assert.match(previewActions, /Could not validate the cue schedule\. Try again\./);
+  assert.match(overlap, /if \(itemError\)/);
+  assert.match(overlap, /if \(shotsError\)/);
+  assert.match(overlap, /throw new Error\('Could not read the catalogue item duration\.'/);
+  assert.match(overlap, /throw new Error\('Could not read the multishot duration\.'/);
 });
 
 test('firework import worker claims queued jobs atomically', () => {

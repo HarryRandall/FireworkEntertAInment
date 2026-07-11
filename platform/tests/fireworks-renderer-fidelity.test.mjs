@@ -243,8 +243,14 @@ test('renderer preserves named firework geometry and trail profiles', () => {
   assert.match(effects, /spawnWaterfall/);
   assert.match(effects, /spawnWhirl/);
   assert.doesNotMatch(effects, /Math\.max\((44|52|18|72|60|80|90), Math\.round/);
-  assert.match(effects, /Math\.max\(1, Math\.round\(layer\.count \* 0\.46\)\)/);
-  assert.match(effects, /Math\.max\(1, Math\.round\(design\.size \* 0\.78\)\)/);
+  // Geometry count scaling is design-driven via `geometryTuning` (defaults
+  // preserve the old constants), not hardcoded multipliers.
+  assert.match(effects, /Math\.max\(1, Math\.round\(layer\.count \* \(countPercent \/ 100\)\)\)/);
+  assert.match(
+    effects,
+    /Math\.max\(1, Math\.round\(design\.size \* \(shape\.countPercent \/ 100\)\)\)/,
+  );
+  assert.match(design, /geometryTuning: GeometryTuningSchema/);
   for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
     assert.match(migration, new RegExp(`'${slug}'`));
   }
@@ -666,6 +672,7 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
 test('unified burst trails are validated, migrated, and exposed through shared controls', () => {
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
+  const timing = read('lib/fireworks/timing.ts');
   const migration = read('supabase/migrations/20260615143000_unified_burst_trail_model.sql');
   const squareTrailMigration = read(
     'supabase/migrations/20260617060841_calibrated_square_trail_defaults.sql',
@@ -684,8 +691,8 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(design, /inferBurstTrailFromLegacy/);
   assert.match(design, /compiled\.burstTrail/);
   assert.match(
-    design,
-    /layers\.map\(\(layer\) =>[\s\S]*layer\.burstTrail\.enabled[\s\S]*layer\.burstTrail\.lifetime\.percent/,
+    timing,
+    /layers\.map\(\(layer, index\) =>[\s\S]*layer\.burstTrail\.enabled[\s\S]*layer\.burstTrail\.lifetime\.percent/,
   );
 
   // The trail panel groups controls into collapsible SubSection dropdowns. The
@@ -1027,6 +1034,7 @@ test('effect editor canonicalises render defaults for shared controls', () => {
   assert.match(design, /FIREWORK_RENDER_DEFAULT_KEYS[\s\S]*'size'/);
   assert.match(design, /FIREWORK_RENDER_DEFAULT_KEYS[\s\S]*'liftVelocity'/);
   assert.match(design, /FIREWORK_RENDER_DEFAULT_KEYS[\s\S]*'launch'/);
+  assert.match(design, /FIREWORK_RENDER_DEFAULT_KEYS[\s\S]*'geometryTuning'/);
   assert.match(
     design,
     /`renderDefaults` wins so old top-level values cannot fight the live editor/,
@@ -1555,15 +1563,14 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   );
 });
 
-test('preview duration estimate avoids blanket post-burst padding', () => {
+test('preview duration estimate uses shared design-aware timing', () => {
   const design = read('lib/fireworks/design.ts');
+  const timing = read('lib/fireworks/timing.ts');
 
-  assert.match(design, /const headDuration = burstLife \* starLifeMultiplier/);
-  assert.match(design, /const splitTail = design\.split\.enabled/);
-  assert.match(
-    design,
-    /const crackleTail = design\.crackle\.enabled && design\.crackle\.probability > 0 \? 1\.2 : 0/,
-  );
-  assert.match(design, /Math\.max\(splitTail, crackleTail, streakTail\)/);
+  assert.match(design, /estimateFireworkDesignTiming\(design\)\.endSeconds/);
+  assert.match(timing, /geometryLifeBounds/);
+  assert.match(timing, /design\.split\.lifeBaseSeconds/);
+  assert.match(timing, /design\.split\.lifeVariationSeconds/);
+  assert.match(timing, /emittedDurationSeconds/);
   assert.doesNotMatch(design, /Math\.max\(1,\s*1\.25 \* design\.trail\.length\)/);
 });

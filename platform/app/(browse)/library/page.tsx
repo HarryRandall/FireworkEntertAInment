@@ -148,8 +148,8 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   return (
     <div className={`mx-auto w-full max-w-6xl ${sort ? 'space-y-6' : 'space-y-4'}`}>
       <header>
-        <h1 className="text-on-surface text-2xl font-bold tracking-tight">Explore shows</h1>
-        <p className="text-on-surface-variant mt-1 max-w-2xl text-sm leading-relaxed">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
           Preview complete, ready-to-use firework shows and choose one as the starting point for
           your own display.
         </p>

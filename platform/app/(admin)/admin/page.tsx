@@ -48,6 +48,7 @@ import {
   type AdminOverviewTabKey,
 } from '@/lib/admin/overview-tabs';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
+import { formatDurationWords } from '@/lib/show-domain';
 
 type RecentShow = AdminOverviewMetrics['recentShows'][number];
 
@@ -415,7 +416,7 @@ function RecentShowsCard({ shows }: { shows: RecentShow[] }) {
                   <TableCell className="max-w-0 truncate py-4 font-medium">
                     <span className="block truncate">{show.title}</span>
                     <span className="text-muted-foreground block truncate text-xs">
-                      {show.location ?? formatDuration(show.durationSeconds)}
+                      {show.location ?? formatDurationWords(show.durationSeconds)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -690,11 +691,4 @@ function formatCurrency(cents: number) {
 
 function formatDate(value: string) {
   return shortDateFormatter.format(new Date(value));
-}
-
-function formatDuration(seconds: number | null) {
-  if (seconds == null) return 'n/a';
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.round(seconds % 60);
-  return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`;
 }

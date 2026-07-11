@@ -12,7 +12,8 @@ import { AlertTriangle, Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } fr
 import { Button } from '@/app/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
-import { formatBytes, formatDuration } from '../utils';
+import { formatDuration } from '@/lib/show-domain';
+import { formatBytes } from '../utils';
 
 export function AudioUpload({
   file,

@@ -155,6 +155,12 @@ export function FireworkEditorShell({
     .filter((tab): tab is FireworkEditorShellTab => Boolean(tab));
 
   useEffect(() => {
+    if (currentTabId && currentTabId !== activeTab) {
+      onActiveTabChange(currentTabId);
+    }
+  }, [activeTab, currentTabId, onActiveTabChange]);
+
+  useEffect(() => {
     if (transportIdleTimer.current) clearTimeout(transportIdleTimer.current);
     setTransportActive(true);
 

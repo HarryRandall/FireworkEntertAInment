@@ -14,7 +14,6 @@ import {
   useState,
   useTransition,
   type CSSProperties,
-  type MouseEvent,
   type ReactNode,
 } from 'react';
 import {
@@ -80,6 +79,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PaletteStrip } from '@/app/components/app/ShowSummaryCards';
+import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
@@ -178,7 +178,7 @@ const SIDEBAR_NAV_BADGE_CLASS =
 const SIDEBAR_NAV_NEW_BADGE_CLASS =
   'border-violet-300 text-violet-950 peer-hover/menu-button:border-violet-400 peer-hover/menu-button:text-violet-950 peer-data-active/menu-button:border-violet-400 peer-data-active/menu-button:text-violet-950 dark:border-violet-400/45 dark:text-violet-100 dark:peer-hover/menu-button:border-violet-300/70 dark:peer-hover/menu-button:text-violet-50 dark:peer-data-active/menu-button:border-violet-300/70 dark:peer-data-active/menu-button:text-violet-50';
 const SIDEBAR_NAV_COUNT_BADGE_CLASS =
-  'border-[color:var(--hl)] text-violet-950 peer-hover/menu-button:border-[color:var(--hl)] peer-hover/menu-button:text-violet-950 peer-data-active/menu-button:border-[color:var(--hl)] peer-data-active/menu-button:text-violet-950 dark:border-[color:var(--hl)] dark:text-violet-100 dark:peer-hover/menu-button:border-[color:var(--hl)] dark:peer-hover/menu-button:text-violet-50 dark:peer-data-active/menu-button:border-[color:var(--hl)] dark:peer-data-active/menu-button:text-violet-50';
+  'border-hl text-hl-ink peer-hover/menu-button:border-hl peer-hover/menu-button:text-hl-ink peer-data-active/menu-button:border-hl peer-data-active/menu-button:text-hl-ink';
 
 const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -215,21 +215,6 @@ function writeCachedWorkspaceSummary(summary: CachedWorkspaceSummary | null) {
   } catch {
     // Ignore storage failures; the sidebar just falls back to fetching.
   }
-}
-
-function isThemePreference(value: string | undefined): value is ThemePreference {
-  return value === 'dark' || value === 'light' || value === 'system';
-}
-
-function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
-  return (
-    !event.defaultPrevented &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.shiftKey &&
-    !event.altKey &&
-    event.button === 0
-  );
 }
 
 function isActivePath(pathname: string | null, href: string) {

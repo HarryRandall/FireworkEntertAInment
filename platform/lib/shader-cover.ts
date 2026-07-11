@@ -1,8 +1,7 @@
 /**
- * Shader cover — a small, serialisable "visual identity" for a show. One is
- * generated per show (randomly at creation, or deterministically from an id for
- * curated templates), persisted as JSON, and rendered both as the animated
- * background on the generating screen and as the cover art on Explore cards.
+ * Legacy shader cover: a small, serialisable visual identity retained for
+ * existing shows. New shows use CSS covers, while browse cards use stored
+ * posters with this module's gradient as the legacy fallback.
  *
  * Pure module: no React, no DOM. Safe to import on the server.
  */

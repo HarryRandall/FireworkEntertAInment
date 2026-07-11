@@ -10,6 +10,7 @@ import {
   GanttChartSquare,
   History,
   Repeat,
+  Shapes,
   SlidersHorizontal,
   Sparkles,
   Volume2,
@@ -29,7 +30,10 @@ import {
   JsonReadOnlyPanel,
 } from '@/app/components/admin/EditorInspectorPanels';
 import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSectionPanels';
-import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  PREVIEW_LAUNCH_POSITIONS,
+  estimatePreviewTicks,
+} from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
@@ -38,7 +42,10 @@ import {
 import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
+import {
+  FireworkRenderControls,
+  supportsGeometryTuningControls,
+} from '@/app/components/admin/FireworkRenderControls';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
@@ -55,7 +62,6 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-  type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
@@ -92,7 +98,6 @@ const PREVIEW_START_SECONDS = 0;
 // fast scrub does not re-render the whole editor on every input event. The
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
-const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 const HISTORY_CONFIRMATION_ATTEMPTS = 4;
 const HISTORY_CONFIRMATION_DELAY_MS = 300;
 
@@ -942,8 +947,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       muted={!isPlaying}
       interactive
       controlsVisible
-      cameraMenuActions={previewMenuActions}
       showStarfield={false}
+      cameraMenuActions={previewMenuActions}
       showFps
       primeSnapshots
       primeOnCueChanges={false}
@@ -1059,6 +1064,27 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Details',
       content: detailsContent,
     },
+    ...(supportsGeometryTuningControls(previewDesign.geometry)
+      ? [
+          {
+            id: 'geometry',
+            label: 'Geometry',
+            icon: Shapes,
+            eyebrow: 'Shape',
+            title: 'Geometry',
+            content: (
+              <FireworkRenderControls
+                design={previewDesign}
+                defaults={renderDefaults}
+                calibrationDefaults={calibrationDefaults}
+                mutate={updateModelDefaults}
+                disabled={!parsedModel.ok}
+                controlScope="geometry"
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'launch-dot',
       label: 'Launch Dot',

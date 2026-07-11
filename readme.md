@@ -22,7 +22,8 @@ retailer firework catalogue into a timed show plan. The app supports:
 - AI credit reservations, settlement, refunds, and admin credit grants.
 - Admin catalogue, effect, multishot, prompt, user, role, import, supplier, and
   billing surfaces.
-- Animated shader cover art for generated shows and curated presets.
+- CSS-first animated cover art with stored browse posters and legacy shader
+  compatibility.
 - A separate firework-video import worker for AI-assisted catalogue ingestion.
 
 ## Tech Stack
@@ -31,8 +32,8 @@ retailer firework catalogue into a timed show plan. The app supports:
 | ------------------- | ----------------------------------------------------------------------------------- |
 | Web app             | Next.js App Router, React 19, TypeScript                                            |
 | Styling             | Tailwind CSS v4, Radix/shadcn primitives, custom app UI primitives                  |
-| Rendering           | Three.js, React Three Fiber, custom firework engine                                 |
-| Shader covers       | `@paper-design/shaders-react`, `@firecms/neat`                                      |
+| Rendering           | Three.js and the custom firework engine                                             |
+| Covers              | CSS/SVG/Canvas covers, stored posters, legacy Paper/Neat shader compatibility       |
 | Backend and storage | Supabase Auth, Postgres, Storage, RLS, RPCs                                         |
 | Audio analysis      | Python, librosa, Modal-hosted HTTP analyser                                         |
 | Cue generation      | Fast deterministic planner by default, optional OpenRouter through the `openai` SDK |
@@ -53,7 +54,7 @@ platform/                       Next.js app, deploy root for Vercel
     (marketing)/                Public marketing pages
     api/                        Health, analysis, admin, user, and show APIs
     components/                 App, admin, marketing, theme, and UI components
-  components/ui/                Generated Radix/shadcn primitives
+  components/ui/                Low-level Radix/shadcn and custom primitives
   analyser/                     Python Modal song analyser
   docs/                         Platform technical notes
   lib/                          Server, domain, renderer, generation, admin utilities
@@ -295,14 +296,21 @@ Use the repo-local ShowCrafter design-system skill before UI work:
 - Codex: `.agents/skills/showcrafter-design-system/SKILL.md`
 - Claude: `.claude/skills/showcrafter-design-system/SKILL.md`
 
-Shared app UI primitives live in `platform/app/components/ui`. Generated
-Radix/shadcn primitives live in `platform/components/ui`. Prefer the app
-primitives for new product UI and use generated primitives only when extending
-the shadcn layer. Use `cn()` from `@/lib/utils`.
+Shared app UI primitives live in `platform/app/components/ui`. The lower-level
+Radix/shadcn layer lives in `platform/components/ui`; only files explicitly
+marked as generated are non-editable. Prefer app primitives for product UI and
+use `cn()` from `@/lib/utils`.
 
 Global tokens live in `platform/app/globals.css`. Shared legacy class fragments
 live in `platform/app/components/ui/styles.ts`; prefer moving repeated patterns
 onto primitives over adding more route-level class strings there.
+
+Normal app and admin chrome uses neutral surfaces. Marker green is reserved for
+primary actions, focus, progress, and active technical markers, while `accent`
+is a neutral hover or selected surface. Use Geist Mono with `tabular-nums` for
+timings, prices, quantities, product codes, confidence scores, and IDs. Never
+remove a focus indicator without providing a visible replacement on the same
+control.
 
 Loading states should keep stable route chrome visible, including page titles,
 descriptions, labels, table headers, and form section headings. Use neutral
@@ -327,12 +335,20 @@ one main landmark.
 
 ## Notes For Agents
 
+- Read [`AGENTS.md`](AGENTS.md) before changing the repository. `CLAUDE.md`
+  mirrors it and is guarded by tests to prevent drift.
 - Use British English, straight apostrophes, and no em dashes.
 - Preserve the explicit show-generation boundary. Music analysis can run after
   upload, but final show creation and cue generation belong to Generate.
 - Do not reveal hidden background work unless an error blocks the user.
 - Treat local source, migrations, tests, and route files as the source of truth.
 - Keep unrelated dirty worktree changes intact.
+- Comment rationale, invariants, security boundaries, lifecycle constraints,
+  coordinate systems, and non-obvious contracts. Do not narrate obvious code.
+- Fail closed when database errors affect authorisation, billing, ownership, or
+  cue scheduling. Use a transaction or guarded RPC for multi-write invariants.
+- Keep renderer `geometryTuning` changes aligned across schema defaults,
+  renderer code, editor controls, canonicalisation, preview timing, and tests.
 
 ## Team Tools
 

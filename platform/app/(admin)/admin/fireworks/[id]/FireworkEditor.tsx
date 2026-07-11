@@ -12,6 +12,7 @@ import {
   Palette,
   Plus,
   Repeat,
+  Shapes,
   SlidersHorizontal,
   Sparkles,
   Volume2,
@@ -41,7 +42,10 @@ import {
   JsonReadOnlyPanel,
 } from '@/app/components/admin/EditorInspectorPanels';
 import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSectionPanels';
-import { estimatePreviewTicks } from '@/app/components/admin/editor-preview-timing';
+import {
+  PREVIEW_LAUNCH_POSITIONS,
+  estimatePreviewTicks,
+} from '@/app/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
@@ -52,6 +56,7 @@ import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import {
   FireworkRenderControls,
+  supportsGeometryTuningControls,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
 import { Button } from '@/app/components/ui/Button';
@@ -74,7 +79,6 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-  type LaunchPosition,
 } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
@@ -109,7 +113,6 @@ const PREVIEW_START_SECONDS = 0;
 // fast scrub does not re-render the whole editor on every input event. The
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
-const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 const DEFAULT_ACCENT_RATIO = 0.22;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const MAX_STAR_COLOURS = 6;
@@ -1830,8 +1833,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       muted={!isPlaying}
       interactive
       controlsVisible
-      cameraMenuActions={previewMenuActions}
       showStarfield={false}
+      cameraMenuActions={previewMenuActions}
       showFps
       primeSnapshots
       primeOnCueChanges={false}
@@ -1975,6 +1978,27 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       title: 'Colour',
       content: starColourControls,
     },
+    ...(supportsGeometryTuningControls(previewDesign.geometry)
+      ? [
+          {
+            id: 'geometry',
+            label: 'Geometry',
+            icon: Shapes,
+            eyebrow: 'Shape',
+            title: 'Geometry',
+            content: (
+              <FireworkRenderControls
+                design={previewDesign}
+                defaults={overridesRecord}
+                calibrationDefaults={calibrationDefaults}
+                mutate={mutateOverrides}
+                disabled={!parsedOverrides.ok}
+                controlScope="geometry"
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'launch-dot',
       label: 'Launch Dot',
