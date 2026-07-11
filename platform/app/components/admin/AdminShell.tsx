@@ -15,7 +15,6 @@ import {
   useState,
   useTransition,
   type CSSProperties,
-  type MouseEvent,
   type ReactNode,
 } from 'react';
 import {
@@ -76,6 +75,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
@@ -179,21 +179,6 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
 
 export function useAdminBreadcrumbOverride() {
   return useContext(AdminBreadcrumbOverrideContext);
-}
-
-function isThemePreference(value: string | undefined): value is ThemePreference {
-  return value === 'dark' || value === 'light' || value === 'system';
-}
-
-function isPlainLeftClick(event: MouseEvent<HTMLAnchorElement>) {
-  return (
-    !event.defaultPrevented &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.shiftKey &&
-    !event.altKey &&
-    event.button === 0
-  );
 }
 
 function isActivePath(pathname: string | null, href: string) {

@@ -51,7 +51,8 @@ export class Scheduler {
     const due: ReplayCue[] = [];
     for (const sc of this.cues) {
       if (sc.fired) continue;
-      if (sc.cue.timeSeconds > prev && sc.cue.timeSeconds <= now) {
+      const startsAtTimelineOrigin = prev <= 0 && sc.cue.timeSeconds === 0;
+      if ((startsAtTimelineOrigin || sc.cue.timeSeconds > prev) && sc.cue.timeSeconds <= now) {
         due.push(sc.cue);
         sc.fired = true;
       }

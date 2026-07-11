@@ -1,7 +1,7 @@
 /** Root Next.js layout; injects fonts, the theme provider, and global styles for every route. */
 
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from './components/theme/ThemeProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -10,6 +10,11 @@ import { Toaster } from '@/components/ui/sonner';
 const geistSans = Geist({
   subsets: ['latin'],
   variable: '--font-geist-sans',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
 });
 
 export const metadata: Metadata = {
@@ -26,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.className} ${geistSans.variable} bg-background text-on-surface overflow-x-hidden`}
+        className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable} bg-background text-on-surface overflow-x-hidden`}
         style={{ fontFamily: geistSans.style.fontFamily }}
       >
         <ThemeProvider>

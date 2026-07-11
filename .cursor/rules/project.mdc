@@ -11,6 +11,17 @@ alwaysApply: true
 - Treat the live local repo as the source of truth. Inspect files before
   answering or editing.
 - Keep unrelated dirty worktree changes intact.
+- Comments should explain rationale, invariants, security boundaries,
+  asynchronous lifecycle constraints, coordinate systems, or non-obvious
+  exported contracts. Do not narrate the next line or restate a filename.
+- Update or remove stale comments in the same change. Code comments also use
+  British English, straight apostrophes, and no em dashes.
+- Treat database, authorisation, billing, ownership, and cue-safety read errors
+  as failures. Do not convert them into empty data or permissive defaults.
+- Multi-write invariants belong in a transaction or guarded RPC. Do not present
+  a partially completed workflow as success.
+- Do not hand-edit files marked as generated. `platform/components/ui` is a
+  low-level shadcn layer, but adapted/custom files in it remain normal source.
 - Vercel deploys from `platform`.
 - The app is ShowCrafter: a consumer firework show-planning platform for
   pyromusical shows built from retail catalogue items.
@@ -55,6 +66,9 @@ alwaysApply: true
   and label the actual slider thumb. See `platform/docs/editor-integrity.md`.
 - Apply schema changes through chronological migrations, regenerate database
   types, and pair RLS with explicit least-privilege Data API and RPC grants.
+- Linear is the issue source of truth, GitHub is implementation and review
+  evidence, and Notion is the verified sprint summary. Link each PR to its issue
+  and use Conventional Commit wording for PR and squash titles.
 - Run the narrowest useful verification for the change and state clearly when a
   full gate was not run.
 

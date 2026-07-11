@@ -26,8 +26,8 @@
     var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
     sans-serif;
   --font-mono:
-    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
-    sans-serif;
+    var(--font-geist-mono, 'Geist Mono'), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
 
   /* ---------- Semantic tokens (light defaults) ---------- */
   /* Surfaces */
@@ -37,11 +37,15 @@
   --color-bg-emphasis: #e1e1e7;
   --color-bg-elevated: #ffffff;
   --color-bg-inverted: #09090b;
+  /* Compatibility alias for editor surfaces. New UI should prefer `bg-card`. */
+  --color-bg-surface: var(--color-bg-default);
 
   /* Borders */
   --color-border-subtle: #e5e5ea;
   --color-border-default: #d9d9e2;
   --color-border-emphasis: #b9bbc6;
+  /* Compatibility alias for stronger focus and hover borders. */
+  --color-border-strong: var(--color-border-emphasis);
 
   /* Content (text/icons) */
   --color-content-emphasis: #24242a;
@@ -223,13 +227,6 @@ body {
   color: var(--color-content-default);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Components own their focus styling; suppress browser/default outlines that
-   create a second harsh box around inputs and popover search fields. */
-:where(*):focus,
-:where(*):focus-visible {
-  outline: none;
 }
 
 :where(button, [role='button']):not(:disabled):not([aria-disabled='true']) {

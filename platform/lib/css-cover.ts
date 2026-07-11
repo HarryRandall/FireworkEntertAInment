@@ -1,6 +1,6 @@
 /**
  * CSS cover - a lightweight, serialisable "visual identity" for a show,
- * rendered entirely with CSS/SVG (plus one small Canvas2D effect) instead of a
+ * rendered with CSS/SVG and small Canvas2D effects instead of a
  * live WebGL context. It mirrors {@link ./shader-cover} so the two can coexist:
  * a stored cover carries an `engine` discriminator and either kind of cover can
  * be generated, parsed, and turned into a cheap gradient fallback.

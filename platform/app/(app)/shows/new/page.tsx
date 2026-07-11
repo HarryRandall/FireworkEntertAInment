@@ -52,7 +52,12 @@ import {
   launchPositionsForWidth,
   type FireworkTypeKey,
 } from '@/lib/cue-generation/show-options';
-import { DEFAULT_SHOW_STYLE, type ShowStyleKey } from '@/lib/cue-generation/show-styles';
+import {
+  DEFAULT_SHOW_STYLE,
+  SHOW_STYLES,
+  SHOW_STYLE_LIST,
+  type ShowStyleKey,
+} from '@/lib/cue-generation/show-styles';
 import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
 import {
   clearPersistedGenerationCover,
@@ -61,7 +66,7 @@ import {
   persistGenerationStartedAt,
   resolvePersistedGenerationCover,
 } from '@/lib/generation-progress-storage';
-import { slugifyTitle } from '@/lib/show-domain';
+import { formatDuration, slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { createShowAction, getShowGenerationPresentationAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
@@ -86,7 +91,6 @@ import type {
 } from './types';
 import {
   deriveTitleFromDescription,
-  formatDuration,
   inferAudioContentType,
   sanitizeStorageName,
   suggestTitleFromFilename,
@@ -156,7 +160,7 @@ export default function NewShowPage() {
 
   // === Step 0: describe ====================================================
   const [description, setDescription] = useState('');
-  const [styleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
+  const [styleKey, setStyleKey] = useState<ShowStyleKey>(DEFAULT_SHOW_STYLE);
   const [selectedCueModel, setSelectedCueModel] = useState<string | null>(null);
   const [generationPresentation, setGenerationPresentation] =
     useState<ShowGenerationPresentation | null>(null);
@@ -216,6 +220,8 @@ export default function NewShowPage() {
   const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
   const effectiveCueModel =
     selectedCueModel ?? generationPresentation?.defaultCueModel ?? FALLBACK_CUE_MODEL;
+  const selectedShowStyle = SHOW_STYLES[styleKey];
+  const usesBeatPrecision = selectedShowStyle.engine === 'beat';
   const selectedCueModelOption = CUE_MODEL_OPTIONS.find(
     (option) => option.value === effectiveCueModel,
   );
@@ -225,8 +231,9 @@ export default function NewShowPage() {
     generationPresentation?.modelCreditCosts[effectiveCueModel] ??
     selectedCueModelOption?.creditCost ??
     1;
-  const displayedGenerationCost =
-    generationPresentation?.generationMode === 'fast'
+  const displayedGenerationCost = usesBeatPrecision
+    ? (generationPresentation?.fastCreditCost ?? 1)
+    : generationPresentation?.generationMode === 'fast'
       ? generationPresentation.fastCreditCost
       : selectedCueModelCost;
 
@@ -297,9 +304,11 @@ export default function NewShowPage() {
   /** True when the user can advance past the current step. */
   const stepValid = useMemo(() => {
     if (stepIndex === 0) return description.trim().length > 0;
-    if (stepIndex === 4) return fireworkTypes.size > 0;
+    if (stepIndex === 4) {
+      return fireworkTypes.size > 0 && (!usesBeatPrecision || fireworkTypes.has('aerial_shells'));
+    }
     return true;
-  }, [stepIndex, description, fireworkTypes]);
+  }, [stepIndex, description, fireworkTypes, usesBeatPrecision]);
 
   // Resolve the audio file's duration locally so we can show "M:SS" in the
   // attached-track pill. The `<audio>` element is throwaway and never plays.
@@ -656,7 +665,11 @@ export default function NewShowPage() {
       data.set('description', description);
       data.set('showStyle', styleKey);
       data.set('expectedGenerationMode', generationPresentation.generationMode);
-      if (generationPresentation.generationMode === 'llm' && selectedCueModel) {
+      if (
+        !usesBeatPrecision &&
+        generationPresentation.generationMode === 'llm' &&
+        selectedCueModel
+      ) {
         data.set('selectedCueModel', selectedCueModel);
       }
       data.set('siteWidthFeet', String(effectiveWidthFeet));
@@ -713,7 +726,11 @@ export default function NewShowPage() {
       return;
     }
     if (!stepValid) {
-      toast.error('Describe the show first - a sentence is plenty.');
+      toast.error(
+        stepIndex === 4 && usesBeatPrecision
+          ? 'Beat precision needs Aerial shells selected.'
+          : 'Describe the show first - a sentence is plenty.',
+      );
       return;
     }
     setFieldError(null);
@@ -774,7 +791,18 @@ export default function NewShowPage() {
                     <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
                       <div className="flex items-center justify-between gap-3">
                         {generationPresentation ? (
-                          generationPresentation.generationMode === 'llm' ? (
+                          usesBeatPrecision ? (
+                            <span
+                              className="border-border bg-background/80 text-foreground inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full border px-2 text-[13px] shadow-sm backdrop-blur-xl"
+                              aria-label={`Beat precision planner, ${generationPresentation.fastCreditCost} AI credit${generationPresentation.fastCreditCost === 1 ? '' : 's'}`}
+                            >
+                              <Waves size={14} aria-hidden="true" />
+                              <span className="truncate font-medium">Beat precision</span>
+                              <span className="bg-muted text-muted-foreground inline-flex h-[1.125rem] min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] leading-none font-medium tabular-nums">
+                                {generationPresentation.fastCreditCost}
+                              </span>
+                            </span>
+                          ) : generationPresentation.generationMode === 'llm' ? (
                             <CueModelSelect
                               value={effectiveCueModel}
                               onChange={setSelectedCueModel}
@@ -831,6 +859,38 @@ export default function NewShowPage() {
                       </div>
                     </div>
                   </div>
+                  <fieldset className="mt-4">
+                    <legend className="sr-only">Show style</legend>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
+                      {SHOW_STYLE_LIST.map((style) => {
+                        const selected = style.key === styleKey;
+                        return (
+                          <button
+                            key={style.key}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            aria-label={`${style.name}: ${style.description}`}
+                            title={style.description}
+                            onClick={() => setStyleKey(style.key)}
+                            className={cn(
+                              'focus-visible:ring-ring/50 min-w-0 rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow] focus:outline-none focus-visible:ring-3',
+                              selected
+                                ? 'border-foreground/55 text-foreground bg-[color:var(--accent)] shadow-sm'
+                                : 'border-border bg-card/70 text-muted-foreground hover:border-foreground/25 hover:bg-[color:color-mix(in_srgb,var(--accent)_60%,transparent)]',
+                            )}
+                          >
+                            <span className="text-foreground block truncate text-xs font-semibold">
+                              {style.name}
+                            </span>
+                            <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4">
+                              {style.tagline}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
                 </div>
               </StepPanel>
 
@@ -986,11 +1046,16 @@ export default function NewShowPage() {
                       );
                     })}
                   </div>
+                  {usesBeatPrecision && !fireworkTypes.has('aerial_shells') ? (
+                    <p className="text-muted-foreground text-center text-xs">
+                      Beat precision needs Aerial shells so each burst can be timed to the music.
+                    </p>
+                  ) : null}
                   <div className="flex justify-center pt-2">
                     <Button
                       type="button"
                       onClick={() => goToStep(stepIndex + 1)}
-                      disabled={mounted && fireworkTypes.size === 0}
+                      disabled={mounted && !stepValid}
                       size="lg"
                       className="rounded-full px-8"
                     >
@@ -1062,9 +1127,11 @@ export default function NewShowPage() {
                         <>
                           This will use {displayedGenerationCost} AI credit
                           {displayedGenerationCost === 1 ? '' : 's'} with{' '}
-                          {generationPresentation.generationMode === 'fast'
-                            ? "ShowCrafter's fast planner"
-                            : selectedCueModelLabel}
+                          {usesBeatPrecision
+                            ? "ShowCrafter's beat precision planner"
+                            : generationPresentation.generationMode === 'fast'
+                              ? "ShowCrafter's fast planner"
+                              : selectedCueModelLabel}
                           .
                         </>
                       ) : generationPresentationError ? (

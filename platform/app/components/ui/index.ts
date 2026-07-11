@@ -23,4 +23,3 @@ export * from './TablePagination';
 export * from './Toggle';
 export * from './toast';
 export * from './styles';
-export * from './tokens';

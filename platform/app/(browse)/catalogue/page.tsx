@@ -4,10 +4,11 @@ import { Suspense } from 'react';
 import type { ReactNode } from 'react';
 import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
-import { EmptyNotice, Skeleton } from '@/app/components/ui/Feedback';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
 import { listFireworkProducts } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
+import { CATALOGUE_PAGE_SIZE, CatalogueSkeleton } from './CatalogueSkeleton';
 import { CatalogueToolbar } from './CatalogueToolbar';
 
 type PageProps = {
@@ -15,7 +16,6 @@ type PageProps = {
 };
 
 type CatalogueProduct = Awaited<ReturnType<typeof listFireworkProducts>>[number];
-const CATALOGUE_PAGE_SIZE = 15;
 
 function matchesProduct(product: CatalogueProduct, query: string, kind: string) {
   const shotCount = product.shotCount ?? 1;
@@ -48,8 +48,8 @@ export default async function CataloguePage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <header>
-        <h1 className="text-on-surface text-2xl font-bold tracking-tight">Firework catalogue</h1>
-        <p className="text-on-surface-variant mt-1 max-w-2xl text-sm leading-relaxed">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Firework catalogue</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
           Browse the products and effects available for ShowCrafter timelines.
         </p>
       </header>
@@ -148,20 +148,6 @@ async function CatalogueList({
         totalItems={products.length}
         itemLabel="product"
       />
-    </div>
-  );
-}
-
-function CatalogueSkeleton() {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: CATALOGUE_PAGE_SIZE }).map((_, index) => (
-        <div key={index} className="border-border bg-card rounded-xl border p-4">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="mt-2 h-4 w-24" />
-          <Skeleton className="mt-5 h-16 w-full" />
-        </div>
-      ))}
     </div>
   );
 }

@@ -94,7 +94,7 @@ test('resolved render designs use copied JSON instead of live default links', ()
     /deepMergeDesign\(\s*deepMergeDesign\(withBase, fireworkStyleDefaults\),\s*variantOverrides,\s*\)/,
   );
 
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v11'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v12'/);
   assert.doesNotMatch(showTypes, /style_default_links:firework_style_default_links/);
   assert.doesNotMatch(showTypes, /style_default_links:firework_effect_style_default_links/);
   assert.doesNotMatch(showMappers, /styleDefaultArrayFromLinks/);

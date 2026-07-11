@@ -5,6 +5,9 @@ globs:
   - "platform/app/**/*.ts"
   - "platform/app/**/*.css"
   - "platform/components/ui/**/*.tsx"
+  - "platform/components.json"
+  - "platform/lib/cover.ts"
+  - "platform/lib/css-cover.ts"
   - "platform/lib/shader-cover.ts"
 alwaysApply: false
 ---
@@ -26,8 +29,9 @@ tool surfaces, and ember/burnt-orange palettes.
 ## Components
 
 - Prefer `platform/app/components/ui` primitives for product UI.
-- Generated Radix/shadcn primitives live in `platform/components/ui`; use them
-  when extending the generated layer.
+- The low-level Radix/shadcn layer lives in `platform/components/ui`. Only files
+  explicitly marked as generated are non-editable; `sidebar.tsx` is adapted and
+  the shader helpers there are custom.
 - Use `cn()` from `@/lib/utils`.
 - Use `platform/app/globals.css` tokens.
 - `platform/app/components/ui/styles.ts` is a legacy shared-class bridge. Prefer
@@ -35,6 +39,21 @@ tool surfaces, and ember/burnt-orange palettes.
 - Use lucide icons for icon buttons when available.
 - Keep controls stable in size so hover, selected, loading, and dynamic text
   states do not shift layout.
+- Standard app controls are normally `h-10`; dense admin controls can use `h-8`
+  or `h-9`. Use `rounded-md` for controls and `rounded-xl` for normal cards.
+
+## Colour And Type
+
+- Neutral surfaces and content own normal app/admin chrome.
+- Marker green is the sparse primary for main actions, focus, progress, and
+  active technical markers. The `accent` token is a neutral hover or selected
+  surface, not the brand colour.
+- Keep gold, violet, sky, rose, and other show-palette colours inside covers,
+  cue visualisation, simulation, or small semantic highlights.
+- Use Geist Mono through `font-mono` with `tabular-nums` for timings, prices,
+  quantities, product codes, confidence scores, and IDs.
+- Do not remove focus indicators globally. Suppress a native outline only when
+  the same focusable element receives a visible replacement ring.
 
 ## Loading
 
@@ -88,6 +107,9 @@ value is still loading. Match loaded dimensions closely.
   not turn a successful primary save into a failure.
 - Centralise physical ranges, clamp invalid negative speed and life values, and
   keep controls, validation, actions, defaults, and renderer bounds aligned.
+- Keep `geometryTuning` schema/defaults, renderer consumption, editor tabs,
+  canonicalisation, design-aware preview timing, and tests aligned. Mines,
+  roman candles, and fountains are ground emitters with no shell-lift phase.
 - Put accessible names on slider thumbs and other interactive primitives, not
   only on non-interactive wrappers. Put the label target ID on the focusable
   thumb. Do not expose a Preview action unless it performs a real preview.
@@ -95,6 +117,8 @@ value is still loading. Match loaded dimensions closely.
 ## Shader Covers
 
 Shows and presets store serialisable `cover_shader` JSON. Use
-`platform/lib/shader-cover.ts` helpers for generation, parsing, normalisation,
-and deterministic seeded covers. Do not hand-roll incompatible cover objects in
-routes.
+`platform/lib/cover.ts` as the dispatcher for CSS-first covers and legacy shader
+covers. Keep parsing and fallbacks in `cover.ts`, `css-cover.ts`, and
+`shader-cover.ts`; do not hand-roll incompatible cover objects in routes.
+Browse cards use stored posters with a static gradient fallback, not one live
+cover renderer per card.

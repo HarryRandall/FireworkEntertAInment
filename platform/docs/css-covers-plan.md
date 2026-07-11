@@ -121,7 +121,7 @@ capped). Both are driven by draw functions that are pure in `t`, so freezing on
 
 Route: `/dev/css-covers` (in the existing `(dev)` group, matching
 `/dev/paper-shaders`). It offers a **Single** view (large preview plus full
-controls) and a **Gallery** view that renders all seven kinds at once so you can
+controls) and a **Gallery** view that renders all 17 kinds at once so you can
 shuffle through them quickly. Controls: effect picker, Randomise, palette editor
 (3-6 colours), Speed/Scale/Angle/Softness/Grain/Intensity/Density sliders, a
 **Freeze/Play** toggle, a **Frozen frame** scrubber to preview the exact still a
@@ -153,8 +153,8 @@ Staged so nothing in the live flow changes until we choose to flip it.
    covers keep the old develop-then-read-buffer path. `CoverPoster` falls back
    to `coverGradient` for either engine.
 5. **Optional cleanup** - once legacy WebGL covers are rare, retire the
-   paper-shaders/neat cover path if desired. The Three.js **firework renderer**
-   (`FireworkReplayCanvas`, R3F) is out of scope and stays as is.
+   paper-shaders/neat cover path if desired. The raw Three.js **firework
+   renderer** (`FireworkReplayCanvas`) is out of scope and stays as is.
 
 ## Notes and risks
 

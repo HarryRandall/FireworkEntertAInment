@@ -25,6 +25,7 @@ import {
   type BurstTrailPreset,
   type FireworkDesign,
   type FireworkStarLayer,
+  type GeometryTuningGroupKey,
   type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
@@ -74,6 +75,1117 @@ import {
 } from '@/lib/fireworks/render-tuning';
 
 export type JsonRecord = Record<string, unknown>;
+
+/** Which geometry-tuning group drives each burst geometry. Geometries without
+ *  bespoke shape behaviour (sphere, split_cross) have no entry and show no
+ *  Geometry panel. */
+const GEOMETRY_TUNING_GROUPS: Partial<Record<FireworkDesign['geometry'], GeometryTuningGroupKey>> =
+  {
+    ring: 'ring',
+    crown: 'crown',
+    weeping: 'weeping',
+    radial_arms: 'radialArms',
+    falling_tail: 'fallingTail',
+    pearls: 'pearls',
+    fragment_cloud: 'fragmentCloud',
+    bowtie: 'bowtie',
+    fish: 'fish',
+    waterfall: 'waterfall',
+    whirl: 'whirl',
+    single_tail: 'singleTail',
+    upward_fan: 'upwardFan',
+    roman_candle: 'romanCandle',
+    fountain: 'fountain',
+  };
+
+export function supportsGeometryTuningControls(geometry: FireworkDesign['geometry']): boolean {
+  return GEOMETRY_TUNING_GROUPS[geometry] != null;
+}
+
+type GeometryTuningSlider = {
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  hint: string;
+};
+
+const PERCENT_HINTS = {
+  count: 'Percentage of the star count this shape actually uses.',
+  life: 'Star burn time relative to the burst life setting. 100% is unchanged.',
+  gravity: 'How strongly gravity pulls these stars, relative to the burst gravity.',
+  drag: 'Air resistance relative to a standard star. Lower drifts further.',
+  headSize: 'Star head size relative to the layer size budget.',
+  trailLife: 'Trail persistence relative to the standard trail life.',
+};
+
+const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTuningSlider[]> = {
+  ring: [
+    {
+      key: 'countPercent',
+      label: 'Ring stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'wobble',
+      label: 'Wobble',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      hint: 'Out-of-plane jitter so the hoop reads as 3D rather than a razor line.',
+    },
+    {
+      key: 'verticalSquash',
+      label: 'Vertical squash',
+      min: 0.2,
+      max: 1.5,
+      step: 0.01,
+      hint: '1 is a perfect circle; lower flattens the hoop.',
+    },
+    {
+      key: 'tiltVariation',
+      label: 'Tilt variation',
+      min: 0,
+      max: 3,
+      step: 0.05,
+      hint: 'How far the hoop plane can randomly tilt, in radians.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+  ],
+  crown: [
+    {
+      key: 'lift',
+      label: 'Upward throw',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'How hard each frond is thrown upward before drooping.',
+    },
+    {
+      key: 'liftVariation',
+      label: 'Throw variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra upward throw per star.',
+    },
+    {
+      key: 'spread',
+      label: 'Spread',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways reach of the fronds.',
+    },
+    {
+      key: 'spreadVariation',
+      label: 'Spread variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra sideways reach per star.',
+    },
+  ],
+  weeping: [
+    {
+      key: 'lift',
+      label: 'Upward throw',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'How hard each strand is thrown upward before hanging.',
+    },
+    {
+      key: 'liftVariation',
+      label: 'Throw variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra upward throw per star.',
+    },
+    {
+      key: 'spread',
+      label: 'Spread',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways reach of the strands.',
+    },
+    {
+      key: 'spreadVariation',
+      label: 'Spread variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra sideways reach per star.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    {
+      key: 'gravityPercent',
+      label: 'Gravity',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.gravity,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+  ],
+  radialArms: [
+    {
+      key: 'arms',
+      label: 'Arms',
+      min: 2,
+      max: 24,
+      step: 1,
+      hint: 'Number of straight spokes the stars group into.',
+    },
+    {
+      key: 'countPercent',
+      label: 'Arm stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'angleJitter',
+      label: 'Arm scatter',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      hint: 'Random angular scatter of each star off its spoke.',
+    },
+    {
+      key: 'armLength',
+      label: 'Arm length',
+      min: 0.1,
+      max: 2,
+      step: 0.01,
+      hint: 'Base spoke length relative to burst speed.',
+    },
+    {
+      key: 'lift',
+      label: 'Upward throw',
+      min: -1,
+      max: 2,
+      step: 0.01,
+      hint: 'Vertical push applied to the whole spider.',
+    },
+    {
+      key: 'liftVariation',
+      label: 'Throw variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra vertical push per star.',
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+  ],
+  fallingTail: [
+    {
+      key: 'countPercent',
+      label: 'Tail stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'spread',
+      label: 'Spread',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways push before the stars start sinking.',
+    },
+    {
+      key: 'spreadVariation',
+      label: 'Spread variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra sideways push per star.',
+    },
+    {
+      key: 'sink',
+      label: 'Sink speed',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Initial downward speed of the tails.',
+    },
+    {
+      key: 'sinkVariation',
+      label: 'Sink variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra downward speed per star.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    {
+      key: 'gravityPercent',
+      label: 'Gravity',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.gravity,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+  ],
+  pearls: [
+    {
+      key: 'countPercent',
+      label: 'Pearl stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'spread',
+      label: 'Spread',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways reach of the pearl ring.',
+    },
+    {
+      key: 'spreadVariation',
+      label: 'Spread variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra reach per pearl.',
+    },
+    {
+      key: 'lift',
+      label: 'Upward throw',
+      min: -1,
+      max: 2,
+      step: 0.01,
+      hint: 'Vertical push of the pearl ring.',
+    },
+    {
+      key: 'liftVariation',
+      label: 'Throw variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra vertical push per pearl.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    {
+      key: 'gravityPercent',
+      label: 'Gravity',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.gravity,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+  ],
+  fragmentCloud: [
+    {
+      key: 'countPercent',
+      label: 'Cloud stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'speedBase',
+      label: 'Base speed',
+      min: 0.1,
+      max: 2,
+      step: 0.01,
+      hint: 'Minimum speed factor for each fragment.',
+    },
+    {
+      key: 'speedVariation',
+      label: 'Speed variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra speed so the cloud looks uneven.',
+    },
+  ],
+  bowtie: [
+    {
+      key: 'countPercent',
+      label: 'Lobe stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'fanAngleDegrees',
+      label: 'Fan angle',
+      min: 10,
+      max: 180,
+      step: 1,
+      hint: 'Total opening angle of each lobe fan, in degrees.',
+    },
+    {
+      key: 'verticalScale',
+      label: 'Fan height',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Vertical thickness of the fans.',
+    },
+    {
+      key: 'depthScale',
+      label: 'Fan depth',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Front-to-back thickness of the fans.',
+    },
+    {
+      key: 'lengthBase',
+      label: 'Lobe length',
+      min: 0.1,
+      max: 2,
+      step: 0.01,
+      hint: 'Base lobe length relative to burst speed.',
+    },
+    {
+      key: 'lengthVariation',
+      label: 'Length variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra lobe length per star.',
+    },
+  ],
+  fish: [
+    {
+      key: 'countPercent',
+      label: 'Swarm size',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: 'Swarm count as a percentage of the star count.',
+    },
+    {
+      key: 'verticalScale',
+      label: 'Flatten',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: '1 is a full sphere; lower keeps the swarm flat.',
+    },
+    {
+      key: 'lifeBaseSeconds',
+      label: 'Life base',
+      min: 0.1,
+      max: 8,
+      step: 0.1,
+      hint: 'Minimum swim time in seconds.',
+    },
+    {
+      key: 'lifeVariationSeconds',
+      label: 'Life spread',
+      min: 0,
+      max: 8,
+      step: 0.1,
+      hint: 'Random extra swim time in seconds.',
+    },
+    {
+      key: 'wiggleStrength',
+      label: 'Wiggle strength',
+      min: 0,
+      max: 8,
+      step: 0.1,
+      hint: 'How hard each fish darts side to side.',
+    },
+    {
+      key: 'wiggleRate',
+      label: 'Wiggle rate',
+      min: 0,
+      max: 40,
+      step: 0.5,
+      hint: 'Wiggle oscillations per second on the primary axis.',
+    },
+    {
+      key: 'wiggleRateCross',
+      label: 'Cross wiggle rate',
+      min: 0,
+      max: 40,
+      step: 0.5,
+      hint: 'Wiggle oscillations per second on the crossing axis.',
+    },
+    {
+      key: 'gravityPercent',
+      label: 'Gravity',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.gravity,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+  waterfall: [
+    {
+      key: 'countPercent',
+      label: 'Curtain stars',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: 'Curtain count as a percentage of the star count.',
+    },
+    {
+      key: 'curtainWidth',
+      label: 'Curtain width',
+      min: 0.2,
+      max: 6,
+      step: 0.05,
+      hint: 'Curtain width relative to the shell size.',
+    },
+    {
+      key: 'scatterX',
+      label: 'Width scatter',
+      min: 0,
+      max: 120,
+      step: 1,
+      hint: 'Random horizontal scatter of each spawn point.',
+    },
+    {
+      key: 'scatterZ',
+      label: 'Depth scatter',
+      min: 0,
+      max: 120,
+      step: 1,
+      hint: 'Random depth scatter of each spawn point.',
+    },
+    {
+      key: 'dropStart',
+      label: 'Drop start',
+      min: 0,
+      max: 240,
+      step: 1,
+      hint: 'How far below the burst point stars may start.',
+    },
+    {
+      key: 'fallSpeed',
+      label: 'Fall speed',
+      min: 0,
+      max: 6,
+      step: 0.05,
+      hint: 'Base downward speed of the curtain.',
+    },
+    {
+      key: 'fallSpeedVariation',
+      label: 'Fall variation',
+      min: 0,
+      max: 6,
+      step: 0.05,
+      hint: 'Random extra downward speed per star.',
+    },
+    {
+      key: 'sideDrift',
+      label: 'Side drift',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways drift while falling.',
+    },
+    {
+      key: 'depthDrift',
+      label: 'Depth drift',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Front-to-back drift while falling.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    {
+      key: 'gravityBase',
+      label: 'Gravity pull',
+      min: -2,
+      max: 0,
+      step: 0.01,
+      hint: 'Base gravity while falling; more negative falls faster.',
+    },
+    {
+      key: 'gravityVariation',
+      label: 'Gravity variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra gravity per star.',
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+  ],
+  whirl: [
+    {
+      key: 'countPercent',
+      label: 'Whirl stars',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: 'Whirl count as a percentage of the star count.',
+    },
+    {
+      key: 'minCount',
+      label: 'Minimum stars',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: 'Lower bound on the whirl count regardless of shell size.',
+    },
+    {
+      key: 'verticalBias',
+      label: 'Vertical bias',
+      min: -1,
+      max: 1,
+      step: 0.01,
+      hint: 'Negative sends more stars downward; positive lifts the whirl.',
+    },
+    {
+      key: 'spinStrength',
+      label: 'Spin strength',
+      min: 0,
+      max: 10,
+      step: 0.1,
+      hint: 'How hard the spiral force pulls the corkscrew arms.',
+    },
+    {
+      key: 'spinRate',
+      label: 'Spin rate',
+      min: 0,
+      max: 40,
+      step: 0.5,
+      hint: 'Spiral oscillations per second.',
+    },
+    {
+      key: 'lifeBaseSeconds',
+      label: 'Life base',
+      min: 0.1,
+      max: 8,
+      step: 0.1,
+      hint: 'Minimum star burn time in seconds.',
+    },
+    {
+      key: 'lifeVariationSeconds',
+      label: 'Life spread',
+      min: 0,
+      max: 8,
+      step: 0.1,
+      hint: 'Random extra burn time in seconds.',
+    },
+    {
+      key: 'gravityPercent',
+      label: 'Gravity',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.gravity,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+  singleTail: [
+    {
+      key: 'inheritPercent',
+      label: 'Carried speed',
+      min: 0,
+      max: 100,
+      step: 1,
+      hint: 'How much of the shell velocity the comet keeps.',
+    },
+    {
+      key: 'driftPercent',
+      label: 'Drift',
+      min: 0,
+      max: 100,
+      step: 1,
+      hint: 'Random sideways drift as a percentage of burst speed.',
+    },
+    {
+      key: 'riseFactor',
+      label: 'Rise',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Minimum upward speed as a fraction of burst speed.',
+    },
+    {
+      key: 'pushFactor',
+      label: 'Push',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Extra upward push added to the inherited rise.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+  upwardFan: [
+    {
+      key: 'countPercent',
+      label: 'Fan stars',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'minCount',
+      label: 'Minimum stars',
+      min: 1,
+      max: 200,
+      step: 1,
+      hint: 'Lower bound on the fan count regardless of shell size.',
+    },
+    {
+      key: 'spreadAngleDegrees',
+      label: 'Fan angle',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: 'Total sideways opening angle of the fan, in degrees.',
+    },
+    {
+      key: 'fanBase',
+      label: 'Fan reach',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Minimum sideways throw of each star.',
+    },
+    {
+      key: 'fanVariation',
+      label: 'Reach variation',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Random extra sideways throw per star.',
+    },
+    {
+      key: 'spawnScatter',
+      label: 'Tube scatter',
+      min: 0,
+      max: 120,
+      step: 1,
+      hint: 'Random horizontal scatter of each spawn point.',
+    },
+    {
+      key: 'riseBase',
+      label: 'Muzzle height',
+      min: 0,
+      max: 120,
+      step: 1,
+      hint: 'Base spawn height above the tube.',
+    },
+    {
+      key: 'riseVariation',
+      label: 'Height variation',
+      min: 0,
+      max: 120,
+      step: 1,
+      hint: 'Random extra spawn height per star.',
+    },
+    {
+      key: 'riseSpeed',
+      label: 'Rise speed',
+      min: 0,
+      max: 4,
+      step: 0.01,
+      hint: 'Base upward speed as a fraction of burst speed.',
+    },
+    {
+      key: 'riseSpeedVariation',
+      label: 'Rise variation',
+      min: 0,
+      max: 4,
+      step: 0.01,
+      hint: 'Random extra upward speed per star.',
+    },
+    {
+      key: 'depthScale',
+      label: 'Fan depth',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Front-to-back thickness of the fan.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+  romanCandle: [
+    {
+      key: 'shotsPercent',
+      label: 'Shots',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: 'Shot count as a percentage of the star count.',
+    },
+    {
+      key: 'minShots',
+      label: 'Minimum shots',
+      min: 1,
+      max: 60,
+      step: 1,
+      hint: 'Lower bound on the shot count regardless of shell size.',
+    },
+    {
+      key: 'durationPercent',
+      label: 'Sequence length',
+      min: 5,
+      max: 100,
+      step: 1,
+      hint: 'Length of the firing sequence relative to the shell life.',
+    },
+    {
+      key: 'durationMinSeconds',
+      label: 'Minimum length',
+      min: 0.5,
+      max: 30,
+      step: 0.5,
+      hint: 'Shortest allowed sequence, in seconds.',
+    },
+    {
+      key: 'durationMaxSeconds',
+      label: 'Maximum length',
+      min: 1,
+      max: 30,
+      step: 0.5,
+      hint: 'Longest allowed sequence, in seconds.',
+    },
+    {
+      key: 'spread',
+      label: 'Aim wobble',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Sideways aim wobble per shot, in radians.',
+    },
+    {
+      key: 'azimuth',
+      label: 'Depth wobble',
+      min: 0,
+      max: 2,
+      step: 0.01,
+      hint: 'Front-to-back aim wobble per shot, in radians.',
+    },
+    {
+      key: 'speedBase',
+      label: 'Shot speed',
+      min: 0.1,
+      max: 3,
+      step: 0.01,
+      hint: 'Minimum shot speed as a fraction of burst speed.',
+    },
+    {
+      key: 'speedVariation',
+      label: 'Speed variation',
+      min: 0,
+      max: 3,
+      step: 0.01,
+      hint: 'Random extra speed per shot.',
+    },
+    {
+      key: 'muzzleScatter',
+      label: 'Muzzle scatter',
+      min: 0,
+      max: 60,
+      step: 1,
+      hint: 'Random muzzle offset of each shot.',
+    },
+    {
+      key: 'lateralScale',
+      label: 'Sideways throw',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Sideways speed factor of each shot.',
+    },
+    {
+      key: 'depthScale',
+      label: 'Depth throw',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Front-to-back speed factor of each shot.',
+    },
+    {
+      key: 'riseBase',
+      label: 'Rise speed',
+      min: 0,
+      max: 4,
+      step: 0.01,
+      hint: 'Base upward speed of each shot.',
+    },
+    {
+      key: 'riseVariation',
+      label: 'Rise variation',
+      min: 0,
+      max: 4,
+      step: 0.01,
+      hint: 'Random extra upward speed per shot.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Star life',
+      min: 10,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Head size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+  fountain: [
+    {
+      key: 'durationPercent',
+      label: 'Spray length',
+      min: 5,
+      max: 100,
+      step: 1,
+      hint: 'Length of the spray relative to the shell life.',
+    },
+    {
+      key: 'durationMinSeconds',
+      label: 'Minimum length',
+      min: 0.5,
+      max: 30,
+      step: 0.5,
+      hint: 'Shortest allowed spray, in seconds.',
+    },
+    {
+      key: 'durationMaxSeconds',
+      label: 'Maximum length',
+      min: 1,
+      max: 30,
+      step: 0.5,
+      hint: 'Longest allowed spray, in seconds.',
+    },
+    {
+      key: 'ratePercent',
+      label: 'Spark rate',
+      min: 10,
+      max: 600,
+      step: 1,
+      hint: 'Sparks per second as a percentage of the star count.',
+    },
+    {
+      key: 'minRatePerSecond',
+      label: 'Minimum rate',
+      min: 1,
+      max: 400,
+      step: 1,
+      hint: 'Lower bound on sparks per second.',
+    },
+    {
+      key: 'coneAngleDegrees',
+      label: 'Cone angle',
+      min: 2,
+      max: 180,
+      step: 1,
+      hint: 'Total opening angle of the spray cone, in degrees.',
+    },
+    {
+      key: 'speedBase',
+      label: 'Spark speed',
+      min: 0.05,
+      max: 3,
+      step: 0.01,
+      hint: 'Minimum spark speed as a fraction of burst speed.',
+    },
+    {
+      key: 'speedVariation',
+      label: 'Speed variation',
+      min: 0,
+      max: 3,
+      step: 0.01,
+      hint: 'Random extra speed per spark.',
+    },
+    {
+      key: 'spawnScatter',
+      label: 'Nozzle scatter',
+      min: 0,
+      max: 60,
+      step: 1,
+      hint: "Random offset of each spark's spawn point.",
+    },
+    {
+      key: 'lateralScale',
+      label: 'Sideways spray',
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      hint: 'Sideways speed factor of the spray.',
+    },
+    {
+      key: 'lifePercent',
+      label: 'Spark life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.life,
+    },
+    { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
+    {
+      key: 'headSizePercent',
+      label: 'Spark size',
+      min: 5,
+      max: 200,
+      step: 1,
+      hint: PERCENT_HINTS.headSize,
+    },
+    {
+      key: 'trailLifePercent',
+      label: 'Trail life',
+      min: 5,
+      max: 300,
+      step: 1,
+      hint: PERCENT_HINTS.trailLife,
+    },
+  ],
+};
 
 const BOOM_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -724,6 +1836,7 @@ export type RenderControlsProps = {
     | 'star'
     | 'starInner'
     | 'trail'
+    | 'geometry'
     | 'launch'
     | 'launchShell'
     | 'launchTrail'
@@ -3237,6 +4350,49 @@ export function FireworkRenderControls({
     );
   }
 
+  function setGeometryTuningValue(group: GeometryTuningGroupKey, key: string, value: unknown) {
+    mutate((draft) => {
+      const tuning = ensureRecord(draft, 'geometryTuning');
+      const target = ensureRecord(tuning, group);
+      target[key] = value;
+    });
+  }
+
+  function renderGeometryControls() {
+    // Brocade crowns burst through their own calibrated path, tuned by the
+    // dedicated brocade panel rather than the shared geometry tuning.
+    if (isBrocade) return null;
+    const group = GEOMETRY_TUNING_GROUPS[design.geometry];
+    if (!group) return null;
+    const values = design.geometryTuning[group] as Record<string, number>;
+    return (
+      <PanelSection
+        title="Geometry"
+        collapsible
+        defaultExpanded={false}
+        titleAccessory={
+          <InfoTooltip text="Shape tuning for this burst geometry. These values save with the effect JSON and were previously fixed inside the renderer." />
+        }
+      >
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          {GEOMETRY_TUNING_SLIDERS[group].map((slider) => (
+            <SliderField
+              key={slider.key}
+              label={slider.label}
+              min={slider.min}
+              max={slider.max}
+              step={slider.step}
+              value={round2(values[slider.key] ?? slider.min)}
+              disabled={disabled}
+              hint={slider.hint}
+              onChange={(value) => setGeometryTuningValue(group, slider.key, round2(value))}
+            />
+          ))}
+        </div>
+      </PanelSection>
+    );
+  }
+
   function renderStrobeControls() {
     return (
       <PanelSection
@@ -3275,6 +4431,36 @@ export function FireworkRenderControls({
             disabled={sectionDisabled.strobe}
             hint="Fraction of each blink the star spends lit."
             onChange={(value) => setNestedRenderValue('strobe', 'dutyCycle', round2(value))}
+          />
+          <SliderField
+            label="Strobe amount"
+            min={0}
+            max={100}
+            step={1}
+            value={design.strobe.amountPercent}
+            disabled={sectionDisabled.strobe}
+            hint="Percentage of stars that strobe; the rest burn steadily."
+            onChange={(value) => setNestedRenderValue('strobe', 'amountPercent', value)}
+          />
+          <SliderField
+            label="Dark size"
+            min={0}
+            max={60}
+            step={0.5}
+            value={design.strobe.dimPercent}
+            disabled={sectionDisabled.strobe}
+            hint="Star size during the dark phase, as a percentage of the lit size. 0 fully vanishes."
+            onChange={(value) => setNestedRenderValue('strobe', 'dimPercent', round2(value))}
+          />
+          <SliderField
+            label="Desync"
+            min={0}
+            max={1}
+            step={0.001}
+            value={design.strobe.desync}
+            disabled={sectionDisabled.strobe}
+            hint="Per-star phase offset. 0 blinks every star in unison; higher scatters the blinks."
+            onChange={(value) => setNestedRenderValue('strobe', 'desync', value)}
           />
         </div>
       </PanelSection>
@@ -3357,6 +4543,48 @@ export function FireworkRenderControls({
               hint="How hard the fragments kick away from the split."
               onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
             />
+            <SliderField
+              label="Fragment life"
+              min={0.1}
+              max={6}
+              step={0.05}
+              value={design.split.lifeBaseSeconds}
+              disabled={sectionDisabled.split}
+              hint="Minimum fragment burn time in seconds."
+              onChange={(value) => setNestedRenderValue('split', 'lifeBaseSeconds', round2(value))}
+            />
+            <SliderField
+              label="Fragment life spread"
+              min={0}
+              max={6}
+              step={0.05}
+              value={design.split.lifeVariationSeconds}
+              disabled={sectionDisabled.split}
+              hint="Random extra burn time on top of the base, in seconds."
+              onChange={(value) =>
+                setNestedRenderValue('split', 'lifeVariationSeconds', round2(value))
+              }
+            />
+            <SliderField
+              label="Fragment size"
+              min={5}
+              max={200}
+              step={1}
+              value={design.split.headSizePercent}
+              disabled={sectionDisabled.split}
+              hint="Fragment head size as a percentage of the parent star."
+              onChange={(value) => setNestedRenderValue('split', 'headSizePercent', value)}
+            />
+            <SliderField
+              label="Fragment trail life"
+              min={5}
+              max={300}
+              step={1}
+              value={design.split.trailLifePercent}
+              disabled={sectionDisabled.split}
+              hint="Fragment trail persistence relative to the parent trail."
+              onChange={(value) => setNestedRenderValue('split', 'trailLifePercent', value)}
+            />
           </div>
         ) : null}
       </PanelSection>
@@ -3364,6 +4592,7 @@ export function FireworkRenderControls({
   }
 
   if (controlScope === 'launch') return <>{renderLaunchControls(true)}</>;
+  if (controlScope === 'geometry') return <>{renderGeometryControls()}</>;
   if (controlScope === 'smoke') return <>{renderSmokeControls()}</>;
   if (controlScope === 'strobe') return <>{renderStrobeControls()}</>;
   if (controlScope === 'crackle') return <>{renderCrackleControls()}</>;
@@ -3499,6 +4728,8 @@ export function FireworkRenderControls({
       {renderStarLayerControls('outer', 'Star')}
 
       {renderStarLayerControls('core', 'Star Inner')}
+
+      {renderGeometryControls()}
 
       {showLaunch ? renderSoundControls() : null}
 

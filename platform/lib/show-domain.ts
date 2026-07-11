@@ -1,10 +1,9 @@
 /**
  * Domain types for ShowCrafter shows.
  *
- * Pure types and small pure helpers (formatters, slug generators) only — no
- * I/O, no in-memory state. Persistence lives in `lib/shows.server.ts` and
- * the upcoming `lib/shows/*` modules; this file is the contract those
- * modules speak to the rest of the app.
+ * Pure types and small pure helpers (formatters, slug generators) only, with no
+ * I/O or in-memory state. Persistence lives in the server-only `lib/shows/`
+ * modules; this file is the contract they expose to the rest of the app.
  */
 
 import type { FireworkSpec } from '@/lib/fireworks/spec';
@@ -68,6 +67,10 @@ export type FireworkSpecification = {
   heightMeters: number | null;
   caliber: string | null;
   shotCount: number | null;
+  /** Multishot children can leave the parent tube, which needs wider overlap modelling. */
+  hasLaunchPositionOverrides?: boolean;
+  /** Absolute launch positions used by multishot children. */
+  launchPositionOverrideIndices?: number[];
   spec: FireworkSpec;
   rawSpec: unknown;
   renderDesign: FireworkDesign | null;
@@ -114,6 +117,18 @@ export function formatDuration(seconds: number | null | undefined): string {
     .toString()
     .padStart(2, '0');
   return `${m}:${s}`;
+}
+
+/**
+ * Format a duration in seconds as `Xm YYs` words for admin summaries.
+ * Falls back to a placeholder when the duration is unknown.
+ */
+export function formatDurationWords(seconds: number | null | undefined): string {
+  if (seconds == null || Number.isNaN(seconds)) return 'n/a';
+  const totalSeconds = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`;
 }
 
 export function formatBudget(cents: number | null | undefined): string {

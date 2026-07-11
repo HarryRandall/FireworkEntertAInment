@@ -41,7 +41,7 @@ test('cue generation defaults to local fast planning instead of waiting on OpenR
   assert.match(runner, /if \(generationMode === 'fast'\)/);
   assert.match(runner, /planCuesFast\(/);
   assert.match(fastPlanner, /export function planCuesFast/);
-  assert.match(fastPlanner, /MAX_FAST_CUES = 110/);
+  assert.match(fastPlanner, /MAX_FAST_CUES = 220/);
   assert.match(envExample, /default fast local planner/);
   assert.doesNotMatch(envExample, /CUE_GENERATION_MODE/);
 });
@@ -76,5 +76,5 @@ test('cue generation emits server timing logs for the critical stages', () => {
   assert.match(runner, /fastPlanMs:/);
   assert.match(runner, /llmMs:/);
   assert.match(runner, /totalMs:/);
-  assert.match(runner, /max_tokens: 8000/);
+  assert.match(runner, /max_tokens: 6000/);
 });

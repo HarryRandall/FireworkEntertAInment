@@ -54,6 +54,27 @@ focused tests. Regenerate `lib/database.types.ts` after applying a migration.
 Follow [database safety](docs/database-safety.md) and
 [the migration rule](../.cursor/rules/supabase-rls.mdc).
 
+## Code And UI Conventions
+
+Read the repository [agent guide](../AGENTS.md) and the local
+[ShowCrafter design-system skill](../.agents/skills/showcrafter-design-system/SKILL.md)
+before editing the app.
+
+- Use `app/components/ui` for app primitives. `components/ui` is the low-level
+  Radix/shadcn layer; only files explicitly marked as generated are non-editable.
+- Keep normal app/admin chrome neutral. Marker green is for primary actions,
+  focus, progress, and active technical markers; `accent` is a neutral hover or
+  selected surface.
+- Use semantic tokens from `app/globals.css`, visible focus states, and Geist
+  Mono with `tabular-nums` for dense numeric metadata.
+- Keep stable route chrome visible while data loads and match skeleton geometry
+  to the loaded surface.
+- Comment non-obvious rationale and invariants, not filenames or the next line.
+- Fail closed on database errors that affect access, credits, ownership, or cue
+  safety. Put multi-write invariants in a transaction or guarded RPC.
+- Keep `geometryTuning` schema/defaults, renderer consumption, editor controls,
+  canonicalisation, preview timing, and tests in sync.
+
 ## Additional Documentation
 
 - [Analyser runner](docs/analyser-runner.md)

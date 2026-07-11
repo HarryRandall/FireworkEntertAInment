@@ -57,9 +57,20 @@ test('new show wizard reflects the server generation mode and live credit costs'
   assert.match(actions, /generationMode === 'llm' \? requestedCueModel : null/);
   assert.match(actions, /defaultCueModel/);
   assert.match(page, /selectedCueModel \?\? generationPresentation\?\.defaultCueModel/);
-  assert.match(page, /generationMode === 'llm' && selectedCueModel/);
+  assert.match(page, /!usesBeatPrecision &&\s+generationPresentation\.generationMode === 'llm'/s);
   assert.match(promptHero, /params\.set\('model', selectedCueModel\)/);
   assert.match(promptHero, /<CueModelSelect/);
+});
+
+test('new show wizard exposes real shared show styles', () => {
+  assert.match(page, /SHOW_STYLE_LIST\.map/);
+  assert.match(page, /setStyleKey\(style\.key\)/);
+  assert.match(page, /role="radiogroup"/);
+  assert.match(page, /role="radio"/);
+  assert.match(page, /aria-checked=\{selected\}/);
+  assert.match(page, /data\.set\('showStyle', styleKey\)/);
+  assert.match(page, /usesBeatPrecision \|\| fireworkTypes\.has\('aerial_shells'\)/);
+  assert.match(actions, /Beat precision needs Aerial shells selected/);
 });
 
 test('new show wizard can prefill a prompt and continue to soundtrack', () => {

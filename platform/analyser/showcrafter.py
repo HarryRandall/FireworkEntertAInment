@@ -646,12 +646,14 @@ def analyse_music_personality(
     buildups: list,
     chroma: np.ndarray | None = None,
 ) -> dict:
-    spectral_centroid = librosa.feature.spectral_centroid(y=y, sr=sr, hop_length=hop_length)[0]
-    spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr, hop_length=hop_length)[0]
+    # Reuse one magnitude spectrogram for brightness and bass metrics. The old
+    # path performed three equivalent STFTs in succession during every run.
+    stft = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_length))
+    spectral_centroid = librosa.feature.spectral_centroid(S=stft, sr=sr)[0]
+    spectral_rolloff = librosa.feature.spectral_rolloff(S=stft, sr=sr)[0]
     if chroma is None:
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
 
-    stft = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_length))
     freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
     total_energy = float(np.mean(stft)) + 1e-10
     bass_mask = freqs <= 180
@@ -935,6 +937,7 @@ def estimate_downbeats(beat_times, onset_env, sr, hop_length):
 
     n = beats.shape[0]
     best_score = -1.0
+    best_contrast = -1.0
     best_bpb = 4
     best_phase = 0
     for bpb in (4, 3, 2):
@@ -953,11 +956,64 @@ def estimate_downbeats(beat_times, onset_env, sr, hop_length):
             score = (down_mean - other_mean) + prior
             if score > best_score:
                 best_score = score
+                best_contrast = down_mean - other_mean
                 best_bpb = bpb
                 best_phase = phase
 
+    # A flat or weak onset pattern does not contain enough evidence to name a
+    # bar phase. Returning no downbeats lets the app preserve the full beat
+    # grid instead of confidently pruning verses against a guessed bar.
+    if best_contrast < 0.06:
+        return [], 4
+
     downbeat_times = [round(float(beats[i]), 3) for i in range(best_phase, n, best_bpb)]
     return downbeat_times, best_bpb
+
+
+def refine_event_times(event_frames, onset_env, sr, hop_length, radius=2):
+    """Refine frame-level beat/onset events against the local transient peak."""
+    refined = []
+    envelope = np.asarray(onset_env, dtype=float)
+    for raw_frame in np.asarray(event_frames, dtype=int):
+        lo = max(0, raw_frame - radius)
+        hi = min(envelope.size, raw_frame + radius + 1)
+        if hi <= lo:
+            peak_frame = float(raw_frame)
+        else:
+            local = envelope[lo:hi]
+            max_strength = float(np.max(local))
+            raw_strength = float(envelope[raw_frame]) if 0 <= raw_frame < envelope.size else 0.0
+            stronger_by = max_strength - raw_strength
+            # A flat/tied window carries no evidence that the beat tracker is
+            # early or late. Keep its grid position rather than letting argmax
+            # pull every such event to the left edge of the search window.
+            if max_strength <= 1e-10 or stronger_by <= max(1e-8, max_strength * 0.05):
+                peak = raw_frame
+            else:
+                candidate_offsets = np.flatnonzero(
+                    np.isclose(local, max_strength, rtol=1e-6, atol=1e-10)
+                )
+                candidate_frames = [lo + int(offset) for offset in candidate_offsets]
+                nearest_distance = min(abs(frame - raw_frame) for frame in candidate_frames)
+                nearest = [
+                    frame
+                    for frame in candidate_frames
+                    if abs(frame - raw_frame) == nearest_distance
+                ]
+                peak = nearest[0] if len(nearest) == 1 else raw_frame
+            peak_frame = float(peak)
+            # Parabolic interpolation gives sub-frame timing for a clean
+            # transient while remaining bounded by the neighbouring frames.
+            if 0 < peak < envelope.size - 1:
+                left = envelope[peak - 1]
+                centre = envelope[peak]
+                right = envelope[peak + 1]
+                denominator = left - 2.0 * centre + right
+                if abs(denominator) > 1e-10:
+                    offset = 0.5 * (left - right) / denominator
+                    peak_frame += float(np.clip(offset, -0.5, 0.5))
+        refined.append(float(librosa.frames_to_time(peak_frame, sr=sr, hop_length=hop_length)))
+    return refined
 
 
 def analyse_song(
@@ -999,7 +1055,7 @@ def analyse_song(
         hop_length=hop_length,
         trim=False,
     )
-    beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
+    beat_times = refine_event_times(beat_frames, onset_env, sr, hop_length)
     tempo_value = float(np.atleast_1d(tempo)[0])
     timings["beat_ms"] += elapsed_ms(beat_start)
 
@@ -1038,7 +1094,7 @@ def analyse_song(
         sr=sr,
         hop_length=hop_length,
     )
-    onset_times = librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length).tolist()
+    onset_times = refine_event_times(onset_frames, onset_env, sr, hop_length)
     timings["onset_ms"] += elapsed_ms(onset_start)
 
     # ──────────────────────────────────────────────

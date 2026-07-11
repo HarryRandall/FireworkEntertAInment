@@ -18,6 +18,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } 
 import { archiveStyleDefault, updateStyleDefault } from '@/app/actions/admin-style-defaults';
 import { JsonReadOnlyPanel } from '@/app/components/admin/EditorInspectorPanels';
 import {
+  PREVIEW_LAUNCH_POSITIONS,
   estimateLaunchPreviewDurationSeconds,
   estimateLaunchPreviewTicks,
   estimatePreviewTicks,
@@ -43,11 +44,7 @@ import { toast } from '@/app/components/ui/toast';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import type { AdminStyleDefaultDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
-import {
-  compileFireworkDesign,
-  estimateDesignDurationSeconds,
-  type LaunchPosition,
-} from '@/lib/fireworks/design';
+import { compileFireworkDesign, estimateDesignDurationSeconds } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
@@ -78,7 +75,6 @@ const PREVIEW_START_SECONDS = 0;
 // fast scrub does not re-render the whole editor on every input event. The
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
-const PREVIEW_LAUNCH_POSITIONS: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 
 const KIND_OPTIONS = FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => ({
   value: kind,

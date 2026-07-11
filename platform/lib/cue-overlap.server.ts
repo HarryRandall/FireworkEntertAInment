@@ -27,11 +27,14 @@ export async function getProductDurationSeconds(
   supabase: AppSupabase,
   catalogueItemId: string,
 ): Promise<number | null> {
-  const { data: item } = await supabase
+  const { data: item, error: itemError } = await supabase
     .from('catalogue_items')
     .select('duration_seconds, firework_id, multishot_id, fireworks(duration_seconds)')
     .eq('id', catalogueItemId)
     .maybeSingle();
+  if (itemError) {
+    throw new Error('Could not read the catalogue item duration.', { cause: itemError });
+  }
   const itemDuration = finiteOrNull(item?.duration_seconds);
   if (itemDuration != null) return itemDuration;
   const directRow = Array.isArray(item?.fireworks) ? item.fireworks[0] : item?.fireworks;
@@ -39,10 +42,13 @@ export async function getProductDurationSeconds(
   if (directDuration != null) return directDuration;
   if (!item?.multishot_id) return null;
 
-  const { data: shots } = await supabase
+  const { data: shots, error: shotsError } = await supabase
     .from('multishot_fireworks')
     .select('time_offset_seconds, fireworks(duration_seconds)')
     .eq('multishot_id', item.multishot_id);
+  if (shotsError) {
+    throw new Error('Could not read the multishot duration.', { cause: shotsError });
+  }
   if (!shots || shots.length === 0) return null;
   let max = 0;
   for (const shot of shots as Array<{

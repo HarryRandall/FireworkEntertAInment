@@ -87,33 +87,54 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   }
   const cueDescription = productRow.name.trim();
 
-  const newDuration =
-    (await getProductDurationSeconds(supabase, parsed.data.productId)) ??
-    MIN_PRODUCT_DURATION_SECONDS;
-
-  const { data: existingCues } = await supabase
-    .from('show_timeline_items')
-    .select('id, time_seconds, catalogue_item_id, description')
-    .eq('show_id', parsed.data.showId)
-    .eq('launch_position_index', parsed.data.launchPositionIndex);
-
+  let newDuration = MIN_PRODUCT_DURATION_SECONDS;
+  let nextPosition = 1;
   const existingWindows: Array<{
     timeSeconds: number;
     durationSeconds: number;
     launchPositionIndex: number;
     description: string;
   }> = [];
-  for (const cue of existingCues ?? []) {
-    if (cue.time_seconds == null) continue;
-    const otherDuration =
-      (await getProductDurationSeconds(supabase, cue.catalogue_item_id)) ??
+
+  // Schedule reads are safety checks, not optional enrichment. A failed read
+  // must block insertion rather than being treated as an empty tube or position.
+  try {
+    newDuration =
+      (await getProductDurationSeconds(supabase, parsed.data.productId)) ??
       MIN_PRODUCT_DURATION_SECONDS;
-    existingWindows.push({
-      timeSeconds: Number(cue.time_seconds),
-      durationSeconds: otherDuration,
-      launchPositionIndex: parsed.data.launchPositionIndex,
-      description: cue.description,
-    });
+
+    const { data: existingCues, error: existingCuesError } = await supabase
+      .from('show_timeline_items')
+      .select('id, time_seconds, catalogue_item_id, description')
+      .eq('show_id', parsed.data.showId)
+      .eq('launch_position_index', parsed.data.launchPositionIndex);
+    if (existingCuesError) throw existingCuesError;
+
+    for (const cue of existingCues ?? []) {
+      if (cue.time_seconds == null) continue;
+      const otherDuration =
+        (await getProductDurationSeconds(supabase, cue.catalogue_item_id)) ??
+        MIN_PRODUCT_DURATION_SECONDS;
+      existingWindows.push({
+        timeSeconds: Number(cue.time_seconds),
+        durationSeconds: otherDuration,
+        launchPositionIndex: parsed.data.launchPositionIndex,
+        description: cue.description,
+      });
+    }
+
+    const { data: lastCue, error: lastCueError } = await supabase
+      .from('show_timeline_items')
+      .select('position')
+      .eq('show_id', parsed.data.showId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (lastCueError) throw lastCueError;
+    nextPosition = (lastCue?.position ?? 0) + 1;
+  } catch (error) {
+    console.error('[addPreviewCueAction] schedule validation failed:', error);
+    return { ok: false, error: 'Could not validate the cue schedule. Try again.' };
   }
 
   const conflict = findTubeOverlap(
@@ -131,14 +152,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       error: `Tube ${parsed.data.launchPositionIndex + 1} is busy from ${formatSeconds(conflict.timeSeconds)} to ${formatSeconds(otherEnd)} (${conflict.description}). Pick a different time or tube.`,
     };
   }
-
-  const { data: lastCue } = await supabase
-    .from('show_timeline_items')
-    .select('position')
-    .eq('show_id', parsed.data.showId)
-    .order('position', { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   const isAiRefinement = parsed.data.aiCreditAction === 'show_refinement';
   let refinementReservationKey: string | null = null;
@@ -175,7 +188,7 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
 
   const { error } = await supabase.from('show_timeline_items').insert({
     show_id: parsed.data.showId,
-    position: (lastCue?.position ?? 0) + 1,
+    position: nextPosition,
     time_seconds: parsed.data.timeSeconds,
     description: cueDescription,
     catalogue_item_id: parsed.data.productId,

@@ -12,14 +12,6 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Render a duration in seconds as `M:SS`. */
-export function formatDuration(seconds: number): string {
-  const total = Math.round(seconds);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
 /** Strip storage-unfriendly characters from a filename, capping length. */
 export function sanitizeStorageName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80) || 'audio';

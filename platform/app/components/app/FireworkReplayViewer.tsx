@@ -315,16 +315,28 @@ export function FireworkReplayViewer({
     function tick(now: number) {
       if (startedAt.current == null) return;
       const dtFromStart = (now - startedAt.current) / 1000;
+      const audio = audioRef.current;
+      const audioTime =
+        audio && !audio.paused && !audio.ended && Number.isFinite(audio.currentTime)
+          ? audio.currentTime
+          : null;
       // Browsers throttle/pause RAF on hidden tabs but performance.now() keeps
-      // ticking — without this re-anchor we'd leap the playhead by however long
+      // ticking. Without this re-anchor we'd leap the playhead by however long
       // the tab was backgrounded and force the engine into a full replay.
-      if (dtFromStart > 0.5) {
+      if (audioTime == null && dtFromStart > 0.5) {
         startedAt.current = now;
         playheadStart.current = elapsedRef.current;
         frame = requestAnimationFrame(tick);
         return;
       }
-      const next = Math.min(duration, playheadStart.current + dtFromStart);
+      // When soundtrack audio exists it is the playback clock. Driving both
+      // the renderer and transport from media currentTime prevents cumulative
+      // wall-clock drift between a correctly planned burst and its beat.
+      const next = Math.min(duration, audioTime ?? playheadStart.current + dtFromStart);
+      if (audioTime != null) {
+        startedAt.current = now;
+        playheadStart.current = next;
+      }
       // 60Hz drive for the engine and timeline via the ref; React state
       // (active cue, table highlight) is throttled to ~15Hz. The transport
       // thumb self-animates from the same ref, so no per-frame state here.
