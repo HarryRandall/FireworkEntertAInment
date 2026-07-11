@@ -26,7 +26,7 @@ export type SlotEmphasis = 'normal' | 'accent' | 'peak';
 
 export type CueSlot = {
   index: number;
-  time: number; // seconds, 2 decimals
+  time: number; // seconds, millisecond precision
   tube: 0 | 1 | 2;
   intensity: number; // 0..1
   sectionLabel: string;
@@ -105,7 +105,7 @@ export function buildCueSlots(
     const interval = 60 / tempoBpm;
     beats = [];
     for (let t = interval; t < songDuration - 0.25; t += interval) {
-      beats.push(Number(t.toFixed(2)));
+      beats.push(Number(t.toFixed(3)));
     }
   }
 
@@ -115,7 +115,7 @@ export function buildCueSlots(
   // so nothing regresses.
   const downbeatTimes = (analysis?.downbeat_times ?? [])
     .filter((t) => Number.isFinite(t) && t >= 0 && t < songDuration)
-    .map((t) => Number(t.toFixed(2)));
+    .map((t) => Number(t.toFixed(3)));
   const hasDownbeats = downbeatTimes.length > 0 && !needsSynth;
   const nearDownbeat = (t: number) => downbeatTimes.some((d) => Math.abs(d - t) <= 0.06);
 
@@ -284,7 +284,7 @@ export function buildCueSlots(
     for (const tube of tubes) {
       slots.push({
         index: idx++,
-        time: Number(b.time.toFixed(2)),
+        time: Number(b.time.toFixed(3)),
         tube,
         intensity: Number(b.intensity.toFixed(3)),
         sectionLabel: b.sectionLabel,
@@ -326,14 +326,14 @@ export function buildCueSlots(
       if (energyAt(t) < 0.5) continue;
       if (nearBeat(t)) continue;
       if (chosen.some((c) => Math.abs(c - t) < 0.3)) continue;
-      chosen.push(Number(t.toFixed(2)));
+      chosen.push(Number(t.toFixed(3)));
     }
     for (const t of chosen) {
       const section = sections.find((s) => t >= s.start && t < s.end);
       const vibe = section ? vibeFor(section.label) : 'verse';
       slots.push({
         index: idx++,
-        time: Number(t.toFixed(2)),
+        time: Number(t.toFixed(3)),
         tube: (rotor % maxTubes) as 0 | 1 | 2,
         intensity: 0.6,
         sectionLabel: section?.label ?? 'unknown',

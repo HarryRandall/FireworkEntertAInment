@@ -77,3 +77,35 @@ export function launchPositionsForWidth(widthFeet: number | null | undefined): 1
   if (widthFeet >= 30) return 2;
   return 1;
 }
+
+type LaunchPositionAwareProduct = {
+  launchPositionOverrideIndices?: number[];
+};
+
+/** Whether every absolute multishot child position fits on this site. */
+export function productFitsLaunchPositions(
+  product: LaunchPositionAwareProduct,
+  maxPositions: 1 | 2 | 3,
+): boolean {
+  return (product.launchPositionOverrideIndices ?? []).every(
+    (index) => Number.isInteger(index) && index >= 0 && index < maxPositions,
+  );
+}
+
+/**
+ * Conservatively reserve the parent tube and every absolute child tube for a
+ * multishot's full duration. This prevents expanded child shots colliding with
+ * another generated cue even when only some children override their position.
+ */
+export function occupiedLaunchPositions(
+  product: LaunchPositionAwareProduct,
+  parentPosition: 0 | 1 | 2,
+  maxPositions: 1 | 2 | 3,
+): Array<0 | 1 | 2> | null {
+  if (!productFitsLaunchPositions(product, maxPositions) || parentPosition >= maxPositions) {
+    return null;
+  }
+  return Array.from(
+    new Set([parentPosition, ...(product.launchPositionOverrideIndices ?? [])]),
+  ).sort((a, b) => a - b) as Array<0 | 1 | 2>;
+}

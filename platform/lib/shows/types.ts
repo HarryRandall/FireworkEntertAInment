@@ -111,7 +111,7 @@ export type ShoppingListComputation = {
 };
 
 /** Cache namespace for everything in this module. Bump the version on schema-affecting changes. */
-export const CACHE_PREFIX = 'shows:v11';
+export const CACHE_PREFIX = 'shows:v12';
 /** TTL for show/cue/shopping reads. Short so mutations don't need to wait for invalidation propagation. */
 export const SHOWS_TTL_SECONDS = 60;
 /** TTL for the firework catalogue lookups — they rarely change. */

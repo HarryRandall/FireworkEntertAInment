@@ -1,8 +1,8 @@
 /**
  * Zod schemas + shared types for cue generation.
  *
- * The LLM is told to emit `{ cues: [{ slotIndex, productId, description }, ...], rationale? }`
- * — these schemas enforce that contract before we trust the response.
+ * The LLM is told to emit `{ cues: [{ slotIndex, productId, emphasis? }, ...], rationale? }`.
+ * These schemas enforce that contract before we trust the response.
  */
 import { z } from 'zod';
 
@@ -14,7 +14,10 @@ export type CueEmphasis = (typeof CUE_EMPHASIS_VALUES)[number];
 export const AssignmentSchema = z.object({
   slotIndex: z.number().int().min(0),
   productId: z.string().uuid(),
-  description: z.string().trim().min(1).max(180),
+  // Optional for compatibility with older/custom prompts. The persisted cue
+  // label comes from the canonical catalogue product, so forcing the model to
+  // write hundreds of discarded sentences only increased latency.
+  description: z.string().trim().min(1).max(180).optional(),
   emphasis: z.enum(CUE_EMPHASIS_VALUES).optional(),
 });
 

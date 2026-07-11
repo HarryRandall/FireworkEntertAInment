@@ -18,6 +18,7 @@ try:
         estimate_downbeats,
         filter_buildups,
         label_sections_from_clusters,
+        refine_event_times,
         select_climax_indices,
         validate_analysis_result,
     )
@@ -251,6 +252,35 @@ class SchemaValidationTests(unittest.TestCase):
 
         self.assertEqual(bpb, 4)
         self.assertEqual(downbeats, [0.0, 2.0])
+
+    def test_estimate_downbeats_rejects_a_flat_unreliable_phase(self):
+        beat_times = [round(i * 0.5, 3) for i in range(12)]
+        onset_env = np.ones(300, dtype=float)
+
+        downbeats, bpb = estimate_downbeats(beat_times, onset_env, 22050, 512)
+
+        self.assertEqual(downbeats, [])
+        self.assertEqual(bpb, 4)
+
+    def test_event_refinement_moves_to_the_local_transient_peak(self):
+        onset_env = np.zeros(20, dtype=float)
+        onset_env[6:9] = [0.4, 1.0, 0.4]
+
+        refined = refine_event_times([6], onset_env, sr=100, hop_length=10)
+
+        self.assertAlmostEqual(refined[0], 0.7, places=3)
+
+    def test_event_refinement_keeps_flat_and_ambiguous_windows_on_grid(self):
+        flat = np.zeros(20, dtype=float)
+        tied = np.zeros(20, dtype=float)
+        tied[4] = 1.0
+        tied[8] = 1.0
+
+        flat_time = refine_event_times([6], flat, sr=100, hop_length=10)
+        tied_time = refine_event_times([6], tied, sr=100, hop_length=10)
+
+        self.assertAlmostEqual(flat_time[0], 0.6, places=3)
+        self.assertAlmostEqual(tied_time[0], 0.6, places=3)
 
     def test_drop_label_for_high_peak_non_chorus_section(self):
         sr, hop_length = 22050, 512

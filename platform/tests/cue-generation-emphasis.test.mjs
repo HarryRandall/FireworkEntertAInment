@@ -30,11 +30,14 @@ test('cue runner replaces show_timeline_items transactionally with emphasis', ()
 
   // Reconstructed cue carries emphasis, defaulting to the slot's computed value.
   assert.match(runner, /emphasis: CueEmphasis;/);
-  assert.match(runner, /emphasis: a\.emphasis \?\? slot\.emphasis,/);
+  assert.match(runner, /const emphasis = a\.emphasis \?\? slot\.emphasis;/);
+  assert.match(runner, /impactTimeSeconds: timing\.impactTimeSeconds,[\s\S]*?emphasis,/);
   // Both planner paths produce emphasis-bearing cues.
   assert.match(fastPlanner, /emphasis: CueEmphasis;/);
-  assert.match(fastPlanner, /emphasis: slot\.emphasis,/);
-  assert.match(beatSync, /emphasis: 'normal',/);
+  assert.match(fastPlanner, /const emphasis: CueEmphasis = isSurprise/);
+  assert.match(fastPlanner, /direction\.softEnding && slot\.finale/);
+  assert.match(fastPlanner, /emphasis,\s+\};/);
+  assert.match(beatSync, /const emphasis = emphasisForTarget/);
   // The DB replacement row includes emphasis and goes through one RPC.
   assert.match(
     runner,

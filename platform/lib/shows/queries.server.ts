@@ -247,6 +247,7 @@ export const listFireworkProducts = cache(
          multishot_fireworks (
            sequence_index,
            caliber,
+           position_override_json,
            fireworks (${fireworkSelect})
          )
        )`,
@@ -277,6 +278,7 @@ export const listFireworkProducts = cache(
           multishot_fireworks: Array<{
             sequence_index: number;
             caliber: string | null;
+            position_override_json: unknown;
             fireworks:
               | FireworkVariantProjection
               | FireworkVariantProjection[]
@@ -294,6 +296,13 @@ export const listFireworkProducts = cache(
           (a, b) => a.sequence_index - b.sequence_index,
         );
         const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
+        const launchPositionOverrideIndices = Array.from(
+          new Set(
+            multishotRows
+              .map((shot) => parseShotLaunchPositionIndex(shot.position_override_json))
+              .filter((index): index is number => index != null),
+          ),
+        ).sort((a, b) => a - b);
         const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
         if (!primary) continue;
 
@@ -319,6 +328,9 @@ export const listFireworkProducts = cache(
             row.catalogue_item_kind === 'multishot'
               ? (row.multishots?.shot_count ?? multishotRows.length)
               : 1,
+          hasLaunchPositionOverrides:
+            row.catalogue_item_kind === 'multishot' && launchPositionOverrideIndices.length > 0,
+          launchPositionOverrideIndices,
         });
       }
 

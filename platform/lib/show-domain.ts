@@ -67,6 +67,10 @@ export type FireworkSpecification = {
   heightMeters: number | null;
   caliber: string | null;
   shotCount: number | null;
+  /** Multishot children can leave the parent tube, which needs wider overlap modelling. */
+  hasLaunchPositionOverrides?: boolean;
+  /** Absolute launch positions used by multishot children. */
+  launchPositionOverrideIndices?: number[];
   spec: FireworkSpec;
   rawSpec: unknown;
   renderDesign: FireworkDesign | null;

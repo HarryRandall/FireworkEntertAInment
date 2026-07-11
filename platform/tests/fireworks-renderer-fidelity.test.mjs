@@ -22,7 +22,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v11'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v12'/);
   assert.match(showDomain, /rawSpec: unknown/);
   assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
   assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);

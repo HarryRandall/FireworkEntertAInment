@@ -78,10 +78,10 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
   },
   beat_test: {
     key: 'beat_test',
-    name: 'Beat-synced (test)',
-    tagline: 'Every firework pops exactly on the beat',
+    name: 'Beat precision',
+    tagline: 'Every chosen burst lands exactly on a beat',
     description:
-      'A deterministic test mode: one single-shot firework on every analysed beat, rotating launch tubes, perfectly in sync.',
+      'Short single shots rotate across every safe firing position, launched early so each visible burst hits the analysed beat.',
     engine: 'beat',
     promptDirectives: null,
   },

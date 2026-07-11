@@ -183,6 +183,14 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     };
   }
 
+  if (
+    parsed.data.showStyle === 'beat_test' &&
+    parsed.data.fireworkTypes?.length &&
+    !parsed.data.fireworkTypes.includes('aerial_shells')
+  ) {
+    return { ok: false, error: 'Beat precision needs Aerial shells selected.' };
+  }
+
   let audioPath = parsed.data.audioPath || null;
   const musicAnalysisId = parsed.data.musicAnalysisId || null;
   const requestedCueModel = normaliseCueModel(parsed.data.selectedCueModel, DEFAULT_CUE_MODEL);
