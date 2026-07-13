@@ -698,7 +698,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
     timing,
     /layers\.map\(\(layer, index\) =>[\s\S]*layer\.burstTrail\.enabled[\s\S]*layer\.burstTrail\.lifetime\.percent/,
   );
-  assert.match(timing, /function launchTrailEndSeconds/);
+  assert.match(timing, /function estimateFireworkLaunchTrailEndSeconds/);
   assert.match(timing, /liftParticles\.lifetime\.afterglowSeconds/);
   assert.match(timing, /liftTrailEndSeconds/);
 
@@ -1588,7 +1588,7 @@ test('preview duration estimate uses shared design-aware timing', () => {
   const timing = read('lib/fireworks/timing.ts');
 
   assert.match(design, /estimateFireworkDesignTiming\(design\)\.endSeconds/);
-  assert.match(timing, /geometryLifeBounds/);
+  assert.match(timing, /estimateFireworkLayerLifeBounds/);
   assert.match(timing, /design\.split\.lifeBaseSeconds/);
   assert.match(timing, /design\.split\.lifeVariationSeconds/);
   assert.match(timing, /emittedDurationSeconds/);
