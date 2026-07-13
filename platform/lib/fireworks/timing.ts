@@ -167,7 +167,8 @@ function geometrySupportsSplit(design: FireworkDesign): boolean {
 }
 
 function launchTrailEndSeconds(design: FireworkDesign, liftTimeSeconds: number): number {
-  const liftParticles = design.launch.liftParticles;
+  const liftParticles = design.launch?.liftParticles;
+  if (!liftParticles) return liftTimeSeconds;
   if (!liftParticles.enabled || liftParticles.amount <= 0) return liftTimeSeconds;
 
   const emissionEnd = liftTimeSeconds * Math.min(1, Math.max(0, liftParticles.height / 100));
