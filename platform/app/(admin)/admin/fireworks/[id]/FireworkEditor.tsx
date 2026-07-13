@@ -2027,15 +2027,18 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       eyebrow: 'Ascent',
       title: 'Launch trail',
       content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={overridesRecord}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => mutateOverridesForStyle('launch', updater)}
-          disabled={!parsedOverrides.ok}
-          showLaunch
-          controlScope="launchTrail"
-        />
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
+            disabled={!parsedOverrides.ok}
+            showLaunch
+            controlScope="launchTrail"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
       ),
     },
     {

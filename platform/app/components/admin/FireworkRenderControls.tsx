@@ -19,6 +19,7 @@ import { SelectField } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
 import { Switch } from '@/components/ui/switch';
 import {
+  BURST_TRAIL_FLICKER_LIFE_MAX,
   BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX,
   BURST_TRAIL_PARTICLES_PER_STAR_MAX,
   makeBurstTrailPreset,
@@ -1269,9 +1270,17 @@ const LAUNCH_SHELL_SIZE_SCALE_MIN = 0.25;
 const LAUNCH_SHELL_SIZE_SCALE_MAX = 4;
 const LAUNCH_SHELL_BRIGHTNESS_MAX = 3;
 const SHELL_TRAIL_TUBE_DIAMETER_MAX = 90;
+const SHELL_TRAIL_CURVE_MIN = 0.2;
+const SHELL_TRAIL_CURVE_MAX = 4;
 const LIFT_PARTICLE_AMOUNT_MAX = 1000;
 const LIFT_PARTICLE_SIZE_MAX = 180;
 const LIFT_PARTICLE_HEIGHT_PERCENT_MAX = 100;
+const LIFT_PARTICLE_FLICKER_STRENGTH_MAX = 3;
+const LIFT_PARTICLE_GRAVITY_MIN = -2;
+const LIFT_PARTICLE_GRAVITY_MAX = 1;
+const LIFT_PARTICLE_DRAG_MAX = 6;
+const LIFT_PARTICLE_INHERITED_VELOCITY_MAX = 1;
+const LIFT_PARTICLE_TURBULENCE_MAX = 2;
 const LIFT_PATH_SAMPLES_MAX = 12;
 const LIFT_SWIRL_STRENGTH_MAX = 4;
 const LIFT_SWIRL_RADIUS_MAX = 180;
@@ -1424,6 +1433,10 @@ function formatDegrees(value: number): string {
 
 function formatMultiplier(value: number): string {
   return `${value.toFixed(value % 1 === 0 ? 0 : 2)}x`;
+}
+
+function formatProbability(value: number): string {
+  return formatPercent(value * 100);
 }
 
 function formatRotation(value: number): string {
@@ -2255,6 +2268,20 @@ export function FireworkRenderControls({
           hint="Spread angle in the older lift trail after it clears the mortar. The launch starts straight and the tube diameter remains the hard cap."
           onChange={(value) => setLaunchNestedValue('shell', 'trail', 'tailAngle', round2(value))}
         />
+        <SliderField
+          label="Width curve"
+          min={SHELL_TRAIL_CURVE_MIN}
+          max={SHELL_TRAIL_CURVE_MAX}
+          step={0.05}
+          value={shellTrail.curve}
+          formatValue={formatMultiplier}
+          showNumberInput
+          inputAriaLabel="Shell trail width curve value"
+          disabled={disabled}
+          fullWidth
+          hint="Shapes how quickly the shell trail widens from the launch tube towards its older tail."
+          onChange={(value) => setLaunchNestedValue('shell', 'trail', 'curve', round2(value))}
+        />
       </div>
     );
 
@@ -2285,7 +2312,7 @@ export function FireworkRenderControls({
       <PanelSection
         title="Lift particles"
         collapsible
-        defaultExpanded={false}
+        defaultExpanded={controlScope === 'launchTrail' || controlScope === 'launch'}
         inactive={!liftParticlesEnabled}
         titleAccessory={<InfoTooltip text="Glowing ascent particles that climb with the shell." />}
         action={
@@ -2630,15 +2657,53 @@ export function FireworkRenderControls({
                   }
                 />
                 <SliderField
-                  label="Flicker"
+                  label="Flicker chance"
                   min={0}
                   max={1}
                   step={0.01}
                   value={liftParticles.flicker.chance}
+                  formatValue={formatProbability}
+                  showNumberInput
+                  inputAriaLabel="Lift flicker chance value"
                   disabled={controlDisabled}
                   hint="Chance each lift particle twinkles white-hot."
                   onChange={(value) =>
                     setLaunchNestedValue('liftParticles', 'flicker', 'chance', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Flicker strength"
+                  min={0}
+                  max={LIFT_PARTICLE_FLICKER_STRENGTH_MAX}
+                  step={0.05}
+                  value={liftParticles.flicker.strength}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift flicker strength value"
+                  disabled={controlDisabled}
+                  hint="How strongly a flickering particle flashes towards white."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'flicker', 'strength', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Flicker life"
+                  min={0}
+                  max={BURST_TRAIL_FLICKER_LIFE_MAX}
+                  step={0.01}
+                  value={liftParticles.flicker.lifetimeMultiplier}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Lift flicker life value"
+                  disabled={controlDisabled}
+                  hint="Lifetime multiplier for particles that flicker. Lower values create sharper flashes."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'flicker',
+                      'lifetimeMultiplier',
+                      round2(value),
+                    )
                   }
                 />
               </AdvancedControls>
@@ -2776,6 +2841,70 @@ export function FireworkRenderControls({
                   setLaunchNestedValue('liftParticles', 'motion', 'driftZ', round2(value))
                 }
               />
+              <AdvancedControls>
+                <SliderField
+                  label="Gravity"
+                  min={LIFT_PARTICLE_GRAVITY_MIN}
+                  max={LIFT_PARTICLE_GRAVITY_MAX}
+                  step={0.01}
+                  value={liftParticles.motion.gravity}
+                  showNumberInput
+                  inputAriaLabel="Lift gravity value"
+                  disabled={controlDisabled}
+                  hint="Vertical acceleration after a particle leaves the guided shell path."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'motion', 'gravity', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Drag"
+                  min={0}
+                  max={LIFT_PARTICLE_DRAG_MAX}
+                  step={0.05}
+                  value={liftParticles.motion.drag}
+                  showNumberInput
+                  inputAriaLabel="Lift drag value"
+                  disabled={controlDisabled}
+                  hint="Air resistance on released lift particles. Higher values stop their motion sooner."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'motion', 'drag', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Inherited speed"
+                  min={0}
+                  max={LIFT_PARTICLE_INHERITED_VELOCITY_MAX}
+                  step={0.01}
+                  value={liftParticles.motion.inheritedVelocity}
+                  formatValue={formatProbability}
+                  showNumberInput
+                  inputAriaLabel="Lift inherited speed value"
+                  disabled={controlDisabled}
+                  hint="Share of the shell's velocity retained when each lift particle is released."
+                  onChange={(value) =>
+                    setLaunchNestedValue(
+                      'liftParticles',
+                      'motion',
+                      'inheritedVelocity',
+                      round2(value),
+                    )
+                  }
+                />
+                <SliderField
+                  label="Turbulence"
+                  min={0}
+                  max={LIFT_PARTICLE_TURBULENCE_MAX}
+                  step={0.01}
+                  value={liftParticles.motion.turbulence}
+                  showNumberInput
+                  inputAriaLabel="Lift turbulence value"
+                  disabled={controlDisabled}
+                  hint="Random velocity scatter that roughens the launch trail."
+                  onChange={(value) =>
+                    setLaunchNestedValue('liftParticles', 'motion', 'turbulence', round2(value))
+                  }
+                />
+              </AdvancedControls>
             </div>
           </SubSection>
         </div>
@@ -4297,7 +4426,12 @@ export function FireworkRenderControls({
   }
 
   if (controlScope === 'launchTrail') {
-    return <>{renderLaunchShellTrailControls()}</>;
+    return (
+      <div className="space-y-5">
+        {renderLaunchShellTrailControls()}
+        {renderLiftParticleControls()}
+      </div>
+    );
   }
 
   function renderLaunchControls(includeLiftParticles = false) {

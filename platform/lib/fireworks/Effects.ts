@@ -1400,7 +1400,10 @@ export class Effects {
       const liftTubeRadius = shellTrailTubeRadius(shellTrail, pathPoint.age, liftRiseHeight);
 
       for (let i = 0; i < liftParticlesPerSample && liftEmitted < liftCount; i++, liftEmitted++) {
-        const brocadeLift = streakLift;
+        // Only crowns keep the legacy calibrated lift look. Other effects use
+        // their saved launch-particle settings even when their burst has a
+        // streak trail, so the Launch Trail editor remains authoritative.
+        const brocadeLift = isBrocadeCrown(design);
         const lockToShellPath = liftTubeRadius <= 0;
         const liftStreakSize = brocadeLift ? clamp(design.trail.streakSize, 0.4, 4) : 1;
         const liftStreakLife = brocadeLift ? clamp(design.trail.streakLife, 0.2, 4) : 1;

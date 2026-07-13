@@ -166,6 +166,20 @@ function geometrySupportsSplit(design: FireworkDesign): boolean {
   ].includes(design.geometry);
 }
 
+function launchTrailEndSeconds(design: FireworkDesign, liftTimeSeconds: number): number {
+  const liftParticles = design.launch.liftParticles;
+  if (!liftParticles.enabled || liftParticles.amount <= 0) return liftTimeSeconds;
+
+  const emissionEnd = liftTimeSeconds * Math.min(1, Math.max(0, liftParticles.height / 100));
+  const lifeVariation = 1 + Math.min(1, Math.max(0, liftParticles.lifetime.variationPercent / 100));
+  const particleLife =
+    (liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds) *
+    lifeVariation *
+    Math.max(0.2, design.trail.length);
+
+  return emissionEnd + particleLife;
+}
+
 /**
  * Estimate the visible phases of one firework from launch. The helper mirrors
  * renderer life and emitter settings so transport limits and timeline ticks
@@ -213,12 +227,19 @@ export function estimateFireworkDesignTiming(design: FireworkDesign): FireworkDe
       return effectStartSeconds + emissionDuration + Math.max(lifeBounds[index].max, trailLife);
     }),
   );
+  const liftTrailEndSeconds = launchTrailEndSeconds(design, liftTimeSeconds);
 
   return {
     liftTimeSeconds,
     effectStartSeconds,
     fadeStartSeconds,
     fadeFinishSeconds,
-    endSeconds: Math.max(fadeFinishSeconds, splitEndSeconds, crackleEndSeconds, trailEndSeconds),
+    endSeconds: Math.max(
+      fadeFinishSeconds,
+      splitEndSeconds,
+      crackleEndSeconds,
+      trailEndSeconds,
+      liftTrailEndSeconds,
+    ),
   };
 }

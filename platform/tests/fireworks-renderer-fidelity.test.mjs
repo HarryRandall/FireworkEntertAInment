@@ -671,6 +671,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
 
 test('unified burst trails are validated, migrated, and exposed through shared controls', () => {
   const controls = read('app/components/admin/FireworkRenderControls.tsx');
+  const burstTrailControls = controls.slice(
+    controls.indexOf('function renderBurstTrailControls'),
+    controls.indexOf('function renderStarLayerControls'),
+  );
   const design = read('lib/fireworks/design.ts');
   const timing = read('lib/fireworks/timing.ts');
   const migration = read('supabase/migrations/20260615143000_unified_burst_trail_model.sql');
@@ -694,6 +698,9 @@ test('unified burst trails are validated, migrated, and exposed through shared c
     timing,
     /layers\.map\(\(layer, index\) =>[\s\S]*layer\.burstTrail\.enabled[\s\S]*layer\.burstTrail\.lifetime\.percent/,
   );
+  assert.match(timing, /function launchTrailEndSeconds/);
+  assert.match(timing, /liftParticles\.lifetime\.afterglowSeconds/);
+  assert.match(timing, /liftTrailEndSeconds/);
 
   // The trail panel groups controls into collapsible SubSection dropdowns. The
   // old per-section density editor is replaced by particle size, placement,
@@ -785,7 +792,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.doesNotMatch(controls, /Size variation/);
   assert.doesNotMatch(controls, /Taper curve/);
   assert.doesNotMatch(controls, /Life variation/);
-  assert.doesNotMatch(controls, /Flicker chance|Flicker strength|Flicker life/);
+  assert.doesNotMatch(burstTrailControls, /Flicker chance|Flicker strength|Flicker life/);
   // The Motion settings sheet was removed entirely.
   assert.doesNotMatch(controls, /Motion settings|Trail motion|Width guide|SheetContent/);
   // Head-orb appearance is a shared, grouped helper with Opening/Core/Glow dropdowns.
@@ -918,6 +925,8 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /previousPosition = liftPreviousPosition/);
   assert.match(effects, /this\.shellEffect\([\s\S]*previousPosition/);
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
+  assert.match(effects, /const brocadeLift = isBrocadeCrown\(design\)/);
+  assert.doesNotMatch(effects, /const brocadeLift = streakLift/);
   assert.match(effects, /liftParticles\.spacing\.pathSamples/);
   assert.match(effects, /function liftPathPoint/);
   assert.match(effects, /function shellTrailSpreadAngle/);
@@ -980,6 +989,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
     controls,
     /label="Tail angle"[\s\S]*setLaunchNestedValue\('shell', 'trail', 'tailAngle'/,
   );
+  assert.match(
+    controls,
+    /label="Width curve"[\s\S]*setLaunchNestedValue\('shell', 'trail', 'curve'/,
+  );
   assert.match(controls, /function renderSmokeControls/);
   assert.match(controls, /title="Lift particles"/);
   assert.match(controls, /title="Smoke"/);
@@ -1000,10 +1013,13 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Head scale"/);
   assert.match(controls, /label="Tail scale"/);
   assert.match(controls, /label="Afterglow"/);
-  assert.doesNotMatch(controls, /inputAriaLabel="Lift gravity value"/);
-  assert.doesNotMatch(controls, /inputAriaLabel="Lift drag value"/);
-  assert.doesNotMatch(controls, /inputAriaLabel="Lift inherited speed value"/);
-  assert.doesNotMatch(controls, /inputAriaLabel="Lift turbulence value"/);
+  assert.match(controls, /label="Flicker chance"/);
+  assert.match(controls, /label="Flicker strength"/);
+  assert.match(controls, /label="Flicker life"/);
+  assert.match(controls, /inputAriaLabel="Lift gravity value"/);
+  assert.match(controls, /inputAriaLabel="Lift drag value"/);
+  assert.match(controls, /inputAriaLabel="Lift inherited speed value"/);
+  assert.match(controls, /inputAriaLabel="Lift turbulence value"/);
   assert.match(controls, /label="Path fill"/);
   assert.match(controls, /label="Cluster strength"/);
   assert.match(controls, /label="Ascent swirl"/);
@@ -1012,6 +1028,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /label="Loop length"/);
   assert.match(controls, /label="Loop height"/);
   assert.match(controls, /label="Loop speed"/);
+  assert.match(
+    controls,
+    /controlScope === 'launchTrail'[\s\S]*renderLaunchShellTrailControls\(\)[\s\S]*renderLiftParticleControls\(\)/,
+  );
   assert.match(
     controls,
     /label="Rise height"[\s\S]*formatValue=\{formatPercent\}[\s\S]*setLaunchValue\('liftParticles', 'height'/,

@@ -1113,15 +1113,18 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       eyebrow: 'Ascent',
       title: 'Launch trail',
       content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={renderDefaults}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
-          disabled={!parsedModel.ok}
-          showLaunch
-          controlScope="launchTrail"
-        />
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
+            disabled={!parsedModel.ok}
+            showLaunch
+            controlScope="launchTrail"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
       ),
     },
     {
