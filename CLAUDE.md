@@ -47,7 +47,7 @@ billing.
   `openai/gpt-4.1-mini` unless `OPENROUTER_CUE_MODEL` is set.
 - **Renderer**: Three.js and the custom firework engine.
 - **Covers**: CSS-first covers, stored posters, and legacy
-  `@paper-design/shaders-react` / `@firecms/neat` compatibility.
+  `@paper-design/shaders-react` compatibility.
 - **Cache**: optional Upstash Redis REST, otherwise per-process memory cache.
 - **Firework import worker**: Python worker in `workers/firework-import-worker/`.
 

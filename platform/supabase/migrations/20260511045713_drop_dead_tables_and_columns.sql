@@ -3,7 +3,7 @@
 --
 -- Dead tables:
 --   "Wikifireworks sample database" / "Finale3D CSV Import Sample" -- raw
---     supplier CSV imports surfaced only in the deleted /dev/db-test page.
+--     supplier CSV imports surfaced only in a deleted database-test page.
 --   products (the 0-row table from the never-properly-applied
 --     0014_products_table.sql migration). Phase 2 will rename
 --     catalogue_products -> products to take this name.

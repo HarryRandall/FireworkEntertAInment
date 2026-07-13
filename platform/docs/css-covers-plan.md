@@ -7,10 +7,9 @@ that matches exactly.
 ## Why
 
 The generating/splash screen mounts a full-bleed `ShaderCover`, which runs a
-`@paper-design/shaders` fragment shader every frame. `@firecms/neat` (real
-Three.js) runs in a few other surfaces too. Both are GPU/CPU heavy, can only be
-mounted once or twice before the page struggles, and cannot back a live browse
-card each. Today browse cards already dodge this by freezing a PNG poster
+`@paper-design/shaders` fragment shader every frame. It is GPU/CPU heavy, can
+only be mounted once or twice before the page struggles, and cannot back a live
+browse card each. Today browse cards already dodge this by freezing a PNG poster
 (`render-cover-poster.tsx` -> `covers` bucket), but that capture grabs a raw
 WebGL frame at a semi-random developed moment, which is why a show's frozen
 "icon" can drift from what the user actually watched.
@@ -20,7 +19,6 @@ Goals:
 - Cheap, smooth animated covers that do not spike CPU/GPU.
 - A variety of distinct, good-looking effects.
 - Freeze any effect to a still that is identical to the live frame.
-- A dev playground to shuffle through every effect.
 
 Decisions taken for this pass: build the effects with **CSS/SVG plus a tiny
 Canvas2D layer**; keep the existing WebGL covers and add CSS covers as a
@@ -47,7 +45,6 @@ to a stored raster stays optional (see migration).
 | `lib/css-cover.ts`                       | Pure, serialisable `CssCover` type + generators, mirrors `lib/shader-cover.ts`. Carries an `engine: 'css'` discriminator so both cover kinds can share the `cover_shader` JSON column. |
 | `app/components/app/CssCover.tsx`        | Renders a `CssCover` as layered CSS/SVG plus the Canvas2D `bloom` kind. `animate` toggles live vs frozen.                                                                              |
 | `app/components/app/CssCover.module.css` | Keyframes and layer classes. Colours/timing come in via CSS custom properties and inline duration/delay.                                                                               |
-| `app/(dev)/dev/css-covers/`              | Playground route (`page.tsx` + `CssCoversPlayground.tsx`).                                                                                                                             |
 
 `lib/css-cover.ts` intentionally reuses the shape and helpers of
 `lib/shader-cover.ts` (palette building, colour normalisation, gradient
@@ -117,21 +114,11 @@ capped); the field kinds share `runFieldCanvas` (fixed low-res buffer, 24-30fps
 capped). Both are driven by draw functions that are pure in `t`, so freezing on
 `frame` stays deterministic.
 
-## Playground
-
-Route: `/dev/css-covers` (in the existing `(dev)` group, matching
-`/dev/paper-shaders`). It offers a **Single** view (large preview plus full
-controls) and a **Gallery** view that renders all 17 kinds at once so you can
-shuffle through them quickly. Controls: effect picker, Randomise, palette editor
-(3-6 colours), Speed/Scale/Angle/Softness/Grain/Intensity/Density sliders, a
-**Freeze/Play** toggle, a **Frozen frame** scrubber to preview the exact still a
-show would save, a layout seed for the Bloom particles, and Copy cover JSON.
-
 ## Migration (coexist as a lite mode)
 
 Staged so nothing in the live flow changes until we choose to flip it.
 
-1. **Done** - lib, component, and playground. No app surface touched yet.
+1. **Done** - lib and component. No app surface touched yet.
 2. **Done - cover dispatcher** - `lib/cover.ts` exposes `ShowCover`
    (`ShaderCover | CssCover`), `parseCover` (dispatches on the `engine` field:
    absent -> WebGL, `css` -> CSS), `randomCover` (always CSS), `coverGradient`,
@@ -153,7 +140,7 @@ Staged so nothing in the live flow changes until we choose to flip it.
    covers keep the old develop-then-read-buffer path. `CoverPoster` falls back
    to `coverGradient` for either engine.
 5. **Optional cleanup** - once legacy WebGL covers are rare, retire the
-   paper-shaders/neat cover path if desired. The raw Three.js **firework
+   Paper shader cover path if desired. The raw Three.js **firework
    renderer** (`FireworkReplayCanvas`) is out of scope and stays as is.
 
 ## Notes and risks
@@ -164,9 +151,6 @@ Staged so nothing in the live flow changes until we choose to flip it.
   them forces a full-screen repaint each frame (this was the original CPU
   pegging). The Bloom canvas reuses one glow sprite per colour, composites with
   `lighter`, and is capped to ~30fps.
-- The playground seeds its first render deterministically (`cssCoverFromSeed`)
-  and only calls `randomCssCover()` after mount, to avoid an SSR/client
-  hydration mismatch.
 - Respects `prefers-reduced-motion`: CSS animations pause via the module's media
   query; the Bloom canvas draws a single static frame.
 - Keep cover params bounded (as the generators do) so covers never render
