@@ -925,8 +925,11 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /previousPosition = liftPreviousPosition/);
   assert.match(effects, /this\.shellEffect\([\s\S]*previousPosition/);
   assert.match(effects, /const liftCount =[\s\S]*liftParticles\.amount \/ 100/);
-  assert.match(effects, /const brocadeLift = isBrocadeCrown\(design\)/);
-  assert.doesNotMatch(effects, /const brocadeLift = streakLift/);
+  assert.match(
+    effects,
+    /const legacyLift =\s*liftParticles\.appearanceMode !== 'custom'[\s\S]*isBrocadeCrown\(design\)[\s\S]*usesStreakTrails\(design\)/,
+  );
+  assert.doesNotMatch(effects, /const brocadeLift/);
   assert.match(effects, /liftParticles\.spacing\.pathSamples/);
   assert.match(effects, /function liftPathPoint/);
   assert.match(effects, /function shellTrailSpreadAngle/);
@@ -934,7 +937,7 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /SHELL_TRAIL_CLEAR_AGE_START/);
   assert.match(effects, /SHELL_TRAIL_CLEAR_AGE_END/);
   assert.match(effects, /const lockToShellPath = liftTubeRadius <= 0/);
-  assert.match(effects, /const scatter = brocadeLift[\s\S]*burstTrailScatterOffset/);
+  assert.match(effects, /const scatter = legacyLift[\s\S]*burstTrailScatterOffset/);
   assert.match(effects, /function flatLiftScatterOffset/);
   assert.match(effects, /: flatLiftScatterOffset\(liftTubeRadius, liftRng\)/);
   assert.match(effects, /function usesGuidedLiftPath/);
@@ -998,6 +1001,10 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(controls, /title="Smoke"/);
   assert.match(controls, /checked=\{liftParticlesEnabled\}/);
   assert.match(controls, /checked=\{smokeEnabled\}/);
+  assert.match(design, /appearanceMode: z\.enum\(\['inherit', 'custom'\]\)\.default\('inherit'\)/);
+  assert.match(controls, /<FieldLabel>Particle appearance<\/FieldLabel>/);
+  assert.match(controls, /ariaLabel="Lift particle appearance"/);
+  assert.match(controls, /section === 'liftParticles'[\s\S]*target\.appearanceMode = 'custom'/);
   assert.match(
     controls,
     /const LIFT_PARTICLE_AMOUNT_MAX = 1000[\s\S]*label="Amount"[\s\S]*setLaunchValue\('liftParticles', 'amount'/,

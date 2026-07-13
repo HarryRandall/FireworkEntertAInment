@@ -1331,8 +1331,12 @@ export class Effects {
         vz = 2 - rng.next() * 4;
         break;
     }
-    const streakLift = isBrocadeCrown(design) || usesStreakTrails(design);
-    const liftTrailMultiplier = streakLift
+    // Existing JSON hydrates to inherit, preserving the calibrated streak
+    // launch until an admin explicitly customises its lift particles.
+    const legacyLift =
+      liftParticles.appearanceMode !== 'custom' &&
+      (isBrocadeCrown(design) || usesStreakTrails(design));
+    const liftTrailMultiplier = legacyLift
       ? design.geometry === 'single_tail'
         ? 1.6
         : 1.0
@@ -1367,7 +1371,7 @@ export class Effects {
           )
         : 0;
     const smokeCount =
-      smoke.enabled && !streakLift && particle.y <= smoke.height
+      smoke.enabled && !legacyLift && particle.y <= smoke.height
         ? Math.max(0, Math.round(baseCount * (smoke.particles / 100)))
         : 0;
     if (liftCount <= 0 && smokeCount <= 0) return;
@@ -1400,14 +1404,10 @@ export class Effects {
       const liftTubeRadius = shellTrailTubeRadius(shellTrail, pathPoint.age, liftRiseHeight);
 
       for (let i = 0; i < liftParticlesPerSample && liftEmitted < liftCount; i++, liftEmitted++) {
-        // Only crowns keep the legacy calibrated lift look. Other effects use
-        // their saved launch-particle settings even when their burst has a
-        // streak trail, so the Launch Trail editor remains authoritative.
-        const brocadeLift = isBrocadeCrown(design);
         const lockToShellPath = liftTubeRadius <= 0;
-        const liftStreakSize = brocadeLift ? clamp(design.trail.streakSize, 0.4, 4) : 1;
-        const liftStreakLife = brocadeLift ? clamp(design.trail.streakLife, 0.2, 4) : 1;
-        const liftVelocityScatter = brocadeLift
+        const liftStreakSize = legacyLift ? clamp(design.trail.streakSize, 0.4, 4) : 1;
+        const liftStreakLife = legacyLift ? clamp(design.trail.streakLife, 0.2, 4) : 1;
+        const liftVelocityScatter = legacyLift
           ? clamp(liftTubeRadius * 0.01, 0, 0.16)
           : clamp(liftTubeRadius * 0.04, 0, 1.2);
         const hotTrail =
@@ -1415,33 +1415,33 @@ export class Effects {
           design.trailProfile === 'thick_tail' ||
           design.trailProfile === 'glitter';
         const launchSparkColor = resolveLaunchColor(liftParticles.colour, color, liftRng);
-        const sparkColor = brocadeLift
+        const sparkColor = legacyLift
           ? applyColorMix(color, liftPalette.hot, 0.66 + liftRng.next() * 0.24)
           : hotTrail
             ? applyColorMix(launchSparkColor, HOT_SPARK_COLOR, 0.45)
             : launchSparkColor;
         const sizeVariation =
           1 + (liftRng.next() * 2 - 1) * (liftParticles.particleSize.variationPercent / 100);
-        const sparkBaseSize = brocadeLift
+        const sparkBaseSize = legacyLift
           ? (8 + liftRng.next() * 14) * design.trail.thickness * liftStreakSize
           : liftParticles.particleSize.base * Math.max(0.08, sizeVariation);
-        const sparkHeadSize = brocadeLift
+        const sparkHeadSize = legacyLift
           ? sparkBaseSize
           : sparkBaseSize * liftParticles.particleSize.headScale;
-        const sparkTailSize = brocadeLift
+        const sparkTailSize = legacyLift
           ? sparkBaseSize * 0.35
           : sparkBaseSize * liftParticles.particleSize.tailScale;
         const lifeVariation =
           1 + (liftRng.next() * 2 - 1) * (liftParticles.lifetime.variationPercent / 100);
-        const flicker = !brocadeLift && liftRng.next() < liftParticles.flicker.chance;
+        const flicker = !legacyLift && liftRng.next() < liftParticles.flicker.chance;
         const flickerMix = flicker ? clamp(liftParticles.flicker.strength / 3, 0, 1) : 0;
-        const sparkLife = brocadeLift
+        const sparkLife = legacyLift
           ? (0.14 + liftRng.next() * 0.24) * liftStreakLife
           : (liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds) *
             Math.max(0.05, lifeVariation) *
             design.trail.length *
             (flicker ? liftParticles.flicker.lifetimeMultiplier : 1);
-        const coolSparkColor = brocadeLift
+        const coolSparkColor = legacyLift
           ? liftPalette.cool
           : new THREE.Color(sparkColor.r * 0.46, sparkColor.g * 0.38, sparkColor.b * 0.28);
         const sparkTone = burstTrailParticleColorAt(
@@ -1454,10 +1454,10 @@ export class Effects {
           flickerMix,
         );
         const spin = clamp(liftParticles.motion.spin, 0, 8);
-        const shape = brocadeLift
+        const shape = legacyLift
           ? TRAIL_SHAPE_SQUARE
           : burstTrailShapeValue(chooseBurstTrailShape(liftParticles.shapeWeights, liftRng));
-        const scatter = brocadeLift
+        const scatter = legacyLift
           ? burstTrailScatterOffset(particle.vx, particle.vy, particle.vz, liftTubeRadius, liftRng)
           : flatLiftScatterOffset(liftTubeRadius, liftRng);
         this.pp.new({
@@ -1467,17 +1467,17 @@ export class Effects {
           mass: 0.002,
           gravity: lockToShellPath
             ? 0
-            : brocadeLift
+            : legacyLift
               ? TRAIL_GRAVITY * 0.3
               : liftParticles.motion.gravity,
-          drag: lockToShellPath ? 0 : brocadeLift ? TRAIL_DRAG * 1.05 : liftParticles.motion.drag,
+          drag: lockToShellPath ? 0 : legacyLift ? TRAIL_DRAG * 1.05 : liftParticles.motion.drag,
           size: sparkHeadSize,
           shape,
           rotation: spin > 0 ? liftRng.next() * Math.PI * 2 : 0,
           spin: spin > 0 ? (liftRng.next() - 0.5) * spin * 2 : 0,
           vx: lockToShellPath
             ? 0
-            : brocadeLift
+            : legacyLift
               ? particle.vx * 0.015 + (liftRng.next() - 0.5) * liftVelocityScatter
               : particle.vx * liftParticles.motion.inheritedVelocity +
                 liftParticles.motion.driftX +
@@ -1485,7 +1485,7 @@ export class Effects {
                 (liftRng.next() - 0.5) * (liftVelocityScatter + liftParticles.motion.turbulence),
           vy: lockToShellPath
             ? 0
-            : brocadeLift
+            : legacyLift
               ? -0.04 + liftRng.next() * 0.08
               : particle.vy * liftParticles.motion.inheritedVelocity +
                 liftParticles.motion.driftY -
@@ -1493,7 +1493,7 @@ export class Effects {
                 liftRng.next() * 0.3,
           vz: lockToShellPath
             ? 0
-            : brocadeLift
+            : legacyLift
               ? particle.vz * 0.015 + (liftRng.next() - 0.5) * liftVelocityScatter
               : particle.vz * liftParticles.motion.inheritedVelocity +
                 liftParticles.motion.driftZ +
@@ -1506,8 +1506,8 @@ export class Effects {
           s: 0.5,
           l: 0.0,
           life: sparkLife,
-          decay: brocadeLift ? 34 + liftRng.next() * 30 : 0,
-          effect: brocadeLift
+          decay: legacyLift ? 34 + liftRng.next() * 30 : 0,
+          effect: legacyLift
             ? undefined
             : (p) => {
                 const particleAge = p.maxLife > 0 ? 1 - clamp(p.life / p.maxLife, 0, 1) : 1;

@@ -5,9 +5,11 @@ import type { FireworkDesign } from '@/lib/fireworks/design';
 import {
   applyFireworkTimelineEdit,
   deriveFireworkEditorTimeline,
+  isGroundFireworkEffect,
   MAX_TIMELINE_PHASE_SECONDS,
   MAX_TIMELINE_TOTAL_SECONDS,
   MIN_TIMELINE_TOTAL_SECONDS,
+  usesLegacyLaunchLiftAppearance,
   type FireworkTimelineDefaults,
   type FireworkTimelineEditKey,
   type FireworkTimelinePhaseKey,
@@ -70,17 +72,19 @@ function affectedStyleKinds(
   if (key === 'burn' || key === 'fade') return ['star'];
 
   const tailKinds: FireworkStyleDefaultKind[] = [];
+  const groundEffect = isGroundFireworkEffect(design);
+  const legacyLaunchLift = usesLegacyLaunchLiftAppearance(design);
   const hasBurstTail = (['outer', 'core'] as const).some((layerKey) => {
     const layer = design.stars[layerKey];
     return layer.enabled && layer.burstTrail.enabled && layer.burstTrail.particlesPerStar > 0;
   });
   if (hasBurstTail) tailKinds.push('trail');
   if (design.split.enabled) tailKinds.push('split');
-  if (!hasBurstTail && !design.split.enabled) {
+  if (!groundEffect && !hasBurstTail && !design.split.enabled) {
     if (design.launch.liftParticles.enabled && design.launch.liftParticles.amount > 0) {
-      tailKinds.push('launch');
+      tailKinds.push(legacyLaunchLift ? 'trail' : 'launch');
     }
-    if (design.launch.smoke.enabled && design.launch.smoke.particles > 0) {
+    if (!legacyLaunchLift && design.launch.smoke.enabled && design.launch.smoke.particles > 0) {
       tailKinds.push('smoke');
     }
   }
@@ -93,8 +97,10 @@ function affectedStyleKinds(
     design.geometry === 'fountain'
       ? []
       : (['launch'] as const)),
-    ...(design.launch.liftParticles.enabled ? (['launch'] as const) : []),
-    ...(design.launch.smoke.enabled ? (['smoke'] as const) : []),
+    ...(!groundEffect && design.launch.liftParticles.enabled ? (['launch'] as const) : []),
+    ...(!groundEffect && !legacyLaunchLift && design.launch.smoke.enabled
+      ? (['smoke'] as const)
+      : []),
     ...tailKinds,
   ]);
 }

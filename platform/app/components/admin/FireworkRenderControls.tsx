@@ -1227,6 +1227,11 @@ const LAUNCH_SHELL_SHAPE_OPTIONS = [
   { value: 'triangle', label: 'Triangle' },
 ] satisfies { value: LaunchShellShape; label: string }[];
 
+const LIFT_APPEARANCE_OPTIONS = [
+  { value: 'inherit', label: 'Match burst trail' },
+  { value: 'custom', label: 'Custom settings' },
+];
+
 const CONTROL_GRID_CLASS =
   'grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-x-6 gap-y-4';
 
@@ -2084,6 +2089,9 @@ export function FireworkRenderControls({
       const launch = ensureRecord(draft, 'launch');
       const target = ensureRecord(launch, String(section));
       target[String(key)] = value;
+      if (section === 'liftParticles' && String(key) !== 'appearanceMode') {
+        target.appearanceMode = 'custom';
+      }
     });
   }
 
@@ -2098,6 +2106,7 @@ export function FireworkRenderControls({
       const target = ensureRecord(launch, String(section));
       const nested = ensureRecord(target, group);
       nested[key] = value;
+      if (section === 'liftParticles') target.appearanceMode = 'custom';
     });
   }
 
@@ -2301,6 +2310,11 @@ export function FireworkRenderControls({
     const controlDisabled = sectionDisabled.liftParticles;
     const particleShape = shapeOptionFromWeights(liftParticles.shapeWeights);
     const liftBias = trailBiasFromFrontClump(liftParticles.frontClump);
+    const supportsInheritedAppearance =
+      isBrocade ||
+      (design.stars.outer.enabled &&
+        design.stars.outer.burstTrail.enabled &&
+        design.stars.outer.burstTrail.particlesPerStar > 0);
 
     function setParticleShape(value: string) {
       const shape = value as TrailParticleShapeOption;
@@ -2326,6 +2340,27 @@ export function FireworkRenderControls({
         }
       >
         <div className="space-y-4">
+          {supportsInheritedAppearance ? (
+            <Field>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Particle appearance</FieldLabel>
+                <InfoTooltip text="Match burst trail preserves the calibrated rising streak. Choosing Custom, or changing any lift-particle control, makes the settings below authoritative." />
+              </div>
+              <SelectField
+                value={liftParticles.appearanceMode}
+                onChange={(value) =>
+                  setLaunchValue(
+                    'liftParticles',
+                    'appearanceMode',
+                    value as FireworkDesign['launch']['liftParticles']['appearanceMode'],
+                  )
+                }
+                options={LIFT_APPEARANCE_OPTIONS}
+                ariaLabel="Lift particle appearance"
+                disabled={disabled}
+              />
+            </Field>
+          ) : null}
           <SubSection title="Particles">
             <div className={CONTROL_GRID_CLASS}>
               <SliderField

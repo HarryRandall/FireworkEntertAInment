@@ -39,6 +39,17 @@ export function isGroundFireworkEffect(design: FireworkDesign): boolean {
   );
 }
 
+export function usesLegacyLaunchLiftAppearance(design: FireworkDesign): boolean {
+  const liftParticles = design.launch?.liftParticles;
+  if (!liftParticles || liftParticles.appearanceMode === 'custom') return false;
+
+  const outer = design.stars.outer;
+  const hasStreakTrail =
+    outer.enabled && outer.burstTrail.enabled && outer.burstTrail.particlesPerStar > 0;
+  const isBrocadeCrown = design.geometry === 'crown' && design.trailProfile === 'glitter';
+  return isBrocadeCrown || hasStreakTrail;
+}
+
 export function estimateFireworkLiftTimeSeconds(design: FireworkDesign): number {
   if (isGroundFireworkEffect(design)) return 0;
 
@@ -173,11 +184,17 @@ export function estimateFireworkLaunchTrailEndSeconds(
   design: FireworkDesign,
   liftTimeSeconds = estimateFireworkLiftTimeSeconds(design),
 ): number {
+  if (isGroundFireworkEffect(design)) return 0;
   const liftParticles = design.launch?.liftParticles;
   if (!liftParticles) return liftTimeSeconds;
   if (!liftParticles.enabled || liftParticles.amount <= 0) return liftTimeSeconds;
 
   const emissionEnd = liftTimeSeconds * Math.min(1, Math.max(0, liftParticles.height / 100));
+  if (usesLegacyLaunchLiftAppearance(design)) {
+    const streakLife = Number.isFinite(design.trail?.streakLife) ? design.trail.streakLife : 1;
+    return emissionEnd + 0.38 * Math.min(4, Math.max(0.2, streakLife));
+  }
+
   const lifeVariation = 1 + Math.min(1, Math.max(0, liftParticles.lifetime.variationPercent / 100));
   const particleLife =
     (liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds) *
@@ -191,6 +208,7 @@ export function estimateFireworkLaunchSmokeEndSeconds(
   design: FireworkDesign,
   liftTimeSeconds = estimateFireworkLiftTimeSeconds(design),
 ): number {
+  if (isGroundFireworkEffect(design) || usesLegacyLaunchLiftAppearance(design)) return 0;
   const smoke = design.launch?.smoke;
   if (!smoke?.enabled || smoke.particles <= 0) return 0;
 
@@ -461,26 +479,38 @@ function setLaunchTailDuration(
   design: FireworkDesign,
   desiredAbsoluteEnd: number,
 ): void {
+  if (isGroundFireworkEffect(design)) return;
+
   const liftParticles = design.launch?.liftParticles;
   if (liftParticles?.enabled && liftParticles.amount > 0) {
     const liftTime = estimateFireworkLiftTimeSeconds(design);
     const emissionEnd = liftTime * clamp(liftParticles.height / 100, 0, 1);
-    const variation = 1 + clamp(liftParticles.lifetime.variationPercent / 100, 0, 1);
-    const trailScale = Math.max(0.2, design.trail.length);
-    const targetLife = Math.max(0.1, (desiredAbsoluteEnd - emissionEnd) / (variation * trailScale));
-    const currentLife =
-      liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds;
-    const baseShare = currentLife > 0 ? liftParticles.lifetime.baseSeconds / currentLife : 0.8;
-    const launch = ensureRecord(defaults, 'launch');
-    const particles = ensureRecord(launch, 'liftParticles');
-    const lifetime = ensureRecord(particles, 'lifetime');
-    const base = clamp(targetLife * baseShare, 0.1, 8);
-    lifetime.baseSeconds = roundTimelineSeconds(base);
-    lifetime.afterglowSeconds = roundTimelineSeconds(clamp(targetLife - base, 0, 6));
+    if (usesLegacyLaunchLiftAppearance(design)) {
+      const trail = ensureRecord(defaults, 'trail');
+      trail.streakLife = roundTimelineSeconds(
+        clamp((desiredAbsoluteEnd - emissionEnd) / 0.38, 0.2, 4),
+      );
+    } else {
+      const variation = 1 + clamp(liftParticles.lifetime.variationPercent / 100, 0, 1);
+      const trailScale = Math.max(0.2, design.trail.length);
+      const targetLife = Math.max(
+        0.1,
+        (desiredAbsoluteEnd - emissionEnd) / (variation * trailScale),
+      );
+      const currentLife =
+        liftParticles.lifetime.baseSeconds + liftParticles.lifetime.afterglowSeconds;
+      const baseShare = currentLife > 0 ? liftParticles.lifetime.baseSeconds / currentLife : 0.8;
+      const launch = ensureRecord(defaults, 'launch');
+      const particles = ensureRecord(launch, 'liftParticles');
+      const lifetime = ensureRecord(particles, 'lifetime');
+      const base = clamp(targetLife * baseShare, 0.1, 8);
+      lifetime.baseSeconds = roundTimelineSeconds(base);
+      lifetime.afterglowSeconds = roundTimelineSeconds(clamp(targetLife - base, 0, 6));
+    }
   }
 
   const smoke = design.launch?.smoke;
-  if (smoke?.enabled && smoke.particles > 0) {
+  if (!usesLegacyLaunchLiftAppearance(design) && smoke?.enabled && smoke.particles > 0) {
     const liftTime = estimateFireworkLiftTimeSeconds(design);
     const launch = ensureRecord(defaults, 'launch');
     const smokeDefaults = ensureRecord(launch, 'smoke');
@@ -540,20 +570,31 @@ function scaleEnabledLaunchDurations(
   design: FireworkDesign,
   scale: number,
 ): void {
-  const launch = ensureRecord(defaults, 'launch');
+  if (isGroundFireworkEffect(design)) return;
+
   const liftParticles = design.launch?.liftParticles;
   if (liftParticles?.enabled && liftParticles.amount > 0) {
-    const particles = ensureRecord(launch, 'liftParticles');
-    const lifetime = ensureRecord(particles, 'lifetime');
-    lifetime.baseSeconds = roundTimelineSeconds(
-      clamp(liftParticles.lifetime.baseSeconds * scale, 0.1, 8),
-    );
-    lifetime.afterglowSeconds = roundTimelineSeconds(
-      clamp(liftParticles.lifetime.afterglowSeconds * scale, 0, 6),
-    );
+    if (usesLegacyLaunchLiftAppearance(design)) {
+      const currentStreakLife = Number.isFinite(design.trail?.streakLife)
+        ? design.trail.streakLife
+        : 1;
+      const trail = ensureRecord(defaults, 'trail');
+      trail.streakLife = roundTimelineSeconds(clamp(currentStreakLife * scale, 0.2, 4));
+    } else {
+      const launch = ensureRecord(defaults, 'launch');
+      const particles = ensureRecord(launch, 'liftParticles');
+      const lifetime = ensureRecord(particles, 'lifetime');
+      lifetime.baseSeconds = roundTimelineSeconds(
+        clamp(liftParticles.lifetime.baseSeconds * scale, 0.1, 8),
+      );
+      lifetime.afterglowSeconds = roundTimelineSeconds(
+        clamp(liftParticles.lifetime.afterglowSeconds * scale, 0, 6),
+      );
+    }
   }
   const smoke = design.launch?.smoke;
-  if (smoke?.enabled && smoke.particles > 0) {
+  if (!usesLegacyLaunchLiftAppearance(design) && smoke?.enabled && smoke.particles > 0) {
+    const launch = ensureRecord(defaults, 'launch');
     const smokeDefaults = ensureRecord(launch, 'smoke');
     smokeDefaults.lifeSeconds = roundTimelineSeconds(clamp(smoke.lifeSeconds * scale, 0.2, 12));
   }
@@ -613,9 +654,11 @@ export function deriveFireworkEditorTimeline(design: FireworkDesign): FireworkEd
   });
   const liftParticles = design.launch?.liftParticles;
   const smoke = design.launch?.smoke;
+  const launchTailVisible = !isGroundFireworkEffect(design);
   const hasLaunchTail =
-    Boolean(liftParticles?.enabled && liftParticles.amount > 0) ||
-    Boolean(smoke?.enabled && smoke.particles > 0);
+    launchTailVisible &&
+    (Boolean(liftParticles?.enabled && liftParticles.amount > 0) ||
+      Boolean(!usesLegacyLaunchLiftAppearance(design) && smoke?.enabled && smoke.particles > 0));
 
   return {
     totalDurationSeconds: roundTimelineSeconds(timing.endSeconds),

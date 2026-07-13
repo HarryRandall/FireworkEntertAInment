@@ -5,7 +5,10 @@ import {
   applyFireworkTimelineEdit,
   deriveFireworkEditorTimeline,
   estimateFireworkDesignTiming,
+  estimateFireworkLaunchSmokeEndSeconds,
+  estimateFireworkLaunchTrailEndSeconds,
   estimateFireworkLiftTimeSeconds,
+  usesLegacyLaunchLiftAppearance,
 } from '../lib/fireworks/timing.ts';
 
 function starLayer(life = [1, 1]) {
@@ -152,6 +155,58 @@ test('ground emitters skip lift and include their sequence duration', () => {
   assert.equal(timing.fadeFinishSeconds, 16);
 });
 
+test('legacy launch timing matches calibrated streak life and suppresses smoke', () => {
+  const outer = starLayer([1, 1]);
+  outer.burstTrail = {
+    enabled: true,
+    particlesPerStar: 24,
+    lifetime: { percent: 1, variationPercent: 0 },
+  };
+  const inherited = design({
+    stars: { outer, core: { ...starLayer(), enabled: false } },
+    trail: { length: 1, streakLife: 1 },
+    launch: {
+      liftParticles: {
+        appearanceMode: 'inherit',
+        enabled: true,
+        amount: 100,
+        height: 100,
+        lifetime: { baseSeconds: 4, afterglowSeconds: 1, variationPercent: 0 },
+      },
+      smoke: { enabled: true, particles: 100, lifeSeconds: 8 },
+    },
+  });
+  const custom = structuredClone(inherited);
+  custom.launch.liftParticles.appearanceMode = 'custom';
+  const liftTime = estimateFireworkLiftTimeSeconds(inherited);
+
+  assert.equal(usesLegacyLaunchLiftAppearance(inherited), true);
+  assert.ok(Math.abs(estimateFireworkLaunchTrailEndSeconds(inherited) - (liftTime + 0.38)) < 0.001);
+  assert.equal(estimateFireworkLaunchSmokeEndSeconds(inherited), 0);
+  assert.ok(estimateFireworkLaunchTrailEndSeconds(custom) > liftTime + 4.9);
+  assert.ok(estimateFireworkLaunchSmokeEndSeconds(custom) > liftTime + 9);
+});
+
+test('ground effects exclude launch particles and smoke from timeline tails', () => {
+  const ground = design({
+    geometry: 'fountain',
+    launch: {
+      liftParticles: {
+        appearanceMode: 'custom',
+        enabled: true,
+        amount: 100,
+        height: 100,
+        lifetime: { baseSeconds: 8, afterglowSeconds: 6, variationPercent: 100 },
+      },
+      smoke: { enabled: true, particles: 100, lifeSeconds: 12 },
+    },
+  });
+
+  assert.equal(estimateFireworkLaunchTrailEndSeconds(ground), 0);
+  assert.equal(estimateFireworkLaunchSmokeEndSeconds(ground), 0);
+  assert.equal(deriveFireworkEditorTimeline(ground).tailEditable, false);
+});
+
 test('preview ticks consume the shared design-aware timing helper', () => {
   const source = readFileSync(
     new URL('../app/components/admin/editor-preview-timing.ts', import.meta.url),
@@ -201,6 +256,35 @@ test('total timeline edits proportionally extend ascent, burn and fade', () => {
   assert.ok(after.phases.burn > before.phases.burn);
   assert.ok(after.phases.fade > before.phases.fade);
   assert.ok(Math.abs(after.totalDurationSeconds - before.totalDurationSeconds * 1.25) < 0.2);
+});
+
+test('total edits preserve inherited streak appearance while scaling its life', () => {
+  const outer = starLayer([2, 4]);
+  outer.burstTrail = {
+    enabled: true,
+    particlesPerStar: 24,
+    lifetime: { percent: 1, variationPercent: 0 },
+  };
+  const current = design({
+    stars: { outer, core: { ...starLayer([2, 4]), enabled: false } },
+    trail: { length: 1, streakLife: 1 },
+    launch: {
+      liftParticles: {
+        appearanceMode: 'inherit',
+        enabled: true,
+        amount: 100,
+        height: 100,
+        lifetime: { baseSeconds: 0.8, afterglowSeconds: 0.1, variationPercent: 0 },
+      },
+      smoke: { enabled: true, particles: 100, lifeSeconds: 3.2 },
+    },
+  });
+  const before = deriveFireworkEditorTimeline(current);
+  const patch = {};
+  applyFireworkTimelineEdit(patch, current, 'total', before.totalDurationSeconds * 1.2);
+
+  assert.equal(patch.launch?.liftParticles?.appearanceMode, undefined);
+  assert.ok(patch.trail.streakLife > current.trail.streakLife);
 });
 
 test('fade edits align the renderer hold and enabled closing transitions', () => {

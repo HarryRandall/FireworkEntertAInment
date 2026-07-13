@@ -348,6 +348,7 @@ const LaunchShellSchema = z
 
 const LaunchLiftParticlesSchema = z
   .object({
+    appearanceMode: z.enum(['inherit', 'custom']).default('inherit'),
     enabled: z.boolean().default(true),
     amount: z.coerce.number().int().min(0).max(1000).default(100),
     colour: ColorSchema.optional(),
@@ -433,6 +434,7 @@ const LaunchLiftParticlesSchema = z
       }),
   })
   .default({
+    appearanceMode: 'inherit',
     enabled: true,
     amount: 100,
     height: 100,
@@ -495,6 +497,7 @@ const LaunchSchema = z
       trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },
     },
     liftParticles: {
+      appearanceMode: 'inherit',
       enabled: true,
       amount: 100,
       height: 100,
