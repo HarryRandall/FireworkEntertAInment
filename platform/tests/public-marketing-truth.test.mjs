@@ -101,6 +101,13 @@ test('homepage proof uses capabilities and documented stakeholders', () => {
   );
 });
 
+test('ambient marketing illustrations stay out of the accessibility tree', () => {
+  const doodle = read('app/components/marketing/landing/Doodle.tsx');
+
+  assert.match(doodle, /<span[\s\S]*?aria-hidden="true"/);
+  assert.doesNotMatch(doodle, /role="img"|aria-label=\{meta\.alt\}|DOODLE_META/);
+});
+
 test('homepage renderer waits for viewport proximity and canvas readiness', () => {
   const preview = read('app/components/marketing/landing/ShowPreviewPanel.tsx');
 

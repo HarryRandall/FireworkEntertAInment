@@ -26,15 +26,6 @@ type DoodleColourKey =
   | 'violetSoft';
 type DoodleColours = Partial<Record<DoodleColourKey, string>>;
 
-const DOODLE_META: Record<DoodleName, { alt: string }> = {
-  fire: { alt: 'Doodle of a firework mortar shooting colourful sparks' },
-  burst: { alt: 'Doodle of a celebratory firework bouquet' },
-  play: { alt: 'Doodle of a play button with a firework sprout' },
-  retry: { alt: 'Doodle of circular retry arrows' },
-  fountain: { alt: 'Doodle of a colourful firework fountain' },
-  willow: { alt: 'Doodle of a framed willow firework show' },
-};
-
 const DOODLE_COLOUR_VARS: Record<DoodleColourKey, `--lp-doodle-${string}`> = {
   ink: '--lp-doodle-ink',
   inkSoft: '--lp-doodle-ink-soft',
@@ -162,7 +153,6 @@ export function Doodle({
   style?: CSSProperties;
   colours?: DoodleColours;
 }) {
-  const meta = DOODLE_META[name];
   const colourStyle = getDoodleColourStyle(colours);
   return (
     <span
@@ -172,8 +162,7 @@ export function Doodle({
         bob && 'lp-doodle-bob',
         className,
       )}
-      role="img"
-      aria-label={meta.alt}
+      aria-hidden="true"
       style={{ width, ...colourStyle, ...style }}
       dangerouslySetInnerHTML={{ __html: DOODLE_MARKUP[name] }}
     />
