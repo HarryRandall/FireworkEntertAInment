@@ -83,7 +83,7 @@ export async function updateSupplier(input: z.infer<typeof UpdateSupplier>): Pro
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const { data: updatedSupplier, error } = await supabase
     .from('supplier_profiles')
     .update({
       name: parsed.data.name,
@@ -92,8 +92,11 @@ export async function updateSupplier(input: z.infer<typeof UpdateSupplier>): Pro
       website_url: parsed.data.websiteUrl || null,
       status: parsed.data.status,
     })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!updatedSupplier) return { ok: false, error: 'Supplier not found.' };
   await invalidateAdminSuppliersCache();
   revalidatePath('/admin/suppliers');
   return { ok: true };
@@ -108,8 +111,14 @@ export async function deleteSupplier(input: z.infer<typeof DeleteSupplier>): Pro
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('supplier_profiles').delete().eq('id', parsed.data.id);
+  const { data: deletedSupplier, error } = await supabase
+    .from('supplier_profiles')
+    .delete()
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!deletedSupplier) return { ok: false, error: 'Supplier not found.' };
   await invalidateAdminSuppliersCache();
   revalidatePath('/admin/suppliers');
   return { ok: true };
