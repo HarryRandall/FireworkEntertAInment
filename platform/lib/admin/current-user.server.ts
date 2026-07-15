@@ -102,12 +102,12 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   }
 
   const [
-    { data: profile },
-    { data: allRoles },
-    { data: userRoles },
-    { data: rolePermissions },
-    { data: allPermissions },
-    { data: overrides },
+    profileResult,
+    allRolesResult,
+    userRolesResult,
+    rolePermissionsResult,
+    allPermissionsResult,
+    overridesResult,
   ] = await Promise.all([
     supabase
       .from('users')
@@ -128,6 +128,29 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
       .select('user_id, permission_id, enabled, assigned_by, created_at, updated_at')
       .eq('user_id', userId),
   ]);
+
+  const fallbackErrors = [
+    { source: 'profile', error: profileResult.error },
+    { source: 'roles', error: allRolesResult.error },
+    { source: 'user roles', error: userRolesResult.error },
+    { source: 'role permissions', error: rolePermissionsResult.error },
+    { source: 'permissions', error: allPermissionsResult.error },
+    { source: 'permission overrides', error: overridesResult.error },
+  ].filter(({ error }) => error !== null);
+
+  if (fallbackErrors.length > 0) {
+    console.error('[admin.current-user] fallback access reads failed:', fallbackErrors);
+    throw new Error('Current user access could not be loaded.', {
+      cause: fallbackErrors[0]?.error,
+    });
+  }
+
+  const profile = profileResult.data;
+  const allRoles = allRolesResult.data;
+  const userRoles = userRolesResult.data;
+  const rolePermissions = rolePermissionsResult.data;
+  const allPermissions = allPermissionsResult.data;
+  const overrides = overridesResult.data;
 
   if (!profile) return null;
   if (profile.status !== 'active' && profile.status !== 'suspended') return null;
