@@ -152,7 +152,6 @@ function LoginPageInner() {
               spellCheck={false}
               aria-describedby={error?.field === 'email' ? 'login-email-error' : undefined}
               invalid={error?.field === 'email'}
-              autoFocus
             />
           </div>
           {error ? (
@@ -208,7 +207,6 @@ function LoginPageInner() {
                 autoComplete="current-password"
                 aria-describedby={error?.field === 'password' ? 'login-password-error' : undefined}
                 invalid={error?.field === 'password'}
-                autoFocus
               />
             </div>
             {error ? (

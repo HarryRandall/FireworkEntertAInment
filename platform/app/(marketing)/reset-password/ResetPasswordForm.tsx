@@ -85,7 +85,6 @@ export function ResetPasswordForm() {
           maxLength={128}
           aria-describedby={error?.field === 'password' ? 'password-recovery-error' : undefined}
           invalid={error?.field === 'password'}
-          autoFocus
         />
       </div>
       <div className="space-y-2">

@@ -293,6 +293,17 @@ test('auth forms expose precise field errors and recover from thrown requests', 
   assert.doesNotMatch(login, /request a new link/);
 });
 
+test('auth forms do not force focus or open a mobile keyboard on arrival', () => {
+  for (const path of [
+    'app/(auth)/login/page.tsx',
+    'app/(auth)/signup/page.tsx',
+    'app/(marketing)/forgot-password/page.tsx',
+    'app/(marketing)/reset-password/ResetPasswordForm.tsx',
+  ]) {
+    assert.doesNotMatch(read(path), /\bautoFocus\b/, path);
+  }
+});
+
 test('the recovery signing secret is documented as server-only configuration', () => {
   const envExample = read('.env.example');
   const agents = read('../AGENTS.md');

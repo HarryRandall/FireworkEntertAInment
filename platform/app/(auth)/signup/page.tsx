@@ -191,7 +191,6 @@ function SignupPageInner() {
                   spellCheck={false}
                   aria-describedby={error?.field === 'email' ? 'signup-email-error' : undefined}
                   invalid={error?.field === 'email'}
-                  autoFocus
                 />
               </div>
               {error ? (
@@ -241,7 +240,6 @@ function SignupPageInner() {
                       error?.field === 'fullName' ? 'signup-details-error' : undefined
                     }
                     invalid={error?.field === 'fullName'}
-                    autoFocus
                   />
                 </div>
                 <div className="space-y-2">

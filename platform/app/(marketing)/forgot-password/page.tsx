@@ -115,7 +115,6 @@ export default function ForgotPasswordPage() {
                   error?.field === 'email' ? 'forgot-password-email-error' : undefined
                 }
                 invalid={error?.field === 'email'}
-                autoFocus
               />
             </div>
             {error ? (
