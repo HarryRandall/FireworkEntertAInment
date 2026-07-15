@@ -83,6 +83,12 @@ export default async function ShowsPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
+      <header>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          Search, preview and continue editing your saved show plans.
+        </p>
+      </header>
       <ShowsToolbar query={query} sort={sort} sorts={SORTS} />
       <Suspense fallback={<ShowsGridSkeleton />}>
         <ShowsGrid query={query} sort={sort} page={params.page} />

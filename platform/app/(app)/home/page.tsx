@@ -10,13 +10,12 @@ import {
 import { PromptHero } from '@/app/components/app/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { listShowTemplates } from '@/lib/admin.server';
-import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows.server';
-import type { FireworkSpecification } from '@/lib/show-domain';
+import { listFireworkProducts } from '@/lib/shows.server';
 
 export default function HomePage() {
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
-      <PromptHero />
+      <PromptHero headingLevel="h1" />
       <Suspense fallback={<HomeSectionsSkeleton />}>
         <HomeContent />
       </Suspense>
@@ -25,20 +24,10 @@ export default function HomePage() {
 }
 
 async function HomeContent() {
-  const [exploreTemplates, specificationsResult] = await Promise.all([
+  const [exploreTemplates, specifications] = await Promise.all([
     listShowTemplates(),
-    listFireworkProducts().then(
-      (specifications) => ({ specifications, failed: false as const }),
-      (error) => {
-        if (error instanceof ShowsNetworkError) {
-          console.error('[home] listFireworkProducts unavailable:', error);
-          return { specifications: [] as FireworkSpecification[], failed: true as const };
-        }
-        throw error;
-      },
-    ),
+    listFireworkProducts(),
   ]);
-  const { specifications } = specificationsResult;
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
   const explorePreviewTemplates = exploreTemplates.slice(2, 12);
 

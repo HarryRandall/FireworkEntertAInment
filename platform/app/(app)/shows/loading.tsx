@@ -33,6 +33,12 @@ const SHOWS_LIST_SKELETON_COUNT = 24;
 function ShowsListSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5" aria-label="Loading shows">
+      <header>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          Search, preview and continue editing your saved show plans.
+        </p>
+      </header>
       <section className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="relative min-w-0">
@@ -81,11 +87,16 @@ function ShowDetailChromeSkeleton({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6" aria-label="Loading show">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-2 pb-4">
+        <nav
+          aria-label="Show sections"
+          className="flex flex-wrap items-center gap-x-8 gap-y-2 pb-4"
+        >
           {DETAIL_TAB_LABELS.map((label) => (
-            <Skeleton key={label} className="h-4 w-24 rounded" />
+            <span key={label} className="text-muted-foreground py-2 text-sm font-medium">
+              {label}
+            </span>
           ))}
-        </div>
+        </nav>
         <div className="flex items-center gap-2">
           <Skeleton className="h-9 w-20 rounded-md" />
           <Skeleton className="h-9 w-20 rounded-md" />

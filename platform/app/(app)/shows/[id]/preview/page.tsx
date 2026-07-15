@@ -10,11 +10,7 @@ import {
   getShowBySlug,
   listFireworkProducts,
   listReplayCuesForShow,
-  ShowsNetworkError,
 } from '@/lib/shows.server';
-
-const EMPTY_CUES: never[] = [];
-const EMPTY_EXTRAS = { specifications: [], audioUrl: null };
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -45,19 +41,11 @@ async function ShowPreviewReplay(props: PageProps) {
   // the signed audio URL stream separately so they never gate the fireworks.
   // The show row itself is awaited so notFound/redirect still run on the
   // server before anything renders.
-  const replayCuesPromise = listReplayCuesForShow(show.id).catch((error: unknown) => {
-    if (error instanceof ShowsNetworkError) return EMPTY_CUES;
-    throw error;
-  });
+  const replayCuesPromise = listReplayCuesForShow(show.id);
   const replayExtrasPromise = Promise.all([
     listFireworkProducts(),
     getAudioSignedUrl(show.audioPath),
-  ])
-    .then(([specifications, audioUrl]) => ({ specifications, audioUrl }))
-    .catch((error: unknown) => {
-      if (error instanceof ShowsNetworkError) return EMPTY_EXTRAS;
-      throw error;
-    });
+  ]).then(([specifications, audioUrl]) => ({ specifications, audioUrl }));
   const currentProfile = await currentProfilePromise;
   const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
 
