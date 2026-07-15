@@ -1607,6 +1607,19 @@ export type Database = {
         Args: { p_show_preset_id: string }
         Returns: Json
       }
+      update_prompt_config_atomically: {
+        Args: {
+          p_key: string
+          p_product_catalogue_fields?: Json
+          p_product_context_text?: string
+          p_system_prompt_text?: string
+        }
+        Returns: boolean
+      }
+      update_show_generation_mode: {
+        Args: { p_generation_mode: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
-import { Boxes, RotateCcw, Save, Sparkles, WandSparkles } from 'lucide-react';
-import { updatePromptConfigAction } from '@/app/actions/admin-prompts';
+import { Boxes, RotateCcw, Sparkles, WandSparkles } from 'lucide-react';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
@@ -15,6 +14,7 @@ import { getAdminPromptControlData } from '@/lib/admin.server';
 import { type GenerationSetting, type PromptConfig } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
 import { GenerationModeControl } from './GenerationModeControl';
+import { PromptConfigForm, PromptSaveButton } from './PromptConfigForm';
 import { ProductCatalogueFieldsControl } from './ProductCatalogueFieldsControl';
 
 type PromptTabKey = 'show_prompt' | 'product_context' | 'video_prompt';
@@ -230,7 +230,7 @@ function ProductContextEditor({
 
   return (
     <Card radius="md" className="p-4 pb-5 shadow-xs">
-      <form action={updatePromptConfigAction} className="flex flex-col gap-4">
+      <PromptConfigForm>
         <input type="hidden" name="key" value={prompt.key} />
 
         <PromptCardHeader
@@ -260,12 +260,9 @@ function ProductContextEditor({
             <RotateCcw size={16} />
             Reset
           </Button>
-          <Button type="submit">
-            <Save size={16} />
-            Save
-          </Button>
+          <PromptSaveButton />
         </div>
-      </form>
+      </PromptConfigForm>
     </Card>
   );
 }
@@ -296,7 +293,7 @@ function PromptEditor({
 
   return (
     <Card radius="md" className="p-4 pb-5 shadow-xs">
-      <form action={updatePromptConfigAction} className="flex flex-col gap-4">
+      <PromptConfigForm>
         <input type="hidden" name="key" value={prompt.key} />
         <PromptCardHeader
           icon={icon}
@@ -325,12 +322,9 @@ function PromptEditor({
             <RotateCcw size={16} />
             Reset
           </Button>
-          <Button type="submit">
-            <Save size={16} />
-            Save
-          </Button>
+          <PromptSaveButton />
         </div>
-      </form>
+      </PromptConfigForm>
     </Card>
   );
 }

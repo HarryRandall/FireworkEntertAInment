@@ -28,9 +28,19 @@ type GenerationModeActionResult =
   | { ok: true; generationMode: 'fast' | 'llm' }
   | { ok: false; error: string };
 
-export async function updatePromptConfigAction(formData: FormData): Promise<void> {
+export type PromptConfigActionState = {
+  status: 'idle' | 'success' | 'error';
+  message: string | null;
+};
+
+export async function updatePromptConfigAction(
+  _previousState: PromptConfigActionState,
+  formData: FormData,
+): Promise<PromptConfigActionState> {
   const admin = await requirePermission('admin.manage_prompts');
-  if (!admin) return;
+  if (!admin) {
+    return { status: 'error', message: 'You do not have permission to manage prompts.' };
+  }
 
   const systemPromptText = formData.get('systemPromptText');
   const productContextText = formData.get('productContextText');
@@ -43,50 +53,49 @@ export async function updatePromptConfigAction(formData: FormData): Promise<void
   });
   if (!parsed.success) {
     console.error('[updatePromptConfigAction] invalid input:', parsed.error.issues[0]?.message);
-    return;
+    return {
+      status: 'error',
+      message: 'Check the prompt text and selected catalogue fields, then try again.',
+    };
   }
 
   const update: {
-    system_prompt_text?: string;
-    product_context_text?: string | null;
-    updated_by: string;
-  } = { updated_by: admin.id };
+    p_key: (typeof parsed.data)['key'];
+    p_system_prompt_text?: string;
+    p_product_context_text?: string;
+    p_product_catalogue_fields?: ReturnType<typeof asProductCatalogueFields>;
+  } = { p_key: parsed.data.key };
   if (parsed.data.systemPromptText !== undefined) {
-    update.system_prompt_text = parsed.data.systemPromptText;
+    update.p_system_prompt_text = parsed.data.systemPromptText;
   }
   if (parsed.data.productContextText !== undefined && parsed.data.key === 'show_cue_generation') {
-    update.product_context_text = parsed.data.productContextText;
+    update.p_product_context_text = parsed.data.productContextText;
   }
-  if (update.system_prompt_text === undefined && update.product_context_text === undefined) {
+  if (parsed.data.productCatalogueFields && parsed.data.key === 'show_cue_generation') {
+    update.p_product_catalogue_fields = asProductCatalogueFields(
+      parsed.data.productCatalogueFields,
+    );
+  }
+  if (
+    update.p_system_prompt_text === undefined &&
+    update.p_product_context_text === undefined &&
+    update.p_product_catalogue_fields === undefined
+  ) {
     console.error('[updatePromptConfigAction] no fields to update');
-    return;
+    return { status: 'error', message: 'There is nothing to save.' };
   }
 
   const supabase = createClient(await cookies());
-  const { error: promptError } = await supabase
-    .from('prompt_configs')
-    .update(update)
-    .eq('key', parsed.data.key);
+  const { data, error } = await supabase.rpc('update_prompt_config_atomically', update);
 
-  if (promptError) {
-    console.error('[updatePromptConfigAction] failed:', promptError);
-    return;
-  }
-
-  if (parsed.data.productCatalogueFields && parsed.data.key === 'show_cue_generation') {
-    const { error: settingsError } = await supabase.from('generation_settings').upsert({
-      key: 'show_cue_generation',
-      product_catalogue_fields: asProductCatalogueFields(parsed.data.productCatalogueFields),
-      updated_by: admin.id,
-    });
-
-    if (settingsError) {
-      console.warn('[updatePromptConfigAction] product fields failed:', settingsError);
-    }
+  if (error || data !== true) {
+    console.error('[updatePromptConfigAction] failed:', error ?? 'RPC returned no confirmation');
+    return { status: 'error', message: 'Could not save prompt settings. Try again.' };
   }
 
   await invalidateAdminPromptConfigsCache();
   revalidatePath('/admin/prompts');
+  return { status: 'success', message: 'Prompt settings saved.' };
 }
 
 export async function updateShowGenerationModeAction(
@@ -107,14 +116,15 @@ export async function updateShowGenerationModeAction(
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('generation_settings').upsert({
-    key: 'show_cue_generation',
-    generation_mode: parsed.data.generationMode,
-    updated_by: admin.id,
+  const { data, error } = await supabase.rpc('update_show_generation_mode', {
+    p_generation_mode: parsed.data.generationMode,
   });
 
-  if (error) {
-    console.warn('[updateShowGenerationModeAction] failed:', error);
+  if (error || data !== true) {
+    console.error(
+      '[updateShowGenerationModeAction] failed:',
+      error ?? 'RPC returned no confirmation',
+    );
     return { ok: false, error: 'Could not save generation mode.' };
   }
 
