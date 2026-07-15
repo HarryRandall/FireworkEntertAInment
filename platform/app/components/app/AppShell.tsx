@@ -79,6 +79,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PaletteStrip } from '@/app/components/app/ShowSummaryCards';
+import { SkipLink } from '@/app/components/ui/SkipLink';
 import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
 import { createClient } from '@/utils/supabase/client';
 import { cn } from '@/lib/utils';
@@ -100,7 +101,7 @@ const APP_LINKS: AppNavLink[] = [
   { href: '/library', label: 'Explore', icon: Star },
   { href: '/catalogue', label: 'Catalogue', icon: Box },
   { href: '/exports', label: 'Exports', icon: Download },
-  { href: '/safety', label: 'Safety', icon: TriangleAlert, permission: 'admin.view' },
+  { href: '/safety', label: 'Safety', icon: TriangleAlert },
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
@@ -978,6 +979,7 @@ export function AppShell({
       style={{ '--sidebar-width': 'calc(var(--spacing) * 64)' } as CSSProperties}
     >
       <ThemePreferenceSync themePreference={profile?.themePreference} />
+      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand onNavigate={handleNavigate} />
@@ -1059,7 +1061,9 @@ export function AppShell({
           // handover splash) can portal in and cover the whole content area,
           // including any route chrome, while the app shell stays visible.
           data-app-content
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10"
+          id="main-content"
+          tabIndex={-1}
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 focus:outline-none sm:px-8 sm:pb-12 lg:px-10"
         >
           {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
         </main>

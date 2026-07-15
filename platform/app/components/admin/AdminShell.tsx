@@ -47,6 +47,7 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
+import { SkipLink } from '@/app/components/ui/SkipLink';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -550,6 +551,7 @@ export function AdminShell({
       style={{ '--sidebar-width': 'calc(var(--spacing) * 60)' } as CSSProperties}
     >
       <ThemePreferenceSync themePreference={profile.themePreference} />
+      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand />
@@ -594,7 +596,11 @@ export function AdminShell({
       <AdminBreadcrumbOverrideContext.Provider value={setBreadcrumbOverride}>
         <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
           <ShellTopBar breadcrumbs={breadcrumbs} />
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 focus:outline-none sm:px-8 lg:px-10"
+          >
             {children}
           </main>
         </SidebarInset>
