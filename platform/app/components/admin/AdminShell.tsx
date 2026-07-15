@@ -77,7 +77,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
-import { createClient } from '@/utils/supabase/client';
+import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
@@ -292,6 +292,17 @@ function ProfileMenuButton({
 }) {
   const { isMobile } = useSidebar();
   const closeFromPointerOutsideRef = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const runSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await onSignOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -363,13 +374,15 @@ function ProfileMenuButton({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
+              disabled={isSigningOut}
+              aria-busy={isSigningOut}
               onSelect={(event) => {
                 event.preventDefault();
-                void onSignOut();
+                void runSignOut();
               }}
             >
               <LogOut />
-              Log out
+              {isSigningOut ? 'Signing out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -539,9 +552,12 @@ export function AdminShell({
   }, [pathname]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
+    const result = await signOutCurrentSession();
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    router.replace('/login');
     router.refresh();
   };
 

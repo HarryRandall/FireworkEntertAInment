@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Undo2 } from 'lucide-react';
 import { stopImpersonationAction } from '@/app/actions/impersonation';
+import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
 import { Button, toast } from '@/app/components/ui';
-import { createClient } from '@/utils/supabase/client';
 
 export function SignOutButton({ impersonating = false }: { impersonating?: boolean }) {
   const router = useRouter();
@@ -24,9 +24,13 @@ export function SignOutButton({ impersonating = false }: { impersonating?: boole
       return;
     }
 
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
+    const result = await signOutCurrentSession();
+    if (!result.ok) {
+      toast.error(result.error);
+      setPending(false);
+      return;
+    }
+    router.replace('/login');
     router.refresh();
   };
 
