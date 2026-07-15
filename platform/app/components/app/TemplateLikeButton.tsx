@@ -27,17 +27,25 @@ export function TemplateLikeButton({
 
   function toggleLike() {
     startTransition(async () => {
-      const result = await toggleShowPresetLikeAction({ presetId: templateId, slug: templateSlug });
-      if (!result.ok) {
-        if (result.requiresAuth) {
-          router.push(`/login?next=${encodeURIComponent(`/library/${templateSlug}`)}`);
+      try {
+        const result = await toggleShowPresetLikeAction({
+          presetId: templateId,
+          slug: templateSlug,
+        });
+        if (!result.ok) {
+          if (result.requiresAuth) {
+            router.push(`/login?next=${encodeURIComponent(`/library/${templateSlug}`)}`);
+            return;
+          }
+          toast.error(result.error);
           return;
         }
-        toast.error(result.error);
-        return;
+        setLiked(result.liked);
+        setLikeCount(result.likeCount);
+      } catch (error) {
+        console.error('[TemplateLikeButton] toggle failed:', error);
+        toast.error('This template could not be saved. Please try again.');
       }
-      setLiked(result.liked);
-      setLikeCount(result.likeCount);
     });
   }
 
@@ -47,10 +55,11 @@ export function TemplateLikeButton({
       onClick={toggleLike}
       disabled={isPending}
       aria-pressed={liked}
-      aria-label={liked ? 'Remove show from saved shows' : 'Save show'}
-      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-all focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+      aria-label={`${liked ? 'Remove template from saved shows' : 'Save template'}, ${likeCount.toLocaleString('en-AU')} ${likeCount === 1 ? 'save' : 'saves'}`}
+      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-[border-color,transform] focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
     >
       <Heart
+        aria-hidden="true"
         size={16}
         className={liked ? 'fill-destructive text-destructive' : 'text-destructive'}
       />

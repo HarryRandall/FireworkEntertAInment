@@ -30,7 +30,12 @@ export async function toggleShowPresetLikeAction(
   const supabase = createClient(await cookies());
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+  if (userError) {
+    console.error('[toggleShowPresetLikeAction] auth check failed:', userError);
+    return { ok: false, error: 'Your account could not be verified. Please try again.' };
+  }
   if (!user) {
     return { ok: false, error: 'Sign in to save shows.', requiresAuth: true };
   }

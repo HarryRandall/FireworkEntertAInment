@@ -234,7 +234,7 @@ export async function getCurrentShowPresetLikeState(presetId: string): Promise<b
     .maybeSingle();
   if (error) {
     console.error('[admin.templates] get current preset like failed:', error);
-    return false;
+    throw new Error('Saved-show state could not be loaded.');
   }
   return Boolean(data);
 }
