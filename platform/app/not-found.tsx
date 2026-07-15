@@ -10,7 +10,10 @@ export default async function NotFound() {
   const homeHref = userId ? '/home' : '/';
 
   return (
-    <div className="bg-background relative flex min-h-dvh flex-col items-center justify-center overflow-hidden">
+    <main
+      id="main-content"
+      className="bg-background relative flex min-h-dvh flex-col items-center justify-center overflow-hidden"
+    >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {[
           { top: '18%', left: '12%', size: 3, opacity: 0.35 },
@@ -58,6 +61,6 @@ export default async function NotFound() {
           Return Home
         </Button>
       </Container>
-    </div>
+    </main>
   );
 }

@@ -15,13 +15,19 @@ export const metadata: Metadata = {
 
 export default function AccountUnavailablePage() {
   return (
-    <main className="flex min-h-[70vh] items-center py-16 sm:py-24">
+    <section
+      aria-labelledby="account-unavailable-title"
+      className="flex min-h-[70vh] items-center py-16 sm:py-24"
+    >
       <Container className="max-w-3xl">
         <Card radius="xl" shadow className="p-7 sm:p-10">
           <span className="border-outline-variant bg-surface-container text-primary flex size-12 items-center justify-center rounded-2xl border">
             <CircleSlash2 aria-hidden size={22} />
           </span>
-          <h1 className="text-on-surface mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          <h1
+            id="account-unavailable-title"
+            className="text-on-surface mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+          >
             This account cannot access the workspace.
           </h1>
           <p className="text-on-surface-variant mt-4 max-w-2xl leading-relaxed text-pretty">
@@ -37,6 +43,6 @@ export default function AccountUnavailablePage() {
           </div>
         </Card>
       </Container>
-    </main>
+    </section>
   );
 }

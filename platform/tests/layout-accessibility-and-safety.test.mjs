@@ -27,6 +27,15 @@ test('public, app and admin chrome expose a working skip link target', () => {
   }
 });
 
+test('standalone and marketing pages keep one main content landmark', () => {
+  const notFound = read('app/not-found.tsx');
+  const accountUnavailable = read('app/(marketing)/account-unavailable/page.tsx');
+
+  assert.match(notFound, /<main[\s\S]*id="main-content"/);
+  assert.doesNotMatch(accountUnavailable, /<main/);
+  assert.match(accountUnavailable, /aria-labelledby="account-unavailable-title"/);
+});
+
 test('safety guidance states product limits and points to official sources', () => {
   const safety = read('app/(app)/safety/page.tsx');
   const shell = read('app/components/app/AppShell.tsx');
