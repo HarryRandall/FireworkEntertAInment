@@ -49,7 +49,10 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
         <form action={cloneShowTemplateAction} className="w-full sm:w-fit">
           <input type="hidden" name="slug" value={template.slug} />
           <input type="hidden" name="cloneToken" value={randomUUID()} />
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-all active:scale-[0.98] sm:w-fit">
+          <button
+            type="submit"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-[background-color,transform] active:scale-[0.98] sm:w-fit"
+          >
             <Wand2 size={16} />
             Create from template
           </button>

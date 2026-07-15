@@ -27,6 +27,8 @@ test('Explore presents published templates as planning starting points', () => {
     assert.doesNotMatch(source, /Use this show/);
   }
 
+  assert.match(detail, /<button[\s\S]*type="submit"/);
+  assert.doesNotMatch(detail, /transition-all/);
   assert.match(page, /length === 1 \? 'template' : 'templates'/);
   assert.match(page, /No templates match this collection yet/);
 });
