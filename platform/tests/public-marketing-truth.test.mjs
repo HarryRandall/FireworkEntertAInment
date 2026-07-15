@@ -131,3 +131,84 @@ test('public contact surfaces do not link to an unpublished email domain', () =>
   assert.match(contact, /There is no monitored ShowCrafter inbox or public contact form today/);
   assert.match(contact, /robots: \{ index: false, follow: false \}/);
 });
+
+test('placeholder marketing routes are noindex and do not advertise unavailable content', () => {
+  const paths = [
+    'app/(marketing)/careers/page.tsx',
+    'app/(marketing)/changelog/page.tsx',
+    'app/(marketing)/docs/page.tsx',
+    'app/(marketing)/tutorials/page.tsx',
+    'app/(marketing)/privacy/page.tsx',
+    'app/(marketing)/terms/page.tsx',
+    'app/(marketing)/cookies/page.tsx',
+    'app/(marketing)/licences/page.tsx',
+  ];
+
+  for (const path of paths) {
+    const source = read(path);
+    assert.match(source, /import \{ ComingSoon \}/, path);
+    assert.match(source, /robots: \{ index: false, follow: false \}/, path);
+    assert.doesNotMatch(source, /@showcrafter\.app|mailto:/, path);
+  }
+
+  const careers = read(paths[0]);
+  assert.match(careers, /does not currently publish open roles or an applications channel/);
+  assert.doesNotMatch(
+    careers,
+    /Senior Audio ML Engineer|Founding Product Designer|Pyrotechnics Safety Lead|Equity for everyone|\$2,000\/year/,
+  );
+
+  const changelog = read(paths[1]);
+  assert.match(changelog, /Verified public release notes are not currently published/);
+  assert.doesNotMatch(changelog, /v0\.6\.0|vendor sync|average show generation|18s to 6s/);
+
+  const docs = read(paths[2]);
+  assert.match(docs, /public product guide is still being prepared/);
+  assert.doesNotMatch(
+    docs,
+    /REST API \(beta\)|Stem-based analysis|Stockist availability|Catalogue refresh/,
+  );
+
+  const tutorials = read(paths[3]);
+  assert.match(tutorials, /does not currently publish tutorial articles or an email digest/);
+  assert.doesNotMatch(tutorials, /8 min read|printable PDF|click track|Read tutorial/);
+
+  const privacy = read(paths[4]);
+  const terms = read(paths[5]);
+  const cookies = read(paths[6]);
+  const licences = read(paths[7]);
+  assert.match(privacy, /Do not treat this placeholder as a policy statement/);
+  assert.match(terms, /Do not treat this placeholder as a legal agreement/);
+  assert.match(cookies, /Do not treat this placeholder as a policy statement/);
+  assert.match(licences, /does not make a publication or launch commitment/);
+  assert.doesNotMatch(privacy, /with our legal team|before public launch/);
+  assert.doesNotMatch(terms, /existing ICON Pyrotechnics retail terms apply/);
+});
+
+test('the public footer links only to currently grounded destinations', () => {
+  const footer = read('app/components/marketing/Footer.tsx');
+
+  assert.match(footer, /<nav aria-label="Footer"/);
+  assert.match(footer, /<ul>/);
+  assert.match(footer, /AI-assisted show planning/);
+  assert.match(footer, /href: '\/features'/);
+  assert.match(footer, /href: '\/how-it-works'/);
+  assert.match(footer, /href: '\/about'/);
+  assert.doesNotMatch(footer, /AI-choreographed/);
+});
+
+test('the public footer links only to published destinations', () => {
+  const footer = read('app/components/marketing/Footer.tsx');
+  const placeholder = read('app/components/marketing/ComingSoon.tsx');
+
+  assert.match(footer, /href: '\/catalogue', label: 'Catalogue'/);
+  assert.doesNotMatch(
+    footer,
+    /href: '\/(careers|changelog|privacy|terms|licences)'|heading: 'Legal'/,
+  );
+
+  assert.match(placeholder, /<PageHeader/);
+  assert.match(placeholder, /This page is intentionally unavailable/);
+  assert.match(placeholder, /href="\/catalogue"/);
+  assert.doesNotMatch(placeholder, /Contact us|legal team|mailto:|@showcrafter\.app/);
+});

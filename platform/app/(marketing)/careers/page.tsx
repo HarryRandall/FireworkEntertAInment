@@ -1,163 +1,20 @@
-/** Marketing "Careers" page. */
+/** Honest careers placeholder while no verified roles or application channel are published. */
 
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight, MapPin, Briefcase } from 'lucide-react';
-import { Container } from '@/app/components/ui/Container';
-import { Card } from '@/app/components/ui/Card';
-import { Badge, Eyebrow } from '@/app/components/ui/Badge';
-import { PageHeader } from '@/app/components/marketing/PageHeader';
-import { CTABand } from '@/app/components/marketing/CTABand';
+import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Careers · ShowCrafter',
-  description:
-    'Help us put a fireworks-show designer in every backyard. Join a small, ambitious team rebuilding consumer pyro from the ground up.',
+  description: 'Careers information is not currently published for ShowCrafter.',
+  robots: { index: false, follow: false },
 };
-
-type Role = {
-  title: string;
-  team: string;
-  location: string;
-  type: string;
-  href: string;
-};
-
-const ROLES: Role[] = [
-  {
-    title: 'Senior Audio ML Engineer',
-    team: 'Engineering',
-    location: 'Brisbane / Remote AU',
-    type: 'Full-time',
-    href: 'mailto:careers@showcrafter.app?subject=Senior%20Audio%20ML%20Engineer',
-  },
-  {
-    title: 'Founding Product Designer',
-    team: 'Design',
-    location: 'Brisbane',
-    type: 'Full-time',
-    href: 'mailto:careers@showcrafter.app?subject=Founding%20Product%20Designer',
-  },
-  {
-    title: 'Pyrotechnics Safety Lead',
-    team: 'Operations',
-    location: 'Brisbane',
-    type: 'Full-time',
-    href: 'mailto:careers@showcrafter.app?subject=Pyrotechnics%20Safety%20Lead',
-  },
-  {
-    title: 'Vendor Partnerships Manager',
-    team: 'Go-to-market',
-    location: 'Sydney / Melbourne',
-    type: 'Full-time',
-    href: 'mailto:careers@showcrafter.app?subject=Vendor%20Partnerships%20Manager',
-  },
-  {
-    title: 'Community & Content (Pyromaster)',
-    team: 'Marketing',
-    location: 'Remote AU/NZ',
-    type: 'Contract',
-    href: 'mailto:careers@showcrafter.app?subject=Community%20and%20Content',
-  },
-];
-
-const PERKS = [
-  {
-    title: 'Equity for everyone',
-    body: 'Every full-time hire gets meaningful equity. We win together or not at all.',
-  },
-  {
-    title: 'Real fireworks budget',
-    body: 'Yes, we buy fireworks for testing. Yes, we let you fire some of them. Safely.',
-  },
-  {
-    title: 'Hybrid by default',
-    body: 'Two days in our Brisbane studio, the rest wherever you do your best work.',
-  },
-  {
-    title: 'Learning stipend',
-    body: '$2,000/year for books, courses, conferences — anything that makes you better.',
-  },
-];
 
 export default function CareersPage() {
   return (
-    <>
-      <PageHeader
-        eyebrow="Careers"
-        title="Build the future of"
-        highlight="backyard pyrotechnics."
-        subtitle="A small team doing one wild thing well — turning every fireworks fan into a show designer. Help us get there."
-      />
-
-      <section className="py-24">
-        <Container>
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <Eyebrow>Open roles</Eyebrow>
-            <h2 className="text-on-surface mt-3 text-3xl font-bold tracking-tight md:text-5xl">
-              Currently hiring.
-            </h2>
-          </div>
-          <div className="mx-auto max-w-4xl space-y-3">
-            {ROLES.map((role) => (
-              <Link key={role.title} href={role.href} className="block">
-                <Card
-                  radius="lg"
-                  hoverable
-                  className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="flex-grow">
-                    <Badge tone="neutral">{role.team}</Badge>
-                    <h3 className="text-on-surface mt-3 text-lg font-bold tracking-tight">
-                      {role.title}
-                    </h3>
-                    <div className="text-on-surface-variant mt-2 flex flex-wrap items-center gap-4 text-xs tracking-widest uppercase">
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin size={12} strokeWidth={1.75} />
-                        {role.location}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Briefcase size={12} strokeWidth={1.75} />
-                        {role.type}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-primary inline-flex items-center gap-2 text-sm font-bold">
-                    View role
-                    <ArrowRight size={16} strokeWidth={1.75} />
-                  </span>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      <section className="border-outline-variant/15 bg-surface-container-lowest border-t py-24">
-        <Container>
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <Eyebrow>Why ShowCrafter</Eyebrow>
-            <h2 className="text-on-surface mt-3 text-3xl font-bold tracking-tight md:text-5xl">
-              Perks &amp; principles.
-            </h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {PERKS.map((perk) => (
-              <Card key={perk.title} radius="lg" className="p-6">
-                <h3 className="text-on-surface text-base font-bold tracking-tight">{perk.title}</h3>
-                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">{perk.body}</p>
-              </Card>
-            ))}
-          </div>
-        </Container>
-      </section>
-
-      <CTABand
-        title="Don't see your role?"
-        description="Tell us what you'd build and why we should make a seat for you."
-        primaryHref="/contact"
-        primaryLabel="Pitch yourself"
-      />
-    </>
+    <ComingSoon
+      eyebrow="Careers"
+      title="Careers information is not published."
+      description="ShowCrafter does not currently publish open roles or an applications channel. This page can be updated when verified hiring information is available."
+    />
   );
 }

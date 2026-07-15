@@ -5,15 +5,16 @@ import { ComingSoon } from '@/app/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Licences · ShowCrafter',
-  description: 'Open-source licences and attributions.',
+  description: 'Open-source licence notices are not currently published for ShowCrafter.',
+  robots: { index: false, follow: false },
 };
 
 export default function LicencesPage() {
   return (
     <ComingSoon
       eyebrow="Open Source Licences"
-      title="Licences coming soon."
-      description="A full list of the open-source projects ShowCrafter is built on, and the licences they ship under, will appear here before public launch."
+      title="Licence notices are not published."
+      description="Open-source licence notices are not available on this route yet. This placeholder does not make a publication or launch commitment."
     />
   );
 }
