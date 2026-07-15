@@ -30,6 +30,11 @@ const MUSIC_ANALYSIS_SELECT =
 const LEGACY_SHOW_ANALYSIS_SELECT =
   'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json, cue_generation_status, cue_generation_error, cue_count';
 
+function failAnalysisRead(operation: string, error: unknown): never {
+  console.error(`[show-analyses.server] ${operation} failed:`, error);
+  throw new Error('Show analysis could not be loaded.', { cause: error });
+}
+
 function hydrateMusicAnalysis(
   row: MusicAnalysisRow,
   showId: string,
@@ -97,8 +102,7 @@ export async function getMusicAnalysisStatus(
     .eq('user_id', userId)
     .maybeSingle();
   if (error) {
-    console.error('[show-analyses.server] status lookup failed:', error);
-    return null;
+    failAnalysisRead('status lookup', error);
   }
   return (data?.status as AnalysisStatus) ?? null;
 }
@@ -118,8 +122,7 @@ export async function getLatestAnalysisForShow(
     .maybeSingle();
 
   if (showError) {
-    console.error('[show-analyses.server] show lookup failed:', showError);
-    return null;
+    failAnalysisRead('show lookup', showError);
   }
 
   if (show?.music_analysis_id) {
@@ -131,8 +134,7 @@ export async function getLatestAnalysisForShow(
       .maybeSingle();
 
     if (error) {
-      console.error('[show-analyses.server] get music analysis failed:', error);
-      return null;
+      failAnalysisRead('music analysis lookup', error);
     }
     if (data) {
       const generationStatus =
@@ -163,8 +165,7 @@ export async function getLatestAnalysisForShow(
     .maybeSingle();
 
   if (error) {
-    console.error('[show-analyses.server] get legacy analysis failed:', error);
-    return null;
+    failAnalysisRead('legacy analysis lookup', error);
   }
   return data ? hydrateLegacyShowAnalysis(data as ShowAnalysisRow) : null;
 }
