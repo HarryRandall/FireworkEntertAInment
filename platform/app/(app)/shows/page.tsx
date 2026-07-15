@@ -60,7 +60,7 @@ function parsePage(value: string | undefined) {
 function ShowsGridSkeleton() {
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]">
         {Array.from({ length: SHOWS_PAGE_SIZE }).map((_, index) => (
           <div key={index} className="min-w-0">
             <Skeleton className="aspect-[4/5] w-full rounded-xl" />
@@ -82,7 +82,7 @@ export default async function ShowsPage({ searchParams }: PageProps) {
   const sort = parseSort(params.sort);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <ShowsToolbar query={query} sort={sort} sorts={SORTS} />
       <Suspense fallback={<ShowsGridSkeleton />}>
         <ShowsGrid query={query} sort={sort} page={params.page} />
@@ -114,7 +114,7 @@ async function ShowsGrid({ query, sort, page }: { query: string; sort: SortKey; 
     <section className="space-y-4">
       {shows.length > 0 ? (
         <ShowReplayPreviewProvider>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]">
             {paginatedShows.map((show) => (
               <ShowReplayCoverCard key={show.id} show={show} />
             ))}

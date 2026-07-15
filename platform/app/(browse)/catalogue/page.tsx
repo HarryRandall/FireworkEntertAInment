@@ -46,7 +46,7 @@ export default async function CataloguePage({ searchParams }: PageProps) {
   const kind = params.kind ?? '';
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Firework catalogue</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
@@ -86,7 +86,7 @@ async function CatalogueList({
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {visibleProducts.map((product) => (
           <article
             key={product.id}

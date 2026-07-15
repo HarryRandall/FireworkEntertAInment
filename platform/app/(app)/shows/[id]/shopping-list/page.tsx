@@ -16,7 +16,7 @@ export default async function ShowShoppingListPage({ params }: PageProps) {
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full max-w-5xl">
       <Suspense fallback={<ShoppingListSkeleton />}>
         <ShowShoppingList show={show} />
       </Suspense>

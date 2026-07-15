@@ -20,7 +20,10 @@ const DETAIL_ROWS = [
 
 export default function LibraryDetailLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5" aria-label="Loading template">
+    <div
+      className="mx-auto flex w-full max-w-[1600px] flex-col gap-5"
+      aria-label="Loading template"
+    >
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 space-y-2">
           <Skeleton className="h-9 w-72 max-w-full" />

@@ -59,7 +59,7 @@ export default async function AdminPromptsPage({ searchParams }: PageProps) {
   const activeKey = activeTabKey(params.tab, params.prompt);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5">
       <Suspense key={activeKey} fallback={<PromptContentSkeleton activeKey={activeKey} />}>
         <AdminPromptsContent activeKey={activeKey} />
       </Suspense>

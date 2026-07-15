@@ -53,13 +53,21 @@ test('home discovery does not depend on the user already having a show', () => {
 
 test('public browse routes retain page-level chrome while their data loads', () => {
   const library = read('app/(browse)/library/page.tsx');
+  const libraryLoading = read('app/(browse)/library/loading.tsx');
   const catalogue = read('app/(browse)/catalogue/page.tsx');
+  const catalogueLoading = read('app/(browse)/catalogue/loading.tsx');
+  const catalogueSkeleton = read('app/(browse)/catalogue/CatalogueSkeleton.tsx');
 
   assert.match(library, /<h1[^>]*>Explore shows<\/h1>/);
   assert.match(library, /fallback=\{/);
   assert.match(library, /LibraryCardsSkeleton/);
-  assert.match(library, /max-w-6xl/);
+  assert.match(library, /max-w-\[1600px\]/);
+  assert.match(libraryLoading, /max-w-\[1600px\]/);
   assert.match(catalogue, /<h1[^>]*>Firework catalogue<\/h1>/);
+  assert.match(catalogue, /max-w-\[1600px\]/);
+  assert.match(catalogueLoading, /max-w-\[1600px\]/);
+  assert.match(catalogue, /2xl:grid-cols-4/);
+  assert.match(catalogueSkeleton, /2xl:grid-cols-4/);
 });
 
 test('route error boundaries do not render backend error messages', () => {

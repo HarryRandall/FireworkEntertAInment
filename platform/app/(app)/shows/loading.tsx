@@ -32,7 +32,7 @@ const SHOWS_LIST_SKELETON_COUNT = 24;
  *  stay as real chrome so the toolbar never flashes to a skeleton. */
 function ShowsListSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5" aria-label="Loading shows">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5" aria-label="Loading shows">
       <section className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="relative min-w-0">
@@ -58,7 +58,7 @@ function ShowsListSkeleton() {
       </section>
 
       <section className="space-y-4">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))]">
           {Array.from({ length: SHOWS_LIST_SKELETON_COUNT }).map((_, index) => (
             <div key={index} className="min-w-0">
               <Skeleton className="aspect-[4/5] w-full rounded-xl" />
@@ -79,7 +79,7 @@ function ShowsListSkeleton() {
  *  jump in when the layout resolves. */
 function ShowDetailChromeSkeleton({ children }: { children: ReactNode }) {
   return (
-    <div className="space-y-6" aria-label="Loading show">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6" aria-label="Loading show">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 pb-4">
           {DETAIL_TAB_LABELS.map((label) => (

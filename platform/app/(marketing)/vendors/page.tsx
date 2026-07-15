@@ -112,7 +112,7 @@ export default function VendorsPage() {
       />
 
       <section className="border-outline-variant/15 bg-surface-container-lowest border-b py-10">
-        <Container>
+        <Container width="wide">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="relative max-w-md flex-grow">
               <Search
@@ -146,7 +146,7 @@ export default function VendorsPage() {
       </section>
 
       <section className="py-24">
-        <Container>
+        <Container width="wide">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {PRODUCTS.map((product) => (
               <Card key={product.sku} radius="lg" hoverable className="flex flex-col p-6">

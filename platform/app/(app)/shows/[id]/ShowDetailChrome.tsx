@@ -23,7 +23,7 @@ export function ShowDetailChrome({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={showSlug} />
         <div className="flex items-center gap-2">

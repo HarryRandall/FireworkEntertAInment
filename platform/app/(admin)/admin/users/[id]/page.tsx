@@ -88,7 +88,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
   const canManageBilling = Boolean(currentProfile?.permissions.includes('admin.manage_billing'));
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-[1200px] space-y-8">
       <Link
         href="/admin/users"
         className="inline-flex items-center gap-2 text-sm font-medium text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"

@@ -36,7 +36,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
   const currentProfilePromise = getCurrentProfile();
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h1 className="text-on-surface text-2xl font-semibold tracking-tight md:text-3xl">
