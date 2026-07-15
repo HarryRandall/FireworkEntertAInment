@@ -150,8 +150,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Preview complete, ready-to-use firework shows and choose one as the starting point for
-          your own display.
+          Preview published show templates and choose one as a starting point for your own plan.
         </p>
       </header>
       <Suspense
@@ -174,7 +173,7 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
   if (templates.length === 0) {
     return (
       <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
-        No shows are available right now. Check back later.
+        No show templates are available right now. Check back later.
       </p>
     );
   }
@@ -199,7 +198,8 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
                 {activeShelf.title}
               </h2>
               <p className="text-on-surface-variant mt-1 text-sm">
-                {activeShelf.templates.length.toLocaleString()} shows
+                {activeShelf.templates.length.toLocaleString()}{' '}
+                {activeShelf.templates.length === 1 ? 'template' : 'templates'}
               </p>
             </div>
             <Link
@@ -210,11 +210,17 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
               Back to shelves
             </Link>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
-            {activeShelf.templates.map((template) => (
-              <ExploreCard key={template.id} template={template} className="w-full sm:w-full" />
-            ))}
-          </div>
+          {activeShelf.templates.length > 0 ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
+              {activeShelf.templates.map((template) => (
+                <ExploreCard key={template.id} template={template} className="w-full sm:w-full" />
+              ))}
+            </div>
+          ) : (
+            <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
+              No templates match this collection yet.
+            </p>
+          )}
         </section>
       ) : (
         <div className="space-y-8">

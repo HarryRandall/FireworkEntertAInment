@@ -8,8 +8,7 @@ export default function LibraryLoading() {
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Preview complete, ready-to-use firework shows and choose one as the starting point for
-          your own display.
+          Preview published show templates and choose one as a starting point for your own plan.
         </p>
       </header>
       <LibraryCardsSkeleton />

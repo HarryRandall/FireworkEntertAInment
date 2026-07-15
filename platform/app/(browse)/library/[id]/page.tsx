@@ -51,15 +51,15 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
           <input type="hidden" name="cloneToken" value={randomUUID()} />
           <button className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-all active:scale-[0.98] sm:w-fit">
             <Wand2 size={16} />
-            Use this show
+            Create from template
           </button>
         </form>
       </header>
 
       {cloneError ? (
         <InlineAlert tone="danger" title="This show could not be copied">
-          Its catalogue or timeline needs attention. Please try another show while an administrator
-          reviews it.
+          Its catalogue or timeline needs attention. Please try another template while an
+          administrator reviews it.
         </InlineAlert>
       ) : null}
 
