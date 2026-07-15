@@ -126,7 +126,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   }
   const timingValidation = validatePresetTimeline(
     resolvedCues,
-    new Map(products.map((product) => [product.id, product.durationSeconds])),
+    new Map(products.map((product) => [product.id, product])),
     template.durationSeconds,
   );
   if (!timingValidation.ok) {

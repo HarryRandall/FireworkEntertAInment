@@ -87,6 +87,10 @@ test('public reads only use published presets while admin helpers include drafts
   );
   assert.match(timing, /const endSeconds = cue\.timeSeconds \+ durationSeconds/);
   assert.match(timing, /ends at.*show duration/);
+  assert.match(timing, /occupiedLaunchPositions/);
+  assert.match(timing, /const candidateWindows/);
+  assert.match(timing, /accepted\.push\(\.\.\.candidateWindows\)/);
+  assert.match(timing, /Position \$\{candidate\.launchPositionIndex \+ 1\} is still busy with/);
 
   for (const action of [
     'createShowPreset',
@@ -106,6 +110,11 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(
     actions,
     /currentPreset\.is_published[\s\S]*validatePresetTimeline\([\s\S]*parsed\.data\.durationSeconds/,
+  );
+  assert.ok((actions.match(/validatePresetTimeline\(/g) ?? []).length >= 3);
+  assert.doesNotMatch(
+    actions,
+    /new Map\(Array\.from\(products, \(\[id, product\]\) => \[id, product\.durationSeconds\]\)\)/,
   );
   assert.match(actions, /is_published: false/);
   assert.match(actions, /published_at: null/);
@@ -149,6 +158,7 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   assert.match(replayCues, /cue\.catalogueItemSlug/);
 
   assert.match(cloneAction, /validatePresetTimeline/);
+  assert.match(cloneAction, /new Map\(products\.map\(\(product\) => \[product\.id, product\]\)\)/);
   assert.match(cloneAction, /resolvedCues/);
   assert.match(cloneAction, /cue\.catalogueItemId/);
   assert.match(cloneAction, /cue\.catalogueItemSlug/);

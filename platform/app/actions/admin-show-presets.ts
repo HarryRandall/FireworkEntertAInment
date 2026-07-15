@@ -214,11 +214,7 @@ async function validatePublishablePreset(
   if (!parsed.success) return { ok: false, error: 'Fix unresolved cues before publishing.' };
   const products = await loadCatalogueProducts(parsed.data.map((cue) => cue.catalogueItemId));
   if (!products) return { ok: false, error: 'Fix unresolved cues before publishing.' };
-  const timelineValidation = validatePresetTimeline(
-    parsed.data,
-    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
-    preset.duration_seconds,
-  );
+  const timelineValidation = validatePresetTimeline(parsed.data, products, preset.duration_seconds);
   if (!timelineValidation.ok) return timelineValidation;
   return { ok: true, slug: preset.slug };
 }
@@ -446,7 +442,7 @@ export async function updateShowPresetDetails(
     if (!products) return { ok: false, error: 'Fix unresolved cues before saving details.' };
     const timelineValidation = validatePresetTimeline(
       cues.data,
-      new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+      products,
       parsed.data.durationSeconds,
     );
     if (!timelineValidation.ok) return timelineValidation;
@@ -503,7 +499,7 @@ export async function replaceShowPresetCues(
   if (!products) return { ok: false, error: 'One or more catalogue items could not be found.' };
   const timelineValidation = validatePresetTimeline(
     parsed.data.cues,
-    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+    products,
     presetState.duration_seconds,
   );
   if (!timelineValidation.ok) return timelineValidation;

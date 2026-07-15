@@ -37,6 +37,9 @@ const rlsPerformanceMigration = read(
 const activePermissionMigration = read(
   'supabase/migrations/20260715083410_require_active_permission_users.sql',
 );
+const presetMultishotSafetyMigration = read(
+  'supabase/migrations/20260715104154_enforce_show_preset_multishot_lane_safety.sql',
+);
 
 test('AI credit internals are private and public wrappers deny anonymous or cross-user access', () => {
   assert.match(privilegeMigration, /create schema if not exists private/);
@@ -474,4 +477,38 @@ test('published presets enforce complete, resolvable and overlap-free cue timing
     /create trigger fireworks_validate_published_timing[\s\S]*?after update of duration_seconds/,
   );
   assert.match(scheduleMigration, /used by a published show preset and cannot be deleted/);
+});
+
+test('published presets reserve multishot parent and absolute child launch positions', () => {
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create or replace function private\.assert_show_preset_publishable\([\s\S]*?private\.catalogue_item_occupied_launch_positions\(/,
+  );
+  assert.ok(
+    (
+      presetMultishotSafetyMigration.match(
+        /foreach occupied_launch_position in array occupied_launch_positions loop/g,
+      ) ?? []
+    ).length >= 2,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /busy_until\[occupied_launch_position \+ 1\] > cue_time/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /busy_until\[occupied_launch_position \+ 1\] := cue_time \+ product_duration/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /select private\.assert_all_published_show_presets\(\);/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create or replace function private\.assert_show_timeline_after_source_mutation\(\)[\s\S]*?private\.assert_show_timeline_non_overlapping\(\)[\s\S]*?private\.assert_all_published_show_presets\(\)/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create trigger show_presets_lock_timeline_sources\s*before insert or update or delete on public\.show_presets\s*for each statement\s*execute function private\.lock_show_timeline_sources_shared\(\)/,
+  );
 });

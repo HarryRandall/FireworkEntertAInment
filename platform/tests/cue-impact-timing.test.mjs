@@ -93,6 +93,14 @@ test('multishot position reservation includes parent and child tubes', () => {
   assert.deepEqual(occupiedLaunchPositions({}, 1, 2), [1]);
 });
 
+test('preset-style scheduling sees an absolute multishot child-position conflict', () => {
+  const occupied = occupiedLaunchPositions({ launchPositionOverrideIndices: [2] }, 0, 3);
+
+  assert.deepEqual(occupied, [0, 2]);
+  assert.equal(occupied?.includes(2), true, 'a direct cue on position 3 conflicts');
+  assert.equal(occupied?.includes(1), false, 'a direct cue on position 2 remains independent');
+});
+
 test('fast planner raises safe density and honours style, surprise and recent-use variety', () => {
   const fast = read('lib/cue-generation/fast-planner.ts');
 
