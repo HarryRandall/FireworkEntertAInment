@@ -19,7 +19,7 @@ import {
   getCurrentShowPresetLikeState,
   getShowTemplateBySlug,
 } from '@/lib/admin.server';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 import { CloneTemplateSubmitButton } from './CloneTemplateSubmitButton';
 
@@ -33,7 +33,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
   const { cloneError } = (await searchParams) ?? {};
   const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
-  const specificationsPromise = listFireworkProducts();
+  const specificationsPromise = listReferencedShowTemplateSpecifications(template.previewCues);
   const currentProfilePromise = getCurrentProfile();
 
   return (

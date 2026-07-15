@@ -29,18 +29,40 @@ test('the public preview route returns only specifications resolved from a publi
   const route = read(routePath);
   assert.match(route, /getShowTemplateBySlug\(slug\)/);
   assert.match(route, /if \(!template\?\.isPublished\)/);
-  assert.match(route, /listFireworkProducts\(\)/);
-  assert.match(route, /cue\.catalogueItemId/);
-  assert.match(route, /cue\.catalogueItemSlug/);
-  assert.match(route, /cue\.fireworkSlug/);
-  assert.match(route, /specification\.variant\?\.slug/);
-  assert.match(route, /specification\.baseEffect\?\.slug/);
-  assert.match(route, /if \(!specification\)/);
-  assert.match(route, /Published Explore show contains an unresolved preview cue/);
-  assert.match(route, /referencedIds\.has\(specification\.id\)/);
+  assert.match(route, /listReferencedShowTemplateSpecifications\(template\.previewCues\)/);
+  assert.doesNotMatch(route, /listFireworkProducts/);
   assert.match(route, /return response\(\{ specifications \}\)/);
   assert.match(route, /'Cache-Control': 'no-store, max-age=0'/);
   assert.doesNotMatch(route, /return response\(\{ template/);
+});
+
+test('the shared specification loader resolves legacy cues and fails closed', () => {
+  const helper = read('lib/show-template-specifications.server.ts');
+
+  assert.match(helper, /listFireworkProducts\(\)/);
+  assert.match(helper, /cue\.catalogueItemId/);
+  assert.match(helper, /cue\.catalogueItemSlug/);
+  assert.match(helper, /cue\.fireworkSlug/);
+  assert.match(helper, /specification\.variant\?\.slug/);
+  assert.match(helper, /specification\.baseEffect\?\.slug/);
+  assert.match(helper, /if \(!specification\)/);
+  assert.match(helper, /Published Explore show contains an unresolved preview cue/);
+  assert.match(helper, /referencedIds\.has\(specification\.id\)/);
+});
+
+test('the template detail serialises only cue-referenced specifications', () => {
+  const detailPage = read('app/(browse)/library/[id]/page.tsx');
+
+  assert.doesNotMatch(detailPage, /listFireworkProducts/);
+  assert.match(detailPage, /listReferencedShowTemplateSpecifications\(template\.previewCues\)/);
+  assert.match(
+    detailPage,
+    /<LibraryDetailReplay template=\{template\} specificationsPromise=\{specificationsPromise\}/,
+  );
+  assert.match(
+    detailPage,
+    /<LibraryDetailCurrentFirework[\s\S]*?specificationsPromise=\{specificationsPromise\}/,
+  );
 });
 
 test('the shared preview loads after intent, caches by slug and stale-guards cancellation', () => {

@@ -121,7 +121,8 @@ test('public reads only use published presets while admin helpers include drafts
 
   assert.match(homePage, /listFireworkProducts/);
   assert.doesNotMatch(libraryPage, /listFireworkProducts/);
-  assert.match(libraryDetailPage, /listFireworkProducts/);
+  assert.doesNotMatch(libraryDetailPage, /listFireworkProducts/);
+  assert.match(libraryDetailPage, /listReferencedShowTemplateSpecifications/);
 });
 
 test('cue parsing, previews, clone and import paths support catalogue-item cues', () => {
