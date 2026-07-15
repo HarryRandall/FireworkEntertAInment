@@ -83,12 +83,7 @@ import {
   STEPS,
   WIDTH_PRESETS,
 } from './constants';
-import type {
-  AudioUploadState,
-  FieldError as FieldErrorKey,
-  ShowGenerationPresentation,
-  UploadedAudio,
-} from './types';
+import type { AudioUploadState, ShowGenerationPresentation, UploadedAudio } from './types';
 import {
   deriveTitleFromDescription,
   inferAudioContentType,
@@ -154,7 +149,6 @@ async function cleanupUnusedMusicAnalysis(uploaded: UploadedAudio): Promise<void
 }
 
 export default function NewShowPage() {
-  const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -181,8 +175,9 @@ export default function NewShowPage() {
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
   const [title, setTitle] = useState('');
-  const titleRef = useRef('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioUploadErrorRef = useRef<HTMLDivElement>(null);
+  const shouldFocusAudioUploadErrorRef = useRef(false);
   // Promise of the in-flight upload so `triggerGenerate` can await it if the
   // user clicks Generate before the upload finishes.
   const uploadPromiseRef = useRef<Promise<UploadedAudio> | null>(null);
@@ -203,7 +198,6 @@ export default function NewShowPage() {
 
   // === Flow nav ============================================================
   const [stepIndex, setStepIndex] = useState(0);
-  const [fieldError, setFieldError] = useState<FieldErrorKey>(null);
   const [isLaunching, setIsLaunching] = useState(false);
   // Set on Generate; renders the instant client-side splash overlay that
   // covers the gap until the /generating route streams in.
@@ -212,11 +206,18 @@ export default function NewShowPage() {
   );
   const [mounted, setMounted] = useState(false);
 
+  const hasMeasuredWidth = measuredWidth.trim().length > 0;
   const measuredFeet = Number(measuredWidth);
+  const measuredWidthError =
+    hasMeasuredWidth &&
+    (!Number.isFinite(measuredFeet) ||
+      !Number.isInteger(measuredFeet) ||
+      measuredFeet < 5 ||
+      measuredFeet > 2000)
+      ? 'Enter a whole-number width between 5 and 2,000 ft.'
+      : null;
   const effectiveWidthFeet =
-    measuredWidth.trim() && Number.isFinite(measuredFeet) && measuredFeet >= 5
-      ? Math.min(Math.round(measuredFeet), 2000)
-      : widthFeet;
+    hasMeasuredWidth && !measuredWidthError ? Math.round(measuredFeet) : widthFeet;
   const effectivePositions = launchPositionsForWidth(effectiveWidthFeet);
   const effectiveCueModel =
     selectedCueModel ?? generationPresentation?.defaultCueModel ?? FALLBACK_CUE_MODEL;
@@ -332,21 +333,24 @@ export default function NewShowPage() {
       stepIndex === 1 &&
       uploadedAudio &&
       audioUploadState === 'ready' &&
-      title.trim() &&
       autoBriefUploadIdRef.current !== uploadedAudio.musicAnalysisId
     ) {
       autoBriefUploadIdRef.current = uploadedAudio.musicAnalysisId;
-      setFieldError(null);
       setStepIndex(2);
     }
-  }, [audioUploadState, stepIndex, title, uploadedAudio]);
+  }, [audioUploadState, stepIndex, uploadedAudio]);
 
-  const focusTitleRequirement = () => {
-    window.requestAnimationFrame(() => {
-      const titleInput = formRef.current?.elements.namedItem('title');
-      if (titleInput instanceof HTMLInputElement) titleInput.focus();
-    });
-  };
+  useEffect(() => {
+    if (
+      stepIndex !== 1 ||
+      audioUploadState !== 'error' ||
+      !shouldFocusAudioUploadErrorRef.current
+    ) {
+      return;
+    }
+    shouldFocusAudioUploadErrorRef.current = false;
+    audioUploadErrorRef.current?.focus();
+  }, [audioUploadError, audioUploadState, stepIndex]);
 
   /** Dice: replace the whole brief with a random ready-made example. */
   const rollDice = () => {
@@ -396,12 +400,10 @@ export default function NewShowPage() {
     if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     // Nothing else to type: the title comes from the track name (editable
     // later on the show page).
-    if (!titleRef.current.trim()) {
+    if (!title.trim()) {
       const suggested = suggestTitleFromFilename(file.name);
       if (suggested) {
-        titleRef.current = suggested;
         setTitle(suggested);
-        if (fieldError === 'title') setFieldError(null);
       }
     }
     setSoundtrackMode('song');
@@ -534,11 +536,6 @@ export default function NewShowPage() {
       setUploadedAudio(uploaded);
       setAudioUploadState('ready');
       setAudioUploadError(null);
-      if (!titleRef.current.trim()) {
-        setFieldError('title');
-        setStepIndex(1);
-        focusTitleRequirement();
-      }
     }
     return uploaded;
   };
@@ -550,7 +547,6 @@ export default function NewShowPage() {
    */
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFieldError(null);
     if (stepIndex < STEPS.length - 1) {
       goToStep(stepIndex + 1);
     }
@@ -561,6 +557,12 @@ export default function NewShowPage() {
     if (e.key !== 'Enter') return;
     const target = e.target as HTMLElement;
     if (target instanceof HTMLTextAreaElement) return;
+    if (
+      target instanceof HTMLInputElement &&
+      (target.type === 'radio' || target.type === 'checkbox' || target.type === 'file')
+    ) {
+      return;
+    }
     if (target.closest('button')) return;
     e.preventDefault();
     if (stepIndex < STEPS.length - 1) goToStep(stepIndex + 1);
@@ -594,7 +596,11 @@ export default function NewShowPage() {
    * the generating splash immediately, awaits any pending upload, then submits
    * the show via the server action. */
   const triggerGenerate = () => {
-    setFieldError(null);
+    if (measuredWidthError) {
+      toast.error('Check the measured width', { description: measuredWidthError });
+      document.getElementById('measured-site-width')?.focus();
+      return;
+    }
     if (!generationPresentation) {
       toast.error('Generation options are not ready', {
         description:
@@ -610,7 +616,6 @@ export default function NewShowPage() {
       deriveTitleFromDescription(description) ||
       'Untitled show';
     if (finalTitle !== title) {
-      titleRef.current = finalTitle;
       setTitle(finalTitle);
     }
     setIsLaunching(true);
@@ -630,30 +635,31 @@ export default function NewShowPage() {
     router.push(
       `/shows/${desiredSlug}/generating?creating=1&t=${titleParam}${hasAudio ? '&a=1' : ''}`,
     );
+    const returnToSoundtrackUploadError = (message: string) => {
+      shouldFocusAudioUploadErrorRef.current = true;
+      setAudioUploadState('error');
+      setAudioUploadError(message);
+      setStepIndex(1);
+      setIsLaunching(false);
+      setLaunch(null);
+      clearPersistedGenerationStart(desiredSlug);
+      router.replace('/shows/new');
+      toast.error('Could not upload track', { description: message });
+    };
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
       if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
         try {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
-          setIsLaunching(false);
-          setLaunch(null);
-          clearPersistedGenerationStart(desiredSlug);
-          router.replace('/shows/new');
-          toast.error('Could not upload track', {
-            description: error instanceof Error ? error.message : 'Try replacing the audio file.',
-          });
+          returnToSoundtrackUploadError(
+            error instanceof Error ? error.message : 'Try replacing the audio file.',
+          );
           return;
         }
       }
       if (audioFile && audioUploadState === 'error') {
-        setIsLaunching(false);
-        setLaunch(null);
-        clearPersistedGenerationStart(desiredSlug);
-        router.replace('/shows/new');
-        toast.error('Could not upload track', {
-          description: audioUploadError ?? 'Try replacing the audio file.',
-        });
+        returnToSoundtrackUploadError(audioUploadError ?? 'Try replacing the audio file.');
         return;
       }
 
@@ -721,7 +727,6 @@ export default function NewShowPage() {
    */
   const goToStep = (nextIndex: number) => {
     if (nextIndex <= stepIndex) {
-      setFieldError(null);
       setStepIndex(nextIndex);
       return;
     }
@@ -733,7 +738,6 @@ export default function NewShowPage() {
       );
       return;
     }
-    setFieldError(null);
     setStepIndex(nextIndex);
   };
 
@@ -742,7 +746,6 @@ export default function NewShowPage() {
 
   return (
     <form
-      ref={formRef}
       noValidate
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
@@ -756,9 +759,6 @@ export default function NewShowPage() {
         launch ? '-mb-10 sm:-mb-12' : '-mb-6',
       )}
     >
-      {/* Hidden derived title — kept as a named element for focus targeting. */}
-      <input type="hidden" name="title" value={title} readOnly />
-
       <div className="relative z-10 flex w-full flex-col px-6 pt-5 pb-6 sm:px-10">
         {/* === Step content, vertically centred ========================== */}
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center py-8 sm:py-10">
@@ -776,15 +776,23 @@ export default function NewShowPage() {
             <div className="mt-8 w-full">
               <StepPanel active={stepIndex === 0}>
                 {/* Mirrors the home-page PromptHero panel sizing so the wizard's
-                    describe step feels like a continuation of it. */}
+                      describe step feels like a continuation of it. */}
                 <div className="mx-auto w-full max-w-3xl">
                   <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
+                    <label htmlFor="show-description" className="sr-only">
+                      Creative brief
+                    </label>
+                    <span id="show-description-hint" className="sr-only">
+                      Describe the mood, colours, pacing, and key moments you want in the show.
+                    </span>
                     <Textarea
+                      id="show-description"
                       name="description"
                       rows={2}
                       autoFocus
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      aria-describedby="show-description-hint"
                       placeholder="Describe your show, or hit the dice to randomise."
                       className="h-28 resize-none rounded-none border-0 bg-transparent p-4 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0"
                     />
@@ -861,32 +869,36 @@ export default function NewShowPage() {
                   </div>
                   <fieldset className="mt-4">
                     <legend className="sr-only">Show style</legend>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {SHOW_STYLE_LIST.map((style) => {
                         const selected = style.key === styleKey;
                         return (
-                          <button
+                          <label
                             key={style.key}
-                            type="button"
-                            role="radio"
-                            aria-checked={selected}
-                            aria-label={`${style.name}: ${style.description}`}
                             title={style.description}
-                            onClick={() => setStyleKey(style.key)}
                             className={cn(
-                              'focus-visible:ring-ring/50 min-w-0 rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow] focus:outline-none focus-visible:ring-3',
+                              'has-[input:focus-visible]:ring-ring/50 min-w-0 cursor-pointer rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow] has-[input:focus-visible]:ring-3',
                               selected
                                 ? 'border-foreground/55 text-foreground bg-[color:var(--accent)] shadow-sm'
                                 : 'border-border bg-card/70 text-muted-foreground hover:border-foreground/25 hover:bg-[color:color-mix(in_srgb,var(--accent)_60%,transparent)]',
                             )}
                           >
+                            <input
+                              type="radio"
+                              name="showStyle"
+                              value={style.key}
+                              checked={selected}
+                              onChange={() => setStyleKey(style.key)}
+                              aria-label={`${style.name}: ${style.description}`}
+                              className="sr-only"
+                            />
                             <span className="text-foreground block truncate text-xs font-semibold">
                               {style.name}
                             </span>
                             <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4">
                               {style.tagline}
                             </span>
-                          </button>
+                          </label>
                         );
                       })}
                     </div>
@@ -896,7 +908,19 @@ export default function NewShowPage() {
 
               <StepPanel active={stepIndex === 1}>
                 <div className="mx-auto w-full max-w-3xl space-y-4">
-                  <div className={cn(soundtrackMode === 'none' && 'opacity-50')}>
+                  <div
+                    ref={audioUploadErrorRef}
+                    tabIndex={-1}
+                    aria-label={
+                      audioUploadState === 'error'
+                        ? `Track upload error: ${audioUploadError ?? 'Upload failed'}`
+                        : undefined
+                    }
+                    className={cn(
+                      'rounded-xl focus:outline-none focus-visible:ring-3 focus-visible:ring-[color:var(--color-status-danger)]/35',
+                      soundtrackMode === 'none' && 'opacity-50',
+                    )}
+                  >
                     <AudioUpload
                       file={audioFile}
                       duration={audioDuration}
@@ -916,8 +940,7 @@ export default function NewShowPage() {
                   </div>
                   <button
                     type="button"
-                    role="radio"
-                    aria-checked={soundtrackMode === 'none'}
+                    aria-label="Continue without a soundtrack"
                     onClick={chooseNoSoundtrack}
                     className={cn(
                       'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
@@ -954,10 +977,14 @@ export default function NewShowPage() {
               </StepPanel>
 
               <StepPanel active={stepIndex === 2}>
-                <div className="space-y-4">
+                <fieldset className="space-y-4">
+                  <legend className="sr-only">Show length</legend>
                   {hasSoundtrack ? (
                     <>
                       <ChoiceCard
+                        type="radio"
+                        name="showLength"
+                        value="match"
                         selected={lengthChoice === 'match'}
                         title="Match the track"
                         hint={audioDuration ? formatDuration(audioDuration) : 'Auto'}
@@ -969,7 +996,7 @@ export default function NewShowPage() {
                             className="text-[color:var(--color-content-muted)]"
                           />
                         }
-                        onClick={() => {
+                        onSelect={() => {
                           setLengthChoice('match');
                           goToStep(stepIndex + 1);
                         }}
@@ -989,6 +1016,9 @@ export default function NewShowPage() {
                       return (
                         <ChoiceCard
                           key={option.minutes}
+                          type="radio"
+                          name="showLength"
+                          value={String(option.minutes)}
                           selected={lengthChoice === option.minutes}
                           title={option.label}
                           hint={`${option.minutes} min`}
@@ -1000,7 +1030,7 @@ export default function NewShowPage() {
                               className="text-[color:var(--color-content-muted)]"
                             />
                           }
-                          onClick={() => {
+                          onSelect={() => {
                             setLengthChoice(option.minutes);
                             goToStep(stepIndex + 1);
                           }}
@@ -1008,40 +1038,49 @@ export default function NewShowPage() {
                       );
                     })}
                   </div>
-                </div>
+                </fieldset>
               </StepPanel>
 
               <StepPanel active={stepIndex === 3}>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {BUDGET_TIERS.map((tier) => (
-                    <ChoiceCard
-                      key={tier.value}
-                      selected={budget === tier.value}
-                      title={tier.label}
-                      hint={tier.hint}
-                      description={tier.description}
-                      onClick={() => {
-                        setBudget(tier.value);
-                        goToStep(stepIndex + 1);
-                      }}
-                    />
-                  ))}
-                </div>
+                <fieldset>
+                  <legend className="sr-only">Show budget</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {BUDGET_TIERS.map((tier) => (
+                      <ChoiceCard
+                        key={tier.value}
+                        type="radio"
+                        name="showBudget"
+                        value={String(tier.value)}
+                        selected={budget === tier.value}
+                        title={tier.label}
+                        hint={tier.hint}
+                        description={tier.description}
+                        onSelect={() => {
+                          setBudget(tier.value);
+                          goToStep(stepIndex + 1);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </fieldset>
               </StepPanel>
 
               <StepPanel active={stepIndex === 4}>
-                <div className="space-y-6">
+                <fieldset className="space-y-6">
+                  <legend className="sr-only">Firework types</legend>
                   <div className="grid gap-3 sm:grid-cols-3">
                     {FIREWORK_TYPE_KEYS.map((key) => {
                       const type = FIREWORK_TYPES[key];
                       return (
                         <ChoiceCard
                           key={key}
-                          multi
+                          type="checkbox"
+                          name="fireworkTypes"
+                          value={key}
                           selected={fireworkTypes.has(key)}
                           title={type.label}
                           description={type.description}
-                          onClick={() => toggleFireworkType(key)}
+                          onSelect={() => toggleFireworkType(key)}
                         />
                       );
                     })}
@@ -1063,40 +1102,71 @@ export default function NewShowPage() {
                       <ArrowRight size={16} />
                     </Button>
                   </div>
-                </div>
+                </fieldset>
               </StepPanel>
 
               <StepPanel active={stepIndex === 5}>
                 <div className="space-y-6">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {WIDTH_PRESETS.map((preset) => (
-                      <ChoiceCard
-                        key={preset.feet}
-                        selected={!measuredWidth.trim() && widthFeet === preset.feet}
-                        title={preset.label}
-                        description={preset.description}
-                        diagram={<PositionDots count={preset.positions} />}
-                        onClick={() => {
-                          setMeasuredWidth('');
-                          setWidthFeet(preset.feet);
-                        }}
+                  <fieldset>
+                    <legend className="sr-only">Site width preset</legend>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {WIDTH_PRESETS.map((preset) => (
+                        <ChoiceCard
+                          key={preset.feet}
+                          type="radio"
+                          name="siteWidthPreset"
+                          value={String(preset.feet)}
+                          selected={!hasMeasuredWidth && widthFeet === preset.feet}
+                          title={preset.label}
+                          description={preset.description}
+                          diagram={<PositionDots count={preset.positions} />}
+                          onSelect={() => {
+                            setMeasuredWidth('');
+                            setWidthFeet(preset.feet);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </fieldset>
+                  <div className="flex flex-col items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)]">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <label htmlFor="measured-site-width">I&apos;ve measured</label>
+                      <Input
+                        id="measured-site-width"
+                        name="measuredSiteWidth"
+                        type="number"
+                        min={5}
+                        max={2000}
+                        step={1}
+                        inputMode="numeric"
+                        value={measuredWidth}
+                        onChange={(e) => setMeasuredWidth(e.target.value)}
+                        placeholder="Width…"
+                        invalid={Boolean(measuredWidthError)}
+                        aria-describedby={
+                          measuredWidthError
+                            ? 'measured-site-width-hint measured-site-width-error'
+                            : 'measured-site-width-hint'
+                        }
+                        className="h-9 w-24 text-center tabular-nums"
                       />
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center gap-3 text-sm text-[color:var(--color-content-subtle)]">
-                    <span>I&apos;ve measured:</span>
-                    <Input
-                      type="number"
-                      min={5}
-                      max={2000}
-                      inputMode="numeric"
-                      value={measuredWidth}
-                      onChange={(e) => setMeasuredWidth(e.target.value)}
-                      placeholder="width"
-                      className="h-9 w-24 text-center tabular-nums"
-                    />
-                    <span>ft</span>
-                    {measuredWidth.trim() ? <PositionDots count={effectivePositions} /> : null}
+                      <span aria-hidden="true">ft</span>
+                      {hasMeasuredWidth && !measuredWidthError ? (
+                        <PositionDots count={effectivePositions} />
+                      ) : null}
+                    </div>
+                    <p id="measured-site-width-hint" className="text-xs">
+                      Enter a whole number from 5 to 2,000 ft, or choose a preset above.
+                    </p>
+                    {measuredWidthError ? (
+                      <p
+                        id="measured-site-width-error"
+                        role="alert"
+                        className="text-xs font-medium text-[color:var(--color-status-danger)]"
+                      >
+                        {measuredWidthError}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex flex-col items-center pt-2">
                     {generationPresentationError && !generationPresentation ? (
@@ -1114,7 +1184,10 @@ export default function NewShowPage() {
                       <Button
                         type="button"
                         onClick={triggerGenerate}
-                        disabled={mounted && (isLaunching || !generationPresentation)}
+                        disabled={
+                          mounted &&
+                          (isLaunching || !generationPresentation || Boolean(measuredWidthError))
+                        }
                         size="lg"
                         className="rounded-full px-8"
                       >
