@@ -48,7 +48,6 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { Skeleton } from '@/app/components/ui/Feedback';
-import { HomePageSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -751,7 +750,51 @@ function getPendingRouteKind(pathname: string | null | undefined): PendingRouteK
 }
 
 function PendingHomeSkeleton() {
-  return <HomePageSkeleton />;
+  return (
+    <div
+      className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
+      aria-label="Loading home"
+      aria-busy="true"
+    >
+      <section className="mx-auto w-full max-w-3xl py-10">
+        <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+          Create any firework show you can imagine
+        </h1>
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs">
+          <Skeleton className="h-28 w-full rounded-none" />
+          <div className="flex items-center justify-between gap-3 px-4 pt-2 pb-3">
+            <Skeleton className="h-9 w-36 rounded-full" />
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <Skeleton className="h-9 w-24 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3" aria-label="Loading featured shows">
+        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Watch real shows</h2>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <Skeleton key={index} className="min-h-56 rounded-2xl" />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3" aria-label="Loading Explore shows">
+        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Explore</h2>
+        <div className="flex gap-4 overflow-hidden pb-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="w-44 shrink-0 sm:w-48" aria-hidden="true">
+              <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+              <Skeleton className="mt-2.5 h-4 w-4/5" />
+              <Skeleton className="mt-2 h-3 w-3/5" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function PendingLibrarySkeleton() {

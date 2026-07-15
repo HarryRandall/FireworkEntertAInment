@@ -23,8 +23,6 @@ type PageProps = {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 };
 
-type ShowPresetSearchParams = Awaited<PageProps['searchParams']>;
-
 const FILTERS: FilterConfig[] = [
   {
     key: 'status',
@@ -38,10 +36,7 @@ const FILTERS: FilterConfig[] = [
   },
 ];
 
-export default async function AdminShowPresetsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const importableShows = await listAdminShowPresetImportShows();
-
+export default function AdminShowPresetsPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
       <Suspense
@@ -67,23 +62,21 @@ export default async function AdminShowPresetsPage({ searchParams }: PageProps) 
           </>
         }
       >
-        <ShowPresetsData params={params} importableShows={importableShows} />
+        <ShowPresetsData searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function ShowPresetsData({
-  params,
-  importableShows,
-}: {
-  params: ShowPresetSearchParams;
-  importableShows: Awaited<ReturnType<typeof listAdminShowPresetImportShows>>;
-}) {
+async function ShowPresetsData({ searchParams }: { searchParams: PageProps['searchParams'] }) {
+  const [params, presets, importableShows] = await Promise.all([
+    searchParams,
+    listAdminShowPresets(),
+    listAdminShowPresetImportShows(),
+  ]);
   const query = (params.q ?? '').trim().toLowerCase();
   const status = params.status;
   const requestedPage = Number(params.page ?? '1');
-  const presets = await listAdminShowPresets();
 
   const filtered = presets.filter((preset) => {
     const text = [preset.title, preset.slug, preset.theme, preset.description, ...preset.moodTags]

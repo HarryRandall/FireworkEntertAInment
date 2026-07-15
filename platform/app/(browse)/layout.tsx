@@ -17,7 +17,12 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function PublicBrowseLayout({ children }: { children: ReactNode }) {
-  const userId = await getCurrentUserId();
+  const [userId, profile, impersonation, cookieStore] = await Promise.all([
+    getCurrentUserId(),
+    getCurrentProfile(),
+    getActiveImpersonation(),
+    cookies(),
+  ]);
 
   if (!userId) {
     return (
@@ -36,11 +41,6 @@ export default async function PublicBrowseLayout({ children }: { children: React
     );
   }
 
-  const [profile, impersonation, cookieStore] = await Promise.all([
-    getCurrentProfile(),
-    getActiveImpersonation(),
-    cookies(),
-  ]);
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,
   );
