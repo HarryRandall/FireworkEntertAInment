@@ -204,15 +204,46 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   const previewCues = read('app/actions/preview-cues.ts');
   const replayViewer = read('app/components/app/FireworkReplayViewer.tsx');
   const credits = read('lib/ai-credits.server.ts');
+  const databaseTypes = read('lib/database.types.ts');
+  const refinementMigration = read(
+    'supabase/migrations/20260715091500_add_refinement_cues_atomically.sql',
+  );
   assert.match(credits, /showRefinementReservationKey/);
   assert.match(previewCues, /aiCreditAction: z\.enum\(\['show_refinement'\]\)\.optional\(\)/);
   assert.match(previewCues, /reserveAiCredits/);
-  assert.match(previewCues, /settleAiCreditReservation/);
+  assert.match(previewCues, /add_refinement_cue_and_settle_credits/);
   assert.match(previewCues, /refundAiCreditReservation/);
   assert.match(previewCues, /showRefinementReservationKey\(parsed\.data\.aiCreditReferenceId\)/);
+  assert.match(previewCues, /const refinementCommitted =/);
+  assert.match(previewCues, /invalidateSidebarAiUsageCache/);
   assert.match(replayViewer, /formData\.set\('aiCreditAction', 'show_refinement'\)/);
   assert.match(replayViewer, /formData\.set\('aiCreditReferenceId', crypto\.randomUUID\(\)\)/);
+  assert.doesNotMatch(replayViewer, /toast\.success\(`Adding /);
+  assert.match(
+    replayViewer,
+    /const result = await addPreviewCueAction\(formData\)[\s\S]*?toast\.success\(`Added /,
+  );
   assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
+  assert.match(
+    refinementMigration,
+    /create or replace function public\.add_refinement_cue_and_settle_credits\([\s\S]*?security definer[\s\S]*?set search_path = ''/,
+  );
+  assert.match(
+    refinementMigration,
+    /insert into public\.show_timeline_items \([\s\S]*?p_refinement_id[\s\S]*?settlement := public\.settle_ai_credit_reservation/,
+  );
+  assert.match(
+    refinementMigration,
+    /if not coalesce\(\(settlement ->> 'ok'\)::boolean, false\) then[\s\S]*?raise exception/,
+  );
+  assert.match(
+    refinementMigration,
+    /revoke execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?to authenticated;/,
+  );
+  assert.match(
+    databaseTypes,
+    /add_refinement_cue_and_settle_credits: \{[\s\S]*?p_refinement_id: string[\s\S]*?Returns: string/,
+  );
 });
 
 test('admin billing overview and user detail expose credit balances and grant controls', () => {

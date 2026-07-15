@@ -1540,6 +1540,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_refinement_cue_and_settle_credits: {
+        Args: {
+          p_catalogue_item_id: string
+          p_emphasis: string
+          p_launch_position_index: number
+          p_metadata?: Json
+          p_position: number
+          p_refinement_id: string
+          p_show_id: string
+          p_time_seconds: number
+        }
+        Returns: string
+      }
       ai_credit_usage_payload: { Args: { p_user_id: string }; Returns: Json }
       current_user_access: { Args: never; Returns: Json }
       current_user_has_permission: {

@@ -17,9 +17,9 @@ import {
   getProductDurationSeconds,
 } from '@/lib/cue-overlap.server';
 import {
+  invalidateSidebarAiUsageCache,
   refundAiCreditReservation,
   reserveAiCredits,
-  settleAiCreditReservation,
   showRefinementReservationKey,
 } from '@/lib/ai-credits.server';
 
@@ -186,45 +186,100 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     }
   }
 
-  const { error } = await supabase.from('show_timeline_items').insert({
-    show_id: parsed.data.showId,
-    position: nextPosition,
-    time_seconds: parsed.data.timeSeconds,
-    description: cueDescription,
-    catalogue_item_id: parsed.data.productId,
-    launch_position_index: parsed.data.launchPositionIndex,
-    emphasis: parsed.data.emphasis,
-  });
+  if (refinementReservationKey && user && parsed.data.aiCreditReferenceId) {
+    const { data: cueId, error: refinementError } = await supabase.rpc(
+      'add_refinement_cue_and_settle_credits',
+      {
+        p_catalogue_item_id: parsed.data.productId,
+        p_emphasis: parsed.data.emphasis,
+        p_launch_position_index: parsed.data.launchPositionIndex,
+        p_metadata: {
+          cueDescription,
+          productId: parsed.data.productId,
+          showId: parsed.data.showId,
+          showSlug: parsed.data.showSlug,
+        },
+        p_position: nextPosition,
+        p_refinement_id: parsed.data.aiCreditReferenceId,
+        p_show_id: parsed.data.showId,
+        p_time_seconds: parsed.data.timeSeconds,
+      },
+    );
 
-  if (error) {
-    console.error('[addPreviewCueAction] insert failed:', error);
-    if (refinementReservationKey && user) {
-      await refundAiCreditReservation(supabase, {
+    let committedAfterResponseError = false;
+    if (refinementError) {
+      // A lost response can arrive after PostgreSQL committed. The deterministic
+      // cue UUID and debit key let us confirm both halves before compensation.
+      const [cueConfirmation, debitConfirmation] = await Promise.all([
+        supabase
+          .from('show_timeline_items')
+          .select('id, show_id, catalogue_item_id')
+          .eq('id', parsed.data.aiCreditReferenceId)
+          .eq('show_id', parsed.data.showId)
+          .eq('catalogue_item_id', parsed.data.productId)
+          .maybeSingle(),
+        supabase
+          .from('ai_credit_transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('idempotency_key', `${refinementReservationKey}:debit`)
+          .eq('transaction_type', 'debit')
+          .eq('status', 'applied')
+          .maybeSingle(),
+      ]);
+      committedAfterResponseError =
+        !cueConfirmation.error &&
+        cueConfirmation.data != null &&
+        !debitConfirmation.error &&
+        debitConfirmation.data != null;
+      if (cueConfirmation.error || debitConfirmation.error) {
+        console.error('[addPreviewCueAction] refinement confirmation failed:', {
+          cueError: cueConfirmation.error,
+          debitError: debitConfirmation.error,
+        });
+      }
+    }
+
+    const refinementCommitted =
+      cueId === parsed.data.aiCreditReferenceId ||
+      (refinementError != null && committedAfterResponseError);
+    if (!refinementCommitted) {
+      console.error('[addPreviewCueAction] atomic refinement failed:', refinementError);
+      const refunded = await refundAiCreditReservation(supabase, {
         userId: user.id,
         reservationKey: refinementReservationKey,
         metadata: {
-          reason: 'cue_insert_failed',
+          reason: 'refinement_cue_failed',
           showId: parsed.data.showId,
           showSlug: parsed.data.showSlug,
         },
       });
+      if (!refunded.ok) {
+        console.error('[addPreviewCueAction] refinement refund failed:', refunded.error);
+      }
+      return { ok: false, error: 'Could not add that firework cue.' };
     }
-    return { ok: false, error: 'Could not add that firework cue.' };
-  }
 
-  if (refinementReservationKey && user) {
-    const settled = await settleAiCreditReservation(supabase, {
-      userId: user.id,
-      reservationKey: refinementReservationKey,
-      metadata: {
-        cueDescription,
-        productId: parsed.data.productId,
-        showId: parsed.data.showId,
-        showSlug: parsed.data.showSlug,
-      },
-    });
-    if (!settled.ok)
-      console.error('[addPreviewCueAction] credit settlement failed:', settled.error);
+    await invalidateSidebarAiUsageCache(user.id);
+  } else {
+    const { data: insertedCue, error } = await supabase
+      .from('show_timeline_items')
+      .insert({
+        show_id: parsed.data.showId,
+        position: nextPosition,
+        time_seconds: parsed.data.timeSeconds,
+        description: cueDescription,
+        catalogue_item_id: parsed.data.productId,
+        launch_position_index: parsed.data.launchPositionIndex,
+        emphasis: parsed.data.emphasis,
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (error || !insertedCue) {
+      console.error('[addPreviewCueAction] insert failed:', error);
+      return { ok: false, error: 'Could not add that firework cue.' };
+    }
   }
 
   if (user) {

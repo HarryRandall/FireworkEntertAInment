@@ -632,7 +632,9 @@ export function FireworkReplayViewer({
     setAiPrompt('');
     setShowAddForm(false);
     setInsertBeforeTime(null);
-    toast.success(`Adding ${product.name} at ${formatDuration(timeSeconds)}`);
+    const refinementToastId = toast.loading(
+      `Adding ${product.name} at ${formatDuration(timeSeconds)}...`,
+    );
 
     startTransition(async () => {
       addOptimisticCue({
@@ -645,12 +647,19 @@ export function FireworkReplayViewer({
         firework: product,
       });
       const result = await addPreviewCueAction(formData);
-      if (isTubeBusyError(result)) {
+      if (!result.ok && isTubeBusyError(result)) {
         setActionResult(null);
+        toast.error(result.error, { id: refinementToastId });
         return;
       }
       setActionResult(result);
-      if (!result.ok) toast.error(result.error);
+      if (!result.ok) {
+        toast.error(result.error, { id: refinementToastId });
+        return;
+      }
+      toast.success(`Added ${product.name} at ${formatDuration(timeSeconds)}`, {
+        id: refinementToastId,
+      });
     });
   }
 
