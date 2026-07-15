@@ -188,29 +188,37 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
 
 type CachedWorkspaceSummary = WorkspaceSummary & { aiUsage?: SidebarAiUsage | null };
 
-const WORKSPACE_SUMMARY_CACHE_KEY = 'sc:workspace-summary:v1';
+const WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v2';
 
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
 const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
-function readCachedWorkspaceSummary(): CachedWorkspaceSummary | null {
-  if (typeof window === 'undefined') return null;
+function workspaceSummaryCacheKey(profileId: string): string {
+  return `${WORKSPACE_SUMMARY_CACHE_KEY_PREFIX}:${profileId}`;
+}
+
+function readCachedWorkspaceSummary(profileId: string | null): CachedWorkspaceSummary | null {
+  if (typeof window === 'undefined' || !profileId) return null;
   try {
-    const raw = window.sessionStorage.getItem(WORKSPACE_SUMMARY_CACHE_KEY);
+    const raw = window.sessionStorage.getItem(workspaceSummaryCacheKey(profileId));
     return raw ? (JSON.parse(raw) as CachedWorkspaceSummary) : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedWorkspaceSummary(summary: CachedWorkspaceSummary | null) {
-  if (typeof window === 'undefined') return;
+function writeCachedWorkspaceSummary(
+  profileId: string | null,
+  summary: CachedWorkspaceSummary | null,
+) {
+  if (typeof window === 'undefined' || !profileId) return;
   try {
+    const cacheKey = workspaceSummaryCacheKey(profileId);
     if (summary) {
-      window.sessionStorage.setItem(WORKSPACE_SUMMARY_CACHE_KEY, JSON.stringify(summary));
+      window.sessionStorage.setItem(cacheKey, JSON.stringify(summary));
     } else {
-      window.sessionStorage.removeItem(WORKSPACE_SUMMARY_CACHE_KEY);
+      window.sessionStorage.removeItem(cacheKey);
     }
   } catch {
     // Ignore storage failures; the sidebar just falls back to fetching.
@@ -864,16 +872,20 @@ export function AppShell({
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
   const [aiUsageLoading, setAiUsageLoading] = useState(true);
+  const profileId = profile?.id ?? null;
 
-  // Seed the sidebar from the sessionStorage cache before first paint so usage
-  // and recent shows appear instantly while the background refetch runs.
+  // Scope cached account data to the authenticated profile and clear the
+  // previous profile before paint if the shell identity changes in-place.
   useHydrationLayoutEffect(() => {
-    const cached = readCachedWorkspaceSummary();
+    setWorkspaceSummary(null);
+    setAiUsage(null);
+    setAiUsageLoading(true);
+    const cached = readCachedWorkspaceSummary(profileId);
     if (!cached) return;
-    setWorkspaceSummary((current) => current ?? cached);
-    setAiUsage((current) => current ?? cached.aiUsage ?? null);
+    setWorkspaceSummary(cached);
+    setAiUsage(cached.aiUsage ?? null);
     setAiUsageLoading(false);
-  }, []);
+  }, [profileId]);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -921,6 +933,10 @@ export function AppShell({
     let active = true;
 
     async function loadWorkspaceSummary() {
+      if (!profileId) {
+        setAiUsageLoading(false);
+        return;
+      }
       try {
         const response = await fetch('/api/me/summary', {
           credentials: 'same-origin',
@@ -931,7 +947,7 @@ export function AppShell({
           return;
         }
         const nextSummary = (await response.json()) as CachedWorkspaceSummary;
-        writeCachedWorkspaceSummary(nextSummary);
+        writeCachedWorkspaceSummary(profileId, nextSummary);
         if (active) {
           setWorkspaceSummary(nextSummary);
           setAiUsage(nextSummary.aiUsage ?? null);
@@ -947,10 +963,10 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, [pathname, profileId]);
 
   const handleSignOut = async () => {
-    writeCachedWorkspaceSummary(null);
+    writeCachedWorkspaceSummary(profileId, null);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/login');
