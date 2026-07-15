@@ -202,7 +202,8 @@ test('manual cue schedule validation fails closed when safety reads fail', () =>
   const overlap = read('lib/cue-overlap.server.ts');
 
   assert.match(previewActions, /existingCuesError/);
-  assert.match(previewActions, /lastCueError/);
+  assert.doesNotMatch(previewActions, /lastCueError/);
+  assert.match(previewActions, /addShowTimelineItem/);
   assert.match(previewActions, /schedule validation failed/);
   assert.match(previewActions, /Could not validate the cue schedule\. Try again\./);
   assert.match(overlap, /if \(itemError\)/);

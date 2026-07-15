@@ -22,6 +22,7 @@ import {
   reserveAiCredits,
   showRefinementReservationKey,
 } from '@/lib/ai-credits.server';
+import { addShowTimelineItem, deleteShowTimelineItem } from '@/lib/show-timeline-mutations.server';
 
 export type CueActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -88,7 +89,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   const cueDescription = productRow.name.trim();
 
   let newDuration = MIN_PRODUCT_DURATION_SECONDS;
-  let nextPosition = 1;
   const existingWindows: Array<{
     timeSeconds: number;
     durationSeconds: number;
@@ -122,16 +122,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
         description: cue.description,
       });
     }
-
-    const { data: lastCue, error: lastCueError } = await supabase
-      .from('show_timeline_items')
-      .select('position')
-      .eq('show_id', parsed.data.showId)
-      .order('position', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (lastCueError) throw lastCueError;
-    nextPosition = (lastCue?.position ?? 0) + 1;
   } catch (error) {
     console.error('[addPreviewCueAction] schedule validation failed:', error);
     return { ok: false, error: 'Could not validate the cue schedule. Try again.' };
@@ -199,7 +189,9 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
           showId: parsed.data.showId,
           showSlug: parsed.data.showSlug,
         },
-        p_position: nextPosition,
+        // The RPC keeps this legacy argument for compatibility, while the
+        // locked database schedule allocates the authoritative position.
+        p_position: 1,
         p_refinement_id: parsed.data.aiCreditReferenceId,
         p_show_id: parsed.data.showId,
         p_time_seconds: parsed.data.timeSeconds,
@@ -257,26 +249,32 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       if (!refunded.ok) {
         console.error('[addPreviewCueAction] refinement refund failed:', refunded.error);
       }
+      if (refinementError?.code === '23514') {
+        return {
+          ok: false,
+          error: 'That launch position became busy. Pick a different time or tube and try again.',
+        };
+      }
       return { ok: false, error: 'Could not add that firework cue.' };
     }
 
     await invalidateSidebarAiUsageCache(user.id);
   } else {
-    const { data: insertedCue, error } = await supabase
-      .from('show_timeline_items')
-      .insert({
-        show_id: parsed.data.showId,
-        position: nextPosition,
-        time_seconds: parsed.data.timeSeconds,
-        description: cueDescription,
-        catalogue_item_id: parsed.data.productId,
-        launch_position_index: parsed.data.launchPositionIndex,
-        emphasis: parsed.data.emphasis,
-      })
-      .select('id')
-      .maybeSingle();
+    const { data: insertedCueId, error } = await addShowTimelineItem(supabase, {
+      p_catalogue_item_id: parsed.data.productId,
+      p_emphasis: parsed.data.emphasis,
+      p_launch_position_index: parsed.data.launchPositionIndex,
+      p_show_id: parsed.data.showId,
+      p_time_seconds: parsed.data.timeSeconds,
+    });
 
-    if (error || !insertedCue) {
+    if (error?.code === '23514') {
+      return {
+        ok: false,
+        error: 'That launch position became busy. Pick a different time or tube and try again.',
+      };
+    }
+    if (error || !insertedCueId) {
       console.error('[addPreviewCueAction] insert failed:', error);
       return { ok: false, error: 'Could not add that firework cue.' };
     }
@@ -315,28 +313,22 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: deletedCue, error } = await supabase
-    .from('show_timeline_items')
-    .delete()
-    .eq('id', parsed.data.cueId)
-    .select('show_id')
-    .maybeSingle();
+  const { data: deletedShowId, error } = await deleteShowTimelineItem(supabase, parsed.data.cueId);
 
   if (error) {
     console.error('[deletePreviewCueAction] delete failed:', error);
     return { ok: false, error: 'Could not remove that firework cue.' };
   }
 
-  // No row came back means nothing matched (wrong id or blocked by RLS); don't
-  // tell the user it was removed when it wasn't.
-  if (!deletedCue) {
+  // No show ID means the guarded mutation did not confirm a deleted row.
+  if (!deletedShowId) {
     return { ok: false, error: 'Could not find that cue to remove.' };
   }
 
-  if (user && deletedCue?.show_id) {
+  if (user) {
     try {
       await syncShowDerivedFieldsForUser(user.id, {
-        showId: deletedCue.show_id,
+        showId: deletedShowId,
         showSlug: parsed.data.showSlug,
       });
     } catch (error) {
