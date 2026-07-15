@@ -94,8 +94,8 @@ npm run worker:firework-import
 - Do not hand-edit files explicitly marked as generated. The lower-level
   `platform/components/ui` directory also contains adapted and custom source,
   so inspect each file's header before editing.
-- Keep `AGENTS.md` and `CLAUDE.md` aligned, and keep the Codex and Claude copies
-  of the ShowCrafter design-system skill aligned.
+- Keep `AGENTS.md` and `CLAUDE.md` aligned. Review repo-local skill updates,
+  licences, scripts, and commit pins before accepting them.
 
 ## Required Environment Variables
 
@@ -222,10 +222,15 @@ derived decoration. See `platform/docs/explore-presets.md`.
 
 ## UI Work
 
-Use the local ShowCrafter design-system skill for any UI work:
+Repo-local design, React, review, and animation skills are pinned under
+`.agents/skills`; see `.agents/skills/README.md`. Use only the skills relevant
+to the task. The rules in this file, the live implementation, database
+invariants, and tests take precedence over generic skill recommendations.
 
-- Codex agents: `.agents/skills/showcrafter-design-system/SKILL.md`
-- Claude agents: `.claude/skills/showcrafter-design-system/SKILL.md`
+Do not introduce a component system, icon family, font, animation library, or
+design-token layer merely because an external skill recommends it. First audit
+the existing dependency and component path, then justify and verify the change
+against ShowCrafter's product flows.
 
 Shared app UI primitives live in `platform/app/components/ui`. The lower-level
 Radix/shadcn layer lives in `platform/components/ui`; only files explicitly
@@ -302,8 +307,7 @@ scripts/                        utility scripts
   types/tests when needed, with explicit least-privilege grants?
 - Did Explore work remain database-managed, draft-first, canonical, and safe to
   schedule per launch position?
-- Did UI work follow the ShowCrafter design-system skill and preserve loading
-  chrome?
+- Did UI work follow the project UI rules and preserve stable loading chrome?
 - Do admin links and actions reflect the current user's real permissions and
   the operation that will actually run?
 - Do comments explain non-obvious reasoning instead of narrating the code?
