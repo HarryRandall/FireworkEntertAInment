@@ -645,7 +645,8 @@ body {
 .lp-menu {
   position: relative;
 }
-.lp-menu:hover .lp-nav-pill svg {
+.lp-menu:hover .lp-nav-pill svg,
+.lp-menu:focus-within .lp-nav-pill svg {
   transform: rotate(180deg);
 }
 .lp-menu-panel {
@@ -675,7 +676,8 @@ body {
   top: -14px;
   height: 14px;
 }
-.lp-menu:hover .lp-menu-panel {
+.lp-menu:hover .lp-menu-panel,
+.lp-menu:focus-within .lp-menu-panel {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
@@ -702,6 +704,26 @@ body {
   border-radius: 8px;
   background: var(--hl-soft);
   color: var(--hl-ink);
+}
+
+.lp-mobile-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  max-height: calc(100dvh - 66px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-mobile-menu[data-state='open'] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 /* New-show wizard: step panel enter animation */
@@ -893,6 +915,12 @@ body {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .lp-mobile-menu,
+  .lp-mobile-menu[data-state='open'] {
+    transform: none !important;
+    transition: none !important;
   }
 }
 /*

@@ -1,14 +1,13 @@
 'use client';
 
 /**
- * MarketingNavBar — sticky, blurred top navigation for the public
- * marketing site. Desktop shows hover mega-menus for "How it works" and
+ * MarketingNavBar provides sticky, blurred top navigation for the public
+ * marketing site. Desktop shows hover and focus menus for "How it works" and
  * "Features"; the signed-in state is resolved on the client so the
- * "Dashboard" CTA can swap in for unauthenticated visitors.
+ * "Home" CTA can swap in for unauthenticated visitors.
  */
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   ChevronDown,
   Menu,
@@ -30,7 +29,7 @@ type MenuItem = { t: string; d: string; href: string; Icon: LucideIcon };
 const HOW_ITEMS: MenuItem[] = [
   {
     t: 'Pick a song',
-    d: 'Upload audio — we read the tempo & drops',
+    d: 'Upload audio, we read the tempo & drops',
     href: '/how-it-works',
     Icon: Music4,
   },
@@ -84,21 +83,23 @@ function NavMenu({ label, href, items }: { label: string; href: string; items: M
       <Link href={href} className="lp-nav-pill">
         {label} <ChevronDown size={13} strokeWidth={2.2} />
       </Link>
-      <div className="lp-menu-panel" role="menu">
+      <ul className="lp-menu-panel m-0 list-none">
         {items.map((it) => (
-          <Link key={`${label}-${it.t}`} href={it.href} className="lp-menu-item" role="menuitem">
-            <span className="lp-menu-item__ic">
-              <it.Icon size={16} strokeWidth={1.9} />
-            </span>
-            <span>
-              <span className="text-on-surface block text-sm font-semibold">{it.t}</span>
-              <span className="text-on-surface-variant mt-px block text-[12.5px] leading-snug">
-                {it.d}
+          <li key={`${label}-${it.t}`}>
+            <Link href={it.href} className="lp-menu-item">
+              <span className="lp-menu-item__ic">
+                <it.Icon size={16} strokeWidth={1.9} />
               </span>
-            </span>
-          </Link>
+              <span>
+                <span className="text-on-surface block text-sm font-semibold">{it.t}</span>
+                <span className="text-on-surface-variant mt-px block text-[12.5px] leading-snug">
+                  {it.d}
+                </span>
+              </span>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -106,6 +107,8 @@ function NavMenu({ label, href, items }: { label: string; href: string; items: M
 export function MarketingNavBar() {
   const [open, setOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const mobileMenuId = useId();
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -129,6 +132,21 @@ export function MarketingNavBar() {
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+
+      event.preventDefault();
+      setOpen(false);
+      mobileMenuTriggerRef.current?.focus();
+    }
+
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [open]);
 
   return (
     <nav className="border-outline-variant/60 sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--background)_80%,transparent)] backdrop-blur-xl">
@@ -173,61 +191,59 @@ export function MarketingNavBar() {
 
         <div className="flex items-center gap-2 lg:hidden">
           <button
+            ref={mobileMenuTriggerRef}
             type="button"
             aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-controls={mobileMenuId}
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
-            className="border-outline-variant/60 bg-background text-on-surface-variant hover:text-on-surface inline-flex h-11 w-11 items-center justify-center rounded-full border"
+            className="border-outline-variant/60 bg-background text-on-surface-variant hover:text-on-surface focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border outline-none focus-visible:ring-3"
           >
-            {open ? <X size={20} /> : <Menu size={20} />}
+            {open ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}
           </button>
         </div>
       </Container>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="border-outline-variant/60 bg-background overflow-hidden border-t lg:hidden"
-          >
-            <Container className="flex flex-col gap-1 py-4">
-              {FLAT_LINKS.map((link) => (
+      <div
+        id={mobileMenuId}
+        data-state={open ? 'open' : 'closed'}
+        aria-hidden={!open}
+        inert={!open}
+        className="lp-mobile-menu border-outline-variant/60 bg-background border-t lg:hidden"
+      >
+        <Container className="flex flex-col gap-1 py-4">
+          {FLAT_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-on-surface-variant hover:bg-muted hover:text-on-surface rounded-lg px-3 py-3 text-base font-medium"
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="border-outline-variant/60 mt-3 flex flex-col gap-3 border-t pt-4">
+            {authenticated ? (
+              <Button href="/home" size="md" className="w-full" onClick={() => setOpen(false)}>
+                Home
+              </Button>
+            ) : (
+              <>
                 <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-on-surface-variant hover:bg-muted hover:text-on-surface rounded-lg px-3 py-3 text-base font-medium"
+                  href="/login"
+                  className="text-on-surface-variant hover:bg-muted rounded-lg px-3 py-3 text-base font-medium"
                   onClick={() => setOpen(false)}
                 >
-                  {link.label}
+                  Log in
                 </Link>
-              ))}
-              <div className="border-outline-variant/60 mt-3 flex flex-col gap-3 border-t pt-4">
-                {authenticated ? (
-                  <Button href="/home" size="md" className="w-full">
-                    Home
-                  </Button>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="text-on-surface-variant hover:bg-muted rounded-lg px-3 py-3 text-base font-medium"
-                      onClick={() => setOpen(false)}
-                    >
-                      Log in
-                    </Link>
-                    <Button href="/signup" size="md" className="w-full">
-                      Sign up free
-                    </Button>
-                  </>
-                )}
-              </div>
-            </Container>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <Button href="/signup" size="md" className="w-full" onClick={() => setOpen(false)}>
+                  Sign up free
+                </Button>
+              </>
+            )}
+          </div>
+        </Container>
+      </div>
     </nav>
   );
 }
