@@ -186,9 +186,13 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
   { value: 'system', label: 'System', icon: Laptop },
 ];
 
-type CachedWorkspaceSummary = WorkspaceSummary & { aiUsage?: SidebarAiUsage | null };
+type CachedWorkspaceSummary = WorkspaceSummary & {
+  aiUsage?: SidebarAiUsage | null;
+  cachedAt?: number;
+};
 
-const WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v2';
+const WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v3';
+const WORKSPACE_SUMMARY_CACHE_TTL_MS = 60_000;
 
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
@@ -206,6 +210,12 @@ function readCachedWorkspaceSummary(profileId: string | null): CachedWorkspaceSu
   } catch {
     return null;
   }
+}
+
+function isWorkspaceSummaryFresh(summary: CachedWorkspaceSummary | null): boolean {
+  return Boolean(
+    summary?.cachedAt && Date.now() - summary.cachedAt < WORKSPACE_SUMMARY_CACHE_TTL_MS,
+  );
 }
 
 function writeCachedWorkspaceSummary(
@@ -228,7 +238,7 @@ function writeCachedWorkspaceSummary(
 function clearCachedAiUsage(profileId: string | null) {
   const cached = readCachedWorkspaceSummary(profileId);
   if (!cached) return;
-  writeCachedWorkspaceSummary(profileId, { ...cached, aiUsage: null });
+  writeCachedWorkspaceSummary(profileId, { ...cached, aiUsage: null, cachedAt: 0 });
 }
 
 function isActivePath(pathname: string | null, href: string) {
@@ -933,6 +943,13 @@ export function AppShell({
         setAiUsageLoading(false);
         return;
       }
+      const cached = readCachedWorkspaceSummary(profileId);
+      if (isWorkspaceSummaryFresh(cached)) {
+        setWorkspaceSummary(cached);
+        setAiUsage(cached?.aiUsage ?? null);
+        setAiUsageLoading(false);
+        return;
+      }
       try {
         const response = await fetch('/api/me/summary', {
           credentials: 'same-origin',
@@ -946,7 +963,8 @@ export function AppShell({
           }
           return;
         }
-        const nextSummary = (await response.json()) as CachedWorkspaceSummary;
+        const payload = (await response.json()) as CachedWorkspaceSummary;
+        const nextSummary: CachedWorkspaceSummary = { ...payload, cachedAt: Date.now() };
         writeCachedWorkspaceSummary(profileId, nextSummary);
         if (active) {
           setWorkspaceSummary(nextSummary);

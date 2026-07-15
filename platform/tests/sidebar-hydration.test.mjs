@@ -52,11 +52,11 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
   assert.match(appSource, /label: 'Admin'/);
   assert.doesNotMatch(appSource, /label: 'Library'/);
   assert.match(appSource, /\/api\/me\/summary/);
-  assert.match(appSource, /WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v2'/);
+  assert.match(appSource, /WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v3'/);
   assert.match(appSource, /workspaceSummaryCacheKey\(profileId\)/);
   assert.match(appSource, /readCachedWorkspaceSummary\(profileId\)/);
   assert.match(appSource, /writeCachedWorkspaceSummary\(profileId, nextSummary\)/);
-  assert.doesNotMatch(appSource, /sc:workspace-summary:v1/);
+  assert.doesNotMatch(appSource, /sc:workspace-summary:v[12]/);
   assert.match(appSource, /aria-label="Breadcrumb"/);
   assert.match(appSource, /<ShellTopBar pathname=\{effectivePath\} \/>/);
 
