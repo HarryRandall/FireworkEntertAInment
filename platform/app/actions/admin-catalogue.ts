@@ -57,7 +57,7 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const { data: updatedProduct, error } = await supabase
     .from('catalogue_items')
     .update({
       part_number: parsed.data.partNumber,
@@ -66,8 +66,11 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
       firework_type: parsed.data.fireworkType || null,
       duration_seconds: parsed.data.durationSeconds,
     })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!updatedProduct) return { ok: false, error: 'Catalogue item not found.' };
   await invalidateAdminCatalogueCache();
   await invalidateAdminEffectsCache();
   await invalidateAdminFireworksCache();

@@ -453,7 +453,7 @@ export async function updateShowPresetDetails(
   }
 
   const slug = parsed.data.slug ? slugifyTitle(parsed.data.slug) : slugifyTitle(parsed.data.title);
-  const { error } = await supabase
+  const { data: updatedPreset, error } = await supabase
     .from('show_presets')
     .update({
       slug,
@@ -468,9 +468,12 @@ export async function updateShowPresetDetails(
       sort_order: parsed.data.sortOrder,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .select('slug')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(slug);
+  if (!updatedPreset) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(updatedPreset.slug);
   return { ok: true };
 }
 
@@ -537,7 +540,8 @@ export async function replaceShowPresetCues(
     .select('slug')
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(preset?.slug);
+  if (!preset) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(preset.slug);
   return { ok: true };
 }
 
@@ -575,7 +579,8 @@ export async function setShowPresetPublished(
     .select('slug')
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(slug ?? data?.slug);
+  if (!data) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(slug ?? data.slug);
   return { ok: true };
 }
 
