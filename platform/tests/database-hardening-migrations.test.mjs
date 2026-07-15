@@ -34,6 +34,9 @@ const analysisCleanupMigration = read(
 const rlsPerformanceMigration = read(
   'supabase/migrations/20260710023403_optimise_remaining_rls_policies.sql',
 );
+const activePermissionMigration = read(
+  'supabase/migrations/20260715083410_require_active_permission_users.sql',
+);
 
 test('AI credit internals are private and public wrappers deny anonymous or cross-user access', () => {
   assert.match(privilegeMigration, /create schema if not exists private/);
@@ -292,6 +295,28 @@ test('storage writes require a current active app user and cover upserts retain 
   assert.match(
     privilegeMigration,
     /create policy covers_select_own on storage\.objects[\s\S]*?for select to authenticated[\s\S]*?storage\.foldername\(name\)/,
+  );
+});
+
+test('effective permissions require a live active account', () => {
+  assert.match(
+    activePermissionMigration,
+    /create or replace function public\.current_user_has_permission\(permission_key text\)/,
+  );
+  assert.match(activePermissionMigration, /security definer/);
+  assert.match(activePermissionMigration, /set search_path = ''/);
+  assert.match(
+    activePermissionMigration,
+    /from public\.users app_user[\s\S]*?app_user\.id = \(select auth\.uid\(\)\)[\s\S]*?app_user\.status = 'active'/,
+  );
+  assert.match(activePermissionMigration, /public\.has_permission\(app_user\.id, permission_key\)/);
+  assert.match(
+    activePermissionMigration,
+    /revoke execute on function public\.current_user_has_permission\(text\)[\s\S]*?from public, anon, service_role/,
+  );
+  assert.match(
+    activePermissionMigration,
+    /grant execute on function public\.current_user_has_permission\(text\)[\s\S]*?to authenticated/,
   );
 });
 
