@@ -440,7 +440,7 @@ export async function runShowAnalysisForShow(params: {
     });
     const runtimeMs = Date.now() - startedAt;
 
-    const { error: updateError } = await params.supabase
+    const { data: completed, error: updateError } = await params.supabase
       .from('show_generation_runs')
       .update({
         status: 'completed',
@@ -452,9 +452,19 @@ export async function runShowAnalysisForShow(params: {
         markdown: contextMarkdown,
         error_message: null,
       })
-      .eq('id', analysisId);
+      .eq('id', analysisId)
+      .eq('user_id', params.userId)
+      .eq('status', 'running')
+      .select('id')
+      .maybeSingle();
     if (updateError) {
       throw new AnalyseError(`Could not save analysis output: ${updateError.message}`, 500);
+    }
+    if (!completed) {
+      throw new AnalyseError(
+        'Could not save analysis output: analysis record was not updated.',
+        500,
+      );
     }
 
     revalidatePath(`/shows/${typedShow.slug}`);

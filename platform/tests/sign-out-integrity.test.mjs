@@ -49,3 +49,22 @@ test('the settings sign-out button stays on the page and becomes retryable after
   assert.doesNotMatch(button, /auth\.signOut\(/);
   assert.match(button, /loading=\{pending\}/);
 });
+
+test('account deletion reports partial session cleanup instead of claiming full sign-out', () => {
+  const account = read('app/actions/account.ts');
+  const login = read('app/(auth)/login/page.tsx');
+  const deletion = account.slice(account.indexOf('export async function deleteAccountAction'));
+
+  assert.match(deletion, /const \{ error: signOutError \} = await supabase\.auth\.signOut\(\)/);
+  assert.match(deletion, /if \(signOutError\)/);
+  assert.match(deletion, /catch \(signOutError\)/);
+  assert.match(deletion, /clearLocalSupabaseAuthCookies\(cookieStore\)/);
+  assert.match(deletion, /redirect\('\/login\?deleted=1&session_cleanup=partial'\)/);
+  assert.ok(
+    deletion.indexOf('admin.auth.admin.deleteUser(user.id)') <
+      deletion.indexOf('await supabase.auth.signOut()'),
+  );
+  assert.match(login, /accountSessionCleanupPartial/);
+  assert.match(login, /complete session cleanup could not be confirmed/);
+  assert.match(login, /Other access tokens may remain valid until they expire/);
+});

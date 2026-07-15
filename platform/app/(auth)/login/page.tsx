@@ -51,6 +51,8 @@ function LoginPageInner() {
   const nextPath = getAuthCallbackDestination(searchParams.get('next'));
   const callbackError = searchParams.get('error');
   const accountDeleted = searchParams.get('deleted') === '1';
+  const accountSessionCleanupPartial =
+    accountDeleted && searchParams.get('session_cleanup') === 'partial';
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -121,10 +123,16 @@ function LoginPageInner() {
 
       {accountDeleted && step === 'email' ? (
         <p
-          className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] px-3.5 py-2.5 text-sm text-[color:var(--color-status-success)]"
-          role="status"
+          className={`rounded-md border border-[color:var(--color-border-subtle)] px-3.5 py-2.5 text-sm ${
+            accountSessionCleanupPartial
+              ? 'bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)]'
+              : 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
+          }`}
+          role={accountSessionCleanupPartial ? 'alert' : 'status'}
         >
-          Your account has been deleted and you have been signed out.
+          {accountSessionCleanupPartial
+            ? 'Your account has been deleted, but complete session cleanup could not be confirmed. Other access tokens may remain valid until they expire.'
+            : 'Your account has been deleted and you have been signed out.'}
         </p>
       ) : null}
 

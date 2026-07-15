@@ -33,6 +33,18 @@ test('audio analysis runner stores rich local song analysis JSON', () => {
   assert.doesNotMatch(runner, /firework_cue_summary/);
 });
 
+test('show analysis succeeds only after the completed row is confirmed', () => {
+  const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
+  const showRunner = runner.slice(runner.indexOf('export async function runShowAnalysisForShow'));
+
+  assert.match(
+    showRunner,
+    /\.eq\('id', analysisId\)\s+\.eq\('user_id', params\.userId\)\s+\.eq\('status', 'running'\)\s+\.select\('id'\)\s+\.maybeSingle\(\)/,
+  );
+  assert.match(showRunner, /if \(!completed\) \{[\s\S]*analysis record was not updated/);
+  assert.ok(showRunner.indexOf('if (!completed)') < showRunner.indexOf('return { ok: true'));
+});
+
 test('analyser warm-up is opt-in from the admin dashboard', () => {
   const modalApp = readFileSync(join(root, 'analyser/modal_app.py'), 'utf8');
   const adminPage = readFileSync(join(root, 'app/(admin)/admin/page.tsx'), 'utf8');
