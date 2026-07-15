@@ -84,6 +84,7 @@ const FLAT_LINKS: { href: string; label: string }[] = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/library', label: 'Explore' },
   { href: '/catalogue', label: 'Catalogue' },
 ];
 
@@ -91,14 +92,14 @@ function NavMenu({ label, href, items }: { label: string; href: string; items: M
   return (
     <div className="lp-menu">
       <Link href={href} className="lp-nav-pill">
-        {label} <ChevronDown size={13} strokeWidth={2.2} />
+        {label} <ChevronDown aria-hidden="true" size={13} strokeWidth={2.2} />
       </Link>
       <ul className="lp-menu-panel m-0 list-none">
         {items.map((it) => (
           <li key={`${label}-${it.t}`}>
             <Link href={it.href} className="lp-menu-item">
               <span className="lp-menu-item__ic">
-                <it.Icon size={16} strokeWidth={1.9} />
+                <it.Icon aria-hidden="true" size={16} strokeWidth={1.9} />
               </span>
               <span>
                 <span className="text-on-surface block text-sm font-semibold">{it.t}</span>
@@ -166,7 +167,7 @@ export function MarketingNavBar() {
           className="text-on-surface flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]"
         >
           <span className="brand-logo-mark h-[30px] w-[30px] rounded-[9px]">
-            <Sparkles size={16} strokeWidth={2} />
+            <Sparkles aria-hidden="true" size={16} strokeWidth={2} />
           </span>
           ShowCrafter
         </Link>

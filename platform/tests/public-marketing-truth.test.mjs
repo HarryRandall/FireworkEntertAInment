@@ -19,6 +19,7 @@ test('the legacy vendor route redirects to the database-backed catalogue', () =>
   assert.match(vendors, /redirect\('\/catalogue'\)/);
   assert.doesNotMatch(vendors, /PRODUCTS|inventory feed|In stock|Search 280\+ products/);
   assert.match(navigation, /href: '\/catalogue', label: 'Catalogue'/);
+  assert.match(navigation, /href: '\/library', label: 'Explore'/);
   assert.doesNotMatch(navigation, /href: '\/vendors'|Only products your store stocks/);
 });
 
@@ -220,6 +221,7 @@ test('the public footer links only to published destinations', () => {
   const placeholder = read('app/components/marketing/ComingSoon.tsx');
 
   assert.match(footer, /href: '\/catalogue', label: 'Catalogue'/);
+  assert.match(footer, /href: '\/library', label: 'Explore'/);
   assert.doesNotMatch(
     footer,
     /href: '\/(careers|changelog|privacy|terms|licences)'|heading: 'Legal'/,
