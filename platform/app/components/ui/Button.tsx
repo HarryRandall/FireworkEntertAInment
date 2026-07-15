@@ -1,3 +1,5 @@
+'use client';
+
 /** Primary button primitive (CVA variants) - use for all clickable actions and links rendered as buttons. */
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';

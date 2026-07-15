@@ -7,6 +7,10 @@ import { test } from 'node:test';
 
 const source = readFileSync(join(process.cwd(), 'app/components/ui/Button.tsx'), 'utf8');
 
+test('shared button owns its interactive link behaviour on the client', () => {
+  assert.match(source, /^'use client';/);
+});
+
 test('loading links block pointer and keyboard click activation', () => {
   assert.match(source, /const isDisabled = loading \|\| ariaDisabled === true/);
   assert.match(source, /aria-disabled=\{isDisabled \|\| undefined\}/);
