@@ -27,7 +27,17 @@ type UserStatusRpcClient = {
   ): PromiseLike<{ data: string | null; error: { message: string } | null }>;
 };
 
-const SELF_LOCKOUT_PERMISSION_KEYS = new Set(['admin.view', 'admin.manage_users']);
+type PermissionOverrideMode = 'grant' | 'deny' | 'clear';
+
+type PermissionOverrideRpcClient = {
+  rpc(
+    functionName: 'set_user_permission_overrides',
+    args: {
+      p_user_id: string;
+      p_overrides: { permission_id: string; mode: PermissionOverrideMode }[];
+    },
+  ): PromiseLike<{ data: number | null; error: { message: string } | null }>;
+};
 
 const SetStatusSchema = z.object({
   userId: z
@@ -46,11 +56,31 @@ const DeleteUserSchema = z.object({
   userId: z.string().uuid(),
 });
 
-const OverrideSchema = z.object({
-  userId: z.string().uuid(),
+const PermissionOverrideSchema = z.object({
   permissionId: z.string().uuid(),
   mode: z.enum(['grant', 'deny', 'clear']),
 });
+
+const OverrideSchema = z.object({
+  userId: z.string().uuid(),
+  ...PermissionOverrideSchema.shape,
+});
+
+const OverrideBatchSchema = z
+  .object({
+    userId: z.string().uuid(),
+    overrides: z.array(PermissionOverrideSchema).min(1).max(100),
+  })
+  .superRefine(({ overrides }, context) => {
+    const permissionIds = new Set(overrides.map((override) => override.permissionId));
+    if (permissionIds.size !== overrides.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['overrides'],
+        message: 'Each permission can be changed only once.',
+      });
+    }
+  });
 
 const GrantAiCreditsSchema = z.object({
   userId: z.string().uuid(),
@@ -190,43 +220,24 @@ export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>):
   return { ok: true };
 }
 
-/** Grant, deny, or clear an individual RBAC permission override on a user. */
-export async function setUserPermissionOverrideAction(
-  input: z.infer<typeof OverrideSchema>,
-): Promise<Result> {
+async function applyUserPermissionOverrides(input: unknown): Promise<Result> {
   const admin = await requirePermission('admin.manage_users');
   if (!admin) return { ok: false, error: 'Not permitted.' };
-  const parsed = OverrideSchema.safeParse(input);
+  const parsed = OverrideBatchSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  if (parsed.data.userId === admin.id && parsed.data.mode === 'deny') {
-    const { data: permission, error: permissionError } = await supabase
-      .from('permissions')
-      .select('key')
-      .eq('id', parsed.data.permissionId)
-      .maybeSingle();
-    if (permissionError) return { ok: false, error: permissionError.message };
-    if (permission && SELF_LOCKOUT_PERMISSION_KEYS.has(permission.key)) {
-      return { ok: false, error: 'You cannot deny your own admin access.' };
-    }
-  }
-
-  if (parsed.data.mode === 'clear') {
-    const { error } = await supabase
-      .from('user_permission_overrides')
-      .delete()
-      .eq('user_id', parsed.data.userId)
-      .eq('permission_id', parsed.data.permissionId);
-    if (error) return { ok: false, error: error.message };
-  } else {
-    const { error } = await supabase.from('user_permission_overrides').upsert({
-      user_id: parsed.data.userId,
-      permission_id: parsed.data.permissionId,
-      enabled: parsed.data.mode === 'grant',
-      assigned_by: admin.id,
-    });
-    if (error) return { ok: false, error: error.message };
+  const overrideRpc = supabase as unknown as PermissionOverrideRpcClient;
+  const { data: processedCount, error } = await overrideRpc.rpc('set_user_permission_overrides', {
+    p_user_id: parsed.data.userId,
+    p_overrides: parsed.data.overrides.map((override) => ({
+      permission_id: override.permissionId,
+      mode: override.mode,
+    })),
+  });
+  if (error) return { ok: false, error: error.message };
+  if (processedCount !== parsed.data.overrides.length) {
+    return { ok: false, error: 'Could not update the permission overrides.' };
   }
 
   await Promise.all([
@@ -235,6 +246,30 @@ export async function setUserPermissionOverrideAction(
   ]);
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
+}
+
+/** Grant, deny, or clear an individual RBAC permission override on a user. */
+export async function setUserPermissionOverrideAction(
+  input: z.infer<typeof OverrideSchema>,
+): Promise<Result> {
+  const parsed = OverrideSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Invalid input.' };
+  return applyUserPermissionOverrides({
+    userId: parsed.data.userId,
+    overrides: [
+      {
+        permissionId: parsed.data.permissionId,
+        mode: parsed.data.mode,
+      },
+    ],
+  });
+}
+
+/** Apply a multi-selection RBAC override edit as one database transaction. */
+export async function setUserPermissionOverridesAction(
+  input: z.infer<typeof OverrideBatchSchema>,
+): Promise<Result> {
+  return applyUserPermissionOverrides(input);
 }
 
 /** Grant AI credits to a user from the admin user detail page. */

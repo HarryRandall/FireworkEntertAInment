@@ -1590,6 +1590,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_user_permission_overrides: {
+        Args: { p_overrides: Json; p_user_id: string }
+        Returns: number
+      }
       settle_ai_credit_reservation: {
         Args: {
           p_idempotency_key: string
