@@ -7,8 +7,8 @@
  * the client — so they:
  *
  * - Use `revalidatePath` to refresh server-rendered pages after a write
- * - Call `requirePermission` to gate by RBAC (silently no-op when denied,
- *   so a broken UI can't trick a non-admin into thinking a write succeeded)
+ * - Call `requirePermission` to gate by RBAC; interactive callers receive
+ *   explicit failure results where they need to display write outcomes
  * - Redirect via `next/navigation`'s `redirect()` only at the end of a flow
  *
  * The file is intentionally kept as a single module: existing tests grep
@@ -84,6 +84,8 @@ export type ImportUploadActionState = {
   ok: boolean;
   error: string | null;
 };
+
+export type ImportJobMutationResult = { ok: true } | { ok: false; error: string };
 
 /** Validates that a model selection is one we know how to dispatch to. */
 const ModelSchema = z
@@ -913,9 +915,10 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
 }
 
 /** Edit the metadata on an existing import job (kind, source, row count, status). */
-export async function updateImportJobAction(formData: FormData): Promise<void> {
-  const admin = await requirePermission('admin.manage_imports');
-  if (!admin) return;
+export async function updateImportJobAction(formData: FormData): Promise<ImportJobMutationResult> {
+  if (!(await requirePermission('admin.manage_imports'))) {
+    return { ok: false, error: 'You do not have permission to manage imports.' };
+  }
   const parsed = ImportJobSchema.extend({ id: z.string().uuid() }).safeParse({
     id: formData.get('id'),
     kind: formData.get('kind'),
@@ -924,10 +927,10 @@ export async function updateImportJobAction(formData: FormData): Promise<void> {
     status: formData.get('status') ?? 'draft',
     rowCount: formData.get('rowCount') ?? '',
   });
-  if (!parsed.success) return console.error(firstError(parsed.error));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const rowCount = typeof parsed.data.rowCount === 'number' ? parsed.data.rowCount : null;
   const supabase = createClient(await cookies());
-  const { error } = await supabase
+  const { data: updatedJob, error } = await supabase
     .from('import_jobs')
     .update({
       kind: parsed.data.kind,
@@ -935,22 +938,44 @@ export async function updateImportJobAction(formData: FormData): Promise<void> {
       source_url: parsed.data.sourceUrl || null,
       status: parsed.data.status,
       row_count: rowCount,
-      created_by: admin.id,
     })
-    .eq('id', parsed.data.id);
-  if (error) console.error('[updateImportJobAction] failed:', error);
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    console.error('[updateImportJobAction] failed:', error);
+    return { ok: false, error: 'Import job could not be saved. Try again.' };
+  }
+  if (!updatedJob) {
+    return { ok: false, error: 'That import job was not found. Refresh the page and try again.' };
+  }
   await invalidateAdminImportsCache();
   revalidatePath('/admin/imports');
+  return { ok: true };
 }
 
 /** Hard-delete an import job and its dependent rows (cascade in the DB). */
-export async function deleteImportJobAction(formData: FormData): Promise<void> {
-  if (!(await requirePermission('admin.manage_imports'))) return;
+export async function deleteImportJobAction(formData: FormData): Promise<ImportJobMutationResult> {
+  if (!(await requirePermission('admin.manage_imports'))) {
+    return { ok: false, error: 'You do not have permission to manage imports.' };
+  }
   const parsed = IdSchema.safeParse({ id: formData.get('id') });
-  if (!parsed.success) return console.error(firstError(parsed.error));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('import_jobs').delete().eq('id', parsed.data.id);
-  if (error) console.error('[deleteImportJobAction] failed:', error);
+  const { data: deletedJob, error } = await supabase
+    .from('import_jobs')
+    .delete()
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    console.error('[deleteImportJobAction] failed:', error);
+    return { ok: false, error: 'Import job could not be deleted. Try again.' };
+  }
+  if (!deletedJob) {
+    return { ok: false, error: 'That import job was not found. Refresh the page and try again.' };
+  }
   await invalidateAdminImportsCache();
   revalidatePath('/admin/imports');
+  return { ok: true };
 }
