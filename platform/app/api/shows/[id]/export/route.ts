@@ -1,4 +1,4 @@
-/** GET handler that exports a show as a downloadable file (e.g. Finale3D / JSON); requires the caller to own the show. */
+/** Export an owned show's complete cue timeline as a Finale 3D-compatible CSV. */
 
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -39,7 +39,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .not('time_seconds', 'is', null)
     .order('time_seconds', { ascending: true });
 
-  if (cuesError || !cues?.length) {
+  if (cuesError) {
+    console.error('[show-export] cue read failed:', cuesError);
+    return new NextResponse('The show could not be exported.', { status: 500 });
+  }
+  if (!cues?.length) {
     return new NextResponse('No cues found', { status: 404 });
   }
 
@@ -55,10 +59,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     .in('id', catalogueItemIds);
 
   if (catalogueError) {
+    console.error('[show-export] catalogue read failed:', catalogueError);
     return new NextResponse('Failed to fetch catalogue items', { status: 500 });
   }
 
   const catalogueItemById = new Map((catalogueItems ?? []).map((item) => [item.id, item]));
+  const missingCatalogueItemIds = catalogueItemIds.filter(
+    (catalogueItemId) => !catalogueItemById.has(catalogueItemId),
+  );
+  if (missingCatalogueItemIds.length > 0) {
+    console.error('[show-export] catalogue references did not resolve:', {
+      showId: show.id,
+      missingCatalogueItemIds,
+    });
+    return new NextResponse('The show contains catalogue items that could not be exported.', {
+      status: 409,
+    });
+  }
+
   const firstCaliberForItem = (item: NonNullable<typeof catalogueItems>[number]) => {
     const directFirework = Array.isArray(item.fireworks) ? item.fireworks[0] : item.fireworks;
     if (directFirework?.caliber) return directFirework.caliber;
@@ -69,24 +87,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return shots.find((shot) => shot.caliber)?.caliber ?? null;
   };
 
-  const csvCues = cues
-    .filter((c) => catalogueItemById.has(c.catalogue_item_id))
-    .map((c) => {
-      const catalogueItem = catalogueItemById.get(c.catalogue_item_id)!;
-      return {
-        timeSeconds: Number(c.time_seconds),
-        effectName: catalogueItem.name,
-        launchPositionIndex: c.launch_position_index ?? 0,
-        sourcePayload: productToSourcePayload({
-          ...catalogueItem,
-          caliber: firstCaliberForItem(catalogueItem),
-        }),
-      };
-    });
-
-  if (!csvCues.length) {
-    return new NextResponse('No matched catalogue items found for this show', { status: 404 });
-  }
+  const csvCues = cues.map((c) => {
+    const catalogueItem = catalogueItemById.get(c.catalogue_item_id)!;
+    return {
+      timeSeconds: Number(c.time_seconds),
+      effectName: catalogueItem.name,
+      launchPositionIndex: c.launch_position_index ?? 0,
+      sourcePayload: productToSourcePayload({
+        ...catalogueItem,
+        caliber: firstCaliberForItem(catalogueItem),
+      }),
+    };
+  });
 
   const csv = buildFinale3dCsv(csvCues);
   const filename = `${show.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-finale3d.csv`;
@@ -95,6 +107,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'private, no-store',
     },
   });
 }
