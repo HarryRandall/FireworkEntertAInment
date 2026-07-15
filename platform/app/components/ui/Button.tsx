@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const button = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent bg-clip-padding text-sm font-medium transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 focus:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent bg-clip-padding text-sm font-medium transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 focus:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -63,6 +63,9 @@ export function Button(props: ButtonProps) {
       className: _c,
       children: _ch,
       loading: _l,
+      onClick,
+      'aria-busy': ariaBusy,
+      'aria-disabled': ariaDisabled,
       ...rest
     } = props;
     void _v;
@@ -70,9 +73,25 @@ export function Button(props: ButtonProps) {
     void _c;
     void _ch;
     void _l;
+    const isDisabled = loading || ariaDisabled === true || ariaDisabled === 'true';
     return (
-      <Link href={href} aria-disabled={loading || undefined} className={classes} {...rest}>
-        {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+      <Link
+        href={href}
+        aria-busy={loading ? true : ariaBusy}
+        aria-disabled={isDisabled || undefined}
+        className={classes}
+        onClick={(event) => {
+          if (isDisabled) {
+            event.preventDefault();
+            return;
+          }
+          onClick?.(event);
+        }}
+        {...rest}
+      >
+        {loading ? (
+          <Loader2 aria-hidden size={16} className="animate-spin motion-reduce:animate-none" />
+        ) : null}
         {children}
       </Link>
     );
@@ -86,6 +105,7 @@ export function Button(props: ButtonProps) {
     loading: _l,
     disabled,
     type = 'button',
+    'aria-busy': ariaBusy,
     ...rest
   } = props as ButtonAsButton;
   void _v;
@@ -94,8 +114,16 @@ export function Button(props: ButtonProps) {
   void _ch;
   void _l;
   return (
-    <button type={type} className={classes} disabled={disabled || loading} {...rest}>
-      {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+    <button
+      type={type}
+      className={classes}
+      disabled={disabled || loading}
+      aria-busy={loading ? true : ariaBusy}
+      {...rest}
+    >
+      {loading ? (
+        <Loader2 aria-hidden size={16} className="animate-spin motion-reduce:animate-none" />
+      ) : null}
       {children}
     </button>
   );
