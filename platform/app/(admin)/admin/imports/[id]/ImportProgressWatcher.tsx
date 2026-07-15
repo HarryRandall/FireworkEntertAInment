@@ -19,7 +19,7 @@ type ImportProgressWatcherProps = {
   initialProgress: number;
   initialOutputCount: number;
   initialUpdatedAt: string | null;
-  /** Polling interval in ms — short while active, longer once terminal. */
+  /** Polling interval in milliseconds while the import remains active. */
   activeIntervalMs?: number;
 };
 
@@ -42,10 +42,27 @@ export function ImportProgressWatcher({
   );
 
   useEffect(() => {
+    if (TERMINAL_STATUSES.has(initialStatus)) return;
+
     let cancelled = false;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let currentStatus = initialStatus;
+
+    function schedulePoll(delay: number) {
+      if (
+        cancelled ||
+        TERMINAL_STATUSES.has(currentStatus) ||
+        document.visibilityState === 'hidden'
+      ) {
+        return;
+      }
+      timeoutId = setTimeout(poll, delay);
+    }
 
     async function poll() {
+      timeoutId = null;
+      if (document.visibilityState === 'hidden') return;
+
       try {
         const res = await fetch(`/api/admin/imports/${jobId}/status`, {
           cache: 'no-store',
@@ -53,6 +70,7 @@ export function ImportProgressWatcher({
         if (!res.ok) return;
         const payload: StatusPayload = await res.json();
         if (cancelled) return;
+        currentStatus = payload.status;
         setStatus(payload.status);
         setProgress(payload.processingProgress);
         setErrorMessage(payload.errorMessage);
@@ -67,19 +85,27 @@ export function ImportProgressWatcher({
       } catch {
         // Network blips are non-fatal; keep polling.
       } finally {
-        if (cancelled) return;
-        const isTerminal = TERMINAL_STATUSES.has(status);
-        const next = isTerminal ? activeIntervalMs * 6 : activeIntervalMs;
-        timeoutId = setTimeout(poll, next);
+        schedulePoll(activeIntervalMs);
       }
     }
 
-    timeoutId = setTimeout(poll, activeIntervalMs);
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = null;
+        return;
+      }
+      if (timeoutId === null) schedulePoll(0);
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    schedulePoll(activeIntervalMs);
     return () => {
       cancelled = true;
       if (timeoutId) clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [jobId, router, activeIntervalMs, status]);
+  }, [jobId, router, activeIntervalMs, initialStatus]);
 
   const isActive = !TERMINAL_STATUSES.has(status);
 
@@ -90,7 +116,7 @@ export function ImportProgressWatcher({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="text-on-surface-variant text-xs font-bold tracking-widest uppercase">
-          Live status
+          Import status
         </div>
         <div className="text-on-surface-variant flex items-center gap-2 text-xs">
           {isActive ? (
@@ -99,18 +125,31 @@ export function ImportProgressWatcher({
               aria-hidden="true"
             />
           ) : null}
-          <span data-testid="import-progress-status">{status.replace('_', ' ')}</span>
+          <span data-testid="import-progress-status" role="status" aria-live="polite">
+            {status.replaceAll('_', ' ')}
+          </span>
           <span aria-hidden="true">·</span>
           <span data-testid="import-progress-percent">{progress}%</span>
         </div>
       </div>
-      <div className="bg-outline-variant/30 h-2 w-full overflow-hidden rounded-full">
+      <div
+        className="bg-outline-variant/30 h-2 w-full overflow-hidden rounded-full"
+        role="progressbar"
+        aria-label="Import progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.min(100, Math.max(0, progress))}
+      >
         <div
           className="bg-primary h-full transition-[width] duration-300 motion-reduce:transition-none"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
-      {errorMessage ? <p className="text-error text-xs font-semibold">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <p className="text-error text-xs font-semibold" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
     </div>
   );
 }
