@@ -14,6 +14,10 @@ test('settings exposes modern account sections', () => {
     join(root, 'app/(app)/settings/profile/PersonalDetailsForm.tsx'),
     'utf8',
   );
+  const notifications = readFileSync(
+    join(root, 'app/(app)/settings/notifications/NotificationPreferences.tsx'),
+    'utf8',
+  );
   for (const label of ['Personal details', 'Notifications', 'Billing', 'Security']) {
     assert.match(shell, new RegExp(`label: '${label}'`));
   }
@@ -21,6 +25,12 @@ test('settings exposes modern account sections', () => {
   assert.match(shell, /ShellBreadcrumbs/);
   assert.match(profile, /PersonalDetailsForm/);
   assert.match(personalDetails, /Interface theme/);
+  assert.match(personalDetails, /queueProfileUpdate/);
+  assert.match(personalDetails, /result\.saved\.fullName/);
+  assert.match(personalDetails, /result\.saved\.phone/);
+  assert.match(personalDetails, /savedThemeRef\.current/);
+  assert.match(notifications, /Notification delivery is not available yet/);
+  assert.doesNotMatch(notifications, /localStorage|STORAGE_KEY|onCheckedChange/);
   assert.equal(existsSync(join(root, 'app/(app)/settings/billing/page.tsx')), true);
   assert.equal(existsSync(join(root, 'app/(app)/settings/notifications/page.tsx')), true);
 });

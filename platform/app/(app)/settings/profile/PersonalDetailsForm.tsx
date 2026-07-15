@@ -2,7 +2,7 @@
 
 /** Client form for editing the signed-in user's display name and other profile fields. */
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useTheme } from 'next-themes';
 import { Check, Laptop, LockKeyhole, Mail, Moon, Phone, Sun, User } from 'lucide-react';
 import { updateProfileAction } from '@/app/actions/platform-admin';
@@ -40,48 +40,89 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
   const [savedPhone, setSavedPhone] = useState(initialPhone);
   const [selectedTheme, setSelectedTheme] = useState<ThemePreference>(initialTheme);
   const [mounted, setMounted] = useState(false);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const selectedThemeRef = useRef<ThemePreference>(initialTheme);
+  const savedThemeRef = useRef<ThemePreference>(initialTheme);
 
   useEffect(() => {
     setMounted(true);
     if (theme === 'dark' || theme === 'light' || theme === 'system') {
       setSelectedTheme(theme);
+      selectedThemeRef.current = theme;
     }
   }, [theme]);
 
-  const persist = (
-    patch: { fullName?: string; phone?: string; themePreference?: ThemePreference },
-    successMessage: string,
-  ) => {
+  const queueProfileUpdate = (patch: {
+    fullName?: string;
+    phone?: string;
+    themePreference?: ThemePreference;
+  }) => {
+    const result = mutationQueueRef.current
+      .then(() => updateProfileAction(patch))
+      .catch(() => ({ ok: false as const, error: 'Could not save changes' }));
+    mutationQueueRef.current = result.then(() => undefined);
+    return result;
+  };
+
+  const commitFullName = () => {
+    const next = fullName.trim();
+    if (next === savedFullName.trim()) return;
     startTransition(async () => {
-      const result = await updateProfileAction(patch);
+      const result = await queueProfileUpdate({ fullName: next });
       if (result.ok) {
-        toast.success(successMessage);
+        const canonical = result.saved.fullName ?? '';
+        setSavedFullName(canonical);
+        setFullName((current) => (current.trim() === next ? canonical : current));
+        toast.success('Name updated');
       } else {
         toast.error(result.error);
       }
     });
   };
 
-  const commitFullName = () => {
-    const next = fullName.trim();
-    if (next === savedFullName.trim()) return;
-    setSavedFullName(next);
-    persist({ fullName: next }, 'Name updated');
-  };
-
   const commitPhone = () => {
     const next = phone.trim();
     if (next === savedPhone.trim()) return;
-    setSavedPhone(next);
-    persist({ phone: next }, 'Phone updated');
+    startTransition(async () => {
+      const result = await queueProfileUpdate({ phone: next });
+      if (result.ok) {
+        const canonical = result.saved.phone ?? '';
+        setSavedPhone(canonical);
+        setPhone((current) => (current.trim() === next ? canonical : current));
+        toast.success('Phone updated');
+      } else {
+        toast.error(result.error);
+      }
+    });
   };
 
   const chooseTheme = (value: ThemePreference) => {
     if (value === selectedTheme) return;
     setSelectedTheme(value);
+    selectedThemeRef.current = value;
     setTheme(value);
-    persist({ themePreference: value }, `Theme set to ${value}`);
+    startTransition(async () => {
+      const result = await queueProfileUpdate({ themePreference: value });
+      if (!result.ok) {
+        if (selectedThemeRef.current === value) {
+          selectedThemeRef.current = savedThemeRef.current;
+          setSelectedTheme(savedThemeRef.current);
+          setTheme(savedThemeRef.current);
+        }
+        toast.error(result.error);
+        return;
+      }
+
+      const canonical = result.saved.themePreference;
+      savedThemeRef.current = canonical;
+      if (selectedThemeRef.current === value) {
+        selectedThemeRef.current = canonical;
+        setSelectedTheme(canonical);
+        setTheme(canonical);
+        toast.success(`Theme set to ${canonical}`);
+      }
+    });
   };
 
   return (
@@ -97,6 +138,7 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
             <Input
               id="fullName"
               name="fullName"
+              autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               onBlur={commitFullName}
@@ -106,8 +148,8 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
                   e.currentTarget.blur();
                 }
               }}
-              iconLeft={<User size={17} />}
-              placeholder="Your full name"
+              iconLeft={<User aria-hidden size={17} />}
+              placeholder="Your full name…"
             />
           </Field>
 
@@ -116,6 +158,9 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
             <Input
               id="phone"
               name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onBlur={commitPhone}
@@ -125,17 +170,17 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
                   e.currentTarget.blur();
                 }
               }}
-              iconLeft={<Phone size={17} />}
-              placeholder="+61 ..."
+              iconLeft={<Phone aria-hidden size={17} />}
+              placeholder="+61…"
             />
           </Field>
 
           <Field className="sm:col-span-2">
             <FieldLabel>Email</FieldLabel>
             <div className="border-input bg-background text-muted-foreground flex h-10 items-center gap-3 rounded-md border px-3 text-sm shadow-xs">
-              <Mail size={17} />
+              <Mail aria-hidden size={17} />
               <span className="truncate">{email || 'No email'}</span>
-              <LockKeyhole size={14} className="ml-auto" />
+              <LockKeyhole aria-hidden size={14} className="ml-auto" />
             </div>
             <FieldHint>Email changes are handled through account security.</FieldHint>
           </Field>
@@ -155,11 +200,11 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
                 <button
                   key={option.value}
                   type="button"
-                  role="radio"
-                  aria-checked={active}
+                  aria-pressed={active}
+                  disabled={isPending}
                   onClick={() => chooseTheme(option.value)}
                   className={cn(
-                    'focus-visible:ring-ring/50 flex min-h-28 flex-col items-start gap-3 rounded-xl border p-4 text-left shadow-xs transition-all focus:outline-none focus-visible:ring-3',
+                    'focus-visible:ring-ring flex min-h-28 flex-col items-start gap-3 rounded-xl border p-4 text-left shadow-xs transition-[border-color,background-color,color,box-shadow,opacity] focus:outline-none focus-visible:ring-3 disabled:cursor-wait disabled:opacity-60',
                     active
                       ? 'border-primary bg-primary/10 text-foreground ring-primary/20 ring-1'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground',
@@ -174,9 +219,9 @@ export function PersonalDetailsForm({ initialFullName, initialPhone, email, init
                           : 'border-border bg-muted/40',
                       )}
                     >
-                      <Icon size={17} />
+                      <Icon aria-hidden size={17} />
                     </span>
-                    {active ? <Check size={16} className="text-primary" /> : null}
+                    {active ? <Check aria-hidden size={16} className="text-primary" /> : null}
                   </span>
                   <span>
                     <span className="text-foreground block text-sm font-medium">

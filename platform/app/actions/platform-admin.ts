@@ -315,6 +315,12 @@ type ProfilePatch = {
   themePreference?: 'dark' | 'light' | 'system';
 };
 
+type SavedProfilePatch = {
+  fullName: string | null;
+  phone: string | null;
+  themePreference: 'dark' | 'light' | 'system';
+};
+
 /**
  * Patch the current user's profile (display name, phone, theme).
  *
@@ -323,7 +329,7 @@ type ProfilePatch = {
  */
 export async function updateProfileAction(
   input: ProfilePatch,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; saved: SavedProfilePatch } | { ok: false; error: string }> {
   const parsed = ProfileSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
@@ -340,18 +346,38 @@ export async function updateProfileAction(
   if (parsed.data.themePreference) {
     patch.theme_preference = parsed.data.themePreference;
   }
-  if (Object.keys(patch).length === 0) return { ok: true };
-
   const supabase = createClient(await cookies());
-  const { error } = await supabase.from('users').update(patch).eq('id', userId);
-  if (error) {
+  const result =
+    Object.keys(patch).length > 0
+      ? await supabase
+          .from('users')
+          .update(patch)
+          .eq('id', userId)
+          .select('full_name, phone, theme_preference')
+          .maybeSingle()
+      : await supabase
+          .from('users')
+          .select('full_name, phone, theme_preference')
+          .eq('id', userId)
+          .maybeSingle();
+  if (result.error || !result.data) {
+    const error = result.error;
     console.error('[updateProfileAction] failed:', error);
     return { ok: false, error: 'Could not save changes' };
   }
-  await invalidateUserProfileCache(userId);
-  revalidatePath('/settings/profile');
-  revalidatePath('/home');
-  return { ok: true };
+  if (Object.keys(patch).length > 0) {
+    await invalidateUserProfileCache(userId);
+    revalidatePath('/settings/profile');
+    revalidatePath('/home');
+  }
+  return {
+    ok: true,
+    saved: {
+      fullName: result.data.full_name,
+      phone: result.data.phone,
+      themePreference: result.data.theme_preference as SavedProfilePatch['themePreference'],
+    },
+  };
 }
 
 // ===========================================================================
