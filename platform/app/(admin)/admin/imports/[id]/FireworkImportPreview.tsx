@@ -43,7 +43,13 @@ export function FireworkImportPreview({
   spec,
   fallbackDuration,
 }: FireworkImportPreviewProps) {
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen({ dialogLabel: 'Import comparison preview' });
   const cues = useMemo(() => (spec ? importedSpecToReplayCues(spec) : []), [spec]);
 
   const canControlPlayback = Boolean(videoUrl || spec);
@@ -236,6 +242,8 @@ export function FireworkImportPreview({
 
   return (
     <div
+      ref={fullscreenContainerRef}
+      {...fullscreenContainerProps}
       className={cn(
         'space-y-4',
         isFullscreen &&

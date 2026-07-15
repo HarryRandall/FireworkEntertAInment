@@ -263,7 +263,13 @@ export function FireworkReplayViewer({
   // Fullscreen overlay for the replay player. The hook owns the Esc + body
   // scroll-lock wiring; this component applies the overlay classes to the
   // player container and renders the shared backdrop.
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen({ dialogLabel: `${showName} preview` });
 
   // Keep the audio element in sync with playhead and play/pause state.
   useEffect(() => {
@@ -694,6 +700,8 @@ export function FireworkReplayViewer({
           )}
         >
           <div
+            ref={fullscreenContainerRef}
+            {...fullscreenContainerProps}
             className={cn(
               'group/replay',
               isFullscreen

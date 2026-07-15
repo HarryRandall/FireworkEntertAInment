@@ -144,8 +144,13 @@ export function TemplateReplayPreview({
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isVisible, setIsVisible] = useState(isDetail);
   const [isReplayReady, setIsReplayReady] = useState(!isDetail);
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef: containerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen({ dialogLabel: 'Template preview' });
   const elapsedRef = useRef(elapsed);
   const lastUIElapsedRef = useRef(elapsed);
   const lastScrubCommitRef = useRef(0);
@@ -212,7 +217,7 @@ export function TemplateReplayPreview({
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [isDetail, isVisible]);
+  }, [containerRef, isDetail, isVisible]);
 
   useEffect(() => {
     hoverStartTimeRef.current = hoverStartTime;
@@ -350,6 +355,7 @@ export function TemplateReplayPreview({
   return (
     <div
       ref={containerRef}
+      {...fullscreenContainerProps}
       className={cn(
         isDetail
           ? 'group/replay border-border overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-card-hover)]'
