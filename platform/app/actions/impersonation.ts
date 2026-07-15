@@ -242,13 +242,25 @@ export async function stopImpersonationAction(
     return { ok: false, error: 'This impersonation session has expired.' };
   }
 
+  const requestClient = createClient(cookieStore);
+  const {
+    data: { user: currentUser },
+    error: currentUserError,
+  } = await requestClient.auth.getUser();
+  if (currentUserError || currentUser?.id !== session.target_user_id) {
+    if (currentUserError) {
+      console.error('[impersonation] current target verification failed:', currentUserError);
+    }
+    clearReturnCookie(cookieStore);
+    return { ok: false, error: 'This impersonation session is no longer active.' };
+  }
+
   const { data: profile } = await service
     .from('users')
     .select('email')
     .eq('id', session.admin_user_id)
     .maybeSingle();
 
-  const requestClient = createClient(cookieStore);
   const restoreResult = await restoreAdminSession(
     service,
     requestClient,
