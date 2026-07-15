@@ -100,6 +100,24 @@ test('homepage proof uses capabilities and documented stakeholders', () => {
   );
 });
 
+test('homepage renderer waits for viewport proximity and canvas readiness', () => {
+  const preview = read('app/components/marketing/landing/ShowPreviewPanel.tsx');
+
+  assert.match(preview, /PREVIEW_RENDER_ROOT_MARGIN = '\d+px 0px'/);
+  assert.match(preview, /rootMargin: PREVIEW_RENDER_ROOT_MARGIN/);
+  assert.match(preview, /setShouldMountCanvas\(true\)/);
+  assert.match(preview, /const showCanvas = shouldMountCanvas && !reducedMotion/);
+  assert.match(preview, /style=\{\{ height \}\}/);
+
+  assert.match(preview, /if \(reducedMotion \|\| !isCanvasReady\) return/);
+  assert.match(preview, /disabled=\{reducedMotion \|\| !isCanvasReady\}/);
+  assert.match(preview, /aria-busy=\{previewIsLoading \|\| undefined\}/);
+  assert.match(preview, /Loading rendered preview…/);
+  assert.match(preview, /Animation disabled by reduced motion preference/);
+  assert.doesNotMatch(preview, /const showCanvas = !reducedMotion/);
+  assert.doesNotMatch(preview, /aria-label=\{active \?/);
+});
+
 test('the press page contains project facts instead of invented coverage', () => {
   const press = read('app/(marketing)/press/page.tsx');
 
