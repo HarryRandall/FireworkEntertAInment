@@ -75,8 +75,16 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
         <p className="text-on-surface-variant text-sm">
           {missingCount} of {presets.length} presets need a poster.
         </p>
-        <Button onClick={renderMissing} disabled={running || missingCount === 0}>
-          {running ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+        <Button
+          onClick={renderMissing}
+          disabled={running || missingCount === 0}
+          aria-busy={running}
+        >
+          {running ? (
+            <Loader2 aria-hidden className="size-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <RefreshCw aria-hidden className="size-4" />
+          )}
           Render missing posters
         </Button>
       </div>
@@ -105,7 +113,10 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
                 )}
                 {isRendering ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <Loader2 className="size-5 animate-spin text-white" />
+                    <Loader2
+                      aria-hidden
+                      className="size-5 animate-spin text-white motion-reduce:animate-none"
+                    />
                   </div>
                 ) : null}
               </div>

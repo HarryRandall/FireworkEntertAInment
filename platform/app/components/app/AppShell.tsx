@@ -607,11 +607,11 @@ function SidebarAiUsageMeter({
       className="border-sidebar-border/75 hover:border-sidebar-border focus-visible:ring-sidebar-ring rounded-lg border px-2.5 py-2 transition-colors group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2"
     >
       {loading ? (
-        <div className="space-y-2">
-          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full" />
+        <div className="space-y-2" aria-hidden="true">
+          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full motion-reduce:animate-none" />
           <div className="flex items-center justify-between gap-2">
-            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md" />
-            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md motion-reduce:animate-none" />
+            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md motion-reduce:animate-none" />
           </div>
         </div>
       ) : (

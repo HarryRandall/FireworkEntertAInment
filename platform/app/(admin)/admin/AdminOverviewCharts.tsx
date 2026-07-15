@@ -256,9 +256,9 @@ export function GenerationPulseCard({
             </span>
           </div>
           <div className="text-muted-foreground flex shrink-0 items-center gap-2 text-sm">
-            <span className="relative flex size-2">
+            <span className="relative flex size-2" aria-hidden="true">
               {live ? (
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75 motion-reduce:animate-none" />
               ) : null}
               <span
                 className={cn(

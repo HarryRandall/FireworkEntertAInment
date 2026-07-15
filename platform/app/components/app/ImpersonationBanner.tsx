@@ -52,6 +52,7 @@ export function ImpersonationBanner({
         type="button"
         aria-label={`Stop impersonating ${target}`}
         disabled={pending}
+        aria-busy={pending}
         onClick={stop}
         className={cn(
           'flex h-8 w-8 min-w-8 items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--color-status-warning)_44%,transparent)] bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-status-warning)_16%,transparent)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-status-warning)] disabled:cursor-not-allowed disabled:opacity-60',
@@ -59,9 +60,14 @@ export function ImpersonationBanner({
         )}
       >
         {pending ? (
-          <Loader2 size={15} strokeWidth={1.85} className="animate-spin" />
+          <Loader2
+            size={15}
+            strokeWidth={1.85}
+            className="animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
         ) : (
-          <ShieldAlert size={15} strokeWidth={1.85} />
+          <ShieldAlert size={15} strokeWidth={1.85} aria-hidden="true" />
         )}
       </button>
     );
@@ -101,13 +107,19 @@ export function ImpersonationBanner({
         type="button"
         aria-label="Stop impersonating"
         disabled={pending}
+        aria-busy={pending}
         onClick={stop}
         className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-2 text-xs font-medium text-[color:var(--color-content-emphasis)] transition-colors hover:bg-[color:var(--color-bg-muted)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? (
-          <Loader2 size={14} strokeWidth={1.85} className="animate-spin" />
+          <Loader2
+            size={14}
+            strokeWidth={1.85}
+            className="animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
         ) : (
-          <Undo2 size={14} strokeWidth={1.85} />
+          <Undo2 size={14} strokeWidth={1.85} aria-hidden="true" />
         )}
         Stop
       </button>

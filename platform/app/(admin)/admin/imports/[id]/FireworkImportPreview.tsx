@@ -23,7 +23,7 @@ type FireworkImportPreviewProps = {
 
 function ReplayCanvasSkeleton() {
   return (
-    <div className="absolute inset-0 h-full w-full animate-pulse overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)]">
+    <div className="absolute inset-0 h-full w-full animate-pulse overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)] motion-reduce:animate-none">
       <ReplayLoadingBar progress={null} position="bottom" />
     </div>
   );

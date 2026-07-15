@@ -67,7 +67,7 @@ export function ReplayLoadingBar({
                 style={{ width: `${pct}%` }}
               />
             ) : (
-              <div className="bg-primary h-full w-full animate-pulse rounded-full opacity-70" />
+              <div className="bg-primary h-full w-full animate-pulse rounded-full opacity-70 motion-reduce:animate-none" />
             )}
           </div>
           <span className="text-on-surface-variant w-9 shrink-0 text-right font-mono text-[11px] tabular-nums">

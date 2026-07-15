@@ -95,7 +95,7 @@ export function ImportProgressWatcher({
         <div className="text-on-surface-variant flex items-center gap-2 text-xs">
           {isActive ? (
             <span
-              className="bg-primary inline-block h-2 w-2 animate-pulse rounded-full"
+              className="bg-primary inline-block h-2 w-2 animate-pulse rounded-full motion-reduce:animate-none"
               aria-hidden="true"
             />
           ) : null}
@@ -106,7 +106,7 @@ export function ImportProgressWatcher({
       </div>
       <div className="bg-outline-variant/30 h-2 w-full overflow-hidden rounded-full">
         <div
-          className="bg-primary h-full transition-[width] duration-500"
+          className="bg-primary h-full transition-[width] duration-300 motion-reduce:transition-none"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>

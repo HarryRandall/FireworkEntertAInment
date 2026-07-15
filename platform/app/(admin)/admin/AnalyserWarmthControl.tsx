@@ -150,10 +150,15 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
             size="sm"
             className="w-full cursor-pointer sm:w-auto"
             disabled={!canManage || isPending}
+            aria-busy={isPending}
             aria-describedby={buttonDescriptionId}
             onClick={keepWarm}
           >
-            {isPending ? <Loader2 aria-hidden className="animate-spin" /> : <Gauge aria-hidden />}
+            {isPending ? (
+              <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
+            ) : (
+              <Gauge aria-hidden />
+            )}
             Keep warm 30 min
           </Button>
         </div>

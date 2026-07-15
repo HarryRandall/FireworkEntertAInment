@@ -231,11 +231,16 @@ export function DuplicateShowPresetButton({ presetId }: { presetId: string }) {
       type="button"
       onClick={duplicate}
       disabled={isPending}
+      aria-busy={isPending}
       className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-wait disabled:opacity-60"
       aria-label="Duplicate preset"
       title="Duplicate preset"
     >
-      {isPending ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+      {isPending ? (
+        <Loader2 size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      ) : (
+        <Copy size={16} aria-hidden="true" />
+      )}
     </button>
   );
 }
