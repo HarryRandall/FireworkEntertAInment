@@ -27,7 +27,7 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
           controlBase,
           invalid
             ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
-            : 'border-input focus-visible:border-ring focus-visible:ring-ring/50',
+            : 'border-input focus-visible:border-ring focus-visible:ring-ring',
           iconLeft ? 'pr-3 pl-10' : 'px-3',
           className,
         )}
@@ -48,7 +48,7 @@ export function Textarea({ className, invalid = false, ...rest }: TextareaProps)
         'bg-background text-foreground placeholder:text-muted-foreground w-full resize-y rounded-md border p-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
         invalid
           ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
-          : 'border-input focus-visible:border-ring focus-visible:ring-ring/50',
+          : 'border-input focus-visible:border-ring focus-visible:ring-ring',
         className,
       )}
     />

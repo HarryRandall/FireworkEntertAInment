@@ -50,8 +50,8 @@
   /* Content (text/icons) */
   --color-content-emphasis: #24242a;
   --color-content-default: #3d3d45;
-  --color-content-subtle: #747680;
-  --color-content-muted: #9b9da7;
+  --color-content-subtle: #62646d;
+  --color-content-muted: #6b6d76;
   --color-content-inverted: #ffffff;
 
   /* Accent - neutral system colour. Use rainbow utilities for soft highlights. */
@@ -984,23 +984,23 @@ body {
   --card-foreground: #24242a;
   --popover: #ffffff;
   --popover-foreground: #24242a;
-  --primary: #0e9d6a;
+  --primary: #075f40;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f6;
   --secondary-foreground: #24242a;
   --muted: #f4f4f6;
-  --muted-foreground: #747680;
+  --muted-foreground: #6b6d76;
   --accent: #e1e1e7;
   --accent-foreground: #24242a;
   --destructive: #dc2626;
   --border: #e5e5ea;
   --input: #d9d9e2;
-  --ring: #15bd8b;
+  --ring: #002f20;
 
   /* Brand highlight (marker green) + per-show palette accents */
   --hl: #15bd8b;
   --hl-soft: #d7f3e9;
-  --hl-ink: #0a7d57;
+  --hl-ink: #075f40;
   --hl-contrast: #05231a;
   --stage-night: #05070d;
   --show-gold: #efb93f;
@@ -1015,13 +1015,13 @@ body {
   --chart-5: #e1e1e7;
   --radius: var(--radius-card);
   --sidebar: #f4f4f6;
-  --sidebar-foreground: #747680;
+  --sidebar-foreground: #62646d;
   --sidebar-primary: #09090b;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e1e1e7;
   --sidebar-accent-foreground: #24242a;
   --sidebar-border: #e5e5ea;
-  --sidebar-ring: #b9bbc6;
+  --sidebar-ring: #075f40;
 }
 
 .dark,

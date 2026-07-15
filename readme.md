@@ -290,10 +290,11 @@ reconstruction, and writes `generated_spec` output rows for admin review.
 
 ## UI And Design System
 
-Use the repo-local ShowCrafter design-system skill before UI work:
-
-- Codex: `.agents/skills/showcrafter-design-system/SKILL.md`
-- Claude: `.claude/skills/showcrafter-design-system/SKILL.md`
+Read `AGENTS.md` before UI work. Repo-local UI, React, review, and animation
+skills are pinned under `.agents/skills`; their sources and revisions are
+documented in [the skill manifest](.agents/skills/README.md). Project guidance,
+live components, database invariants, and tests take precedence over generic
+skill recommendations.
 
 Shared app UI primitives live in `platform/app/components/ui`. The lower-level
 Radix/shadcn layer lives in `platform/components/ui`; only files explicitly
