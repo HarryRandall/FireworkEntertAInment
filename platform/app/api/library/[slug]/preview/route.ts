@@ -22,7 +22,7 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!template?.isPublished) return response({ error: 'not_found' }, 404);
 
     const specifications = await listReferencedShowTemplateSpecifications(template.previewCues);
-    return response({ specifications });
+    return response({ previewCues: template.previewCues, specifications });
   } catch (error) {
     console.error(`[library-preview] ${slug} read failed:`, error);
     return response({ error: 'temporarily_unavailable' }, 503);

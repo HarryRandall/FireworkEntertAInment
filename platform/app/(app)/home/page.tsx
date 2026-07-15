@@ -10,7 +10,6 @@ import {
 import { PromptHero } from '@/app/components/app/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { listShowTemplates } from '@/lib/admin.server';
-import { listFireworkProducts } from '@/lib/shows.server';
 
 export default function HomePage() {
   return (
@@ -24,16 +23,13 @@ export default function HomePage() {
 }
 
 async function HomeContent() {
-  const [exploreTemplates, specifications] = await Promise.all([
-    listShowTemplates(),
-    listFireworkProducts(),
-  ]);
+  const exploreTemplates = await listShowTemplates();
   const featuredShowTemplates = exploreTemplates.slice(0, 2);
   const explorePreviewTemplates = exploreTemplates.slice(2, 12);
 
   return (
     <>
-      <HomeFeaturedShows templates={featuredShowTemplates} specifications={specifications} />
+      <HomeFeaturedShows templates={featuredShowTemplates} />
       <HomeCollectionsSection />
 
       {explorePreviewTemplates.length > 0 ? (

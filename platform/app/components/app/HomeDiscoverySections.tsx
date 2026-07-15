@@ -5,8 +5,14 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { BadgeDollarSign, ChevronRight, Clock3, ListMusic, Play } from 'lucide-react';
 import { CoverPoster } from '@/app/components/app/CoverPoster';
-import type { ShowTemplate } from '@/lib/admin.types';
-import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import {
+  EXPLORE_PREVIEW_INTENT_MS,
+  loadExplorePreview,
+  type ExplorePreviewPayload,
+} from '@/lib/explore-preview';
+import { formatBudget, formatDuration } from '@/lib/show-domain';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import {
   shaderCoverFromSeed,
   shaderCoverGradient,
@@ -64,35 +70,75 @@ function collectionLayerCover(
   };
 }
 
-function FeaturedShowCard({
-  template,
-  index,
-  specifications,
-}: {
-  template: ShowTemplate;
-  index: number;
-  specifications: FireworkSpecification[];
-}) {
+function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; index: number }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [isPreviewHovered, setIsPreviewHovered] = useState(false);
-  const [hasPreviewMounted, setHasPreviewMounted] = useState(false);
   const [isPreviewReady, setIsPreviewReady] = useState(false);
-  const hasReplay = template.previewCues.length > 0 && specifications.length > 0;
+  const [preview, setPreview] = useState<ExplorePreviewPayload | null>(null);
+  const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestAbortRef = useRef<AbortController | null>(null);
+  const requestSerialRef = useRef(0);
   const isPreviewVisible = isPreviewReady && isPreviewHovered;
-  const showReplay = hasReplay && hasPreviewMounted;
+  const replayTemplate = preview ? { ...template, previewCues: preview.previewCues } : null;
+
+  const cancelPendingPreview = useCallback(() => {
+    requestSerialRef.current += 1;
+    if (intentTimerRef.current !== null) {
+      clearTimeout(intentTimerRef.current);
+      intentTimerRef.current = null;
+    }
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+  }, []);
 
   useEffect(() => {
+    cancelPendingPreview();
     setIsPreviewReady(false);
-    setHasPreviewMounted(false);
-  }, [template.id]);
+    setPreview(null);
+    return cancelPendingPreview;
+  }, [cancelPendingPreview, template.id, template.slug, template.updatedAt]);
+
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    cancelPendingPreview();
+    setIsPreviewHovered(false);
+    setIsPreviewReady(false);
+    setPreview(null);
+  }, [cancelPendingPreview, prefersReducedMotion]);
 
   const startPreview = useCallback(() => {
-    if (hasReplay) setHasPreviewMounted(true);
+    if (prefersReducedMotion) return;
     setIsPreviewHovered(true);
-  }, [hasReplay]);
+    if (preview) return;
+
+    cancelPendingPreview();
+    const requestSerial = requestSerialRef.current;
+    intentTimerRef.current = setTimeout(() => {
+      intentTimerRef.current = null;
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+      void loadExplorePreview(template.slug, controller.signal)
+        .then((payload) => {
+          if (
+            requestSerialRef.current !== requestSerial ||
+            payload.previewCues.length === 0 ||
+            payload.specifications.length === 0
+          ) {
+            return;
+          }
+          setPreview(payload);
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (requestAbortRef.current === controller) requestAbortRef.current = null;
+        });
+    }, EXPLORE_PREVIEW_INTENT_MS);
+  }, [cancelPendingPreview, prefersReducedMotion, preview, template.slug]);
 
   const stopPreview = useCallback(() => {
     setIsPreviewHovered(false);
-  }, []);
+    if (!preview) cancelPendingPreview();
+  }, [cancelPendingPreview, preview]);
 
   const handlePreviewReady = useCallback(() => {
     setIsPreviewReady(true);
@@ -103,7 +149,7 @@ function FeaturedShowCard({
       href={`/library/${template.slug}`}
       prefetch={false}
       aria-label={`Watch ${template.title}`}
-      className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative isolate min-h-[14rem] overflow-hidden rounded-2xl bg-[color:var(--color-bg-elevated)] shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background relative isolate min-h-[14rem] overflow-hidden rounded-2xl bg-[color:var(--color-bg-elevated)] shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
       onPointerEnter={startPreview}
       onPointerLeave={stopPreview}
       onFocus={startPreview}
@@ -113,22 +159,22 @@ function FeaturedShowCard({
         imagePath={template.coverImagePath}
         fallbackCover={template.coverShader}
         eager
-        className={`z-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 ${
+        className={`z-0 transition-[opacity,transform] duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none ${
           isPreviewVisible ? 'opacity-0' : 'opacity-100'
         }`}
       />
-      {showReplay ? (
+      {replayTemplate && preview && !prefersReducedMotion ? (
         <TemplateReplayPreview
-          template={template}
-          specifications={specifications}
+          template={replayTemplate}
+          specifications={preview.specifications}
           isCardHovered={isPreviewHovered}
           isCardPlaybackActive={isPreviewHovered}
-          keepCardCanvasMounted={hasPreviewMounted}
+          keepCardCanvasMounted
           resetCardPlayheadOnIdle={false}
           showCardOverlays={false}
           lazyHoverMount
           onReady={handlePreviewReady}
-          cardClassName={`absolute inset-0 z-[1] h-full w-full overflow-hidden transition-opacity duration-700 ${
+          cardClassName={`absolute inset-0 z-[1] h-full w-full overflow-hidden transition-opacity duration-700 motion-reduce:transition-none ${
             isPreviewVisible ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -141,7 +187,7 @@ function FeaturedShowCard({
         aria-hidden
         className="pointer-events-none absolute inset-px z-20 rounded-[calc(var(--radius-2xl)-1px)] border border-white/20"
       />
-      <span className="absolute top-4 right-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform duration-200 group-hover:scale-105 sm:flex">
+      <span className="absolute top-4 right-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none sm:flex">
         <Play size={18} fill="currentColor" />
       </span>
       {/* Tucked into the top-left corner, out of the content flow. No
@@ -162,7 +208,7 @@ function FeaturedShowCard({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ListMusic size={13} />
-            <span className="tabular-nums">{template.previewCues.length}</span>
+            <span className="tabular-nums">{template.effectsCount}</span>
           </span>
           <span
             className="inline-flex items-center gap-1.5"
@@ -181,13 +227,7 @@ function FeaturedShowCard({
   );
 }
 
-export function HomeFeaturedShows({
-  templates,
-  specifications,
-}: {
-  templates: ShowTemplate[];
-  specifications: FireworkSpecification[];
-}) {
+export function HomeFeaturedShows({ templates }: { templates: ShowTemplateSummary[] }) {
   const featured = templates.slice(0, 2);
   if (featured.length === 0) return null;
 
@@ -205,12 +245,7 @@ export function HomeFeaturedShows({
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {featured.map((template, index) => (
-          <FeaturedShowCard
-            key={template.id}
-            template={template}
-            index={index}
-            specifications={specifications}
-          />
+          <FeaturedShowCard key={template.id} template={template} index={index} />
         ))}
       </div>
     </section>

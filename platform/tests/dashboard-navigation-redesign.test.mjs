@@ -222,9 +222,9 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(libraryPage, /templateMatchesShelf/);
   assert.match(libraryPage, /if \(sort === 'featured'\) return template\.isFeatured/);
   assert.match(libraryPage, /templates: templatesForShelf\(templates, sort\)/);
-  assert.match(libraryPage, /templateFireworkSignature/);
   assert.match(libraryPage, /usedTemplateIds/);
-  assert.match(libraryPage, /usedFireworkSignatures/);
+  assert.match(libraryPage, /ShowTemplateSummary/);
+  assert.doesNotMatch(libraryPage, /previewCues/);
   assert.match(libraryPage, /activeShelf\.templates\.length\.toLocaleString\(\)/);
   assert.match(libraryPage, /activeShelf\.templates\.map/);
   assert.match(libraryPage, /href="\/library"/);
@@ -325,7 +325,8 @@ test('explore seed data supports database-managed factual library shelves', () =
   assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
   assert.match(templateReads, /if \(cached\) return cached/);
   assert.match(templateReads, /throw new Error\('Explore shows could not be loaded\.'\)/);
-  assert.match(templateReads, /map\(mapShowTemplate\)/);
+  assert.match(templateReads, /map\(mapShowTemplateSummary\)/);
+  assert.match(templateReads, /PUBLIC_SHOW_TEMPLATE_SUMMARIES_SELECT/);
 });
 
 test('shader-heavy app routes use neutral loading skeletons', () => {

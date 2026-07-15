@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import { cn } from '@/lib/utils';
 
 export function ExploreRow({
@@ -19,7 +19,7 @@ export function ExploreRow({
   seeAllHref,
 }: {
   title: string;
-  templates: ShowTemplate[];
+  templates: ShowTemplateSummary[];
   seeAllHref?: string;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();

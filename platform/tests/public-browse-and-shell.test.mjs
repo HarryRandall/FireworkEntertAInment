@@ -46,8 +46,10 @@ test('home discovery does not depend on the user already having a show', () => {
   assert.match(library, /if \(sort === 'featured'\) return template\.isFeatured/);
   assert.match(library, /if \(sort === 'shortest'\)/);
   assert.match(library, /usedTemplateIds/);
-  assert.match(library, /usedFireworkSignatures/);
-  assert.match(library, /templateFireworkSignature/);
+  assert.match(library, /ShowTemplateSummary/);
+  assert.match(library, /usedCompositionSignatures/);
+  assert.match(library, /template\.compositionSignature/);
+  assert.doesNotMatch(library, /previewCues/);
   assert.doesNotMatch(library, /fallbackTemplates|sort=hot|hashString/);
 });
 

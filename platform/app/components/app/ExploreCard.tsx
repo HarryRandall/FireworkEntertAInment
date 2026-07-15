@@ -13,7 +13,7 @@ import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton'
 import { useExplorePreview } from '@/app/components/app/ExplorePreviewContext';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 function formatCount(value: number): string {
   if (value >= 1000) {
@@ -27,7 +27,7 @@ export const ExploreCard = memo(function ExploreCard({
   template,
   className,
 }: {
-  template: ShowTemplate;
+  template: ShowTemplateSummary;
   /** Width override: shelves use the default fixed width, grids pass w-full. */
   className?: string;
 }) {
@@ -42,7 +42,8 @@ export const ExploreCard = memo(function ExploreCard({
   // yields once the shared canvas has painted a frame for this exact card.
   const isPreviewActive = preview?.activeId === previewId;
   const isPreviewRevealed = preview?.readyId === previewId;
-  const isPreviewLoading = isPreviewActive && !isPreviewRevealed;
+  const isPreviewLoading =
+    preview?.pendingId === previewId || (isPreviewActive && !isPreviewRevealed);
   return (
     <Link
       href={`/library/${template.slug}`}
@@ -77,7 +78,7 @@ export const ExploreCard = memo(function ExploreCard({
         <CoverPoster
           imagePath={template.coverImagePath}
           fallbackCover={template.coverShader}
-          className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 ${
+          className={`transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none ${
             isPreviewRevealed ? 'opacity-0' : 'opacity-100'
           }`}
         />
@@ -97,7 +98,7 @@ export const ExploreCard = memo(function ExploreCard({
         <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
           {isPreviewLoading ? 'Loading template preview…' : ''}
         </span>
-        <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+        <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
           <Play aria-hidden="true" size={16} fill="currentColor" />
         </span>
       </div>

@@ -23,13 +23,18 @@ import {
   type ReactNode,
 } from 'react';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import {
+  EXPLORE_PREVIEW_INTENT_MS,
+  loadExplorePreview,
+  type ExplorePreviewPayload,
+} from '@/lib/explore-preview';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 // Hover-intent delay: a card must be hovered (or focused) for this long before
 // the heavy Three.js replay canvas loads and plays. Grazing the grid never
 // loads WebGL; only a deliberate dwell triggers the black empty set -> play.
-const HOVER_INTENT_MS = 500;
 
 // Lazy-load the replay preview (and its Three.js canvas + Slider + icons) so it
 // is not in the initial bundle; it mounts on first confirmed hover and stays
@@ -49,7 +54,7 @@ type PreviewContextValue = {
    * once there are real fireworks to show (never a black warm-up frame).
    */
   readyId: string | null;
-  requestPreview: (id: string, element: HTMLElement, template: ShowTemplate) => void;
+  requestPreview: (id: string, element: HTMLElement, template: ShowTemplateSummary) => void;
   releasePreview: (id: string) => void;
 };
 
@@ -57,26 +62,6 @@ const ExplorePreviewContext = createContext<PreviewContextValue | null>(null);
 
 export function useExplorePreview() {
   return useContext(ExplorePreviewContext);
-}
-
-async function loadPreviewSpecifications(slug: string, signal: AbortSignal) {
-  const response = await fetch(`/api/library/${encodeURIComponent(slug)}/preview`, {
-    cache: 'no-store',
-    credentials: 'same-origin',
-    headers: { Accept: 'application/json' },
-    signal,
-  });
-  if (!response.ok) throw new Error('Explore preview specifications could not be loaded.');
-
-  const payload: unknown = await response.json();
-  if (
-    !payload ||
-    typeof payload !== 'object' ||
-    !Array.isArray((payload as { specifications?: unknown }).specifications)
-  ) {
-    throw new Error('Explore preview specifications were malformed.');
-  }
-  return (payload as { specifications: FireworkSpecification[] }).specifications;
 }
 
 export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
@@ -88,13 +73,13 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<{
     id: string;
     element: HTMLElement;
-    template: ShowTemplate;
+    template: ShowTemplateSummary;
   } | null>(null);
   const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSerialRef = useRef(0);
   const requestIdentityRef = useRef<{ id: string; serial: number } | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
-  const specificationCacheRef = useRef(new Map<string, FireworkSpecification[]>());
+  const previewCacheRef = useRef(new Map<string, ExplorePreviewPayload>());
   // The most recently previewed template; kept mounted so the warm canvas
   // always has a show to render and a new hover only swaps cues.
   const [mountedPreview, setMountedPreview] = useState<{
@@ -154,14 +139,20 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
   }, [cancelActivePreview, prefersReducedMotion]);
 
   const confirmPreview = useCallback(
-    async (requestSerial: number, id: string, element: HTMLElement, template: ShowTemplate) => {
-      let specifications = specificationCacheRef.current.get(template.slug);
-      if (!specifications) {
+    async (
+      requestSerial: number,
+      id: string,
+      element: HTMLElement,
+      template: ShowTemplateSummary,
+    ) => {
+      const previewKey = `${template.slug}:${template.updatedAt}`;
+      let preview = previewCacheRef.current.get(previewKey);
+      if (!preview) {
         const controller = new AbortController();
         requestAbortRef.current = controller;
         try {
-          specifications = await loadPreviewSpecifications(template.slug, controller.signal);
-          specificationCacheRef.current.set(template.slug, specifications);
+          preview = await loadExplorePreview(template.slug, controller.signal);
+          previewCacheRef.current.set(previewKey, preview);
         } catch {
           if (requestAbortRef.current === controller) requestAbortRef.current = null;
           if (requestSerialRef.current !== requestSerial) return;
@@ -176,21 +167,25 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
 
       if (requestSerialRef.current !== requestSerial) return;
       setPending((current) => (current?.id === id ? null : current));
-      if (specifications.length === 0) {
+      if (preview.previewCues.length === 0 || preview.specifications.length === 0) {
         requestIdentityRef.current = null;
         setActive(null);
         parkOverlay();
         return;
       }
 
-      setMountedPreview({ template, specifications, requestSerial });
+      setMountedPreview({
+        template: { ...template, previewCues: preview.previewCues },
+        specifications: preview.specifications,
+        requestSerial,
+      });
       setActive({ id, element });
     },
     [parkOverlay],
   );
 
   const requestPreview = useCallback(
-    (id: string, element: HTMLElement, template: ShowTemplate) => {
+    (id: string, element: HTMLElement, template: ShowTemplateSummary) => {
       if (prefersReducedMotion) return;
 
       const requestSerial = requestSerialRef.current + 1;
@@ -204,7 +199,7 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
       intentTimerRef.current = setTimeout(() => {
         intentTimerRef.current = null;
         void confirmPreview(requestSerial, id, element, template);
-      }, HOVER_INTENT_MS);
+      }, EXPLORE_PREVIEW_INTENT_MS);
     },
     [abortPreviewRequest, clearIntentTimer, confirmPreview, parkOverlay, prefersReducedMotion],
   );
@@ -328,7 +323,7 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
         () => ({
           // Loading the bounded payload and warming WebGL are background work.
           // Cards only switch from their poster once a real frame is ready.
-          activeId: ready ? (active?.id ?? null) : null,
+          activeId: active?.id ?? null,
           pendingId: pending?.id ?? null,
           readyId: ready ? (active?.id ?? null) : null,
           requestPreview,

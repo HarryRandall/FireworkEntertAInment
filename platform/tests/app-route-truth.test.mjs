@@ -15,7 +15,8 @@ test('home and show preview propagate data failures to the app error boundary', 
   const home = read('app/(app)/home/page.tsx');
   const preview = read('app/(app)/shows/[id]/preview/page.tsx');
 
-  assert.match(home, /listFireworkProducts\(\)/);
+  assert.match(home, /listShowTemplates\(\)/);
+  assert.doesNotMatch(home, /listFireworkProducts\(\)/);
   assert.doesNotMatch(home, /ShowsNetworkError|specifications: \[\]|\.catch\(/);
   assert.match(preview, /const replayCuesPromise = listReplayCuesForShow\(show\.id\)/);
   assert.doesNotMatch(preview, /ShowsNetworkError|EMPTY_CUES|EMPTY_EXTRAS|\.catch\(/);

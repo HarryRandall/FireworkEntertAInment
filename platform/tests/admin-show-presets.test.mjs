@@ -67,6 +67,7 @@ test('public reads only use published presets while admin helpers include drafts
   const actions = read('app/actions/admin-show-presets.ts');
   const index = read('lib/admin/index.ts');
   const homePage = read('app/(app)/home/page.tsx');
+  const homeDiscovery = read('app/components/app/HomeDiscoverySections.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
   const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
 
@@ -119,7 +120,8 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(actions, /catalogueItemSlug: item\.part_number/);
   assert.match(actions, /source_show_id: show\.id/);
 
-  assert.match(homePage, /listFireworkProducts/);
+  assert.doesNotMatch(homePage, /listFireworkProducts/);
+  assert.match(homeDiscovery, /loadExplorePreview/);
   assert.doesNotMatch(libraryPage, /listFireworkProducts/);
   assert.doesNotMatch(libraryDetailPage, /listFireworkProducts/);
   assert.match(libraryDetailPage, /listReferencedShowTemplateSpecifications/);

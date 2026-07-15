@@ -115,9 +115,8 @@ export function getAdminGenerationSettingsCacheKey(): string {
 
 /** Cache key for public curated show presets. */
 export function getShowTemplatesCacheKey(): string {
-  // Versioned after removing code-only fallback templates so an older merged
-  // payload cannot remain visible for the previous ten-minute cache window.
-  return `${PLATFORM_CACHE_PREFIX}:show-templates:database-v3`;
+  // Keep cue-bearing list payloads from surviving the summary-only rollout.
+  return `${PLATFORM_CACHE_PREFIX}:show-templates:database-v4`;
 }
 
 /**

@@ -2,7 +2,6 @@ import 'server-only';
 
 import { cache } from 'react';
 import { listShowTemplates } from '@/lib/admin.server';
-import type { ShowTemplate } from '@/lib/admin.types';
 import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { mapShow } from '@/lib/shows/mappers';
@@ -10,6 +9,7 @@ import { getServerClient } from '@/lib/shows/supabase';
 import { SHOW_SELECT, type ShowProjection } from '@/lib/shows/types';
 import { listShowsForCurrentUser, ShowsNetworkError } from '@/lib/shows.server';
 import type { Show } from '@/lib/show-domain';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import {
   mapShowToSummary,
   mapTemplateToSummary,
@@ -30,7 +30,7 @@ const EMPTY_WORKSPACE_SUMMARY: WorkspaceSummary = {
   recentShows: [],
 };
 
-function buildDashboardSummary(shows: Show[], templates: ShowTemplate[]): DashboardSummary {
+function buildDashboardSummary(shows: Show[], templates: ShowTemplateSummary[]): DashboardSummary {
   const showSummaries = shows.map(mapShowToSummary);
   const templateSummaries = templates.map(mapTemplateToSummary);
   const totalRuntimeSeconds = showSummaries.reduce(
@@ -62,7 +62,7 @@ export const getDashboardSummary = cache(async (): Promise<DashboardSummary> => 
 export const getDashboardSummaryWithTemplates = cache(
   async (): Promise<{
     summary: DashboardSummary;
-    templates: ShowTemplate[];
+    templates: ShowTemplateSummary[];
   }> => {
     const [shows, templates] = await Promise.all([listShowsForCurrentUser(), listShowTemplates()]);
     return {

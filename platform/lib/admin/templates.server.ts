@@ -16,22 +16,33 @@ import type {
   ShowTemplate,
   ShowTemplateCue,
 } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import { listFireworkProducts } from '@/lib/shows.server';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 import { getShowTemplatesCacheKey, SHOW_TEMPLATES_TTL_SECONDS } from './cache-keys';
 import { requirePermission } from './current-user.server';
-import { mapShowTemplate, type ShowTemplateRow } from './mappers';
+import {
+  mapShowTemplate,
+  mapShowTemplateSummary,
+  type ShowTemplateRow,
+  type ShowTemplateSummaryRow,
+} from './mappers';
 import { describeSupabaseError } from './style-default-schema';
 import { getServerClient } from './supabase';
 
 const SHOW_TEMPLATES_BASE_SELECT =
   'id, slug, title, theme, description, duration_seconds, budget_cents, total_cents, effects_count, time_of_day, mood_tags, preview_cues, is_featured, is_published, published_at, source_show_id, sort_order, created_at, updated_at';
 const SHOW_TEMPLATES_CORE_SELECT = SHOW_TEMPLATES_BASE_SELECT.replace(', source_show_id', '');
+const SHOW_TEMPLATE_SUMMARIES_CORE_SELECT =
+  'id, slug, title, theme, description, duration_seconds, budget_cents, total_cents, effects_count, composition_signature, time_of_day, mood_tags, is_featured, is_published, published_at, sort_order, created_at, updated_at';
+const SHOW_TEMPLATE_SUMMARIES_LEGACY_CORE_SELECT =
+  'id, slug, title, theme, description, duration_seconds, budget_cents, total_cents, effects_count, time_of_day, mood_tags, preview_cues, is_featured, is_published, published_at, sort_order, created_at, updated_at';
 const SHOW_TEMPLATES_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path`;
 const SHOW_TEMPLATES_CORE_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_CORE_SELECT}, cover_shader, cover_image_path`;
 const SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`;
 const PUBLIC_SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_CORE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`;
+const PUBLIC_SHOW_TEMPLATE_SUMMARIES_SELECT = `${SHOW_TEMPLATE_SUMMARIES_CORE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`;
 const SHOW_TEMPLATES_FALLBACK_SELECTS = [
   SHOW_TEMPLATES_WITH_COVERS_SELECT,
   SHOW_TEMPLATES_CORE_WITH_COVERS_SELECT,
@@ -40,6 +51,11 @@ const SHOW_TEMPLATES_FALLBACK_SELECTS = [
 const PUBLIC_SHOW_TEMPLATES_FALLBACK_SELECTS = [
   SHOW_TEMPLATES_CORE_WITH_COVERS_SELECT,
   SHOW_TEMPLATES_CORE_SELECT,
+] as const;
+const PUBLIC_SHOW_TEMPLATE_SUMMARIES_FALLBACK_SELECTS = [
+  `${SHOW_TEMPLATE_SUMMARIES_LEGACY_CORE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`,
+  `${SHOW_TEMPLATE_SUMMARIES_LEGACY_CORE_SELECT}, cover_shader, cover_image_path`,
+  SHOW_TEMPLATE_SUMMARIES_LEGACY_CORE_SELECT,
 ] as const;
 
 function throwAdminTemplateReadError(operation: string, error: unknown): never {
@@ -193,20 +209,20 @@ export async function listAdminShowPresetImportShows(): Promise<AdminShowPresetI
   }));
 }
 
-/** Returns all show templates, featured first then by sort order. Cached. */
-export async function listShowTemplates(): Promise<ShowTemplate[]> {
+/** Returns cue-free public summaries, featured first then by sort order. Cached. */
+export async function listShowTemplates(): Promise<ShowTemplateSummary[]> {
   const cacheKey = getShowTemplatesCacheKey();
-  const cached = await getCachedJson<ShowTemplate[]>(cacheKey);
+  const cached = await getCachedJson<ShowTemplateSummary[]>(cacheKey);
   if (cached) return cached;
 
   const supabase = await getServerClient();
   let result: { data: unknown[] | null; error: unknown } = await supabase
     .from('show_presets')
-    .select(PUBLIC_SHOW_TEMPLATES_SELECT)
+    .select(PUBLIC_SHOW_TEMPLATE_SUMMARIES_SELECT)
     .eq('is_published', true)
     .order('is_featured', { ascending: false })
     .order('sort_order', { ascending: true });
-  for (const select of PUBLIC_SHOW_TEMPLATES_FALLBACK_SELECTS) {
+  for (const select of PUBLIC_SHOW_TEMPLATE_SUMMARIES_FALLBACK_SELECTS) {
     if (!result.error || !isOptionalShowPresetSchemaError(result.error)) break;
     result = await supabase
       .from('show_presets')
@@ -222,7 +238,7 @@ export async function listShowTemplates(): Promise<ShowTemplate[]> {
     console.error('[admin.server] listShowTemplates failed:', { transient, error });
     throw new Error('Explore shows could not be loaded.');
   }
-  const mapped = ((data ?? []) as ShowTemplateRow[]).map(mapShowTemplate);
+  const mapped = ((data ?? []) as ShowTemplateSummaryRow[]).map(mapShowTemplateSummary);
   await setCachedJson(cacheKey, mapped, SHOW_TEMPLATES_TTL_SECONDS);
   return mapped;
 }
@@ -306,14 +322,10 @@ export async function getAdminShowPresetById(
 }
 
 /**
- * Returns a template by slug. Tries the cached list first, falls back to a
- * direct DB lookup so deep-links work even if the list cache is cold.
+ * Returns one published cue-bearing template for preview, detail or cloning.
+ * This deliberately bypasses the cue-free list cache.
  */
 export async function getShowTemplateBySlug(slug: string): Promise<ShowTemplate | null> {
-  const cachedTemplates = await listShowTemplates();
-  const cached = cachedTemplates.find((template) => template.slug === slug);
-  if (cached) return cached;
-
   const supabase = await getServerClient();
   let result: { data: unknown | null; error: unknown } = await supabase
     .from('show_presets')

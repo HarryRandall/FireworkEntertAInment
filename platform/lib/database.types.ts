@@ -1020,6 +1020,7 @@ export type Database = {
       show_presets: {
         Row: {
           budget_cents: number | null
+          composition_signature: string
           cover_image_path: string | null
           cover_shader: Json | null
           created_at: string
@@ -1043,6 +1044,7 @@ export type Database = {
         }
         Insert: {
           budget_cents?: number | null
+          composition_signature?: never
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
@@ -1066,6 +1068,7 @@ export type Database = {
         }
         Update: {
           budget_cents?: number | null
+          composition_signature?: never
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string

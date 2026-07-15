@@ -8,13 +8,13 @@ import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { ExploreRow } from '@/app/components/app/ExploreRow';
 import { ExplorePreviewProvider } from '@/app/components/app/ExplorePreviewContext';
 import { listShowTemplates } from '@/lib/admin.server';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 type Shelf = {
   sort: LibrarySort;
   title: string;
   seeAllHref: string;
-  templates: ShowTemplate[];
+  templates: ShowTemplateSummary[];
 };
 
 type LibrarySort = 'featured' | 'popular' | 'curated' | 'recent' | 'shortest' | 'budget';
@@ -45,7 +45,7 @@ function parseSort(value: string | undefined): LibrarySort | null {
   return null;
 }
 
-function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTemplate[] {
+function sortTemplates(templates: ShowTemplateSummary[], sort: LibrarySort): ShowTemplateSummary[] {
   if (sort === 'popular') return [...templates].sort((a, b) => b.likeCount - a.likeCount);
   if (sort === 'featured') {
     return [...templates].sort(
@@ -68,47 +68,35 @@ function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTempla
   return [...templates].sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 }
 
-function templateMatchesShelf(template: ShowTemplate, sort: LibrarySort): boolean {
+function templateMatchesShelf(template: ShowTemplateSummary, sort: LibrarySort): boolean {
   if (sort === 'featured') return template.isFeatured;
   if (sort === 'shortest') return (template.durationSeconds ?? Number.MAX_SAFE_INTEGER) <= 75;
   return true;
 }
 
-function templateFireworkSignature(template: ShowTemplate): string {
-  const catalogueItemIds = Array.from(
-    new Set(
-      template.previewCues
-        .map((cue) => cue.catalogueItemId ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? null)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  ).sort();
-
-  return catalogueItemIds.length > 0
-    ? catalogueItemIds.join('|')
-    : `template-without-cues:${template.id}`;
-}
-
 function templatesForShelf(
-  templates: ShowTemplate[],
+  templates: ShowTemplateSummary[],
   sort: LibrarySort,
   limit?: number,
   usedTemplateIds = new Set<string>(),
-  usedFireworkSignatures = new Set<string>(),
-): ShowTemplate[] {
+  usedCompositionSignatures = new Set<string>(),
+): ShowTemplateSummary[] {
   const matching = sortTemplates(templates, sort).filter((template) =>
     templateMatchesShelf(template, sort),
   );
-  const selected: ShowTemplate[] = [];
+  const selected: ShowTemplateSummary[] = [];
 
   for (const template of matching) {
-    const fireworkSignature = templateFireworkSignature(template);
-    if (usedTemplateIds.has(template.id) || usedFireworkSignatures.has(fireworkSignature)) {
+    if (
+      usedTemplateIds.has(template.id) ||
+      usedCompositionSignatures.has(template.compositionSignature)
+    ) {
       continue;
     }
 
     selected.push(template);
     usedTemplateIds.add(template.id);
-    usedFireworkSignatures.add(fireworkSignature);
+    usedCompositionSignatures.add(template.compositionSignature);
     if (limit != null && selected.length >= limit) break;
   }
 
@@ -116,9 +104,9 @@ function templatesForShelf(
 }
 
 /** Build factual shelves without repeating a show or its firework composition. */
-function buildShelves(templates: ShowTemplate[]): Shelf[] {
+function buildShelves(templates: ShowTemplateSummary[]): Shelf[] {
   const usedTemplateIds = new Set<string>();
-  const usedFireworkSignatures = new Set<string>();
+  const usedCompositionSignatures = new Set<string>();
   const shelfSorts: LibrarySort[] = ['featured', 'popular', 'curated', 'recent', 'shortest'];
   const shelves = shelfSorts.map((sort) => ({
     sort,
@@ -129,7 +117,7 @@ function buildShelves(templates: ShowTemplate[]): Shelf[] {
       sort,
       SHOWS_PER_SHELF,
       usedTemplateIds,
-      usedFireworkSignatures,
+      usedCompositionSignatures,
     ),
   }));
 
