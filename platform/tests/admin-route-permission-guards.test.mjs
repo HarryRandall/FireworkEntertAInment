@@ -9,6 +9,7 @@ const root = process.cwd();
 
 const guardedSubtrees = new Map([
   ['users', 'admin.manage_users'],
+  ['billing', 'admin.manage_billing'],
   ['catalogue', 'admin.manage_catalogue'],
   ['suppliers', 'admin.manage_suppliers'],
   ['imports', 'admin.manage_imports'],
