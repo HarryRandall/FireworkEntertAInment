@@ -59,13 +59,27 @@ export function useExplorePreview() {
   return useContext(ExplorePreviewContext);
 }
 
-export function ExplorePreviewProvider({
-  specifications,
-  children,
-}: {
-  specifications: FireworkSpecification[];
-  children: ReactNode;
-}) {
+async function loadPreviewSpecifications(slug: string, signal: AbortSignal) {
+  const response = await fetch(`/api/library/${encodeURIComponent(slug)}/preview`, {
+    cache: 'no-store',
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+    signal,
+  });
+  if (!response.ok) throw new Error('Explore preview specifications could not be loaded.');
+
+  const payload: unknown = await response.json();
+  if (
+    !payload ||
+    typeof payload !== 'object' ||
+    !Array.isArray((payload as { specifications?: unknown }).specifications)
+  ) {
+    throw new Error('Explore preview specifications were malformed.');
+  }
+  return (payload as { specifications: FireworkSpecification[] }).specifications;
+}
+
+export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [active, setActive] = useState<{ id: string; element: HTMLElement } | null>(null);
   // A hover that has started but not yet survived the intent delay. While
@@ -77,9 +91,17 @@ export function ExplorePreviewProvider({
     template: ShowTemplate;
   } | null>(null);
   const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestSerialRef = useRef(0);
+  const requestIdentityRef = useRef<{ id: string; serial: number } | null>(null);
+  const requestAbortRef = useRef<AbortController | null>(null);
+  const specificationCacheRef = useRef(new Map<string, FireworkSpecification[]>());
   // The most recently previewed template; kept mounted so the warm canvas
   // always has a show to render and a new hover only swaps cues.
-  const [mountedTemplate, setMountedTemplate] = useState<ShowTemplate | null>(null);
+  const [mountedPreview, setMountedPreview] = useState<{
+    template: ShowTemplate;
+    specifications: FireworkSpecification[];
+    requestSerial: number;
+  } | null>(null);
   // Whether the active card's canvas has painted its first frame. Read live by
   // the follow loop (via the ref) so the overlay only fades in once ready.
   const [ready, setReady] = useState(false);
@@ -91,7 +113,7 @@ export function ExplorePreviewProvider({
   useEffect(() => {
     readyRef.current = false;
     setReady(false);
-  }, [active?.id]);
+  }, [active?.id, mountedPreview?.requestSerial]);
 
   const clearIntentTimer = useCallback(() => {
     if (intentTimerRef.current !== null) {
@@ -111,44 +133,105 @@ export function ExplorePreviewProvider({
     overlay.style.clipPath = 'inset(0 round 0.75rem)';
   }, []);
 
+  const abortPreviewRequest = useCallback(() => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+  }, []);
+
   const cancelActivePreview = useCallback(() => {
+    requestSerialRef.current += 1;
+    requestIdentityRef.current = null;
+    abortPreviewRequest();
     clearIntentTimer();
     setPending(null);
     parkOverlay();
     setActive(null);
-  }, [clearIntentTimer, parkOverlay]);
+  }, [abortPreviewRequest, clearIntentTimer, parkOverlay]);
 
   useEffect(() => {
     if (!prefersReducedMotion) return;
     cancelActivePreview();
   }, [cancelActivePreview, prefersReducedMotion]);
 
+  const confirmPreview = useCallback(
+    async (requestSerial: number, id: string, element: HTMLElement, template: ShowTemplate) => {
+      let specifications = specificationCacheRef.current.get(template.slug);
+      if (!specifications) {
+        const controller = new AbortController();
+        requestAbortRef.current = controller;
+        try {
+          specifications = await loadPreviewSpecifications(template.slug, controller.signal);
+          specificationCacheRef.current.set(template.slug, specifications);
+        } catch {
+          if (requestAbortRef.current === controller) requestAbortRef.current = null;
+          if (requestSerialRef.current !== requestSerial) return;
+          requestIdentityRef.current = null;
+          setPending((current) => (current?.id === id ? null : current));
+          setActive(null);
+          parkOverlay();
+          return;
+        }
+        if (requestAbortRef.current === controller) requestAbortRef.current = null;
+      }
+
+      if (requestSerialRef.current !== requestSerial) return;
+      setPending((current) => (current?.id === id ? null : current));
+      if (specifications.length === 0) {
+        requestIdentityRef.current = null;
+        setActive(null);
+        parkOverlay();
+        return;
+      }
+
+      setMountedPreview({ template, specifications, requestSerial });
+      setActive({ id, element });
+    },
+    [parkOverlay],
+  );
+
   const requestPreview = useCallback(
     (id: string, element: HTMLElement, template: ShowTemplate) => {
       if (prefersReducedMotion) return;
 
+      const requestSerial = requestSerialRef.current + 1;
+      requestSerialRef.current = requestSerial;
+      requestIdentityRef.current = { id, serial: requestSerial };
+      abortPreviewRequest();
       clearIntentTimer();
+      parkOverlay();
+      setActive(null);
       setPending({ id, element, template });
       intentTimerRef.current = setTimeout(() => {
         intentTimerRef.current = null;
-        setMountedTemplate(template);
-        setActive({ id, element });
-        setPending((current) => (current && current.id === id ? null : current));
+        void confirmPreview(requestSerial, id, element, template);
       }, HOVER_INTENT_MS);
     },
-    [clearIntentTimer, prefersReducedMotion],
+    [abortPreviewRequest, clearIntentTimer, confirmPreview, parkOverlay, prefersReducedMotion],
   );
 
   const releasePreview = useCallback(
     (id: string) => {
+      if (requestIdentityRef.current?.id !== id) return;
+      requestSerialRef.current += 1;
+      requestIdentityRef.current = null;
+      abortPreviewRequest();
       clearIntentTimer();
       setPending((current) => (current && current.id === id ? null : current));
       setActive((current) => (current && current.id === id ? null : current));
+      parkOverlay();
     },
-    [clearIntentTimer],
+    [abortPreviewRequest, clearIntentTimer, parkOverlay],
   );
 
-  useEffect(() => () => clearIntentTimer(), [clearIntentTimer]);
+  useEffect(
+    () => () => {
+      requestSerialRef.current += 1;
+      requestIdentityRef.current = null;
+      abortPreviewRequest();
+      clearIntentTimer();
+    },
+    [abortPreviewRequest, clearIntentTimer],
+  );
 
   // Wheel/scroll can leave the pointer "hovering" while the card moves under
   // it. Hide the fixed replay overlay immediately and cancel any pending
@@ -243,7 +326,9 @@ export function ExplorePreviewProvider({
     <ExplorePreviewContext.Provider
       value={useMemo(
         () => ({
-          activeId: active?.id ?? null,
+          // Loading the bounded payload and warming WebGL are background work.
+          // Cards only switch from their poster once a real frame is ready.
+          activeId: ready ? (active?.id ?? null) : null,
           pendingId: pending?.id ?? null,
           readyId: ready ? (active?.id ?? null) : null,
           requestPreview,
@@ -259,14 +344,15 @@ export function ExplorePreviewProvider({
         className="pointer-events-none fixed top-0 left-0 z-30 overflow-hidden rounded-xl opacity-0"
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
-        {mountedTemplate && !prefersReducedMotion ? (
+        {mountedPreview && !prefersReducedMotion ? (
           <TemplateReplayPreview
-            template={mountedTemplate}
-            specifications={specifications}
+            template={mountedPreview.template}
+            specifications={mountedPreview.specifications}
             isCardHovered={active !== null}
             showCardOverlays={false}
             lazyHoverMount
             onReady={() => {
+              if (requestSerialRef.current !== mountedPreview.requestSerial) return;
               readyRef.current = true;
               setReady(true);
             }}

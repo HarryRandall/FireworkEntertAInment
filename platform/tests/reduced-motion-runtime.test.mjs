@@ -32,7 +32,7 @@ test('hover and focus replay providers do not start WebGL previews for reduced m
   }
 
   assert.match(showReplay, /mountedPreview && !prefersReducedMotion/);
-  assert.match(exploreReplay, /mountedTemplate && !prefersReducedMotion/);
+  assert.match(exploreReplay, /mountedPreview && !prefersReducedMotion/);
 });
 
 test('legacy shader covers use their stable gradient instead of mounting WebGL', () => {

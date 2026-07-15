@@ -37,7 +37,7 @@ async function HomeContent() {
       <HomeCollectionsSection />
 
       {explorePreviewTemplates.length > 0 ? (
-        <ExplorePreviewProvider specifications={specifications}>
+        <ExplorePreviewProvider>
           <ExploreRow title="Explore" templates={explorePreviewTemplates} seeAllHref="/library" />
         </ExplorePreviewProvider>
       ) : null}

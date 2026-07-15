@@ -74,7 +74,7 @@ test('library presets persist and expose JSON shader covers', () => {
   assert.match(explorePreview, /closest\(\s*'\[data-explore-scroll-viewport\]'/);
   assert.match(explorePreview, /fadeWidth = 48/);
   assert.match(explorePreview, /overlay\.style\.clipPath = `inset/);
-  assert.match(libraryPage, /ExplorePreviewProvider specifications=\{specifications\}/);
+  assert.match(libraryPage, /<ExplorePreviewProvider>/);
   assert.match(cloneAction, /cover_shader: template\.coverShader \?\? randomCover\(\)/);
 });
 

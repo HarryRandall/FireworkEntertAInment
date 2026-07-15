@@ -120,7 +120,7 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(actions, /source_show_id: show\.id/);
 
   assert.match(homePage, /listFireworkProducts/);
-  assert.match(libraryPage, /listFireworkProducts/);
+  assert.doesNotMatch(libraryPage, /listFireworkProducts/);
   assert.match(libraryDetailPage, /listFireworkProducts/);
 });
 
