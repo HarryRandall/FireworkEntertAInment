@@ -146,7 +146,8 @@ test('show song context exposes stored analysis context', () => {
   assert.match(timeline, /Song context/);
   assert.match(timeline, /contextMarkdown/);
   assert.match(timeline, /buildKpis/);
-  assert.match(timeline, /window\.setInterval\(\(\) => router\.refresh\(\), 5000\)/);
+  assert.match(timeline, /\/api\/shows\/\$\{encodeURIComponent\(showId\)\}\/analysis/);
+  assert.doesNotMatch(timeline, /router\.refresh/);
   assert.doesNotMatch(timeline, /Run analysis/);
   assert.doesNotMatch(timeline, /Re-run/);
   assert.doesNotMatch(page, /GenerateShowPanel/);
