@@ -2,7 +2,82 @@
 -- intervals are half-open, so a launch position becomes available exactly
 -- when the previous catalogue item's conservative duration ends.
 
-do $$
+-- Block legacy direct writers while the preflight runs and the durable guards
+-- are installed. SHARE ROW EXCLUSIVE conflicts with ordinary DML but still
+-- permits the reads needed to calculate conservative occupancy.
+lock table
+  public.catalogue_items,
+  public.fireworks,
+  public.multishot_fireworks,
+  public.show_timeline_items
+in share row exclusive mode;
+
+-- A multishot reserves its parent position and every valid absolute child
+-- override for its full conservative duration. The JSON parser mirrors the
+-- renderer contract by accepting finite integer numbers and numeric strings.
+create or replace function private.catalogue_item_occupied_launch_positions(
+  p_catalogue_item_id uuid,
+  p_parent_launch_position_index integer
+)
+returns integer[]
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with raw_child_positions as (
+    select case
+      when jsonb_typeof(shot.position_override_json -> 'launchPositionIndex') = 'number'
+        then (shot.position_override_json ->> 'launchPositionIndex')::numeric
+      when jsonb_typeof(shot.position_override_json -> 'launchPositionIndex') = 'string'
+        and char_length(btrim(shot.position_override_json ->> 'launchPositionIndex'))
+          between 1 and 64
+        and btrim(shot.position_override_json ->> 'launchPositionIndex')
+          ~ '^[+-]?(([0-9]+([.][0-9]*)?)|([.][0-9]+))([eE][+-]?[0-9]{1,3})?$'
+        then btrim(shot.position_override_json ->> 'launchPositionIndex')::numeric
+      else null
+    end as launch_position_index
+    from public.catalogue_items item
+    join public.multishot_fireworks shot
+      on shot.multishot_id = item.multishot_id
+    where item.id = p_catalogue_item_id
+  ),
+  valid_child_positions as (
+    select launch_position_index::integer as launch_position_index
+    from raw_child_positions
+    where launch_position_index between 0 and 2
+      and launch_position_index = trunc(launch_position_index)
+  )
+  select coalesce(
+    array_agg(
+      distinct occupied.launch_position_index
+      order by occupied.launch_position_index
+    ),
+    array[]::integer[]
+  )
+  from (
+    select p_parent_launch_position_index as launch_position_index
+    where p_parent_launch_position_index between 0 and 2
+    union all
+    select child.launch_position_index
+    from valid_child_positions child
+  ) occupied;
+$$;
+
+revoke execute on function private.catalogue_item_occupied_launch_positions(
+  uuid,
+  integer
+) from public, anon, authenticated, service_role;
+
+-- This full-table assertion is used both for migration preflight and after any
+-- source-data mutation that can change cue duration or occupied positions.
+create or replace function private.assert_show_timeline_non_overlapping()
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
 declare
   conflict record;
 begin
@@ -10,14 +85,27 @@ begin
     first_item.show_id,
     first_item.id as first_cue_id,
     second_item.id as second_cue_id,
-    first_item.launch_position_index
+    first_occupancy.positions as first_positions,
+    second_occupancy.positions as second_positions
   into conflict
   from public.show_timeline_items first_item
   join public.show_timeline_items second_item
     on second_item.show_id = first_item.show_id
    and second_item.position > first_item.position
-   and second_item.launch_position_index = first_item.launch_position_index
-  where first_item.time_seconds
+  cross join lateral (
+    select private.catalogue_item_occupied_launch_positions(
+      first_item.catalogue_item_id,
+      first_item.launch_position_index
+    ) as positions
+  ) first_occupancy
+  cross join lateral (
+    select private.catalogue_item_occupied_launch_positions(
+      second_item.catalogue_item_id,
+      second_item.launch_position_index
+    ) as positions
+  ) second_occupancy
+  where first_occupancy.positions && second_occupancy.positions
+    and first_item.time_seconds
           < second_item.time_seconds
             + coalesce(
                 private.catalogue_item_safe_duration(second_item.catalogue_item_id),
@@ -33,15 +121,124 @@ begin
 
   if found then
     raise exception
-      'Show % has overlapping timeline cues % and % on launch position %.',
+      'Show % has overlapping timeline cues % and % on occupied launch positions % and %.',
       conflict.show_id,
       conflict.first_cue_id,
       conflict.second_cue_id,
-      conflict.launch_position_index
+      conflict.first_positions,
+      conflict.second_positions
       using errcode = '23514';
   end if;
 end;
 $$;
+
+revoke execute on function private.assert_show_timeline_non_overlapping()
+  from public, anon, authenticated, service_role;
+
+select private.assert_show_timeline_non_overlapping();
+
+-- Timeline writes may proceed together, but source changes must wait for every
+-- timeline writer and then retain exclusive ownership through revalidation.
+create or replace function private.lock_show_timeline_sources_shared()
+returns trigger
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock_shared(
+    pg_catalog.hashtextextended('show-timeline-source-safety', 0)
+  );
+  return null;
+end;
+$$;
+
+revoke execute on function private.lock_show_timeline_sources_shared()
+  from public, anon, authenticated, service_role;
+
+create or replace function private.lock_show_timeline_sources_exclusive()
+returns trigger
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('show-timeline-source-safety', 0)
+  );
+  return null;
+end;
+$$;
+
+revoke execute on function private.lock_show_timeline_sources_exclusive()
+  from public, anon, authenticated, service_role;
+
+create or replace function private.assert_show_timeline_after_source_mutation()
+returns trigger
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.assert_show_timeline_non_overlapping();
+  return null;
+end;
+$$;
+
+revoke execute on function private.assert_show_timeline_after_source_mutation()
+  from public, anon, authenticated, service_role;
+
+drop trigger if exists show_timeline_items_lock_sources
+  on public.show_timeline_items;
+create trigger show_timeline_items_lock_sources
+before insert or update or delete on public.show_timeline_items
+for each statement
+execute function private.lock_show_timeline_sources_shared();
+
+drop trigger if exists catalogue_items_lock_timeline_sources
+  on public.catalogue_items;
+create trigger catalogue_items_lock_timeline_sources
+before insert or update or delete on public.catalogue_items
+for each statement
+execute function private.lock_show_timeline_sources_exclusive();
+
+drop trigger if exists fireworks_lock_timeline_sources
+  on public.fireworks;
+create trigger fireworks_lock_timeline_sources
+before insert or update or delete on public.fireworks
+for each statement
+execute function private.lock_show_timeline_sources_exclusive();
+
+drop trigger if exists multishot_fireworks_lock_timeline_sources
+  on public.multishot_fireworks;
+create trigger multishot_fireworks_lock_timeline_sources
+before insert or update or delete on public.multishot_fireworks
+for each statement
+execute function private.lock_show_timeline_sources_exclusive();
+
+drop trigger if exists catalogue_items_assert_timeline_safety
+  on public.catalogue_items;
+create trigger catalogue_items_assert_timeline_safety
+after insert or update or delete on public.catalogue_items
+for each statement
+execute function private.assert_show_timeline_after_source_mutation();
+
+drop trigger if exists fireworks_assert_timeline_safety
+  on public.fireworks;
+create trigger fireworks_assert_timeline_safety
+after insert or update or delete on public.fireworks
+for each statement
+execute function private.assert_show_timeline_after_source_mutation();
+
+drop trigger if exists multishot_fireworks_assert_timeline_safety
+  on public.multishot_fireworks;
+create trigger multishot_fireworks_assert_timeline_safety
+after insert or update or delete on public.multishot_fireworks
+for each statement
+execute function private.assert_show_timeline_after_source_mutation();
 
 create or replace function private.reject_overlapping_show_timeline_item()
 returns trigger
@@ -52,6 +249,7 @@ set search_path = ''
 as $$
 declare
   candidate_duration numeric;
+  candidate_occupied_positions integer[];
 begin
   -- Serialise every supported mutation path on the owned show before the
   -- overlap read. The public RPCs also acquire this lock before their DML so
@@ -76,12 +274,21 @@ begin
       message = 'Catalogue item was not found.';
   end if;
 
+  candidate_occupied_positions :=
+    private.catalogue_item_occupied_launch_positions(
+      new.catalogue_item_id,
+      new.launch_position_index
+    );
+
   if exists (
     select 1
     from public.show_timeline_items existing_item
     where existing_item.show_id = new.show_id
       and existing_item.id <> new.id
-      and existing_item.launch_position_index = new.launch_position_index
+      and private.catalogue_item_occupied_launch_positions(
+            existing_item.catalogue_item_id,
+            existing_item.launch_position_index
+          ) && candidate_occupied_positions
       and new.time_seconds
             < existing_item.time_seconds
               + coalesce(
@@ -93,10 +300,7 @@ begin
   ) then
     raise exception using
       errcode = '23514',
-      message = format(
-        'Timeline item overlaps launch position %s.',
-        new.launch_position_index
-      );
+      message = 'Timeline item overlaps an occupied launch position.';
   end if;
 
   return new;
