@@ -49,6 +49,16 @@ import { RowActionsMenu } from '@/app/components/ui/RowActionsMenu';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -94,6 +104,12 @@ type FireworkReplayViewerProps = {
 };
 
 type CueDialogTab = 'manual' | 'ai';
+
+type CueDeletionTarget = {
+  cueId: string;
+  fireworkName: string;
+  timeLabel: string;
+};
 
 const LAUNCH_POSITION_OPTIONS = [
   { value: '0', label: 'Mortar 1 (left)' },
@@ -216,6 +232,8 @@ export function FireworkReplayViewer({
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [cuePage, setCuePage] = useState(0);
+  const [cueToDelete, setCueToDelete] = useState<CueDeletionTarget | null>(null);
+  const [deletingCueId, setDeletingCueId] = useState<string | null>(null);
   const CUES_PER_PAGE = 5;
   const formRef = useRef<HTMLFormElement>(null);
   const startedAt = useRef<number | null>(null);
@@ -227,6 +245,7 @@ export function FireworkReplayViewer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayStartedRef = useRef(false);
+  const deletingCueIdRef = useRef<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -629,12 +648,28 @@ export function FireworkReplayViewer({
     });
   }
 
-  function deleteCue(cueId: string) {
+  function requestCueDeletion(target: CueDeletionTarget) {
+    if (deletingCueIdRef.current !== null) return;
+    setCueToDelete(target);
+  }
+
+  function deleteCue() {
+    const target = cueToDelete;
+    if (!target || deletingCueIdRef.current !== null) return;
+
+    deletingCueIdRef.current = target.cueId;
+    setDeletingCueId(target.cueId);
     const formData = new FormData();
-    formData.set('cueId', cueId);
+    formData.set('cueId', target.cueId);
     formData.set('showSlug', showSlug);
     startTransition(async () => {
-      setActionResult(await deletePreviewCueAction(formData));
+      try {
+        setActionResult(await deletePreviewCueAction(formData));
+        setCueToDelete(null);
+      } finally {
+        deletingCueIdRef.current = null;
+        setDeletingCueId(null);
+      }
     });
   }
 
@@ -906,6 +941,42 @@ export function FireworkReplayViewer({
               </DialogContent>
             </Dialog>
 
+            {cueToDelete ? (
+              <AlertDialog
+                open
+                onOpenChange={(open) => {
+                  if (!open && deletingCueId === null) setCueToDelete(null);
+                }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this cue?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently removes <strong>{cueToDelete.fireworkName}</strong> at{' '}
+                      <span className="font-mono tabular-nums">{cueToDelete.timeLabel}</span> from
+                      this show.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deletingCueId !== null}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      disabled={deletingCueId !== null}
+                      aria-busy={deletingCueId !== null}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        deleteCue();
+                      }}
+                    >
+                      <span aria-live="polite">
+                        {deletingCueId === cueToDelete.cueId ? 'Deleting…' : 'Delete cue'}
+                      </span>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+
             <div className="space-y-3">
               {builderCues.length > 0 ? (
                 <div>
@@ -936,27 +1007,31 @@ export function FireworkReplayViewer({
                           const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
                           const fireworkName =
                             productNameById.get(cue.productId) ?? cue.firework.name;
+                          const cueTimeLabel = formatDuration(cue.timeSeconds);
                           const isActive = activeBaseCueIds.has(baseCueId);
                           return (
                             <tr
                               key={baseCueId}
-                              onClick={() => {
-                                setIsPlaying(false);
-                                seekTo(cue.timeSeconds, false);
-                              }}
-                              aria-current={isActive ? 'true' : undefined}
                               className={tableRowClasses(
                                 cn(
-                                  'cursor-pointer',
                                   isActive &&
                                     'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
                                 ),
                               )}
                             >
                               <td className={tableCellClasses('h-14')}>
-                                <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
-                                  {formatDuration(cue.timeSeconds)}
-                                </span>
+                                <button
+                                  type="button"
+                                  aria-label={`Seek to ${fireworkName} at ${cueTimeLabel}`}
+                                  aria-current={isActive ? 'true' : undefined}
+                                  onClick={() => {
+                                    setIsPlaying(false);
+                                    seekTo(cue.timeSeconds, false);
+                                  }}
+                                  className="text-tertiary hover:bg-muted hover:text-foreground focus-visible:ring-ring -my-2 -ml-2 inline-flex min-h-10 rounded-md px-2 font-mono text-sm font-bold tabular-nums transition-colors focus:outline-none focus-visible:ring-3"
+                                >
+                                  {cueTimeLabel}
+                                </button>
                               </td>
                               <td className={tableCellClasses('h-14')}>
                                 <TruncatedCell text={fireworkName} />
@@ -971,10 +1046,7 @@ export function FireworkReplayViewer({
                                   {mortarLabel}
                                 </span>
                               </td>
-                              <td
-                                className={tableCellClasses('h-14 text-right')}
-                                onClick={(event) => event.stopPropagation()}
-                              >
+                              <td className={tableCellClasses('h-14 text-right')}>
                                 <RowActionsMenu
                                   label="Cue actions"
                                   items={[
@@ -1006,8 +1078,13 @@ export function FireworkReplayViewer({
                                       label: 'Delete cue',
                                       icon: <Trash2 size={14} strokeWidth={2} />,
                                       destructive: true,
-                                      disabled: isPending,
-                                      onSelect: () => deleteCue(baseCueId),
+                                      disabled: isPending || deletingCueId !== null,
+                                      onSelect: () =>
+                                        requestCueDeletion({
+                                          cueId: baseCueId,
+                                          fireworkName,
+                                          timeLabel: cueTimeLabel,
+                                        }),
                                     },
                                   ]}
                                 />
