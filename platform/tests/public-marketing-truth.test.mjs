@@ -126,6 +126,27 @@ test('homepage renderer waits for viewport proximity and canvas readiness', () =
   assert.doesNotMatch(preview, /aria-label=\{active \?/);
 });
 
+test('homepage headline wraps without a global overflow mask', () => {
+  const hero = read('app/components/marketing/Hero.tsx');
+  const globalStyles = read('app/globals.css');
+  const rootLayout = read('app/layout.tsx');
+
+  assert.match(hero, /<section className="relative isolate/);
+  assert.match(hero, /absolute inset-0 -z-10 overflow-hidden/);
+  assert.match(hero, /absolute inset-0 z-\[1\] overflow-hidden/);
+  assert.match(hero, /text-\[clamp\(2\.25rem,12vw,5\.625rem\)\]/);
+  assert.match(hero, /sm:text-\[clamp\(46px,7vw,90px\)\]/);
+  assert.match(hero, /right-\[14%\] hidden sm:block/);
+
+  assert.match(globalStyles, /-webkit-box-decoration-break: clone/);
+  assert.match(globalStyles, /box-decoration-break: clone/);
+  assert.match(
+    globalStyles,
+    /@media \(min-width: 40rem\) \{[\s\S]*?\.lp-mark \{[\s\S]*?white-space: nowrap/,
+  );
+  assert.doesNotMatch(rootLayout, /overflow-x-hidden/);
+});
+
 test('the press page contains project facts instead of invented coverage', () => {
   const press = read('app/(marketing)/press/page.tsx');
 

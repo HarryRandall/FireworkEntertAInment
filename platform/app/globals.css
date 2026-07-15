@@ -378,31 +378,46 @@ body {
 }
 
 /* ============================================================
-   Marketing landing page — decorative effects (prefix: lp-)
+   Marketing landing page - decorative effects (prefix: lp-)
    Type-forward green-accent homepage. Used only under (marketing).
    ============================================================ */
 
-/* Marker highlight behind a word (the 'look here' device) */
+/* Marker highlight wraps on phones, then restores its hand-drawn sweep on larger screens. */
 .lp-mark {
   position: relative;
-  white-space: nowrap;
+  padding-inline: 0.08em;
+  border-radius: 0.32em;
+  background: color-mix(in srgb, var(--hl) 34%, transparent);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .lp-mark > span {
   position: relative;
   z-index: 1;
 }
-.lp-mark::before {
-  content: '';
-  position: absolute;
-  left: -0.1em;
-  right: -0.1em;
-  top: 0.08em;
-  bottom: 0.04em;
-  background: var(--hl);
-  opacity: 0.34;
-  border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
-  transform: rotate(-1.4deg);
-  z-index: 0;
+
+@media (min-width: 40rem) {
+  .lp-mark {
+    padding-inline: 0;
+    white-space: nowrap;
+    border-radius: 0;
+    background: transparent;
+    -webkit-box-decoration-break: slice;
+    box-decoration-break: slice;
+  }
+  .lp-mark::before {
+    content: '';
+    position: absolute;
+    left: -0.1em;
+    right: -0.1em;
+    top: 0.08em;
+    bottom: 0.04em;
+    background: var(--hl);
+    opacity: 0.34;
+    border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
+    transform: rotate(-1.4deg);
+    z-index: 0;
+  }
 }
 
 /* Doodle illustrations, inlined from SVG source assets and driven by CSS vars. */

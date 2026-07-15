@@ -32,24 +32,29 @@ export function Hero({
   secondaryLabel,
 }: HeroProps) {
   return (
-    <section className="relative overflow-hidden pt-18 pb-20 lg:pt-24">
-      <div className="pointer-events-none absolute inset-0 -z-10">
+    <section className="relative isolate pt-18 pb-20 lg:pt-24">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
         <div className="hero-rainbow-wash absolute top-[42%] left-1/2 h-[30rem] w-[min(70rem,110vw)] -translate-x-1/2 -translate-y-1/2" />
-        <div aria-hidden className="noise-overlay" />
+        <div className="noise-overlay" />
       </div>
 
-      <Doodle
-        name="fire"
-        width={230}
-        bob
-        className="absolute bottom-[12%] left-[2.5%] z-[1] hidden lg:block"
-      />
-      <Doodle
-        name="burst"
-        width={210}
-        bob
-        className="absolute top-[14%] right-[2%] z-[1] hidden lg:block"
-      />
+      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+        <Doodle
+          name="fire"
+          width={230}
+          bob
+          className="absolute bottom-[12%] left-[2.5%] hidden lg:block"
+        />
+        <Doodle
+          name="burst"
+          width={210}
+          bob
+          className="absolute top-[14%] right-[2%] hidden lg:block"
+        />
+      </div>
 
       <Container className="relative z-[2] mx-auto max-w-[880px] text-center">
         <Reveal className="mb-6 inline-flex items-center gap-2">
@@ -60,11 +65,11 @@ export function Hero({
         </Reveal>
 
         <Reveal delay={0.08}>
-          <h1 className="text-on-surface relative m-0 text-[clamp(46px,7vw,90px)] leading-[0.97] font-extrabold tracking-[-0.035em] text-balance">
+          <h1 className="text-on-surface relative m-0 text-[clamp(2.25rem,12vw,5.625rem)] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-[clamp(46px,7vw,90px)] sm:leading-[0.97]">
             {title}
             <br />
             <Mark>{highlight}</Mark>
-            <Star4 size={24} className="absolute -top-1.5 right-[14%]" />
+            <Star4 size={24} className="absolute -top-1.5 right-[14%] hidden sm:block" />
           </h1>
         </Reveal>
 
