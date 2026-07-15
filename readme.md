@@ -136,6 +136,7 @@ real secrets.
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | Optional server fallback                                  | Server-only public key fallbacks.                                                                                                      |
 | `SUPABASE_SERVICE_ROLE_KEY`                           | Feature-gated                                             | Trusted server and worker operations, admin media signing, imports, prompt lookups, and impersonation. Never expose it to the browser. |
 | `APP_ORIGIN`                                          | Yes when deployed                                         | Canonical HTTPS app origin for trusted server-generated authentication redirects.                                                      |
+| `PASSWORD_RECOVERY_SIGNING_SECRET`                    | Yes for password recovery                                 | Signs the short-lived recovery proof cookie. Generate with `openssl rand -base64 48`.                                                  |
 | `ANALYSER_URL`                                        | Yes for analysis                                          | Modal analyser URL printed by `modal deploy`.                                                                                          |
 | `ANALYSER_SHARED_SECRET`                              | Yes for analysis                                          | Bearer token shared by Next.js and the Modal secret.                                                                                   |
 | `CRON_SECRET`                                         | Required in deployed warm-up                              | Authorises `/api/admin/analyser/warm`; development allows calls without it.                                                            |
@@ -143,8 +144,14 @@ real secrets.
 | `OPENROUTER_API_KEY`                                  | Optional for default generation, required for LLM/imports | Enables optional LLM cue assignment and firework-video reconstruction.                                                                 |
 | `OPENROUTER_CUE_MODEL`                                | Optional                                                  | Cue model override, defaulting to `openai/gpt-4.1-mini`.                                                                               |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME`         | Optional                                                  | OpenRouter ranking headers.                                                                                                            |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Optional                                                  | Shared cache for dynamic server reads. Missing or placeholder values fall back to memory cache.                                        |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Required for deployed password recovery                   | Shared cache and durable recovery-verification limits. Development falls back to memory.                                               |
 | `SHOWCRAFTER_SLOW_LOG_MS`                             | Optional                                                  | Development slow-log threshold for server timing diagnostics.                                                                          |
+
+For hosted Supabase projects, keep the Reset Password email body aligned with
+`platform/supabase/templates/recovery.html`. It sends the recovery-only token
+hash to `/auth/confirm`, where the server verifies it before exposing the
+password form. Set Supabase's Site URL and redirect allow list to the same
+origin as `APP_ORIGIN` before deploying.
 
 ## Music Analysis
 

@@ -11,29 +11,50 @@ import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
 import { AuthShell } from '../components/AuthShell';
 import { FormError } from '@/app/components/ui/FormError';
+import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth-redirect';
 
 type Step = 'email' | 'password';
 
-function getSafeNextPath(nextPath: string) {
-  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/home';
-}
-
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoginPageFallback />}>
       <LoginPageInner />
     </Suspense>
   );
 }
 
+function LoginPageFallback() {
+  return (
+    <AuthShell>
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+          Welcome back
+        </h1>
+        <p
+          className="text-sm text-[color:var(--color-content-subtle)]"
+          role="status"
+          aria-live="polite"
+        >
+          Checking your sign-in link…
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
+
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get('next') || '/home';
+  const nextPath = getAuthCallbackDestination(searchParams.get('next'));
+  const callbackError = searchParams.get('error');
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    callbackError === 'confirmation_failed'
+      ? 'That confirmation link is invalid or has expired. Please sign in or request a new link.'
+      : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -61,8 +82,7 @@ function LoginPageInner() {
       setError(error.message);
       setLoading(false);
     } else {
-      const dest = getSafeNextPath(nextPath);
-      window.location.replace(dest);
+      window.location.replace(nextPath);
     }
   };
 
@@ -88,6 +108,7 @@ function LoginPageInner() {
             </label>
             <Input
               id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => {
@@ -97,10 +118,17 @@ function LoginPageInner() {
               placeholder="you@example.com"
               iconLeft={<Mail size={16} />}
               autoComplete="email"
+              spellCheck={false}
+              aria-describedby={error ? 'login-email-error' : undefined}
+              invalid={Boolean(error)}
               autoFocus
             />
           </div>
-          {error && <FormError message={error} />}
+          {error ? (
+            <div id="login-email-error" role="alert" aria-live="polite">
+              <FormError message={error} />
+            </div>
+          ) : null}
           <Button type="submit" className="w-full">
             Continue
           </Button>
@@ -137,6 +165,7 @@ function LoginPageInner() {
               </div>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => {
@@ -146,10 +175,16 @@ function LoginPageInner() {
                 placeholder="••••••••"
                 iconLeft={<Lock size={16} />}
                 autoComplete="current-password"
+                aria-describedby={error ? 'login-password-error' : undefined}
+                invalid={Boolean(error)}
                 autoFocus
               />
             </div>
-            {error && <FormError message={error} />}
+            {error ? (
+              <div id="login-password-error" role="alert" aria-live="polite">
+                <FormError message={error} />
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" loading={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
@@ -160,7 +195,7 @@ function LoginPageInner() {
       <p className="text-sm text-[color:var(--color-content-subtle)]">
         No account?{' '}
         <Link
-          href="/signup"
+          href={buildAuthPageHref('/signup', nextPath)}
           className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
         >
           Create one free

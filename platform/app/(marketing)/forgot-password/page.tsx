@@ -5,9 +5,9 @@
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Mail, CheckCircle, Sparkles } from 'lucide-react';
+import { requestPasswordRecoveryAction } from '@/app/actions/password-recovery';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
-import { createClient } from '@/utils/supabase/client';
 import { FormError } from '@/app/components/ui/FormError';
 
 export default function ForgotPasswordPage() {
@@ -15,8 +15,6 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-
-  const supabase = createClient();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,11 +24,9 @@ export default function ForgotPasswordPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
-    if (error) {
-      setError(error.message);
+    const result = await requestPasswordRecoveryAction(email);
+    if (!result.ok) {
+      setError(result.error);
       setLoading(false);
       return;
     }
@@ -41,7 +37,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell>
       {sent ? (
-        <div className="space-y-5 text-center">
+        <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
             <CheckCircle size={22} strokeWidth={1.8} />
           </div>
@@ -54,7 +50,10 @@ export default function ForgotPasswordPage() {
               <span className="font-medium text-[color:var(--color-content-emphasis)]">
                 {email}
               </span>
-              , we&apos;ve sent a password reset link. The link expires in 1 hour.
+              , a password reset link may arrive shortly. Follow the link to continue.
+            </p>
+            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+              The link is single-use. If it expires, request another one here.
             </p>
           </div>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
@@ -73,8 +72,7 @@ export default function ForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="text-sm text-[color:var(--color-content-subtle)]">
-              Enter the email associated with your ShowCrafter account and we&apos;ll send you a
-              reset link.
+              Enter the email associated with your ShowCrafter account to request a reset link.
             </p>
           </div>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -87,6 +85,7 @@ export default function ForgotPasswordPage() {
               </label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => {
@@ -96,10 +95,17 @@ export default function ForgotPasswordPage() {
                 placeholder="you@example.com"
                 iconLeft={<Mail size={16} />}
                 autoComplete="email"
+                spellCheck={false}
+                aria-describedby={error ? 'forgot-password-email-error' : undefined}
+                invalid={Boolean(error)}
                 autoFocus
               />
             </div>
-            {error && <FormError message={error} />}
+            {error ? (
+              <div id="forgot-password-email-error" role="alert" aria-live="polite">
+                <FormError message={error} />
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" loading={loading}>
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>

@@ -113,6 +113,7 @@ Variables.
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | optional fallback                                         | server                           | Server-only public key fallbacks                                                                     |
 | `SUPABASE_SERVICE_ROLE_KEY`                           | feature-gated                                             | trusted server and import worker | Admin signing, prompt lookup, imports, impersonation, and worker writes. Never expose to the browser |
 | `APP_ORIGIN`                                          | yes when deployed                                         | trusted server                   | Canonical HTTPS app origin for server-generated authentication redirects                             |
+| `PASSWORD_RECOVERY_SIGNING_SECRET`                    | yes for password recovery                                 | trusted server                   | Signs the short-lived recovery proof cookie. Generate at least 32 random bytes                       |
 | `ANALYSER_URL`                                        | yes for analysis                                          | server                           | Hosted Modal song analyser URL                                                                       |
 | `ANALYSER_SHARED_SECRET`                              | yes for analysis                                          | server and Modal                 | Bearer token shared with the Modal `showcrafter` secret                                              |
 | `CRON_SECRET`                                         | deployed warm-up                                          | server                           | Authorises `/api/admin/analyser/warm`                                                                |
@@ -120,8 +121,14 @@ Variables.
 | `OPENROUTER_API_KEY`                                  | optional for default generation, required for LLM/imports | server and import worker         | Enables LLM cue assignment and firework-video reconstruction                                         |
 | `OPENROUTER_CUE_MODEL`                                | optional                                                  | server                           | Cue model override                                                                                   |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME`         | optional                                                  | server and import worker         | OpenRouter ranking headers                                                                           |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | optional                                                  | server                           | Shared cache for dynamic reads; invalid placeholders fall back to memory                             |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | deployed password recovery                                | server                           | Shared cache and durable recovery-verification limits; development falls back to memory              |
 | `SHOWCRAFTER_SLOW_LOG_MS`                             | optional                                                  | server                           | Development timing log threshold                                                                     |
+
+Hosted Supabase password-recovery email content must stay aligned with
+`platform/supabase/templates/recovery.html`. The template sends a recovery-only
+token hash to `/auth/confirm`; the server must verify it before exposing the
+password form. Keep Supabase's Site URL and redirect allow list aligned with
+`APP_ORIGIN` in deployed environments.
 
 ## Database
 

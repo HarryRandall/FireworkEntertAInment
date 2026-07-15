@@ -3,17 +3,52 @@
 /** Signup page (Supabase email/password sign-up). */
 
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState, type FormEvent } from 'react';
 import { Mail, Lock, User, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
 import { AuthShell } from '../components/AuthShell';
 import { FormError } from '@/app/components/ui/FormError';
+import {
+  buildAuthCallbackUrl,
+  buildAuthPageHref,
+  getAuthCallbackDestination,
+} from '@/lib/auth-redirect';
 
 type Step = 'email' | 'details' | 'confirm';
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupPageFallback />}>
+      <SignupPageInner />
+    </Suspense>
+  );
+}
+
+function SignupPageFallback() {
+  return (
+    <AuthShell>
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+          Create your account
+        </h1>
+        <p
+          className="text-sm text-[color:var(--color-content-subtle)]"
+          role="status"
+          aria-live="polite"
+        >
+          Preparing account creation…
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
+
+function SignupPageInner() {
+  const searchParams = useSearchParams();
+  const nextPath = getAuthCallbackDestination(searchParams.get('next'));
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
@@ -41,8 +76,8 @@ export default function SignupPage() {
       setError('Please enter your full name.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (password !== confirmPassword) {
@@ -55,7 +90,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: buildAuthCallbackUrl(window.location.origin, nextPath),
       },
     });
     if (error) {
@@ -69,7 +104,7 @@ export default function SignupPage() {
   return (
     <AuthShell>
       {step === 'confirm' ? (
-        <div className="space-y-5 text-center">
+        <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
             <CheckCircle size={22} strokeWidth={1.8} />
           </div>
@@ -84,11 +119,14 @@ export default function SignupPage() {
               </span>
               . Click it to activate your account.
             </p>
+            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+              For security, open the link in this browser on this device.
+            </p>
           </div>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
             Already confirmed?{' '}
             <Link
-              href="/login"
+              href={buildAuthPageHref('/login', nextPath)}
               className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
             >
               Sign in
@@ -117,6 +155,7 @@ export default function SignupPage() {
                 </label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -126,10 +165,17 @@ export default function SignupPage() {
                   placeholder="you@example.com"
                   iconLeft={<Mail size={16} />}
                   autoComplete="email"
+                  spellCheck={false}
+                  aria-describedby={error ? 'signup-email-error' : undefined}
+                  invalid={Boolean(error)}
                   autoFocus
                 />
               </div>
-              {error && <FormError message={error} />}
+              {error ? (
+                <div id="signup-email-error" role="alert" aria-live="polite">
+                  <FormError message={error} />
+                </div>
+              ) : null}
               <Button type="submit" className="w-full">
                 Continue
               </Button>
@@ -158,6 +204,7 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="fullName"
+                    name="fullName"
                     type="text"
                     value={fullName}
                     onChange={(e) => {
@@ -167,6 +214,8 @@ export default function SignupPage() {
                     placeholder="Your full name"
                     iconLeft={<User size={16} />}
                     autoComplete="name"
+                    aria-describedby={error ? 'signup-details-error' : undefined}
+                    invalid={error === 'Please enter your full name.'}
                     autoFocus
                   />
                 </div>
@@ -179,15 +228,20 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       setError(null);
                     }}
-                    placeholder="Create a password"
+                    placeholder="At least 8 characters"
                     iconLeft={<Lock size={16} />}
                     autoComplete="new-password"
+                    aria-describedby={error ? 'signup-details-error' : undefined}
+                    minLength={8}
+                    maxLength={128}
+                    invalid={error === 'Password must be at least 8 characters.'}
                   />
                 </div>
                 <div className="space-y-2">
@@ -199,6 +253,7 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => {
@@ -208,9 +263,17 @@ export default function SignupPage() {
                     placeholder="Repeat your password"
                     iconLeft={<Lock size={16} />}
                     autoComplete="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    aria-describedby={error ? 'signup-details-error' : undefined}
+                    invalid={error === 'Passwords do not match.'}
                   />
                 </div>
-                {error && <FormError message={error} />}
+                {error ? (
+                  <div id="signup-details-error" role="alert" aria-live="polite">
+                    <FormError message={error} />
+                  </div>
+                ) : null}
                 <Button type="submit" className="w-full" loading={loading}>
                   {loading ? 'Creating account…' : 'Create account'}
                 </Button>
@@ -221,7 +284,7 @@ export default function SignupPage() {
           <p className="text-sm text-[color:var(--color-content-subtle)]">
             Already have an account?{' '}
             <Link
-              href="/login"
+              href={buildAuthPageHref('/login', nextPath)}
               className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
             >
               Sign in

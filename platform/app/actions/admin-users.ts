@@ -14,13 +14,26 @@ import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server';
 import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
 import { grantAiCredits } from '@/lib/ai-credits.server';
+import { getTrustedAppOrigin } from '@/lib/app-origin';
+import { sendPasswordRecoveryEmail } from '@/lib/password-recovery-email.server';
+import { reservePasswordRecoveryEmailRequest } from '@/lib/password-recovery-rate-limit.server';
 
 type Result = { ok: true } | { ok: false; error: string };
+
+type UserStatusRpcClient = {
+  rpc(
+    functionName: 'set_user_status',
+    args: { p_user_id: string; p_status: 'active' | 'suspended' },
+  ): PromiseLike<{ data: string | null; error: { message: string } | null }>;
+};
 
 const SELF_LOCKOUT_PERMISSION_KEYS = new Set(['admin.view', 'admin.manage_users']);
 
 const SetStatusSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z
+    .string()
+    .uuid()
+    .transform((value) => value.toLowerCase()),
   status: z.enum(['active', 'suspended']),
 });
 
@@ -45,26 +58,6 @@ const GrantAiCreditsSchema = z.object({
   note: z.string().trim().max(280).optional(),
 });
 
-function trustedAppOrigin(): string | null {
-  const configured = process.env.APP_ORIGIN?.trim();
-  const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
-  const candidate =
-    configured ||
-    (vercelProductionHost ? `https://${vercelProductionHost}` : null) ||
-    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null);
-  if (!candidate) return null;
-
-  try {
-    const url = new URL(candidate);
-    const isLocalHttp =
-      url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname);
-    if (url.username || url.password || (url.protocol !== 'https:' && !isLocalHttp)) return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
-
 /** Set a user's `users.status` (active / suspended); refuses to suspend the current admin. */
 export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>): Promise<Result> {
   const admin = await requirePermission('admin.manage_users');
@@ -76,11 +69,15 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
   }
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from('users')
-    .update({ status: parsed.data.status })
-    .eq('id', parsed.data.userId);
+  const statusRpc = supabase as unknown as UserStatusRpcClient;
+  const { data: updatedUserId, error } = await statusRpc.rpc('set_user_status', {
+    p_user_id: parsed.data.userId,
+    p_status: parsed.data.status,
+  });
   if (error) return { ok: false, error: error.message };
+  if (updatedUserId !== parsed.data.userId) {
+    return { ok: false, error: 'Could not update the user status.' };
+  }
 
   await Promise.all([
     invalidateAdminUsersCache(parsed.data.userId),
@@ -138,22 +135,35 @@ export async function sendUserPasswordResetAction(
   const parsed = DeleteUserSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
-  const supabase = createClient(await cookies());
-  const { data: target, error: targetError } = await supabase
-    .from('users')
-    .select('email')
-    .eq('id', parsed.data.userId)
-    .maybeSingle();
+  const service = createServiceRoleSupabase();
+  if (!service) return { ok: false, error: 'Service role is not configured.' };
+  const { data: target, error: targetError } = await service.auth.admin.getUserById(
+    parsed.data.userId,
+  );
   if (targetError) return { ok: false, error: targetError.message };
-  if (!target?.email) return { ok: false, error: 'This user does not have an email address.' };
+  if (!target.user?.email) {
+    return { ok: false, error: 'This user does not have an email address.' };
+  }
 
-  const appOrigin = trustedAppOrigin();
+  const appOrigin = getTrustedAppOrigin();
   if (!appOrigin) {
     return { ok: false, error: 'Password reset is unavailable until APP_ORIGIN is configured.' };
   }
-  const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-  const { error } = await supabase.auth.resetPasswordForEmail(target.email, { redirectTo });
-  if (error) return { ok: false, error: error.message };
+  const allowance = await reservePasswordRecoveryEmailRequest(target.user.email);
+  if (!allowance.ok) {
+    return {
+      ok: false,
+      error:
+        allowance.reason === 'rate_limited'
+          ? 'Password reset requests are temporarily limited. Try again later.'
+          : 'Password reset is unavailable until shared recovery protection is configured.',
+    };
+  }
+  const result = await sendPasswordRecoveryEmail(target.user.email, appOrigin);
+  if (!result.ok) {
+    console.error('[admin-users] password reset email failed:', result.error);
+    return { ok: false, error: 'Could not send the password reset email.' };
+  }
   return { ok: true };
 }
 

@@ -173,9 +173,8 @@ test('admin mutations harden self actions roles supplier URLs and product durati
   assert.match(users, /\.from\(['"]user_roles['"]\)\.upsert\([\s\S]*onConflict: ['"]user_id['"]/);
   assert.doesNotMatch(users, /\.from\(['"]user_roles['"]\)[\s\S]{0,80}\.delete\(\)/);
   assert.match(users, /sendUserPasswordResetAction/);
-  assert.match(users, /resetPasswordForEmail/);
-  assert.match(users, /process\.env\.APP_ORIGIN/);
-  assert.match(users, /VERCEL_PROJECT_PRODUCTION_URL/);
+  assert.match(users, /sendPasswordRecoveryEmail/);
+  assert.match(users, /getTrustedAppOrigin/);
   assert.doesNotMatch(users, /x-forwarded-host|requestHeaders\.get\(['"]host/);
   assert.match(users, /service\.auth\.admin\.deleteUser/);
   assert.match(suppliers, /url\.protocol === ['"]http:['"] \|\| url\.protocol === ['"]https:['"]/);
