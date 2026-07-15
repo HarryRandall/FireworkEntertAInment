@@ -18,7 +18,7 @@ export function ShowTabs({ id }: Props) {
   ];
 
   return (
-    <nav className="flex flex-wrap items-center gap-x-8 gap-y-2">
+    <nav aria-label="Show sections" className="flex flex-wrap items-center gap-x-8 gap-y-2">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (
@@ -26,8 +26,9 @@ export function ShowTabs({ id }: Props) {
             key={tab.href}
             href={tab.href}
             prefetch
+            aria-current={active ? 'page' : undefined}
             className={cn(
-              'pb-4 text-sm font-medium transition-colors',
+              'focus-visible:ring-ring/50 rounded-sm pb-4 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-3 focus-visible:ring-offset-2',
               active
                 ? 'border-primary text-primary border-b-2 font-semibold'
                 : 'text-on-surface-variant hover:text-on-surface border-b-2 border-transparent',

@@ -1,5 +1,5 @@
 /**
- * ShowGuideList — step-by-step firing guide rendered on the show
+ * ShowGuideList is the cue-by-cue plan rendered on the show
  * detail route inside the `/app` group. Pure presentation; the
  * upstream server component flattens multi-shot products into cues.
  */
@@ -26,12 +26,12 @@ export function ShowGuideList({ steps }: ShowGuideListProps) {
     <Card elevation="low" radius="md" className="space-y-6 p-8">
       <SectionHeader
         title="Show Guide"
-        description="Step-by-step firing instructions, timestamped to your song."
+        description="A cue-by-cue plan, timestamped to your song for review with your operator."
       />
 
       {steps.length === 0 ? (
         <EmptyNotice>
-          No cues yet. They&apos;ll appear here once the AI has choreographed your show.
+          No cues yet. They&apos;ll appear here once show generation finishes.
         </EmptyNotice>
       ) : (
         <ol className="space-y-0">
