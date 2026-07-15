@@ -40,7 +40,10 @@ test('Explore cards expose their visible facts and retain posters through previe
   assert.match(card, /template\.effectsCount === 1 \? 'effect' : 'effects'/);
   assert.match(card, /Estimated retail/);
   assert.match(card, /isPreviewLoading \? 'Loading template preview…' : ''/);
-  assert.match(card, /const isPreviewLoading = isPreviewActive && !isPreviewRevealed/);
+  assert.match(
+    card,
+    /preview\?\.pendingId === previewId \|\| \(isPreviewActive && !isPreviewRevealed\)/,
+  );
   assert.match(card, /isPreviewRevealed \? 'opacity-0' : 'opacity-100'/);
   assert.doesNotMatch(card, /isPreviewHovering/);
 });
