@@ -189,11 +189,15 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       if (!cues) {
         try {
           cues = await getShowReplayPreviewCues(show.id);
+          cueCacheRef.current.set(show.id, cues);
         } catch (error) {
           console.error('[show-replay] cue fetch failed', error);
-          cues = [];
+          if (requestSerialRef.current !== serial) return;
+          setPending((current) => (current && current.id === id ? null : current));
+          setActive(null);
+          parkOverlay();
+          return;
         }
-        cueCacheRef.current.set(show.id, cues);
       }
 
       if (requestSerialRef.current !== serial) return;
@@ -262,8 +266,11 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       return;
     }
 
-    let raf = 0;
-    const follow = () => {
+    // Scroll-like movement cancels the preview above. Remeasure only when the
+    // card or viewport resizes so overlay tracking does not force layout each frame.
+    let frame = 0;
+    const positionOverlay = () => {
+      frame = 0;
       if (!active.element.isConnected) {
         parkOverlay();
         return;
@@ -277,7 +284,6 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         rect.left >= window.innerWidth
       ) {
         overlay.style.opacity = '0';
-        raf = requestAnimationFrame(follow);
         return;
       }
 
@@ -286,12 +292,25 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       overlay.style.width = `${rect.width}px`;
       overlay.style.height = `${rect.height}px`;
       overlay.style.clipPath = 'inset(0 round 0.75rem)';
-      raf = requestAnimationFrame(follow);
     };
 
-    follow();
-    return () => cancelAnimationFrame(raf);
-  }, [active, parkOverlay]);
+    const schedulePosition = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(positionOverlay);
+    };
+
+    schedulePosition();
+    window.addEventListener('resize', schedulePosition);
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedulePosition);
+    resizeObserver?.observe(active.element);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', schedulePosition);
+      resizeObserver?.disconnect();
+    };
+  }, [active, parkOverlay, ready]);
 
   return (
     <ShowReplayPreviewContext.Provider
