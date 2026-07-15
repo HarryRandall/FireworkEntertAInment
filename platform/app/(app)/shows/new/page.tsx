@@ -789,7 +789,6 @@ export default function NewShowPage() {
                       id="show-description"
                       name="description"
                       rows={2}
-                      autoFocus
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       aria-describedby="show-description-hint"

@@ -136,6 +136,20 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
             </tr>
           </thead>
           <tbody>
+            {paginated.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className={tableCellClasses(
+                    'text-muted-foreground py-12 text-center text-sm font-normal',
+                  )}
+                >
+                  {query || roleFilter || statusFilter
+                    ? 'No users match the current filters.'
+                    : 'No users have been added yet.'}
+                </td>
+              </tr>
+            ) : null}
             {paginated.map((user) => {
               const href = `/admin/users/${user.id}`;
               const primaryRole = user.roles[0] ?? 'user';

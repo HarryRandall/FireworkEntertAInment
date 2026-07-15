@@ -753,7 +753,7 @@ export function FireworkReplayViewer({
             {replayReady ? (
               <div
                 className={cn(
-                  'absolute inset-x-0 bottom-6 z-20 transition-all duration-300',
+                  'absolute inset-x-0 bottom-6 z-20 transition-opacity duration-300 motion-reduce:transition-none',
                   playbackControlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
