@@ -8,11 +8,16 @@ import { Button } from '@/app/components/ui/Button';
 import { FormError } from '@/app/components/ui/FormError';
 import { Input } from '@/app/components/ui/Input';
 
+type ResetPasswordError = {
+  message: string;
+  field: 'password' | 'confirmPassword' | null;
+};
+
 export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ResetPasswordError | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -20,15 +25,21 @@ export function ResetPasswordForm() {
     setError(null);
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError({ message: 'Password must be at least 8 characters.', field: 'password' });
+      const passwordInput = event.currentTarget.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     if (password.length > 128) {
-      setError('Password is too long.');
+      setError({ message: 'Password is too long.', field: 'password' });
+      const passwordInput = event.currentTarget.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError({ message: 'Passwords do not match.', field: 'confirmPassword' });
+      const confirmPasswordInput = event.currentTarget.elements.namedItem('confirmPassword');
+      if (confirmPasswordInput instanceof HTMLInputElement) confirmPasswordInput.focus();
       return;
     }
 
@@ -36,7 +47,7 @@ export function ResetPasswordForm() {
       try {
         const result = await updateRecoveredPasswordAction({ password, confirmPassword });
         if (!result.ok) {
-          setError(result.error);
+          setError({ message: result.error, field: null });
           return;
         }
 
@@ -44,7 +55,7 @@ export function ResetPasswordForm() {
         router.refresh();
       } catch (actionError) {
         console.error('[password-recovery] action failed:', actionError);
-        setError('Could not update your password. Please try again.');
+        setError({ message: 'Could not update your password. Please try again.', field: null });
       }
     });
   };
@@ -68,12 +79,12 @@ export function ResetPasswordForm() {
             setError(null);
           }}
           placeholder="At least 8 characters"
-          iconLeft={<Lock size={16} />}
+          iconLeft={<Lock size={16} aria-hidden="true" />}
           autoComplete="new-password"
           minLength={8}
           maxLength={128}
-          aria-describedby={error ? 'password-recovery-error' : undefined}
-          invalid={Boolean(error)}
+          aria-describedby={error?.field === 'password' ? 'password-recovery-error' : undefined}
+          invalid={error?.field === 'password'}
           autoFocus
         />
       </div>
@@ -94,17 +105,19 @@ export function ResetPasswordForm() {
             setError(null);
           }}
           placeholder="Repeat your password"
-          iconLeft={<Lock size={16} />}
+          iconLeft={<Lock size={16} aria-hidden="true" />}
           autoComplete="new-password"
           minLength={8}
           maxLength={128}
-          aria-describedby={error ? 'password-recovery-error' : undefined}
-          invalid={Boolean(error)}
+          aria-describedby={
+            error?.field === 'confirmPassword' ? 'password-recovery-error' : undefined
+          }
+          invalid={error?.field === 'confirmPassword'}
         />
       </div>
       {error ? (
         <div id="password-recovery-error" role="alert" aria-live="polite">
-          <FormError message={error} />
+          <FormError message={error.message} />
         </div>
       ) : null}
       <Button type="submit" className="w-full" loading={isPending}>

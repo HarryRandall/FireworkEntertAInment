@@ -14,6 +14,10 @@ import { FormError } from '@/app/components/ui/FormError';
 import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth-redirect';
 
 type Step = 'email' | 'password';
+type LoginError = {
+  message: string;
+  field: Step | null;
+};
 
 export default function LoginPage() {
   return (
@@ -46,13 +50,18 @@ function LoginPageInner() {
   const searchParams = useSearchParams();
   const nextPath = getAuthCallbackDestination(searchParams.get('next'));
   const callbackError = searchParams.get('error');
+  const accountDeleted = searchParams.get('deleted') === '1';
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(() =>
+  const [error, setError] = useState<LoginError | null>(() =>
     callbackError === 'confirmation_failed'
-      ? 'That confirmation link is invalid or has expired. Please sign in or request a new link.'
+      ? {
+          message:
+            'That confirmation link is invalid or has expired. Sign in if your account is already confirmed.',
+          field: null,
+        }
       : null,
   );
   const [loading, setLoading] = useState(false);
@@ -63,7 +72,9 @@ function LoginPageInner() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setStep('password');
@@ -71,18 +82,29 @@ function LoginPageInner() {
 
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setError(null);
     if (!password) {
-      setError('Please enter your password.');
+      setError({ message: 'Please enter your password.', field: 'password' });
+      const passwordInput = form.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError({ message: signInError.message, field: 'password' });
+        const passwordInput = form.elements.namedItem('password');
+        if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
+        setLoading(false);
+        return;
+      }
       window.location.replace(nextPath);
+    } catch (signInError) {
+      console.error('[auth] sign-in failed:', signInError);
+      setError({ message: 'Could not sign in. Check your connection and try again.', field: null });
+      setLoading(false);
     }
   };
 
@@ -96,6 +118,15 @@ function LoginPageInner() {
           {step === 'email' ? 'Sign in to your ShowCrafter account' : email}
         </p>
       </div>
+
+      {accountDeleted && step === 'email' ? (
+        <p
+          className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] px-3.5 py-2.5 text-sm text-[color:var(--color-status-success)]"
+          role="status"
+        >
+          Your account has been deleted and you have been signed out.
+        </p>
+      ) : null}
 
       {step === 'email' ? (
         <form onSubmit={handleEmailContinue} noValidate className="space-y-4">
@@ -116,17 +147,17 @@ function LoginPageInner() {
                 setError(null);
               }}
               placeholder="you@example.com"
-              iconLeft={<Mail size={16} />}
+              iconLeft={<Mail size={16} aria-hidden="true" />}
               autoComplete="email"
               spellCheck={false}
-              aria-describedby={error ? 'login-email-error' : undefined}
-              invalid={Boolean(error)}
+              aria-describedby={error?.field === 'email' ? 'login-email-error' : undefined}
+              invalid={error?.field === 'email'}
               autoFocus
             />
           </div>
           {error ? (
             <div id="login-email-error" role="alert" aria-live="polite">
-              <FormError message={error} />
+              <FormError message={error.message} />
             </div>
           ) : null}
           <Button type="submit" className="w-full">
@@ -143,7 +174,7 @@ function LoginPageInner() {
             }}
             className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={14} aria-hidden="true" />
             Use a different email
           </button>
 
@@ -173,16 +204,16 @@ function LoginPageInner() {
                   setError(null);
                 }}
                 placeholder="••••••••"
-                iconLeft={<Lock size={16} />}
+                iconLeft={<Lock size={16} aria-hidden="true" />}
                 autoComplete="current-password"
-                aria-describedby={error ? 'login-password-error' : undefined}
-                invalid={Boolean(error)}
+                aria-describedby={error?.field === 'password' ? 'login-password-error' : undefined}
+                invalid={error?.field === 'password'}
                 autoFocus
               />
             </div>
             {error ? (
               <div id="login-password-error" role="alert" aria-live="polite">
-                <FormError message={error} />
+                <FormError message={error.message} />
               </div>
             ) : null}
             <Button type="submit" className="w-full" loading={loading}>

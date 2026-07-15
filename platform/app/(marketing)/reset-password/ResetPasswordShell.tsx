@@ -10,7 +10,7 @@ export function ResetPasswordShell({ children }: { children: ReactNode }) {
         className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-          <Sparkles size={14} strokeWidth={2.2} />
+          <Sparkles size={14} strokeWidth={2.2} aria-hidden="true" />
         </span>
         ShowCrafter
       </Link>

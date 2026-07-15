@@ -252,7 +252,7 @@ test('PKCE signup restrictions and form feedback are exposed accessibly', () => 
 
   for (const source of [login, signup, forgotPassword]) {
     assert.match(source, /aria-describedby=/);
-    assert.match(source, /invalid=\{Boolean\(error\)\}/);
+    assert.match(source, /invalid=\{error\?\.field ===/);
   }
 
   for (const source of [signup, forgotPassword]) {
@@ -261,6 +261,36 @@ test('PKCE signup restrictions and form feedback are exposed accessibly', () => 
   assert.match(signup, /For security, open the link in this browser on this device/);
   assert.doesNotMatch(forgotPassword, /open the link in this browser on this device/);
   assert.match(forgotPassword, /The link is single-use/);
+});
+
+test('auth forms expose precise field errors and recover from thrown requests', () => {
+  const login = read('app/(auth)/login/page.tsx');
+  const signup = read('app/(auth)/signup/page.tsx');
+  const forgotPassword = read('app/(marketing)/forgot-password/page.tsx');
+  const resetPassword = read('app/(marketing)/reset-password/ResetPasswordForm.tsx');
+  const authShell = read('app/(auth)/components/AuthShell.tsx');
+
+  assert.match(authShell, /<SkipLink \/>/);
+  assert.match(authShell, /<main[\s\S]*id="main-content"[\s\S]*tabIndex=\{-1\}/);
+
+  for (const source of [login, signup, forgotPassword, resetPassword]) {
+    assert.match(source, /field: .+ \| null/);
+    assert.match(source, /role="alert" aria-live="polite"/);
+    assert.match(source, /instanceof HTMLInputElement[\s\S]*\.focus\(\)/);
+    assert.match(source, /catch \(/);
+  }
+
+  assert.match(
+    login,
+    /setLoading\(false\)[\s\S]*return;[\s\S]*window\.location\.replace\(nextPath\)/,
+  );
+  assert.doesNotMatch(
+    login,
+    /window\.location\.replace\(nextPath\)[\s\S]*finally[\s\S]*setLoading\(false\)/,
+  );
+  assert.match(login, /Your account has been deleted and you have been signed out/);
+  assert.match(login, /confirmation link is invalid or has expired/);
+  assert.doesNotMatch(login, /request a new link/);
 });
 
 test('the recovery signing secret is documented as server-only configuration', () => {

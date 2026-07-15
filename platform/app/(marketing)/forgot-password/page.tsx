@@ -10,9 +10,14 @@ import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { FormError } from '@/app/components/ui/FormError';
 
+type ForgotPasswordError = {
+  message: string;
+  field: 'email' | null;
+};
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ForgotPasswordError | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -20,18 +25,28 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setLoading(true);
-    const result = await requestPasswordRecoveryAction(email);
-    if (!result.ok) {
-      setError(result.error);
+    try {
+      const result = await requestPasswordRecoveryAction(email);
+      if (!result.ok) {
+        setError({ message: result.error, field: null });
+        return;
+      }
+      setSent(true);
+    } catch (requestError) {
+      console.error('[password-recovery] request failed:', requestError);
+      setError({
+        message: 'Could not request a reset link. Check your connection and try again.',
+        field: null,
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-    setSent(true);
-    setLoading(false);
   };
 
   return (
@@ -39,7 +54,7 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
-            <CheckCircle size={22} strokeWidth={1.8} />
+            <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
@@ -93,17 +108,19 @@ export default function ForgotPasswordPage() {
                   setError(null);
                 }}
                 placeholder="you@example.com"
-                iconLeft={<Mail size={16} />}
+                iconLeft={<Mail size={16} aria-hidden="true" />}
                 autoComplete="email"
                 spellCheck={false}
-                aria-describedby={error ? 'forgot-password-email-error' : undefined}
-                invalid={Boolean(error)}
+                aria-describedby={
+                  error?.field === 'email' ? 'forgot-password-email-error' : undefined
+                }
+                invalid={error?.field === 'email'}
                 autoFocus
               />
             </div>
             {error ? (
               <div id="forgot-password-email-error" role="alert" aria-live="polite">
-                <FormError message={error} />
+                <FormError message={error.message} />
               </div>
             ) : null}
             <Button type="submit" className="w-full" loading={loading}>
@@ -133,7 +150,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
         className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-          <Sparkles size={14} strokeWidth={2.2} />
+          <Sparkles size={14} strokeWidth={2.2} aria-hidden="true" />
         </span>
         ShowCrafter
       </Link>

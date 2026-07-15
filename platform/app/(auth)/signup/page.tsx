@@ -18,6 +18,11 @@ import {
 } from '@/lib/auth-redirect';
 
 type Step = 'email' | 'details' | 'confirm';
+type SignupErrorField = 'email' | 'fullName' | 'password' | 'confirmPassword';
+type SignupError = {
+  message: string;
+  field: SignupErrorField | null;
+};
 
 export default function SignupPage() {
   return (
@@ -54,7 +59,7 @@ function SignupPageInner() {
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SignupError | null>(null);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -63,7 +68,9 @@ function SignupPageInner() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setStep('details');
@@ -71,33 +78,49 @@ function SignupPageInner() {
 
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setError(null);
     if (!fullName.trim()) {
-      setError('Please enter your full name.');
+      setError({ message: 'Please enter your full name.', field: 'fullName' });
+      const fullNameInput = form.elements.namedItem('fullName');
+      if (fullNameInput instanceof HTMLInputElement) fullNameInput.focus();
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError({ message: 'Password must be at least 8 characters.', field: 'password' });
+      const passwordInput = form.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError({ message: 'Passwords do not match.', field: 'confirmPassword' });
+      const confirmPasswordInput = form.elements.namedItem('confirmPassword');
+      if (confirmPasswordInput instanceof HTMLInputElement) confirmPasswordInput.focus();
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: buildAuthCallbackUrl(window.location.origin, nextPath),
-      },
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName.trim() },
+          emailRedirectTo: buildAuthCallbackUrl(window.location.origin, nextPath),
+        },
+      });
+      if (signUpError) {
+        setError({ message: signUpError.message, field: null });
+        return;
+      }
       setStep('confirm');
+    } catch (signUpError) {
+      console.error('[auth] sign-up failed:', signUpError);
+      setError({
+        message: 'Could not create your account. Check your connection and try again.',
+        field: null,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,7 +129,7 @@ function SignupPageInner() {
       {step === 'confirm' ? (
         <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
-            <CheckCircle size={22} strokeWidth={1.8} />
+            <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
@@ -163,17 +186,17 @@ function SignupPageInner() {
                     setError(null);
                   }}
                   placeholder="you@example.com"
-                  iconLeft={<Mail size={16} />}
+                  iconLeft={<Mail size={16} aria-hidden="true" />}
                   autoComplete="email"
                   spellCheck={false}
-                  aria-describedby={error ? 'signup-email-error' : undefined}
-                  invalid={Boolean(error)}
+                  aria-describedby={error?.field === 'email' ? 'signup-email-error' : undefined}
+                  invalid={error?.field === 'email'}
                   autoFocus
                 />
               </div>
               {error ? (
                 <div id="signup-email-error" role="alert" aria-live="polite">
-                  <FormError message={error} />
+                  <FormError message={error.message} />
                 </div>
               ) : null}
               <Button type="submit" className="w-full">
@@ -190,7 +213,7 @@ function SignupPageInner() {
                 }}
                 className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
               >
-                <ArrowLeft size={14} />
+                <ArrowLeft size={14} aria-hidden="true" />
                 Use a different email
               </button>
 
@@ -212,10 +235,12 @@ function SignupPageInner() {
                       setError(null);
                     }}
                     placeholder="Your full name"
-                    iconLeft={<User size={16} />}
+                    iconLeft={<User size={16} aria-hidden="true" />}
                     autoComplete="name"
-                    aria-describedby={error ? 'signup-details-error' : undefined}
-                    invalid={error === 'Please enter your full name.'}
+                    aria-describedby={
+                      error?.field === 'fullName' ? 'signup-details-error' : undefined
+                    }
+                    invalid={error?.field === 'fullName'}
                     autoFocus
                   />
                 </div>
@@ -236,12 +261,14 @@ function SignupPageInner() {
                       setError(null);
                     }}
                     placeholder="At least 8 characters"
-                    iconLeft={<Lock size={16} />}
+                    iconLeft={<Lock size={16} aria-hidden="true" />}
                     autoComplete="new-password"
-                    aria-describedby={error ? 'signup-details-error' : undefined}
+                    aria-describedby={
+                      error?.field === 'password' ? 'signup-details-error' : undefined
+                    }
                     minLength={8}
                     maxLength={128}
-                    invalid={error === 'Password must be at least 8 characters.'}
+                    invalid={error?.field === 'password'}
                   />
                 </div>
                 <div className="space-y-2">
@@ -261,17 +288,19 @@ function SignupPageInner() {
                       setError(null);
                     }}
                     placeholder="Repeat your password"
-                    iconLeft={<Lock size={16} />}
+                    iconLeft={<Lock size={16} aria-hidden="true" />}
                     autoComplete="new-password"
                     minLength={8}
                     maxLength={128}
-                    aria-describedby={error ? 'signup-details-error' : undefined}
-                    invalid={error === 'Passwords do not match.'}
+                    aria-describedby={
+                      error?.field === 'confirmPassword' ? 'signup-details-error' : undefined
+                    }
+                    invalid={error?.field === 'confirmPassword'}
                   />
                 </div>
                 {error ? (
                   <div id="signup-details-error" role="alert" aria-live="polite">
-                    <FormError message={error} />
+                    <FormError message={error.message} />
                   </div>
                 ) : null}
                 <Button type="submit" className="w-full" loading={loading}>
