@@ -27,6 +27,8 @@ test('home and My shows retain one primary heading through loading', () => {
   const homeLoading = read('app/components/app/HomeLoadingSkeleton.tsx');
   const shows = read('app/(app)/shows/page.tsx');
   const showsLoading = read('app/(app)/shows/loading.tsx');
+  const showTabs = read('app/(app)/shows/[id]/ShowTabs.tsx');
+  const showSections = read('app/(app)/shows/[id]/show-detail-sections.ts');
 
   assert.match(home, /<PromptHero headingLevel="h1"/);
   assert.match(homeLoading, /<PromptHero headingLevel="h1"/);
@@ -34,8 +36,9 @@ test('home and My shows retain one primary heading through loading', () => {
     assert.match(source, /<h1[^>]*>My shows<\/h1>/);
     assert.match(source, /Search, preview and continue editing your saved show plans/);
   }
-  assert.match(showsLoading, /aria-label="Show sections"/);
+  assert.match(showsLoading, /<ShowTabs id=\{showSlug\} prefetch=\{false\} \/>/);
+  assert.match(showTabs, /aria-label="Show sections"/);
   for (const label of ['Live preview', 'Shopping list', 'Show guide', 'Song context']) {
-    assert.match(showsLoading, new RegExp(label));
+    assert.match(showSections, new RegExp(label));
   }
 });

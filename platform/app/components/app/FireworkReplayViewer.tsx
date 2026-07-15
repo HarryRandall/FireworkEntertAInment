@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * FireworkReplayViewer — interactive replay + cue editor used on the
+ * FireworkReplayViewer: interactive replay and cue editor used on the
  * authenticated show detail route. Wraps the 3D canvas with audio sync
  * controls and server actions for adding / deleting preview cues.
  * Cue mutations go through preview-cues server actions which reject
@@ -151,7 +151,7 @@ function EmptyPreview() {
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8 text-center">
       <div className="border-outline-variant/15 bg-surface-container-low/85 max-w-md rounded-2xl border p-6 backdrop-blur">
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
-        <h3 className="text-on-surface text-xl font-bold">No typed fireworks yet</h3>
+        <h2 className="text-on-surface text-xl font-bold">No typed fireworks yet</h2>
         <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
           Add a cue below to preview the show.
         </p>
@@ -279,7 +279,7 @@ export function FireworkReplayViewer({
       const drift = Math.abs(audio.currentTime - elapsedRef.current);
       if (drift > 0.25) audio.currentTime = elapsedRef.current;
       void audio.play().catch(() => {
-        /* autoplay blocked or seek interrupted — ignore */
+        /* Autoplay was blocked or seeking was interrupted, so playback stays paused. */
       });
     } else {
       audio.pause();
@@ -287,8 +287,8 @@ export function FireworkReplayViewer({
   }, [isPlaying]);
 
   // Keep paused audio aligned with the playhead (e.g. cue-row jumps). While a
-  // drag is mid-flight the media element is left alone — seeking it at 15Hz
-  // forces repeated decodes — and commitScrub seeks it once on release.
+  // drag is mid-flight the media element is left alone, because seeking it at
+  // 15 Hz forces repeated decodes. commitScrub seeks it once on release.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || isPlaying) return;
@@ -774,7 +774,7 @@ export function FireworkReplayViewer({
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
               <div>
                 <Eyebrow tone="muted">Cue builder</Eyebrow>
-                <h3 className="text-on-surface mt-2 text-2xl font-bold">Cues</h3>
+                <h2 className="text-on-surface mt-2 text-2xl font-bold">Cues</h2>
               </div>
               <div className="flex items-center gap-3">
                 {actionResult ? (
@@ -1153,7 +1153,7 @@ export function FireworkReplayViewer({
             <div className="space-y-2">
               <StatChip
                 label="Total cost"
-                value={totalCents != null ? formatTotal(totalCents) : '—'}
+                value={totalCents != null ? formatTotal(totalCents) : '-'}
               />
               <StatChip label="Fireworks" value={String(builderCues.length)} />
               <StatChip label="Length" value={formatDuration(duration)} />
@@ -1169,10 +1169,10 @@ export function FireworkReplayViewer({
                 </div>
                 <div>
                   <Eyebrow tone="muted">Refine with prompt</Eyebrow>
-                  <h3 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h3>
+                  <h2 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h2>
                   <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
-                    Say what you want next — &ldquo;add green firework at the start&rdquo;,
-                    &ldquo;something gold at 1:20&rdquo; — and we&apos;ll drop a matching cue in.
+                    Say what you want next: &ldquo;add green firework at the start&rdquo; or
+                    &ldquo;something gold at 1:20&rdquo;, and we&apos;ll drop a matching cue in.
                   </p>
                   <p className="text-on-surface-variant mt-2 text-xs leading-relaxed">
                     This will use {REFINEMENT_CREDIT_COST} AI credits.

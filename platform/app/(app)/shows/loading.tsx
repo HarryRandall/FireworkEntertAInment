@@ -16,16 +16,12 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ListFilter, Search } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
 import { GENERATING_ROUTE_SPLASH_CLASS } from '@/app/components/app/generatingSplashLayout';
-import {
-  ListSkeleton,
-  ReplayPanelSkeleton,
-  ShoppingListSkeleton,
-  SongContextSkeleton,
-} from '@/app/components/app/RouteSkeletons';
 import { Skeleton } from '@/app/components/ui/Feedback';
+import { ShowDetailContentSkeleton } from './[id]/ShowDetailContentSkeleton';
+import { ShowTabs } from './[id]/ShowTabs';
+import { getShowDetailSection } from './[id]/show-detail-sections';
 import { WizardLoading } from './new/_components/WizardLoading';
 
-const DETAIL_TAB_LABELS = ['Live preview', 'Shopping list', 'Show guide', 'Song context'];
 const SHOWS_LIST_SKELETON_COUNT = 24;
 
 /** Card-grid placeholder for the `/shows` list. The search bar and sort control
@@ -81,50 +77,44 @@ function ShowsListSkeleton() {
   );
 }
 
-/** Mirrors the `[id]/layout` chrome (tab row + Refine/Export) so the tabs do not
- *  jump in when the layout resolves. */
-function ShowDetailChromeSkeleton({ children }: { children: ReactNode }) {
+/** Mirrors the `[id]/layout` heading, tabs and actions while the show lookup resolves. */
+function ShowDetailChromeSkeleton({
+  children,
+  segment,
+  showSlug,
+}: {
+  children: ReactNode;
+  segment: string | undefined;
+  showSlug: string;
+}) {
+  const activeSection = getShowDetailSection(segment);
+
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6" aria-label="Loading show">
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-6"
+      aria-label="Loading show"
+      aria-busy="true"
+    >
+      <header className="space-y-1.5">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Show details</h1>
+        <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed text-pretty">
+          {activeSection.description}
+        </p>
+      </header>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav
-          aria-label="Show sections"
-          className="flex flex-wrap items-center gap-x-8 gap-y-2 pb-4"
-        >
-          {DETAIL_TAB_LABELS.map((label) => (
-            <span key={label} className="text-muted-foreground py-2 text-sm font-medium">
-              {label}
-            </span>
-          ))}
-        </nav>
+        <ShowTabs id={showSlug} prefetch={false} />
         <div className="flex items-center gap-2">
           <Skeleton className="h-9 w-20 rounded-md" />
           <Skeleton className="h-9 w-20 rounded-md" />
         </div>
       </div>
+      <span className="sr-only" role="status" aria-live="polite">
+        Loading {activeSection.label.toLowerCase()}…
+      </span>
       {children}
     </div>
   );
-}
-
-function detailContentFor(tab: string | undefined): ReactNode {
-  switch (tab) {
-    case 'shopping-list':
-      return <ShoppingListSkeleton />;
-    case 'show-guide':
-      return (
-        <div className="max-w-3xl">
-          <ListSkeleton rows={8} />
-        </div>
-      );
-    case 'timeline':
-      return <SongContextSkeleton />;
-    // The base `/shows/[id]` route redirects to `/preview`, so preview is the
-    // right default for both the explicit preview tab and the bare detail URL.
-    case 'preview':
-    default:
-      return <ReplayPanelSkeleton />;
-  }
 }
 
 export default function ShowsLoading() {
@@ -146,17 +136,21 @@ export default function ShowsLoading() {
     );
   }
 
-  // `/shows/new` is the wizard, not a show detail page — without this branch
+  // `/shows/new` is the wizard, not a show detail page. Without this branch,
   // it matches the detail regex below and flashes the preview skeleton.
   if (pathname === '/shows/new' || pathname?.startsWith('/shows/new/')) {
     return <WizardLoading />;
   }
 
   // A detail route is `/shows/<something>[/tab]`; anything else is the list.
-  const detailMatch = pathname?.match(/^\/shows\/[^/]+(?:\/([^/]+))?\/?$/);
+  const detailMatch = pathname?.match(/^\/shows\/([^/]+)(?:\/([^/]+))?\/?$/);
   if (!detailMatch) {
     return <ShowsListSkeleton />;
   }
 
-  return <ShowDetailChromeSkeleton>{detailContentFor(detailMatch[1])}</ShowDetailChromeSkeleton>;
+  return (
+    <ShowDetailChromeSkeleton showSlug={detailMatch[1]} segment={detailMatch[2]}>
+      <ShowDetailContentSkeleton segment={detailMatch[2]} />
+    </ShowDetailChromeSkeleton>
+  );
 }
