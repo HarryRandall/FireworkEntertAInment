@@ -42,6 +42,11 @@ const PUBLIC_SHOW_TEMPLATES_FALLBACK_SELECTS = [
   SHOW_TEMPLATES_CORE_SELECT,
 ] as const;
 
+function throwAdminTemplateReadError(operation: string, error: unknown): never {
+  console.error(`[admin.templates] ${operation} failed:`, describeSupabaseError(error));
+  throw new Error('Admin show preset data could not be loaded.', { cause: error });
+}
+
 function errorCode(error: unknown): string | undefined {
   return error && typeof error === 'object' ? (error as { code?: string }).code : undefined;
 }
@@ -154,13 +159,12 @@ export async function listAdminShowPresetImportShows(): Promise<AdminShowPresetI
         .limit(100),
       service.from('show_presets').select('source_show_id').not('source_show_id', 'is', null),
     ]);
-  if (error) {
-    console.error('[admin.templates] listImportableGeneratedShows failed:', error);
-    return [];
-  }
-  if (importedPresetsError) {
-    console.error('[admin.templates] list imported preset sources failed:', importedPresetsError);
-    return [];
+  const sourceFailures = [
+    { source: 'completed shows', error },
+    { source: 'imported preset sources', error: importedPresetsError },
+  ].filter((failure) => failure.error !== null);
+  if (sourceFailures.length > 0) {
+    throwAdminTemplateReadError('listAdminShowPresetImportShows sources', sourceFailures);
   }
 
   const importedShowIds = new Set(
@@ -169,9 +173,12 @@ export async function listAdminShowPresetImportShows(): Promise<AdminShowPresetI
   const importableShows = (shows ?? []).filter((show) => !importedShowIds.has(show.id));
 
   const userIds = Array.from(new Set(importableShows.map((show) => show.user_id).filter(Boolean)));
-  const { data: users } = userIds.length
+  const { data: users, error: usersError } = userIds.length
     ? await service.from('users').select('id, email').in('id', userIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (usersError) {
+    throwAdminTemplateReadError('listAdminShowPresetImportShows owners', usersError);
+  }
   const emailByUserId = new Map((users ?? []).map((user) => [user.id, user.email]));
 
   return importableShows.map((show) => ({
@@ -250,8 +257,7 @@ export async function listAdminShowPresets(): Promise<AdminShowPresetSummary[]> 
   ]);
 
   if (error) {
-    console.error('[admin.templates] listAdminShowPresets failed:', describeSupabaseError(error));
-    return [];
+    throwAdminTemplateReadError('listAdminShowPresets', error);
   }
 
   const resolutionKeys = catalogueResolutionKeys(products);
@@ -267,8 +273,7 @@ export async function getAdminShowPresetById(
   const supabase = await getServerClient();
   const { data, error } = await selectShowPresetByIdForAdmin(supabase, presetId);
   if (error) {
-    console.error('[admin.templates] getAdminShowPresetById failed:', describeSupabaseError(error));
-    return null;
+    throwAdminTemplateReadError('getAdminShowPresetById', error);
   }
   if (!data) return null;
 
