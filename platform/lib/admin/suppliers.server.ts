@@ -14,6 +14,11 @@ import { requirePermission } from './current-user.server';
 import type { SupplierRow } from './mappers';
 import { getServerClient } from './supabase';
 
+function throwSupplierReadError(operation: string, error: unknown): never {
+  console.error(`[admin.suppliers] ${operation} failed:`, error);
+  throw new Error('Suppliers could not be loaded.', { cause: error });
+}
+
 /** Returns the supplier list visible to the caller, or `[]` when unauthorised. */
 export async function listSuppliers(): Promise<SupplierSummary[]> {
   if (
@@ -32,8 +37,7 @@ export async function listSuppliers(): Promise<SupplierSummary[]> {
     .select('id, name, slug, status, contact_email, phone, website_url, updated_at')
     .order('updated_at', { ascending: false });
   if (error) {
-    console.error('[admin.server] listSuppliers failed:', error);
-    return [];
+    throwSupplierReadError('listSuppliers', error);
   }
   const mapped = (
     (data ?? []) as Pick<
