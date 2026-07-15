@@ -32,7 +32,7 @@ export function StepDots({
             key={index}
             aria-hidden="true"
             className={cn(
-              'h-1.5 rounded-full transition-all duration-300',
+              'h-1.5 rounded-full transition-[width,background-color] duration-300 motion-reduce:transition-none',
               active ? 'bg-foreground w-6' : 'bg-muted-foreground w-1.5',
             )}
           />

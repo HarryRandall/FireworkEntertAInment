@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ReplayLoadingBar — floating "Loading fireworks" / "Preparing preview" status
+ * Floating "Loading fireworks" / "Preparing preview" status
  * bar shared by every canvas consumer. Shows a determinate progress bar while
  * the engine primes fireworks (`progress` is a 0..1 fraction) and an
  * indeterminate pulse before the cue set has landed or while the prime is
@@ -32,7 +32,7 @@ export function ReplayLoadingBar({
       ? 'pointer-events-none absolute top-1/2 left-1/2 z-[80] flex -translate-x-1/2 -translate-y-1/2'
       : 'pointer-events-none absolute bottom-6 left-1/2 z-[80] flex -translate-x-1/2';
   const widthClass = compact ? 'w-auto max-w-[calc(100%-2rem)]' : 'w-[min(440px,calc(100%-2rem))]';
-  const label = compact ? 'Loading...' : determinate ? 'Loading fireworks' : 'Preparing preview';
+  const label = compact ? 'Loading…' : determinate ? 'Loading fireworks' : 'Preparing preview';
   return (
     <div
       className={cn(
@@ -45,7 +45,11 @@ export function ReplayLoadingBar({
       aria-live="polite"
       aria-label={compact ? 'Loading preview' : label}
     >
-      <Loader2 className="text-primary h-4 w-4 shrink-0 animate-spin" strokeWidth={2.5} />
+      <Loader2
+        className="text-primary h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none"
+        strokeWidth={2.5}
+        aria-hidden="true"
+      />
       <span
         className={cn(
           'text-on-surface-variant shrink-0',

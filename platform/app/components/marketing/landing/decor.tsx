@@ -238,7 +238,7 @@ export function ShowCard({
   likes,
   budget,
   action,
-  href = '#',
+  href,
 }: {
   title: string;
   theme: string;
@@ -246,13 +246,13 @@ export function ShowCard({
   likes?: number;
   budget?: string;
   action?: string;
-  href?: string;
+  href: string;
 }) {
   const gradient = `linear-gradient(135deg, color-mix(in srgb, ${palette[0]} 58%, black), ${palette[0]}, ${palette[2]})`;
   return (
     <Link
       href={href}
-      className="border-outline-variant/60 bg-card flex min-h-40 flex-col overflow-hidden rounded-2xl border no-underline shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]"
+      className="border-outline-variant/60 bg-card focus-visible:ring-primary/45 focus-visible:ring-offset-background flex min-h-40 touch-manipulation flex-col overflow-hidden rounded-2xl border no-underline shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       <div
         className="border-outline-variant/60 relative h-20 flex-shrink-0 border-b"
