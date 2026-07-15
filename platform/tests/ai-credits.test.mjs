@@ -215,14 +215,14 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
 });
 
-test('admin user detail exposes credit balance, recent spend, and grant controls', () => {
+test('admin billing overview and user detail expose credit balances and grant controls', () => {
   const shell = read('app/components/admin/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
   const grantDialog = read('app/(admin)/admin/users/[id]/GrantAiCreditsDialog.tsx');
   const actions = read('app/actions/admin-users.ts');
-  assert.doesNotMatch(shell, /\/admin\/billing/);
-  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing/page.tsx')), false);
+  assert.match(shell, /\/admin\/billing/);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing/page.tsx')), true);
   assert.match(userDetail, /AdminUserAiCreditsCard/);
   assert.match(userDetail, /Recent spend/);
   assert.match(userHeaderActions, /GrantAiCreditsDialog/);

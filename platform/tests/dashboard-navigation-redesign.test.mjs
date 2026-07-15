@@ -77,7 +77,7 @@ test('app shell exposes only shipped V1 navigation routes', () => {
   assert.match(shell, /href: '\/home', label: 'Home'/);
   assert.match(shell, /href: '\/shows', label: 'My shows'/);
   assert.match(shell, /href: '\/library', label: 'Explore'/);
-  assert.match(shell, /badge: 'New'/);
+  assert.doesNotMatch(shell, /badge: 'New'/);
   assert.match(shell, /href: '\/catalogue', label: 'Catalogue'/);
   assert.match(shell, /href: '\/exports', label: 'Exports'/);
   assert.match(shell, /href: '\/safety', label: 'Safety'/);
@@ -97,6 +97,7 @@ test('admin navigation only exposes destinations granted to the current profile'
 
   for (const permission of [
     'admin.manage_users',
+    'admin.manage_billing',
     'admin.manage_suppliers',
     'admin.manage_catalogue',
     'admin.manage_imports',
@@ -131,7 +132,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showsPage, /Search results/);
   assert.doesNotMatch(showsPage, /<select/);
   assert.doesNotMatch(showsPage, /<table/);
-  assert.doesNotMatch(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
+  assert.match(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
 
   const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
   assert.match(showReplayCard, /CoverPoster/);
