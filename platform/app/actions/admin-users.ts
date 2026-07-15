@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server';
+import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
 import { grantAiCredits } from '@/lib/ai-credits.server';
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -81,7 +82,10 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
     .eq('id', parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
-  await invalidateAdminUsersCache(parsed.data.userId);
+  await Promise.all([
+    invalidateAdminUsersCache(parsed.data.userId),
+    invalidateUserProfileCache(parsed.data.userId),
+  ]);
   revalidatePath('/admin/users');
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
@@ -116,7 +120,10 @@ export async function setUserRoleAction(input: z.infer<typeof SetRoleSchema>): P
   );
   if (roleAssignmentError) return { ok: false, error: roleAssignmentError.message };
 
-  await invalidateAdminUsersCache(parsed.data.userId);
+  await Promise.all([
+    invalidateAdminUsersCache(parsed.data.userId),
+    invalidateUserProfileCache(parsed.data.userId),
+  ]);
   revalidatePath('/admin/users');
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
@@ -165,7 +172,10 @@ export async function deleteUserAction(input: z.infer<typeof DeleteUserSchema>):
   const { error } = await service.auth.admin.deleteUser(parsed.data.userId);
   if (error) return { ok: false, error: error.message };
 
-  await invalidateAdminUsersCache(parsed.data.userId);
+  await Promise.all([
+    invalidateAdminUsersCache(parsed.data.userId),
+    invalidateUserProfileCache(parsed.data.userId),
+  ]);
   revalidatePath('/admin/users');
   return { ok: true };
 }
@@ -209,7 +219,10 @@ export async function setUserPermissionOverrideAction(
     if (error) return { ok: false, error: error.message };
   }
 
-  await invalidateAdminUsersCache(parsed.data.userId);
+  await Promise.all([
+    invalidateAdminUsersCache(parsed.data.userId),
+    invalidateUserProfileCache(parsed.data.userId),
+  ]);
   revalidatePath(`/admin/users/${parsed.data.userId}`);
   return { ok: true };
 }

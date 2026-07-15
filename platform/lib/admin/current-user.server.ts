@@ -53,6 +53,7 @@ function parseAccessRpc(value: Json): CurrentProfile | null {
   if (!isRecord(value)) return null;
   const profile = value.profile;
   if (!isRecord(profile) || typeof profile.id !== 'string') return null;
+  if (profile.status !== 'active' && profile.status !== 'suspended') return null;
   const roles = Array.isArray(value.roles)
     ? value.roles.filter((role): role is string => typeof role === 'string').map(asRoleKey)
     : [];
@@ -66,7 +67,7 @@ function parseAccessRpc(value: Json): CurrentProfile | null {
     email: typeof profile.email === 'string' ? profile.email : null,
     fullName: typeof profile.full_name === 'string' ? profile.full_name : null,
     phone: typeof profile.phone === 'string' ? profile.phone : null,
-    status: typeof profile.status === 'string' ? asProfileStatus(profile.status) : 'active',
+    status: profile.status,
     themePreference:
       profile.theme_preference === 'dark' ||
       profile.theme_preference === 'light' ||
@@ -129,6 +130,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   ]);
 
   if (!profile) return null;
+  if (profile.status !== 'active' && profile.status !== 'suspended') return null;
 
   const rolesById = new Map((allRoles ?? []).map((role) => [role.id, mapRole(role)]));
   const permissionsById = new Map(
@@ -182,6 +184,8 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
  */
 export async function requirePermission(permission: PermissionKey) {
   const profile = await getCurrentProfile();
-  if (!profile || !profile.permissions.includes(permission)) return null;
+  if (!profile || profile.status !== 'active' || !profile.permissions.includes(permission)) {
+    return null;
+  }
   return profile;
 }
