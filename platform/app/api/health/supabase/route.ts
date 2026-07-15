@@ -1,51 +1,49 @@
 /** GET health-check endpoint verifying the Supabase connection. */
 
-import { createClient } from '@/utils/supabase/server';
-import { getSupabaseServerEnv } from '@/utils/supabase/env';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createPublicServerSupabase } from '@/utils/supabase/public-server';
+
+export const dynamic = 'force-dynamic';
+
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, max-age=0' } as const;
+
+function unavailableResponse() {
+  return NextResponse.json(
+    { ok: false, message: 'Supabase health check failed.' },
+    { status: 503, headers: NO_STORE_HEADERS },
+  );
+}
 
 /**
  * GET /api/health/supabase
- * Confirms Supabase env is present and the app can reach Supabase (auth endpoint).
+ * Confirms Supabase env is present and the app can read an intentionally
+ * public browse table.
  * Safe to call from production after deploy; does not expose secrets.
  */
 export async function GET() {
-  if (!getSupabaseServerEnv()) {
-    return NextResponse.json(
-      {
-        ok: false,
-        step: 'env',
-        message:
-          'Missing Supabase URL/key. Use NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY (optional: SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_ANON_KEY on server).',
-      },
-      { status: 503 },
-    );
+  const supabase = createPublicServerSupabase();
+  if (!supabase) {
+    console.error('[api/health/supabase] Supabase server environment is unavailable.');
+    return unavailableResponse();
   }
 
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { error } = await supabase.auth.getUser();
+    const { error } = await supabase.from('show_presets').select('id').limit(1);
 
     if (error) {
-      return NextResponse.json(
-        {
-          ok: false,
-          step: 'supabase',
-          message: error.message,
-        },
-        { status: 503 },
-      );
+      console.error('[api/health/supabase] public database probe failed:', error);
+      return unavailableResponse();
     }
 
-    return NextResponse.json({
-      ok: true,
-      step: 'supabase',
-      message: 'Reachable (auth.getUser completed; user may be anonymous)',
-    });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ ok: false, step: 'exception', message }, { status: 503 });
+    return NextResponse.json(
+      {
+        ok: true,
+        message: 'Supabase is reachable.',
+      },
+      { headers: NO_STORE_HEADERS },
+    );
+  } catch (error) {
+    console.error('[api/health/supabase] public database probe threw:', error);
+    return unavailableResponse();
   }
 }
