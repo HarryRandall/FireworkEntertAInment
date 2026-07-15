@@ -1,7 +1,7 @@
 /** Marketing "Contact" page. */
 
 import type { Metadata } from 'next';
-import { Mail, MessageCircle, Building2, MapPin } from 'lucide-react';
+import { Building2, Mail, MessageCircle, Paperclip } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
@@ -20,7 +20,7 @@ const CHANNELS = [
     eyebrow: 'Support',
     title: 'Help with your show',
     description:
-      "Stuck on a cue, can't sync your audio, or seeing a strange error? We answer within one business day.",
+      "Stuck on a cue, can't sync your audio, or seeing a strange error? Send the details.",
     cta: { label: 'support@showcrafter.app', href: 'mailto:support@showcrafter.app' },
   },
   {
@@ -48,7 +48,7 @@ export default function ContactPage() {
         eyebrow="Contact"
         title="Talk to"
         highlight="ShowCrafter."
-        subtitle="Pick the channel that fits — we read every message and reply within a business day."
+        subtitle="Pick the inbox that fits your question, then send it from your email app."
       />
 
       <section className="py-24">
@@ -62,7 +62,7 @@ export default function ContactPage() {
                     <Card key={channel.eyebrow} radius="lg" className="p-6">
                       <div className="flex items-start gap-4">
                         <div className="bg-primary/15 text-primary inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-                          <Icon size={20} strokeWidth={1.75} />
+                          <Icon aria-hidden size={20} strokeWidth={1.75} />
                         </div>
                         <div className="flex-grow">
                           <Eyebrow>{channel.eyebrow}</Eyebrow>
@@ -88,16 +88,13 @@ export default function ContactPage() {
               <Card radius="lg" className="mt-6 p-6">
                 <div className="flex items-start gap-4">
                   <div className="bg-primary/15 text-primary inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-                    <MapPin size={20} strokeWidth={1.75} />
+                    <Building2 aria-hidden size={20} strokeWidth={1.75} />
                   </div>
                   <div>
-                    <Eyebrow>Headquarters</Eyebrow>
+                    <Eyebrow>Project partners</Eyebrow>
                     <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-                      Level 4, Innovation Hub
-                      <br />
-                      The University of Queensland
-                      <br />
-                      St Lucia QLD 4072, Australia
+                      ShowCrafter is developed with ICON Pyrotechnics International Co Ltd and
+                      International Fireworks Pty Ltd.
                     </p>
                   </div>
                 </div>
@@ -106,87 +103,43 @@ export default function ContactPage() {
 
             <div className="lg:col-span-7">
               <Card radius="lg" elevation="high" className="p-8 md:p-10">
-                <Eyebrow>Send a message</Eyebrow>
+                <Eyebrow>Email us</Eyebrow>
                 <h2 className="text-on-surface mt-2 text-2xl font-bold tracking-tight md:text-3xl">
-                  Tell us what you're building.
+                  Send the context from your inbox.
                 </h2>
-                <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
-                  We answer within one business day. The more context you share, the better we can
-                  help.
+                <p className="text-on-surface-variant mt-3 max-w-2xl text-sm leading-relaxed text-pretty">
+                  ShowCrafter does not submit messages through this page. Emailing us directly keeps
+                  a copy in your sent folder and lets you attach screenshots, show links, or error
+                  details.
                 </p>
-
-                <form className="mt-8 space-y-5">
-                  <div className="grid gap-5 md:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor="name"
-                        className="text-on-surface-variant mb-2 block text-xs font-bold tracking-widest uppercase"
-                      >
-                        Your name
-                      </label>
-                      <input
-                        id="name"
-                        type="text"
-                        placeholder="Jordan Sparks"
-                        className="bg-surface-container-highest text-on-surface placeholder:text-on-surface-variant/50 focus:ring-primary/30 h-11 w-full rounded-md border-none px-4 text-sm focus:ring-2 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="text-on-surface-variant mb-2 block text-xs font-bold tracking-widest uppercase"
-                      >
-                        Email
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="you@example.com"
-                        className="bg-surface-container-highest text-on-surface placeholder:text-on-surface-variant/50 focus:ring-primary/30 h-11 w-full rounded-md border-none px-4 text-sm focus:ring-2 focus:outline-none"
-                      />
+                <div className="border-outline-variant/60 bg-surface-container/45 mt-8 rounded-2xl border p-5 sm:p-6">
+                  <div className="flex items-start gap-4">
+                    <span className="bg-primary/15 text-primary flex size-10 shrink-0 items-center justify-center rounded-full">
+                      <Paperclip aria-hidden size={18} />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-on-surface text-sm font-semibold">
+                        Useful details to include
+                      </h3>
+                      <p className="text-on-surface-variant mt-1 text-sm leading-relaxed text-pretty">
+                        Add the page URL, what you expected, what happened, and a screenshot when
+                        reporting a problem. Never send passwords or API keys.
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <label
-                      htmlFor="topic"
-                      className="text-on-surface-variant mb-2 block text-xs font-bold tracking-widest uppercase"
-                    >
-                      Topic
-                    </label>
-                    <select
-                      id="topic"
-                      className="bg-surface-container-highest text-on-surface focus:ring-primary/30 h-11 w-full rounded-md border-none px-4 text-sm focus:ring-2 focus:outline-none"
-                    >
-                      <option>General question</option>
-                      <option>Help with my show</option>
-                      <option>Vendor partnership</option>
-                      <option>Press enquiry</option>
-                      <option>Something else</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="message"
-                      className="text-on-surface-variant mb-2 block text-xs font-bold tracking-widest uppercase"
-                    >
-                      Message
-                    </label>
-                    <textarea
-                      id="message"
-                      rows={5}
-                      placeholder="Tell us what you're working on…"
-                      className="bg-surface-container-highest text-on-surface placeholder:text-on-surface-variant/50 focus:ring-primary/30 w-full rounded-md border-none px-4 py-3 text-sm focus:ring-2 focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-4 pt-2">
-                    <p className="text-on-surface-variant text-xs">
-                      We never share your details. See our privacy policy.
-                    </p>
-                    <Button type="submit" size="md">
-                      Send message
-                    </Button>
-                  </div>
-                </form>
+                </div>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    href="mailto:support@showcrafter.app?subject=ShowCrafter%20enquiry"
+                    size="md"
+                  >
+                    <Mail aria-hidden size={17} />
+                    Email support
+                  </Button>
+                  <Button href="mailto:partners@showcrafter.app" variant="secondary" size="md">
+                    Partnership enquiry
+                  </Button>
+                </div>
               </Card>
             </div>
           </div>
