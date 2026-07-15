@@ -996,10 +996,7 @@ export default function NewShowPage() {
                             className="text-[color:var(--color-content-muted)]"
                           />
                         }
-                        onSelect={() => {
-                          setLengthChoice('match');
-                          goToStep(stepIndex + 1);
-                        }}
+                        onSelect={() => setLengthChoice('match')}
                       />
                       <div className="flex items-center gap-3 py-1">
                         <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
@@ -1030,10 +1027,7 @@ export default function NewShowPage() {
                               className="text-[color:var(--color-content-muted)]"
                             />
                           }
-                          onSelect={() => {
-                            setLengthChoice(option.minutes);
-                            goToStep(stepIndex + 1);
-                          }}
+                          onSelect={() => setLengthChoice(option.minutes)}
                         />
                       );
                     })}
@@ -1055,10 +1049,7 @@ export default function NewShowPage() {
                         title={tier.label}
                         hint={tier.hint}
                         description={tier.description}
-                        onSelect={() => {
-                          setBudget(tier.value);
-                          goToStep(stepIndex + 1);
-                        }}
+                        onSelect={() => setBudget(tier.value)}
                       />
                     ))}
                   </div>
@@ -1247,7 +1238,9 @@ export default function NewShowPage() {
               variant="ghost"
               className="rounded-full px-5"
             >
-              Skip
+              {(stepIndex === 2 && lengthChoice !== null) || (stepIndex === 3 && budget !== null)
+                ? 'Continue'
+                : 'Skip'}
             </Button>
           )}
         </div>

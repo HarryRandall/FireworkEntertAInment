@@ -133,6 +133,19 @@ test('new show wizard uses labelled native selection controls', () => {
   assert.match(page, /type="checkbox"\s+name="fireworkTypes"/);
 });
 
+test('radio-card answers stay on screen for keyboard review before continuing', () => {
+  assert.match(page, /onSelect=\{\(\) => setLengthChoice\('match'\)\}/);
+  assert.match(page, /onSelect=\{\(\) => setLengthChoice\(option\.minutes\)\}/);
+  assert.match(page, /onSelect=\{\(\) => setBudget\(tier\.value\)\}/);
+  assert.doesNotMatch(
+    page,
+    /onSelect=\{\(\) => \{\s*set(?:LengthChoice|Budget)\([^;]+;\s*goToStep\(stepIndex \+ 1\)/s,
+  );
+  assert.doesNotMatch(choiceCards, /onClick=\{\(event\) =>/);
+  assert.match(page, /stepIndex === 2 && lengthChoice !== null/);
+  assert.match(page, /stepIndex === 3 && budget !== null/);
+});
+
 test('new show wizard routes to the generation page immediately on launch', () => {
   assert.doesNotMatch(page, /import \{ GeneratingShowAnimation \}/);
   assert.match(page, /const \[isLaunching, setIsLaunching\] = useState\(false\)/);

@@ -57,12 +57,6 @@ export function ChoiceCard({
         value={value}
         checked={selected}
         onChange={onSelect}
-        onClick={(event) => {
-          // A checked radio does not emit another change event. Treating a
-          // deliberate second activation as selection again preserves the
-          // wizard's auto-advance behaviour after the user navigates back.
-          if (type === 'radio' && selected && event.currentTarget.checked) onSelect();
-        }}
         className="sr-only"
       />
       {selected || multiple ? (
