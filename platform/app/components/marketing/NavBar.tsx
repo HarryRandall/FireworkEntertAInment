@@ -10,9 +10,9 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   ChevronDown,
+  ListChecks,
   Menu,
   Music4,
-  ShieldCheck,
   ShoppingBag,
   Sparkles,
   SlidersHorizontal,
@@ -29,52 +29,62 @@ type MenuItem = { t: string; d: string; href: string; Icon: LucideIcon };
 const HOW_ITEMS: MenuItem[] = [
   {
     t: 'Pick a song',
-    d: 'Upload audio, we read the tempo & drops',
+    d: 'Upload audio for beat and section analysis',
     href: '/how-it-works',
     Icon: Music4,
   },
   {
-    t: 'Set a budget',
-    d: 'Spend cap, venue size and finale weight',
+    t: 'Describe the show',
+    d: 'Set the budget, venue and creative direction',
     href: '/how-it-works',
     Icon: SlidersHorizontal,
   },
   {
-    t: 'AI choreography',
-    d: 'Every cue mapped to a real product',
+    t: 'Generate the timeline',
+    d: 'Create cues only when you press Generate',
     href: '/how-it-works',
     Icon: Wand2,
   },
   {
-    t: 'Buy & fire',
-    d: 'Shopping list + timed click-track',
+    t: 'Review the plan',
+    d: 'Preview cues and check the shopping list',
     href: '/how-it-works',
     Icon: ShoppingBag,
   },
 ];
 
 const FEATURE_ITEMS: MenuItem[] = [
-  { t: 'Audio analyser', d: 'Beats, drops and harmonic peaks', href: '/features', Icon: Music4 },
   {
-    t: 'Safety engine',
-    d: 'Minimum safe-distance on every cue',
+    t: 'Audio analysis',
+    d: 'Tempo, sections and musical structure',
     href: '/features',
-    Icon: ShieldCheck,
+    Icon: Music4,
   },
   {
-    t: 'Local inventory',
-    d: 'Only products your store stocks',
-    href: '/vendors',
+    t: 'Cue planning',
+    d: 'Fast deterministic planning by default',
+    href: '/features',
+    Icon: ListChecks,
+  },
+  {
+    t: 'Catalogue products',
+    d: 'Browse fireworks available for show plans',
+    href: '/catalogue',
     Icon: ShoppingBag,
   },
-  { t: 'Show gallery', d: 'Remix shows from the community', href: '/features', Icon: Sparkles },
+  {
+    t: 'Explore templates',
+    d: 'Start from published curated presets',
+    href: '/library',
+    Icon: Sparkles,
+  },
 ];
 
 const FLAT_LINKS: { href: string; label: string }[] = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/vendors', label: 'Vendors' },
+  { href: '/catalogue', label: 'Catalogue' },
 ];
 
 function NavMenu({ label, href, items }: { label: string; href: string; items: MenuItem[] }) {
@@ -167,8 +177,8 @@ export function MarketingNavBar() {
           <Link href="/pricing" className="lp-nav-pill">
             Pricing
           </Link>
-          <Link href="/vendors" className="lp-nav-pill">
-            Vendors
+          <Link href="/catalogue" className="lp-nav-pill">
+            Catalogue
           </Link>
         </div>
 
