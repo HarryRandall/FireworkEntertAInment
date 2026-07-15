@@ -21,7 +21,6 @@
     "*.{js,jsx,ts,tsx,mjs,cjs,json,css,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
-    "@firecms/neat": "^1.0.1",
     "@paper-design/shaders-react": "^0.0.76",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.57.0",

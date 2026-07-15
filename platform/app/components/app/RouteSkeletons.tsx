@@ -45,6 +45,7 @@ const EXPLORE_SKELETON_SHELVES = [
   { title: 'Recently updated', sort: 'recent' },
   { title: 'Quick bursts', sort: 'shortest' },
 ] as const;
+const LIBRARY_SHELF_SKELETON_COUNT = 8;
 
 function ExploreCardSkeleton({ index, className }: { index: number; className?: string }) {
   const titleWidths = ['w-28', 'w-36', 'w-24', 'w-32'];
@@ -142,7 +143,7 @@ export function LibraryCardsSkeleton() {
           </div>
 
           <div className="flex gap-4 overflow-hidden">
-            {Array.from({ length: 6 }).map((_, index) => (
+            {Array.from({ length: LIBRARY_SHELF_SKELETON_COUNT }).map((_, index) => (
               <ExploreCardSkeleton key={index} index={index} />
             ))}
           </div>
@@ -183,7 +184,7 @@ export function LibraryGridSkeleton({ title }: { title: string }) {
 /** Skeleton for the `/admin` overview dashboard. */
 export function AdminOverviewSkeleton() {
   return (
-    <div className="space-y-4" aria-label="Loading admin overview">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4" aria-label="Loading admin overview">
       <AdminOverviewControlsSkeleton />
       <AdminOverviewContentSkeleton />
     </div>
@@ -529,7 +530,7 @@ export function AdminUserPermissionsSkeleton() {
 /** Skeleton for the admin user detail route. */
 export function AdminUserDetailSkeleton() {
   return (
-    <div className="space-y-8" aria-label="Loading user detail">
+    <div className="mx-auto w-full max-w-[1200px] space-y-8" aria-label="Loading user detail">
       <AdminUserHeaderSkeleton />
       <AdminUserRoleSkeleton />
       <AdminUserActivitySkeleton />
@@ -543,7 +544,10 @@ export function AdminUserDetailSkeleton() {
 /** Skeleton for the admin roles permission matrix route. */
 export function AdminRolesSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-8" aria-label="Loading roles">
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      aria-label="Loading roles"
+    >
       <AdminFilterControlsSkeleton searchPlaceholder="Search permissions by name or area..." />
 
       <DataTableShell
@@ -611,7 +615,7 @@ export function AdminRolesSkeleton() {
 /** Skeleton for the admin prompt control route. */
 export function AdminPromptsSkeleton() {
   return (
-    <div className="flex flex-col gap-5" aria-label="Loading prompts">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5" aria-label="Loading prompts">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Prompt settings"
@@ -683,7 +687,10 @@ export function AdminTableRouteSkeleton({
   ariaLabel?: string;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-8" aria-label={ariaLabel}>
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      aria-label={ariaLabel}
+    >
       {hasAction ? (
         <div className="flex justify-end">
           <Skeleton className="h-11 w-36 rounded-full" />
@@ -708,7 +715,7 @@ export function AdminTableRouteSkeleton({
 /** Skeleton for the admin imports list route. */
 export function AdminImportsSkeleton() {
   return (
-    <div className="space-y-6" aria-label="Loading imports">
+    <div className="mx-auto w-full max-w-[1400px] space-y-6" aria-label="Loading imports">
       <div className="border-border bg-card rounded-lg border p-5">
         <h2 className="text-foreground text-lg font-bold">Upload firework video</h2>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -750,7 +757,7 @@ export function AdminImportsSkeleton() {
 /** Skeleton for the admin import review route. */
 export function AdminImportDetailSkeleton() {
   return (
-    <div className="space-y-6" aria-label="Loading import detail">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6" aria-label="Loading import detail">
       <div className="flex flex-col gap-4">
         <Skeleton className="h-5 w-32" />
         <div className="flex flex-wrap items-center gap-3">
@@ -794,7 +801,10 @@ export function AdminFireworkEditorSkeleton() {
 /** Skeleton for the multishot editor, preserving the preview, inspector, timeline and meta chrome. */
 export function AdminMultishotEditorSkeleton() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5" aria-label="Loading multishot editor">
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-5"
+      aria-label="Loading multishot editor"
+    >
       <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="bg-stage-night relative h-[560px] overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white">
           <ReplayPanelLoadingStage />
@@ -1281,7 +1291,7 @@ export function SongContextSkeleton() {
 /** Skeleton matching the shopping-list card on the show detail route. */
 export function ShoppingListSkeleton() {
   return (
-    <div className="max-w-3xl" aria-label="Loading shopping list">
+    <div className="w-full max-w-5xl" aria-label="Loading shopping list">
       <div className="border-border bg-card rounded-lg border p-8">
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-3">

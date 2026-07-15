@@ -4,7 +4,10 @@ import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function AdminShowPresetEditorLoading() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-5" aria-label="Loading curated show editor">
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-5"
+      aria-label="Loading curated show editor"
+    >
       <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="bg-stage-night relative h-[520px] overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)]">
           <div className="absolute inset-x-8 bottom-8 space-y-3">

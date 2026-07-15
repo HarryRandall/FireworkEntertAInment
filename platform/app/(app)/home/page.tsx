@@ -15,7 +15,7 @@ import type { FireworkSpecification } from '@/lib/show-domain';
 
 export default function HomePage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
       <PromptHero />
       <Suspense fallback={<HomeSectionsSkeleton />}>
         <HomeContent />

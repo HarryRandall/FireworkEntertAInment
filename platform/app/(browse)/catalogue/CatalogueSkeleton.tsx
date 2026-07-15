@@ -6,7 +6,7 @@ export const CATALOGUE_PAGE_SIZE = 15;
 
 export function CatalogueSkeleton() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {Array.from({ length: CATALOGUE_PAGE_SIZE }).map((_, index) => (
         <div key={index} className="border-border bg-card rounded-xl border p-4">
           <Skeleton className="h-5 w-3/4" />

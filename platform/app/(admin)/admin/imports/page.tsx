@@ -23,7 +23,7 @@ const STATUS_OPTIONS = [
 
 export default function AdminImportsPage() {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1400px] space-y-6">
       <Card elevation="high" radius="md" className="p-5">
         <div className="mb-4">
           <h2 className="text-on-surface text-lg font-bold">Upload firework video</h2>

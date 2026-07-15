@@ -39,7 +39,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   const isWaitingForWorker = (job.status === 'queued' || job.status === 'processing') && !spec;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <div className="flex flex-col gap-4">
         <Link
           href="/admin/imports"

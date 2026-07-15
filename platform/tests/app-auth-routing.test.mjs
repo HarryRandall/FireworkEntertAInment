@@ -45,12 +45,15 @@ test('proxy gates private app prefixes to /login?next=', () => {
   assert.match(proxy, /auth\.getClaims\(\)/);
   assert.match(proxy, /matcher:/);
 
-  // Dev diagnostics must not be public in production.
   const nextConfig = read('next.config.ts');
-  assert.match(proxy, /pathname === '\/dev'/);
-  assert.match(proxy, /process\.env\.NODE_ENV === 'development'/);
-  assert.match(proxy, /NextResponse\.rewrite\(new URL\('\/404'/);
   assert.doesNotMatch(nextConfig, /supabase-example/);
+});
+
+test('developer-only routes are not shipped with the app', () => {
+  assert.equal(existsSync(join(root, 'app/(dev)')), false);
+
+  const proxy = read('proxy.ts');
+  assert.doesNotMatch(proxy, /pathname === '\/dev'/);
 });
 
 test('proxy clears stale Supabase auth cookies instead of looping refresh errors', () => {

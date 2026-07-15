@@ -33,7 +33,7 @@ retailer firework catalogue into a timed show plan. The app supports:
 | Web app             | Next.js App Router, React 19, TypeScript                                            |
 | Styling             | Tailwind CSS v4, Radix/shadcn primitives, custom app UI primitives                  |
 | Rendering           | Three.js and the custom firework engine                                             |
-| Covers              | CSS/SVG/Canvas covers, stored posters, legacy Paper/Neat shader compatibility       |
+| Covers              | CSS/SVG/Canvas covers, stored posters, legacy Paper shader compatibility            |
 | Backend and storage | Supabase Auth, Postgres, Storage, RLS, RPCs                                         |
 | Audio analysis      | Python, librosa, Modal-hosted HTTP analyser                                         |
 | Cue generation      | Fast deterministic planner by default, optional OpenRouter through the `openai` SDK |
@@ -50,7 +50,6 @@ platform/                       Next.js app, deploy root for Vercel
     (admin)/                    Platform admin console
     (auth)/                     Login and signup pages
     (browse)/                   Guest and signed-in catalogue/Explore routes
-    (dev)/dev/                  Local visual and shader playgrounds
     (marketing)/                Public marketing pages
     api/                        Health, analysis, admin, user, and show APIs
     components/                 App, admin, marketing, theme, and UI components

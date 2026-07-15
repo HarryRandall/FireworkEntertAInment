@@ -59,10 +59,10 @@ import {
   supportsGeometryTuningControls,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/app/components/admin/FireworkTimelineControls';
 import { Button } from '@/app/components/ui/Button';
 import { ColorPicker } from '@/app/components/ui/ColorPicker';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
 import { SliderField } from '@/app/components/ui/SliderField';
@@ -80,6 +80,7 @@ import {
   compileFireworkDesign,
   estimateDesignDurationSeconds,
 } from '@/lib/fireworks/design';
+import { roundTimelineSeconds } from '@/lib/fireworks/timing';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
@@ -827,6 +828,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [historyVersions, setHistoryVersions] = useState(firework.history);
   const pendingHistoryVersionIdsRef = useRef(new Set<string>());
+  const timelineDurationSyncPendingRef = useRef(false);
   const [pendingHistoryVersionIds, setPendingHistoryVersionIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -1117,6 +1119,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
     return Math.max(4, Math.ceil(estimated * 2) / 2);
   }, [previewDesign]);
+  useEffect(() => {
+    if (!timelineDurationSyncPendingRef.current) return;
+    timelineDurationSyncPendingRef.current = false;
+    setDurationSeconds(String(roundTimelineSeconds(estimateDesignDurationSeconds(previewDesign))));
+  }, [previewDesign]);
   const previewTicks = useMemo(
     () =>
       estimatePreviewTicks({
@@ -1274,6 +1281,25 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     updater(draft);
     setOverridesText(JSON.stringify(draft, null, 2));
     if (shouldMarkCustom) markStyleDefaultCustom(kind);
+  }
+
+  function mutateOverridesForTimeline(
+    kinds: readonly FireworkStyleDefaultKind[],
+    updater: (defaults: JsonRecord) => void,
+  ) {
+    if (!parsedOverrides.ok) return;
+    const draft = cloneRecord(parsedOverrides.value);
+    const customKinds = kinds.filter((kind) => materialiseStyleDefault(kind, draft));
+    updater(draft);
+    timelineDurationSyncPendingRef.current = true;
+    setOverridesText(JSON.stringify(draft, null, 2));
+    if (customKinds.length > 0) {
+      setStyleDefaultIds((current) => {
+        const next = { ...current };
+        for (const kind of customKinds) next[kind] = NO_STYLE_DEFAULT_VALUE;
+        return next;
+      });
+    }
   }
 
   function materialiseStyleDefaultInOverrides(kind: FireworkStyleDefaultKind) {
@@ -2027,15 +2053,18 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       eyebrow: 'Ascent',
       title: 'Launch trail',
       content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={overridesRecord}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => mutateOverridesForStyle('launch', updater)}
-          disabled={!parsedOverrides.ok}
-          showLaunch
-          controlScope="launchTrail"
-        />
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
+            disabled={!parsedOverrides.ok}
+            showLaunch
+            controlScope="launchTrail"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
       ),
     },
     {
@@ -2204,10 +2233,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       eyebrow: 'Timing',
       title: 'Timeline',
       content: (
-        <InlineAlert tone="info" title="Coming soon">
-          A master timeline for extending individual sections and the overall firework length will
-          live here.
-        </InlineAlert>
+        <FireworkTimelineControls
+          design={previewDesign}
+          disabled={!parsedOverrides.ok}
+          onMutate={mutateOverridesForTimeline}
+        />
       ),
     },
     {

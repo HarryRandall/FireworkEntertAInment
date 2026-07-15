@@ -46,8 +46,8 @@ import {
   FireworkRenderControls,
   supportsGeometryTuningControls,
 } from '@/app/components/admin/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/app/components/admin/FireworkTimelineControls';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert } from '@/app/components/ui/Feedback';
 import { Input, Textarea } from '@/app/components/ui/Input';
 import type { SelectOption } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
@@ -713,6 +713,25 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     if (shouldMarkCustom) markStyleDefaultCustom(kind);
   }
 
+  function updateModelDefaultsForTimeline(
+    kinds: readonly FireworkStyleDefaultKind[],
+    updater: (defaults: JsonRecord) => void,
+  ) {
+    if (!parsedModel.ok) return;
+    const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
+    const defaults = ensureRecord(draft, 'renderDefaults');
+    const customKinds = kinds.filter((kind) => materialiseStyleDefault(kind, defaults));
+    updater(defaults);
+    setModelText(JSON.stringify(draft, null, 2));
+    if (customKinds.length > 0) {
+      setStyleDefaultIds((current) => {
+        const next = { ...current };
+        for (const kind of customKinds) next[kind] = NO_STYLE_DEFAULT_VALUE;
+        return next;
+      });
+    }
+  }
+
   function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
     updateModelDefaults((defaults) => {
       removeStyleDefaultOverridesFromRecord(defaults, kind);
@@ -1113,15 +1132,18 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       eyebrow: 'Ascent',
       title: 'Launch trail',
       content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={renderDefaults}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
-          disabled={!parsedModel.ok}
-          showLaunch
-          controlScope="launchTrail"
-        />
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
+            disabled={!parsedModel.ok}
+            showLaunch
+            controlScope="launchTrail"
+          />
+          {renderStyleDefaultControls('launch')}
+        </div>
       ),
     },
     {
@@ -1290,10 +1312,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       eyebrow: 'Timing',
       title: 'Timeline',
       content: (
-        <InlineAlert tone="info" title="Coming soon">
-          A master timeline for extending individual sections and the overall firework length will
-          live here.
-        </InlineAlert>
+        <FireworkTimelineControls
+          design={previewDesign}
+          disabled={!parsedModel.ok}
+          durationLabel="Render duration"
+          durationHint="Scale timing stored on this effect. Catalogue firework durations remain independently editable for scheduling safety."
+          onMutate={updateModelDefaultsForTimeline}
+        />
       ),
     },
     {

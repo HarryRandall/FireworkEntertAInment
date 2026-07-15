@@ -146,7 +146,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
   const sort = parseSort(params.sort);
 
   return (
-    <div className={`mx-auto w-full max-w-6xl ${sort ? 'space-y-6' : 'space-y-4'}`}>
+    <div className={`mx-auto w-full max-w-[1600px] ${sort ? 'space-y-6' : 'space-y-4'}`}>
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">

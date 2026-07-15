@@ -11,7 +11,7 @@ export default async function AdminCoverPostersPage() {
   if (!presets) redirect('/admin');
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <header className="flex flex-col gap-1">
         <h1 className="text-on-surface text-2xl font-black">Cover posters</h1>
         <p className="text-on-surface-variant text-sm leading-relaxed">

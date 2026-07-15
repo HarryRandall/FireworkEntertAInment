@@ -5,7 +5,10 @@ import { Skeleton } from '@/app/components/ui/Feedback';
 
 export default function AdminCoverPostersLoading() {
   return (
-    <div className="flex flex-col gap-5" aria-label="Loading cover posters">
+    <div
+      className="mx-auto flex w-full max-w-[1600px] flex-col gap-5"
+      aria-label="Loading cover posters"
+    >
       <header className="flex flex-col gap-1">
         <h1 className="text-on-surface text-2xl font-black">Cover posters</h1>
         <p className="text-on-surface-variant text-sm leading-relaxed">
@@ -19,7 +22,7 @@ export default function AdminCoverPostersLoading() {
           <Skeleton className="h-5 w-48" />
           <Skeleton className="h-9 w-36 rounded-lg" />
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {Array.from({ length: 8 }, (_, index) => (
             <Card key={index} radius="md" className="overflow-hidden">
               <div className="bg-surface-container relative aspect-[4/5] w-full">

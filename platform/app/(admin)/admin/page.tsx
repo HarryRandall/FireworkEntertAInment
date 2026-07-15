@@ -99,7 +99,7 @@ export default async function AdminOverviewPage({ searchParams }: PageProps) {
   const tab = parseAdminOverviewTab(params.tab);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4">
       <AdminOverviewData range={range} tab={tab.key} />
     </div>
   );

@@ -107,7 +107,7 @@ export function HomeSectionsSkeleton() {
 export function HomePageSkeleton() {
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
+      className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
       aria-label="Loading home"
     >
       <PromptHero />

@@ -250,13 +250,6 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (pathname === '/dev' || pathname.startsWith('/dev/')) {
-    if (process.env.NODE_ENV === 'development') {
-      return supabaseResponse;
-    }
-    return NextResponse.rewrite(new URL('/404', request.url), { status: 404 });
-  }
-
   const isProtected = PROTECTED_PREFIXES.some((p) => matchesPathPrefix(pathname, p));
   const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
   const isRoot = pathname === '/';
