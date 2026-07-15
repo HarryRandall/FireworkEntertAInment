@@ -16,19 +16,21 @@ test('Explore presents published templates as planning starting points', () => {
   const loading = read('app/(browse)/library/loading.tsx');
   const detail = read('app/(browse)/library/[id]/page.tsx');
   const detailLoading = read('app/(browse)/library/[id]/loading.tsx');
+  const cloneSubmit = read('app/(browse)/library/[id]/CloneTemplateSubmitButton.tsx');
 
   for (const source of [page, loading]) {
     assert.match(source, /Preview published show templates/);
     assert.doesNotMatch(source, /complete, ready-to-use/i);
   }
 
-  for (const source of [detail, detailLoading]) {
+  for (const source of [cloneSubmit, detailLoading]) {
     assert.match(source, /Create from template/);
     assert.doesNotMatch(source, /Use this show/);
   }
 
-  assert.match(detail, /<button[\s\S]*type="submit"/);
-  assert.doesNotMatch(detail, /transition-all/);
+  assert.match(detail, /<CloneTemplateSubmitButton \/>/);
+  assert.match(cloneSubmit, /<button[\s\S]*type="submit"/);
+  assert.doesNotMatch(cloneSubmit, /transition-all/);
   assert.match(page, /length === 1 \? 'template' : 'templates'/);
   assert.match(page, /No templates match this collection yet/);
 });

@@ -754,29 +754,42 @@ function PendingLibrarySkeleton() {
   ];
 
   return (
-    <div className="space-y-8" aria-label="Loading show library">
-      {shelves.map((title) => (
-        <section key={title}>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
-            <Skeleton className="h-7 w-20 rounded-full" />
-          </div>
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-4"
+      aria-label="Loading show library"
+      aria-busy="true"
+    >
+      <header>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          Preview published show templates and choose one as a starting point for your own plan.
+        </p>
+      </header>
 
-          <div className="flex gap-4 overflow-hidden">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="w-44 shrink-0 sm:w-48">
-                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-                <div className="mt-2.5 flex items-center gap-2">
-                  <Skeleton className="h-4 flex-1" />
-                  <Skeleton className="h-5 w-10 rounded-md" />
+      <div className="space-y-8">
+        {shelves.map((title) => (
+          <section key={title}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+              <Skeleton className="h-7 w-20 rounded-full" />
+            </div>
+
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="w-44 shrink-0 sm:w-48">
+                  <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-5 w-10 rounded-md" />
+                  </div>
+                  <Skeleton className="mt-2 h-3 w-24" />
+                  <Skeleton className="mt-2 h-3 w-32" />
                 </div>
-                <Skeleton className="mt-2 h-3 w-24" />
-                <Skeleton className="mt-2 h-3 w-32" />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
@@ -888,9 +901,6 @@ export function AppShell({
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };
-    }
-    if (link.href === '/library') {
-      return { ...link, badge: 'New' };
     }
     return link;
   });

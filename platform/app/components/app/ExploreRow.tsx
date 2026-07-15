@@ -98,21 +98,21 @@ export function ExploreRow({
         {canScrollLeft ? (
           <button
             type="button"
-            aria-label="Scroll left"
+            aria-label={`Scroll ${title} left`}
             onClick={() => scrollBy(-1)}
-            className="absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft aria-hidden="true" size={18} />
           </button>
         ) : null}
         {canScrollRight ? (
           <button
             type="button"
-            aria-label="Scroll right"
+            aria-label={`Scroll ${title} right`}
             onClick={() => scrollBy(1)}
-            className="absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
-            <ChevronRight size={18} />
+            <ChevronRight aria-hidden="true" size={18} />
           </button>
         ) : null}
       </div>

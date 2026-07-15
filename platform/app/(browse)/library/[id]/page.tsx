@@ -1,7 +1,7 @@
 /** Show template detail page; lets the user clone a template into a new show. */
 
 import { notFound } from 'next/navigation';
-import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wand2, Wallet } from 'lucide-react';
+import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wallet } from 'lucide-react';
 import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import type * as React from 'react';
@@ -21,6 +21,7 @@ import {
 } from '@/lib/admin.server';
 import { listFireworkProducts } from '@/lib/shows.server';
 import type { ShowTemplate } from '@/lib/admin.types';
+import { CloneTemplateSubmitButton } from './CloneTemplateSubmitButton';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -49,13 +50,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
         <form action={cloneShowTemplateAction} className="w-full sm:w-fit">
           <input type="hidden" name="slug" value={template.slug} />
           <input type="hidden" name="cloneToken" value={randomUUID()} />
-          <button
-            type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-[background-color,transform] active:scale-[0.98] sm:w-fit"
-          >
-            <Wand2 size={16} />
-            Create from template
-          </button>
+          <CloneTemplateSubmitButton />
         </form>
       </header>
 
