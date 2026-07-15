@@ -22,6 +22,18 @@ import {
 } from './mappers';
 import { getServerClient } from './supabase';
 
+type AdminUserReadFailure = {
+  source: string;
+  error: unknown;
+};
+
+function throwAdminUserReadError(operation: string, failures: AdminUserReadFailure[]): never {
+  console.error(`[admin.users] ${operation} failed:`, failures);
+  throw new Error('Admin user data could not be loaded.', {
+    cause: failures[0]?.error,
+  });
+}
+
 /** Returns the full admin user list, or `[]` when the caller lacks the permission. */
 export async function listAdminUsers(): Promise<AdminUser[]> {
   const admin = await requirePermission('admin.manage_users');
@@ -32,36 +44,44 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const [
-    { data: users },
-    { data: userRoles },
-    { data: roles },
-    { data: overrides },
-    { data: permissions },
-  ] = await Promise.all([
-    supabase
-      .from('users')
-      .select('id, email, full_name, phone, status, updated_at')
-      .order('updated_at', { ascending: false }),
-    supabase.from('user_roles').select('user_id, role_id, assigned_by, created_at'),
-    supabase.from('roles').select('id, key, name, description, sort_order, created_at, updated_at'),
-    supabase
-      .from('user_permission_overrides')
-      .select('user_id, permission_id, enabled, assigned_by, created_at, updated_at'),
-    supabase
-      .from('permissions')
-      .select('id, key, name, description, category, created_at, updated_at'),
-  ]);
+  const [usersResult, userRolesResult, rolesResult, overridesResult, permissionsResult] =
+    await Promise.all([
+      supabase
+        .from('users')
+        .select('id, email, full_name, phone, status, updated_at')
+        .order('updated_at', { ascending: false }),
+      supabase.from('user_roles').select('user_id, role_id, assigned_by, created_at'),
+      supabase
+        .from('roles')
+        .select('id, key, name, description, sort_order, created_at, updated_at'),
+      supabase
+        .from('user_permission_overrides')
+        .select('user_id, permission_id, enabled, assigned_by, created_at, updated_at'),
+      supabase
+        .from('permissions')
+        .select('id, key, name, description, category, created_at, updated_at'),
+    ]);
+
+  const failures = [
+    { source: 'users', error: usersResult.error },
+    { source: 'user roles', error: userRolesResult.error },
+    { source: 'roles', error: rolesResult.error },
+    { source: 'permission overrides', error: overridesResult.error },
+    { source: 'permissions', error: permissionsResult.error },
+  ].filter(({ error }) => error !== null);
+  if (failures.length > 0) {
+    throwAdminUserReadError('listAdminUsers', failures);
+  }
 
   const mapped = mapAdminUsersFromRows({
-    users: (users ?? []) as Pick<
+    users: (usersResult.data ?? []) as Pick<
       ProfileRow,
       'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'
     >[],
-    userRoles: (userRoles ?? []) as UserRoleRow[],
-    roles: (roles ?? []) as RoleRow[],
-    overrides: (overrides ?? []) as UserPermissionOverrideRow[],
-    permissions: (permissions ?? []) as PermissionRow[],
+    userRoles: (userRolesResult.data ?? []) as UserRoleRow[],
+    roles: (rolesResult.data ?? []) as RoleRow[],
+    overrides: (overridesResult.data ?? []) as UserPermissionOverrideRow[],
+    permissions: (permissionsResult.data ?? []) as PermissionRow[],
   });
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
@@ -76,46 +96,50 @@ export async function getAdminUserById(userId: string): Promise<AdminUser | null
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const [
-    { data: profile, error: profileError },
-    { data: userRoles },
-    { data: roles },
-    { data: overrides },
-    { data: permissions },
-  ] = await Promise.all([
-    supabase
-      .from('users')
-      .select('id, email, full_name, phone, status, updated_at')
-      .eq('id', userId)
-      .maybeSingle(),
-    supabase
-      .from('user_roles')
-      .select('user_id, role_id, assigned_by, created_at')
-      .eq('user_id', userId),
-    supabase.from('roles').select('id, key, name, description, sort_order, created_at, updated_at'),
-    supabase
-      .from('user_permission_overrides')
-      .select('user_id, permission_id, enabled, assigned_by, created_at, updated_at')
-      .eq('user_id', userId),
-    supabase
-      .from('permissions')
-      .select('id, key, name, description, category, created_at, updated_at'),
-  ]);
+  const [profileResult, userRolesResult, rolesResult, overridesResult, permissionsResult] =
+    await Promise.all([
+      supabase
+        .from('users')
+        .select('id, email, full_name, phone, status, updated_at')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('user_roles')
+        .select('user_id, role_id, assigned_by, created_at')
+        .eq('user_id', userId),
+      supabase
+        .from('roles')
+        .select('id, key, name, description, sort_order, created_at, updated_at'),
+      supabase
+        .from('user_permission_overrides')
+        .select('user_id, permission_id, enabled, assigned_by, created_at, updated_at')
+        .eq('user_id', userId),
+      supabase
+        .from('permissions')
+        .select('id, key, name, description, category, created_at, updated_at'),
+    ]);
 
-  if (profileError) {
-    console.error('[admin.server] getAdminUserById failed:', profileError);
-    return null;
+  const failures = [
+    { source: 'user profile', error: profileResult.error },
+    { source: 'user roles', error: userRolesResult.error },
+    { source: 'roles', error: rolesResult.error },
+    { source: 'permission overrides', error: overridesResult.error },
+    { source: 'permissions', error: permissionsResult.error },
+  ].filter(({ error }) => error !== null);
+  if (failures.length > 0) {
+    throwAdminUserReadError('getAdminUserById', failures);
   }
+  const profile = profileResult.data;
   if (!profile) return null;
 
   const [mapped] = mapAdminUsersFromRows({
     users: [
       profile as Pick<ProfileRow, 'id' | 'email' | 'full_name' | 'phone' | 'status' | 'updated_at'>,
     ],
-    userRoles: (userRoles ?? []) as UserRoleRow[],
-    roles: (roles ?? []) as RoleRow[],
-    overrides: (overrides ?? []) as UserPermissionOverrideRow[],
-    permissions: (permissions ?? []) as PermissionRow[],
+    userRoles: (userRolesResult.data ?? []) as UserRoleRow[],
+    roles: (rolesResult.data ?? []) as RoleRow[],
+    overrides: (overridesResult.data ?? []) as UserPermissionOverrideRow[],
+    permissions: (permissionsResult.data ?? []) as PermissionRow[],
   });
   if (mapped) {
     await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
@@ -154,10 +178,20 @@ export async function getUserActivity(userId: string): Promise<UserActivity | nu
   const service = createServiceRoleSupabase();
   const supabase = service ?? (await getServerClient());
 
-  const [{ data: showsAll }, { data: showsRecent }] = await Promise.all([
+  const [showsAllResult, showsRecentResult] = await Promise.all([
     supabase.from('shows').select('id', { count: 'exact', head: false }).eq('user_id', userId),
     supabase.from('shows').select('created_at').eq('user_id', userId).gte('created_at', sinceIso),
   ]);
+  const showFailures = [
+    { source: 'all shows', error: showsAllResult.error },
+    { source: 'recent shows', error: showsRecentResult.error },
+  ].filter(({ error }) => error !== null);
+  if (showFailures.length > 0) {
+    throwAdminUserReadError('getUserActivity shows', showFailures);
+  }
+
+  const showsAll = showsAllResult.data;
+  const showsRecent = showsRecentResult.data;
 
   // Pre-fill 30 daily buckets so the UI always renders a contiguous chart,
   // even if the user created zero shows on a given day.
@@ -175,7 +209,12 @@ export async function getUserActivity(userId: string): Promise<UserActivity | nu
   let lastSignInAt: string | null = null;
   let accountAgeDays: number | null = null;
   if (service) {
-    const { data: authUser } = await service.auth.admin.getUserById(userId);
+    const { data: authUser, error: authUserError } = await service.auth.admin.getUserById(userId);
+    if (authUserError) {
+      throwAdminUserReadError('getUserActivity auth user', [
+        { source: 'auth user', error: authUserError },
+      ]);
+    }
     if (authUser?.user) {
       lastSignInAt = authUser.user.last_sign_in_at ?? null;
       const createdAt = authUser.user.created_at ?? null;
