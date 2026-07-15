@@ -170,7 +170,6 @@ type SidebarAiUsage = {
   totalSpent: number;
 };
 
-const SIDEBAR_FREE_SHOWS_INCLUDED = 3;
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
@@ -223,6 +222,12 @@ function writeCachedWorkspaceSummary(
   } catch {
     // Ignore storage failures; the sidebar just falls back to fetching.
   }
+}
+
+function clearCachedAiUsage(profileId: string | null) {
+  const cached = readCachedWorkspaceSummary(profileId);
+  if (!cached) return;
+  writeCachedWorkspaceSummary(profileId, { ...cached, aiUsage: null });
 }
 
 function isActivePath(pathname: string | null, href: string) {
@@ -577,18 +582,17 @@ function SidebarAiUsageMeter({
 }) {
   if (!usage && !loading) return null;
 
-  const reserved = Math.max(usage?.reserved ?? 0, 0);
-  const usedOrReservedFreeShows = Math.min(
-    Math.max((usage?.totalSpent ?? 0) + reserved, 0),
-    SIDEBAR_FREE_SHOWS_INCLUDED,
-  );
-  const freeShowsRemaining = Math.max(SIDEBAR_FREE_SHOWS_INCLUDED - usedOrReservedFreeShows, 0);
-  const summary = `${freeShowsRemaining}/${SIDEBAR_FREE_SHOWS_INCLUDED} shows left`;
+  const balance = Math.max(usage?.balance ?? 0, 0);
+  const available = Math.max(usage?.available ?? 0, 0);
+  const granted = Math.max(usage?.totalGranted ?? 0, usage?.includedCredits ?? 0, balance, 1);
+  const balancePercentage = Math.min((balance / granted) * 100, 100);
+  const summary = `${available.toLocaleString('en-AU')} credits available`;
 
   return (
     <Link
       href="/settings/usage"
       prefetch={false}
+      aria-label="View AI credit usage"
       className="border-sidebar-border/75 hover:border-sidebar-border focus-visible:ring-sidebar-ring rounded-lg border px-2.5 py-2 transition-colors group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2"
     >
       {loading ? (
@@ -601,42 +605,23 @@ function SidebarAiUsageMeter({
         </div>
       ) : (
         <>
-          <SidebarCreditSegments
-            remaining={freeShowsRemaining}
-            total={SIDEBAR_FREE_SHOWS_INCLUDED}
-          />
+          <div className="bg-sidebar-foreground/20 h-1.5 overflow-hidden rounded-full" aria-hidden>
+            <span
+              className="block h-full rounded-full bg-[color:var(--hl)]"
+              style={{ width: `${balancePercentage}%` }}
+            />
+          </div>
           <div className="mt-2 flex items-center justify-between gap-2">
             <span className="text-sidebar-foreground/60 min-w-0 truncate text-[11px]">
               {summary}
             </span>
-            <span className="bg-sidebar-foreground text-sidebar inline-flex h-5 shrink-0 items-center rounded-md px-2 text-[10px] font-medium">
-              Upgrade
+            <span className="border-sidebar-border text-sidebar-foreground/70 inline-flex h-5 shrink-0 items-center rounded-md border px-2 text-[10px] font-medium">
+              Usage
             </span>
           </div>
         </>
       )}
     </Link>
-  );
-}
-
-function SidebarCreditSegments({ remaining, total }: { remaining: number; total: number }) {
-  const safeRemaining = Math.min(Math.max(remaining, 0), total);
-
-  return (
-    <div className="flex gap-1" aria-hidden>
-      {Array.from({ length: total }).map((_, index) => {
-        const isRemaining = index < safeRemaining;
-        return (
-          <span
-            key={index}
-            className={cn(
-              'h-1.5 flex-1 rounded-full',
-              isRemaining ? 'bg-[color:var(--hl)]' : 'bg-sidebar-foreground/25',
-            )}
-          />
-        );
-      })}
-    </div>
   );
 }
 
@@ -943,7 +928,11 @@ export function AppShell({
           headers: { Accept: 'application/json' },
         });
         if (!response.ok) {
-          if (active) setAiUsageLoading(false);
+          clearCachedAiUsage(profileId);
+          if (active) {
+            setAiUsage(null);
+            setAiUsageLoading(false);
+          }
           return;
         }
         const nextSummary = (await response.json()) as CachedWorkspaceSummary;
@@ -954,7 +943,11 @@ export function AppShell({
           setAiUsageLoading(false);
         }
       } catch {
-        if (active) setAiUsageLoading(false);
+        clearCachedAiUsage(profileId);
+        if (active) {
+          setAiUsage(null);
+          setAiUsageLoading(false);
+        }
       }
     }
 

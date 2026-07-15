@@ -97,56 +97,12 @@ export type AdminAiCreditAccountSummary = {
   updatedAt: string;
 };
 
-const FALLBACK_COSTS: Record<AiCreditActionKey, AiCreditCostSummary> = {
-  music_analysis: {
-    key: 'music_analysis',
-    name: 'Music analysis',
-    amount: 1,
-    description: 'Upload-scoped soundtrack analysis.',
-  },
-  show_generation_fast: {
-    key: 'show_generation_fast',
-    name: 'Fast show generation',
-    amount: 1,
-    description: 'Default deterministic cue planning.',
-  },
-  show_generation_gpt4o: {
-    key: 'show_generation_gpt4o',
-    name: 'GPT-4o show generation',
-    amount: 1,
-    description: 'Lower-cost OpenAI cue planning.',
-  },
-  show_generation_sonnet: {
-    key: 'show_generation_sonnet',
-    name: 'Claude Sonnet show generation',
-    amount: DEFAULT_SHOW_GENERATION_CREDITS,
-    description: 'Premium balanced cue planning.',
-  },
-  show_generation_opus: {
-    key: 'show_generation_opus',
-    name: 'Claude Opus 4 show generation',
-    amount: 5,
-    description: 'Highest-cost reasoning model cue planning.',
-  },
-  show_refinement: {
-    key: 'show_refinement',
-    name: 'Show refinement',
-    amount: SHOW_REFINEMENT_CREDITS,
-    description: 'Prompted changes to a show timeline.',
-  },
-  import_video_reconstruction: {
-    key: 'import_video_reconstruction',
-    name: 'Import video reconstruction',
-    amount: 25,
-    description: 'Admin product-video reconstruction.',
-  },
-  import_video_refinement: {
-    key: 'import_video_refinement',
-    name: 'Import video refinement',
-    amount: 15,
-    description: 'Admin prompted import refinement.',
-  },
-};
+export class AiCreditReadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AiCreditReadError';
+  }
+}
 
 const ACTION_LABELS: Record<string, string> = {
   admin_credit_grant: 'Admin credit grant',
@@ -222,42 +178,32 @@ function summaryFromUsage(
   costs: AiCreditCostSummary[],
   recentTransactions: AiCreditTransactionSummary[],
 ): AiCreditSummary {
-  const fallbackBalance = DEFAULT_INCLUDED_AI_CREDITS;
-  const balance = usage.ok ? (usage.balance ?? fallbackBalance) : fallbackBalance;
-  const reserved = usage.ok ? (usage.reserved ?? 0) : 0;
-  const totalGranted = usage.ok
-    ? (usage.totalGranted ?? Math.max(balance, DEFAULT_INCLUDED_AI_CREDITS))
-    : DEFAULT_INCLUDED_AI_CREDITS;
-  const totalSpent = usage.ok ? (usage.totalSpent ?? Math.max(totalGranted - balance, 0)) : 0;
-  const hourlyLimit = usage.hourlyLimit ?? DEFAULT_HOURLY_AI_CREDIT_LIMIT;
-  const weeklyLimit = usage.weeklyLimit ?? DEFAULT_WEEKLY_AI_CREDIT_LIMIT;
-  const hourlyUsed = usage.ok ? (usage.hourlyUsed ?? 0) : 0;
-  const weeklyUsed = usage.ok ? (usage.weeklyUsed ?? 0) : 0;
-  const hourlyRemaining = usage.ok
-    ? (usage.hourlyRemaining ?? Math.max(hourlyLimit - hourlyUsed - reserved, 0))
-    : hourlyLimit;
-  const weeklyRemaining = usage.ok
-    ? (usage.weeklyRemaining ?? Math.max(weeklyLimit - weeklyUsed - reserved, 0))
-    : weeklyLimit;
+  if (!usage.ok) {
+    throw new AiCreditReadError(usage.error ?? 'AI credit usage could not be loaded.');
+  }
+
+  const required = (value: number | undefined, field: string) => {
+    if (value === undefined) {
+      throw new AiCreditReadError(`AI credit usage omitted ${field}.`);
+    }
+    return value;
+  };
 
   return {
-    balance,
-    reserved,
-    available: usage.ok
-      ? (usage.available ??
-        Math.min(Math.max(balance - reserved, 0), hourlyRemaining, weeklyRemaining))
-      : Math.min(fallbackBalance, hourlyRemaining, weeklyRemaining),
-    includedCredits: usage.includedCredits ?? DEFAULT_INCLUDED_AI_CREDITS,
-    hourlyLimit,
-    weeklyLimit,
-    hourlyUsed,
-    weeklyUsed,
-    hourlyRemaining,
-    weeklyRemaining,
+    balance: required(usage.balance, 'balance'),
+    reserved: required(usage.reserved, 'reserved'),
+    available: required(usage.available, 'available'),
+    includedCredits: required(usage.includedCredits, 'includedCredits'),
+    hourlyLimit: required(usage.hourlyLimit, 'hourlyLimit'),
+    weeklyLimit: required(usage.weeklyLimit, 'weeklyLimit'),
+    hourlyUsed: required(usage.hourlyUsed, 'hourlyUsed'),
+    weeklyUsed: required(usage.weeklyUsed, 'weeklyUsed'),
+    hourlyRemaining: required(usage.hourlyRemaining, 'hourlyRemaining'),
+    weeklyRemaining: required(usage.weeklyRemaining, 'weeklyRemaining'),
     hourlyResetAt: usage.hourlyResetAt ?? null,
     weeklyResetAt: usage.weeklyResetAt ?? null,
-    totalGranted,
-    totalSpent,
+    totalGranted: required(usage.totalGranted, 'totalGranted'),
+    totalSpent: required(usage.totalSpent, 'totalSpent'),
     costs,
     recentTransactions,
   };
@@ -279,41 +225,22 @@ export async function invalidateSidebarAiUsageCache(userId: string): Promise<voi
   await deleteCachedKeys([aiUsageCacheKey(userId)]);
 }
 
-/** Map the account RPC result to the sidebar usage shape with safe fallbacks. */
+/** Map the account RPC result to the sidebar usage shape without inventing billing data. */
 function sidebarUsageFromRpc(usage: AiCreditRpcResult): AiUsageSummary {
-  const fallbackBalance = DEFAULT_INCLUDED_AI_CREDITS;
-  const balance = usage.ok ? (usage.balance ?? fallbackBalance) : fallbackBalance;
-  const reserved = usage.ok ? (usage.reserved ?? 0) : 0;
-  const totalGranted = usage.ok
-    ? (usage.totalGranted ?? Math.max(balance, DEFAULT_INCLUDED_AI_CREDITS))
-    : DEFAULT_INCLUDED_AI_CREDITS;
-  const totalSpent = usage.ok ? (usage.totalSpent ?? Math.max(totalGranted - balance, 0)) : 0;
-  const hourlyLimit = usage.hourlyLimit ?? DEFAULT_HOURLY_AI_CREDIT_LIMIT;
-  const weeklyLimit = usage.weeklyLimit ?? DEFAULT_WEEKLY_AI_CREDIT_LIMIT;
-  const hourlyUsed = usage.ok ? (usage.hourlyUsed ?? 0) : 0;
-  const weeklyUsed = usage.ok ? (usage.weeklyUsed ?? 0) : 0;
-  const hourlyRemaining = usage.ok
-    ? (usage.hourlyRemaining ?? Math.max(hourlyLimit - hourlyUsed - reserved, 0))
-    : hourlyLimit;
-  const weeklyRemaining = usage.ok
-    ? (usage.weeklyRemaining ?? Math.max(weeklyLimit - weeklyUsed - reserved, 0))
-    : weeklyLimit;
+  const summary = summaryFromUsage(usage, [], []);
   return {
-    balance,
-    reserved,
-    available: usage.ok
-      ? (usage.available ??
-        Math.min(Math.max(balance - reserved, 0), hourlyRemaining, weeklyRemaining))
-      : Math.min(fallbackBalance, hourlyRemaining, weeklyRemaining),
-    includedCredits: usage.includedCredits ?? DEFAULT_INCLUDED_AI_CREDITS,
-    hourlyLimit,
-    weeklyLimit,
-    hourlyUsed,
-    weeklyUsed,
-    hourlyRemaining,
-    weeklyRemaining,
-    totalGranted,
-    totalSpent,
+    balance: summary.balance,
+    reserved: summary.reserved,
+    available: summary.available,
+    includedCredits: summary.includedCredits,
+    hourlyLimit: summary.hourlyLimit,
+    weeklyLimit: summary.weeklyLimit,
+    hourlyUsed: summary.hourlyUsed,
+    weeklyUsed: summary.weeklyUsed,
+    hourlyRemaining: summary.hourlyRemaining,
+    weeklyRemaining: summary.weeklyRemaining,
+    totalGranted: summary.totalGranted,
+    totalSpent: summary.totalSpent,
   };
 }
 
@@ -358,7 +285,8 @@ export async function getAiCreditCost(
     .eq('key', actionKey)
     .maybeSingle();
 
-  if (error || !data) return FALLBACK_COSTS[actionKey];
+  if (error) throw new AiCreditReadError(error.message);
+  if (!data) throw new AiCreditReadError(`AI credit cost '${actionKey}' was not found.`);
   return {
     key: data.key as AiCreditActionKey,
     name: data.name,
@@ -389,7 +317,17 @@ export async function reserveAiCredits(
     metadata?: Record<string, Json | undefined>;
   },
 ): Promise<AiCreditRpcResult & { reservationKey: string; amount: number }> {
-  const cost = await getAiCreditCost(supabase, params.actionKey);
+  let cost: AiCreditCostSummary;
+  try {
+    cost = await getAiCreditCost(supabase, params.actionKey);
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Could not read the AI credit cost.',
+      reservationKey: params.reservationKey,
+      amount: 0,
+    };
+  }
   if (cost.amount <= 0) {
     return {
       ok: true,
@@ -495,9 +433,15 @@ export async function getAiCreditSummaryForUser(userId: string): Promise<AiCredi
         'id, transaction_type, status, action_key, amount, reference_type, reference_id, created_at',
       )
       .eq('user_id', userId)
+      // A terminal reservation has a matching debit or refund row. Keeping both
+      // would present one completed action twice and mislabel spent credit as reserved.
+      .or('transaction_type.neq.reserve,status.eq.reserved')
       .order('created_at', { ascending: false })
       .limit(8),
   ]);
+
+  if (costsResult.error) throw new AiCreditReadError(costsResult.error.message);
+  if (transactionsResult.error) throw new AiCreditReadError(transactionsResult.error.message);
 
   const costs = (costsResult.data ?? []).map((cost) => ({
     key: cost.key as AiCreditActionKey,
@@ -517,11 +461,11 @@ export async function getAiCreditSummaryForUser(userId: string): Promise<AiCredi
     referenceId: transaction.reference_id,
   }));
 
-  return summaryFromUsage(
-    usage,
-    costs.length ? costs : Object.values(FALLBACK_COSTS),
-    recentTransactions,
-  );
+  if (costs.length === 0) {
+    throw new AiCreditReadError('AI credit costs were not found.');
+  }
+
+  return summaryFromUsage(usage, costs, recentTransactions);
 }
 
 export async function getCurrentUserAiCreditSummary(): Promise<AiCreditSummary | null> {
@@ -557,14 +501,15 @@ export async function listAdminAiCreditAccounts(): Promise<AdminAiCreditAccountS
     .select('user_id, balance, reserved, updated_at')
     .order('updated_at', { ascending: false });
   if (error) {
-    console.error('[ai-credits] list accounts failed:', error);
-    return [];
+    throw new AiCreditReadError(error.message);
   }
 
   const userIds = (accounts ?? []).map((account) => account.user_id);
-  const { data: users } = userIds.length
+  const usersResult = userIds.length
     ? await supabase.from('users').select('id, email, full_name').in('id', userIds)
-    : { data: [] };
+    : { data: [], error: null };
+  if (usersResult.error) throw new AiCreditReadError(usersResult.error.message);
+  const users = usersResult.data;
   const usersById = new Map((users ?? []).map((user) => [user.id, user]));
   const usages = await Promise.all(
     (accounts ?? []).map((account) => ensureAiCreditAccount(supabase, account.user_id)),
@@ -576,17 +521,17 @@ export async function listAdminAiCreditAccounts(): Promise<AdminAiCreditAccountS
   return (accounts ?? []).map((account) => {
     const user = usersById.get(account.user_id);
     const usage = usageByUserId.get(account.user_id);
-    const balance = usage?.balance ?? account.balance;
-    const reserved = usage?.reserved ?? account.reserved;
+    if (!usage) throw new AiCreditReadError('AI credit usage was not returned.');
+    const summary = sidebarUsageFromRpc(usage);
     return {
       userId: account.user_id,
       email: user?.email ?? null,
       fullName: user?.full_name ?? null,
-      balance,
-      reserved,
-      available: usage?.available ?? Math.max(balance - reserved, 0),
-      totalGranted: usage?.totalGranted ?? balance,
-      totalSpent: usage?.totalSpent ?? 0,
+      balance: summary.balance,
+      reserved: summary.reserved,
+      available: summary.available,
+      totalGranted: summary.totalGranted,
+      totalSpent: summary.totalSpent,
       updatedAt: account.updated_at,
     };
   });

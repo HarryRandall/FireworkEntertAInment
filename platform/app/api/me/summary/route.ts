@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getWorkspaceSummary } from '@/lib/show-summary.server';
-import { getSidebarAiUsageSummary } from '@/lib/ai-credits.server';
+import { AiCreditReadError, getSidebarAiUsageSummary } from '@/lib/ai-credits.server';
 import { ShowsNetworkError } from '@/lib/shows.server';
 import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 
@@ -20,7 +20,11 @@ export async function GET() {
     ]);
     return NextResponse.json({ ...summary, aiUsage });
   } catch (error) {
-    if (error instanceof ShowsNetworkError || isSupabaseTransientNetworkError(error)) {
+    if (
+      error instanceof ShowsNetworkError ||
+      error instanceof AiCreditReadError ||
+      isSupabaseTransientNetworkError(error)
+    ) {
       return NextResponse.json(
         { ok: false, error: 'Workspace summary is temporarily unavailable.' },
         { status: 503 },
