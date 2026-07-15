@@ -1,51 +1,82 @@
 /** Loading skeleton for the `/settings/profile` route. */
 
 import { Skeleton } from '@/app/components/ui/Feedback';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+const THEME_OPTIONS = [
+  { label: 'Dark', description: 'Layered black workspace' },
+  { label: 'Light', description: 'Bright production view' },
+  { label: 'System', description: 'Match this device' },
+] as const;
 
 export default function ProfileSettingsLoading() {
   return (
-    <div className="space-y-6" aria-label="Loading personal details">
+    <div className="space-y-6" aria-label="Loading personal details" aria-busy="true">
       <Card>
         <CardHeader>
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-4 w-72 max-w-full" />
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Update your name, contact details, and interface theme.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
+              <p className="text-foreground text-sm font-medium">Full name</p>
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
             <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
+              <p className="text-foreground text-sm font-medium">Phone</p>
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Skeleton className="h-4 w-16" />
+              <p className="text-foreground text-sm font-medium">Email</p>
               <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-4 w-64 max-w-full" />
+              <p className="text-muted-foreground text-sm">
+                Email changes are handled through account security.
+              </p>
             </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-28 rounded-xl" />
-            ))}
+
+          <div className="border-border border-t pt-6">
+            <p className="text-foreground mb-3 text-sm font-medium">Interface theme</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              {THEME_OPTIONS.map((option) => (
+                <div key={option.label} className="border-border min-h-28 rounded-xl border p-4">
+                  <Skeleton className="size-8 rounded-lg" />
+                  <p className="text-foreground mt-3 text-sm font-medium">{option.label}</p>
+                  <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                    {option.description}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-4 w-64 max-w-full" />
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Sign out or permanently delete your account.</CardDescription>
         </CardHeader>
         <CardContent className="divide-border divide-y p-0">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <div key={index} className="flex items-center justify-between gap-4 px-5 py-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-64 max-w-full" />
+          {[
+            {
+              title: 'Session',
+              description: 'Loading the action available for this browser session.',
+            },
+            {
+              title: 'Delete account',
+              description:
+                'Permanently remove your account, profile, and any shows you own. This cannot be undone.',
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <h2 className="text-foreground text-sm font-medium">{item.title}</h2>
+                <p className="text-muted-foreground mt-1 text-sm">{item.description}</p>
               </div>
               <Skeleton className="h-10 w-32 rounded-md" />
             </div>
