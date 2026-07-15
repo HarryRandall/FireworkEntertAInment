@@ -1,6 +1,6 @@
 'use client';
 
-/** FilterBar — search + filter chips bound to URL searchParams — use atop any paginated list route. */
+/** Search and filter controls bound to URL search parameters for paginated routes. */
 import {
   useCallback,
   useEffect,
@@ -63,31 +63,45 @@ export function FilterBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchParamsRef = useRef(searchParams.toString());
 
   const initialSearch = searchParams.get(searchKey) ?? '';
   const [searchValue, setSearchValue] = useState(initialSearch);
 
   useEffect(() => {
-    setSearchValue(searchParams.get(searchKey) ?? '');
+    searchParamsRef.current = searchParams.toString();
+    if (debounceRef.current === null) {
+      setSearchValue(searchParams.get(searchKey) ?? '');
+    }
   }, [searchKey, searchParams]);
+
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
 
   const updateParams = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsRef.current);
       mutate(params);
+      params.delete('page');
       const query = params.toString();
+      searchParamsRef.current = query;
       startTransition(() => {
         router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
       });
     },
-    [pathname, router, searchParams],
+    [pathname, router],
   );
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSearchChange = (value: string) => {
     setSearchValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
       updateParams((p) => {
         if (value) p.set(searchKey, value);
         else p.delete(searchKey);
@@ -122,6 +136,11 @@ export function FilterBar({
   const hasAnyActive = activeFilters.length > 0 || Boolean(searchParams.get(searchKey));
 
   const clearAll = () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    setSearchValue('');
     updateParams((p) => {
       p.delete(searchKey);
       for (const f of filters) {
@@ -145,14 +164,25 @@ export function FilterBar({
   };
 
   return (
-    <div className={cn('flex flex-col gap-3', className)} data-pending={isPending || undefined}>
+    <div
+      className={cn('flex flex-col gap-3', className)}
+      data-pending={isPending || undefined}
+      aria-busy={isPending}
+    >
+      <span className="sr-only" role="status" aria-live="polite">
+        {isPending ? 'Updating results…' : ''}
+      </span>
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <Input
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
+            type="search"
+            name={searchKey}
+            autoComplete="off"
+            spellCheck={false}
             placeholder={searchPlaceholder}
-            iconLeft={<Search size={16} />}
+            iconLeft={<Search size={16} aria-hidden="true" />}
             aria-label="Search"
           />
         </div>
@@ -167,8 +197,7 @@ export function FilterBar({
         ) : null}
       </div>
 
-      {(activeFilters.length > 0 || hasAnyActive) &&
-      activeFilters.length + (searchParams.get(searchKey) ? 0 : 0) > 0 ? (
+      {hasAnyActive ? (
         <div className="flex flex-wrap items-center gap-2">
           {activeFilters.map(({ config, chip }) => (
             <button
@@ -180,7 +209,11 @@ export function FilterBar({
             >
               <Badge tone="neutral" solid className="gap-1 pr-1">
                 {chip}
-                <X size={12} className="text-muted-foreground group-hover:text-foreground ml-1" />
+                <X
+                  size={12}
+                  className="text-muted-foreground group-hover:text-foreground ml-1"
+                  aria-hidden="true"
+                />
               </Badge>
             </button>
           ))}
@@ -215,7 +248,7 @@ function FilterPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="secondary" size="md">
-          <ListFilter size={16} />
+          <ListFilter size={16} aria-hidden="true" />
           Filter
         </Button>
       </PopoverTrigger>
@@ -290,9 +323,9 @@ function FilterPopoverBackButton({ label, onClick }: { label: string; onClick: (
     <button
       type="button"
       onClick={onClick}
-      className="text-muted-foreground hover:bg-muted hover:text-foreground mx-1 mt-1 flex h-8 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring mx-1 mt-1 flex h-8 items-center gap-2 rounded-md px-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-3"
     >
-      <ArrowLeft size={14} />
+      <ArrowLeft size={14} aria-hidden="true" />
       {label}
     </button>
   );
@@ -333,7 +366,9 @@ function RangeFilterPanel({
       <div className="flex items-center gap-2">
         <Input
           type="number"
+          name={`${filter.key}_min`}
           inputMode="decimal"
+          autoComplete="off"
           value={min}
           onChange={(e) => setMin(e.target.value)}
           placeholder={filter.minPlaceholder ?? 'Min'}
@@ -342,7 +377,9 @@ function RangeFilterPanel({
         <span className="text-muted-foreground text-xs">to</span>
         <Input
           type="number"
+          name={`${filter.key}_max`}
           inputMode="decimal"
+          autoComplete="off"
           value={max}
           onChange={(e) => setMax(e.target.value)}
           placeholder={filter.maxPlaceholder ?? 'Max'}
