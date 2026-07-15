@@ -22,6 +22,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { ShowTemplate } from '@/lib/admin.types';
 
@@ -65,6 +66,7 @@ export function ExplorePreviewProvider({
   specifications: FireworkSpecification[];
   children: ReactNode;
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [active, setActive] = useState<{ id: string; element: HTMLElement } | null>(null);
   // A hover that has started but not yet survived the intent delay. While
   // pending, the card keeps showing its poster; only on confirm do we activate
@@ -116,8 +118,15 @@ export function ExplorePreviewProvider({
     setActive(null);
   }, [clearIntentTimer, parkOverlay]);
 
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    cancelActivePreview();
+  }, [cancelActivePreview, prefersReducedMotion]);
+
   const requestPreview = useCallback(
     (id: string, element: HTMLElement, template: ShowTemplate) => {
+      if (prefersReducedMotion) return;
+
       clearIntentTimer();
       setPending({ id, element, template });
       intentTimerRef.current = setTimeout(() => {
@@ -127,7 +136,7 @@ export function ExplorePreviewProvider({
         setPending((current) => (current && current.id === id ? null : current));
       }, HOVER_INTENT_MS);
     },
-    [clearIntentTimer],
+    [clearIntentTimer, prefersReducedMotion],
   );
 
   const releasePreview = useCallback(
@@ -250,7 +259,7 @@ export function ExplorePreviewProvider({
         className="pointer-events-none fixed top-0 left-0 z-30 overflow-hidden rounded-xl opacity-0"
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
-        {mountedTemplate ? (
+        {mountedTemplate && !prefersReducedMotion ? (
           <TemplateReplayPreview
             template={mountedTemplate}
             specifications={specifications}

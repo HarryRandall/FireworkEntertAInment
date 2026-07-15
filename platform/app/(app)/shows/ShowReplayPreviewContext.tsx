@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Play } from 'lucide-react';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import type { ReplayCue } from '@/lib/show-domain';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { ShowSummaryCard } from '@/lib/show-summary';
@@ -135,6 +136,7 @@ function ShowReplayPreviewSurface({
 }
 
 export function ShowReplayPreviewProvider({ children }: { children: ReactNode }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [active, setActive] = useState<ActivePreview | null>(null);
   const [pending, setPending] = useState<{ id: string; element: HTMLElement } | null>(null);
   const [mountedPreview, setMountedPreview] = useState<MountedPreview | null>(null);
@@ -176,6 +178,11 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
     parkOverlay();
   }, [clearIntentTimer, parkOverlay]);
 
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    cancelActivePreview();
+  }, [cancelActivePreview, prefersReducedMotion]);
+
   const confirmPreview = useCallback(
     async (serial: number, id: string, element: HTMLElement, show: ShowSummaryCard) => {
       let cues = cueCacheRef.current.get(show.id);
@@ -206,6 +213,8 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
 
   const requestPreview = useCallback(
     (id: string, element: HTMLElement, show: ShowSummaryCard) => {
+      if (prefersReducedMotion) return;
+
       requestSerialRef.current += 1;
       const serial = requestSerialRef.current;
       clearIntentTimer();
@@ -215,7 +224,7 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         void confirmPreview(serial, id, element, show);
       }, HOVER_INTENT_MS);
     },
-    [clearIntentTimer, confirmPreview],
+    [clearIntentTimer, confirmPreview, prefersReducedMotion],
   );
 
   const releasePreview = useCallback(
@@ -304,7 +313,7 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         className="pointer-events-none fixed top-0 left-0 z-30 overflow-hidden rounded-xl opacity-0"
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
-        {mountedPreview ? (
+        {mountedPreview && !prefersReducedMotion ? (
           <>
             <ShowReplayPreviewSurface
               preview={mountedPreview}

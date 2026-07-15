@@ -9,7 +9,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ExploreCard } from '@/app/components/app/ExploreCard';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import type { ShowTemplate } from '@/lib/admin.types';
+import { cn } from '@/lib/utils';
 
 export function ExploreRow({
   title,
@@ -20,6 +22,7 @@ export function ExploreRow({
   templates: ShowTemplate[];
   seeAllHref?: string;
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -49,7 +52,10 @@ export function ExploreRow({
   function scrollBy(direction: 1 | -1) {
     const node = scrollerRef.current;
     if (!node) return;
-    node.scrollBy({ left: direction * node.clientWidth * 0.85, behavior: 'smooth' });
+    node.scrollBy({
+      left: direction * node.clientWidth * 0.85,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
   }
 
   return (
@@ -71,7 +77,10 @@ export function ExploreRow({
         <div
           ref={scrollerRef}
           data-explore-scroll-viewport
-          className="-mt-4 -mb-6 flex gap-4 overflow-x-auto scroll-smooth pt-4 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={cn(
+            '-mt-4 -mb-6 flex gap-4 overflow-x-auto pt-4 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            prefersReducedMotion ? 'scroll-auto' : 'scroll-smooth',
+          )}
         >
           {templates.map((template) => (
             <ExploreCard key={template.id} template={template} />
