@@ -2,7 +2,7 @@
 
 /** Interactive backfill grid: renders missing preset covers to PNGs and uploads them. */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ImageIcon, Loader2, RefreshCw } from 'lucide-react';
 import { CoverPoster } from '@/app/components/app/CoverPoster';
 import { Badge } from '@/app/components/ui/Badge';
@@ -20,6 +20,10 @@ type PresetState = {
   message?: string;
 };
 
+// Six cards fill the widest grid row. The remaining poster images can use the
+// browser's native lazy-loading path instead of competing for initial bandwidth.
+const EAGER_POSTER_COUNT = 6;
+
 export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[] }) {
   const [states, setStates] = useState<Record<string, PresetState>>(() => {
     const init: Record<string, PresetState> = {};
@@ -28,20 +32,29 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
     }
     return init;
   });
-  const [running, setRunning] = useState(false);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [activeRenderId, setActiveRenderId] = useState<string | null>(null);
+  const renderLockRef = useRef(false);
 
   const missing = useMemo(
     () => presets.filter((preset) => preset.cover && !states[preset.id]?.coverImagePath),
     [presets, states],
   );
   const missingCount = missing.length;
+  const activePreset = useMemo(
+    () => presets.find((preset) => preset.id === activeRenderId) ?? null,
+    [activeRenderId, presets],
+  );
+  const isBusy = bulkRunning || activeRenderId !== null;
 
   function setState(id: string, next: Partial<PresetState>) {
     setStates((prev) => ({ ...prev, [id]: { ...prev[id], ...next } }));
   }
 
   async function renderOne(preset: CoverBackfillPreset) {
-    if (!preset.cover) return;
+    if (!preset.cover || renderLockRef.current) return;
+    renderLockRef.current = true;
+    setActiveRenderId(preset.id);
     setState(preset.id, { status: 'rendering', message: undefined });
     try {
       const dataUrl = await renderCoverToPng(preset.cover);
@@ -56,41 +69,57 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
         status: 'error',
         message: error instanceof Error ? error.message : 'Render failed',
       });
+    } finally {
+      renderLockRef.current = false;
+      setActiveRenderId((current) => (current === preset.id ? null : current));
     }
   }
 
   async function renderMissing() {
-    if (running || missingCount === 0) return;
-    setRunning(true);
-    for (const preset of missing) {
-      // Sequential so only one hidden WebGL context exists at a time.
-      await renderOne(preset);
+    if (renderLockRef.current || bulkRunning || missingCount === 0) return;
+    setBulkRunning(true);
+    try {
+      for (const preset of missing) {
+        // Await the full render, upload, and confirmed row update before the
+        // next hidden renderer mounts.
+        await renderOne(preset);
+      }
+    } finally {
+      setBulkRunning(false);
     }
-    setRunning(false);
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-on-surface-variant text-sm">
-          {missingCount} of {presets.length} presets need a poster.
+        <p
+          className="text-on-surface-variant text-sm"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {activePreset
+            ? `Rendering ${activePreset.title} poster…`
+            : `${missingCount} of ${presets.length} presets need a poster.`}
         </p>
         <Button
           onClick={renderMissing}
-          disabled={running || missingCount === 0}
-          aria-busy={running}
+          disabled={isBusy || missingCount === 0}
+          loading={bulkRunning}
         >
-          {running ? (
-            <Loader2 aria-hidden className="size-4 animate-spin motion-reduce:animate-none" />
+          {bulkRunning ? (
+            'Rendering posters…'
           ) : (
-            <RefreshCw aria-hidden className="size-4" />
+            <>
+              <RefreshCw aria-hidden className="size-4" />
+              Render missing posters
+            </>
           )}
-          Render missing posters
         </Button>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-        {presets.map((preset) => {
+        {presets.map((preset, index) => {
           const state = states[preset.id] ?? {
             coverImagePath: preset.coverImagePath,
             status: 'idle' as ItemStatus,
@@ -98,13 +127,13 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
           const hasPoster = Boolean(state.coverImagePath);
           const isRendering = state.status === 'rendering';
           return (
-            <Card key={preset.id} radius="md" className="overflow-hidden">
+            <Card key={preset.id} radius="md" className="overflow-hidden" aria-busy={isRendering}>
               <div className="bg-surface-container relative aspect-[4/5] w-full">
                 {preset.cover ? (
                   <CoverPoster
                     imagePath={state.coverImagePath}
                     fallbackCover={preset.cover}
-                    eager
+                    eager={index < EAGER_POSTER_COUNT}
                   />
                 ) : (
                   <div className="text-on-surface-variant flex h-full items-center justify-center text-xs">
@@ -128,7 +157,15 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {hasPoster ? (
+                  {isRendering ? (
+                    <Badge tone="neutral" solid>
+                      Rendering
+                    </Badge>
+                  ) : state.status === 'error' ? (
+                    <Badge tone="danger" solid>
+                      Failed
+                    </Badge>
+                  ) : hasPoster ? (
                     <Badge tone="success" solid>
                       Poster
                     </Badge>
@@ -140,16 +177,27 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => renderOne(preset)}
-                    disabled={running || !preset.cover || isRendering}
-                    aria-label={`Re-render ${preset.title} poster`}
+                    onClick={() => void renderOne(preset)}
+                    disabled={isBusy || !preset.cover}
+                    loading={isRendering}
+                    aria-label={
+                      isRendering
+                        ? `Rendering ${preset.title} poster`
+                        : `${hasPoster ? 'Re-render' : 'Render'} ${preset.title} poster`
+                    }
                   >
-                    <ImageIcon className="size-4" />
+                    {isRendering ? (
+                      <span className="sr-only">Rendering…</span>
+                    ) : (
+                      <ImageIcon aria-hidden className="size-4" />
+                    )}
                   </Button>
                 </div>
               </div>
               {state.status === 'error' && state.message ? (
-                <div className="text-error px-3 pb-3 text-[11px]">{state.message}</div>
+                <div className="text-error px-3 pb-3 text-[11px]" role="alert">
+                  {state.message}
+                </div>
               ) : null}
             </Card>
           );
