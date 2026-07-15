@@ -626,17 +626,31 @@ export async function generateCuesForShow(params: {
     return { ok: false, error: message };
   }
 
-  // === Stage 6: mark complete + refresh derived fields ===================
+  // === Stage 6: refresh derived fields + mark complete ===================
+  try {
+    await syncShowDerivedFieldsForUser(userId, {
+      showId,
+      showSlug: brief.slug,
+    });
+  } catch (error) {
+    const message = 'Could not finalise the generated show totals.';
+    console.error('[cue-generation] derived-field sync failed:', error);
+    await markGenerationStatus(supabase, userId, showId, {
+      generation_status: 'failed',
+      generation_error: message,
+      generation_completed_at: new Date().toISOString(),
+    });
+    timings.dbWriteMs = elapsedMs(dbStart);
+    await refundGenerationCredits(message);
+    logTimings('failed', { error: message });
+    return { ok: false, error: message };
+  }
+
   await markGenerationStatus(supabase, userId, showId, {
     generation_status: 'completed',
     generation_error: null,
     generated_cue_count: accepted.length,
     generation_completed_at: new Date().toISOString(),
-  });
-
-  await syncShowDerivedFieldsForUser(userId, {
-    showId,
-    showSlug: brief.slug,
   });
   revalidatePath(`/shows/${brief.slug}`);
   revalidatePath(`/shows/${brief.slug}/preview`);

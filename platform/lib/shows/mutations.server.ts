@@ -15,8 +15,8 @@ import { getServerClient } from './supabase';
 
 /**
  * Recomputes the shopping-list total and effects count for a single show and
- * writes them back. Always invalidates the per-show cache afterward so the
- * next read sees the fresh derived values.
+ * writes them back. Invalidates the per-show cache only after the database
+ * confirms the intended show row was updated.
  */
 export async function syncShowDerivedFieldsForUser(
   userId: string,
@@ -24,16 +24,24 @@ export async function syncShowDerivedFieldsForUser(
 ): Promise<void> {
   const supabase = await getServerClient();
   const computed = await computeShoppingListForShow(supabase, params.showId);
-  if (!computed) return;
+  if (!computed) {
+    throw new Error('Could not compute show totals.');
+  }
 
   const totalCents = computed.items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
-  await supabase
+  const { data: updatedShow, error } = await supabase
     .from('shows')
     .update({
       total_cents: totalCents,
       effects_count: computed.effectsCount,
     })
     .eq('id', params.showId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
+  if (error || !updatedShow) {
+    console.error('[shows.server] syncShowDerivedFieldsForUser update failed:', error);
+    throw new Error('Could not save show totals.', { cause: error ?? undefined });
+  }
   await invalidateShowCacheForUser(userId, params);
 }

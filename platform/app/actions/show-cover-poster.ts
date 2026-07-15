@@ -41,8 +41,14 @@ export async function setShowCoverImagePath(
   const update: { cover_image_path: string; cover_shader?: Json } = { cover_image_path: path };
   if (parsedCover) update.cover_shader = parsedCover as Json;
 
-  const { error } = await supabase.from('shows').update(update).eq('id', showId);
-  if (error) {
+  const { data: updatedShow, error } = await supabase
+    .from('shows')
+    .update(update)
+    .eq('id', showId)
+    .eq('user_id', user.id)
+    .select('id')
+    .maybeSingle();
+  if (error || !updatedShow) {
     console.error('[setShowCoverImagePath] update failed:', error);
     return { ok: false };
   }

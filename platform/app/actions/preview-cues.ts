@@ -283,10 +283,18 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   }
 
   if (user) {
-    await syncShowDerivedFieldsForUser(user.id, {
-      showId: parsed.data.showId,
-      showSlug: parsed.data.showSlug,
-    });
+    try {
+      await syncShowDerivedFieldsForUser(user.id, {
+        showId: parsed.data.showId,
+        showSlug: parsed.data.showSlug,
+      });
+    } catch (error) {
+      console.error('[addPreviewCueAction] derived-field sync failed:', error);
+      return {
+        ok: false,
+        error: 'The cue was added, but show totals could not refresh. Reload before retrying.',
+      };
+    }
   }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: 'Cue added.' };
@@ -326,10 +334,18 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
   }
 
   if (user && deletedCue?.show_id) {
-    await syncShowDerivedFieldsForUser(user.id, {
-      showId: deletedCue.show_id,
-      showSlug: parsed.data.showSlug,
-    });
+    try {
+      await syncShowDerivedFieldsForUser(user.id, {
+        showId: deletedCue.show_id,
+        showSlug: parsed.data.showSlug,
+      });
+    } catch (error) {
+      console.error('[deletePreviewCueAction] derived-field sync failed:', error);
+      return {
+        ok: false,
+        error: 'The cue was removed, but show totals could not refresh. Reload before retrying.',
+      };
+    }
   }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: 'Cue removed.' };

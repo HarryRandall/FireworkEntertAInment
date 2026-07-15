@@ -219,10 +219,18 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
     }
   }
 
-  await syncShowDerivedFieldsForUser(user.id, {
-    showId: show.id,
-    showSlug: show.slug,
-  });
+  try {
+    await syncShowDerivedFieldsForUser(user.id, {
+      showId: show.id,
+      showSlug: show.slug,
+    });
+  } catch (error) {
+    const removed = await removeIncompleteClone(supabase, user.id, show.id);
+    console.error('[cloneShowTemplateAction] derived-field sync failed:', error, {
+      cleanupSucceeded: removed,
+    });
+    redirectToCloneError(slug);
+  }
   revalidatePath('/home');
   redirect(`/shows/${show.slug}/preview`);
 }
