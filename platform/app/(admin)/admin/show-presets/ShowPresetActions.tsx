@@ -24,22 +24,66 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import type { AdminShowPresetImportShow } from '@/lib/admin.types';
+import type { CoverBackfillPreset } from '@/lib/admin/cover-posters.server';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
+import { CoverPosterBackfill } from './CoverPosterBackfill';
 
 export function ShowPresetCreateActions({
   importableShows,
+  coverPresets,
 }: {
   importableShows: AdminShowPresetImportShow[];
+  coverPresets: CoverBackfillPreset[] | null;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button href="/admin/cover-posters" variant="secondary">
-        <ImageIcon size={16} /> Cover posters
-      </Button>
+      <CoverPostersDialogButton coverPresets={coverPresets} />
       <ImportAllShowPresetsButton disabled={importableShows.length === 0} />
       <ImportShowPresetButton importableShows={importableShows} />
       <NewShowPresetButton />
     </div>
+  );
+}
+
+function CoverPostersDialogButton({
+  coverPresets,
+}: {
+  coverPresets: CoverBackfillPreset[] | null;
+}) {
+  const [open, setOpen] = useState(false);
+  // A null list is a failed read, not "no presets": keep the entry point
+  // visible but inert so the failure is not mistaken for completed work.
+  if (coverPresets === null) {
+    return (
+      <Button
+        variant="secondary"
+        disabled
+        title="Cover posters could not be loaded. Reload the page to retry."
+      >
+        <ImageIcon size={16} /> Cover posters unavailable
+      </Button>
+    );
+  }
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="secondary">
+          <ImageIcon size={16} /> Cover posters
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-5xl">
+        <DialogHeader>
+          <DialogTitle>Cover posters</DialogTitle>
+          <DialogDescription>
+            Render each curated show&apos;s shader cover to a stored PNG so browse pages show a
+            static image instead of a live WebGL context per card. Renders run in your browser.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <CoverPosterBackfill presets={coverPresets} />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

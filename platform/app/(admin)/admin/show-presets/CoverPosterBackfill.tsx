@@ -118,7 +118,9 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      {/* Rendered inside the curated-shows dialog (~64rem), so column count is
+          capped lower than the old full-width page grid. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {presets.map((preset, index) => {
           const state = states[preset.id] ?? {
             coverImagePath: preset.coverImagePath,

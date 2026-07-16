@@ -16,6 +16,7 @@ import { FilterBar, type FilterConfig } from '@/app/components/ui/FilterBar';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin.server';
+import { listShowPresetsForCoverBackfill } from '@/lib/admin/cover-posters.server';
 import { formatDuration, formatStableDateTime } from '@/lib/show-domain';
 import { DuplicateShowPresetButton, ShowPresetCreateActions } from './ShowPresetActions';
 
@@ -69,10 +70,11 @@ export default function AdminShowPresetsPage({ searchParams }: PageProps) {
 }
 
 async function ShowPresetsData({ searchParams }: { searchParams: PageProps['searchParams'] }) {
-  const [params, presets, importableShows] = await Promise.all([
+  const [params, presets, importableShows, coverPresets] = await Promise.all([
     searchParams,
     listAdminShowPresets(),
     listAdminShowPresetImportShows(),
+    listShowPresetsForCoverBackfill(),
   ]);
   const query = (params.q ?? '').trim().toLowerCase();
   const status = params.status;
@@ -105,7 +107,7 @@ async function ShowPresetsData({ searchParams }: { searchParams: PageProps['sear
         <div className="min-w-0 flex-1">
           <FilterBar searchPlaceholder="Search curated shows..." filters={FILTERS} />
         </div>
-        <ShowPresetCreateActions importableShows={importableShows} />
+        <ShowPresetCreateActions importableShows={importableShows} coverPresets={coverPresets} />
       </div>
 
       <DataTableShell
