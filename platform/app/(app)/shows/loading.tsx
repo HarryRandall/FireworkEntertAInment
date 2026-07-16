@@ -77,7 +77,7 @@ function ShowsListSkeleton() {
   );
 }
 
-/** Mirrors the `[id]/layout` heading, tabs and actions while the show lookup resolves. */
+/** Mirrors the `[id]/layout` tabs and actions while the show lookup resolves. */
 function ShowDetailChromeSkeleton({
   children,
   segment,
@@ -95,12 +95,7 @@ function ShowDetailChromeSkeleton({
       aria-label="Loading show"
       aria-busy="true"
     >
-      <header className="space-y-1.5">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">Show details</h1>
-        <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed text-pretty">
-          {activeSection.description}
-        </p>
-      </header>
+      <h1 className="sr-only">Show details</h1>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={showSlug} prefetch={false} />

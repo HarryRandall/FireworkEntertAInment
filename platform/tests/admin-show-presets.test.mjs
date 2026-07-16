@@ -28,9 +28,10 @@ test('admin show preset routes and navigation are wired without old header bands
   const actions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
   assert.match(shell, /href: '\/admin\/show-presets'/);
   assert.match(shell, /label: 'Explore shows'/);
-  assert.match(shell, /href: '\/admin\/cover-posters'/);
-  assert.match(shell, /label: 'Cover posters'/);
-  assert.match(actions, /href="\/admin\/cover-posters"/);
+  // Cover posters are embedded in the curated-shows page, not a separate tab.
+  assert.doesNotMatch(shell, /href: '\/admin\/cover-posters'/);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/cover-posters')), false);
+  assert.match(actions, /CoverPosterBackfill/);
   assert.match(actions, /Cover posters/);
 });
 

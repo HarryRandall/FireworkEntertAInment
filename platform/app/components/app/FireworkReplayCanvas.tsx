@@ -41,6 +41,10 @@ import {
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
 import { replaySimulationCacheKey } from '@/lib/fireworks/replay-cache-key';
+import {
+  FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
+  quantiseFireworksEngineTimeSeconds,
+} from '@/lib/fireworks/import-renderer-contract';
 import { Button } from '@/app/components/ui/Button';
 import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
 import { cn } from '@/lib/utils';
@@ -180,6 +184,12 @@ type Props = {
    */
   preserveDrawingBuffer?: boolean;
   /**
+   * Exposes deterministic, non-interactive frame capture to the protected
+   * import validator. The controller advances the same engine and composer as
+   * the visible replay, and is never enabled by normal replay consumers.
+   */
+  onCaptureController?: (controller: FireworkReplayCaptureController | null) => void;
+  /**
    * Aim-direction overlay for the multishot editor. When provided, a marker is
    * drawn from the shared mortar for each shot and the canvas becomes
    * pickable: clicking a marker selects it, and (with `repositionMarkerId` set)
@@ -195,6 +205,23 @@ type Props = {
   onRepositionMarker?: (id: string, panDegrees: number, tiltDegrees: number) => void;
   /** Fired once on pointer-up after a reposition drag, for persistence. */
   onRepositionCommit?: (id: string, panDegrees: number, tiltDegrees: number) => void;
+};
+
+export type FireworkReplayCapturedFrame = {
+  elapsedSeconds: number;
+  width: number;
+  height: number;
+  pixels: Uint8ClampedArray;
+  pngBase64: string | null;
+  stats: ReturnType<FireworksEngine['getStats']>;
+};
+
+export type FireworkReplayCaptureController = {
+  captureAt(
+    elapsedSeconds: number,
+    options?: { includePng?: boolean },
+  ): FireworkReplayCapturedFrame;
+  reset(): void;
 };
 
 const MAX_DEVICE_PIXEL_RATIO = 1.25;
@@ -795,6 +822,7 @@ export function FireworkReplayCanvas({
   onToggleFullscreen,
   showStarfield = true,
   preserveDrawingBuffer = false,
+  onCaptureController,
   aimMarkers,
   selectedMarkerId = null,
   onSelectMarker,
@@ -867,6 +895,7 @@ export function FireworkReplayCanvas({
   const [loadingProgress, setLoadingProgress] = useState<number | null>(null);
   const [loadingBarVisible, setLoadingBarVisible] = useState(showLoadingBar);
   const onReadyRef = useRef(onReady);
+  const onCaptureControllerRef = useRef(onCaptureController);
   const glowPadding = renderTuning.glowPadding ?? DEFAULT_FIREWORK_RENDER_TUNING.glowPadding;
   const whiteCoreSizePercent =
     renderTuning.whiteCoreSizePercent ?? DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent;
@@ -890,6 +919,9 @@ export function FireworkReplayCanvas({
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
+  useEffect(() => {
+    onCaptureControllerRef.current = onCaptureController;
+  }, [onCaptureController]);
   useEffect(() => {
     onSceneReadyRef.current = onSceneReady;
   }, [onSceneReady]);
@@ -1182,6 +1214,67 @@ export function FireworkReplayCanvas({
     }
     syncEngineViewport();
     composer.render(0);
+    let capturedElapsed = 0;
+    let capturedFrame = 0;
+    const captureCanvas = document.createElement('canvas');
+    const captureContext = captureCanvas.getContext('2d', { willReadFrequently: true });
+    if (captureContext) {
+      onCaptureControllerRef.current?.({
+        reset() {
+          internalElapsedRef.current = 0;
+          if (playbackRef) playbackRef.current = 0;
+          engine.setElapsed(0);
+          engine.settleCurrentBoundary();
+          capturedElapsed = 0;
+          capturedFrame = 0;
+          composer.render(0);
+        },
+        captureAt(requestedElapsed, options) {
+          if (!Number.isFinite(requestedElapsed) || requestedElapsed < 0) {
+            throw new Error('Capture time must be a finite non-negative number.');
+          }
+          const target = quantiseFireworksEngineTimeSeconds(requestedElapsed);
+          const targetFrame = Math.round(target / FIREWORKS_ENGINE_FIXED_STEP_SECONDS);
+          if (target + 0.0001 < capturedElapsed) {
+            engine.setElapsed(0);
+            engine.settleCurrentBoundary();
+            capturedElapsed = 0;
+            capturedFrame = 0;
+          }
+          // Integer frame chunks keep the engine on one global 60 Hz lattice.
+          // Requested sample boundaries must never introduce a fractional
+          // physics step, because that changes the carrier's apex timing.
+          while (capturedFrame < targetFrame) {
+            const nextFrame = Math.min(targetFrame, capturedFrame + 15);
+            const next = nextFrame * FIREWORKS_ENGINE_FIXED_STEP_SECONDS;
+            engine.setElapsed(next);
+            capturedElapsed = next;
+            capturedFrame = nextFrame;
+          }
+          internalElapsedRef.current = target;
+          if (playbackRef) playbackRef.current = target;
+          composer.render(0);
+
+          const width = renderer.domElement.width;
+          const height = renderer.domElement.height;
+          captureCanvas.width = width;
+          captureCanvas.height = height;
+          captureContext.drawImage(renderer.domElement, 0, 0, width, height);
+          const pixels = captureContext.getImageData(0, 0, width, height).data;
+          return {
+            elapsedSeconds: target,
+            width,
+            height,
+            pixels,
+            pngBase64:
+              options?.includePng === true
+                ? (captureCanvas.toDataURL('image/png').split(',', 2)[1] ?? '')
+                : null,
+            stats: engine.getStats(),
+          };
+        },
+      });
+    }
     // The empty scene is on screen; let the parent drop its placeholder so the
     // user can see (and orbit) the stage while fireworks are still priming.
     if (!hasReportedSceneReadyRef.current) {
@@ -1353,6 +1446,7 @@ export function FireworkReplayCanvas({
     ro.observe(container);
 
     return () => {
+      onCaptureControllerRef.current?.(null);
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       document.removeEventListener('pointerdown', unlockAudio, { capture: true });

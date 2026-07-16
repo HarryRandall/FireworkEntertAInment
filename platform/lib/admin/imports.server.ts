@@ -73,19 +73,24 @@ async function createSignedImportVideoUrl(
 }
 
 /** Returns the import-job list, or `[]` when unauthorised. Cached. */
-export async function listImportJobs(): Promise<ImportJobSummary[]> {
+export async function listImportJobs(
+  view: 'active' | 'archived' = 'active',
+): Promise<ImportJobSummary[]> {
   if (!(await requirePermission('admin.manage_imports'))) return [];
-  const cacheKey = getAdminImportsCacheKey();
+  const cacheKey = getAdminImportsCacheKey(view);
   const cached = await getCachedJson<ImportJobSummary[]>(cacheKey);
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, archived_at, archived_by, started_at, completed_at, created_at, updated_at',
     )
     .order('updated_at', { ascending: false });
+  query =
+    view === 'archived' ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
+  const { data, error } = await query;
   if (error) {
     throwImportReadError('listImportJobs', error);
   }
@@ -105,7 +110,7 @@ export async function getImportJobDetail(jobId: string): Promise<ImportJobDetail
   const { data: job, error: jobError } = await supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, archived_at, archived_by, started_at, completed_at, created_at, updated_at',
     )
     .eq('id', jobId)
     .maybeSingle();

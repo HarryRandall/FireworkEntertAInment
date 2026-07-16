@@ -67,12 +67,12 @@ test('admin routes cap data workspaces without constraining full-bleed editors',
   }
 });
 
-test('cover poster grids add columns in both loaded and loading states', () => {
-  const grid = read('app/(admin)/admin/cover-posters/CoverPosterBackfill.tsx');
-  const loading = read('app/(admin)/admin/cover-posters/loading.tsx');
+test('cover poster grid stays responsive inside the curated-shows dialog', () => {
+  const grid = read('app/(admin)/admin/show-presets/CoverPosterBackfill.tsx');
 
-  for (const source of [grid, loading]) {
-    assert.match(source, /xl:grid-cols-5/);
-    assert.match(source, /2xl:grid-cols-6/);
-  }
+  assert.match(grid, /grid-cols-2/);
+  assert.match(grid, /sm:grid-cols-3/);
+  assert.match(grid, /lg:grid-cols-4/);
+  // The dialog caps at ~64rem, so wider breakpoints must not add columns.
+  assert.doesNotMatch(grid, /xl:grid-cols/);
 });

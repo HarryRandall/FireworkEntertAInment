@@ -34,7 +34,13 @@ const STATUS_OPTIONS = [
   { value: 'failed', label: 'Failed' },
 ];
 
-export function ImportJobCard({ job }: { job: ImportJobSummary }) {
+export function ImportJobCard({
+  job,
+  readOnly = false,
+}: {
+  job: ImportJobSummary;
+  readOnly?: boolean;
+}) {
   const router = useRouter();
   const mutationLockRef = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -50,7 +56,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
 
   function saveJob(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mutationLockRef.current) return;
+    if (readOnly || mutationLockRef.current) return;
 
     const formData = new FormData(event.currentTarget);
     mutationLockRef.current = true;
@@ -72,7 +78,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
   }
 
   function deleteJob() {
-    if (mutationLockRef.current) return;
+    if (readOnly || mutationLockRef.current) return;
 
     const formData = new FormData();
     formData.set('id', job.id);
@@ -111,7 +117,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
                   required
                   maxLength={180}
                   autoComplete="off"
-                  disabled={isBusy}
+                  disabled={isBusy || readOnly}
                   className="h-10 text-base font-bold"
                 />
               </Field>
@@ -120,6 +126,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
                   {job.status.replace('_', ' ')}
                 </Badge>
                 {job.selectedModel ? <Badge tone="neutral">{job.selectedModel}</Badge> : null}
+                {readOnly ? <Badge tone="info">Archived</Badge> : null}
                 {job.kind === 'firework_video' ? (
                   <span className="text-on-surface-variant text-xs font-semibold tabular-nums">
                     {job.processingProgress}% processed
@@ -136,7 +143,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
                 defaultValue={job.sourceUrl ?? ''}
                 placeholder="https://example.com/video…"
                 autoComplete="off"
-                disabled={isBusy}
+                disabled={isBusy || readOnly}
                 className="h-10"
               />
             </Field>
@@ -149,7 +156,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
               id={kindId}
               name="kind"
               defaultValue={job.kind}
-              disabled={isBusy}
+              disabled={isBusy || readOnly}
               className="h-10"
             >
               {KIND_OPTIONS.map((option) => (
@@ -165,7 +172,7 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
               id={statusId}
               name="status"
               defaultValue={job.status}
-              disabled={isBusy}
+              disabled={isBusy || readOnly}
               className="h-10"
             >
               {STATUS_OPTIONS.map((option) => (
@@ -186,59 +193,74 @@ export function ImportJobCard({ job }: { job: ImportJobSummary }) {
               inputMode="numeric"
               defaultValue={job.rowCount ?? ''}
               autoComplete="off"
-              disabled={isBusy}
+              disabled={isBusy || readOnly}
               className="h-10 tabular-nums"
             />
           </Field>
-          <Button type="submit" variant="secondary" size="sm" loading={isSaving} disabled={isBusy}>
-            {isSaving ? 'Saving…' : 'Save'}
-          </Button>
-          {job.kind === 'firework_video' ? (
-            <Button href={`/admin/imports/${job.id}`} variant="secondary" size="sm">
-              Review
-            </Button>
-          ) : null}
-          <AlertDialog
-            open={deleteOpen}
-            onOpenChange={(open) => {
-              if (!isDeleting) setDeleteOpen(open);
-            }}
-          >
-            <AlertDialogTrigger asChild>
-              <Button type="button" variant="destructive" size="sm" disabled={isBusy}>
-                Delete
+          {!readOnly ? (
+            <>
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                loading={isSaving}
+                disabled={isBusy}
+              >
+                {isSaving ? 'Saving…' : 'Save'}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete import job?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This permanently deletes <strong className="break-words">{job.sourceName}</strong>{' '}
-                  and its dependent import records. This cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={(event) => {
-                    event.preventDefault();
-                    deleteJob();
-                  }}
-                  variant="destructive"
-                  disabled={isDeleting}
-                  aria-busy={isDeleting}
-                >
-                  {isDeleting ? (
-                    <Loader2
-                      aria-hidden="true"
-                      className="animate-spin motion-reduce:animate-none"
-                    />
-                  ) : null}
-                  {isDeleting ? 'Deleting…' : 'Delete import job'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              {job.kind === 'firework_video' ? (
+                <Button href={`/admin/imports/${job.id}`} variant="secondary" size="sm">
+                  Review
+                </Button>
+              ) : null}
+              <AlertDialog
+                open={deleteOpen}
+                onOpenChange={(open) => {
+                  if (!isDeleting) setDeleteOpen(open);
+                }}
+              >
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" size="sm" disabled={isBusy}>
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete import job?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently deletes{' '}
+                      <strong className="break-words">{job.sourceName}</strong> and its dependent
+                      import records. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(event) => {
+                        event.preventDefault();
+                        deleteJob();
+                      }}
+                      variant="destructive"
+                      disabled={isDeleting}
+                      aria-busy={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2
+                          aria-hidden="true"
+                          className="animate-spin motion-reduce:animate-none"
+                        />
+                      ) : null}
+                      {isDeleting ? 'Deleting…' : 'Delete import job'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-xs md:col-span-3">
+              Retained for audit. Editing and deletion are unavailable.
+            </p>
+          )}
         </div>
       </form>
       {job.errorMessage ? (

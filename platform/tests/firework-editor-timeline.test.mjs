@@ -33,6 +33,9 @@ test('timeline panel exposes an accessible total and slider for every lifecycle 
   }
   assert.match(panel, /inputAriaLabel=\{`\$\{phase\.label\} duration value`\}/);
   assert.match(panel, /role="img"/);
+  assert.match(panel, /SliderPrimitive\.Thumb/);
+  assert.match(panel, /applyFireworkTimelineBoundaryEdit/);
+  assert.match(panel, /aria-label=\{`\$\{phase\.label\} end`\}/);
   assert.match(panel, /font-mono/);
   assert.match(panel, /bg-primary/);
   assert.match(panel, /Ground emitters start at the tube/);
@@ -71,6 +74,7 @@ test('timeline timing logic edits existing renderer fields without a parallel sc
 
   assert.match(timing, /export function deriveFireworkEditorTimeline/);
   assert.match(timing, /export function applyFireworkTimelineEdit/);
+  assert.match(timing, /export function applyFireworkTimelineBoundaryEdit/);
   assert.match(timing, /defaults\.liftVelocity = solveLiftVelocity/);
   assert.match(timing, /head\.brightnessHoldPercent/);
   assert.match(timing, /lifetime\.percent = roundTimelineSeconds\(multiplier\)/);

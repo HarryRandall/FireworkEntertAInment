@@ -214,8 +214,13 @@ test('manual cue schedule validation fails closed when safety reads fail', () =>
 
 test('firework import worker claims queued jobs atomically', () => {
   const worker = readFileSync(join(repoRoot, 'workers/firework-import-worker/worker.py'), 'utf8');
+  assert.match(worker, /def claim_reconstruction_run/);
+  assert.match(worker, /supabase\.rpc\([\s\S]*?"claim_firework_import_run"/);
   assert.match(worker, /def claim_queued_job/);
-  assert.match(worker, /\.eq\("id", job_id\)\.eq\("status", "queued"\)\.execute\(\)/);
+  assert.match(
+    worker,
+    /\.eq\("id", job_id\)[\s\S]*?\.eq\("status", "queued"\)[\s\S]*?\.execute\(\)/,
+  );
   assert.match(worker, /if not result\.data:/);
   assert.match(worker, /claimed = claim_queued_job\(supabase, job\)/);
 });

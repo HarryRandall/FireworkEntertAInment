@@ -121,12 +121,14 @@ export function EditorHistoryPanel({
   pendingVersionIds,
   warning,
   restoringVersionId,
+  mutationPending = false,
   onRestore,
 }: {
   versions: AdminEditorVersion[];
   pendingVersionIds?: ReadonlySet<string>;
   warning?: string | null;
   restoringVersionId: string | null;
+  mutationPending?: boolean;
   onRestore: (version: AdminEditorVersion) => void;
 }) {
   const [now, setNow] = useState<Date | null>(null);
@@ -206,7 +208,7 @@ export function EditorHistoryPanel({
                     size="sm"
                     className="text-hl-contrast h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold shadow-none hover:bg-[color:var(--hl)]/85"
                     loading={restoringVersionId === version.id}
-                    disabled={isPending}
+                    disabled={isPending || mutationPending}
                     onClick={() => onRestore(version)}
                   >
                     <RotateCcw size={13} />

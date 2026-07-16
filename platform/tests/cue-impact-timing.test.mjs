@@ -75,13 +75,21 @@ test('multishot child positions participate in site and overlap safety', () => {
   const showTypes = read('lib/shows/types.ts');
 
   assert.match(domain, /launchPositionOverrideIndices\?: number\[\];/);
+  assert.match(domain, /occupancyDurationSeconds\?: number \| null;/);
+  assert.match(domain, /export function fireworkOccupancyDurationSeconds/);
   assert.match(queries, /position_override_json,/);
   assert.match(queries, /launchPositionOverrideIndices/);
   assert.match(options, /export function occupiedLaunchPositions/);
   assert.match(fast, /occupiedLaunchPositions\(product\.product, tube, maxTubes\)/);
   assert.match(runner, /occupiedLaunchPositions\(product, cue\.tube, maxTubes\)/);
   assert.match(runner, /acceptedWindows\.push\(\.\.\.windows\)/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v12'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v13'/);
+  assert.match(
+    queries,
+    /occupancyDurationSeconds: conservativeProductDuration\(\s*row\.duration_seconds,\s*base\.durationSeconds,\s*\)/,
+  );
+  assert.match(fast, /fireworkOccupancyDurationSeconds\(product\)/);
+  assert.match(runner, /fireworkOccupancyDurationSeconds\(product\)/);
 });
 
 test('multishot position reservation includes parent and child tubes', () => {
@@ -186,6 +194,15 @@ test('scheduler includes a launch at the exact start of the timeline', () => {
 
   assert.deepEqual(scheduler.pop(0, 0.016), [cue]);
   assert.deepEqual(scheduler.pop(0.016, 0.032), []);
+});
+
+test('scheduler materialises an unfired cue at any exact replay boundary', () => {
+  const scheduler = new Scheduler();
+  const cue = { id: 'boundary', timeSeconds: 0.25 };
+  scheduler.setCues([cue]);
+
+  assert.deepEqual(scheduler.pop(0.25, 0.25), [cue]);
+  assert.deepEqual(scheduler.pop(0.25, 0.266667), []);
 });
 
 test('soundtrack playback is the replay clock while audio is active', () => {

@@ -16,6 +16,7 @@ export type PresetTimelineCue = {
 
 export type PresetTimelineProduct = {
   durationSeconds: number | null;
+  occupancyDurationSeconds?: number | null;
   launchPositionOverrideIndices?: number[];
 };
 
@@ -56,7 +57,7 @@ export function validatePresetTimeline(
       return { ok: false, error: `${cue.description} has an invalid launch position.` };
     }
 
-    const storedDuration = product.durationSeconds;
+    const storedDuration = product.occupancyDurationSeconds ?? product.durationSeconds;
     const durationSeconds =
       storedDuration != null && Number.isFinite(storedDuration) && storedDuration > 0
         ? storedDuration

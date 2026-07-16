@@ -17,6 +17,8 @@ test('show tabs identify the current page and preserve keyboard focus', () => {
   assert.match(tabs, /aria-label="Show sections"/);
   assert.match(tabs, /aria-current=\{active \? 'page' : undefined\}/);
   assert.match(tabs, /focus-visible:ring-3/);
+  assert.match(tabs, /bg-\[color:var\(--accent\)\]/);
+  assert.doesNotMatch(tabs, /border-b-2/);
 });
 
 test('show guide copy stays planner-neutral and operator-aware', () => {

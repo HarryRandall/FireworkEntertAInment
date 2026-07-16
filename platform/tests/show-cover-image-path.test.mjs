@@ -132,9 +132,9 @@ test('user-show capture uploads and persists via a server action', () => {
   assert.match(generatingPage, /coverImagePath=\{show\.coverImagePath\}/);
 });
 
-test('admin backfill page + service-role action write preset posters', () => {
-  const page = read('app/(admin)/admin/cover-posters/page.tsx');
-  const backfill = read('app/(admin)/admin/cover-posters/CoverPosterBackfill.tsx');
+test('embedded admin backfill + service-role action write preset posters', () => {
+  const page = read('app/(admin)/admin/show-presets/page.tsx');
+  const backfill = read('app/(admin)/admin/show-presets/CoverPosterBackfill.tsx');
   const action = read('app/actions/admin-cover-posters.ts');
   const list = read('lib/admin/cover-posters.server.ts');
 

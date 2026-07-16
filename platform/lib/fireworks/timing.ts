@@ -50,14 +50,15 @@ export function usesLegacyLaunchLiftAppearance(design: FireworkDesign): boolean 
   return isBrocadeCrown || hasStreakTrail;
 }
 
-export function estimateFireworkLiftTimeSeconds(design: FireworkDesign): number {
+export function estimateFireworkLiftTimeSeconds(design: FireworkDesign, panDegrees = 0): number {
   if (isGroundFireworkEffect(design)) return 0;
 
   const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const panRadians = ((Number.isFinite(panDegrees) ? panDegrees : 0) * Math.PI) / 180;
   const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
   const shellMass = 0.5;
   const dt = 1 / 60;
-  let vy = liftVelocity * 0.96;
+  let vy = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
   let liftTime = 0;
 
   while (vy > 0 && liftTime < design.shellLife) {
@@ -208,13 +209,22 @@ export function estimateFireworkLaunchSmokeEndSeconds(
   design: FireworkDesign,
   liftTimeSeconds = estimateFireworkLiftTimeSeconds(design),
 ): number {
-  if (isGroundFireworkEffect(design) || usesLegacyLaunchLiftAppearance(design)) return 0;
   const smoke = design.launch?.smoke;
   if (!smoke?.enabled || smoke.particles <= 0) return 0;
 
-  // Smoke is emitted while the carrier climbs and each particle can live for
-  // up to 1.2 times the configured life in the renderer.
-  return liftTimeSeconds + smoke.lifeSeconds * 1.2;
+  const lifeVariationPercent = Number.isFinite(smoke.lifeVariationPercent)
+    ? smoke.lifeVariationPercent
+    : 0;
+  const particleLife =
+    smoke.lifeSeconds * (1 + Math.min(1, Math.max(0, lifeVariationPercent / 100)));
+
+  // Every effect can emit mortar smoke at launch. Only custom aerial launches
+  // continue emitting smoke during the ascent, so their final particles start
+  // at the lift boundary rather than at time zero.
+  const emitsDuringAscent =
+    !isGroundFireworkEffect(design) && !usesLegacyLaunchLiftAppearance(design) && smoke.height > 0;
+
+  return (emitsDuringAscent ? liftTimeSeconds : 0) + particleLife;
 }
 
 /**
@@ -222,11 +232,14 @@ export function estimateFireworkLaunchSmokeEndSeconds(
  * renderer life and emitter settings so transport limits and timeline ticks
  * expand with admin geometry tuning instead of clipping long effects.
  */
-export function estimateFireworkDesignTiming(design: FireworkDesign): FireworkDesignTiming {
+export function estimateFireworkDesignTiming(
+  design: FireworkDesign,
+  panDegrees = 0,
+): FireworkDesignTiming {
   const activeLayers = [design.stars.outer, design.stars.core].filter((layer) => layer.enabled);
   const layers = activeLayers.length > 0 ? activeLayers : [design.stars.outer];
   const lifeBounds = layers.map((layer) => estimateFireworkLayerLifeBounds(design, layer));
-  const liftTimeSeconds = estimateFireworkLiftTimeSeconds(design);
+  const liftTimeSeconds = estimateFireworkLiftTimeSeconds(design, panDegrees);
   const effectStartSeconds = liftTimeSeconds;
   const emissionDuration = emittedDurationSeconds(design);
   const minFadeOffset = Math.min(
@@ -284,6 +297,7 @@ export function estimateFireworkDesignTiming(design: FireworkDesign): FireworkDe
 }
 
 export type FireworkTimelinePhaseKey = 'ascent' | 'burn' | 'fade' | 'tail';
+export type FireworkTimelineBoundaryKey = 'ascent' | 'burn' | 'fade';
 export type FireworkTimelineEditKey = FireworkTimelinePhaseKey | 'total';
 export type FireworkTimelineDefaults = Record<string, unknown>;
 
@@ -298,9 +312,10 @@ export type FireworkEditorTimeline = {
 export const MIN_TIMELINE_TOTAL_SECONDS = 1;
 export const MAX_TIMELINE_TOTAL_SECONDS = 60;
 export const MAX_TIMELINE_PHASE_SECONDS = 30;
+export const MAX_TIMELINE_HEAD_SECONDS = 8;
 
 const MIN_STAR_LIFE_SECONDS = 0.1;
-const MAX_STAR_LIFE_SECONDS = 8;
+const MAX_STAR_LIFE_SECONDS = MAX_TIMELINE_HEAD_SECONDS;
 const MIN_LIFT_VELOCITY = 4;
 const MAX_LIFT_VELOCITY = 40;
 
@@ -403,7 +418,7 @@ function setHeadPhaseDurations(
     MAX_TIMELINE_PHASE_SECONDS,
   );
   const lifeScale = targetHeadDuration / currentHeadDuration;
-  const fadePercent = clamp((Math.max(0, fadeSeconds) / targetHeadDuration) * 100, 1, 100);
+  const fadePercent = clamp((Math.max(0, fadeSeconds) / targetHeadDuration) * 100, 0, 100);
 
   let outerLife: [number, number] | null = null;
   for (const layerKey of activeLayerKeys(design)) {
@@ -686,12 +701,61 @@ export function applyFireworkTimelineEdit(
       setAscentDuration(defaults, design, seconds);
       return;
     case 'burn':
-      setHeadPhaseDurations(defaults, design, seconds, timeline.phases.fade);
+      setHeadPhaseDurations(
+        defaults,
+        design,
+        clamp(seconds, 0, MAX_TIMELINE_HEAD_SECONDS),
+        Math.min(
+          timeline.phases.fade,
+          Math.max(0, MAX_TIMELINE_HEAD_SECONDS - Math.max(0, seconds)),
+        ),
+      );
       return;
     case 'fade':
-      setHeadPhaseDurations(defaults, design, timeline.phases.burn, seconds);
+      setHeadPhaseDurations(
+        defaults,
+        design,
+        Math.min(
+          timeline.phases.burn,
+          Math.max(0, MAX_TIMELINE_HEAD_SECONDS - Math.max(0, seconds)),
+        ),
+        clamp(seconds, 0, MAX_TIMELINE_HEAD_SECONDS),
+      );
       return;
     case 'tail':
       setTailDuration(defaults, design, seconds);
+  }
+}
+
+export function applyFireworkTimelineBoundaryEdit(
+  defaults: FireworkTimelineDefaults,
+  design: FireworkDesign,
+  boundary: FireworkTimelineBoundaryKey,
+  seconds: number,
+): void {
+  if (!Number.isFinite(seconds)) return;
+  const timeline = deriveFireworkEditorTimeline(design);
+  const { ascent, burn, fade } = timeline.phases;
+
+  switch (boundary) {
+    case 'ascent': {
+      if (!timeline.ascentEditable) return;
+      const nextAscent = clamp(seconds, 0, ascent + burn);
+      setAscentDuration(defaults, design, nextAscent);
+      setHeadPhaseDurations(defaults, design, ascent + burn - nextAscent, fade);
+      return;
+    }
+    case 'burn': {
+      const headEnd = ascent + burn + fade;
+      const nextBurn = clamp(seconds - ascent, 0, burn + fade);
+      setHeadPhaseDurations(defaults, design, nextBurn, headEnd - ascent - nextBurn);
+      return;
+    }
+    case 'fade': {
+      if (!timeline.tailEditable) return;
+      const nextFade = clamp(seconds - ascent - burn, 0, fade + timeline.phases.tail);
+      setHeadPhaseDurations(defaults, design, burn, nextFade);
+      setTailDuration(defaults, design, timeline.totalDurationSeconds - seconds);
+    }
   }
 }

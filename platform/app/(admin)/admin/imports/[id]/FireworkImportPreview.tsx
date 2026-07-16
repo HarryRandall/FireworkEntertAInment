@@ -11,13 +11,20 @@ import {
 import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
 import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
 import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
+import {
+  reconstructionToReplayCues,
+  type ImportReconstructionPlan,
+} from '@/lib/import-reconstruction';
 import { cn } from '@/lib/utils';
 
 type FireworkImportPreviewProps = {
   videoUrl: string | null;
   /** Helps the browser choose a decoder when the manifest is ambiguous. */
   videoMimeType?: string | null;
+  /** Immutable sampled renderer frames retained with the selected candidate. */
+  retainedEvidenceUrl?: string | null;
   spec: ImportedFireworkSpec | null;
+  reconstruction?: ImportReconstructionPlan | null;
   fallbackDuration: number;
 };
 
@@ -40,7 +47,9 @@ const LazyFireworkReplayCanvas = dynamic(
 export function FireworkImportPreview({
   videoUrl,
   videoMimeType,
+  retainedEvidenceUrl,
   spec,
+  reconstruction,
   fallbackDuration,
 }: FireworkImportPreviewProps) {
   const {
@@ -49,15 +58,27 @@ export function FireworkImportPreview({
     exitFullscreen,
     fullscreenContainerRef,
     fullscreenContainerProps,
-  } = usePreviewFullscreen({ dialogLabel: 'Import comparison preview' });
-  const cues = useMemo(() => (spec ? importedSpecToReplayCues(spec) : []), [spec]);
+  } = usePreviewFullscreen({ dialogLabel: 'Import source and engine evidence preview' });
+  const cues = useMemo(
+    () =>
+      reconstruction
+        ? reconstructionToReplayCues(reconstruction, { idPrefix: 'import-review' })
+        : spec
+          ? importedSpecToReplayCues(spec)
+          : [],
+    [reconstruction, spec],
+  );
 
-  const canControlPlayback = Boolean(videoUrl || spec);
+  const canControlPlayback = Boolean(videoUrl || retainedEvidenceUrl || reconstruction || spec);
   const [videoMetaDuration, setVideoMetaDuration] = useState<number | null>(null);
+  const [retainedEvidenceDuration, setRetainedEvidenceDuration] = useState<number | null>(null);
   const [videoDecodeError, setVideoDecodeError] = useState<string | null>(null);
+  const [retainedEvidenceError, setRetainedEvidenceError] = useState<string | null>(null);
   const timelineDuration = Math.max(
     1,
     videoMetaDuration ?? 0,
+    retainedEvidenceDuration ?? 0,
+    reconstruction?.durationSeconds ?? 0,
     spec?.durationSeconds ?? 0,
     fallbackDuration,
   );
@@ -67,6 +88,7 @@ export function FireworkImportPreview({
   const playingRef = useRef(false);
   const elapsedRef = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const retainedEvidenceRef = useRef<HTMLVideoElement>(null);
   /** True while syncing source video so timeupdate callbacks do not overwrite slider seeks. */
   const videoSyncFromUiRef = useRef(false);
   const timelineDurationRef = useRef(timelineDuration);
@@ -89,6 +111,11 @@ export function FireworkImportPreview({
     setVideoDecodeError(null);
   }, [videoUrl]);
 
+  useEffect(() => {
+    setRetainedEvidenceDuration(null);
+    setRetainedEvidenceError(null);
+  }, [retainedEvidenceUrl]);
+
   // Keep source audio unmuted and at full level; controls are the bar below (no native media UI).
   useEffect(() => {
     const video = videoRef.current;
@@ -105,11 +132,38 @@ export function FireworkImportPreview({
       video.pause();
       return;
     }
+    if (Number.isFinite(video.duration) && elapsedRef.current >= video.duration) {
+      video.pause();
+      return;
+    }
     void video.play().catch(() => setPlaying(false));
   }, [playing, videoUrl]);
 
-  // Single animation clock: RAF samples the video timeline when source video exists,
-  // otherwise steps elapsed internally. Avoids rewriting video.currentTime every frame.
+  // The retained MP4 has no authoritative audio and follows the shared
+  // inspection playhead. Its held frames remain visibly distinct from the
+  // continuously rendered current-engine reconstruction.
+  useEffect(() => {
+    const video = retainedEvidenceRef.current;
+    if (!video || !retainedEvidenceUrl) return;
+    video.muted = true;
+    if (!playing) {
+      video.pause();
+      return;
+    }
+    if (Number.isFinite(video.duration) && elapsedRef.current >= video.duration) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => {
+      setRetainedEvidenceError(
+        'The retained sampled evidence could not be played in this browser.',
+      );
+    });
+  }, [playing, retainedEvidenceUrl]);
+
+  // A single wall clock keeps reconstruction playback moving if the source
+  // video ends before a longer inferred fade. While video is active, its
+  // timestamp remains the authoritative clock to prevent audible drift.
   useEffect(() => {
     if (!playing) return;
 
@@ -121,22 +175,30 @@ export function FireworkImportPreview({
       if (!playingRef.current) return;
 
       const video = videoRef.current;
-      if (videoUrl) {
-        if (!video) {
-          rafId = requestAnimationFrame(tick);
-          return;
-        }
-        if (video.ended) {
-          setPlaying(false);
-          setElapsed(timelineDuration);
-          return;
-        }
-        setElapsed(Math.min(video.currentTime, timelineDuration));
-        rafId = requestAnimationFrame(tick);
-        return;
-      }
-
-      const next = Math.min(timelineDuration, startElapsed + (now - begunAt) / 1000);
+      const retainedEvidence = retainedEvidenceRef.current;
+      const wallClock = startElapsed + (now - begunAt) / 1000;
+      const videoIsAuthoritative =
+        Boolean(videoUrl) &&
+        video !== null &&
+        !video.ended &&
+        Number.isFinite(video.duration) &&
+        wallClock <= video.duration + 0.08;
+      const retainedEvidenceIsAuthoritative =
+        !videoIsAuthoritative &&
+        !videoUrl &&
+        Boolean(retainedEvidenceUrl) &&
+        retainedEvidence !== null &&
+        !retainedEvidence.ended &&
+        Number.isFinite(retainedEvidence.duration) &&
+        wallClock <= retainedEvidence.duration + 0.08;
+      const next = Math.min(
+        timelineDuration,
+        videoIsAuthoritative && video
+          ? video.currentTime
+          : retainedEvidenceIsAuthoritative && retainedEvidence
+            ? retainedEvidence.currentTime
+            : wallClock,
+      );
       setElapsed(next);
       if (next >= timelineDuration) {
         setPlaying(false);
@@ -147,7 +209,7 @@ export function FireworkImportPreview({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [playing, videoUrl, timelineDuration]);
+  }, [playing, retainedEvidenceUrl, videoUrl, timelineDuration]);
 
   function seek(next: number) {
     const clamped = Math.min(timelineDuration, Math.max(0, next));
@@ -157,12 +219,27 @@ export function FireworkImportPreview({
     if (video && videoUrl) {
       try {
         videoSyncFromUiRef.current = true;
-        video.currentTime = clamped;
+        video.currentTime = Number.isFinite(video.duration)
+          ? Math.min(clamped, video.duration)
+          : clamped;
         requestAnimationFrame(() => {
           videoSyncFromUiRef.current = false;
         });
       } catch {
         videoSyncFromUiRef.current = false;
+      }
+    }
+
+    const retainedEvidence = retainedEvidenceRef.current;
+    if (retainedEvidence && retainedEvidenceUrl) {
+      try {
+        retainedEvidence.currentTime = Number.isFinite(retainedEvidence.duration)
+          ? Math.min(clamped, retainedEvidence.duration)
+          : clamped;
+      } catch {
+        setRetainedEvidenceError(
+          'The retained sampled evidence could not be aligned to this timestamp.',
+        );
       }
     }
   }
@@ -173,6 +250,7 @@ export function FireworkImportPreview({
     if (videoRef.current && videoUrl) {
       videoRef.current.pause();
     }
+    retainedEvidenceRef.current?.pause();
   }
 
   function probeVideoRenderable(video: HTMLVideoElement) {
@@ -199,7 +277,7 @@ export function FireworkImportPreview({
           return;
         }
         setVideoDecodeError(
-          'Playback has sound but no picture: this file’s video track is not decodable here (often HEVC/H.265, e.g. from iPhones). Export as H.264 (AVC) + AAC in an MP4 and upload again.',
+          "Playback has sound but no picture. This file's video track is not decodable here, often because it uses HEVC/H.265. Export it as H.264 with AAC in an MP4 and upload again.",
         );
       }, 550);
     });
@@ -214,6 +292,7 @@ export function FireworkImportPreview({
     if (playing) {
       setPlaying(false);
       video?.pause();
+      retainedEvidenceRef.current?.pause();
       return;
     }
 
@@ -225,7 +304,7 @@ export function FireworkImportPreview({
           setElapsed(0);
         } else if (Math.abs(video.currentTime - elapsed) > 0.08) {
           videoSyncFromUiRef.current = true;
-          video.currentTime = elapsedRef.current;
+          video.currentTime = Math.min(elapsedRef.current, video.duration);
           requestAnimationFrame(() => {
             videoSyncFromUiRef.current = false;
           });
@@ -235,6 +314,19 @@ export function FireworkImportPreview({
       }
     } else if (atEnd) {
       setElapsed(0);
+    }
+
+    const retainedEvidence = retainedEvidenceRef.current;
+    if (retainedEvidenceUrl && retainedEvidence && Number.isFinite(retainedEvidence.duration)) {
+      try {
+        retainedEvidence.currentTime = atEnd
+          ? 0
+          : Math.min(elapsedRef.current, retainedEvidence.duration);
+      } catch {
+        setRetainedEvidenceError(
+          'The retained sampled evidence could not be aligned to this timestamp.',
+        );
+      }
     }
 
     setPlaying(true);
@@ -250,116 +342,206 @@ export function FireworkImportPreview({
           'fixed inset-[5vmin] z-[100] overflow-auto rounded-2xl border border-white/12 bg-black p-4 shadow-[var(--shadow-modal)]',
       )}
     >
-      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
-        <div className="border-outline-variant/35 relative aspect-video w-full overflow-hidden rounded-xl border bg-black">
-          {videoUrl ? (
-            <>
-              <video
-                key={videoUrl}
-                ref={videoRef}
-                tabIndex={-1}
-                playsInline
-                preload="auto"
-                className="pointer-events-none absolute inset-0 z-10 h-full w-full bg-black object-contain outline-none"
-                onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                onLoadedData={(event) => {
-                  const v = event.currentTarget;
-                  v.volume = 1;
-                  v.muted = false;
-                  probeVideoRenderable(v);
-                }}
-                onLoadedMetadata={(event) => {
-                  const v = event.currentTarget;
-                  v.volume = 1;
-                  v.muted = false;
-                  const dur = v.duration;
-                  if (Number.isFinite(dur) && dur > 0) setVideoMetaDuration(dur);
-                  probeVideoRenderable(v);
-                }}
-                onTimeUpdate={(event) => {
-                  if (videoSyncFromUiRef.current) return;
-                  const v = event.currentTarget;
-                  setElapsed(Math.min(v.currentTime, timelineDurationRef.current));
-                }}
-                onError={() =>
-                  setVideoDecodeError(
-                    'This browser could not load the uploaded file. Prefer H.264 in an MP4 container, or verify storage signing (SUPABASE_SERVICE_ROLE_KEY on the Next server).',
-                  )
-                }
-                onEnded={() => {
-                  setPlaying(false);
-                  const v = videoRef.current;
-                  if (v && Number.isFinite(v.duration))
-                    setElapsed(Math.min(v.currentTime, timelineDuration));
-                }}
-              >
-                <source
-                  src={videoUrl}
-                  type={videoMimeType && videoMimeType.length > 0 ? videoMimeType : 'video/mp4'}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <section aria-labelledby="source-video-heading" className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 id="source-video-heading" className="text-foreground text-sm font-medium">
+              Source video
+            </h3>
+            {videoMetaDuration != null ? (
+              <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                {videoMetaDuration.toFixed(2)}s
+              </span>
+            ) : null}
+          </div>
+          <div className="border-border relative aspect-video w-full overflow-hidden rounded-lg border bg-black">
+            {videoUrl ? (
+              <>
+                <video
+                  key={videoUrl}
+                  ref={videoRef}
+                  tabIndex={-1}
+                  playsInline
+                  preload="auto"
+                  className="pointer-events-none absolute inset-0 z-10 h-full w-full bg-black object-contain outline-none"
+                  onLoadedData={(event) => {
+                    const v = event.currentTarget;
+                    v.volume = 1;
+                    v.muted = false;
+                    probeVideoRenderable(v);
+                  }}
+                  onLoadedMetadata={(event) => {
+                    const v = event.currentTarget;
+                    v.volume = 1;
+                    v.muted = false;
+                    const dur = v.duration;
+                    if (Number.isFinite(dur) && dur > 0) setVideoMetaDuration(dur);
+                    probeVideoRenderable(v);
+                  }}
+                  onTimeUpdate={(event) => {
+                    if (videoSyncFromUiRef.current) return;
+                    const v = event.currentTarget;
+                    setElapsed(Math.min(v.currentTime, timelineDurationRef.current));
+                  }}
+                  onError={() =>
+                    setVideoDecodeError(
+                      'This browser could not play the uploaded file. Try an H.264 video with AAC audio in an MP4 container.',
+                    )
+                  }
+                  onEnded={() => {
+                    const v = videoRef.current;
+                    if (v && Number.isFinite(v.duration) && timelineDuration <= v.duration + 0.08) {
+                      setPlaying(false);
+                      setElapsed(Math.min(v.currentTime, timelineDuration));
+                    }
+                  }}
+                  aria-label="Uploaded source video"
+                >
+                  <source
+                    src={videoUrl}
+                    type={videoMimeType && videoMimeType.length > 0 ? videoMimeType : 'video/mp4'}
+                  />
+                </video>
+                {/* Playback is controlled by the shared transport below. */}
+                <div
+                  className="absolute inset-0 z-[15] cursor-default touch-none bg-transparent select-none"
+                  aria-hidden="true"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onDoubleClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
                 />
-              </video>
-              {/* Transparent layer: eats pointer/double-click so the picture never toggles playback; emits no audio. */}
-              <div
-                className="absolute inset-0 z-[15] cursor-default touch-none bg-transparent select-none"
-                aria-hidden="true"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                onDoubleClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-              />
-              {videoDecodeError ? (
-                <div className="text-on-error pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 text-center text-xs leading-relaxed">
-                  {videoDecodeError}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <div className="text-on-surface-variant flex h-full min-h-[200px] items-center justify-center p-6 text-center text-sm">
-              No source video is available for this import.
-            </div>
-          )}
-        </div>
-        <div className="border-outline-variant/35 bg-surface-container-lowest relative aspect-video w-full overflow-hidden rounded-xl border">
-          <div className="absolute inset-0 min-h-[200px]">
-            {spec ? (
-              <LazyFireworkReplayCanvas
-                cues={cues}
-                elapsed={elapsed}
-                interactive
-                showFps
-                primeSnapshots
-                showLoadingBar
-                loadingBarPosition="bottom"
-              />
+                {videoDecodeError ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/80 p-4 text-center text-xs leading-relaxed text-white"
+                    role="alert"
+                  >
+                    {videoDecodeError}
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <div className="text-on-surface-variant flex h-full items-center justify-center p-6 text-center text-sm">
-                The generated 3D reconstruction will appear after processing.
+              <div className="text-muted-foreground flex h-full min-h-[200px] items-center justify-center p-6 text-center text-sm">
+                No source video is available for this import.
               </div>
             )}
           </div>
-        </div>
+        </section>
+        <section aria-labelledby="retained-evidence-heading" className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 id="retained-evidence-heading" className="text-foreground text-sm font-medium">
+              Retained sampled engine evidence
+            </h3>
+            {retainedEvidenceDuration != null ? (
+              <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                {retainedEvidenceDuration.toFixed(2)}s
+              </span>
+            ) : null}
+          </div>
+          <div className="border-border relative aspect-video w-full overflow-hidden rounded-lg border bg-black">
+            {retainedEvidenceUrl ? (
+              <>
+                <video
+                  key={retainedEvidenceUrl}
+                  ref={retainedEvidenceRef}
+                  tabIndex={-1}
+                  playsInline
+                  muted
+                  preload="metadata"
+                  className="pointer-events-none absolute inset-0 h-full w-full bg-black object-contain outline-none"
+                  onLoadedMetadata={(event) => {
+                    const retainedVideo = event.currentTarget;
+                    retainedVideo.muted = true;
+                    const duration = retainedVideo.duration;
+                    if (Number.isFinite(duration) && duration > 0) {
+                      setRetainedEvidenceDuration(duration);
+                    }
+                  }}
+                  onError={() =>
+                    setRetainedEvidenceError(
+                      'The retained sampled evidence could not be loaded. Refresh this audit page to renew its private link.',
+                    )
+                  }
+                  aria-label="Retained sampled engine evidence"
+                >
+                  <source src={retainedEvidenceUrl} type="video/mp4" />
+                </video>
+                {retainedEvidenceError ? (
+                  <div
+                    className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/80 p-4 text-center text-xs leading-relaxed text-white"
+                    role="status"
+                  >
+                    {retainedEvidenceError}
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="text-muted-foreground flex h-full min-h-[200px] items-center justify-center p-6 text-center text-sm">
+                No retained sampled engine evidence is available for the selected candidate.
+              </div>
+            )}
+          </div>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Run-owned sampled frames captured during validation. This is an immutable audit
+            artefact, not continuous footage or a claim of exact physical recovery.
+          </p>
+        </section>
+        <section aria-labelledby="reconstruction-heading" className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 id="reconstruction-heading" className="text-foreground text-sm font-medium">
+              Live current-engine reconstruction
+            </h3>
+            {reconstruction ? (
+              <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                {reconstruction.shots.length} {reconstruction.shots.length === 1 ? 'shot' : 'shots'}
+              </span>
+            ) : null}
+          </div>
+          <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-lg border">
+            <div className="absolute inset-0 min-h-[200px]">
+              {reconstruction || spec ? (
+                <LazyFireworkReplayCanvas
+                  cues={cues}
+                  elapsed={elapsed}
+                  interactive
+                  showFps={false}
+                  primeSnapshots
+                  showLoadingBar
+                  loadingBarPosition="bottom"
+                />
+              ) : (
+                <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
+                  The generated 3D reconstruction will appear after processing.
+                </div>
+              )}
+            </div>
+          </div>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Re-rendered now from the selected reconstruction. It may differ from retained evidence
+            after a renderer contract change.
+          </p>
+        </section>
       </div>
 
-      <div className="border-outline-variant/25 bg-surface-container-low rounded-xl border p-4">
+      <div className="border-border bg-muted/40 rounded-lg border p-4">
         <ReplayTransportControls
           elapsed={elapsed}
           duration={timelineDuration}
           isPlaying={playing}
           disabled={!canControlPlayback}
           step={0.02}
-          playLabel="Play comparison preview"
-          pauseLabel="Pause comparison preview"
-          resetLabel="Restart comparison preview"
-          timelineLabel="Synced source and generated preview timeline"
+          playLabel="Play source and engine evidence"
+          pauseLabel="Pause source and engine evidence"
+          resetLabel="Restart source and engine evidence"
+          timelineLabel="Synced source, retained evidence and live reconstruction timeline"
           fullscreen={isFullscreen}
           onPlayPause={togglePlayback}
           onReset={restart}
@@ -367,6 +549,7 @@ export function FireworkImportPreview({
           onScrub={(next) => {
             setPlaying(false);
             videoRef.current?.pause();
+            retainedEvidenceRef.current?.pause();
             seek(next);
           }}
         />

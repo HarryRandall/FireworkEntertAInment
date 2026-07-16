@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import {
   Braces,
   Circle,
@@ -32,11 +31,10 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
-  confirmFireworkEditorVersions,
+  createStyleDefaultAndUpdateFirework,
   restoreFireworkEditorVersion,
   updateFirework,
 } from '@/app/actions/admin-fireworks';
-import { createStyleDefault } from '@/app/actions/admin-style-defaults';
 import {
   EditorHistoryPanel,
   JsonReadOnlyPanel,
@@ -51,12 +49,15 @@ import {
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/app/components/admin/useEditorHistory';
 import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
 import {
   FireworkRenderControls,
-  supportsGeometryTuningControls,
   type JsonRecord,
 } from '@/app/components/admin/FireworkRenderControls';
 import { FireworkTimelineControls } from '@/app/components/admin/FireworkTimelineControls';
@@ -74,13 +75,14 @@ import type {
   AdminStyleDefaultOption,
 } from '@/lib/admin.types';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
+import { parseFireworkEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
 } from '@/lib/fireworks/design';
-import { roundTimelineSeconds } from '@/lib/fireworks/timing';
+import { isGroundFireworkEffect, roundTimelineSeconds } from '@/lib/fireworks/timing';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
@@ -120,8 +122,6 @@ const MAX_STAR_COLOURS = 6;
 const STAR_PATTERN_COUNT_MIN = 1;
 const STAR_PATTERN_COUNT_MAX = 6;
 const DEFAULT_COLOUR_SWATCHES = FIREWORK_COLOR_VALUES;
-const HISTORY_CONFIRMATION_ATTEMPTS = 4;
-const HISTORY_CONFIRMATION_DELAY_MS = 300;
 
 const STAR_COLOUR_MODE_OPTIONS = [
   { value: 'solid', label: 'Solid' },
@@ -302,12 +302,6 @@ function applyColourToOverrides(
       weight: stop.share,
     })),
   };
-  if (isRecord(stars.core)) {
-    const core = { ...stars.core };
-    delete core.color;
-    delete core.colourPattern;
-    stars.core = core;
-  }
   return base;
 }
 
@@ -642,6 +636,13 @@ function buildInitialColourStops(
   return normaliseColourShares(stops);
 }
 
+function nextAddedColourStopIndex(stops: ColourStop[]): number {
+  return stops.reduce((next, stop) => {
+    const match = /^added-(\d+)$/.exec(stop.id);
+    return match ? Math.max(next, Number(match[1]) + 1) : next;
+  }, stops.length);
+}
+
 type FireworkEditorSavedSnapshot = {
   id: string;
   updatedAt: string;
@@ -766,7 +767,6 @@ function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
 }
 
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
-  const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const colourToggleId = useId();
@@ -816,7 +816,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [colourAxis, setColourAxis] = useState<StarColourAxis>(() =>
     initialColourAxis(initialOverrides),
   );
-  const nextColourStopIdRef = useRef(initialColourStops.length);
+  const nextColourStopIdRef = useRef(nextAddedColourStopIndex(initialColourStops));
   const [overridesText, setOverridesText] = useState(
     JSON.stringify(firework.renderOverridesJson ?? {}, null, 2),
   );
@@ -824,16 +824,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<FireworkEditorSavedSnapshot>(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
+  const editorTargetIdRef = useRef(firework.id);
   const [activeTab, setActiveTab] = useState('colour');
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
-  const [historyVersions, setHistoryVersions] = useState(firework.history);
-  const pendingHistoryVersionIdsRef = useRef(new Set<string>());
   const timelineDurationSyncPendingRef = useRef(false);
-  const [pendingHistoryVersionIds, setPendingHistoryVersionIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const [historyWarning, setHistoryWarning] = useState<string | null>(null);
-  const historyFireworkIdRef = useRef(firework.id);
+  const editorHistory = useEditorHistory({
+    targetKey: firework.id,
+    initialVersions: firework.history,
+  });
 
   const parsedOverrides = useMemo(() => parseJsonObject(overridesText), [overridesText]);
   const overridesRecord = useMemo<JsonRecord>(
@@ -963,7 +961,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   useLayoutEffect(() => {
     currentSignatureRef.current = currentSignature;
     savedSignatureRef.current = savedSignature;
-  }, [currentSignature, savedSignature]);
+    editorTargetIdRef.current = firework.id;
+  }, [currentSignature, firework.id, savedSignature]);
 
   useEffect(() => {
     const incomingSnapshot = incomingSavedSnapshot;
@@ -988,101 +987,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setColourStops(incomingSnapshot.colourStops.map((stop) => ({ ...stop })));
     setColourMode(incomingSnapshot.colourMode);
     setColourAxis(incomingSnapshot.colourAxis);
-    nextColourStopIdRef.current = incomingSnapshot.colourStops.length;
+    nextColourStopIdRef.current = nextAddedColourStopIndex(incomingSnapshot.colourStops);
     setOverridesText(incomingSnapshot.overridesText);
     setLastSavedUpdatedAt(incomingSnapshot.updatedAt);
     setRestoringVersionId(null);
     setSavedSignature(incomingSnapshot.signature);
   }, [incomingSavedSnapshot]);
-
-  useEffect(() => {
-    if (historyFireworkIdRef.current !== firework.id) {
-      historyFireworkIdRef.current = firework.id;
-      pendingHistoryVersionIdsRef.current.clear();
-      setPendingHistoryVersionIds(new Set());
-      setHistoryVersions(firework.history);
-      setHistoryWarning(null);
-      return;
-    }
-
-    const incomingIds = new Set(firework.history.map((version) => version.id));
-    for (const id of incomingIds) pendingHistoryVersionIdsRef.current.delete(id);
-    setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-    setHistoryVersions((current) => {
-      const pending = current.filter(
-        (version) =>
-          pendingHistoryVersionIdsRef.current.has(version.id) && !incomingIds.has(version.id),
-      );
-      return [...pending, ...firework.history]
-        .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
-        .slice(0, 24);
-    });
-  }, [firework.history, firework.id]);
-
-  useEffect(() => {
-    const initialIds = Array.from(pendingHistoryVersionIds).slice(0, 10);
-    if (initialIds.length === 0) return;
-    let cancelled = false;
-    let timeoutId: number | null = null;
-    let resolveDelay: (() => void) | null = null;
-
-    function waitForRetry() {
-      return new Promise<void>((resolve) => {
-        resolveDelay = resolve;
-        timeoutId = window.setTimeout(() => {
-          timeoutId = null;
-          resolveDelay = null;
-          resolve();
-        }, HISTORY_CONFIRMATION_DELAY_MS);
-      });
-    }
-
-    function failConfirmation(ids: string[]) {
-      for (const id of ids) pendingHistoryVersionIdsRef.current.delete(id);
-      setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-      setHistoryVersions((current) => current.filter((version) => !ids.includes(version.id)));
-      setHistoryWarning('Version history was not recorded. Your editor changes are still saved.');
-    }
-
-    async function confirmPendingVersions() {
-      let remainingIds = initialIds;
-      for (let attempt = 0; attempt < HISTORY_CONFIRMATION_ATTEMPTS; attempt += 1) {
-        if (attempt > 0) await waitForRetry();
-        if (cancelled) return;
-        let result: Awaited<ReturnType<typeof confirmFireworkEditorVersions>>;
-        try {
-          result = await confirmFireworkEditorVersions({
-            fireworkId: firework.id,
-            versionIds: remainingIds,
-          });
-        } catch {
-          if (!cancelled) failConfirmation(remainingIds);
-          return;
-        }
-        if (cancelled) return;
-        if (!result.ok) {
-          failConfirmation(remainingIds);
-          return;
-        }
-        const confirmed = new Set(result.confirmedIds);
-        for (const id of confirmed) pendingHistoryVersionIdsRef.current.delete(id);
-        if (confirmed.size > 0) {
-          setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-          setHistoryWarning(null);
-        }
-        remainingIds = remainingIds.filter((id) => !confirmed.has(id));
-        if (remainingIds.length === 0) return;
-      }
-      if (!cancelled) failConfirmation(remainingIds);
-    }
-
-    void confirmPendingVersions();
-    return () => {
-      cancelled = true;
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-      resolveDelay?.();
-    };
-  }, [firework.id, pendingHistoryVersionIds]);
 
   const previewDesign = useMemo(
     () =>
@@ -1400,26 +1310,38 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }
 
   async function persistFirework(args: {
+    targetId: string;
     styleDefaultIdsMap: Record<FireworkStyleDefaultKind, string | null>;
     overrides: JsonRecord;
+    historyVersionId: string;
   }): Promise<UpdateFireworkSuccess | null> {
-    const result = await updateFirework({
-      id: firework.id,
-      expectedUpdatedAt: lastSavedUpdatedAt,
-      name,
-      description,
-      fireworkEffectId: effectId,
-      caliber,
-      durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
-      heightMeters: heightMeters === '' ? null : Number(heightMeters),
-      primaryColor: mainColor,
-      secondaryColor: accentColor,
-      colorPalette: palette,
-      starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
-      trailStyleDefaultId: args.styleDefaultIdsMap.trail ?? null,
-      styleDefaultIds: args.styleDefaultIdsMap,
-      renderOverridesJson: JSON.stringify(args.overrides, null, 2),
-    });
+    let result: Awaited<ReturnType<typeof updateFirework>>;
+    try {
+      result = await updateFirework({
+        id: firework.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
+        name,
+        description,
+        fireworkEffectId: effectId,
+        caliber,
+        durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
+        heightMeters: heightMeters === '' ? null : Number(heightMeters),
+        primaryColor: mainColor,
+        secondaryColor: accentColor,
+        colorPalette: palette,
+        starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
+        trailStyleDefaultId: args.styleDefaultIdsMap.trail ?? null,
+        styleDefaultIds: args.styleDefaultIdsMap,
+        renderOverridesJson: JSON.stringify(args.overrides, null, 2),
+        historyVersionId: args.historyVersionId,
+      });
+    } catch {
+      if (editorTargetIdRef.current === args.targetId) {
+        setError('Could not save the firework. Try again.');
+      }
+      return null;
+    }
+    if (editorTargetIdRef.current !== args.targetId) return null;
     if (!result.ok) {
       setError(result.error);
       return null;
@@ -1428,27 +1350,163 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     return result;
   }
 
-  function prependPendingHistoryVersion(version: AdminEditorVersion) {
-    setHistoryWarning(null);
-    pendingHistoryVersionIdsRef.current.add(version.id);
-    setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-    setHistoryVersions((current) =>
-      [version, ...current.filter((item) => item.id !== version.id)].slice(0, 24),
+  function currentLocalSnapshot(): FireworkEditorSavedSnapshot {
+    return {
+      id: firework.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      effectId,
+      styleDefaultIds: { ...styleDefaultIds },
+      caliber,
+      durationSeconds,
+      heightMeters,
+      colourStops: colourStops.map((stop) => ({ ...stop })),
+      colourMode,
+      colourAxis,
+      overridesText,
+      signature: currentSignature,
+    };
+  }
+
+  function applySnapshot(snapshot: FireworkEditorSavedSnapshot) {
+    setName(snapshot.name);
+    setDescription(snapshot.description);
+    setEffectId(snapshot.effectId);
+    setStyleDefaultIds({ ...snapshot.styleDefaultIds });
+    setCaliber(snapshot.caliber);
+    setDurationSeconds(snapshot.durationSeconds);
+    setHeightMeters(snapshot.heightMeters);
+    setColourStops(snapshot.colourStops.map((stop) => ({ ...stop })));
+    setColourMode(snapshot.colourMode);
+    setColourAxis(snapshot.colourAxis);
+    nextColourStopIdRef.current = Math.max(
+      nextColourStopIdRef.current,
+      nextAddedColourStopIndex(snapshot.colourStops),
     );
+    setOverridesText(snapshot.overridesText);
+  }
+
+  function beginOptimisticMutation(
+    optimisticSnapshot: FireworkEditorSavedSnapshot,
+    action: 'update' | 'restore',
+  ) {
+    const historyVersionId = crypto.randomUUID();
+    const previousSavedSnapshot = savedSnapshotRef.current;
+    const localSnapshot = currentLocalSnapshot();
+    savedSnapshotRef.current = optimisticSnapshot;
+    savedSignatureRef.current = optimisticSnapshot.signature;
+    currentSignatureRef.current = optimisticSnapshot.signature;
+    setSavedSignature(optimisticSnapshot.signature);
+    applySnapshot(optimisticSnapshot);
+    editorHistory.begin(
+      makeOptimisticEditorVersion({
+        id: historyVersionId,
+        targetKind: 'firework',
+        targetId: firework.id,
+        action,
+      }),
+    );
+    return {
+      targetId: firework.id,
+      historyVersionId,
+      localSnapshot,
+      optimisticSnapshot,
+      previousSavedSnapshot,
+    };
+  }
+
+  function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
+    if (editorTargetIdRef.current !== mutation.targetId) return;
+    editorHistory.discard(mutation.historyVersionId);
+    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
+      savedSnapshotRef.current = mutation.previousSavedSnapshot;
+      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
+      setSavedSignature(mutation.previousSavedSnapshot.signature);
+    }
+    if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
+      currentSignatureRef.current = mutation.localSnapshot.signature;
+      applySnapshot(mutation.localSnapshot);
+    }
   }
 
   function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
+    if (isPending) return;
     setError(null);
-    const saveStartedFromSignature = currentSignature;
+    if (!effectId || !mainColor || !parsedOverrides.ok) {
+      setError('Pick a base effect and main colour, then click Save to keep this preset.');
+      return;
+    }
+    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+    const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+    const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+    const nextMerged = applyColourToOverrides(copiedOverrides, {
+      mainColor,
+      accentColor,
+      accentShare,
+      colourMode,
+      colourAxis,
+      validColourStops,
+    });
+    const optimisticSnapshot = fireworkSavedSnapshotFromFields({
+      id: firework.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      effectId,
+      styleDefaultIds: clearedStyleDefaultIds,
+      caliber: caliber || null,
+      durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
+      heightMeters: heightMeters === '' ? null : Number(heightMeters),
+      primaryColor: mainColor,
+      secondaryColor: accentColor,
+      colorPalette: palette,
+      renderOverridesJson: nextMerged,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
     startTransition(async () => {
-      const result = await createStyleDefault({
-        kind,
-        name: styleName,
-        description: '',
-        defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
-      });
+      let result: Awaited<ReturnType<typeof createStyleDefaultAndUpdateFirework>>;
+      try {
+        result = await createStyleDefaultAndUpdateFirework({
+          firework: {
+            id: firework.id,
+            expectedUpdatedAt: lastSavedUpdatedAt,
+            name,
+            description,
+            fireworkEffectId: effectId,
+            caliber,
+            durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
+            heightMeters: heightMeters === '' ? null : Number(heightMeters),
+            primaryColor: mainColor,
+            secondaryColor: accentColor,
+            colorPalette: palette,
+            styleDefaultIds: clearedSaveMap,
+            renderOverridesJson: JSON.stringify(nextMerged, null, 2),
+            historyVersionId: mutation.historyVersionId,
+          },
+          styleDefault: {
+            kind,
+            name: styleName,
+            description: '',
+            defaultsJson: JSON.stringify(
+              extractStyleDefaultsFromDesign(previewDesign, kind),
+              null,
+              2,
+            ),
+          },
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setError('Could not create the style default. Try again.');
+        }
+        return;
+      }
+
+      if (editorTargetIdRef.current !== mutation.targetId) return;
 
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
         setError(result.error);
         return;
       }
@@ -1460,64 +1518,36 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
         ],
       }));
-
-      if (!effectId || !mainColor || !parsedOverrides.ok) {
-        setError('Pick a base effect and main colour, then click Save to keep this preset.');
-        return;
-      }
-
-      const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
-      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
-      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
-
-      const nextMerged = applyColourToOverrides(copiedOverrides, {
-        mainColor,
-        accentColor,
-        accentShare,
-        colourMode,
-        colourAxis,
-        validColourStops,
-      });
-      const persisted = await persistFirework({
-        styleDefaultIdsMap: clearedSaveMap,
-        overrides: nextMerged,
-      });
-      if (!persisted) return;
+      setLastSavedUpdatedAt(result.saved.updatedAt);
       const applySavedSnapshot = canApplySavedEditorSnapshot(
-        saveStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       const savedSnapshot = fireworkSavedSnapshotFromFields({
-        ...persisted.saved,
-        effectId: persisted.saved.fireworkEffectId,
+        ...result.saved,
+        effectId: result.saved.fireworkEffectId,
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
-      prependPendingHistoryVersion(persisted.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
       if (applySavedSnapshot) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setEffectId(savedSnapshot.effectId);
-        setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
-        setCaliber(savedSnapshot.caliber);
-        setDurationSeconds(savedSnapshot.durationSeconds);
-        setHeightMeters(savedSnapshot.heightMeters);
-        setColourStops(savedSnapshot.colourStops.map((stop) => ({ ...stop })));
-        setColourMode(savedSnapshot.colourMode);
-        setColourAxis(savedSnapshot.colourAxis);
-        nextColourStopIdRef.current = savedSnapshot.colourStops.length;
-        setOverridesText(savedSnapshot.overridesText);
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Style default created and saved');
       } else {
         toast.success('Saved; newer firework edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function save() {
+    if (isPending) return;
     setError(null);
     if (!parsedOverrides.ok) {
       setError(parsedOverrides.error);
@@ -1531,18 +1561,38 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       setError('Pick a main colour.');
       return;
     }
-    const saveStartedFromSignature = currentSignature;
+    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+    const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+    const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+    const optimisticSnapshot = fireworkSavedSnapshotFromFields({
+      id: firework.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      effectId,
+      styleDefaultIds: clearedStyleDefaultIds,
+      caliber: caliber || null,
+      durationSeconds: durationSeconds === '' ? null : Number(durationSeconds),
+      heightMeters: heightMeters === '' ? null : Number(heightMeters),
+      primaryColor: mainColor,
+      secondaryColor: accentColor,
+      colorPalette: palette,
+      renderOverridesJson: copiedOverrides,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
     startTransition(async () => {
-      const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
-      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
-      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
       const persisted = await persistFirework({
+        targetId: mutation.targetId,
         styleDefaultIdsMap: clearedSaveMap,
         overrides: copiedOverrides,
+        historyVersionId: mutation.historyVersionId,
       });
-      if (!persisted) return;
+      if (!persisted) {
+        rollbackOptimisticMutation(mutation);
+        return;
+      }
       const applySavedSnapshot = canApplySavedEditorSnapshot(
-        saveStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       const savedSnapshot = fireworkSavedSnapshotFromFields({
@@ -1553,42 +1603,24 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
-      prependPendingHistoryVersion(persisted.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: persisted.historyVersion,
+        recorded: persisted.historyRecorded,
+      });
       if (applySavedSnapshot) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setEffectId(savedSnapshot.effectId);
-        setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
-        setCaliber(savedSnapshot.caliber);
-        setDurationSeconds(savedSnapshot.durationSeconds);
-        setHeightMeters(savedSnapshot.heightMeters);
-        setColourStops(savedSnapshot.colourStops.map((stop) => ({ ...stop })));
-        setColourMode(savedSnapshot.colourMode);
-        setColourAxis(savedSnapshot.colourAxis);
-        nextColourStopIdRef.current = savedSnapshot.colourStops.length;
-        setOverridesText(savedSnapshot.overridesText);
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Firework saved');
       } else {
         toast.success('Firework saved; newer edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function revertLocalChanges() {
     const savedSnapshot = savedSnapshotRef.current;
-    setName(savedSnapshot.name);
-    setDescription(savedSnapshot.description);
-    setEffectId(savedSnapshot.effectId);
-    setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
-    setCaliber(savedSnapshot.caliber);
-    setDurationSeconds(savedSnapshot.durationSeconds);
-    setHeightMeters(savedSnapshot.heightMeters);
-    setColourStops(savedSnapshot.colourStops.map((stop) => ({ ...stop })));
-    setColourMode(savedSnapshot.colourMode);
-    setColourAxis(savedSnapshot.colourAxis);
-    nextColourStopIdRef.current = savedSnapshot.colourStops.length;
-    setOverridesText(savedSnapshot.overridesText);
+    applySnapshot(savedSnapshot);
     setLastSavedUpdatedAt(savedSnapshot.updatedAt);
     setError(null);
     savedSignatureRef.current = savedSnapshot.signature;
@@ -1596,17 +1628,51 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }
 
   function restoreVersion(version: AdminEditorVersion) {
+    if (isPending) return;
     setError(null);
+    const snapshot = parseFireworkEditorSnapshot(version.snapshotJson);
+    if (!snapshot || snapshot.id !== firework.id) {
+      setError('That version cannot be restored.');
+      return;
+    }
+    const optimisticSnapshot = fireworkSavedSnapshotFromFields({
+      id: snapshot.id,
+      updatedAt: lastSavedUpdatedAt,
+      name: snapshot.name,
+      description: snapshot.description,
+      effectId: snapshot.fireworkEffectId,
+      styleDefaultIds: emptyStyleDefaultIdMap(),
+      caliber: snapshot.caliber,
+      durationSeconds: snapshot.durationSeconds,
+      heightMeters: snapshot.heightMeters,
+      primaryColor: snapshot.primaryColor,
+      secondaryColor: snapshot.secondaryColor,
+      colorPalette: snapshot.colorPalette,
+      renderOverridesJson: snapshot.renderOverridesJson,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'restore');
     setRestoringVersionId(version.id);
-    const restoreStartedFromSignature = currentSignature;
     startTransition(async () => {
-      const result = await restoreFireworkEditorVersion({
-        fireworkId: firework.id,
-        versionId: version.id,
-        expectedUpdatedAt: lastSavedUpdatedAt,
-      });
+      let result: Awaited<ReturnType<typeof restoreFireworkEditorVersion>>;
+      try {
+        result = await restoreFireworkEditorVersion({
+          fireworkId: firework.id,
+          versionId: version.id,
+          expectedUpdatedAt: lastSavedUpdatedAt,
+          historyVersionId: mutation.historyVersionId,
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setRestoringVersionId(null);
+          setError('Could not restore that version. Try again.');
+        }
+        return;
+      }
+      if (editorTargetIdRef.current !== mutation.targetId) return;
       setRestoringVersionId(null);
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
         setError(result.error);
         return;
       }
@@ -1616,32 +1682,25 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         styleDefaultIds: emptyStyleDefaultIdMap(),
       });
       const applyRestoredSnapshot = canApplySavedEditorSnapshot(
-        restoreStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
       savedSignatureRef.current = restoredSnapshot.signature;
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
-      prependPendingHistoryVersion(result.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
       if (applyRestoredSnapshot) {
-        setName(restoredSnapshot.name);
-        setDescription(restoredSnapshot.description);
-        setEffectId(restoredSnapshot.effectId);
-        setStyleDefaultIds({ ...restoredSnapshot.styleDefaultIds });
-        setCaliber(restoredSnapshot.caliber);
-        setDurationSeconds(restoredSnapshot.durationSeconds);
-        setHeightMeters(restoredSnapshot.heightMeters);
-        setColourStops(restoredSnapshot.colourStops.map((stop) => ({ ...stop })));
-        setColourMode(restoredSnapshot.colourMode);
-        setColourAxis(restoredSnapshot.colourAxis);
-        nextColourStopIdRef.current = restoredSnapshot.colourStops.length;
-        setOverridesText(restoredSnapshot.overridesText);
+        currentSignatureRef.current = restoredSnapshot.signature;
+        applySnapshot(restoredSnapshot);
         toast.success('Version restored');
       } else {
         toast.success('Version restored; newer firework edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
@@ -1925,7 +1984,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           selectedFireworkStyleDefaults[kind] ?? firework.fireworkStyleDefaultLinks[kind] ?? null,
         )}
         disabled={!parsedOverrides.ok}
-        saveDisabled={kind === 'star' && !mainColor}
+        saveDisabled={isPending || (kind === 'star' && !mainColor)}
         onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
         onReset={() => resetLocalStyleDefaults(kind)}
       />
@@ -1987,6 +2046,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       </Field>
     </div>
   );
+  const isGroundEmitter = isGroundFireworkEffect(previewDesign);
   const tabs: FireworkEditorShellTab[] = [
     {
       id: 'details',
@@ -2004,27 +2064,26 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       title: 'Colour',
       content: starColourControls,
     },
-    ...(supportsGeometryTuningControls(previewDesign.geometry)
-      ? [
-          {
-            id: 'geometry',
-            label: 'Geometry',
-            icon: Shapes,
-            eyebrow: 'Shape',
-            title: 'Geometry',
-            content: (
-              <FireworkRenderControls
-                design={previewDesign}
-                defaults={overridesRecord}
-                calibrationDefaults={calibrationDefaults}
-                mutate={mutateOverrides}
-                disabled={!parsedOverrides.ok}
-                controlScope="geometry"
-              />
-            ),
-          },
-        ]
-      : []),
+    {
+      id: 'geometry',
+      label: 'Geometry',
+      icon: Shapes,
+      eyebrow: 'Shape',
+      title: 'Geometry',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={overridesRecord}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => mutateOverridesForStyle('geometry', updater)}
+            disabled={!parsedOverrides.ok}
+            controlScope="geometry"
+          />
+          {renderStyleDefaultControls('geometry')}
+        </div>
+      ),
+    },
     {
       id: 'launch-dot',
       label: 'Launch Dot',
@@ -2119,7 +2178,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           design={previewDesign}
           defaults={overridesRecord}
           calibrationDefaults={calibrationDefaults}
-          mutate={mutateOverrides}
+          mutate={(updater) => mutateOverridesForStyle('star', updater)}
           disabled={!parsedOverrides.ok}
           showStarCount
           controlScope="starInner"
@@ -2248,10 +2307,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       title: 'Version history',
       content: (
         <EditorHistoryPanel
-          versions={historyVersions}
-          pendingVersionIds={pendingHistoryVersionIds}
-          warning={historyWarning}
+          versions={editorHistory.versions}
+          pendingVersionIds={editorHistory.pendingIds}
+          warning={editorHistory.warning}
           restoringVersionId={restoringVersionId}
+          mutationPending={isPending}
           onRestore={restoreVersion}
         />
       ),
@@ -2264,7 +2324,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       title: 'Render overrides JSON',
       content: <JsonReadOnlyPanel value={mergedOverrides as Json} />,
     },
-  ];
+  ].filter((tab) => !isGroundEmitter || (tab.id !== 'launch-dot' && tab.id !== 'launch-trail'));
 
   return (
     <FireworkEditorShell

@@ -5,7 +5,7 @@
  * land on an analysed beat. Creative direction controls which beats are used,
  * never whether an accepted cue is allowed to drift away from its beat.
  */
-import type { FireworkSpecification } from '@/lib/show-domain';
+import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import type { PlannedCue } from './fast-planner';
@@ -378,7 +378,7 @@ function productSearchText(product: FireworkSpecification): string {
 
 function productDuration(product: FireworkSpecification | undefined): number {
   if (!product) return Infinity;
-  return Math.max(product.durationSeconds ?? 0.5, 0.5);
+  return Math.max(fireworkOccupancyDurationSeconds(product) ?? 0.5, 0.5);
 }
 
 function spectacleScore(product: FireworkSpecification): number {

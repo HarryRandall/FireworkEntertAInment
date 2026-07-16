@@ -2,6 +2,8 @@
 -- intervals are half-open, so a launch position becomes available exactly
 -- when the previous catalogue item's conservative duration ends.
 
+begin;
+
 -- Block legacy direct writers while the preflight runs and the durable guards
 -- are installed. SHARE ROW EXCLUSIVE conflicts with ordinary DML but still
 -- permits the reads needed to calculate conservative occupancy.
@@ -770,3 +772,5 @@ grant execute on function public.add_refinement_cue_and_settle_credits(
   text,
   jsonb
 ) to authenticated;
+
+commit;

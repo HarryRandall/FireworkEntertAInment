@@ -88,14 +88,19 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
             <div>
               <h1 className="text-foreground text-2xl font-semibold">Show generation failed</h1>
               <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                We could not finish this show. Review it, then adjust the brief or start another
-                show.
+                We could not finish this show. Adjust the brief or start another show.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button href={`/shows/${show.slug}/preview`} size="sm">
-                Review show
-              </Button>
+              {(show.generatedCueCount ?? 0) > 0 ? (
+                <Button href={`/shows/${show.slug}/preview`} size="sm">
+                  Review show
+                </Button>
+              ) : (
+                <Button href="/shows" size="sm">
+                  Back to My Shows
+                </Button>
+              )}
               <Button href="/shows/new" size="sm" variant="secondary">
                 Start another show
               </Button>

@@ -113,6 +113,12 @@ test('firework admin lists use paginated hover-preview card grids', () => {
     assert.match(source, /persistedPosterUrl=\{fireworkPreviewImageUrl\(/, page);
     assert.match(source, /previewImagePath/, page);
     assert.match(source, /\bpersistPoster\b/, page);
+    assert.match(source, /posterBackfillTargets/, page);
+    assert.match(
+      source,
+      /<FireworkBrowsePreviewProvider posterBackfillTargets=\{posterBackfillTargets\}>/,
+      page,
+    );
     assert.match(source, /<TablePagination/, page);
     assert.match(source, /visibleItems=\{paginated\.length\}/, page);
     assert.match(source, /totalItems=\{filtered\.length\}/, page);
@@ -139,7 +145,10 @@ test('effects use preview cards while style defaults retain the admin table', ()
   const source = readFileSync(join(root, 'app/(admin)/admin/effects/EffectsBrowser.tsx'), 'utf8');
   const loading = readFileSync(join(root, 'app/(admin)/admin/effects/loading.tsx'), 'utf8');
 
-  assert.match(source, /<FireworkBrowsePreviewProvider>/);
+  assert.match(
+    source,
+    /<FireworkBrowsePreviewProvider posterBackfillTargets=\{posterBackfillTargets\}>/,
+  );
   assert.match(source, /<FireworkBrowseCard/);
   assert.match(source, /\/api\/admin\/firework-previews\/effect\//);
   assert.match(source, /withFireworkPreviewRevision\(/);
@@ -149,6 +158,7 @@ test('effects use preview cards while style defaults retain the admin table', ()
     /persistedPosterUrl=\{fireworkPreviewImageUrl\(effect\.previewImagePath\)\}/,
   );
   assert.match(source, /\bpersistPoster\b/);
+  assert.match(source, /posterBackfillTargets/);
   assert.match(source, /effectsActive \? \(/);
   assert.match(source, /<DataTableShell/);
   assert.match(source, /filteredDefaults\.map/);

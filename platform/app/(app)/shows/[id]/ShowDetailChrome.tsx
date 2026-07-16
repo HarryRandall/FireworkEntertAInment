@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
 import { ShowTabs } from './ShowTabs';
@@ -21,7 +21,6 @@ export function ShowDetailChrome({
 }: ShowDetailChromeProps) {
   const segment = useSelectedLayoutSegment();
   const section = getShowDetailSection(segment);
-  const descriptionId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const routeKey = `${showSlug}:${segment ?? section.segment}:${forceContentOnly ? 'content-only' : 'chrome'}`;
   const previousRouteKeyRef = useRef(routeKey);
@@ -40,22 +39,9 @@ export function ShowDetailChrome({
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <header className="min-w-0 space-y-1.5">
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          aria-describedby={descriptionId}
-          className="text-foreground focus-visible:ring-ring/50 w-fit max-w-full rounded-sm text-2xl font-bold tracking-tight text-balance break-words focus-visible:ring-3 focus-visible:ring-offset-2"
-        >
-          {showTitle}
-        </h1>
-        <p
-          id={descriptionId}
-          className="text-muted-foreground max-w-2xl text-sm leading-relaxed text-pretty"
-        >
-          {section.description}
-        </p>
-      </header>
+      <h1 ref={headingRef} tabIndex={-1} className="sr-only">
+        {showTitle}
+      </h1>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={showSlug} />

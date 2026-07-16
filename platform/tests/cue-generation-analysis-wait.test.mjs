@@ -68,7 +68,9 @@ test('failed generation uses a safe, recoverable customer error state', () => {
 
   assert.match(page, /console\.error\('\[shows\/generating\] generation failed:'/);
   assert.doesNotMatch(page, /\{show\.generationError \?\?/);
+  assert.match(page, /\(show\.generatedCueCount \?\? 0\) > 0/);
   assert.match(page, /Review show/);
+  assert.match(page, /Back to My Shows/);
   assert.match(page, /Start another show/);
   assert.doesNotMatch(page, /Open preview/);
   assert.doesNotMatch(page, /bg-error|text-on-surface|text-primary/);

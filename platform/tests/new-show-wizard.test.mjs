@@ -142,6 +142,17 @@ test('radio-card answers stay on screen for keyboard review before continuing', 
     /onSelect=\{\(\) => \{\s*set(?:LengthChoice|Budget)\([^;]+;\s*goToStep\(stepIndex \+ 1\)/s,
   );
   assert.doesNotMatch(choiceCards, /onClick=\{\(event\) =>/);
+});
+
+test('single-choice steps reveal a primary Continue action after selection', () => {
+  assert.match(
+    page,
+    /\{lengthChoice !== null \? \(\s*<div className="flex justify-center pt-2">[\s\S]*?Continue[\s\S]*?<ArrowRight size=\{16\} \/>/,
+  );
+  assert.match(
+    page,
+    /\{budget !== null \? \(\s*<div className="flex justify-center pt-5">[\s\S]*?Continue[\s\S]*?<ArrowRight size=\{16\} \/>/,
+  );
   assert.match(page, /stepIndex === 2 && lengthChoice !== null/);
   assert.match(page, /stepIndex === 3 && budget !== null/);
 });

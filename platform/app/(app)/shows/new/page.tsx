@@ -1031,6 +1031,19 @@ export default function NewShowPage() {
                       );
                     })}
                   </div>
+                  {lengthChoice !== null ? (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        type="button"
+                        onClick={() => goToStep(stepIndex + 1)}
+                        size="lg"
+                        className="rounded-full px-8"
+                      >
+                        Continue
+                        <ArrowRight size={16} />
+                      </Button>
+                    </div>
+                  ) : null}
                 </fieldset>
               </StepPanel>
 
@@ -1052,6 +1065,19 @@ export default function NewShowPage() {
                       />
                     ))}
                   </div>
+                  {budget !== null ? (
+                    <div className="flex justify-center pt-5">
+                      <Button
+                        type="button"
+                        onClick={() => goToStep(stepIndex + 1)}
+                        size="lg"
+                        className="rounded-full px-8"
+                      >
+                        Continue
+                        <ArrowRight size={16} />
+                      </Button>
+                    </div>
+                  ) : null}
                 </fieldset>
               </StepPanel>
 
@@ -1227,7 +1253,10 @@ export default function NewShowPage() {
             </Button>
           )}
           <StepDots stepIndex={stepIndex} total={STEPS.length} />
-          {stepIndex === 0 || isFinalStep ? (
+          {stepIndex === 0 ||
+          isFinalStep ||
+          (stepIndex === 2 && lengthChoice !== null) ||
+          (stepIndex === 3 && budget !== null) ? (
             <span className="inline-block h-10 w-10" aria-hidden="true" />
           ) : (
             <Button
@@ -1237,9 +1266,7 @@ export default function NewShowPage() {
               variant="ghost"
               className="rounded-full px-5"
             >
-              {(stepIndex === 2 && lengthChoice !== null) || (stepIndex === 3 && budget !== null)
-                ? 'Continue'
-                : 'Skip'}
+              Skip
             </Button>
           )}
         </div>

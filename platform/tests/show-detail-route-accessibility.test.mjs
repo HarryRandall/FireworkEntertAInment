@@ -11,14 +11,14 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('show detail chrome owns one stable page heading', () => {
+test('show detail chrome keeps an accessible heading without visible title chrome', () => {
   const layout = read('app/(app)/shows/[id]/layout.tsx');
   const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
 
   assert.match(layout, /showTitle=\{show\.title\}/);
-  assert.match(chrome, /<h1/);
+  assert.match(chrome, /<h1[^>]*className="sr-only"/);
   assert.match(chrome, /\{showTitle\}/);
-  assert.match(chrome, /aria-describedby=\{descriptionId\}/);
+  assert.doesNotMatch(chrome, /section\.description|aria-describedby=\{descriptionId\}/);
 
   for (const path of [
     'app/(app)/shows/[id]/preview/page.tsx',
@@ -54,7 +54,8 @@ test('show loading boundaries preserve real route chrome without redrawing it', 
   const parentLoading = read('app/(app)/shows/loading.tsx');
   const detailLoading = read('app/(app)/shows/[id]/loading.tsx');
 
-  assert.match(parentLoading, /<h1[^>]*>Show details<\/h1>/);
+  assert.match(parentLoading, /<h1 className="sr-only">Show details<\/h1>/);
+  assert.doesNotMatch(parentLoading, /\{activeSection\.description\}/);
   assert.match(parentLoading, /<ShowTabs id=\{showSlug\} prefetch=\{false\} \/>/);
   assert.match(parentLoading, /<ShowDetailContentSkeleton segment=\{detailMatch\[2\]\} \/>/);
   assert.match(parentLoading, /aria-busy="true"/);

@@ -93,13 +93,6 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
   const readyRef = useRef(false);
   const overlayRef = useRef<HTMLDivElement | null>(null);
 
-  // Every time the active card changes (including to none), drop back to the
-  // poster until the freshly mounted canvas reports ready again.
-  useEffect(() => {
-    readyRef.current = false;
-    setReady(false);
-  }, [active?.id, mountedPreview?.requestSerial]);
-
   const clearIntentTimer = useCallback(() => {
     if (intentTimerRef.current !== null) {
       clearTimeout(intentTimerRef.current);
@@ -174,6 +167,11 @@ export function ExplorePreviewProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Reset before mounting the next replay. A parent effect runs after the
+      // canvas's mount effects and can otherwise overwrite its first onReady
+      // signal, leaving the card stuck on Loading.
+      readyRef.current = false;
+      setReady(false);
       setMountedPreview({
         template: { ...template, previewCues: preview.previewCues },
         specifications: preview.specifications,

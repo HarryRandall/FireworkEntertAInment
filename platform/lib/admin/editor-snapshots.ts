@@ -1,6 +1,10 @@
 import type { AdminStyleDefaultIdMap } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
-import { FIREWORK_STYLE_DEFAULT_KINDS } from '@/lib/fireworks/style-defaults';
+import {
+  FIREWORK_STYLE_DEFAULT_KINDS,
+  isFireworkStyleDefaultKind,
+  type FireworkStyleDefaultKind,
+} from '@/lib/fireworks/style-defaults';
 
 export type FireworkEditorSnapshot = {
   kind: 'firework';
@@ -28,6 +32,18 @@ export type EffectEditorSnapshot = {
   sortOrder: number;
   styleDefaultIds: AdminStyleDefaultIdMap;
   modelJson: Json;
+  updatedAt: string | null;
+};
+
+export type StyleDefaultEditorSnapshot = {
+  kind: 'style_default';
+  id: string;
+  name: string;
+  description: string | null;
+  styleKind: FireworkStyleDefaultKind;
+  sortOrder: number;
+  isArchived: boolean;
+  defaultsJson: Json;
   updatedAt: string | null;
 };
 
@@ -92,6 +108,20 @@ export function makeEffectEditorSnapshot(input: EffectEditorSnapshot): Json {
   };
 }
 
+export function makeStyleDefaultEditorSnapshot(input: StyleDefaultEditorSnapshot): Json {
+  return {
+    kind: 'style_default',
+    id: input.id,
+    name: input.name,
+    description: input.description,
+    styleKind: input.styleKind,
+    sortOrder: input.sortOrder,
+    isArchived: input.isArchived,
+    defaultsJson: input.defaultsJson,
+    updatedAt: input.updatedAt,
+  };
+}
+
 export function parseFireworkEditorSnapshot(value: Json | unknown): FireworkEditorSnapshot | null {
   if (!isRecord(value) || value.kind !== 'firework' || typeof value.id !== 'string') return null;
   const name =
@@ -137,6 +167,28 @@ export function parseEffectEditorSnapshot(value: Json | unknown): EffectEditorSn
     sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 0,
     styleDefaultIds: normaliseSnapshotStyleDefaultIds(value.styleDefaultIds),
     modelJson: jsonObject(value.modelJson),
+    updatedAt: stringOrNull(value.updatedAt),
+  };
+}
+
+export function parseStyleDefaultEditorSnapshot(
+  value: Json | unknown,
+): StyleDefaultEditorSnapshot | null {
+  if (!isRecord(value) || value.kind !== 'style_default' || typeof value.id !== 'string') {
+    return null;
+  }
+  if (!isFireworkStyleDefaultKind(value.styleKind)) return null;
+
+  return {
+    kind: 'style_default',
+    id: value.id,
+    name:
+      typeof value.name === 'string' && value.name.trim() ? value.name : 'Untitled style default',
+    description: stringOrNull(value.description),
+    styleKind: value.styleKind,
+    sortOrder: Number.isFinite(Number(value.sortOrder)) ? Number(value.sortOrder) : 0,
+    isArchived: value.isArchived === true,
+    defaultsJson: jsonObject(value.defaultsJson),
     updatedAt: stringOrNull(value.updatedAt),
   };
 }

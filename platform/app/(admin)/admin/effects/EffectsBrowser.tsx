@@ -7,16 +7,17 @@
  * filtering, and tab switching happen instantly in the browser with no extra
  * round-trips. Filters live behind a compact popover and creation happens in a
  * dialog, keeping the page itself minimal: a tab switch, a search box, and the
- * table.
+ * current browse surface.
  */
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, ListFilter, Plus, Search } from 'lucide-react';
-import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
 import { createCustomStarEffect } from '@/app/actions/admin-effects';
 import { createStyleDefaultFromKind } from '@/app/actions/admin-style-defaults';
+import { FireworkBrowseCard } from '@/app/components/app/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
 import {
@@ -27,6 +28,7 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from '@/app/components/ui/DataTable';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { Input } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -45,6 +47,7 @@ import {
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
 } from '@/lib/fireworks/style-defaults';
+import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatStableDateTime } from '@/lib/show-domain';
 import type { AdminEffectSummary, AdminStyleDefaultSummary } from '@/lib/admin.types';
 import { cn } from '@/lib/utils';
@@ -318,6 +321,20 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
     });
   }, [styleDefaults, normalisedQuery, kindFilter]);
 
+  const posterBackfillTargets = useMemo(
+    () =>
+      filteredEffects
+        .filter((effect) => !effect.previewImagePath)
+        .map((effect) => ({
+          id: `effect-${effect.id}`,
+          previewUrl: withFireworkPreviewRevision(
+            `/api/admin/firework-previews/effect/${effect.id}`,
+            effect.previewImageRevision,
+          ),
+        })),
+    [filteredEffects],
+  );
+
   const open = (href: string) => {
     startTransition(() => router.push(href));
   };
@@ -377,97 +394,66 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
         </FilterPopover>
       </div>
 
-      <DataTableShell
-        viewport
-        footer={
-          <p className="text-muted-foreground text-sm">
-            Viewing <span className="text-foreground font-medium tabular-nums">{visibleCount}</span>{' '}
-            of <span className="tabular-nums">{totalCount}</span>{' '}
-            {totalCount === 1 ? itemLabel : `${itemLabel}s`}
-          </p>
-        }
-      >
-        {effectsActive ? (
-          <table className={tableClasses('min-w-[820px]')}>
-            <thead className={tableHeadClasses()}>
-              <tr>
-                <th className={tableHeaderCellClasses()}>Effect</th>
-                <th className={tableHeaderCellClasses()}>Pattern</th>
-                <th className={tableHeaderCellClasses()}>Source</th>
-                <th className={tableHeaderCellClasses('text-right')}>Variants</th>
-                <th className={tableHeaderCellClasses()}>Updated</th>
-                <th className={tableHeaderCellClasses('w-10')}>
-                  <span className="sr-only">Open</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEffects.length === 0 ? (
-                <EmptyRow colSpan={6} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
-              ) : (
-                filteredEffects.map((effect) => {
-                  const href = `/admin/effects/${effect.id}`;
-                  return (
-                    <tr
-                      key={effect.id}
-                      onClick={() => open(href)}
-                      className={tableRowClasses(
-                        'group cursor-pointer hover:bg-[color:var(--color-bg-muted)]',
-                      )}
-                    >
-                      <td className={tableCellClasses()}>
-                        <div className="flex items-center gap-3">
-                          <EffectPreviewIcon preview={effect.preview} />
-                          <div className="min-w-0">
-                            <Link
-                              href={href}
-                              onClick={(event) => event.stopPropagation()}
-                              className="block max-w-xs truncate font-medium text-[color:var(--color-content-emphasis)] hover:underline focus:outline-none focus-visible:underline"
-                            >
-                              {effect.name}
-                            </Link>
-                            <div className="mt-0.5 max-w-md truncate text-xs text-[color:var(--color-content-subtle)]">
-                              {effect.description ?? effect.slug}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className={tableCellClasses()}>
-                        <span className="font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)]">
-                          {effect.patternKey}
+      {effectsActive ? (
+        <div className="space-y-5">
+          {filteredEffects.length === 0 ? (
+            <EmptyNotice>
+              {normalisedQuery || activeFilterCount
+                ? 'No effects match your search and filters.'
+                : 'No effects have been created yet.'}
+            </EmptyNotice>
+          ) : (
+            <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {filteredEffects.map((effect) => (
+                  <FireworkBrowseCard
+                    key={effect.id}
+                    previewId={`effect-${effect.id}`}
+                    previewUrl={withFireworkPreviewRevision(
+                      `/api/admin/firework-previews/effect/${effect.id}`,
+                      effect.previewImageRevision,
+                    )}
+                    persistedPosterUrl={fireworkPreviewImageUrl(effect.previewImagePath)}
+                    persistPoster
+                    label={effect.name}
+                    href={`/admin/effects/${effect.id}`}
+                  >
+                    <div className="p-4">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <h2 className="text-foreground line-clamp-2 min-w-0 text-sm leading-5 font-semibold">
+                          {effect.name}
+                        </h2>
+                        <Badge tone="neutral" className="max-w-32 shrink-0 truncate">
+                          {effect.source}
+                        </Badge>
+                      </div>
+                      <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+                        <span className="truncate font-mono">{effect.patternKey}</span>
+                        <span aria-hidden>·</span>
+                        <span className="tabular-nums">
+                          {effect.variantCount.toLocaleString()}{' '}
+                          {effect.variantCount === 1 ? 'variant' : 'variants'}
                         </span>
-                      </td>
-                      <td className={tableCellClasses()}>
-                        <Badge tone="neutral">{effect.source}</Badge>
-                      </td>
-                      <td
-                        className={tableCellClasses(
-                          'text-right font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                        )}
-                      >
-                        {effect.variantCount}
-                      </td>
-                      <td
-                        className={tableCellClasses(
-                          'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                        )}
-                      >
-                        {formatStableDateTime(effect.updatedAt)}
-                      </td>
-                      <td className={tableCellClasses('text-right')}>
-                        <ChevronRight
-                          size={16}
-                          className="text-[color:var(--color-content-subtle)] transition-transform group-hover:translate-x-0.5 group-hover:text-[color:var(--color-content-emphasis)]"
-                          aria-hidden
-                        />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        ) : (
+                      </div>
+                    </div>
+                  </FireworkBrowseCard>
+                ))}
+              </div>
+            </FireworkBrowsePreviewProvider>
+          )}
+          <BrowserCount visibleCount={visibleCount} totalCount={totalCount} itemLabel={itemLabel} />
+        </div>
+      ) : (
+        <DataTableShell
+          viewport
+          footer={
+            <BrowserCount
+              visibleCount={visibleCount}
+              totalCount={totalCount}
+              itemLabel={itemLabel}
+            />
+          }
+        >
           <table className={tableClasses('min-w-[720px]')}>
             <thead className={tableHeadClasses()}>
               <tr>
@@ -530,9 +516,27 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
               )}
             </tbody>
           </table>
-        )}
-      </DataTableShell>
+        </DataTableShell>
+      )}
     </div>
+  );
+}
+
+function BrowserCount({
+  visibleCount,
+  totalCount,
+  itemLabel,
+}: {
+  visibleCount: number;
+  totalCount: number;
+  itemLabel: string;
+}) {
+  return (
+    <p className="text-muted-foreground text-sm">
+      Viewing <span className="text-foreground font-medium tabular-nums">{visibleCount}</span> of{' '}
+      <span className="tabular-nums">{totalCount}</span>{' '}
+      {totalCount === 1 ? itemLabel : `${itemLabel}s`}
+    </p>
   );
 }
 

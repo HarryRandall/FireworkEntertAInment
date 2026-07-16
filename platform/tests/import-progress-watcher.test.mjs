@@ -12,6 +12,9 @@ const source = readFileSync(
 );
 
 test('import polling stops at terminal states and pauses in hidden tabs', () => {
+  assert.match(source, /setStatus\(initialStatus\)/);
+  assert.match(source, /setStage\(initialStage\)/);
+  assert.match(source, /setProgress\(initialProgress\)/);
   assert.match(source, /if \(TERMINAL_STATUSES\.has\(initialStatus\)\) return/);
   assert.match(source, /TERMINAL_STATUSES\.has\(currentStatus\)/);
   assert.match(source, /document\.visibilityState === 'hidden'/);
@@ -21,8 +24,14 @@ test('import polling stops at terminal states and pauses in hidden tabs', () => 
 });
 
 test('import progress exposes live status and progressbar semantics', () => {
+  const connectionIssue = source.slice(
+    source.indexOf('{connectionIssue ?'),
+    source.indexOf('{errorMessage ?'),
+  );
   assert.match(source, /role="status" aria-live="polite"/);
   assert.match(source, /role="progressbar"/);
   assert.match(source, /aria-valuenow=/);
+  assert.match(connectionIssue, /role="status"/);
+  assert.match(connectionIssue, /temporarily unavailable/);
   assert.match(source, /role="alert"/);
 });

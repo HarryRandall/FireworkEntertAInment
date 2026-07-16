@@ -13,7 +13,7 @@ export default async function AdminStyleDefaultDetailPage({ params }: PageProps)
 
   return (
     <div className="-mx-6 -my-6 flex h-[calc(100svh-3.5rem)] min-h-0 flex-1 sm:-mx-8 md:h-[calc(100svh-4.5rem)] lg:-mx-10">
-      <StyleDefaultEditor styleDefault={styleDefault} />
+      <StyleDefaultEditor key={styleDefault.id} styleDefault={styleDefault} />
     </div>
   );
 }

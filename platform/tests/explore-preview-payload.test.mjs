@@ -113,6 +113,11 @@ test('the shared preview loads after intent, caches by slug and stale-guards can
   assert.match(context, /new AbortController\(\)/);
   assert.match(context, /requestAbortRef\.current\?\.abort\(\)/);
   assert.match(context, /requestSerialRef\.current !== requestSerial/);
+  assert.match(context, /readyRef\.current = false;\s+setReady\(false\);\s+setMountedPreview\(/);
+  assert.doesNotMatch(
+    context,
+    /useEffect\(\(\) => \{\s+readyRef\.current = false;\s+setReady\(false\);\s+\}, \[active\?\.id/,
+  );
   assert.match(context, /activeId: active\?\.id \?\? null/);
   assert.match(context, /pendingId: pending\?\.id \?\? null/);
   assert.match(context, /overlay\.style\.opacity = readyRef\.current \? '1' : '0'/);

@@ -3,6 +3,10 @@ import 'server-only';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AdminEffectDetail, AdminEffectSummary } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
+import {
+  resolveFireworkPreviewImage,
+  type FireworkPreviewImageRelation,
+} from '@/lib/firework-preview-image';
 import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
 import {
   ADMIN_CACHE_TTL_SECONDS,
@@ -17,6 +21,7 @@ import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
+type CachedAdminEffectDetail = Omit<AdminEffectDetail, 'history'>;
 
 type BaseEffectRow = Pick<
   Database['public']['Tables']['firework_effects']['Row'],
@@ -31,6 +36,7 @@ type BaseEffectRow = Pick<
   | 'updated_at'
 > & {
   fireworks?: Array<{ id: string }> | null;
+  firework_preview_images?: FireworkPreviewImageRelation;
 };
 
 function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
@@ -50,11 +56,12 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
       pattern: row.pattern_key,
       name: row.name,
     }),
+    ...resolveFireworkPreviewImage(row.firework_preview_images),
     updatedAt: row.updated_at,
   };
 }
 
-function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
+function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
   return {
     ...mapBaseEffectSummary(row),
     modelJson: row.model_json as Json,
@@ -63,6 +70,7 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
     styleDefaultLinks: {},
     styleDefaultIds: emptyStyleDefaultIdMap(),
     styleDefaults: {
+      geometry: [],
       star: [],
       trail: [],
       launch: [],
@@ -72,14 +80,13 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetail {
       split: [],
       sound: [],
     },
-    history: [],
   };
 }
 
 const BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
+  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
 const LEGACY_BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id)';
+  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
 
 async function selectBaseEffects(supabase: ServerClient) {
   const result = await supabase
@@ -140,10 +147,15 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
 
   const cacheKey = getAdminEffectCacheKey(effectId);
-  const cached = await getCachedJson<AdminEffectDetail>(cacheKey);
-  if (cached) return cached;
-
   const supabase = await getServerClient();
+  const cached = await getCachedJson<CachedAdminEffectDetail>(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      history: await listEffectEditorVersions(supabase, effectId),
+    };
+  }
+
   const { data, error } = await selectBaseEffectById(supabase, effectId);
 
   if (error) {
@@ -157,11 +169,10 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
     listAdminStyleDefaultOptions(),
     listEffectEditorVersions(supabase, row.id),
   ]);
-  const mapped = {
+  const mapped: CachedAdminEffectDetail = {
     ...mapBaseEffectDetail(row),
     styleDefaults,
-    history,
   };
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
-  return mapped;
+  return { ...mapped, history };
 }

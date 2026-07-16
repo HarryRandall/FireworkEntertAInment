@@ -246,14 +246,16 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   );
 });
 
-test('admin billing overview and user detail expose credit balances and grant controls', () => {
+test('user detail exposes credit balances and grant controls', () => {
   const shell = read('app/components/admin/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
   const grantDialog = read('app/(admin)/admin/users/[id]/GrantAiCreditsDialog.tsx');
   const actions = read('app/actions/admin-users.ts');
-  assert.match(shell, /\/admin\/billing/);
-  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing/page.tsx')), true);
+  // The standalone AI billing tab was removed; credit management lives on the
+  // user detail page.
+  assert.doesNotMatch(shell, /href: '\/admin\/billing'/);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing')), false);
   assert.match(userDetail, /AdminUserAiCreditsCard/);
   assert.match(userDetail, /Recent spend/);
   assert.match(userHeaderActions, /GrantAiCreditsDialog/);

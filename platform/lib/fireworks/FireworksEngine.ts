@@ -47,16 +47,22 @@ import {
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
 import { replayCuesSimulationKey } from '@/lib/fireworks/replay-cache-key';
+import { FIREWORKS_ENGINE_FIXED_STEP_SECONDS } from '@/lib/fireworks/import-renderer-contract';
+
+export { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/fireworks/import-renderer-contract';
 
 export type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin,fadeIn] per particle */
+  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin,fadeIn,headStyleSlot] per particle */
   data: Float32Array;
   current: number;
   aliveMax: number;
 };
 
 export type SnapshotCacheEntry = { time: number; state: PoolSnapshot; lossy: boolean };
+
+export type HeadRenderStyle = FireworkHeadStyle & FireworkRenderTuning;
+export type HeadStylePairSnapshot = { outer: HeadRenderStyle; core: HeadRenderStyle };
 
 /**
  * Serialisable-ish snapshot of the primed seek cache, plus the simulated show
@@ -69,6 +75,9 @@ export type SnapshotCacheEntry = { time: number; state: PoolSnapshot; lossy: boo
 export type SnapshotCacheData = {
   snapshots: SnapshotCacheEntry[];
   primingEnd: number;
+  snapshotStride: number;
+  /** Stable slot table referenced by each packed particle's headStyleSlot. */
+  headStylePairs: HeadStylePairSnapshot[];
 };
 
 export type FireworksEngineStats = {
@@ -78,7 +87,7 @@ export type FireworksEngineStats = {
 };
 
 const PARTICLE_CAPACITY = 100_000;
-const FIXED_DT = 1 / 60;
+const FIXED_DT = FIREWORKS_ENGINE_FIXED_STEP_SECONDS;
 // Scrub rebuilds can be coarser than playback; procedural emitters compensate
 // by ageing particles across each rebuilt segment.
 const SCRUB_DT = 1 / 24;
@@ -87,13 +96,12 @@ const SCRUB_DT = 1 / 24;
 // the step count keeps fast drags across busy shows responsive.
 const SCRUB_DRAG_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 21;
+const SNAPSHOT_STRIDE = 22;
 // Sized for SNAPSHOT_INTERVAL below: 1200 half-second snapshots covers a
 // 10-minute show before eviction starts dropping the earliest entries.
 const MAX_SNAPSHOTS = 1200;
 const BRIGHTNESS_BOOST = 1.55;
 const MAX_COLOR_INTENSITY = 1.75;
-const SMOKE_BRIGHTNESS_BOOST = 1.8;
 
 type FireworksEngineOptions = {
   showStarfield?: boolean;
@@ -125,34 +133,48 @@ export class FireworksEngine {
   private sizes: Float32Array;
   private shapes: Float32Array;
   private rotations: Float32Array;
+  private pointHeadStyleA: Float32Array;
+  private pointHeadStyleB: Float32Array;
+  private pointHeadStyleC: Float32Array;
   private smokePositions: Float32Array;
   private smokeColors: Float32Array;
   private smokeSizes: Float32Array;
+  private smokeOpacities: Float32Array;
   private headPositions: Float32Array | null = null;
   private headColors: Float32Array | null = null;
   private headSizes: Float32Array | null = null;
   private headShapes: Float32Array | null = null;
+  private billboardHeadStyleA: Float32Array | null = null;
+  private billboardHeadStyleB: Float32Array | null = null;
+  private billboardHeadStyleC: Float32Array | null = null;
   private positionAttribute: THREE.BufferAttribute;
   private colorAttribute: THREE.BufferAttribute;
   private sizeAttribute: THREE.BufferAttribute;
   private shapeAttribute: THREE.BufferAttribute;
   private rotationAttribute: THREE.BufferAttribute;
+  private pointHeadStyleAAttribute: THREE.BufferAttribute;
+  private pointHeadStyleBAttribute: THREE.BufferAttribute;
+  private pointHeadStyleCAttribute: THREE.BufferAttribute;
   private smokePositionAttribute: THREE.BufferAttribute;
   private smokeColorAttribute: THREE.BufferAttribute;
   private smokeSizeAttribute: THREE.BufferAttribute;
+  private smokeOpacityAttribute: THREE.BufferAttribute;
   private headPositionAttribute: THREE.InstancedBufferAttribute | null = null;
   private headColorAttribute: THREE.InstancedBufferAttribute | null = null;
   private headSizeAttribute: THREE.InstancedBufferAttribute | null = null;
   private headShapeAttribute: THREE.InstancedBufferAttribute | null = null;
+  private billboardHeadStyleAAttribute: THREE.InstancedBufferAttribute | null = null;
+  private billboardHeadStyleBAttribute: THREE.InstancedBufferAttribute | null = null;
+  private billboardHeadStyleCAttribute: THREE.InstancedBufferAttribute | null = null;
   private viewport = new THREE.Vector2(1, 1);
 
-  // Per-layer head brightness hold (outer/core), mirrored into the material
-  // uniforms and consumed CPU-side by renderParticleAlpha so the packed head
-  // colour holds bright for a configurable slice of life before fading.
-  private headHoldOuter = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent;
-  private headHoldCore = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent;
-  private headExpOuter = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent;
-  private headExpCore = DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent;
+  /**
+   * Cue-owned style pairs. Particles keep a stable slot into this table, so a
+   * later overlapping cue cannot restyle an earlier cue's live heads.
+   */
+  private headStylePairs: HeadStylePairSnapshot[] = [defaultHeadStylePair()];
+  /** Cue slots start at one, leaving mutable preview defaults isolated at slot zero. */
+  private headStylePairSlots = new Map<string, number>();
 
   private elapsed = 0;
   private time = 0;
@@ -212,92 +234,6 @@ export class FireworksEngine {
     this.headBillboardsEnabled = readMaxPointSize(renderer) < HEAD_SPRITE_MAX_SIZE;
 
     this.material = new THREE.ShaderMaterial({
-      uniforms: {
-        glowPadding: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
-            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
-          ),
-        },
-        whiteCoreSizePercent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
-          ),
-        },
-        whiteCoreBlurPercent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
-          ),
-        },
-        coreSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
-          ),
-        },
-        coreBrightness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
-          ),
-        },
-        coreOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
-          ),
-        },
-        glowSize: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
-          ),
-        },
-        glowSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
-          ),
-        },
-        glowOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
-          ),
-        },
-        glowBlur: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
-          ),
-        },
-        backgroundGlowOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
-          ),
-        },
-        backgroundGlowSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
-          ),
-        },
-        headBrightnessHold: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
-          ),
-        },
-        headBrightnessHoldExponent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
-          ),
-        },
-      },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
       blending: THREE.AdditiveBlending,
@@ -321,9 +257,13 @@ export class FireworksEngine {
     this.sizes = new Float32Array(PARTICLE_CAPACITY);
     this.shapes = new Float32Array(PARTICLE_CAPACITY);
     this.rotations = new Float32Array(PARTICLE_CAPACITY);
+    this.pointHeadStyleA = new Float32Array(PARTICLE_CAPACITY * 4);
+    this.pointHeadStyleB = new Float32Array(PARTICLE_CAPACITY * 4);
+    this.pointHeadStyleC = new Float32Array(PARTICLE_CAPACITY * 4);
     this.smokePositions = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeColors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.smokeSizes = new Float32Array(PARTICLE_CAPACITY);
+    this.smokeOpacities = new Float32Array(PARTICLE_CAPACITY);
 
     this.geometry = new THREE.BufferGeometry();
     this.positionAttribute = new THREE.BufferAttribute(this.positions, 3).setUsage(
@@ -339,11 +279,23 @@ export class FireworksEngine {
     this.rotationAttribute = new THREE.BufferAttribute(this.rotations, 1).setUsage(
       THREE.DynamicDrawUsage,
     );
+    this.pointHeadStyleAAttribute = new THREE.BufferAttribute(this.pointHeadStyleA, 4).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    this.pointHeadStyleBAttribute = new THREE.BufferAttribute(this.pointHeadStyleB, 4).setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    this.pointHeadStyleCAttribute = new THREE.BufferAttribute(this.pointHeadStyleC, 4).setUsage(
+      THREE.DynamicDrawUsage,
+    );
     this.geometry.setAttribute('position', this.positionAttribute);
     this.geometry.setAttribute('color', this.colorAttribute);
     this.geometry.setAttribute('size', this.sizeAttribute);
     this.geometry.setAttribute('shape', this.shapeAttribute);
     this.geometry.setAttribute('rotation', this.rotationAttribute);
+    this.geometry.setAttribute('headStyleA', this.pointHeadStyleAAttribute);
+    this.geometry.setAttribute('headStyleB', this.pointHeadStyleBAttribute);
+    this.geometry.setAttribute('headStyleC', this.pointHeadStyleCAttribute);
     this.geometry.setDrawRange(0, 0);
 
     this.smokeGeometry = new THREE.BufferGeometry();
@@ -356,9 +308,13 @@ export class FireworksEngine {
     this.smokeSizeAttribute = new THREE.BufferAttribute(this.smokeSizes, 1).setUsage(
       THREE.DynamicDrawUsage,
     );
+    this.smokeOpacityAttribute = new THREE.BufferAttribute(this.smokeOpacities, 1).setUsage(
+      THREE.DynamicDrawUsage,
+    );
     this.smokeGeometry.setAttribute('position', this.smokePositionAttribute);
     this.smokeGeometry.setAttribute('color', this.smokeColorAttribute);
     this.smokeGeometry.setAttribute('size', this.smokeSizeAttribute);
+    this.smokeGeometry.setAttribute('smokeOpacity', this.smokeOpacityAttribute);
     this.smokeGeometry.setDrawRange(0, 0);
 
     this.smokePoints = new THREE.Points(this.smokeGeometry, this.smokeMaterial);
@@ -377,6 +333,9 @@ export class FireworksEngine {
     this.headColors = new Float32Array(PARTICLE_CAPACITY * 3);
     this.headSizes = new Float32Array(PARTICLE_CAPACITY);
     this.headShapes = new Float32Array(PARTICLE_CAPACITY);
+    this.billboardHeadStyleA = new Float32Array(PARTICLE_CAPACITY * 4);
+    this.billboardHeadStyleB = new Float32Array(PARTICLE_CAPACITY * 4);
+    this.billboardHeadStyleC = new Float32Array(PARTICLE_CAPACITY * 4);
 
     const geometry = new THREE.InstancedBufferGeometry();
     geometry.setAttribute(
@@ -398,97 +357,28 @@ export class FireworksEngine {
     this.headShapeAttribute = new THREE.InstancedBufferAttribute(this.headShapes, 1).setUsage(
       THREE.DynamicDrawUsage,
     );
+    this.billboardHeadStyleAAttribute = new THREE.InstancedBufferAttribute(
+      this.billboardHeadStyleA,
+      4,
+    ).setUsage(THREE.DynamicDrawUsage);
+    this.billboardHeadStyleBAttribute = new THREE.InstancedBufferAttribute(
+      this.billboardHeadStyleB,
+      4,
+    ).setUsage(THREE.DynamicDrawUsage);
+    this.billboardHeadStyleCAttribute = new THREE.InstancedBufferAttribute(
+      this.billboardHeadStyleC,
+      4,
+    ).setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute('instancePosition', this.headPositionAttribute);
     geometry.setAttribute('instanceColor', this.headColorAttribute);
     geometry.setAttribute('instanceSize', this.headSizeAttribute);
     geometry.setAttribute('instanceShape', this.headShapeAttribute);
+    geometry.setAttribute('instanceHeadStyleA', this.billboardHeadStyleAAttribute);
+    geometry.setAttribute('instanceHeadStyleB', this.billboardHeadStyleBAttribute);
+    geometry.setAttribute('instanceHeadStyleC', this.billboardHeadStyleCAttribute);
 
     const material = new THREE.ShaderMaterial({
       uniforms: {
-        glowPadding: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
-            DEFAULT_FIREWORK_RENDER_TUNING.glowPadding,
-          ),
-        },
-        whiteCoreSizePercent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreSizePercent,
-          ),
-        },
-        whiteCoreBlurPercent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
-            DEFAULT_FIREWORK_RENDER_TUNING.whiteCoreBlurPercent,
-          ),
-        },
-        coreSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreSoftness,
-          ),
-        },
-        coreBrightness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreBrightness,
-          ),
-        },
-        coreOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.coreOpacityFalloff,
-          ),
-        },
-        glowSize: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSize,
-          ),
-        },
-        glowSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowSoftness,
-          ),
-        },
-        glowOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowOpacityFalloff,
-          ),
-        },
-        glowBlur: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
-            DEFAULT_FIREWORK_HEAD_STYLE.glowBlur,
-          ),
-        },
-        backgroundGlowOpacityFalloff: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowOpacityFalloff,
-          ),
-        },
-        backgroundGlowSoftness: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
-            DEFAULT_FIREWORK_HEAD_STYLE.backgroundGlowSoftness,
-          ),
-        },
-        headBrightnessHold: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldPercent / 100,
-          ),
-        },
-        headBrightnessHoldExponent: {
-          value: new THREE.Vector2(
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
-            DEFAULT_FIREWORK_HEAD_STYLE.brightnessHoldExponent,
-          ),
-        },
         viewport: { value: this.viewport },
       },
       vertexShader: HEAD_BILLBOARD_VERTEX_SHADER,
@@ -511,39 +401,7 @@ export class FireworksEngine {
 
   setRenderTuning(tuning: Partial<FireworkRenderTuning> | null | undefined): void {
     const next = normaliseFireworkRenderTuning(tuning);
-    this.setVec2Uniform(this.material, 'glowPadding', next.glowPadding, next.glowPadding);
-    this.setVec2Uniform(
-      this.material,
-      'whiteCoreSizePercent',
-      next.whiteCoreSizePercent,
-      next.whiteCoreSizePercent,
-    );
-    this.setVec2Uniform(
-      this.material,
-      'whiteCoreBlurPercent',
-      next.whiteCoreBlurPercent,
-      next.whiteCoreBlurPercent,
-    );
-    if (this.headBillboardMaterial) {
-      this.setVec2Uniform(
-        this.headBillboardMaterial,
-        'glowPadding',
-        next.glowPadding,
-        next.glowPadding,
-      );
-      this.setVec2Uniform(
-        this.headBillboardMaterial,
-        'whiteCoreSizePercent',
-        next.whiteCoreSizePercent,
-        next.whiteCoreSizePercent,
-      );
-      this.setVec2Uniform(
-        this.headBillboardMaterial,
-        'whiteCoreBlurPercent',
-        next.whiteCoreBlurPercent,
-        next.whiteCoreBlurPercent,
-      );
-    }
+    this.updateDefaultHeadStylePair((style) => ({ ...style, ...next }));
   }
 
   /**
@@ -553,136 +411,61 @@ export class FireworksEngine {
    */
   setHeadStyle(style: Partial<FireworkHeadStyle> | null | undefined): void {
     const next = normaliseFireworkHeadStyle(style);
-    const apply = (material: THREE.ShaderMaterial | null) => {
-      if (!material) return;
-      this.setVec2Uniform(material, 'coreSoftness', next.coreSoftness, next.coreSoftness);
-      this.setVec2Uniform(material, 'coreBrightness', next.coreBrightness, next.coreBrightness);
-      this.setVec2Uniform(
-        material,
-        'coreOpacityFalloff',
-        next.coreOpacityFalloff,
-        next.coreOpacityFalloff,
-      );
-      this.setVec2Uniform(material, 'glowSize', next.glowSize, next.glowSize);
-      this.setVec2Uniform(material, 'glowSoftness', next.glowSoftness, next.glowSoftness);
-      this.setVec2Uniform(
-        material,
-        'glowOpacityFalloff',
-        next.glowOpacityFalloff,
-        next.glowOpacityFalloff,
-      );
-      this.setVec2Uniform(material, 'glowBlur', next.glowBlur, next.glowBlur);
-      this.setVec2Uniform(
-        material,
-        'backgroundGlowOpacityFalloff',
-        next.backgroundGlowOpacityFalloff,
-        next.backgroundGlowOpacityFalloff,
-      );
-      this.setVec2Uniform(
-        material,
-        'backgroundGlowSoftness',
-        next.backgroundGlowSoftness,
-        next.backgroundGlowSoftness,
-      );
-      this.setVec2Uniform(
-        material,
-        'headBrightnessHold',
-        next.brightnessHoldPercent / 100,
-        next.brightnessHoldPercent / 100,
-      );
-      this.setVec2Uniform(
-        material,
-        'headBrightnessHoldExponent',
-        next.brightnessHoldExponent,
-        next.brightnessHoldExponent,
-      );
-    };
-    this.headHoldOuter = next.brightnessHoldPercent;
-    this.headHoldCore = next.brightnessHoldPercent;
-    this.headExpOuter = next.brightnessHoldExponent;
-    this.headExpCore = next.brightnessHoldExponent;
-    apply(this.material);
-    apply(this.headBillboardMaterial);
+    this.updateDefaultHeadStylePair((current) => ({ ...current, ...next }));
   }
 
-  setLayerHeadStyles(outer: FireworkStarLayer['head'], core: FireworkStarLayer['head']): void {
-    const apply = (material: THREE.ShaderMaterial | null) => {
-      if (!material) return;
-      this.setVec2Uniform(material, 'glowPadding', outer.glowPadding, core.glowPadding);
-      this.setVec2Uniform(
-        material,
-        'whiteCoreSizePercent',
-        outer.whiteCoreSizePercent,
-        core.whiteCoreSizePercent,
-      );
-      this.setVec2Uniform(
-        material,
-        'whiteCoreBlurPercent',
-        outer.whiteCoreBlurPercent,
-        core.whiteCoreBlurPercent,
-      );
-      this.setVec2Uniform(material, 'coreSoftness', outer.coreSoftness, core.coreSoftness);
-      this.setVec2Uniform(material, 'coreBrightness', outer.coreBrightness, core.coreBrightness);
-      this.setVec2Uniform(
-        material,
-        'coreOpacityFalloff',
-        outer.coreOpacityFalloff,
-        core.coreOpacityFalloff,
-      );
-      this.setVec2Uniform(material, 'glowSize', outer.glowSize, core.glowSize);
-      this.setVec2Uniform(material, 'glowSoftness', outer.glowSoftness, core.glowSoftness);
-      this.setVec2Uniform(
-        material,
-        'glowOpacityFalloff',
-        outer.glowOpacityFalloff,
-        core.glowOpacityFalloff,
-      );
-      this.setVec2Uniform(material, 'glowBlur', outer.glowBlur, core.glowBlur);
-      this.setVec2Uniform(
-        material,
-        'backgroundGlowOpacityFalloff',
-        outer.backgroundGlowOpacityFalloff,
-        core.backgroundGlowOpacityFalloff,
-      );
-      this.setVec2Uniform(
-        material,
-        'backgroundGlowSoftness',
-        outer.backgroundGlowSoftness,
-        core.backgroundGlowSoftness,
-      );
-      this.setVec2Uniform(
-        material,
-        'headBrightnessHold',
-        outer.brightnessHoldPercent / 100,
-        core.brightnessHoldPercent / 100,
-      );
-      this.setVec2Uniform(
-        material,
-        'headBrightnessHoldExponent',
-        outer.brightnessHoldExponent,
-        core.brightnessHoldExponent,
-      );
+  setLayerHeadStyles(outer: FireworkStarLayer['head'], core: FireworkStarLayer['head']): number {
+    const pair = {
+      outer: normaliseHeadRenderStyle(outer),
+      core: normaliseHeadRenderStyle(core),
     };
-    this.headHoldOuter = outer.brightnessHoldPercent;
-    this.headHoldCore = core.brightnessHoldPercent;
-    this.headExpOuter = outer.brightnessHoldExponent;
-    this.headExpCore = core.brightnessHoldExponent;
-    apply(this.material);
-    apply(this.headBillboardMaterial);
+    const key = headStylePairKey(pair);
+    const existing = this.headStylePairSlots.get(key);
+    if (existing !== undefined) return existing;
+
+    const slot = this.headStylePairs.length;
+    this.headStylePairs.push(pair);
+    this.headStylePairSlots.set(key, slot);
+    return slot;
   }
 
-  private setVec2Uniform(
-    material: THREE.ShaderMaterial,
-    name: string,
-    outer: number,
-    core: number,
-  ): void {
-    const value = material.uniforms[name]?.value;
-    if (value instanceof THREE.Vector2) {
-      value.set(outer, core);
-      return;
+  private updateDefaultHeadStylePair(update: (style: HeadRenderStyle) => HeadRenderStyle): void {
+    const current = this.headStylePairs[0] ?? defaultHeadStylePair();
+    this.headStylePairs[0] = {
+      outer: update(current.outer),
+      core: update(current.core),
+    };
+    this.rebuildHeadStylePairSlots();
+  }
+
+  private resetHeadStylePairs(): void {
+    const fallback = this.headStylePairs[0] ?? defaultHeadStylePair();
+    this.headStylePairs = [cloneHeadStylePair(fallback)];
+    this.rebuildHeadStylePairSlots();
+  }
+
+  private replaceHeadStylePairs(pairs: readonly HeadStylePairSnapshot[]): void {
+    this.headStylePairs =
+      pairs.length > 0
+        ? pairs.map((pair) => ({
+            outer: normaliseHeadRenderStyle(pair.outer),
+            core: normaliseHeadRenderStyle(pair.core),
+          }))
+        : [defaultHeadStylePair()];
+    this.rebuildHeadStylePairSlots();
+  }
+
+  private rebuildHeadStylePairSlots(): void {
+    this.headStylePairSlots.clear();
+    for (let slot = 1; slot < this.headStylePairs.length; slot++) {
+      const key = headStylePairKey(this.headStylePairs[slot]);
+      if (!this.headStylePairSlots.has(key)) this.headStylePairSlots.set(key, slot);
     }
-    material.uniforms[name].value = new THREE.Vector2(outer, core);
+  }
+
+  private headStyleForParticle(particle: Particle): HeadRenderStyle {
+    const pair = this.headStylePairs[particle.headStyleSlot] ?? this.headStylePairs[0];
+    return particle.shape >= 3 ? pair.core : pair.outer;
   }
 
   setViewport(width: number, height: number): void {
@@ -735,6 +518,7 @@ export class FireworksEngine {
       this.primed = false;
       this.snapshots.length = 0;
       this.nextSnapshotAt = 0;
+      this.resetHeadStylePairs();
     }
     if (options.cache && this.importSnapshotCache(options.cache)) {
       // Cached prime: skip the silent full pass and settle at the playhead.
@@ -775,6 +559,8 @@ export class FireworksEngine {
       // cached entry; the packed typed arrays inside `state` stay shared.
       snapshots: this.snapshots.map((s) => ({ time: s.time, lossy: s.lossy, state: s.state })),
       primingEnd: this.primingEnd,
+      snapshotStride: SNAPSHOT_STRIDE,
+      headStylePairs: this.headStylePairs.map(cloneHeadStylePair),
     };
   }
 
@@ -784,10 +570,13 @@ export class FireworksEngine {
    * cache is empty/missing so `setCues` falls through to a real prime.
    */
   importSnapshotCache(cache: SnapshotCacheData | null | undefined): boolean {
-    if (!cache || cache.snapshots.length === 0) return false;
+    if (!cache || cache.snapshotStride !== SNAPSHOT_STRIDE || cache.snapshots.length === 0) {
+      return false;
+    }
     this.primingActive = false;
     this.primingCursor = 0;
     this.primingEnd = cache.primingEnd;
+    this.replaceHeadStylePairs(cache.headStylePairs ?? []);
     // Fresh wrapper array, shared read-only typed arrays.
     this.snapshots = cache.snapshots.map((s) => ({ time: s.time, lossy: s.lossy, state: s.state }));
     const lastTime = this.snapshots[this.snapshots.length - 1].time;
@@ -817,12 +606,14 @@ export class FireworksEngine {
     if (!this.primingActive) return { progress: 1, done: true };
     const start = performance.now();
     this.effects.setAudible(false);
+    const boundaryCues = this.scheduler.pop(this.primingCursor, this.primingCursor);
+    for (const cue of boundaryCues) this.fireCue(cue, false);
     while (this.primingCursor + 0.0001 < this.primingEnd) {
       const next = Math.min(this.primingEnd, this.primingCursor + SCRUB_DT);
       const due = this.scheduler.pop(this.primingCursor, next);
-      for (const cue of due) this.fireCue(cue, false);
       this.tickPhysics(next - this.primingCursor);
       this.primingCursor = next;
+      for (const cue of due) this.fireCue(cue, false);
       // Capture on the regular stride, and additionally the moment the pool
       // transitions back to callback-free after a lossy stretch. That plants a
       // clean snapshot right at the end of every burst, so accurate repairs
@@ -918,6 +709,18 @@ export class FireworksEngine {
   }
 
   /**
+   * Materialise cues at the current playhead without ageing them. Deterministic
+   * capture uses this after a reset so a t=0 sample contains a fresh launch,
+   * while the first physics update still belongs to the following frame.
+   */
+  settleCurrentBoundary(): void {
+    this.effects.setAudible(false);
+    const due = this.scheduler.pop(this.elapsed, this.elapsed);
+    for (const cue of due) this.fireCue(cue, false);
+    if (due.length > 0) this.syncGeometry();
+  }
+
+  /**
    * Toggle timeline-scrub mode. While active, seeks accept lossy snapshot
    * restores instead of falling back to a from-zero rebuild, so dragging the
    * thumb across a busy show stays responsive. Turning it off arms an accurate
@@ -992,12 +795,14 @@ export class FireworksEngine {
     const start = performance.now();
     this.effects.setAudible(false);
     let cursor = this.elapsed;
+    const boundaryCues = this.scheduler.pop(cursor, cursor);
+    for (const cue of boundaryCues) this.fireCue(cue, false);
     while (cursor + 0.0001 < this.repairTarget) {
       const next = Math.min(this.repairTarget, cursor + SCRUB_DT);
       const due = this.scheduler.pop(cursor, next);
-      for (const cue of due) this.fireCue(cue, false);
       this.tickPhysics(next - cursor);
       cursor = next;
+      for (const cue of due) this.fireCue(cue, false);
       if (performance.now() - start >= budgetMs) break;
     }
     this.elapsed = cursor;
@@ -1023,10 +828,7 @@ export class FireworksEngine {
       cue.firework.caliber,
     );
     const design = scaleDesignForEmphasis(baseDesign, cue.emphasis);
-    // Head appearance is saved per design. Outer/Core styles share the global
-    // material uniforms for a cue, while each head particle carries the style
-    // slot encoded in its shape value.
-    this.setLayerHeadStyles(design.stars.outer.head, design.stars.core.head);
+    const headStyleSlot = this.setLayerHeadStyles(design.stars.outer.head, design.stars.core.head);
     const idx = (cue as ReplayCue & { launchPositionIndex?: number }).launchPositionIndex ?? 0;
     const basePos = this.world.getLaunchPosition(idx);
     const override = cue.shotPositionOverride;
@@ -1044,13 +846,15 @@ export class FireworksEngine {
       cue.timeSeconds,
       idx,
     );
-    this.effects.fire(design, pos, {
-      rng: createSeededRng(seed),
-      smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
-      liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
-      audible,
-      panDegrees: cue.shotPanDegrees ?? 0,
-      tiltDegrees: cue.shotTiltDegrees ?? 0,
+    this.pool.withHeadStyleSlot(headStyleSlot, () => {
+      this.effects.fire(design, pos, {
+        rng: createSeededRng(seed),
+        smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
+        liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
+        audible,
+        panDegrees: cue.shotPanDegrees ?? 0,
+        tiltDegrees: cue.shotTiltDegrees ?? 0,
+      });
     });
   }
 
@@ -1107,14 +911,17 @@ export class FireworksEngine {
     const dt = audible ? FIXED_DT : this.scrubbing ? SCRUB_DRAG_DT : SCRUB_DT;
     let cursor = this.elapsed;
     this.effects.setAudible(audible);
+    const boundaryCues = this.scheduler.pop(cursor, cursor);
+    for (const cue of boundaryCues) this.fireCue(cue, audible);
     while (cursor + 0.0001 < target) {
       const next = Math.min(target, cursor + dt);
       const due = this.scheduler.pop(cursor, next);
-      for (const cue of due) {
-        this.fireCue(cue, audible);
-      }
+      // Existing particles advance to the boundary first. Dispatching a cue
+      // before this tick gave a newly launched shell time from before its own
+      // launch and moved its apex up to one frame early.
       this.tickPhysics(next - cursor);
       cursor = next;
+      for (const cue of due) this.fireCue(cue, audible);
       // Capture every interval even when callback-driven heads/flashes are
       // alive. Those callbacks are not serialised, so such snapshots restore
       // slightly lossy (a head may miss a few trail emissions for the fraction
@@ -1156,7 +963,9 @@ export class FireworksEngine {
     const count = this.pool.aliveCount;
     for (let slot = 0; slot < count; slot++) {
       const p = ps[live[slot]];
-      if (p.alive) p.update(dt, this.time);
+      if (!p.alive) continue;
+      const headStyleSlot = p.headStyleSlot;
+      this.pool.withHeadStyleSlot(headStyleSlot, () => p.update(dt, this.time));
     }
     this.pool.compactAliveMax();
     this.lights.update();
@@ -1170,13 +979,20 @@ export class FireworksEngine {
     const sizes = this.sizes;
     const shapes = this.shapes;
     const rotations = this.rotations;
+    const pointHeadStyleA = this.pointHeadStyleA;
+    const pointHeadStyleB = this.pointHeadStyleB;
+    const pointHeadStyleC = this.pointHeadStyleC;
     const smokePositions = this.smokePositions;
     const smokeColors = this.smokeColors;
     const smokeSizes = this.smokeSizes;
+    const smokeOpacities = this.smokeOpacities;
     const headPositions = this.headPositions;
     const headColors = this.headColors;
     const headSizes = this.headSizes;
     const headShapes = this.headShapes;
+    const billboardHeadStyleA = this.billboardHeadStyleA;
+    const billboardHeadStyleB = this.billboardHeadStyleB;
+    const billboardHeadStyleC = this.billboardHeadStyleC;
     const count = this.pool.aliveCount;
     let drawCount = 0;
     let smokeDrawCount = 0;
@@ -1190,31 +1006,25 @@ export class FireworksEngine {
       const isStar = p.mass <= 0.0015;
       const isHead = p.shape > 1.5;
       const isSmoke = p.mass >= 0.004 && p.mass < 0.01;
+      const headStyle = isHead
+        ? this.headStyleForParticle(p)
+        : (this.headStylePairs[0]?.outer ?? defaultHeadRenderStyle());
       // Subtle shimmer — enough to read as "alive" without strobing. Higher
       // amplitudes and faster frequencies caused per-particle flicker that
       // looked like noise rather than burning chemistry. Head orbs are exempt:
       // they are meant to read as a steady, constant core, so they never twinkle.
       const twinkle = isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
-      const alpha =
-        renderParticleAlpha(
-          p,
-          this.headHoldOuter,
-          this.headHoldCore,
-          this.headExpOuter,
-          this.headExpCore,
-        ) *
-        twinkle *
-        clamp(p.alpha, 0, 1);
+      const alpha = renderParticleAlpha(p, headStyle) * twinkle * clamp(p.alpha, 0, 1);
       if (isSmoke) {
         const si = smokeDrawCount * 3;
-        const smokeTone = alpha * SMOKE_BRIGHTNESS_BOOST;
         smokePositions[si] = p.x;
         smokePositions[si + 1] = p.y;
         smokePositions[si + 2] = p.z;
         smokeSizes[smokeDrawCount] = renderParticleSize(p);
-        smokeColors[si] = clamp((p.color.r + 0.13) * smokeTone, 0, 0.52);
-        smokeColors[si + 1] = clamp((p.color.g + 0.14) * smokeTone, 0, 0.54);
-        smokeColors[si + 2] = clamp((p.color.b + 0.16) * smokeTone, 0, 0.58);
+        smokeOpacities[smokeDrawCount] = alpha;
+        smokeColors[si] = clamp(p.color.r, 0, 1);
+        smokeColors[si + 1] = clamp(p.color.g, 0, 1);
+        smokeColors[si + 2] = clamp(p.color.b, 0, 1);
         smokeDrawCount++;
         continue;
       }
@@ -1245,7 +1055,10 @@ export class FireworksEngine {
         headPositions &&
         headColors &&
         headSizes &&
-        headShapes
+        headShapes &&
+        billboardHeadStyleA &&
+        billboardHeadStyleB &&
+        billboardHeadStyleC
       ) {
         const hi = headDrawCount * 3;
         headPositions[hi] = p.x;
@@ -1256,6 +1069,13 @@ export class FireworksEngine {
         headColors[hi + 2] = blue;
         headSizes[headDrawCount] = renderParticleSize(p);
         headShapes[headDrawCount] = p.shape;
+        writeHeadRenderStyle(
+          billboardHeadStyleA,
+          billboardHeadStyleB,
+          billboardHeadStyleC,
+          headDrawCount,
+          headStyle,
+        );
         headDrawCount++;
         continue;
       }
@@ -1266,6 +1086,7 @@ export class FireworksEngine {
       sizes[drawCount] = renderParticleSize(p);
       shapes[drawCount] = p.shape;
       rotations[drawCount] = p.rotation;
+      writeHeadRenderStyle(pointHeadStyleA, pointHeadStyleB, pointHeadStyleC, drawCount, headStyle);
       colors[pi] = red;
       colors[pi + 1] = green;
       colors[pi + 2] = blue;
@@ -1295,6 +1116,17 @@ export class FireworksEngine {
       this.rotationAttribute.clearUpdateRanges();
       this.rotationAttribute.addUpdateRange(0, drawCount);
       this.rotationAttribute.needsUpdate = true;
+
+      const headStyleValueCount = drawCount * 4;
+      for (const attribute of [
+        this.pointHeadStyleAAttribute,
+        this.pointHeadStyleBAttribute,
+        this.pointHeadStyleCAttribute,
+      ]) {
+        attribute.clearUpdateRanges();
+        attribute.addUpdateRange(0, headStyleValueCount);
+        attribute.needsUpdate = true;
+      }
     }
     if (smokeDrawCount > 0) {
       const smokePositionCount = smokeDrawCount * 3;
@@ -1309,6 +1141,10 @@ export class FireworksEngine {
       this.smokeSizeAttribute.clearUpdateRanges();
       this.smokeSizeAttribute.addUpdateRange(0, smokeDrawCount);
       this.smokeSizeAttribute.needsUpdate = true;
+
+      this.smokeOpacityAttribute.clearUpdateRanges();
+      this.smokeOpacityAttribute.addUpdateRange(0, smokeDrawCount);
+      this.smokeOpacityAttribute.needsUpdate = true;
     }
     if (
       headDrawCount > 0 &&
@@ -1333,6 +1169,18 @@ export class FireworksEngine {
       this.headShapeAttribute.clearUpdateRanges();
       this.headShapeAttribute.addUpdateRange(0, headDrawCount);
       this.headShapeAttribute.needsUpdate = true;
+
+      const headStyleValueCount = headDrawCount * 4;
+      for (const attribute of [
+        this.billboardHeadStyleAAttribute,
+        this.billboardHeadStyleBAttribute,
+        this.billboardHeadStyleCAttribute,
+      ]) {
+        if (!attribute) continue;
+        attribute.clearUpdateRanges();
+        attribute.addUpdateRange(0, headStyleValueCount);
+        attribute.needsUpdate = true;
+      }
     }
   }
 
@@ -1378,6 +1226,7 @@ export class FireworksEngine {
       state.data[o + 18] = p.rotation;
       state.data[o + 19] = p.spin;
       state.data[o + 20] = p.fadeIn ? 1 : 0;
+      state.data[o + 21] = p.headStyleSlot;
       w++;
     }
     return state;
@@ -1411,6 +1260,7 @@ export class FireworksEngine {
       p.rotation = state.data[o + 18] || 0;
       p.spin = state.data[o + 19] || 0;
       p.fadeIn = state.data[o + 20] !== 0;
+      p.headStyleSlot = state.data[o + 21] || 0;
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);
@@ -1494,11 +1344,14 @@ export class FireworksEngine {
     const pos = this.world.getLaunchPosition(launchIndex);
     const seed = mixSeed('manual', this.elapsed, launchIndex);
     this.effects.setAudible(true);
-    this.effects.fire(design, pos, {
-      rng: createSeededRng(seed),
-      smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
-      liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
-      audible: true,
+    const headStyleSlot = this.setLayerHeadStyles(design.stars.outer.head, design.stars.core.head);
+    this.pool.withHeadStyleSlot(headStyleSlot, () => {
+      this.effects.fire(design, pos, {
+        rng: createSeededRng(seed),
+        smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
+        liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
+        audible: true,
+      });
     });
   }
 
@@ -1518,6 +1371,80 @@ export class FireworksEngine {
   }
 }
 
+const HEAD_RENDER_STYLE_KEYS = [
+  'glowPadding',
+  'whiteCoreSizePercent',
+  'whiteCoreBlurPercent',
+  'coreSoftness',
+  'coreBrightness',
+  'coreOpacityFalloff',
+  'glowSize',
+  'glowSoftness',
+  'glowOpacityFalloff',
+  'glowBlur',
+  'backgroundGlowOpacityFalloff',
+  'backgroundGlowSoftness',
+  'brightnessHoldPercent',
+  'brightnessHoldExponent',
+] as const satisfies readonly (keyof HeadRenderStyle)[];
+
+function normaliseHeadRenderStyle(
+  style: Partial<HeadRenderStyle> | null | undefined,
+): HeadRenderStyle {
+  return {
+    ...normaliseFireworkHeadStyle(style),
+    ...normaliseFireworkRenderTuning(style),
+  };
+}
+
+function defaultHeadRenderStyle(): HeadRenderStyle {
+  return {
+    ...DEFAULT_FIREWORK_HEAD_STYLE,
+    ...DEFAULT_FIREWORK_RENDER_TUNING,
+  };
+}
+
+function defaultHeadStylePair(): HeadStylePairSnapshot {
+  return {
+    outer: defaultHeadRenderStyle(),
+    core: defaultHeadRenderStyle(),
+  };
+}
+
+function cloneHeadStylePair(pair: HeadStylePairSnapshot): HeadStylePairSnapshot {
+  return {
+    outer: { ...pair.outer },
+    core: { ...pair.core },
+  };
+}
+
+function headStylePairKey(pair: HeadStylePairSnapshot): string {
+  return HEAD_RENDER_STYLE_KEYS.map((key) => `${pair.outer[key]}:${pair.core[key]}`).join('|');
+}
+
+/** Pack the shader-visible subset of a concrete outer or core head style. */
+function writeHeadRenderStyle(
+  styleA: Float32Array,
+  styleB: Float32Array,
+  styleC: Float32Array,
+  index: number,
+  style: HeadRenderStyle,
+): void {
+  const offset = index * 4;
+  styleA[offset] = style.glowPadding;
+  styleA[offset + 1] = style.whiteCoreSizePercent;
+  styleA[offset + 2] = style.whiteCoreBlurPercent;
+  styleA[offset + 3] = style.coreSoftness;
+  styleB[offset] = style.coreBrightness;
+  styleB[offset + 1] = style.coreOpacityFalloff;
+  styleB[offset + 2] = style.glowSize;
+  styleB[offset + 3] = style.glowSoftness;
+  styleC[offset] = style.glowOpacityFalloff;
+  styleC[offset + 1] = style.glowBlur;
+  styleC[offset + 2] = style.backgroundGlowOpacityFalloff;
+  styleC[offset + 3] = style.backgroundGlowSoftness;
+}
+
 function renderParticleSize(p: Particle): number {
   const base = Math.sqrt(Math.max(0, p.size));
   const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
@@ -1530,7 +1457,7 @@ function renderParticleSize(p: Particle): number {
   // above the shader's square clamp so heads stay dominant when zoomed in.
   // sqrt(headSize) maps the 100..4000 slider to a ~10..63px budget with the
   // default of 900 landing at 30 — the calibrated "clearly visible orb" size.
-  if (p.mass <= 0.0006) return clamp(base, 4, 240);
+  if (p.mass <= 0.0006) return clamp(base, 2, 240);
   if (p.mass <= 0.0015) return clamp(base * 1.55, 1.4, 34);
   if (p.mass <= 0.003) return clamp(base * 1.05, 1.0, 14);
   return clamp(base * 1.2, 1.1, 20);
@@ -1538,10 +1465,7 @@ function renderParticleSize(p: Particle): number {
 
 function renderParticleAlpha(
   p: Particle,
-  holdOuter = 82,
-  holdCore = 82,
-  expOuter = 0.8,
-  expCore = 0.8,
+  headStyle: HeadRenderStyle = defaultHeadRenderStyle(),
 ): number {
   const maxLife = Math.max(p.maxLife, p.life, 0.001);
   const lifeRatio = clamp(p.life / maxLife, 0, 1);
@@ -1550,19 +1474,16 @@ function renderParticleAlpha(
   const isFlash = p.mass >= 0.1 && p.maxLife < 0.7;
   const isSmoke = p.mass >= 0.004 && p.mass < 0.01;
   if (isSmoke) {
-    return clamp(0.34 * Math.pow(lifeRatio, 1.18), 0, 0.36);
+    return clamp(Math.pow(lifeRatio, 1.18), 0, 1);
   }
   let peak = 0.34;
   if (isFlash) peak = 0.14;
   else if (p.mass >= 0.1) peak = 0.28;
   else if (p.shape > 1.5) {
     // Heads hold brightness for a configurable slice of life, then wink out.
-    // The shader keeps the core opaque while this packed colour fades. Core
-    // heads (shape >= 3.0, the headShapeValue core sentinel) can hold for a
-    // different slice than outer heads, so each layer fades on its own curve.
-    const isCoreHead = p.shape >= 3.0;
-    const hold = isCoreHead ? holdCore : holdOuter;
-    const exponent = isCoreHead ? expCore : expOuter;
+    // The shader keeps the core opaque while this packed colour fades.
+    const hold = headStyle.brightnessHoldPercent;
+    const exponent = headStyle.brightnessHoldExponent;
     const holdFade = Math.pow(clamp(lifeRatio / Math.max(0.001, 1 - hold / 100), 0, 1), exponent);
     return clamp(0.7 * fadeIn * holdFade, 0, 0.82);
   } else if (p.shape > 0.5)

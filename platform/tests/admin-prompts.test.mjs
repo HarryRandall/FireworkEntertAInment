@@ -198,13 +198,16 @@ test('prompt writes are transactional and unavailable through direct table DML',
   assert.match(modeFunction, /grant execute on function[\s\S]*?to authenticated/);
 });
 
-test('firework import worker fetches saved reconstruction prompt with fallback', () => {
+test('firework import worker layers saved guidance over its immutable reconstruction contract', () => {
   const worker = readFileSync(join(repoRoot, 'workers/firework-import-worker/worker.py'), 'utf8');
 
   assert.match(worker, /PROMPT_CONFIGS_TABLE = "prompt_configs"/);
   assert.match(worker, /def fetch_prompt_config/);
   assert.match(worker, /\.eq\("key", key\)/);
-  assert.match(worker, /prompt config fallback/);
+  assert.match(worker, /\.eq\("is_active", True\)/);
+  assert.match(worker, /def effective_reconstruction_system_prompt/);
+  assert.match(worker, /system_prompt = DEFAULT_RECONSTRUCTION_SYSTEM_PROMPT/);
+  assert.match(worker, /admin-authored guidance is subordinate to the strict API schema/);
   assert.match(worker, /"firework_video_reconstruction"/);
   assert.match(worker, /reconstruction_prompt/);
   assert.match(worker, /if isinstance\(reconstruction_prompt, str\)/);

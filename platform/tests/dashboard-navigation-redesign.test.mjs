@@ -97,7 +97,6 @@ test('admin navigation only exposes destinations granted to the current profile'
 
   for (const permission of [
     'admin.manage_users',
-    'admin.manage_billing',
     'admin.manage_suppliers',
     'admin.manage_catalogue',
     'admin.manage_imports',

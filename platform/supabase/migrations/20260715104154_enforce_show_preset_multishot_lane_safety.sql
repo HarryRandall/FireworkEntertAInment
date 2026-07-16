@@ -2,6 +2,8 @@
 -- shows: a multishot reserves its parent position and every valid absolute
 -- child override for the product's full safe duration.
 
+begin;
+
 lock table
   public.catalogue_items,
   public.fireworks,
@@ -264,3 +266,5 @@ create trigger show_presets_lock_timeline_sources
 before insert or update or delete on public.show_presets
 for each statement
 execute function private.lock_show_timeline_sources_shared();
+
+commit;

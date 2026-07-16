@@ -16,13 +16,18 @@ export const MIN_PRODUCT_DURATION_SECONDS = 0.5;
 type AppSupabase = SupabaseClient<Database>;
 
 function finiteOrNull(value: unknown): number | null {
+  if (value == null) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
 
-// Total airtime a catalogue item occupies on a tube. Prefer the pre-aggregated
-// `catalogue_items.duration_seconds`; fall back to the linked firework or the
-// largest child firework in a multishot.
+function greatestPositiveDuration(...values: Array<number | null>): number | null {
+  const durations = values.filter((value): value is number => value != null && value > 0);
+  return durations.length > 0 ? Math.max(...durations) : null;
+}
+
+// Total airtime a catalogue item occupies on a tube. Use the greatest stored,
+// renderer, or child duration so application checks match the database guard.
 export async function getProductDurationSeconds(
   supabase: AppSupabase,
   catalogueItemId: string,
@@ -36,32 +41,42 @@ export async function getProductDurationSeconds(
     throw new Error('Could not read the catalogue item duration.', { cause: itemError });
   }
   const itemDuration = finiteOrNull(item?.duration_seconds);
-  if (itemDuration != null) return itemDuration;
   const directRow = Array.isArray(item?.fireworks) ? item.fireworks[0] : item?.fireworks;
   const directDuration = finiteOrNull(directRow?.duration_seconds);
-  if (directDuration != null) return directDuration;
-  if (!item?.multishot_id) return null;
+  const directSafeDuration = greatestPositiveDuration(itemDuration, directDuration);
+  if (!item?.multishot_id) return directSafeDuration;
 
   const { data: shots, error: shotsError } = await supabase
     .from('multishot_fireworks')
-    .select('time_offset_seconds, fireworks(duration_seconds)')
+    .select('time_offset_seconds, fireworks(duration_seconds, catalogue_items(duration_seconds))')
     .eq('multishot_id', item.multishot_id);
   if (shotsError) {
     throw new Error('Could not read the multishot duration.', { cause: shotsError });
   }
-  if (!shots || shots.length === 0) return null;
-  let max = 0;
+  if (!shots || shots.length === 0) return directSafeDuration;
+  let multishotDuration = 0;
   for (const shot of shots as Array<{
     time_offset_seconds: number;
-    fireworks: { duration_seconds: number | null } | null;
+    fireworks: {
+      duration_seconds: number | null;
+      catalogue_items: Array<{ duration_seconds: number | null }>;
+    } | null;
   }>) {
     // A child with an unknown duration still occupies the tube; assume the
     // minimum rather than 0 so we never under-estimate multishot airtime.
-    const duration = finiteOrNull(shot.fireworks?.duration_seconds) ?? MIN_PRODUCT_DURATION_SECONDS;
-    const end = (finiteOrNull(shot.time_offset_seconds) ?? 0) + duration;
-    if (end > max) max = end;
+    const childCatalogueDuration = greatestPositiveDuration(
+      ...(shot.fireworks?.catalogue_items ?? []).map((item) => finiteOrNull(item.duration_seconds)),
+    );
+    const duration =
+      greatestPositiveDuration(
+        childCatalogueDuration,
+        finiteOrNull(shot.fireworks?.duration_seconds),
+        MIN_PRODUCT_DURATION_SECONDS,
+      ) ?? MIN_PRODUCT_DURATION_SECONDS;
+    const end = Math.ceil(((finiteOrNull(shot.time_offset_seconds) ?? 0) + duration) * 100) / 100;
+    if (end > multishotDuration) multishotDuration = end;
   }
-  return max;
+  return greatestPositiveDuration(directSafeDuration, multishotDuration);
 }
 
 export type CueWindow = {

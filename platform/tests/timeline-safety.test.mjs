@@ -12,6 +12,15 @@ function read(path) {
 }
 
 const migration = read('supabase/migrations/20260715100857_enforce_show_timeline_safety.sql');
+const overlapHelper = read('lib/cue-overlap.server.ts');
+
+test('application duration checks use the same conservative sources as the database', () => {
+  assert.match(overlapHelper, /greatestPositiveDuration\(itemDuration, directDuration\)/);
+  assert.match(overlapHelper, /greatestPositiveDuration\(directSafeDuration, multishotDuration\)/);
+  assert.match(overlapHelper, /catalogue_items\(duration_seconds\)/);
+  assert.match(overlapHelper, /Math\.ceil\(/);
+  assert.doesNotMatch(overlapHelper, /if \(itemDuration != null\) return itemDuration/);
+});
 
 test('timeline overlap is a conservative database invariant', () => {
   assert.match(migration, /private\.catalogue_item_safe_duration/);

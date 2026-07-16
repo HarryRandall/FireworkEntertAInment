@@ -24,7 +24,6 @@ import {
   CreditCard,
   Database,
   FileInput,
-  ImageIcon,
   Laptop,
   Layers,
   LayoutDashboard,
@@ -94,12 +93,6 @@ const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin/users', label: 'Users', icon: Users, permission: 'admin.manage_users' },
   { href: '/admin/roles', label: 'Roles', icon: ShieldCheck, permission: 'admin.manage_users' },
   {
-    href: '/admin/billing',
-    label: 'AI billing',
-    icon: CreditCard,
-    permission: 'admin.manage_billing',
-  },
-  {
     href: '/admin/suppliers',
     label: 'Suppliers',
     icon: Store,
@@ -133,12 +126,6 @@ const ADMIN_LINKS: AdminNavLink[] = [
     href: '/admin/show-presets',
     label: 'Explore shows',
     icon: Star,
-    permission: 'admin.manage_catalogue',
-  },
-  {
-    href: '/admin/cover-posters',
-    label: 'Cover posters',
-    icon: ImageIcon,
     permission: 'admin.manage_catalogue',
   },
   {

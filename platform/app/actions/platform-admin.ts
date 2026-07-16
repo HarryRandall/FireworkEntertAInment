@@ -26,9 +26,11 @@
  */
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { after } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { getCurrentUserId } from '@/lib/current-user.server';
@@ -40,19 +42,26 @@ import {
   requirePermission,
 } from '@/lib/admin.server';
 import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
-import { slugifyTitle } from '@/lib/show-domain';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,
   ImportedFireworkSpecSchema,
-  latestImportedSpecFromOutputs,
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
   type ImportedFireworkSpec,
 } from '@/lib/import-jobs';
-import { compileFireworkDesign } from '@/lib/fireworks/design';
+import {
+  IMPORT_RECONSTRUCTION_VALIDATOR_VERSION,
+  parseImportReconstruction,
+} from '@/lib/import-reconstruction';
+import { parseImportEnginePublicationEvidence } from '@/lib/import-review';
+import {
+  dispatchFireworkImportRun,
+  getFireworkImportDispatchConfiguration,
+} from '@/lib/firework-import-trigger.server';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 import type { Json } from '@/lib/database.types';
+import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 
 // ===========================================================================
 // 1. Zod schemas
@@ -85,7 +94,8 @@ export type ImportUploadActionState = {
   error: string | null;
 };
 
-export type ImportJobMutationResult = { ok: true } | { ok: false; error: string };
+export type ImportMutationActionResult = { ok: true } | { ok: false; error: string };
+export type ImportJobMutationResult = ImportMutationActionResult;
 
 /** Validates that a model selection is one we know how to dispatch to. */
 const ModelSchema = z
@@ -97,17 +107,6 @@ const ModelSchema = z
     (model) => OPENROUTER_MODEL_OPTIONS.some((option) => option.value === model),
     'Choose a supported OpenRouter model.',
   );
-
-const VideoImportSchema = z.object({
-  sourceName: z.string().trim().min(1).max(180),
-  selectedModel: ModelSchema.default(DEFAULT_OPENROUTER_MODEL),
-  reportedDurationSeconds: z.coerce
-    .number()
-    .min(0)
-    .max(MAX_IMPORT_VIDEO_SECONDS)
-    .optional()
-    .or(z.literal('')),
-});
 
 /**
  * Direct-to-storage uploads happen in the browser (Vercel caps Server Action
@@ -123,7 +122,7 @@ const FinalizeVideoImportSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(500 * 1024 * 1024),
+    .max(250 * 1024 * 1024),
   contentType: z.string().trim().min(1).max(120),
   reportedDurationSeconds: z.coerce
     .number()
@@ -136,12 +135,19 @@ const FinalizeVideoImportSchema = z.object({
 const QueueImportSchema = z.object({
   id: z.string().uuid(),
   selectedModel: ModelSchema.default(DEFAULT_OPENROUTER_MODEL),
+  idempotencyKey: z.string().uuid().optional(),
 });
 
 const RefinementSchema = z.object({
   id: z.string().uuid(),
   selectedModel: ModelSchema.default(DEFAULT_OPENROUTER_MODEL),
   prompt: z.string().trim().min(3).max(2000),
+  idempotencyKey: z.string().uuid().optional(),
+});
+
+const SelectImportCandidateSchema = z.object({
+  id: z.string().uuid(),
+  candidateId: z.string().uuid(),
 });
 
 const ManualDraftSchema = z.object({
@@ -170,86 +176,157 @@ function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Check the form details.';
 }
 
-type ProductKind =
-  | 'single_shot'
-  | 'multi_shot'
-  | 'assortment'
-  | 'cake'
-  | 'rack'
-  | 'shell_kit'
-  | 'fountain'
-  | 'other';
+type UntypedRpcError = {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+};
 
-function hexColour(value: unknown): string | null {
-  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : null;
+type UntypedRpcResult<T> = {
+  data: T | null;
+  error: UntypedRpcError | null;
+};
+
+type UntypedRpcClient = {
+  rpc: <T>(name: string, args: Record<string, unknown>) => Promise<UntypedRpcResult<T>>;
+};
+
+function callUntypedRpc<T>(
+  supabase: unknown,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<UntypedRpcResult<T>> {
+  return (supabase as unknown as UntypedRpcClient).rpc<T>(name, args);
 }
 
-function collectSpecColours(spec: ImportedFireworkSpec['spec']): string[] {
-  const seen = new Set<string>();
-  const colours: string[] = [];
-  const add = (value: unknown) => {
-    if (Array.isArray(value)) {
-      value.forEach(add);
+function firstRpcRow<T>(data: T | T[] | null): T | null {
+  return Array.isArray(data) ? (data[0] ?? null) : data;
+}
+
+type FireworkImportDispatchReadiness =
+  | { ok: true; mode: 'direct' | 'local-worker' }
+  | { ok: false; error: string };
+
+const DISPATCH_CONFIGURATION_ERROR =
+  'Firework reconstruction is temporarily unavailable because dispatch is not configured. No credits were reserved.';
+
+function pause(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function retryTrustedDispatchRpc<T>(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<UntypedRpcResult<T>> {
+  let lastResult: UntypedRpcResult<T> = {
+    data: null,
+    error: { message: 'The trusted dispatch client is unavailable.' },
+  };
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const service = createServiceRoleSupabase();
+    if (!service) return lastResult;
+    try {
+      lastResult = await callUntypedRpc<T>(service, name, args);
+    } catch {
+      lastResult = {
+        data: null,
+        error: { message: 'The trusted dispatch request failed.' },
+      };
+    }
+    if (!lastResult.error) return lastResult;
+    if (attempt < 3) await pause(100 * attempt);
+  }
+  return lastResult;
+}
+
+/** Refuse production queue writes unless their failure/refund path is usable. */
+async function prepareFireworkImportDispatch(): Promise<FireworkImportDispatchReadiness> {
+  const configuration = getFireworkImportDispatchConfiguration();
+  if (configuration.mode === 'local-worker') return { ok: true, mode: 'local-worker' };
+  if (configuration.mode === 'invalid') {
+    console.error(`[firework-import] ${configuration.error}`);
+    if (process.env.NODE_ENV !== 'production') return { ok: true, mode: 'local-worker' };
+    return { ok: false, error: DISPATCH_CONFIGURATION_ERROR };
+  }
+
+  const readiness = await retryTrustedDispatchRpc<boolean>(
+    'check_firework_import_dispatch_ready',
+    {},
+  );
+  if (readiness.error || readiness.data !== true) {
+    console.error('[firework-import] trusted dispatch preflight failed:', readiness.error);
+    if (process.env.NODE_ENV !== 'production') return { ok: true, mode: 'local-worker' };
+    return { ok: false, error: DISPATCH_CONFIGURATION_ERROR };
+  }
+  return { ok: true, mode: 'direct' };
+}
+
+async function recordFireworkImportDispatch(
+  runId: string,
+  result: Awaited<ReturnType<typeof dispatchFireworkImportRun>>,
+): Promise<void> {
+  if (!result.dispatched && result.reason === 'local-worker') return;
+  const persisted = await retryTrustedDispatchRpc<string>(
+    'record_firework_import_dispatch_result',
+    result.dispatched
+      ? {
+          p_run_id: runId,
+          p_outcome: 'accepted',
+          p_attempt_count: result.attempts,
+          p_call_id: result.callId,
+          p_error: null,
+        }
+      : {
+          p_run_id: runId,
+          p_outcome: 'exhausted',
+          p_attempt_count: result.attempts,
+          p_call_id: null,
+          p_error: result.error,
+        },
+  );
+  if (persisted.error) {
+    console.error('[firework-import] dispatch result could not be persisted:', persisted.error);
+  }
+}
+
+function scheduleFireworkImportDispatch(runId: string, mode: 'direct' | 'local-worker'): void {
+  if (mode === 'local-worker') return;
+  after(async () => {
+    const begin = await retryTrustedDispatchRpc<boolean>('begin_firework_import_dispatch', {
+      p_run_id: runId,
+    });
+    if (begin.error) {
+      console.error('[firework-import] dispatch could not be started:', begin.error);
       return;
     }
-    const colour = hexColour(value);
-    if (!colour || seen.has(colour)) return;
-    seen.add(colour);
-    colours.push(colour);
+    if (begin.data !== true) return;
+
+    const result = await dispatchFireworkImportRun(runId);
+    await recordFireworkImportDispatch(runId, result);
+  });
+}
+
+async function selectUntypedMaybeSingle<T>(
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  columns: string,
+  matchColumn: string,
+  matchValue: string,
+): Promise<UntypedRpcResult<T>> {
+  const client = supabase as unknown as {
+    from: (tableName: string) => {
+      select: (selection: string) => {
+        eq: (
+          column: string,
+          value: string,
+        ) => {
+          maybeSingle: () => Promise<UntypedRpcResult<T>>;
+        };
+      };
+    };
   };
-
-  add(spec.outerColor);
-  add(spec.color);
-  add(spec.colorPalette);
-  add(spec.innerColor);
-  add(spec.secondColor);
-  add(spec.pistilColor);
-  add(spec.tailColor);
-  add(spec.glitterColor);
-  add(spec.launch?.tailColor);
-  add(spec.launch?.tracerColor);
-  return colours;
-}
-
-function baseEffectSlugForImport(spec: ImportedFireworkSpec['spec']): string {
-  if (spec.crackle || spec.shellType === 'crackle') return 'crackle';
-  if (spec.strobe || spec.shellType === 'strobe') return 'strobe';
-  if (spec.crossette || spec.shellType === 'crossette') return 'crossette';
-  if (spec.horsetail || spec.shellType === 'horsetail') return 'horsetail';
-  if (spec.ring || spec.shellType === 'ring') return 'ring';
-  if (spec.shellType === 'palm') return 'palm';
-  if (spec.shellType === 'willow' || spec.fallingLeaves || spec.shellType === 'fallingLeaves') {
-    return 'willow';
-  }
-  if (spec.shellType === 'comet') return 'comet';
-  if (spec.glitter && spec.glitter !== 'none') return 'chrysanthemum';
-  return 'peony';
-}
-
-function productKindForImport(
-  spec: ImportedFireworkSpec['spec'],
-  category: string | undefined,
-  fireworkType: string | undefined,
-): ProductKind {
-  const text = `${category ?? ''} ${fireworkType ?? ''}`.toLowerCase();
-  if (text.includes('assortment')) return 'assortment';
-  if (text.includes('shell kit') || text.includes('reloadable')) return 'shell_kit';
-  if (text.includes('fountain')) return 'fountain';
-  if (text.includes('rack')) return 'rack';
-  if (text.includes('cake')) return 'cake';
-  if ((spec.shots?.length ?? 0) > 1) return 'multi_shot';
-  return 'single_shot';
-}
-
-/** Make a filename safe to embed in a Supabase Storage path. */
-function sanitizeStorageName(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9._-]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 80) || 'firework-video'
-  );
+  return client.from(table).select(columns).eq(matchColumn, matchValue).maybeSingle();
 }
 
 /**
@@ -281,30 +358,6 @@ async function verifyCallerOwnedUploadObject(
   }
   const exists = (data ?? []).some((item) => item.name === objectName);
   return exists ? null : 'Uploaded video was not found in storage. Upload it again.';
-}
-
-/**
- * Returns the most recent normalised firework spec for an import job, walking
- * its `import_outputs` rows in chronological order. Returns `null` when no
- * usable spec has been produced yet.
- */
-async function latestSpecForImport(importJobId: string): Promise<ImportedFireworkSpec | null> {
-  const supabase = createClient(await cookies());
-  const { data, error } = await supabase
-    .from('import_outputs')
-    .select('output_type, payload, created_at')
-    .eq('import_job_id', importJobId)
-    .order('created_at', { ascending: true });
-  if (error) {
-    console.error('[latestSpecForImport] failed:', error);
-    return null;
-  }
-  return latestImportedSpecFromOutputs(
-    (data ?? []).map((row) => ({
-      outputType: row.output_type,
-      payload: row.payload,
-    })),
-  );
 }
 
 // ===========================================================================
@@ -401,6 +454,10 @@ export async function createImportJobAction(formData: FormData): Promise<void> {
     rowCount: formData.get('rowCount') ?? '',
   });
   if (!parsed.success) return console.error(firstError(parsed.error));
+  if (parsed.data.kind === 'firework_video') {
+    console.error('[createImportJobAction] video imports require the guarded upload workflow.');
+    return;
+  }
 
   const rowCount = typeof parsed.data.rowCount === 'number' ? parsed.data.rowCount : null;
   const supabase = createClient(await cookies());
@@ -423,132 +480,6 @@ export async function createImportJobAction(formData: FormData): Promise<void> {
 // ===========================================================================
 // 5. Video upload + finalize (browser-direct upload flow)
 // ===========================================================================
-
-/**
- * Legacy "all-in-one" video upload action: receives the file bytes via
- * FormData, uploads to storage, creates the media + import-job rows, then
- * redirects to the new job's detail page.
- *
- * Modern callers use {@link finalizeVideoImportJobAction} instead because
- * Vercel caps Server Action bodies at 4.5 MB regardless of `bodySizeLimit`.
- */
-export async function createVideoImportJobAction(
-  _state: ImportUploadActionState,
-  formData: FormData,
-): Promise<ImportUploadActionState> {
-  const admin = await requirePermission('admin.manage_imports');
-  if (!admin) {
-    return { ok: false, error: 'You do not have permission to manage imports.' };
-  }
-
-  const parsed = VideoImportSchema.safeParse({
-    sourceName: formData.get('sourceName'),
-    selectedModel: formData.get('selectedModel') ?? DEFAULT_OPENROUTER_MODEL,
-    reportedDurationSeconds: formData.get('reportedDurationSeconds') ?? '',
-  });
-  if (!parsed.success) {
-    return { ok: false, error: firstError(parsed.error) };
-  }
-
-  const file = formData.get('videoFile');
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: 'Choose a video file before uploading.' };
-  }
-  // Some browsers report an empty file.type for less common containers
-  // (e.g. MPEG-4 SP). Accept those too if the file extension is a video
-  // container — the bucket's allowed_mime_types will still reject anything
-  // truly unsupported, and the worker re-probes with ffprobe.
-  const looksLikeVideoByName = /\.(mp4|m4v|mov|webm|mkv)$/i.test(file.name);
-  if (!file.type.startsWith('video/') && !looksLikeVideoByName) {
-    return { ok: false, error: 'Choose a supported video file.' };
-  }
-  // When the browser hasn't filled in a mime, infer one from the extension so
-  // the upload doesn't get blocked by the bucket's allowed_mime_types check.
-  const inferredContentType =
-    file.type && file.type.startsWith('video/')
-      ? file.type
-      : /\.mov$/i.test(file.name)
-        ? 'video/quicktime'
-        : /\.webm$/i.test(file.name)
-          ? 'video/webm'
-          : /\.mkv$/i.test(file.name)
-            ? 'video/x-matroska'
-            : 'video/mp4';
-
-  const supabase = createClient(await cookies());
-  const storagePath = `${admin.id}/${crypto.randomUUID()}-${sanitizeStorageName(file.name)}`;
-  const { error: uploadError } = await supabase.storage
-    .from(IMPORT_VIDEO_BUCKET)
-    .upload(storagePath, file, {
-      contentType: inferredContentType,
-      upsert: false,
-    });
-  if (uploadError) {
-    console.error('[createVideoImportJobAction] upload failed:', uploadError);
-    const detail = uploadError.message ?? '';
-    // Surface the underlying storage failure so the operator can act on it
-    // instead of always blaming a missing migration.
-    return {
-      ok: false,
-      error: detail
-        ? `Video upload failed: ${detail}`
-        : 'Video upload failed. Apply migration 0008 first so the import-videos storage bucket exists.',
-    };
-  }
-
-  const duration =
-    typeof parsed.data.reportedDurationSeconds === 'number'
-      ? parsed.data.reportedDurationSeconds
-      : null;
-  const { data: media, error: mediaError } = await supabase
-    .from('media_assets')
-    .insert({
-      owner_id: admin.id,
-      source_type: 'upload',
-      storage_path: storagePath,
-      mime_type: file.type || null,
-      duration_seconds: duration,
-      metadata: {
-        originalName: file.name,
-        sizeBytes: file.size,
-      } as Json,
-    })
-    .select('id')
-    .single();
-  if (mediaError || !media) {
-    console.error('[createVideoImportJobAction] media insert failed:', mediaError);
-    return {
-      ok: false,
-      error: 'Could not create the media record. Apply migration 0008 and try again.',
-    };
-  }
-
-  const { data: job, error: jobError } = await supabase
-    .from('import_jobs')
-    .insert({
-      kind: 'firework_video',
-      status: 'queued',
-      source_name: parsed.data.sourceName,
-      media_asset_id: media.id,
-      selected_model: parsed.data.selectedModel,
-      processing_progress: 0,
-      created_by: admin.id,
-      row_count: 0,
-    })
-    .select('id')
-    .single();
-  if (jobError || !job) {
-    console.error('[createVideoImportJobAction] import job insert failed:', jobError);
-    return {
-      ok: false,
-      error: 'Could not create the import job. Apply migration 0008 and try again.',
-    };
-  }
-
-  await invalidateAdminImportsCache();
-  revalidatePath('/admin/imports');
-  redirect(`/admin/imports/${job.id}`);
-}
 
 /**
  * Finalize a browser-direct video upload.
@@ -579,6 +510,9 @@ export async function finalizeVideoImportJobAction(
     return { ok: false, error: firstError(parsed.error) };
   }
 
+  const dispatch = await prepareFireworkImportDispatch();
+  if (!dispatch.ok) return dispatch;
+
   const supabase = createClient(await cookies());
   const uploadError = await verifyCallerOwnedUploadObject(
     supabase,
@@ -593,57 +527,29 @@ export async function finalizeVideoImportJobAction(
     typeof parsed.data.reportedDurationSeconds === 'number'
       ? parsed.data.reportedDurationSeconds
       : null;
-  const { data: media, error: mediaError } = await supabase
-    .from('media_assets')
-    .insert({
-      owner_id: admin.id,
-      source_type: 'upload',
-      storage_path: parsed.data.storagePath,
-      mime_type: parsed.data.contentType,
-      duration_seconds: duration,
-      metadata: {
-        originalName: parsed.data.originalName,
-        sizeBytes: parsed.data.sizeBytes,
-      } as Json,
-    })
-    .select('id')
-    .single();
-  if (mediaError || !media) {
-    console.error('[finalizeVideoImportJobAction] media insert failed:', mediaError);
+  const { data, error } = await callUntypedRpc<
+    { job_id: string; run_id: string } | Array<{ job_id: string; run_id: string }>
+  >(supabase, 'finalise_firework_video_import', {
+    p_source_name: parsed.data.sourceName,
+    p_storage_path: parsed.data.storagePath,
+    p_original_name: parsed.data.originalName,
+    p_selected_model: parsed.data.selectedModel,
+    p_reported_duration_seconds: duration,
+  });
+  const created = firstRpcRow(data);
+  if (error || !created) {
+    console.error('[finalizeVideoImportJobAction] transaction failed:', error);
     return {
       ok: false,
-      error:
-        mediaError?.message ??
-        'Could not create the media record. Apply migration 0008 and try again.',
+      error: error?.message ?? 'Could not create the import job. Try again.',
     };
   }
 
-  const { data: job, error: jobError } = await supabase
-    .from('import_jobs')
-    .insert({
-      kind: 'firework_video',
-      status: 'queued',
-      source_name: parsed.data.sourceName,
-      media_asset_id: media.id,
-      selected_model: parsed.data.selectedModel,
-      processing_progress: 0,
-      created_by: admin.id,
-      row_count: 0,
-    })
-    .select('id')
-    .single();
-  if (jobError || !job) {
-    console.error('[finalizeVideoImportJobAction] import job insert failed:', jobError);
-    return {
-      ok: false,
-      error:
-        jobError?.message ?? 'Could not create the import job. Apply migration 0008 and try again.',
-    };
-  }
+  scheduleFireworkImportDispatch(created.run_id, dispatch.mode);
 
   await invalidateAdminImportsCache();
   revalidatePath('/admin/imports');
-  redirect(`/admin/imports/${job.id}`);
+  redirect(`/admin/imports/${created.job_id}`);
 }
 
 // ===========================================================================
@@ -651,35 +557,44 @@ export async function finalizeVideoImportJobAction(
 // ===========================================================================
 
 /** Re-queue an import job for processing (also resets progress + errors). */
-export async function queueImportJobAction(formData: FormData): Promise<void> {
+export async function queueImportJobAction(
+  formData: FormData,
+): Promise<ImportMutationActionResult> {
   const admin = await requirePermission('admin.manage_imports');
-  if (!admin) return;
+  if (!admin) return { ok: false, error: 'You do not have permission to manage imports.' };
   const parsed = QueueImportSchema.safeParse({
     id: formData.get('id'),
     selectedModel: formData.get('selectedModel') ?? DEFAULT_OPENROUTER_MODEL,
+    idempotencyKey: formData.get('idempotencyKey') ?? undefined,
   });
-  if (!parsed.success) return console.error(firstError(parsed.error));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+
+  const dispatch = await prepareFireworkImportDispatch();
+  if (!dispatch.ok) return dispatch;
 
   const supabase = createClient(await cookies());
-  const { error } = await supabase
-    .from('import_jobs')
-    .update({
-      status: 'queued',
-      selected_model: parsed.data.selectedModel,
-      processing_progress: 0,
-      error_message: null,
-      started_at: null,
-      completed_at: null,
-      created_by: admin.id,
-    })
-    .eq('id', parsed.data.id);
-  if (error) {
+  const idempotencyKey = parsed.data.idempotencyKey ?? randomUUID();
+  const { data, error } = await callUntypedRpc<{ id: string } | Array<{ id: string }>>(
+    supabase,
+    'start_firework_import_run',
+    {
+      p_job_id: parsed.data.id,
+      p_request_kind: 'retry',
+      p_selected_model: parsed.data.selectedModel,
+      p_idempotency_key: `retry:${parsed.data.id}:${idempotencyKey}`,
+      p_request_prompt: null,
+    },
+  );
+  const run = firstRpcRow(data);
+  if (error || !run) {
     console.error('[queueImportJobAction] failed:', error);
-    return;
+    return { ok: false, error: error?.message ?? 'Could not queue another reconstruction.' };
   }
+  scheduleFireworkImportDispatch(run.id, dispatch.mode);
   await invalidateAdminImportsCache();
   revalidatePath('/admin/imports');
   revalidatePath(`/admin/imports/${parsed.data.id}`);
+  return { ok: true };
 }
 
 /**
@@ -687,47 +602,75 @@ export async function queueImportJobAction(formData: FormData): Promise<void> {
  * prompt. Records the prompt + current spec snapshot in `import_outputs`
  * then re-queues the job for processing.
  */
-export async function requestImportRefinementAction(formData: FormData): Promise<void> {
+export async function requestImportRefinementAction(
+  formData: FormData,
+): Promise<ImportMutationActionResult> {
   const admin = await requirePermission('admin.manage_imports');
-  if (!admin) return;
+  if (!admin) return { ok: false, error: 'You do not have permission to manage imports.' };
   const parsed = RefinementSchema.safeParse({
     id: formData.get('id'),
     selectedModel: formData.get('selectedModel') ?? DEFAULT_OPENROUTER_MODEL,
     prompt: formData.get('prompt'),
+    idempotencyKey: formData.get('idempotencyKey') ?? undefined,
   });
-  if (!parsed.success) return console.error(firstError(parsed.error));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
-  const currentSpec = await latestSpecForImport(parsed.data.id);
+  const dispatch = await prepareFireworkImportDispatch();
+  if (!dispatch.ok) return dispatch;
+
   const supabase = createClient(await cookies());
-  const { error: outputError } = await supabase.from('import_outputs').insert({
-    import_job_id: parsed.data.id,
-    output_type: 'refinement',
-    payload: {
-      prompt: parsed.data.prompt,
-      requestedModel: parsed.data.selectedModel,
-      requestedBy: admin.id,
-      spec: currentSpec,
-    } as Json,
-  });
-  if (outputError) {
-    console.error('[requestImportRefinementAction] output failed:', outputError);
-    return;
+  const idempotencyKey = parsed.data.idempotencyKey ?? randomUUID();
+  const { data, error } = await callUntypedRpc<{ id: string } | Array<{ id: string }>>(
+    supabase,
+    'start_firework_import_run',
+    {
+      p_job_id: parsed.data.id,
+      p_request_kind: 'refinement',
+      p_selected_model: parsed.data.selectedModel,
+      p_idempotency_key: `refine:${parsed.data.id}:${idempotencyKey}`,
+      p_request_prompt: parsed.data.prompt,
+    },
+  );
+  const run = firstRpcRow(data);
+  if (error || !run) {
+    console.error('[requestImportRefinementAction] failed:', error);
+    return { ok: false, error: error?.message ?? 'Could not start the refinement.' };
   }
-
-  const { error: jobError } = await supabase
-    .from('import_jobs')
-    .update({
-      status: 'queued',
-      selected_model: parsed.data.selectedModel,
-      processing_progress: 0,
-      error_message: null,
-      started_at: null,
-      completed_at: null,
-    })
-    .eq('id', parsed.data.id);
-  if (jobError) console.error('[requestImportRefinementAction] job failed:', jobError);
+  scheduleFireworkImportDispatch(run.id, dispatch.mode);
   await invalidateAdminImportsCache();
   revalidatePath(`/admin/imports/${parsed.data.id}`);
+  return { ok: true };
+}
+
+/** Select a reconstruction candidate from the job's current completed run. */
+export async function selectImportCandidateAction(
+  formData: FormData,
+): Promise<ImportMutationActionResult> {
+  const admin = await requirePermission('admin.manage_imports');
+  if (!admin) return { ok: false, error: 'You do not have permission to manage imports.' };
+  const parsed = SelectImportCandidateSchema.safeParse({
+    id: formData.get('id'),
+    candidateId: formData.get('candidateId'),
+  });
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+
+  const supabase = createClient(await cookies());
+  const { data, error } = await callUntypedRpc<string>(
+    supabase,
+    'select_firework_import_candidate',
+    {
+      p_job_id: parsed.data.id,
+      p_candidate_id: parsed.data.candidateId,
+    },
+  );
+  if (error || !data) {
+    console.error('[selectImportCandidateAction] failed:', error);
+    return { ok: false, error: error?.message ?? 'Could not select that reconstruction.' };
+  }
+
+  await invalidateAdminImportsCache();
+  revalidatePath(`/admin/imports/${parsed.data.id}`);
+  return { ok: true };
 }
 
 /**
@@ -745,6 +688,23 @@ export async function updateImportDraftSpecAction(formData: FormData): Promise<v
     spec: formData.get('spec') ?? '',
   });
   if (!parsed.success) return console.error(firstError(parsed.error));
+
+  const supabase = createClient(await cookies());
+  const { data: job, error: jobError } = await supabase
+    .from('import_jobs')
+    .select('kind')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
+  if (jobError || !job) {
+    console.error('[updateImportDraftSpecAction] import lookup failed:', jobError);
+    return;
+  }
+  if (job.kind === 'firework_video') {
+    console.error(
+      '[updateImportDraftSpecAction] renderer-native video candidates cannot be edited as legacy drafts.',
+    );
+    return;
+  }
 
   let specJson: unknown;
   try {
@@ -767,7 +727,6 @@ export async function updateImportDraftSpecAction(formData: FormData): Promise<v
   }
   const spec: ImportedFireworkSpec = result.data;
 
-  const supabase = createClient(await cookies());
   const { error } = await supabase.from('import_outputs').insert({
     import_job_id: parsed.data.id,
     output_type: 'draft_spec',
@@ -797,10 +756,14 @@ export async function updateImportDraftSpecAction(formData: FormData): Promise<v
  * row. Then marks the import job complete and invalidates every related cache
  * so the next read sees the new catalogue item.
  */
-export async function approveImportJobAction(formData: FormData): Promise<void> {
+export async function approveImportJobAction(
+  formData: FormData,
+): Promise<ImportMutationActionResult> {
   const importAdmin = await requirePermission('admin.manage_imports');
   const catalogueAdmin = await requirePermission('admin.manage_catalogue');
-  if (!importAdmin || !catalogueAdmin) return;
+  if (!importAdmin || !catalogueAdmin) {
+    return { ok: false, error: 'You do not have permission to approve catalogue imports.' };
+  }
   const parsed = ApproveImportSchema.safeParse({
     id: formData.get('id'),
     partNumber: formData.get('partNumber'),
@@ -809,109 +772,174 @@ export async function approveImportJobAction(formData: FormData): Promise<void> 
     category: formData.get('category') ?? '',
     fireworkType: formData.get('fireworkType') ?? '',
   });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const spec = await latestSpecForImport(parsed.data.id);
-  if (!spec) {
-    console.error('[approveImportJobAction] no valid generated spec');
-    return;
-  }
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const baseEffectSlug = baseEffectSlugForImport(spec.spec);
-  const fireworkSlug = `${slugifyTitle(parsed.data.name)}-${parsed.data.id.slice(0, 8)}`;
-  const variantSlug = `${baseEffectSlug}-${fireworkSlug}`;
-  const fireworkSpec = spec.spec;
-  const colours = collectSpecColours(fireworkSpec);
-  const { data: baseEffect, error: baseEffectError } = await supabase
-    .from('firework_effects')
-    .select('id')
-    .eq('slug', baseEffectSlug)
-    .maybeSingle();
-  if (baseEffectError || !baseEffect) {
-    console.error('[approveImportJobAction] base effect lookup failed:', baseEffectError);
-    return;
+  const { data: job, error: jobError } = await selectUntypedMaybeSingle<{
+    selected_candidate_id: string | null;
+  }>(supabase, 'import_jobs', 'selected_candidate_id', 'id', parsed.data.id);
+  if (jobError || !job?.selected_candidate_id) {
+    console.error('[approveImportJobAction] selected candidate lookup failed:', jobError);
+    return {
+      ok: false,
+      error: jobError?.message ?? 'Select a completed reconstruction before approving it.',
+    };
   }
 
-  const { data: variant, error: variantError } = await supabase
-    .from('fireworks')
-    .insert({
-      firework_effect_id: baseEffect.id,
-      slug: variantSlug,
-      name: parsed.data.name,
-      description: spec.description || null,
-      primary_color: colours[0] ?? null,
-      secondary_color: colours[1] ?? null,
-      color_palette: colours,
-      caliber: spec.caliber ?? null,
-      duration_seconds: spec.durationSeconds,
-      height_meters: spec.heightMeters ?? null,
-      variant_json: fireworkSpec as unknown as Json,
-      render_overrides_json: compileFireworkDesign({ legacySpec: fireworkSpec }) as unknown as Json,
-      source: 'video_inferred',
-      confidence: spec.confidence,
-    })
-    .select('id')
-    .single();
-  if (variantError || !variant) {
-    console.error('[approveImportJobAction] firework variant insert failed:', variantError);
-    return;
+  const { data: candidate, error: candidateError } = await selectUntypedMaybeSingle<{
+    reconstruction: unknown;
+    validation: unknown;
+    metrics: unknown;
+    rendered_video_path: string | null;
+    content_hash: string;
+  }>(
+    supabase,
+    'import_candidates',
+    'reconstruction, validation, metrics, rendered_video_path, content_hash',
+    'id',
+    job.selected_candidate_id,
+  );
+  if (candidateError || !candidate) {
+    console.error('[approveImportJobAction] candidate lookup failed:', candidateError);
+    return {
+      ok: false,
+      error: candidateError?.message ?? 'The selected reconstruction could not be loaded.',
+    };
   }
 
-  const { data: catalogueItem, error: catalogueItemError } = await supabase
-    .from('catalogue_items')
-    .insert({
-      part_number: parsed.data.partNumber,
-      name: parsed.data.name,
-      manufacturer: parsed.data.manufacturer || null,
-      firework_type: parsed.data.fireworkType || 'Video reconstructed',
-      duration_seconds: spec.durationSeconds,
-      description: spec.description || null,
-      catalogue_item_kind: 'firework',
-      firework_id: variant.id,
-      metadata: {
-        category: parsed.data.category || null,
-        importJobId: parsed.data.id,
-        source: 'video_import',
-        baseEffectSlug,
-        fireworkId: variant.id,
-        legacyProductKind: productKindForImport(
-          spec.spec,
-          parsed.data.category,
-          parsed.data.fireworkType,
-        ),
-      } as Json,
-    })
-    .select('id')
-    .single();
-  if (catalogueItemError || !catalogueItem) {
-    console.error('[approveImportJobAction] catalogue item insert failed:', catalogueItemError);
-    return;
+  const strictCandidate = parseImportReconstruction(candidate.reconstruction);
+  const validation =
+    typeof candidate.validation === 'object' && candidate.validation !== null
+      ? (candidate.validation as Record<string, unknown>)
+      : null;
+  if (!strictCandidate.success || validation?.valid !== true) {
+    console.error(
+      '[approveImportJobAction] candidate failed the strict validation gate:',
+      strictCandidate.success ? validation : strictCandidate.issues,
+    );
+    return {
+      ok: false,
+      error: strictCandidate.success
+        ? 'Resolve the failed reconstruction checks before approval.'
+        : (strictCandidate.issues[0]?.message ?? 'The reconstruction is not renderer-safe.'),
+    };
   }
 
-  const { error: jobError } = await supabase
-    .from('import_jobs')
-    .update({
-      status: 'complete',
-      processing_progress: 100,
-      approved_catalogue_item_id: catalogueItem.id,
-      completed_at: new Date().toISOString(),
-      error_message: null,
-    })
-    .eq('id', parsed.data.id);
-  if (jobError) console.error('[approveImportJobAction] job update failed:', jobError);
+  const engineEvidence = parseImportEnginePublicationEvidence(
+    candidate.metrics,
+    candidate.rendered_video_path,
+    strictCandidate.data,
+  );
+  if (!engineEvidence.success) {
+    return { ok: false, error: engineEvidence.error };
+  }
+
+  const canonicalReconstruction = strictCandidate.data as unknown as Json;
+  const trustedValidator = createServiceRoleSupabase();
+  if (!trustedValidator) {
+    return {
+      ok: false,
+      error: 'The trusted renderer validator is not configured on this deployment.',
+    };
+  }
+  const { data: sealedCandidateId, error: sealError } = await callUntypedRpc<string>(
+    trustedValidator,
+    'seal_firework_import_candidate',
+    {
+      p_candidate_id: job.selected_candidate_id,
+      p_validator_version: IMPORT_RECONSTRUCTION_VALIDATOR_VERSION,
+      p_canonical_reconstruction: canonicalReconstruction,
+      p_content_hash: candidate.content_hash,
+    },
+  );
+  if (sealError || sealedCandidateId !== job.selected_candidate_id) {
+    console.error('[approveImportJobAction] renderer validation seal failed:', sealError);
+    return {
+      ok: false,
+      error: sealError?.message ?? 'Could not seal the renderer-safe reconstruction.',
+    };
+  }
+
+  const { data: sealedRenderCandidateId, error: renderSealError } = await callUntypedRpc<string>(
+    trustedValidator,
+    'seal_firework_import_render_validation',
+    {
+      p_candidate_id: job.selected_candidate_id,
+      p_validator_version: engineEvidence.data.validatorVersion,
+      p_canonical_evidence: engineEvidence.data.canonicalEvidence as unknown as Json,
+      p_artifact_storage_path: engineEvidence.data.renderedVideoPath,
+    },
+  );
+  if (renderSealError || sealedRenderCandidateId !== job.selected_candidate_id) {
+    console.error('[approveImportJobAction] engine validation seal failed:', renderSealError);
+    return {
+      ok: false,
+      error: renderSealError?.message ?? 'Could not seal the sampled engine evidence.',
+    };
+  }
+
+  type ApprovalRow = {
+    catalogue_item_id: string;
+    firework_ids: string[];
+    multishot_id: string | null;
+  };
+  const { data: approvalData, error: approvalError } = await callUntypedRpc<
+    ApprovalRow | ApprovalRow[]
+  >(supabase, 'approve_firework_import_candidate', {
+    p_job_id: parsed.data.id,
+    p_candidate_id: job.selected_candidate_id,
+    p_part_number: parsed.data.partNumber,
+    p_name: parsed.data.name,
+    p_manufacturer: parsed.data.manufacturer || null,
+    p_category: parsed.data.category || null,
+    p_firework_type: parsed.data.fireworkType || null,
+  });
+  const approval = firstRpcRow<ApprovalRow>(approvalData);
+  if (approvalError || !approval) {
+    console.error('[approveImportJobAction] approval transaction failed:', approvalError);
+    return { ok: false, error: approvalError?.message ?? 'Could not publish this reconstruction.' };
+  }
+
+  const { data: createdFireworks, error: createdFireworksError } =
+    approval.firework_ids.length > 0
+      ? await supabase
+          .from('fireworks')
+          .select('id, firework_effect_id')
+          .in('id', approval.firework_ids)
+      : { data: [], error: null };
+  if (createdFireworksError) {
+    console.error(
+      '[approveImportJobAction] post-approval firework lookup failed:',
+      createdFireworksError,
+    );
+  }
+
   await invalidateAdminImportsCache();
   await invalidateAdminCatalogueCache();
-  await invalidateAdminEffectsCache(baseEffect.id);
-  await invalidateAdminFireworksCache(variant.id);
+  await Promise.all(
+    approval.firework_ids.map((fireworkId) => invalidateAdminFireworksCache(fireworkId)),
+  );
+  await Promise.all(
+    Array.from(
+      new Set((createdFireworks ?? []).map((firework) => firework.firework_effect_id)),
+    ).map((effectId) => invalidateAdminEffectsCache(effectId)),
+  );
   await invalidateFireworkCatalogueCaches();
   revalidatePath('/admin/imports');
   revalidatePath('/admin/catalogue');
   revalidatePath('/admin/effects');
-  revalidatePath(`/admin/effects/${baseEffect.id}`);
+  for (const effectId of new Set(
+    (createdFireworks ?? []).map((firework) => firework.firework_effect_id),
+  )) {
+    revalidatePath(`/admin/effects/${effectId}`);
+  }
   revalidatePath('/admin/fireworks');
-  revalidatePath(`/admin/fireworks/${variant.id}`);
+  approval.firework_ids.forEach((fireworkId) => {
+    revalidatePath(`/admin/fireworks/${fireworkId}`);
+  });
+  if (approval.multishot_id) revalidatePath('/admin/multishots');
   revalidatePath(`/admin/imports/${parsed.data.id}`);
+  return { ok: true };
 }
 
 /** Edit the metadata on an existing import job (kind, source, row count, status). */
@@ -928,6 +956,12 @@ export async function updateImportJobAction(formData: FormData): Promise<ImportJ
     rowCount: formData.get('rowCount') ?? '',
   });
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  if (parsed.data.kind === 'firework_video') {
+    return {
+      ok: false,
+      error: 'Video imports can only be changed through their reconstruction controls.',
+    };
+  }
   const rowCount = typeof parsed.data.rowCount === 'number' ? parsed.data.rowCount : null;
   const supabase = createClient(await cookies());
   const { data: updatedJob, error } = await supabase
@@ -954,7 +988,7 @@ export async function updateImportJobAction(formData: FormData): Promise<ImportJ
   return { ok: true };
 }
 
-/** Hard-delete an import job and its dependent rows (cascade in the DB). */
+/** Archive video imports for audit; legacy imports retain their hard-delete path. */
 export async function deleteImportJobAction(formData: FormData): Promise<ImportJobMutationResult> {
   if (!(await requirePermission('admin.manage_imports'))) {
     return { ok: false, error: 'You do not have permission to manage imports.' };
@@ -962,6 +996,32 @@ export async function deleteImportJobAction(formData: FormData): Promise<ImportJ
   const parsed = IdSchema.safeParse({ id: formData.get('id') });
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const supabase = createClient(await cookies());
+  const { data: job, error: lookupError } = await supabase
+    .from('import_jobs')
+    .select('kind')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
+  if (lookupError || !job) {
+    console.error('[deleteImportJobAction] import lookup failed:', lookupError);
+    return { ok: false, error: 'That import job was not found. Refresh the page and try again.' };
+  }
+
+  if (job.kind === 'firework_video') {
+    const { data: archivedId, error: archiveError } = await callUntypedRpc<string>(
+      supabase,
+      'archive_firework_import_job',
+      { p_job_id: parsed.data.id },
+    );
+    if (archiveError || archivedId !== parsed.data.id) {
+      console.error('[deleteImportJobAction] video archive failed:', archiveError);
+      return { ok: false, error: archiveError?.message ?? 'Import job could not be archived.' };
+    }
+    await invalidateAdminImportsCache();
+    revalidatePath('/admin/imports');
+    revalidatePath(`/admin/imports/${parsed.data.id}`);
+    return { ok: true };
+  }
+
   const { data: deletedJob, error } = await supabase
     .from('import_jobs')
     .delete()

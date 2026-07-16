@@ -69,7 +69,27 @@ test('public browse routes retain page-level chrome while their data loads', () 
   assert.match(catalogue, /max-w-\[1600px\]/);
   assert.match(catalogueLoading, /max-w-\[1600px\]/);
   assert.match(catalogue, /2xl:grid-cols-4/);
-  assert.match(catalogueSkeleton, /2xl:grid-cols-4/);
+  assert.match(catalogueSkeleton, /FireworkBrowseGridSkeleton/);
+  assert.match(catalogueSkeleton, /count=\{CATALOGUE_PAGE_SIZE\}/);
+  assert.match(catalogue, /<FireworkBrowsePreviewProvider>/);
+  assert.match(catalogue, /<FireworkBrowseCard/);
+  assert.match(catalogue, /\/api\/catalogue\/\$\{product\.id\}\/preview/);
+  assert.match(catalogue, /withFireworkPreviewRevision\(/);
+  assert.match(catalogue, /product\.previewImageRevision/);
+  assert.match(
+    catalogue,
+    /persistedPosterUrl=\{fireworkPreviewImageUrl\(product\.previewImagePath\)\}/,
+  );
+  assert.doesNotMatch(catalogue, /\bpersistPoster\b/);
+  assert.match(catalogue, /\(product\.shotCount \?\? 1\)\.toLocaleString\(\)/);
+  assert.match(catalogue, /formatDuration\(product\.durationSeconds\)/);
+  assert.doesNotMatch(catalogue, /preview=\{/);
+  assert.doesNotMatch(catalogue, /AdminEffectPreview/);
+  assert.doesNotMatch(catalogue, /CatalogueMeta/);
+  assert.doesNotMatch(catalogue, /aria-label="Colour palette"/);
+  assert.doesNotMatch(catalogue, /product\.variant\?\.colorPalette\.slice/);
+  assert.doesNotMatch(catalogue, /\{product\.description\s*\?\?/);
+  assert.doesNotMatch(catalogue, /product\.heightMeters \?/);
 });
 
 test('route error boundaries do not render backend error messages', () => {
@@ -87,6 +107,6 @@ test('catalogue failures reach the shared browse retry boundary', () => {
   assert.doesNotMatch(catalogue, /ShowsNetworkError/);
   assert.doesNotMatch(catalogue, /temporarily unavailable/);
   assert.match(catalogue, /await listFireworkProducts/);
-  assert.match(catalogue, /bg-card min-w-0 rounded-xl/);
-  assert.match(catalogue, /\[overflow-wrap:anywhere\]/);
+  assert.match(catalogue, /FireworkBrowseCard/);
+  assert.match(catalogue, /line-clamp-2 text-sm leading-5 font-semibold/);
 });

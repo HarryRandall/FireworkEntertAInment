@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('all poster renders share one synchronous hidden-renderer lock', () => {
-  const source = read('app/(admin)/admin/cover-posters/CoverPosterBackfill.tsx');
+  const source = read('app/(admin)/admin/show-presets/CoverPosterBackfill.tsx');
 
   assert.match(source, /const renderLockRef = useRef\(false\)/);
   assert.match(source, /if \(!preset\.cover \|\| renderLockRef\.current\) return;/);
@@ -28,7 +28,7 @@ test('all poster renders share one synchronous hidden-renderer lock', () => {
 });
 
 test('poster loading and pending states stay bounded and accessible', () => {
-  const source = read('app/(admin)/admin/cover-posters/CoverPosterBackfill.tsx');
+  const source = read('app/(admin)/admin/show-presets/CoverPosterBackfill.tsx');
 
   assert.match(source, /const EAGER_POSTER_COUNT = 6/);
   assert.match(source, /eager=\{index < EAGER_POSTER_COUNT\}/);

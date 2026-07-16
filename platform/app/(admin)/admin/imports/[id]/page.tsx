@@ -1,250 +1,267 @@
-/** Admin import job detail page with the firework preview and live progress watcher. */
+/** Admin reconstruction workbench for one firework video import. */
 
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, RefreshCcw, WandSparkles } from 'lucide-react';
-import {
-  approveImportJobAction,
-  queueImportJobAction,
-  requestImportRefinementAction,
-  updateImportDraftSpecAction,
-} from '@/app/actions/platform-admin';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
-import { Input, Select, Textarea } from '@/app/components/ui/Input';
+import { InlineAlert } from '@/app/components/ui/Feedback';
+import { getImportJobDetail, requirePermission } from '@/lib/admin.server';
+import { DEFAULT_OPENROUTER_MODEL } from '@/lib/import-jobs';
 import {
-  DEFAULT_OPENROUTER_MODEL,
-  latestImportedSpecFromOutputs,
-  OPENROUTER_MODEL_OPTIONS,
-} from '@/lib/import-jobs';
-import { getImportJobDetail } from '@/lib/admin.server';
+  buildImportReview,
+  isRunOwnedImportEngineReviewVideoPath,
+  parseImportEngineMetricSummary,
+  parseImportEnginePublicationEvidence,
+  type ImportCandidate,
+} from '@/lib/import-review';
+import { getImportRunHistory } from '@/lib/import-review.server';
+import { parseImportReconstruction } from '@/lib/import-reconstruction';
 import { FireworkImportPreview } from './FireworkImportPreview';
+import { ImportAdvancedData } from './ImportAdvancedData';
+import { ImportCandidatePicker, type CandidatePickerOption } from './ImportCandidatePicker';
+import { ImportEngineValidationPanel } from './ImportEngineValidationPanel';
 import { ImportProgressWatcher } from './ImportProgressWatcher';
+import { ImportPublishPanel } from './ImportPublishPanel';
+import { ImportReconstructionSummary } from './ImportReconstructionSummary';
+import { ImportRunControls } from './ImportRunControls';
+import { ImportRunHistory } from './ImportRunHistory';
+import { ImportStageHeader } from './ImportStageHeader';
+import { ImportValidationPanel } from './ImportValidationPanel';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function AdminImportDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const job = await getImportJobDetail(id);
+  const [job, history, canManageCatalogue] = await Promise.all([
+    getImportJobDetail(id),
+    getImportRunHistory(id),
+    requirePermission('admin.manage_catalogue'),
+  ]);
   if (!job) notFound();
+  const archived = Boolean(job.archivedAt);
 
-  const spec = latestImportedSpecFromOutputs(job.outputs);
-  const defaultDuration = spec?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
-  const defaultSpecJson = spec
-    ? JSON.stringify(spec.spec, null, 2)
-    : '{\n  "shellType": "crysanthemum",\n  "spreadSize": 4.6,\n  "starLifeMs": 1400,\n  "color": "#ffbf36",\n  "glitter": "light"\n}';
-  const selectedModel = job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
-  const canApprove = Boolean(spec) && job.status !== 'complete';
-  const isWaitingForWorker = (job.status === 'queued' || job.status === 'processing') && !spec;
+  const review = buildImportReview({
+    outputs: job.outputs,
+    history,
+    sourceDurationSeconds: job.mediaAsset?.durationSeconds ?? null,
+  });
+  const currentRun = history.runs.find((run) => run.id === history.activeRunId) ?? history.runs[0];
+  const selectedModel = currentRun?.selectedModel ?? job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
+  const fallbackDuration =
+    review.reconstruction?.durationSeconds ??
+    review.latestSpec?.durationSeconds ??
+    job.mediaAsset?.durationSeconds ??
+    10;
+  const activeRunInProgress = currentRun
+    ? currentRun.status === 'queued' || currentRun.status === 'processing'
+    : job.status === 'queued' || job.status === 'processing';
+  const complete = job.status === 'complete' || Boolean(job.approvedCatalogueItemId);
+  const canRetry = !archived && !complete && !activeRunInProgress;
+  const selectedCandidateRun = history.runs.find((run) =>
+    run.candidates.some((candidate) => candidate.id === history.selectedCandidateId),
+  );
+  const canRefine =
+    !archived &&
+    !complete &&
+    !activeRunInProgress &&
+    Boolean(history.selectedCandidateId) &&
+    selectedCandidateRun?.status === 'succeeded';
+  const candidateOptions = buildCandidateOptions(
+    history.runs.flatMap((run) =>
+      run.candidates.map((candidate) => ({
+        candidate,
+        runNumber: run.attemptNumber,
+        runStatus: run.status,
+      })),
+    ),
+    {
+      selectedCandidateId: history.selectedCandidateId,
+      selectionLocked: activeRunInProgress || archived,
+      complete,
+    },
+  );
+  const publishBlockers = uniqueStrings([
+    ...review.blockers.map((check) => check.detail),
+    ...(activeRunInProgress ? ['Wait for the active reconstruction run before publishing.'] : []),
+    ...(!history.selectedCandidateId ? ['Select a renderer-native candidate.'] : []),
+    ...(review.selectedAttempt?.source !== 'candidate'
+      ? ['Legacy draft adapters cannot be published through the strict candidate gate.']
+      : []),
+    ...(!canManageCatalogue
+      ? ['Catalogue management permission is required to publish this reconstruction.']
+      : []),
+    ...(archived ? ['Archived imports are read-only audit records.'] : []),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
-      <div className="flex flex-col gap-4">
-        <Link
-          href="/admin/imports"
-          className="text-primary inline-flex items-center gap-2 text-sm font-bold"
-        >
-          <ArrowLeft size={16} />
-          Back to imports
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge tone={job.status === 'complete' ? 'success' : 'neutral'}>
-            {job.status.replace('_', ' ')}
-          </Badge>
-          <Badge tone="neutral">{job.processingProgress}%</Badge>
-        </div>
+      <Link
+        href={archived ? '/admin/imports?view=archived' : '/admin/imports'}
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-md text-sm font-medium focus:outline-none focus-visible:ring-2"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        {archived ? 'Back to archived imports' : 'Back to imports'}
+      </Link>
+
+      <ImportStageHeader
+        sourceName={job.sourceName}
+        status={job.status}
+        stage={currentRun?.stage ?? null}
+        modelConfidence={review.modelConfidence}
+      />
+
+      {!archived ? (
         <ImportProgressWatcher
           jobId={job.id}
           initialStatus={job.status}
-          initialProgress={job.processingProgress}
-          initialOutputCount={job.outputs.length}
-          initialUpdatedAt={job.updatedAt ?? null}
+          initialStage={currentRun?.stage ?? null}
+          initialProgress={currentRun?.progress ?? job.processingProgress}
+          initialOutputCount={job.outputs.length + (currentRun?.outputs.length ?? 0)}
+          initialCandidateCount={currentRun?.candidates.length ?? 0}
+          initialUpdatedAt={currentRun?.updatedAt ?? job.updatedAt ?? null}
         />
-      </div>
-
-      {isWaitingForWorker ? (
-        <Card elevation="low" radius="md" className="border-primary/35 p-5">
-          <h2 className="text-on-surface text-lg font-bold">
-            Waiting for the reconstruction worker
-          </h2>
-          <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-            The upload worked and the import is queued. Start the worker in a second terminal with{' '}
-            <span className="text-on-surface font-mono">npm run worker:firework-import</span>. It
-            needs <span className="text-on-surface font-mono">SUPABASE_SERVICE_ROLE_KEY</span> in
-            the worker environment so OpenRouter jobs can finish, and the same variable on your
-            <span className="text-on-surface font-mono"> Next</span> server so private import videos
-            receive a valid signed playback URL. Also set{' '}
-            <span className="text-on-surface font-mono">OPENROUTER_API_KEY</span> for the worker.
-          </p>
-        </Card>
       ) : null}
 
-      <Card elevation="high" radius="md" className="space-y-5 p-5">
-        <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
-          <div>
-            <h2 className="text-on-surface text-xl font-bold">Reconstruction review</h2>
-            <p className="text-on-surface-variant mt-1 text-sm">
-              Compare the source footage with the generated 3D particle demo.
-            </p>
-          </div>
-          <form action={queueImportJobAction} className="flex flex-col gap-2 sm:flex-row">
-            <input type="hidden" name="id" value={job.id} />
-            <Select name="selectedModel" defaultValue={selectedModel} className="sm:w-[260px]">
-              {OPENROUTER_MODEL_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Button type="submit" variant="secondary" disabled={!job.mediaAsset}>
-              <RefreshCcw size={16} />
-              Queue analysis
-            </Button>
-          </form>
+      {archived ? (
+        <InlineAlert tone="info" title="Archived audit record">
+          Reconstruction runs, candidates, source footage and validation evidence are retained, but
+          this job cannot be retried, refined, selected or published.
+          {job.archivedAt ? ` Archived ${formatDateTime(job.archivedAt)}.` : ''}
+        </InlineAlert>
+      ) : null}
+
+      {job.errorMessage ? (
+        <InlineAlert tone="danger" title="Reconstruction failed">
+          {job.errorMessage}
+        </InlineAlert>
+      ) : null}
+
+      <Card className="space-y-5 p-5 sm:p-6" shadow>
+        <div>
+          <h2 className="text-foreground text-xl font-semibold">Source and engine evidence</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Compare the upload, the sampled engine frames retained with the selected candidate, and
+            a live reconstruction from the current renderer on one inspection timeline.
+          </p>
         </div>
         <FireworkImportPreview
           videoUrl={job.videoUrl}
           videoMimeType={job.videoMimeType}
-          spec={spec}
-          fallbackDuration={defaultDuration}
+          retainedEvidenceUrl={review.selectedAttempt?.renderedVideoUrl ?? null}
+          spec={review.latestSpec}
+          reconstruction={review.reconstruction}
+          fallbackDuration={fallbackDuration}
         />
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <Card elevation="low" radius="md" className="space-y-5 p-5">
-          <div>
-            <h2 className="text-on-surface text-xl font-bold">Natural-language refinement</h2>
-            <p className="text-on-surface-variant mt-1 text-sm">
-              Refinement requests are queued for the worker so it can reanalyse the original video
-              context with the latest draft.
-            </p>
-          </div>
-          <form action={requestImportRefinementAction} className="space-y-3">
-            <input type="hidden" name="id" value={job.id} />
-            <Select name="selectedModel" defaultValue={selectedModel}>
-              {OPENROUTER_MODEL_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-            <Textarea
-              name="prompt"
-              rows={5}
-              placeholder="At the end it went green; make that section a lighter #A8FF8F and let it fade more slowly."
-              required
-            />
-            <Button type="submit" disabled={!spec}>
-              <WandSparkles size={16} />
-              Queue refinement
-            </Button>
-          </form>
-        </Card>
+      <ImportCandidatePicker jobId={job.id} options={candidateOptions} />
 
-        <Card elevation="low" radius="md" className="space-y-5 p-5">
-          <div>
-            <h2 className="text-on-surface text-xl font-bold">Approve to catalogue</h2>
-            <p className="text-on-surface-variant mt-1 text-sm">
-              Approval publishes both a catalogue product and a reusable 3D firework specification.
-            </p>
-          </div>
-          <form action={approveImportJobAction} className="space-y-3">
-            <input type="hidden" name="id" value={job.id} />
-            <Input
-              name="partNumber"
-              defaultValue={`VID-${job.id.slice(0, 8).toUpperCase()}`}
-              required
-            />
-            <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
-            <Input name="manufacturer" placeholder="Manufacturer" />
-            <Input name="category" defaultValue="Imported video" />
-            <Input name="fireworkType" defaultValue="Video reconstructed" />
-            <Button type="submit" disabled={!canApprove}>
-              <CheckCircle2 size={16} />
-              Approve and publish
-            </Button>
-          </form>
-        </Card>
+      <ImportEngineValidationPanel
+        metrics={review.engineMetrics}
+        artifact={review.engineArtifact}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.8fr)_minmax(0,1.2fr)]">
+        <ImportValidationPanel checks={review.checks} />
+        <ImportReconstructionSummary reconstruction={review.reconstruction} />
       </div>
 
-      <Card elevation="high" radius="md" className="space-y-5 p-5">
-        <div>
-          <h2 className="text-on-surface text-xl font-bold">Manual adjustments</h2>
-          <p className="text-on-surface-variant mt-1 text-sm">
-            These controls save a new draft spec immediately for preview and approval.
-          </p>
-        </div>
-        <form action={updateImportDraftSpecAction} className="grid grid-cols-1 gap-3">
-          <input type="hidden" name="id" value={job.id} />
-          <label className="space-y-1">
-            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-              Name
-            </span>
-            <Input name="name" defaultValue={spec?.name ?? job.sourceName} required />
-          </label>
-          <label className="space-y-1">
-            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-              Description
-            </span>
-            <Textarea name="description" rows={3} defaultValue={spec?.description ?? ''} />
-          </label>
-          <label className="space-y-1">
-            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-              Duration (seconds)
-            </span>
-            <Input
-              name="durationSeconds"
-              type="number"
-              step={0.1}
-              defaultValue={defaultDuration}
-              required
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
-              FireworkSpec JSON
-            </span>
-            <Textarea
-              name="spec"
-              rows={14}
-              defaultValue={defaultSpecJson}
-              className="font-mono text-xs"
-              required
-            />
-          </label>
-          <div>
-            <Button type="submit" variant="secondary">
-              Save manual draft
-            </Button>
-          </div>
-        </form>
-      </Card>
+      {!archived ? (
+        <>
+          <ImportRunControls
+            jobId={job.id}
+            selectedModel={selectedModel}
+            canRetry={canRetry}
+            canRefine={canRefine}
+          />
 
-      <Card elevation="low" radius="md" className="p-5">
-        <h2 className="text-on-surface text-xl font-bold">Import outputs</h2>
-        <div className="mt-4 space-y-2">
-          {job.outputs.length > 0 ? (
-            job.outputs.map((output) => (
-              <div
-                key={output.id}
-                className="border-outline-variant/20 bg-surface-container-highest/40 flex flex-col gap-1 rounded-lg border p-3 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="text-on-surface font-semibold">
-                  {output.outputType.replace('_', ' ')}
-                </div>
-                <div className="text-on-surface-variant font-mono text-xs">
-                  {new Date(output.createdAt).toLocaleString()}
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-on-surface-variant text-sm">
-              No worker outputs have been stored yet.
-            </p>
-          )}
-        </div>
-      </Card>
+          <ImportPublishPanel
+            jobId={job.id}
+            defaultPartNumber={`VID-${job.id.slice(0, 8).toUpperCase()}`}
+            defaultName={review.reconstruction?.name ?? review.latestSpec?.name ?? job.sourceName}
+            blockers={publishBlockers}
+            complete={complete}
+          />
+        </>
+      ) : null}
+
+      <ImportRunHistory runs={history.runs} />
+      <ImportAdvancedData selectedAttempt={review.selectedAttempt} outputs={job.outputs} />
     </div>
   );
+}
+
+function buildCandidateOptions(
+  candidates: Array<{ candidate: ImportCandidate; runNumber: number; runStatus: string }>,
+  state: {
+    selectedCandidateId: string | null;
+    selectionLocked: boolean;
+    complete: boolean;
+  },
+): CandidatePickerOption[] {
+  return candidates.map(({ candidate, runNumber, runStatus }) => {
+    const parsed = parseImportReconstruction(candidate.reconstruction);
+    const reconstruction = parsed.success ? parsed.data : null;
+    const validation = record(candidate.validation);
+    const engineMetrics = parseImportEngineMetricSummary(candidate.metrics);
+    const publicationEvidence = reconstruction
+      ? parseImportEnginePublicationEvidence(
+          candidate.metrics,
+          isRunOwnedImportEngineReviewVideoPath(candidate.renderedVideoPath, candidate.runId)
+            ? candidate.renderedVideoPath
+            : null,
+          reconstruction,
+        )
+      : null;
+    const weakestEngineComponent = engineMetrics
+      ? Object.entries(engineMetrics.components).sort(
+          (left, right) => left[1].score - right[1].score,
+        )[0]
+      : null;
+    const palette = reconstruction
+      ? Array.from(new Set(reconstruction.designs.flatMap((design) => design.colorPalette)))
+      : [];
+    return {
+      id: candidate.id,
+      runNumber,
+      ordinal: candidate.ordinal,
+      selected: candidate.id === state.selectedCandidateId,
+      selectable: !state.complete && !state.selectionLocked && runStatus === 'succeeded',
+      workerValid: Boolean(reconstruction) && validation?.valid === true,
+      enginePublishable: publicationEvidence?.success === true,
+      engineScore: engineMetrics?.overallScore ?? null,
+      weakestEngineComponent: weakestEngineComponent
+        ? {
+            label: weakestEngineComponent[0],
+            score: weakestEngineComponent[1].score,
+          }
+        : null,
+      engineDetail:
+        publicationEvidence && !publicationEvidence.success ? publicationEvidence.error : null,
+      score: candidate.score,
+      confidence: reconstruction?.confidence ?? null,
+      effectCount: reconstruction?.designs.length ?? null,
+      shotCount: reconstruction?.shots.length ?? null,
+      palette,
+    };
+  });
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'at an unknown time';
+  return new Intl.DateTimeFormat('en-AU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }

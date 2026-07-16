@@ -1,11 +1,12 @@
 /** Read-only firework catalogue page for the app sidebar. */
 
 import { Suspense } from 'react';
-import type { ReactNode } from 'react';
-import { Clock3, Layers3, Sparkles, Ruler } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
+import { Clock3, Layers3 } from 'lucide-react';
+import { FireworkBrowseCard } from '@/app/components/app/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
 import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
+import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { listFireworkProducts } from '@/lib/shows.server';
 import { formatDuration } from '@/lib/show-domain';
 import { CATALOGUE_PAGE_SIZE, CatalogueSkeleton } from './CatalogueSkeleton';
@@ -86,59 +87,46 @@ async function CatalogueList({
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {visibleProducts.map((product) => (
-          <article
-            key={product.id}
-            className="border-border bg-card min-w-0 rounded-xl border p-4 shadow-xs transition-colors hover:border-[color:var(--color-border-strong)]"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+      <FireworkBrowsePreviewProvider>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {visibleProducts.map((product) => (
+            <FireworkBrowseCard
+              key={product.id}
+              previewId={`catalogue-${product.id}`}
+              previewUrl={withFireworkPreviewRevision(
+                `/api/catalogue/${product.id}/preview`,
+                product.previewImageRevision,
+              )}
+              persistedPosterUrl={fireworkPreviewImageUrl(product.previewImagePath)}
+              label={product.name}
+            >
+              <div className="p-4">
                 <h2 className="text-foreground line-clamp-2 text-sm leading-5 font-semibold">
                   {product.name}
                 </h2>
-                <p className="text-muted-foreground mt-1 font-mono text-xs">{product.slug}</p>
+                <p className="text-muted-foreground mt-1 truncate font-mono text-xs tabular-nums">
+                  {product.slug}
+                </p>
+                <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Layers3 size={13} aria-hidden />
+                    <span className="tabular-nums">
+                      {(product.shotCount ?? 1).toLocaleString()}{' '}
+                      {(product.shotCount ?? 1) === 1 ? 'shot' : 'shots'}
+                    </span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock3 size={13} aria-hidden />
+                    <span className="font-mono tabular-nums">
+                      {formatDuration(product.durationSeconds)}
+                    </span>
+                  </span>
+                </div>
               </div>
-              {product.caliber ? (
-                <Badge tone="neutral" className="shrink-0">
-                  {product.caliber}
-                </Badge>
-              ) : null}
-            </div>
-
-            <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed [overflow-wrap:anywhere]">
-              {product.description ?? product.baseEffect?.name ?? 'Uncategorised firework'}
-            </p>
-
-            <div className="text-muted-foreground mt-4 grid grid-cols-2 gap-2 text-xs">
-              <CatalogueMeta icon={<Sparkles size={13} />} label="Effect">
-                {product.baseEffect?.name ?? 'Uncategorised'}
-              </CatalogueMeta>
-              <CatalogueMeta icon={<Clock3 size={13} />} label="Duration">
-                {formatDuration(product.durationSeconds)}
-              </CatalogueMeta>
-              <CatalogueMeta icon={<Layers3 size={13} />} label="Shots">
-                {product.shotCount ? product.shotCount.toLocaleString() : '1'}
-              </CatalogueMeta>
-              <CatalogueMeta icon={<Ruler size={13} />} label="Height">
-                {product.heightMeters ? `${product.heightMeters}m` : 'Not set'}
-              </CatalogueMeta>
-            </div>
-
-            {product.variant?.colorPalette?.length ? (
-              <div className="mt-4 flex items-center gap-1.5" aria-label="Colour palette">
-                {product.variant.colorPalette.slice(0, 5).map((color, index) => (
-                  <span
-                    key={`${product.id}-${color}-${index}`}
-                    className="h-3 w-8 rounded-full border border-white/20 shadow-sm"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </article>
-        ))}
-      </div>
+            </FireworkBrowseCard>
+          ))}
+        </div>
+      </FireworkBrowsePreviewProvider>
 
       <TablePagination
         currentPage={currentPage}
@@ -148,26 +136,6 @@ async function CatalogueList({
         totalItems={products.length}
         itemLabel="product"
       />
-    </div>
-  );
-}
-
-function CatalogueMeta({
-  icon,
-  label,
-  children,
-}: {
-  icon: ReactNode;
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="bg-muted/60 rounded-lg px-2.5 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-[0.08em] text-[color:var(--color-content-muted)] uppercase">
-        {icon}
-        {label}
-      </div>
-      <div className="text-foreground mt-1 truncate text-xs font-medium">{children}</div>
     </div>
   );
 }

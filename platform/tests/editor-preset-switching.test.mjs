@@ -42,11 +42,21 @@ test('Save new default copies settings and clears transient selection in one cli
     fireworkEditor,
     /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoOverrides\(mergedOverrides\)/,
   );
-  assert.match(fireworkEditor, /saveCurrentStyleAsDefault[\s\S]*?overrides: nextMerged/);
+  assert.match(
+    fireworkEditor,
+    /saveCurrentStyleAsDefault[\s\S]*?renderOverridesJson: JSON\.stringify\(nextMerged/,
+  );
   assert.match(fireworkEditor, /fireworkSavedSnapshotFromFields\(\{/);
-  assert.match(fireworkEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
-  assert.match(fireworkEditor, /setOverridesText\(savedSnapshot\.overridesText\)/);
-  assert.match(fireworkEditor, /setSavedSignature\(savedSnapshot\.signature\)/);
+  assert.match(
+    fireworkEditor,
+    /saveCurrentStyleAsDefault[\s\S]*?const mutation = beginOptimisticMutation\(optimisticSnapshot, 'update'\)/,
+  );
+  assert.match(
+    fireworkEditor,
+    /createStyleDefaultAndUpdateFirework\(\{[\s\S]*?historyVersionId: mutation\.historyVersionId/,
+  );
+  assert.match(fireworkEditor, /applySnapshot\(savedSnapshot\)/);
+  assert.match(fireworkEditor, /rollbackOptimisticMutation\(mutation\)/);
   assert.match(fireworkEditor, /canApplySavedEditorSnapshot/);
   assert.match(fireworkEditor, /Style default created and saved/);
 
@@ -61,14 +71,23 @@ test('Save new default copies settings and clears transient selection in one cli
     /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoModel\(parsedModel\.value\)/,
   );
   assert.match(effectEditor, /effectSavedSnapshotFromFields\(\{/);
-  assert.match(effectEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
-  assert.match(effectEditor, /setModelText\(savedSnapshot\.modelText\)/);
-  assert.match(effectEditor, /setSavedSignature\(savedSnapshot\.signature\)/);
+  assert.match(
+    effectEditor,
+    /saveCurrentStyleAsDefault[\s\S]*?const mutation = beginOptimisticMutation\(optimisticSnapshot, 'update'\)/,
+  );
+  assert.match(
+    effectEditor,
+    /createStyleDefaultAndUpdateEffect\(\{[\s\S]*?historyVersionId: mutation\.historyVersionId/,
+  );
+  assert.match(effectEditor, /applySnapshot\(savedSnapshot\)/);
+  assert.match(effectEditor, /rollbackOptimisticMutation\(mutation\)/);
   assert.match(effectEditor, /canApplySavedEditorSnapshot/);
   assert.match(effectEditor, /Style default created and saved/);
+  assert.doesNotMatch(fireworkEditor, /await createStyleDefault\(\{/);
+  assert.doesNotMatch(effectEditor, /await createStyleDefault\(\{/);
 });
 
-test('writing a top-level burstTrail clears nested star layer burstTrails', () => {
+test('writing a top-level burstTrail clears only the inherited outer layer trail', () => {
   const styleDefaults = read('lib/fireworks/style-defaults.ts');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
@@ -85,8 +104,10 @@ test('writing a top-level burstTrail clears nested star layer burstTrails', () =
 
   assert.match(
     controls,
-    /function writeBurstTrail[\s\S]*?if \(!layerKey\) \{[\s\S]*?clearNestedStarBurstTrails\(draft\)/,
+    /function writeBurstTrail[\s\S]*?if \(!layerKey\) \{[\s\S]*?delete stars\.outer\.burstTrail/,
   );
+  assert.doesNotMatch(controls, /delete stars\.core\.burstTrail/);
+  assert.doesNotMatch(controls, /clearNestedStarBurstTrails\(draft\)/);
 });
 
 test('changing the base effect resets style defaults and clears overrides', () => {

@@ -119,7 +119,7 @@ function normaliseLaunchPositionIndex(value: number): number {
 }
 
 function cueDurationOf(spec: FireworkSpecification | undefined): number {
-  const duration = spec?.durationSeconds;
+  const duration = spec?.occupancyDurationSeconds ?? spec?.durationSeconds;
   return duration && Number.isFinite(duration) && duration > 0
     ? duration
     : DEFAULT_CUE_DURATION_SECONDS;

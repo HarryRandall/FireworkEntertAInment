@@ -1,16 +1,20 @@
 'use client';
 
 import { SliderField } from '@/app/components/ui/SliderField';
+import { Slider as SliderPrimitive } from 'radix-ui';
 import type { FireworkDesign } from '@/lib/fireworks/design';
 import {
   applyFireworkTimelineEdit,
+  applyFireworkTimelineBoundaryEdit,
   deriveFireworkEditorTimeline,
   isGroundFireworkEffect,
   MAX_TIMELINE_PHASE_SECONDS,
+  MAX_TIMELINE_HEAD_SECONDS,
   MAX_TIMELINE_TOTAL_SECONDS,
   MIN_TIMELINE_TOTAL_SECONDS,
   usesLegacyLaunchLiftAppearance,
   type FireworkTimelineDefaults,
+  type FireworkTimelineBoundaryKey,
   type FireworkTimelineEditKey,
   type FireworkTimelinePhaseKey,
 } from '@/lib/fireworks/timing';
@@ -69,7 +73,11 @@ function affectedStyleKinds(
   key: FireworkTimelineEditKey,
 ): FireworkStyleDefaultKind[] {
   if (key === 'ascent') return ['launch'];
-  if (key === 'burn' || key === 'fade') return ['star'];
+  if (key === 'burn' || key === 'fade') {
+    return design.geometry === 'fish' || design.geometry === 'whirl'
+      ? ['star', 'geometry']
+      : ['star'];
+  }
 
   const tailKinds: FireworkStyleDefaultKind[] = [];
   const groundEffect = isGroundFireworkEffect(design);
@@ -92,6 +100,11 @@ function affectedStyleKinds(
   if (key === 'tail') return uniqueKinds(tailKinds);
   return uniqueKinds([
     'star',
+    ...((['fish', 'whirl', 'roman_candle', 'fountain'] as const).includes(
+      design.geometry as 'fish' | 'whirl' | 'roman_candle' | 'fountain',
+    )
+      ? (['geometry'] as const)
+      : []),
     ...(design.geometry === 'upward_fan' ||
     design.geometry === 'roman_candle' ||
     design.geometry === 'fountain'
@@ -126,29 +139,81 @@ export function FireworkTimelineControls({
     onMutate(kinds, (defaults) => applyFireworkTimelineEdit(defaults, design, key, seconds));
   }
 
+  const boundaries = [
+    timeline.phases.ascent,
+    timeline.phases.ascent + timeline.phases.burn,
+    timeline.phases.ascent + timeline.phases.burn + timeline.phases.fade,
+  ];
+
+  function updateBoundary(index: number, seconds: number) {
+    const key = PHASES[index]?.key as FireworkTimelineBoundaryKey | undefined;
+    const nextPhase = PHASES[index + 1]?.key;
+    if (!key || !nextPhase) return;
+    const kinds = uniqueKinds([
+      ...affectedStyleKinds(design, key),
+      ...affectedStyleKinds(design, nextPhase),
+    ]);
+    onMutate(kinds, (defaults) =>
+      applyFireworkTimelineBoundaryEdit(defaults, design, key, seconds),
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="border-border bg-card space-y-3 rounded-xl border p-3">
-        <div
-          role="img"
-          aria-label={`Firework timeline: ${PHASES.map(
-            (phase) => `${phase.label} ${formatSeconds(timeline.phases[phase.key])}`,
-          ).join(', ')}. Total ${formatSeconds(timeline.totalDurationSeconds)}.`}
-          className="space-y-2"
-        >
-          <div className="bg-muted flex h-2.5 overflow-hidden rounded-full">
-            {PHASES.map((phase) => {
-              const duration = timeline.phases[phase.key];
-              if (duration <= 0) return null;
-              return (
-                <div
-                  key={phase.key}
-                  className={cn('h-full min-w-px', phase.className)}
-                  style={{ width: `${(duration / total) * 100}%` }}
-                />
-              );
-            })}
-          </div>
+        <div className="space-y-2">
+          <span
+            role="img"
+            aria-label={`Firework timeline: ${PHASES.map(
+              (phase) => `${phase.label} ${formatSeconds(timeline.phases[phase.key])}`,
+            ).join(', ')}. Total ${formatSeconds(timeline.totalDurationSeconds)}.`}
+            className="sr-only"
+          />
+          <SliderPrimitive.Root
+            value={boundaries}
+            min={0}
+            max={total}
+            step={0.05}
+            disabled={disabled}
+            onValueChange={(next) => {
+              let changedIndex = 0;
+              for (let index = 1; index < next.length; index += 1) {
+                if (
+                  Math.abs((next[index] ?? 0) - boundaries[index]) >
+                  Math.abs((next[changedIndex] ?? 0) - boundaries[changedIndex])
+                ) {
+                  changedIndex = index;
+                }
+              }
+              updateBoundary(changedIndex, next[changedIndex] ?? boundaries[changedIndex]);
+            }}
+            className="relative flex h-5 touch-none items-center select-none data-disabled:opacity-50"
+          >
+            <SliderPrimitive.Track className="bg-muted relative flex h-2.5 grow overflow-hidden rounded-full">
+              {PHASES.map((phase) => {
+                const duration = timeline.phases[phase.key];
+                if (duration <= 0) return null;
+                return (
+                  <div
+                    key={phase.key}
+                    className={cn('h-full min-w-px', phase.className)}
+                    style={{ width: `${(duration / total) * 100}%` }}
+                  />
+                );
+              })}
+            </SliderPrimitive.Track>
+            {PHASES.slice(0, -1).map((phase) => (
+              <SliderPrimitive.Thumb
+                key={phase.key}
+                aria-label={`${phase.label} end`}
+                aria-disabled={
+                  (phase.key === 'ascent' && !timeline.ascentEditable) ||
+                  (phase.key === 'fade' && !timeline.tailEditable)
+                }
+                className="border-primary bg-background ring-ring/50 block size-3.5 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden"
+              />
+            ))}
+          </SliderPrimitive.Root>
           <div className="text-muted-foreground flex justify-between font-mono text-[10px] tabular-nums">
             <span>0.00s</span>
             <span>{formatSeconds(timeline.totalDurationSeconds)}</span>
@@ -200,9 +265,13 @@ export function FireworkTimelineControls({
             <SliderField
               key={phase.key}
               label={`${phase.label} duration`}
-              min={phase.key === 'tail' ? 0 : 0.1}
+              min={phase.key === 'ascent' ? 0.1 : 0}
               max={Math.max(
-                phase.key === 'ascent' ? 8 : MAX_TIMELINE_PHASE_SECONDS,
+                phase.key === 'ascent'
+                  ? 8
+                  : phase.key === 'burn' || phase.key === 'fade'
+                    ? MAX_TIMELINE_HEAD_SECONDS
+                    : MAX_TIMELINE_PHASE_SECONDS,
                 Math.ceil(timeline.phases[phase.key]),
               )}
               step={0.05}

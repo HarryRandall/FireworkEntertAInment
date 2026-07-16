@@ -118,6 +118,8 @@ export function mapImportJob(row: ImportJobRow): ImportJobSummary {
     approvedCatalogueItemId: row.approved_catalogue_item_id,
     rowCount: row.row_count,
     errorMessage: row.error_message,
+    archivedAt: row.archived_at,
+    archivedBy: row.archived_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
