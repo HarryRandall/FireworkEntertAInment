@@ -118,8 +118,14 @@ function mapCue(row: CueRow): AdminOverviewCueMetric {
   return { createdAt: row.created_at };
 }
 
-function logOverviewError(label: string, error: unknown) {
-  if (error) console.error(`[admin.overview] ${label} failed:`, error);
+function throwOverviewReadErrors(results: Array<{ operation: string; error: unknown }>): void {
+  const failures = results.filter(({ error }) => error !== null);
+  if (failures.length === 0) return;
+
+  console.error('[admin.overview] metric reads failed:', failures);
+  throw new Error('Admin overview metrics could not be loaded.', {
+    cause: failures[0]?.error,
+  });
 }
 
 /** Returns platform overview metrics for the admin dashboard. */
@@ -202,15 +208,17 @@ export async function getAdminOverviewMetrics(
       .limit(2000),
   ]);
 
-  logOverviewError('current shows query', currentShowsResult.error);
-  logOverviewError('previous shows query', previousShowsResult.error);
-  logOverviewError('recent shows query', recentShowsResult.error);
-  logOverviewError('current cues query', currentShowCuesResult.error);
-  logOverviewError('previous cues query', previousShowCuesResult.error);
-  logOverviewError('recent cues query', recentShowCuesResult.error);
-  logOverviewError('current music analyses query', currentMusicAnalysesResult.error);
-  logOverviewError('previous music analyses query', previousMusicAnalysesResult.error);
-  logOverviewError('recent music analyses query', recentMusicAnalysesResult.error);
+  throwOverviewReadErrors([
+    { operation: 'current shows query', error: currentShowsResult.error },
+    { operation: 'previous shows query', error: previousShowsResult.error },
+    { operation: 'recent shows query', error: recentShowsResult.error },
+    { operation: 'current cues query', error: currentShowCuesResult.error },
+    { operation: 'previous cues query', error: previousShowCuesResult.error },
+    { operation: 'recent cues query', error: recentShowCuesResult.error },
+    { operation: 'current music analyses query', error: currentMusicAnalysesResult.error },
+    { operation: 'previous music analyses query', error: previousMusicAnalysesResult.error },
+    { operation: 'recent music analyses query', error: recentMusicAnalysesResult.error },
+  ]);
 
   const metrics: AdminOverviewMetrics = {
     previousShows: previousShowsResult.count ?? 0,

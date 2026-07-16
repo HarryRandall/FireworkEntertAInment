@@ -1,5 +1,5 @@
 /**
- * Big tap-target cards for the new-show flow. One generic ChoiceCard plus a
+ * Big tap-target cards for the new-show flow. One native-input ChoiceCard plus a
  * small launch-position dot diagram. No sliders, no typing: every answer in
  * the flow is a card press.
  */
@@ -10,19 +10,25 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Selectable card. `multi` renders a checkbox-style corner tick (for
- * multi-select questions); otherwise it behaves like a radio card.
+ * Selectable card backed by a native radio or checkbox. Keeping the input in
+ * the accessibility tree gives grouped radio cards standard arrow-key
+ * behaviour without recreating that interaction in JavaScript.
  */
 export function ChoiceCard({
+  type,
+  name,
+  value,
   selected,
   title,
   description,
   hint,
   diagram,
-  multi = false,
-  onClick,
+  onSelect,
   className,
 }: {
+  type: 'radio' | 'checkbox';
+  name: string;
+  value: string;
   selected: boolean;
   title: string;
   description?: string;
@@ -30,30 +36,35 @@ export function ChoiceCard({
   hint?: string;
   /** Optional visual rendered above the title (e.g. position dots). */
   diagram?: ReactNode;
-  multi?: boolean;
-  onClick: () => void;
+  onSelect: () => void;
   className?: string;
 }) {
+  const multiple = type === 'checkbox';
+
   return (
-    <button
-      type="button"
-      role={multi ? 'checkbox' : 'radio'}
-      aria-checked={selected}
-      onClick={onClick}
+    <label
       className={cn(
-        'focus-visible:ring-ring/50 relative flex min-h-[5.5rem] w-full flex-col justify-center gap-1 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99] sm:p-5',
+        'has-[input:focus-visible]:ring-ring/50 relative flex min-h-[5.5rem] w-full cursor-pointer flex-col justify-center gap-1 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] active:scale-[0.99] has-[input:focus-visible]:ring-3 sm:p-5',
         selected
           ? 'border-[color:var(--color-content-emphasis)]'
           : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
         className,
       )}
     >
-      {selected || multi ? (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        checked={selected}
+        onChange={onSelect}
+        className="sr-only"
+      />
+      {selected || multiple ? (
         <span
           aria-hidden="true"
           className={cn(
             'absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center border transition-colors',
-            multi ? 'rounded-md' : 'rounded-full',
+            multiple ? 'rounded-md' : 'rounded-full',
             selected
               ? 'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm'
               : 'border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)]/80',
@@ -78,7 +89,7 @@ export function ChoiceCard({
           {description}
         </span>
       ) : null}
-    </button>
+    </label>
   );
 }
 

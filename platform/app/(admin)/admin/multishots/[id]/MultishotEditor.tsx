@@ -24,6 +24,7 @@ import {
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import {
   Check,
@@ -41,6 +42,7 @@ import {
 } from 'lucide-react';
 import {
   PreviewFullscreenBackdrop,
+  type PreviewFullscreenContainerProps,
   usePreviewFullscreen,
 } from '@/app/components/admin/previewFullscreen';
 import {
@@ -304,7 +306,13 @@ export function MultishotEditor({
 }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen<HTMLElement>({ dialogLabel: `${multishot.name} preview` });
 
   // Meta panel state.
   const [isSavingMeta, startMetaTransition] = useTransition();
@@ -915,6 +923,8 @@ export function MultishotEditor({
           isPlaying={isPlaying}
           isLooping={isLooping}
           fullscreen={isFullscreen}
+          fullscreenContainerRef={fullscreenContainerRef}
+          fullscreenContainerProps={fullscreenContainerProps}
           loading={!previewReady}
           loadingProgress={previewLoadingProgress}
           ticks={transportTicks}
@@ -1152,6 +1162,8 @@ function PreviewStage({
   isPlaying,
   isLooping,
   fullscreen,
+  fullscreenContainerRef,
+  fullscreenContainerProps,
   loading,
   loadingProgress,
   ticks,
@@ -1175,6 +1187,8 @@ function PreviewStage({
   isPlaying: boolean;
   isLooping: boolean;
   fullscreen: boolean;
+  fullscreenContainerRef: RefObject<HTMLElement | null>;
+  fullscreenContainerProps: PreviewFullscreenContainerProps;
   loading: boolean;
   loadingProgress: number | null;
   ticks: { timeSeconds: number; label: string }[];
@@ -1267,6 +1281,8 @@ function PreviewStage({
       <div className={fullscreen ? 'contents' : 'relative'}>
         <section
           data-preserve-shot-selection
+          ref={fullscreenContainerRef}
+          {...fullscreenContainerProps}
           onFocusCapture={wakePreviewTransport}
           onBlurCapture={handlePreviewBlur}
           onPointerEnter={wakePreviewTransport}

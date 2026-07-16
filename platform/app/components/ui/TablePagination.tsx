@@ -119,15 +119,25 @@ export function TablePagination({
       {showControls ? (
         <ul className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link
-              href={pageHref(searchParams, Math.max(1, currentPage - 1), pageKey)}
-              aria-label="Go to previous page"
-              aria-disabled={currentPage === 1}
-              className={paginationLinkClasses({ disabled: currentPage === 1 })}
-            >
-              <ChevronLeft size={16} aria-hidden />
-              <span className="hidden sm:inline">Previous</span>
-            </Link>
+            {currentPage === 1 ? (
+              <span
+                aria-label="Go to previous page"
+                aria-disabled="true"
+                className={paginationLinkClasses({ disabled: true })}
+              >
+                <ChevronLeft size={16} aria-hidden />
+                <span className="hidden sm:inline">Previous</span>
+              </span>
+            ) : (
+              <Link
+                href={pageHref(searchParams, currentPage - 1, pageKey)}
+                aria-label="Go to previous page"
+                className={paginationLinkClasses({})}
+              >
+                <ChevronLeft size={16} aria-hidden />
+                <span className="hidden sm:inline">Previous</span>
+              </Link>
+            )}
           </li>
 
           {pages[0] > 1 ? (
@@ -167,15 +177,25 @@ export function TablePagination({
           ) : null}
 
           <li>
-            <Link
-              href={pageHref(searchParams, Math.min(totalPages, currentPage + 1), pageKey)}
-              aria-label="Go to next page"
-              aria-disabled={currentPage === totalPages}
-              className={paginationLinkClasses({ disabled: currentPage === totalPages })}
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight size={16} aria-hidden />
-            </Link>
+            {currentPage === totalPages ? (
+              <span
+                aria-label="Go to next page"
+                aria-disabled="true"
+                className={paginationLinkClasses({ disabled: true })}
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={16} aria-hidden />
+              </span>
+            ) : (
+              <Link
+                href={pageHref(searchParams, currentPage + 1, pageKey)}
+                aria-label="Go to next page"
+                className={paginationLinkClasses({})}
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={16} aria-hidden />
+              </Link>
+            )}
           </li>
         </ul>
       ) : null}

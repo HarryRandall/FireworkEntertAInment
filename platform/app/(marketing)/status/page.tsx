@@ -1,113 +1,52 @@
-/** Marketing "Status" page. */
+/** Beta service information without an unsupported live-status feed. */
 
 import type { Metadata } from 'next';
-import { CheckCircle2 } from 'lucide-react';
+import { FlaskConical, ListChecks, Mail, RadioTower } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/app/components/ui/Button';
 import { Eyebrow } from '@/app/components/ui/Badge';
 import { PageHeader } from '@/app/components/marketing/PageHeader';
 
 export const metadata: Metadata = {
-  title: 'Status · ShowCrafter',
+  title: 'Beta status · ShowCrafter',
   description:
-    'Real-time status of every ShowCrafter system — from the audio analyser to the choreography agent.',
-};
-
-type Status = 'operational' | 'degraded' | 'outage';
-
-type System = {
-  name: string;
-  description: string;
-  status: Status;
-  uptime: string;
-};
-
-const SYSTEMS: System[] = [
-  {
-    name: 'Web app',
-    description: 'showcrafter.app and the dashboard',
-    status: 'operational',
-    uptime: '99.99%',
-  },
-  {
-    name: 'Audio analyser',
-    description: 'Beat & tempo detection (librosa pipeline)',
-    status: 'operational',
-    uptime: '99.97%',
-  },
-  {
-    name: 'Choreography agent',
-    description: 'LLM cue planner & SKU mapper',
-    status: 'operational',
-    uptime: '99.92%',
-  },
-  {
-    name: 'Live preview (WebGL)',
-    description: 'Real-time 3D show rendering',
-    status: 'operational',
-    uptime: '99.95%',
-  },
-  {
-    name: 'Vendor catalogue sync',
-    description: 'ICON Pyrotechnics inventory feed',
-    status: 'operational',
-    uptime: '99.98%',
-  },
-  {
-    name: 'Authentication',
-    description: 'Login, signup, password reset',
-    status: 'operational',
-    uptime: '100.00%',
-  },
-  {
-    name: 'Storage (audio uploads)',
-    description: 'Supabase Storage',
-    status: 'operational',
-    uptime: '99.99%',
-  },
-];
-
-const INCIDENTS = [
-  {
-    date: '12 Apr 2026',
-    title: 'Brief delays in choreography agent (resolved)',
-    body: 'Between 09:14 and 09:42 AEST, agent jobs queued for an average of 22 seconds. A burst of beta traffic hit our autoscaler before it could spin up new workers. Full service restored.',
-  },
-  {
-    date: '28 Mar 2026',
-    title: 'Vendor catalogue sync paused (resolved)',
-    body: "ICON's inventory API was down for scheduled maintenance from 02:00 to 04:00 AEST. Catalogue browsing fell back to last-known-good data; no shows were affected.",
-  },
-];
-
-const STATUS_TONE: Record<Status, { label: string; dot: string; text: string }> = {
-  operational: {
-    label: 'Operational',
-    dot: 'bg-[color:var(--color-success)]',
-    text: 'text-[color:var(--color-success)]',
-  },
-  degraded: {
-    label: 'Degraded',
-    dot: 'bg-primary',
-    text: 'text-primary',
-  },
-  outage: {
-    label: 'Outage',
-    dot: 'bg-[color:var(--color-danger)]',
-    text: 'text-[color:var(--color-danger)]',
+    'Beta service information for ShowCrafter. This page does not publish live uptime or incident monitoring.',
+  robots: {
+    index: false,
+    follow: false,
   },
 };
+
+const BETA_INFORMATION = [
+  {
+    icon: ListChecks,
+    title: 'Beta scope',
+    description:
+      'The beta covers catalogue browsing, music analysis, cue generation, 3D previews and shopping-list workflows.',
+  },
+  {
+    icon: RadioTower,
+    title: 'Status reporting',
+    description:
+      'This page is not connected to live monitoring. It does not publish uptime, component health or an incident history.',
+  },
+  {
+    icon: Mail,
+    title: 'Report a problem',
+    description:
+      'If you already have a project contact channel, include the page, approximate time and visible error when reporting a blocked workflow.',
+  },
+] as const;
 
 export default function StatusPage() {
-  const allOk = SYSTEMS.every((s) => s.status === 'operational');
-
   return (
     <>
       <PageHeader
-        eyebrow="System status"
-        title={allOk ? 'All systems' : 'Some systems affected'}
-        highlight={allOk ? 'operational.' : undefined}
-        subtitle="Real-time status of every component of the ShowCrafter platform. Updated every 60 seconds."
+        eyebrow="Beta service information"
+        title="ShowCrafter is in"
+        highlight="beta."
+        subtitle="This page explains the current service model. It is not a live monitoring dashboard and does not claim that individual systems are operational."
       />
 
       <section className="py-24">
@@ -115,79 +54,57 @@ export default function StatusPage() {
           <div className="mx-auto max-w-4xl">
             <Card
               radius="lg"
-              elevation={allOk ? 'high' : 'low'}
-              className={`flex items-center gap-4 p-6 ${
-                allOk
-                  ? 'border-[color:var(--color-success)]/30 ring-1 ring-[color:var(--color-success)]/20'
-                  : ''
-              }`}
+              shadow
+              className="border-primary/25 ring-primary/15 flex items-start gap-4 p-6 ring-1 md:p-8"
             >
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] text-[color:var(--color-success)]">
-                <CheckCircle2 size={24} strokeWidth={1.75} />
+              <div className="bg-primary/15 text-primary inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
+                <FlaskConical aria-hidden="true" size={24} strokeWidth={1.75} />
               </div>
-              <div className="flex-grow">
-                <h2 className="text-on-surface text-base font-bold">
-                  {allOk ? 'Everything is humming along.' : "We're investigating an issue."}
+              <div>
+                <Eyebrow>Beta notice</Eyebrow>
+                <h2 className="text-on-surface mt-2 text-xl font-bold tracking-tight text-balance md:text-2xl">
+                  Features and availability can change during testing.
                 </h2>
-                <p className="text-on-surface-variant text-sm">
-                  Last checked{' '}
-                  {new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}{' '}
-                  AEST
+                <p className="text-on-surface-variant mt-3 max-w-2xl text-sm leading-relaxed md:text-base">
+                  ShowCrafter is still being developed with its project stakeholders. Treat this
+                  page as product information, not as evidence of current service health.
                 </p>
               </div>
             </Card>
 
             <div className="mt-12">
-              <Eyebrow>Components</Eyebrow>
-              <div className="divide-outline-variant/15 border-outline-variant/15 bg-surface-container-low mt-4 divide-y overflow-hidden rounded-2xl border">
-                {SYSTEMS.map((system) => {
-                  const tone = STATUS_TONE[system.status];
+              <Eyebrow>What this page covers</Eyebrow>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                {BETA_INFORMATION.map((item) => {
+                  const Icon = item.icon;
                   return (
-                    <div
-                      key={system.name}
-                      className="flex flex-col gap-2 p-5 md:flex-row md:items-center md:justify-between"
-                    >
-                      <div>
-                        <div className="text-on-surface text-base font-bold tracking-tight">
-                          {system.name}
-                        </div>
-                        <div className="text-on-surface-variant text-sm">{system.description}</div>
+                    <Card key={item.title} radius="lg" className="p-6">
+                      <div className="bg-surface-container-highest text-primary inline-flex h-10 w-10 items-center justify-center rounded-full">
+                        <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-on-surface-variant font-mono text-xs tracking-widest uppercase">
-                          {system.uptime} · 90d
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase ${tone.text}`}
-                        >
-                          <span className={`inline-block h-2 w-2 rounded-full ${tone.dot}`} />
-                          {tone.label}
-                        </span>
-                      </div>
-                    </div>
+                      <h2 className="text-on-surface mt-5 text-base font-bold tracking-tight">
+                        {item.title}
+                      </h2>
+                      <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                        {item.description}
+                      </p>
+                    </Card>
                   );
                 })}
               </div>
             </div>
 
-            <div className="mt-16">
-              <Eyebrow>Past incidents</Eyebrow>
-              <h2 className="text-on-surface mt-3 text-2xl font-bold tracking-tight md:text-3xl">
-                Recent history.
-              </h2>
-              <div className="mt-8 space-y-4">
-                {INCIDENTS.map((incident) => (
-                  <Card key={incident.title} radius="md" className="p-6">
-                    <div className="text-on-surface-variant text-xs tracking-widest uppercase">
-                      {incident.date}
-                    </div>
-                    <h3 className="text-on-surface mt-1.5 text-base font-bold">{incident.title}</h3>
-                    <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-                      {incident.body}
-                    </p>
-                  </Card>
-                ))}
+            <div className="border-outline-variant/20 bg-surface-container-low mt-12 flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-on-surface text-base font-bold">Something not working?</h2>
+                <p className="text-on-surface-variant mt-1 text-sm">
+                  Check the current channel status and include enough context to reproduce the
+                  blocked workflow when a channel is available.
+                </p>
               </div>
+              <Button href="/contact" variant="secondary" size="sm">
+                Contact information
+              </Button>
             </div>
           </div>
         </Container>

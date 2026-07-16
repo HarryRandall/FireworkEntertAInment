@@ -75,6 +75,11 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.match(actions, /Model JSON must be an object/);
   assert.match(actions, /CUSTOM_STAR_EFFECT_MODEL/);
   assert.match(actions, /canonicaliseEffectModelJson/);
+  assert.match(actions, /fireworkDesignFragmentError/);
+  assert.match(
+    actions,
+    /function parseModelJson[\s\S]*canonicaliseEffectModelJson\(parsed\)[\s\S]*fireworkDesignFragmentError\(canonical\.renderDefaults\)/,
+  );
   assert.match(actions, /recordEffectVersion/);
   assert.match(actions, /firework_editor_versions/);
   assert.doesNotMatch(actions, /hasEffectVersionHistory/);
@@ -87,15 +92,34 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.doesNotMatch(updateBody, /star_style_default_id|trail_style_default_id/);
   assert.doesNotMatch(updateBody, /type: parsed\.data\.type/);
   assert.match(updateBody, /recordEffectVersion/);
+  assert.match(updateBody, /historyVersionId: parsed\.data\.historyVersionId/);
+  assert.match(updateBody, /const historyRecorded = await recordEffectVersion/);
+  assert.match(updateBody, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
+  assert.ok(
+    updateBody.indexOf('await recordEffectVersion') <
+      updateBody.indexOf('invalidateAdminEffectsCache'),
+    'effect history must be observed before its caches are invalidated',
+  );
   assert.match(updateBody, /action: 'update'/);
   assert.match(restoreBody, /parseEffectEditorSnapshot/);
+  assert.match(restoreBody, /fireworkDesignFragmentError\(restoredModel\.renderDefaults\)/);
   assert.doesNotMatch(restoreBody, /replaceEffectStyleDefaultLinks/);
   assert.doesNotMatch(restoreBody, /star_style_default_id|trail_style_default_id/);
   assert.match(restoreBody, /action: 'restore'/);
+  assert.match(restoreBody, /historyVersionId: parsed\.data\.historyVersionId/);
+  assert.match(restoreBody, /const historyRecorded = await recordEffectVersion/);
+  assert.match(restoreBody, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
+  assert.ok(
+    restoreBody.indexOf('await recordEffectVersion') <
+      restoreBody.indexOf('invalidateAdminEffectsCache'),
+    'effect restore history must be observed before its caches are invalidated',
+  );
   assert.match(restoreBody, /Restored version from/);
   assert.match(updateBody, /invalidateAdminEffectsCache\(parsed\.data\.id\)/);
   assert.match(updateBody, /invalidateAdminFireworksCache\(\)/);
+  assert.match(updateBody, /invalidateAdminMultishotsCache\(\)/);
   assert.match(updateBody, /invalidateFireworkCatalogueCaches\(\)/);
+  assert.match(updateBody, /revalidatePath\('\/admin\/multishots'\)/);
   assert.match(createBody, /\.from\('firework_effects'\)/);
   assert.match(createBody, /\.insert\(\{/);
   assert.match(createBody, /slug = `custom-star-\$\{Date\.now\(\)\.toString\(36\)\}`/);
@@ -105,6 +129,7 @@ test('base effect edits validate model JSON and use conflict detection', () => {
   assert.doesNotMatch(createBody, /type,/);
   assert.match(createBody, /redirect\(`\/admin\/effects\/\$\{data\.id\}`\)/);
   assert.doesNotMatch(updateBody, /effect_specs|spec_json|FireworkSpecSchema/);
+  assert.doesNotMatch(actions, /from 'next\/server'|\bafter\(|confirmEffectEditorVersions/);
 });
 
 test('base effect classification column is removed from schema and migrations', () => {
@@ -137,6 +162,7 @@ test('firework edits use conflict detection and immutable version history', () =
   assert.match(actions, /expectedUpdatedAt/);
   assert.match(actions, /recordFireworkVersion/);
   assert.match(actions, /firework_editor_versions/);
+  assert.match(actions, /function parseJsonObject[\s\S]*fireworkDesignFragmentError\(parsed\)/);
   assert.doesNotMatch(actions, /hasFireworkVersionHistory/);
   assert.doesNotMatch(actions, /Current version before editor changes/);
   assert.doesNotMatch(actions, /filterValidStyleDefaultAssignments/);
@@ -146,23 +172,44 @@ test('firework edits use conflict detection and immutable version history', () =
   assert.doesNotMatch(updateBody, /star_style_default_id|trail_style_default_id/);
   assert.match(updateBody, /recordFireworkVersion/);
   assert.match(updateBody, /historyVersion/);
+  assert.match(updateBody, /historyVersionId: parsed\.data\.historyVersionId/);
+  assert.match(updateBody, /const historyRecorded = await recordFireworkVersion/);
+  assert.match(updateBody, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
+  assert.ok(
+    updateBody.indexOf('await recordFireworkVersion') < updateBody.indexOf('await refresh'),
+    'firework history must be observed before its caches are invalidated',
+  );
   assert.match(updateBody, /action: 'update'/);
   assert.match(updateBody, /This firework changed in another session/);
   assert.match(restoreBody, /parseFireworkEditorSnapshot/);
+  assert.match(restoreBody, /fireworkDesignFragmentError\(snapshot\.renderOverridesJson\)/);
   assert.doesNotMatch(restoreBody, /replaceFireworkStyleDefaultLinks/);
   assert.doesNotMatch(restoreBody, /star_style_default_id|trail_style_default_id/);
   assert.match(restoreBody, /action: 'restore'/);
+  assert.match(restoreBody, /historyVersionId: parsed\.data\.historyVersionId/);
+  assert.match(restoreBody, /const historyRecorded = await recordFireworkVersion/);
+  assert.match(restoreBody, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
+  assert.ok(
+    restoreBody.indexOf('await recordFireworkVersion') < restoreBody.indexOf('await refresh'),
+    'firework restore history must be observed before its caches are invalidated',
+  );
   assert.match(restoreBody, /Restored version from/);
   assert.match(restoreBody, /refresh\(parsed\.data\.fireworkId\)/);
+  assert.doesNotMatch(actions, /from 'next\/server'|\bafter\(|confirmFireworkEditorVersions/);
 });
 
 test('editor version history migration is permission-gated and typed', () => {
   const migration = read('supabase/migrations/20260622035601_admin-editor-version-history.sql');
+  const styleDefaultMigration = read(
+    'supabase/migrations/20260715032141_add_style_default_editor_version_history.sql',
+  );
   const types = read('lib/database.types.ts');
   const adminTypes = read('lib/admin.types.ts');
   const effectsServer = read('lib/admin/effects.server.ts');
   const fireworksServer = read('lib/admin/fireworks.server.ts');
+  const styleDefaultsServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
+  const styleDefaultSchema = read('lib/admin/style-default-schema.ts');
 
   assert.match(migration, /create table if not exists public\.firework_editor_versions/);
   assert.match(migration, /target_kind text not null/);
@@ -185,19 +232,62 @@ test('editor version history migration is permission-gated and typed', () => {
   assert.match(migration, /firework_editor_versions_admin_insert/);
   assert.match(migration, /public\.current_user_has_permission\('admin\.manage_catalogue'\)/);
   assert.doesNotMatch(migration, /for update|for delete/);
+  assert.match(styleDefaultMigration, /add column firework_style_default_id uuid/);
+  assert.match(
+    styleDefaultMigration,
+    /references public\.firework_style_defaults\(id\) on delete cascade/,
+  );
+  assert.match(
+    styleDefaultMigration,
+    /check \(target_kind in \('firework', 'effect', 'style_default'\)\)/,
+  );
+  assert.match(styleDefaultMigration, /target_kind = 'style_default'/);
+  assert.match(styleDefaultMigration, /firework_editor_versions_style_default_created_at_idx/);
 
   assert.match(types, /firework_editor_versions: \{/);
   assert.match(types, /snapshot_json: Json/);
   assert.match(types, /previous_snapshot_json: Json \| null/);
   assert.match(types, /foreignKeyName: "firework_editor_versions_firework_id_fkey"/);
   assert.match(types, /foreignKeyName: "firework_editor_versions_firework_effect_id_fkey"/);
+  assert.match(types, /foreignKeyName: "firework_editor_versions_firework_style_default_id_fkey"/);
+  assert.match(
+    adminTypes,
+    /AdminEditorVersionTargetKind = 'firework' \| 'effect' \| 'style_default'/,
+  );
   assert.match(adminTypes, /export type AdminEditorVersion/);
+  assert.match(adminTypes, /fireworkStyleDefaultId: string \| null/);
   assert.match(adminTypes, /history: AdminEditorVersion\[\]/);
   assert.match(effectsServer, /listEffectEditorVersions/);
   assert.match(fireworksServer, /listFireworkEditorVersions/);
+  assert.match(styleDefaultsServer, /listStyleDefaultEditorVersions/);
+  assert.match(
+    styleDefaultsServer,
+    /history: await listStyleDefaultEditorVersions\(supabase, defaultId\)/,
+  );
+  assert.match(effectsServer, /type CachedAdminEffectDetail = Omit<AdminEffectDetail, 'history'>/);
+  assert.match(
+    fireworksServer,
+    /type CachedAdminFireworkDetail = Omit<AdminFireworkDetail, 'history'>/,
+  );
+  assert.match(effectsServer, /history: await listEffectEditorVersions\(supabase, effectId\)/);
+  assert.match(
+    fireworksServer,
+    /history: await listFireworkEditorVersions\(supabase, fireworkId\)/,
+  );
   assert.match(editorVersions, /isSyntheticCurrentVersion/);
   assert.match(editorVersions, /row\.changes_json\.currentVersion === true/);
   assert.match(editorVersions, /\.filter\(\(row\) => !isSyntheticCurrentVersion\(row\)\)/);
+  assert.match(editorVersions, /listStyleDefaultEditorVersions/);
+  assert.match(editorVersions, /\.eq\('firework_style_default_id', styleDefaultId\)/);
+  assert.match(editorVersions, /function throwHistoryReadError\(/);
+  assert.match(editorVersions, /const LEGACY_EDITOR_VERSION_SELECT/);
+  assert.match(editorVersions, /isMissingStyleDefaultEditorVersionColumnError/);
+  assert.match(editorVersions, /listFireworkEditorVersionsLegacy/);
+  assert.match(editorVersions, /listEffectEditorVersionsLegacy/);
+  assert.match(editorVersions, /fireworkStyleDefaultId: row\.firework_style_default_id \?\? null/);
+  assert.match(styleDefaultSchema, /isMissingEditorVersionTableError/);
+  assert.match(styleDefaultSchema, /isMissingStyleDefaultEditorVersionColumnError/);
+  assert.match(styleDefaultSchema, /includes\('firework_style_default_id'\)/);
 });
 
 test('admin effects UI is wired to base effect fields', () => {
@@ -243,7 +333,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(editor, /controlScope="starInner"/);
   assert.match(editor, /id: 'trail'/);
   assert.match(editor, /controlScope="trail"/);
-  assert.match(editor, /supportsGeometryTuningControls/);
+  assert.match(editor, /renderStyleDefaultControls\('geometry'\)/);
   assert.match(editor, /controlScope="geometry"/);
   assert.match(editor, /id: 'history'/);
   assert.match(editor, /id: 'json'/);
@@ -353,8 +443,12 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /axis: colour\.colourAxis/);
   assert.match(fireworkEditor, /count: clampStarPatternCount\(colour\.validColourStops\.length\)/);
   assert.match(fireworkEditor, /weight: stop\.share/);
-  assert.match(fireworkEditor, /delete core\.color/);
-  assert.match(fireworkEditor, /delete core\.colourPattern/);
+  assert.doesNotMatch(fireworkEditor, /delete core\.color/);
+  assert.doesNotMatch(fireworkEditor, /delete core\.colourPattern/);
+  assert.match(
+    fireworkEditor,
+    /mutate=\{\(updater\) => mutateOverridesForStyle\('star', updater\)\}[\s\S]*?controlScope="starInner"/,
+  );
   assert.match(fireworkEditor, /FireworkEditorShell/);
   assert.match(fireworkEditor, /EditorPreviewTransport/);
   assert.match(fireworkEditor, /cameraMenuActions=\{previewMenuActions\}/);
@@ -371,7 +465,7 @@ test('admin effects UI is wired to base effect fields', () => {
   assert.match(fireworkEditor, /controlScope="starInner"/);
   assert.match(fireworkEditor, /id: 'trail'/);
   assert.match(fireworkEditor, /controlScope="trail"/);
-  assert.match(fireworkEditor, /supportsGeometryTuningControls/);
+  assert.match(fireworkEditor, /renderStyleDefaultControls\('geometry'\)/);
   assert.match(fireworkEditor, /controlScope="geometry"/);
   assert.match(fireworkEditor, /id: 'launch-dot'/);
   assert.match(fireworkEditor, /controlScope="launchShell"/);
@@ -545,6 +639,9 @@ test('catalogue and import mutations invalidate new admin firework caches', () =
 
   assert.match(catalogue, /invalidateAdminEffectsCache/);
   assert.match(catalogue, /invalidateAdminFireworksCache/);
-  assert.match(imports, /invalidateAdminEffectsCache\(baseEffect\.id\)/);
-  assert.match(imports, /invalidateAdminFireworksCache\(variant\.id\)/);
+  assert.match(
+    imports,
+    /approval\.firework_ids\.map\(\(fireworkId\) => invalidateAdminFireworksCache\(fireworkId\)\)/,
+  );
+  assert.match(imports, /\.map\(\(effectId\) => invalidateAdminEffectsCache\(effectId\)\)/);
 });

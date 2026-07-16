@@ -1,39 +1,39 @@
 'use client';
 
-/** Client tab navigation linking the preview, song context, show-guide and shopping-list sub-routes for a show. */
+/** Client navigation linking the four show workspace sections. */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { SHOW_DETAIL_SECTIONS } from './show-detail-sections';
 
-type Props = { id: string };
+type Props = {
+  id: string;
+  prefetch?: boolean;
+};
 
-export function ShowTabs({ id }: Props) {
+export function ShowTabs({ id, prefetch = true }: Props) {
   const pathname = usePathname();
-  const tabs = [
-    { href: `/shows/${id}/preview`, label: 'Live preview' },
-    { href: `/shows/${id}/shopping-list`, label: 'Shopping list' },
-    { href: `/shows/${id}/show-guide`, label: 'Show guide' },
-    { href: `/shows/${id}/timeline`, label: 'Song context' },
-  ];
 
   return (
-    <nav className="flex flex-wrap items-center gap-x-8 gap-y-2">
-      {tabs.map((tab) => {
-        const active = pathname === tab.href;
+    <nav aria-label="Show sections" className="flex flex-wrap items-center gap-1.5">
+      {SHOW_DETAIL_SECTIONS.map((section) => {
+        const href = `/shows/${id}/${section.segment}`;
+        const active = pathname === href;
         return (
           <Link
-            key={tab.href}
-            href={tab.href}
-            prefetch
+            key={section.segment}
+            href={href}
+            prefetch={prefetch}
+            aria-current={active ? 'page' : undefined}
             className={cn(
-              'pb-4 text-sm font-medium transition-colors',
+              'focus-visible:ring-ring/50 inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-[color,background-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 focus-visible:ring-offset-2 active:scale-[0.98]',
               active
-                ? 'border-primary text-primary border-b-2 font-semibold'
-                : 'text-on-surface-variant hover:text-on-surface border-b-2 border-transparent',
+                ? 'text-foreground bg-[color:var(--accent)] font-semibold shadow-sm ring-1 ring-[color:var(--color-border-subtle)] ring-inset'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-[color:color-mix(in_srgb,var(--accent)_55%,transparent)]',
             )}
           >
-            {tab.label}
+            {section.label}
           </Link>
         );
       })}

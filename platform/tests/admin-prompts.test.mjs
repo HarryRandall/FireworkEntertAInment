@@ -17,6 +17,10 @@ test('admin prompt route and navigation are present', () => {
     join(root, 'app/(admin)/admin/prompts/ProductCatalogueFieldsControl.tsx'),
     'utf8',
   );
+  const promptForm = readFileSync(
+    join(root, 'app/(admin)/admin/prompts/PromptConfigForm.tsx'),
+    'utf8',
+  );
   const shell = readFileSync(join(root, 'app/components/admin/AdminShell.tsx'), 'utf8');
   assert.match(page, /PromptTabs/);
   assert.match(page, /Suspense/);
@@ -24,6 +28,8 @@ test('admin prompt route and navigation are present', () => {
   assert.match(page, /getAdminPromptControlData/);
   assert.match(page, /\/admin\/prompts\?tab=\$\{tab\.key\}/);
   assert.match(page, /GenerationModeControl/);
+  assert.match(page, /PromptConfigForm/);
+  assert.match(page, /PromptSaveButton/);
   assert.match(page, /ProductCatalogueFieldsControl/);
   assert.match(page, /Show prompt/);
   assert.match(page, /Product context/);
@@ -32,6 +38,15 @@ test('admin prompt route and navigation are present', () => {
   assert.match(page, /fieldName === 'productContextText'/);
   assert.match(productFieldsDialog, /Catalogue fields/);
   assert.match(productFieldsDialog, /PRODUCT_CATALOGUE_FIELD_KEYS/);
+  assert.match(productFieldsDialog, /resetVersion/);
+  assert.match(promptForm, /useActionState\(updatePromptConfigAction, INITIAL_STATE\)/);
+  assert.match(promptForm, /action=\{formAction\}/);
+  assert.match(promptForm, /event\.preventDefault\(\)/);
+  assert.match(promptForm, /startTransition\(\(\) => formAction\(formData\)\)/);
+  assert.match(promptForm, /<fieldset disabled=\{isPending\}/);
+  assert.match(promptForm, /aria-busy=\{isPending \|\| undefined\}/);
+  assert.match(promptForm, /<InlineAlert/);
+  assert.match(promptForm, /loading=\{isPending\}/);
   assert.match(shell, /\/admin\/prompts/);
   assert.match(shell, /MessageSquareText/);
 });
@@ -99,11 +114,15 @@ test('admin prompt action is RBAC gated and invalidates prompt cache', () => {
   const cacheKeys = readFileSync(join(root, 'lib/admin/cache-keys.ts'), 'utf8');
 
   assert.match(action, /requirePermission\('admin\.manage_prompts'\)/);
-  assert.match(action, /\.from\('prompt_configs'\)/);
+  assert.match(action, /\.rpc\('update_prompt_config_atomically', update\)/);
   assert.match(action, /updateShowGenerationModeAction/);
-  assert.match(action, /\.from\('generation_settings'\)\.upsert/);
-  assert.match(action, /product_catalogue_fields/);
+  assert.match(action, /\.rpc\('update_show_generation_mode'/);
+  assert.doesNotMatch(action, /\.from\('prompt_configs'\)/);
+  assert.doesNotMatch(action, /\.from\('generation_settings'\)/);
+  assert.match(action, /p_product_catalogue_fields/);
   assert.match(action, /asProductCatalogueFields/);
+  assert.match(action, /data !== true/);
+  assert.match(action, /PromptConfigActionState/);
   assert.match(action, /invalidateAdminPromptConfigsCache/);
   assert.match(action, /revalidatePath\('\/admin\/prompts'\)/);
   assert.match(helpers, /listAdminPromptConfigs/);
@@ -115,13 +134,80 @@ test('admin prompt action is RBAC gated and invalidates prompt cache', () => {
   assert.match(cacheKeys, /getAdminGenerationSettingsCacheKey/);
 });
 
-test('firework import worker fetches saved reconstruction prompt with fallback', () => {
+test('prompt writes are transactional and unavailable through direct table DML', () => {
+  const migration = readFileSync(
+    join(root, 'supabase/migrations/20260715075053_update_prompt_config_atomically.sql'),
+    'utf8',
+  );
+
+  assert.match(
+    migration,
+    /create policy prompt_configs_admin_read[\s\S]*?for select to authenticated/,
+  );
+  assert.match(
+    migration,
+    /create policy generation_settings_admin_read[\s\S]*?for select to authenticated/,
+  );
+  assert.equal((migration.match(/current_user_is_active\(\)/g) ?? []).length >= 4, true);
+  assert.match(
+    migration,
+    /revoke all privileges on table public\.prompt_configs from authenticated/,
+  );
+  assert.match(
+    migration,
+    /revoke all privileges on table public\.generation_settings from authenticated/,
+  );
+  assert.match(
+    migration,
+    /grant select on table public\.prompt_configs, public\.generation_settings to authenticated/,
+  );
+
+  const promptFunction = migration.slice(
+    migration.indexOf('create or replace function public.update_prompt_config_atomically'),
+    migration.indexOf('create or replace function public.update_show_generation_mode'),
+  );
+  assert.match(promptFunction, /security definer/);
+  assert.match(promptFunction, /set search_path = ''/);
+  assert.match(promptFunction, /p_key is null/);
+  assert.match(
+    promptFunction,
+    /jsonb_typeof\(p_product_catalogue_fields\) is distinct from 'array'/,
+  );
+  assert.ok(
+    promptFunction.indexOf("jsonb_typeof(p_product_catalogue_fields) is distinct from 'array'") <
+      promptFunction.indexOf('jsonb_array_length(p_product_catalogue_fields)'),
+  );
+  assert.match(
+    promptFunction,
+    /update public\.prompt_configs[\s\S]*?update public\.generation_settings/,
+  );
+  assert.match(promptFunction, /Show generation settings were not found/);
+  assert.match(
+    promptFunction,
+    /revoke execute on function public\.update_prompt_config_atomically[\s\S]*?from public, anon, authenticated, service_role/,
+  );
+  assert.match(promptFunction, /grant execute on function[\s\S]*?to authenticated/);
+
+  const modeFunction = migration.slice(
+    migration.indexOf('create or replace function public.update_show_generation_mode'),
+  );
+  assert.match(modeFunction, /security definer/);
+  assert.match(modeFunction, /p_generation_mode not in \('fast', 'llm'\)/);
+  assert.doesNotMatch(modeFunction, /on conflict/);
+  assert.match(modeFunction, /Show generation settings were not found/);
+  assert.match(modeFunction, /grant execute on function[\s\S]*?to authenticated/);
+});
+
+test('firework import worker layers saved guidance over its immutable reconstruction contract', () => {
   const worker = readFileSync(join(repoRoot, 'workers/firework-import-worker/worker.py'), 'utf8');
 
   assert.match(worker, /PROMPT_CONFIGS_TABLE = "prompt_configs"/);
   assert.match(worker, /def fetch_prompt_config/);
   assert.match(worker, /\.eq\("key", key\)/);
-  assert.match(worker, /prompt config fallback/);
+  assert.match(worker, /\.eq\("is_active", True\)/);
+  assert.match(worker, /def effective_reconstruction_system_prompt/);
+  assert.match(worker, /system_prompt = DEFAULT_RECONSTRUCTION_SYSTEM_PROMPT/);
+  assert.match(worker, /admin-authored guidance is subordinate to the strict API schema/);
   assert.match(worker, /"firework_video_reconstruction"/);
   assert.match(worker, /reconstruction_prompt/);
   assert.match(worker, /if isinstance\(reconstruction_prompt, str\)/);

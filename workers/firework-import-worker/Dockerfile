@@ -6,9 +6,11 @@ RUN apt-get update \
 
 WORKDIR /worker
 
-COPY requirements.txt .
+COPY requirements.txt smoke_playwright.py ./
 RUN pip install --no-cache-dir -r requirements.txt
+RUN playwright install --with-deps chromium \
+  && python smoke_playwright.py
 
-COPY worker.py .
+COPY worker.py media_analysis.py reconstruction.py engine_validation.py ./
 
 CMD ["python", "worker.py"]

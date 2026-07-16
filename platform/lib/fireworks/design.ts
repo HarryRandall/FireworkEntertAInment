@@ -158,6 +158,8 @@ export const FIREWORK_GEOMETRIES = [
   'single_tail',
   'upward_fan',
   'fragment_cloud',
+  'heart',
+  'five_point_star',
   'pistil',
   'pearls',
   'fish',
@@ -195,6 +197,10 @@ export const BURST_TRAIL_PRESETS = [
   'willowHang',
   'cometTail',
   'denseBrocade',
+  'silverRain',
+  'ghostFade',
+  'dragonEgg',
+  'titaniumFlash',
   'custom',
 ] as const;
 export type BurstTrailPreset = (typeof BURST_TRAIL_PRESETS)[number];
@@ -209,6 +215,8 @@ export const BURST_TRAIL_MAX_STOPS = 5;
 export const BURST_TRAIL_PARTICLES_PER_STAR_MAX = 2000;
 export const BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX = 10;
 export const BURST_TRAIL_FLICKER_LIFE_MAX = 0.5;
+export const STAR_AIR_RESISTANCE_PERCENT_MAX = 300;
+export const STAR_TERMINAL_VELOCITY_MAX = 18;
 export const BURST_TRAIL_FADE_MODES = ['dynamic', 'fixed'] as const;
 export type BurstTrailFadeMode = (typeof BURST_TRAIL_FADE_MODES)[number];
 
@@ -240,7 +248,19 @@ const ColorSchema = z.union([RgbSchema, z.literal('random')]);
 const MAX_STAR_COUNT = 100;
 export const DEFAULT_LAUNCH_SMOKE_COLOR = { r: 0.15, g: 0.15, b: 0.16 } as const;
 
-const RangeSchema = z.tuple([z.coerce.number(), z.coerce.number()]);
+function orderedRangeSchema(min: number, max: number) {
+  return z
+    .tuple([z.coerce.number().min(min).max(max), z.coerce.number().min(min).max(max)])
+    .transform(
+      ([first, second]) =>
+        (first <= second ? [first, second] : [second, first]) as [number, number],
+    );
+}
+
+const StarSpeedRangeSchema = orderedRangeSchema(0, 20);
+const StarGravityRangeSchema = orderedRangeSchema(-2, 1);
+const StarLifeRangeSchema = orderedRangeSchema(0.05, 30);
+const StarFlairSizeRangeSchema = orderedRangeSchema(0, 1000);
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
@@ -471,19 +491,35 @@ const LaunchSchema = z
       .object({
         enabled: z.boolean().default(true),
         particles: z.coerce.number().int().min(0).max(500).default(100),
+        colour: RgbSchema.default(DEFAULT_LAUNCH_SMOKE_COLOR),
+        opacity: z.coerce.number().min(0).max(1).default(0.72),
         size: z.coerce.number().min(4).max(220).default(86),
+        sizeVariationPercent: z.coerce.number().min(0).max(100).default(48),
         lifeSeconds: z.coerce.number().min(0.2).max(12).default(3.2),
+        lifeVariationPercent: z.coerce.number().min(0).max(100).default(40),
+        expansionPerSecond: z.coerce.number().min(-120).max(240).default(16),
         spread: z.coerce.number().min(0).max(140).default(30),
         drift: z.coerce.number().min(0).max(4).default(1),
+        windX: z.coerce.number().min(-4).max(4).default(0),
+        windZ: z.coerce.number().min(-4).max(4).default(0),
+        turbulence: z.coerce.number().min(0).max(4).default(0.4),
         height: z.coerce.number().min(0).max(900).default(360),
       })
       .default({
         enabled: true,
         particles: 100,
+        colour: DEFAULT_LAUNCH_SMOKE_COLOR,
+        opacity: 0.72,
         size: 86,
+        sizeVariationPercent: 48,
         lifeSeconds: 3.2,
+        lifeVariationPercent: 40,
+        expansionPerSecond: 16,
         spread: 30,
         drift: 1,
+        windX: 0,
+        windZ: 0,
+        turbulence: 0.4,
         height: 360,
       }),
   })
@@ -528,10 +564,18 @@ const LaunchSchema = z
     smoke: {
       enabled: true,
       particles: 100,
+      colour: DEFAULT_LAUNCH_SMOKE_COLOR,
+      opacity: 0.72,
       size: 86,
+      sizeVariationPercent: 48,
       lifeSeconds: 3.2,
+      lifeVariationPercent: 40,
+      expansionPerSecond: 16,
       spread: 30,
       drift: 1,
+      windX: 0,
+      windZ: 0,
+      turbulence: 0.4,
       height: 360,
     },
   });
@@ -692,16 +736,28 @@ const BurstTrailSchema = z
 
 const StarBurstSchema = z
   .object({
-    speed: RangeSchema.default([2, 4]),
-    gravity: RangeSchema.default([-0.24, -0.02]),
-    life: RangeSchema.default([0.5, 6.5]),
-    flairSizeStrobe: RangeSchema.optional(),
+    speed: StarSpeedRangeSchema.default([2, 4]),
+    gravity: StarGravityRangeSchema.default([-0.24, -0.02]),
+    life: StarLifeRangeSchema.default([0.5, 6.5]),
+    airResistancePercent: z.coerce
+      .number()
+      .min(0)
+      .max(STAR_AIR_RESISTANCE_PERCENT_MAX)
+      .default(100),
+    terminalVelocity: z.coerce
+      .number()
+      .min(0)
+      .max(STAR_TERMINAL_VELOCITY_MAX)
+      .default(STAR_TERMINAL_VELOCITY_MAX),
+    flairSizeStrobe: StarFlairSizeRangeSchema.optional(),
     flairColorMode: z.enum(['bombColor', 'random', 'mixed']).default('mixed'),
   })
   .default({
     speed: [2, 4],
     gravity: [-0.24, -0.02],
     life: [0.5, 6.5],
+    airResistancePercent: 100,
+    terminalVelocity: STAR_TERMINAL_VELOCITY_MAX,
     flairColorMode: 'mixed',
   });
 
@@ -895,6 +951,8 @@ const StarLayerSchema = z
       speed: [2, 4],
       gravity: [-0.24, -0.02],
       life: [0.5, 6.5],
+      airResistancePercent: 100,
+      terminalVelocity: STAR_TERMINAL_VELOCITY_MAX,
       flairColorMode: 'mixed',
     },
     head: {
@@ -1003,6 +1061,26 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     dragPercent: 135,
   },
   fragmentCloud: { countPercent: 90, speedBase: 0.72, speedVariation: 0.78 },
+  heart: {
+    countPercent: 88,
+    scaleX: 1,
+    scaleY: 1,
+    depthScale: 0.08,
+    outlineJitter: 0.035,
+    tiltVariation: 0.45,
+    rotationDegrees: 0,
+  },
+  fivePointStar: {
+    countPercent: 86,
+    points: 5,
+    innerRadius: 0.44,
+    scaleX: 1,
+    scaleY: 1,
+    depthScale: 0.08,
+    outlineJitter: 0.035,
+    tiltVariation: 0.45,
+    rotationDegrees: -90,
+  },
   bowtie: {
     countPercent: 82,
     fanAngleDegrees: 111.6,
@@ -1218,6 +1296,32 @@ const GeometryTuningSchema = z
         speedVariation: z.coerce.number().min(0).max(2).default(0.78),
       })
       .default(GEOMETRY_TUNING_DEFAULTS.fragmentCloud),
+    /** Heart outline: a planar parametric heart with editable thickness and orientation. */
+    heart: z
+      .object({
+        countPercent: percent(88, 1, 100),
+        scaleX: z.coerce.number().min(0.2).max(2.5).default(1),
+        scaleY: z.coerce.number().min(0.2).max(2.5).default(1),
+        depthScale: z.coerce.number().min(0).max(1).default(0.08),
+        outlineJitter: z.coerce.number().min(0).max(0.4).default(0.035),
+        tiltVariation: z.coerce.number().min(0).max(3).default(0.45),
+        rotationDegrees: z.coerce.number().min(-180).max(180).default(0),
+      })
+      .default(GEOMETRY_TUNING_DEFAULTS.heart),
+    /** Outlined star polygon. Five points by default, with editable point count. */
+    fivePointStar: z
+      .object({
+        countPercent: percent(86, 1, 100),
+        points: z.coerce.number().int().min(3).max(12).default(5),
+        innerRadius: z.coerce.number().min(0.08).max(0.95).default(0.44),
+        scaleX: z.coerce.number().min(0.2).max(2.5).default(1),
+        scaleY: z.coerce.number().min(0.2).max(2.5).default(1),
+        depthScale: z.coerce.number().min(0).max(1).default(0.08),
+        outlineJitter: z.coerce.number().min(0).max(0.4).default(0.035),
+        tiltVariation: z.coerce.number().min(0).max(3).default(0.45),
+        rotationDegrees: z.coerce.number().min(-180).max(180).default(-90),
+      })
+      .default(GEOMETRY_TUNING_DEFAULTS.fivePointStar),
     /** Bow tie: two opposed fans fired in a flat plane. */
     bowtie: z
       .object({
@@ -1411,255 +1515,301 @@ const GeometryTuningSchema = z
 export type FireworkGeometryTuning = z.infer<typeof GeometryTuningSchema>;
 export type GeometryTuningGroupKey = keyof FireworkGeometryTuning;
 
-export const FireworkDesignSchema = z.object({
-  size: z.coerce
-    .number()
-    .min(1)
-    .transform((value) => Math.min(MAX_STAR_COUNT, value))
-    .default(MAX_STAR_COUNT),
-  colour: z
-    .object({
-      enabled: z.boolean().default(true),
-    })
-    .default({ enabled: true }),
-  color: ColorSchema.default('random'),
-  secondaryColor: ColorSchema.optional(),
-  /** Fraction of the burst that takes the secondary/accent colour (0..1).
-   *  Defaults to ~0.22 in the renderer when omitted. */
-  secondaryColorRatio: z.coerce.number().min(0).max(1).optional(),
-  liftVelocity: z.coerce.number().min(4).max(40).optional(),
-  shellLife: z.coerce.number().min(2).max(60).default(20),
-  pattern: z.enum(FIREWORK_PATTERNS).default('fibonacci'),
-  geometry: z.enum(FIREWORK_GEOMETRIES).default('sphere'),
-  trailProfile: z.enum(FIREWORK_TRAIL_PROFILES).default('spark'),
-  burstTrail: BurstTrailSchema,
-  burst: StarBurstSchema,
-  flair: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
-  crackle: z
-    .object({
-      enabled: z.boolean().default(true),
-      probability: z.coerce.number().min(0).max(1).default(0.05),
-      sound: z.enum(['crackle', 'lightBoom', 'heavyBoom']).default('crackle'),
-    })
-    .default({ enabled: true, probability: 0.05, sound: 'crackle' }),
-  sound: z
-    .object({
-      launch: z.boolean().default(true),
-      boom: z.enum(['none', 'auto', 'light', 'heavy']).default('auto'),
-    })
-    .default({ launch: true, boom: 'auto' }),
-  strobe: z
-    .object({
-      enabled: z.boolean().default(false),
-      frequencyHz: z.coerce.number().min(2).max(28).default(12),
-      dutyCycle: z.coerce.number().min(0.1).max(0.9).default(0.45),
-      /** Percentage of stars that strobe; the rest burn steadily. */
-      amountPercent: z.coerce.number().min(0).max(100).default(100),
-      /** Star size during the dark phase, as a percentage of the lit size. */
-      dimPercent: z.coerce.number().min(0).max(60).default(4.5),
-      /** Per-star phase offset so stars don't all blink in unison. 0 = synchronised. */
-      desync: z.coerce.number().min(0).max(1).default(0.037),
-    })
-    .default({
-      enabled: false,
-      frequencyHz: 12,
-      dutyCycle: 0.45,
-      amountPercent: 100,
-      dimPercent: 4.5,
-      desync: 0.037,
-    }),
-  trail: z
-    .object({
-      density: z.coerce.number().min(0).max(4).default(1),
-      length: z.coerce.number().min(0.2).max(4).default(1),
-      sparkle: z.coerce.number().min(0).max(1).default(0.35),
-      thickness: z.coerce.number().min(0.4).max(4).default(1),
-      streakSize: z.coerce.number().min(0.4).max(4).default(1),
-      streakLength: z.coerce.number().min(0.4).max(4).default(1),
-      streakLife: z.coerce.number().min(0.2).max(4).default(1),
-    })
-    .default({
-      density: 1,
-      length: 1,
-      sparkle: 0.35,
-      thickness: 1,
-      streakSize: 1,
-      streakLength: 1,
-      streakLife: 1,
-    }),
-  split: z
-    .object({
-      enabled: z.boolean().default(false),
-      fragments: z.coerce.number().int().min(2).max(8).default(4),
-      speed: z.coerce.number().min(0.4).max(4).default(1.55),
-      delayRatio: z.coerce.number().min(0.15).max(0.85).default(0.42),
-      /** Minimum fragment burn time in seconds. */
-      lifeBaseSeconds: z.coerce.number().min(0.1).max(6).default(0.65),
-      /** Random extra burn time added on top of the base, in seconds. */
-      lifeVariationSeconds: z.coerce.number().min(0).max(6).default(1.6),
-      /** Fragment head size as a percentage of the parent star's size budget. */
-      headSizePercent: z.coerce.number().min(5).max(200).default(50),
-      /** Fragment trail life as a percentage of the parent star's trail life. */
-      trailLifePercent: z.coerce.number().min(5).max(300).default(60),
-    })
-    .default({
-      enabled: false,
-      fragments: 4,
-      speed: 1.55,
-      delayRatio: 0.42,
-      lifeBaseSeconds: 0.65,
-      lifeVariationSeconds: 1.6,
-      headSizePercent: 50,
-      trailLifePercent: 60,
-    }),
-  geometryTuning: GeometryTuningSchema,
-  mortar: z
-    .object({
-      smokeParticles: z.coerce.number().int().min(0).max(500).default(100),
-      sound: z.boolean().default(true),
-    })
-    .default({ smokeParticles: 100, sound: true }),
-  launch: LaunchSchema,
-  /**
-   * Layered star calibration for non-brocade effects. `outer` is the main
-   * burst. `core` is the inner burst, active by default for star-based effects,
-   * with the same count, physics, head appearance, colour, and trail model as
-   * the outer layer.
-   */
-  stars: z
-    .object({
-      outer: StarLayerSchema,
-      core: StarLayerSchema.default({
+export const FireworkDesignSchema = z
+  .object({
+    size: z.coerce
+      .number()
+      .min(1)
+      .transform((value) => Math.min(MAX_STAR_COUNT, value))
+      .default(MAX_STAR_COUNT),
+    colour: z
+      .object({
+        enabled: z.boolean().default(true),
+      })
+      .default({ enabled: true }),
+    color: ColorSchema.default('random'),
+    secondaryColor: ColorSchema.optional(),
+    /** Fraction of the burst that takes the secondary/accent colour (0..1).
+     *  Defaults to ~0.22 in the renderer when omitted. */
+    secondaryColorRatio: z.coerce.number().min(0).max(1).optional(),
+    liftVelocity: z.coerce.number().min(0).max(40).optional(),
+    shellLife: z.coerce.number().min(2).max(60).default(20),
+    pattern: z.enum(FIREWORK_PATTERNS).default('fibonacci'),
+    geometry: z.enum(FIREWORK_GEOMETRIES).default('sphere'),
+    trailProfile: z.enum(FIREWORK_TRAIL_PROFILES).default('spark'),
+    burstTrail: BurstTrailSchema,
+    burst: StarBurstSchema,
+    flair: z.object({ enabled: z.boolean().default(true) }).default({ enabled: true }),
+    crackle: z
+      .object({
+        enabled: z.boolean().default(true),
+        /** Chance per 60 Hz reference step while a star is inside the trigger window. */
+        probability: z.coerce.number().min(0).max(1).default(0.05),
+        triggerWindowSeconds: z.coerce.number().min(0.1).max(4).default(1),
+        fragmentCount: z.coerce.number().int().min(1).max(200).default(48),
+        fragmentCountVariationPercent: z.coerce.number().min(0).max(100).default(84),
+        fragmentSize: z.coerce.number().min(1).max(120).default(24),
+        fragmentSizeVariationPercent: z.coerce.number().min(0).max(100).default(90),
+        fragmentSpeed: z.coerce.number().min(0).max(6).default(1.15),
+        fragmentSpeedVariationPercent: z.coerce.number().min(0).max(100).default(70),
+        fragmentLifeSeconds: z.coerce.number().min(0.05).max(4).default(0.7),
+        fragmentLifeVariationPercent: z.coerce.number().min(0).max(100).default(86),
+        fragmentGravity: z.coerce.number().min(-2).max(1).default(-0.2),
+        colourMode: z.enum(['silver', 'star', 'gold']).default('silver'),
+        sound: z.enum(['crackle', 'lightBoom', 'heavyBoom']).default('crackle'),
+        soundChance: z.coerce.number().min(0).max(1).default(0.2),
+        soundVolume: z.coerce.number().min(0).max(1).default(0.1),
+      })
+      .default({
         enabled: true,
-        count: 38,
-        burst: {
-          speed: [0.8, 1.8],
-          gravity: [-0.22, -0.02],
-          life: [0.4, 5.4],
-          flairColorMode: 'mixed',
-        },
-        head: {
-          visible: true,
-          size: DEFAULT_STAR_INNER_HEAD_SIZE,
-          opening: STAR_HEAD_OPENING_DEFAULTS,
-          closing: STAR_HEAD_CLOSING_DEFAULTS,
-          glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
-          ...HEAD_APPEARANCE_DEFAULTS,
-        },
-        colourPattern: {
-          mode: 'solid',
-          axis: 'vertical',
-          count: 3,
-          colours: [],
-        },
-        burstTrail: {
-          version: 2,
-          enabled: false,
-          preset: 'none',
-          colourMode: 'gold',
-          particlesPerStar: 0,
-          frontClump: 0,
-          width: { front: 0, tail: 0, curve: 1 },
-          particleSize: { base: 0.6, headScale: 1, tailScale: 0.6, variationPercent: 0 },
-          opening: TRAIL_OPENING_DEFAULTS,
-          closing: TRAIL_CLOSING_DEFAULTS,
-          placement: { headGapPercent: 0 },
-          spacing: { curve: 1, jitterPercent: 0 },
-          lifetime: {
-            mode: 'dynamic',
-            percent: 0.1,
-            baseSeconds: 0.4,
-            variationPercent: 20,
-            afterglowSeconds: 0,
-          },
-          intensity: { brightness: 0, fadeSoftness: 1 },
-          flicker: { chance: 0, strength: 0, lifetimeMultiplier: 0.45 },
-          motion: {
-            gravity: -0.014,
-            drag: 1.6,
-            inheritedVelocity: 0,
-            turbulence: 0,
-            driftX: 0,
-            driftY: -0.012,
-            driftZ: 0,
-            spin: 0,
-          },
-          stops: [],
-        },
+        probability: 0.05,
+        triggerWindowSeconds: 1,
+        fragmentCount: 48,
+        fragmentCountVariationPercent: 84,
+        fragmentSize: 24,
+        fragmentSizeVariationPercent: 90,
+        fragmentSpeed: 1.15,
+        fragmentSpeedVariationPercent: 70,
+        fragmentLifeSeconds: 0.7,
+        fragmentLifeVariationPercent: 86,
+        fragmentGravity: -0.2,
+        colourMode: 'silver',
+        sound: 'crackle',
+        soundChance: 0.2,
+        soundVolume: 0.1,
       }),
-    })
-    .default({
-      outer: StarLayerSchema.parse({
-        enabled: true,
-        count: MAX_STAR_COUNT,
-        burst: {
-          speed: [2, 4],
-          gravity: [-0.24, -0.02],
-          life: [0.5, 6.5],
-          flairColorMode: 'mixed',
-        },
-        head: {
-          visible: true,
-          size: DEFAULT_STAR_HEAD_SIZE,
-          opening: STAR_HEAD_OPENING_DEFAULTS,
-          closing: STAR_HEAD_CLOSING_DEFAULTS,
-          glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
-          ...HEAD_APPEARANCE_DEFAULTS,
-        },
+    sound: z
+      .object({
+        launch: z.boolean().default(true),
+        boom: z.enum(['none', 'auto', 'light', 'heavy']).default('auto'),
+      })
+      .default({ launch: true, boom: 'auto' }),
+    strobe: z
+      .object({
+        enabled: z.boolean().default(false),
+        frequencyHz: z.coerce.number().min(2).max(28).default(12),
+        dutyCycle: z.coerce.number().min(0.1).max(0.9).default(0.45),
+        /** Percentage of stars that strobe; the rest burn steadily. */
+        amountPercent: z.coerce.number().min(0).max(100).default(100),
+        /** Star size during the dark phase, as a percentage of the lit size. */
+        dimPercent: z.coerce.number().min(0).max(60).default(4.5),
+        /** Per-star phase offset so stars don't all blink in unison. 0 = synchronised. */
+        desync: z.coerce.number().min(0).max(1).default(0.037),
+      })
+      .default({
+        enabled: false,
+        frequencyHz: 12,
+        dutyCycle: 0.45,
+        amountPercent: 100,
+        dimPercent: 4.5,
+        desync: 0.037,
       }),
-      core: StarLayerSchema.parse({ enabled: true }),
-    }),
-  /**
-   * Brocade crown calibration. Only read when the design is a brocade crown
-   * (`geometry: 'crown'` + `trailProfile: 'glitter'`). Defaults mirror the
-   * renderer constants the brocade rework shipped with, so designs without an
-   * explicit `brocade` block look identical to before.
-   */
-  brocade: z
-    .object({
-      /** Streak heads per shell. Falls back to `size` when absent. */
-      streakCount: z.coerce.number().int().min(1).max(100).optional(),
-      /** Arc-length spacing (world units) between trail square emissions. */
-      trailStep: z.coerce.number().min(1).max(10).default(3),
-      /** Radius (world units) of the tube trail squares scatter within. */
-      tubeRadius: z.coerce.number().min(0.5).max(12).default(3.2),
-      /** Render the glowing head orbs. Off leaves the trails as bare streaks. */
-      headsEnabled: z.boolean().default(true),
-      /** Size budget of each glowing head orb. */
-      headSize: z.coerce.number().min(100).max(4000).default(900),
-      /** Halo brightness multiplier; also drives scene light tinting. */
-      glowStrength: z.coerce
-        .number()
-        .min(MIN_HEAD_GLOW_STRENGTH)
-        .max(MAX_HEAD_GLOW_STRENGTH)
-        .default(DEFAULT_HEAD_GLOW_STRENGTH),
-      /** Probability a head is green rather than red. */
-      greenRatio: z.coerce.number().min(0).max(1).default(0.5),
-      headColors: z
-        .object({
-          green: RgbSchema.default({ r: 0.4, g: 1, b: 0.5 }),
-          red: RgbSchema.default({ r: 1, g: 0.28, b: 0.32 }),
-        })
-        .default({ green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } }),
-      /** Trail fire gradient: white-gold hot core cooling to ember tips. */
-      palette: z
-        .object({
-          hot: RgbSchema.default({ r: 1, g: 0.93, b: 0.72 }),
-          ember: RgbSchema.default({ r: 1, g: 0.42, b: 0.14 }),
-        })
-        .default({ hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } }),
-    })
-    .default({
-      trailStep: 3,
-      tubeRadius: 3.2,
-      headsEnabled: true,
-      headSize: 900,
-      glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
-      greenRatio: 0.5,
-      headColors: { green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } },
-      palette: { hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } },
-    }),
-});
+    trail: z
+      .object({
+        density: z.coerce.number().min(0).max(4).default(1),
+        length: z.coerce.number().min(0.2).max(4).default(1),
+        sparkle: z.coerce.number().min(0).max(1).default(0.35),
+        thickness: z.coerce.number().min(0.4).max(4).default(1),
+        streakSize: z.coerce.number().min(0.4).max(4).default(1),
+        streakLength: z.coerce.number().min(0.4).max(4).default(1),
+        streakLife: z.coerce.number().min(0.2).max(4).default(1),
+      })
+      .default({
+        density: 1,
+        length: 1,
+        sparkle: 0.35,
+        thickness: 1,
+        streakSize: 1,
+        streakLength: 1,
+        streakLife: 1,
+      }),
+    split: z
+      .object({
+        enabled: z.boolean().default(false),
+        fragments: z.coerce.number().int().min(2).max(8).default(4),
+        speed: z.coerce.number().min(0.4).max(4).default(1.55),
+        delayRatio: z.coerce.number().min(0.15).max(0.85).default(0.42),
+        /** Minimum fragment burn time in seconds. */
+        lifeBaseSeconds: z.coerce.number().min(0.1).max(6).default(0.65),
+        /** Random extra burn time added on top of the base, in seconds. */
+        lifeVariationSeconds: z.coerce.number().min(0).max(6).default(1.6),
+        /** Fragment head size as a percentage of the parent star's size budget. */
+        headSizePercent: z.coerce.number().min(5).max(200).default(50),
+        /** Fragment trail life as a percentage of the parent star's trail life. */
+        trailLifePercent: z.coerce.number().min(5).max(300).default(60),
+      })
+      .default({
+        enabled: false,
+        fragments: 4,
+        speed: 1.55,
+        delayRatio: 0.42,
+        lifeBaseSeconds: 0.65,
+        lifeVariationSeconds: 1.6,
+        headSizePercent: 50,
+        trailLifePercent: 60,
+      }),
+    geometryTuning: GeometryTuningSchema,
+    mortar: z
+      .object({
+        smokeParticles: z.coerce.number().int().min(0).max(500).default(100),
+        sound: z.boolean().default(true),
+      })
+      .default({ smokeParticles: 100, sound: true }),
+    launch: LaunchSchema,
+    /**
+     * Layered star calibration for non-brocade effects. `outer` is the main
+     * burst. `core` is the inner burst, active by default for star-based effects,
+     * with the same count, physics, head appearance, colour, and trail model as
+     * the outer layer.
+     */
+    stars: z
+      .object({
+        outer: StarLayerSchema,
+        core: StarLayerSchema.default({
+          enabled: true,
+          count: 38,
+          burst: {
+            speed: [0.8, 1.8],
+            gravity: [-0.22, -0.02],
+            life: [0.4, 5.4],
+            airResistancePercent: 100,
+            terminalVelocity: STAR_TERMINAL_VELOCITY_MAX,
+            flairColorMode: 'mixed',
+          },
+          head: {
+            visible: true,
+            size: DEFAULT_STAR_INNER_HEAD_SIZE,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+          colourPattern: {
+            mode: 'solid',
+            axis: 'vertical',
+            count: 3,
+            colours: [],
+          },
+          burstTrail: {
+            version: 2,
+            enabled: false,
+            preset: 'none',
+            colourMode: 'gold',
+            particlesPerStar: 0,
+            frontClump: 0,
+            width: { front: 0, tail: 0, curve: 1 },
+            particleSize: { base: 0.6, headScale: 1, tailScale: 0.6, variationPercent: 0 },
+            opening: TRAIL_OPENING_DEFAULTS,
+            closing: TRAIL_CLOSING_DEFAULTS,
+            placement: { headGapPercent: 0 },
+            spacing: { curve: 1, jitterPercent: 0 },
+            lifetime: {
+              mode: 'dynamic',
+              percent: 0.1,
+              baseSeconds: 0.4,
+              variationPercent: 20,
+              afterglowSeconds: 0,
+            },
+            intensity: { brightness: 0, fadeSoftness: 1 },
+            flicker: { chance: 0, strength: 0, lifetimeMultiplier: 0.45 },
+            motion: {
+              gravity: -0.014,
+              drag: 1.6,
+              inheritedVelocity: 0,
+              turbulence: 0,
+              driftX: 0,
+              driftY: -0.012,
+              driftZ: 0,
+              spin: 0,
+            },
+            stops: [],
+          },
+        }),
+      })
+      .default({
+        outer: StarLayerSchema.parse({
+          enabled: true,
+          count: MAX_STAR_COUNT,
+          burst: {
+            speed: [2, 4],
+            gravity: [-0.24, -0.02],
+            life: [0.5, 6.5],
+            airResistancePercent: 100,
+            terminalVelocity: STAR_TERMINAL_VELOCITY_MAX,
+            flairColorMode: 'mixed',
+          },
+          head: {
+            visible: true,
+            size: DEFAULT_STAR_HEAD_SIZE,
+            opening: STAR_HEAD_OPENING_DEFAULTS,
+            closing: STAR_HEAD_CLOSING_DEFAULTS,
+            glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+            ...HEAD_APPEARANCE_DEFAULTS,
+          },
+        }),
+        core: StarLayerSchema.parse({ enabled: true }),
+      }),
+    /**
+     * Brocade crown calibration. Only read when the design is a brocade crown
+     * (`geometry: 'crown'` + `trailProfile: 'glitter'`). Defaults mirror the
+     * renderer constants the brocade rework shipped with, so designs without an
+     * explicit `brocade` block look identical to before.
+     */
+    brocade: z
+      .object({
+        /** Streak heads per shell. Falls back to `size` when absent. */
+        streakCount: z.coerce.number().int().min(1).max(100).optional(),
+        /** Arc-length spacing (world units) between trail square emissions. */
+        trailStep: z.coerce.number().min(1).max(10).default(3),
+        /** Radius (world units) of the tube trail squares scatter within. */
+        tubeRadius: z.coerce.number().min(0.5).max(12).default(3.2),
+        /** Render the glowing head orbs. Off leaves the trails as bare streaks. */
+        headsEnabled: z.boolean().default(true),
+        /** Size budget of each glowing head orb. */
+        headSize: z.coerce.number().min(100).max(4000).default(900),
+        /** Halo brightness multiplier; also drives scene light tinting. */
+        glowStrength: z.coerce
+          .number()
+          .min(MIN_HEAD_GLOW_STRENGTH)
+          .max(MAX_HEAD_GLOW_STRENGTH)
+          .default(DEFAULT_HEAD_GLOW_STRENGTH),
+        /** Probability a head is green rather than red. */
+        greenRatio: z.coerce.number().min(0).max(1).default(0.5),
+        headColors: z
+          .object({
+            green: RgbSchema.default({ r: 0.4, g: 1, b: 0.5 }),
+            red: RgbSchema.default({ r: 1, g: 0.28, b: 0.32 }),
+          })
+          .default({ green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } }),
+        /** Trail fire gradient: white-gold hot core cooling to ember tips. */
+        palette: z
+          .object({
+            hot: RgbSchema.default({ r: 1, g: 0.93, b: 0.72 }),
+            ember: RgbSchema.default({ r: 1, g: 0.42, b: 0.14 }),
+          })
+          .default({ hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } }),
+      })
+      .default({
+        trailStep: 3,
+        tubeRadius: 3.2,
+        headsEnabled: true,
+        headSize: 900,
+        glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
+        greenRatio: 0.5,
+        headColors: { green: { r: 0.4, g: 1, b: 0.5 }, red: { r: 1, g: 0.28, b: 0.32 } },
+        palette: { hot: { r: 1, g: 0.93, b: 0.72 }, ember: { r: 1, g: 0.42, b: 0.14 } },
+      }),
+  })
+  .superRefine((design, context) => {
+    const isGroundEmitter = ['upward_fan', 'roman_candle', 'fountain'].includes(design.geometry);
+    if (!isGroundEmitter && design.liftVelocity !== undefined && design.liftVelocity < 4) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['liftVelocity'],
+        message: 'Aerial fireworks require a lift velocity of at least 4.',
+      });
+    }
+  });
 
 export type FireworkDesign = z.infer<typeof FireworkDesignSchema>;
 export type StarLayerKey = 'outer' | 'core';
@@ -1932,6 +2082,174 @@ const BURST_TRAIL_PRESET_DEFAULTS: Record<BurstTrailPreset, BurstTrail> = {
       burstTrailStop(25, 1.25, 0.92, 24, { circle: 5, square: 86, triangle: 9 }),
       burstTrailStop(70, 0.62, 0.64, 30, { circle: 8, square: 82, triangle: 10 }),
       burstTrailStop(100, 0.24, 0.42, 36, { circle: 14, square: 76, triangle: 10 }),
+    ],
+  },
+  silverRain: {
+    version: 2,
+    enabled: true,
+    preset: 'silverRain',
+    colourMode: 'silver',
+    particlesPerStar: 112,
+    frontClump: 0.42,
+    width: { front: 1.2, tail: 4.2, curve: 1.45 },
+    particleSize: { base: 0.78, headScale: 1, tailScale: 0.38, variationPercent: 32 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: TRAIL_CLOSING_DEFAULTS,
+    placement: { headGapPercent: 50 },
+    spacing: { curve: 1.25, jitterPercent: 30 },
+    lifetime: {
+      mode: 'dynamic',
+      percent: 0.42,
+      baseSeconds: 2.8,
+      variationPercent: 36,
+      afterglowSeconds: 0.45,
+    },
+    intensity: { brightness: 1.12, fadeSoftness: 1.7 },
+    flicker: { chance: 0.14, strength: 0.8, lifetimeMultiplier: 0.5 },
+    motion: {
+      gravity: -0.16,
+      drag: 0.72,
+      inheritedVelocity: 0.012,
+      turbulence: 0.08,
+      driftX: 0,
+      driftY: -0.09,
+      driftZ: 0,
+      spin: 0,
+    },
+    stops: [
+      burstTrailStop(0, 1.3, 0.94, 28, { circle: 12, square: 80, triangle: 8 }),
+      burstTrailStop(55, 0.84, 0.68, 34, { circle: 18, square: 72, triangle: 10 }),
+      burstTrailStop(100, 0.22, 0.3, 45, { circle: 34, square: 58, triangle: 8 }),
+    ],
+  },
+  ghostFade: {
+    version: 2,
+    enabled: true,
+    preset: 'ghostFade',
+    colourMode: 'starFade',
+    particlesPerStar: 76,
+    frontClump: 0.58,
+    width: { front: 1.6, tail: 2.8, curve: 1.2 },
+    particleSize: { base: 0.72, headScale: 1.08, tailScale: 0.2, variationPercent: 24 },
+    opening: {
+      size: { startPercent: 35 },
+      visibility: { brightnessPercent: 165, particlesPercent: 72, revealPercent: 18 },
+    },
+    closing: {
+      colour: { enabled: true, color: { r: 0.55, g: 0.72, b: 1 }, fadePercent: 46 },
+      size: { enabled: true, endPercent: 0, shrinkPercent: 42 },
+      spreadFade: { enabled: true, startAngle: 36, endOpacityPercent: 4 },
+    },
+    placement: { headGapPercent: 46 },
+    spacing: { curve: 1.4, jitterPercent: 16 },
+    lifetime: {
+      mode: 'fixed',
+      percent: 0.28,
+      baseSeconds: 1.65,
+      variationPercent: 22,
+      afterglowSeconds: 0.55,
+    },
+    intensity: { brightness: 1.22, fadeSoftness: 2.25 },
+    flicker: { chance: 0.03, strength: 0.45, lifetimeMultiplier: 0.5 },
+    motion: {
+      gravity: -0.045,
+      drag: 1.05,
+      inheritedVelocity: 0.025,
+      turbulence: 0.035,
+      driftX: 0,
+      driftY: -0.018,
+      driftZ: 0,
+      spin: 0,
+    },
+    stops: [
+      burstTrailStop(0, 1.1, 0.84, 22, { circle: 76, square: 20, triangle: 4 }),
+      burstTrailStop(60, 0.68, 0.5, 28, { circle: 86, square: 12, triangle: 2 }),
+      burstTrailStop(100, 0.12, 0.18, 36, { circle: 94, square: 6, triangle: 0 }),
+    ],
+  },
+  dragonEgg: {
+    version: 2,
+    enabled: true,
+    preset: 'dragonEgg',
+    colourMode: 'ember',
+    particlesPerStar: 148,
+    frontClump: 0.64,
+    width: { front: 4.8, tail: 7.5, curve: 0.82 },
+    particleSize: { base: 1.18, headScale: 1.3, tailScale: 0.3, variationPercent: 72 },
+    opening: TRAIL_OPENING_DEFAULTS,
+    closing: {
+      ...TRAIL_CLOSING_DEFAULTS,
+      size: { enabled: true, endPercent: 0, shrinkPercent: 34 },
+    },
+    placement: { headGapPercent: 38 },
+    spacing: { curve: 0.72, jitterPercent: 78 },
+    lifetime: {
+      mode: 'fixed',
+      percent: 0.2,
+      baseSeconds: 0.58,
+      variationPercent: 68,
+      afterglowSeconds: 0.24,
+    },
+    intensity: { brightness: 1.5, fadeSoftness: 0.72 },
+    flicker: { chance: 0.62, strength: 1.7, lifetimeMultiplier: 0.28 },
+    motion: {
+      gravity: -0.22,
+      drag: 2.8,
+      inheritedVelocity: 0.008,
+      turbulence: 0.88,
+      driftX: 0,
+      driftY: -0.08,
+      driftZ: 0,
+      spin: 1.6,
+    },
+    stops: [
+      burstTrailStop(0, 2.2, 1.4, 65, { circle: 48, square: 32, triangle: 20 }),
+      burstTrailStop(45, 1.45, 0.92, 76, { circle: 58, square: 26, triangle: 16 }),
+      burstTrailStop(100, 0.38, 0.3, 88, { circle: 76, square: 18, triangle: 6 }),
+    ],
+  },
+  titaniumFlash: {
+    version: 2,
+    enabled: true,
+    preset: 'titaniumFlash',
+    colourMode: 'silver',
+    particlesPerStar: 180,
+    frontClump: 0.78,
+    width: { front: 6.5, tail: 5.5, curve: 0.65 },
+    particleSize: { base: 1.45, headScale: 1.5, tailScale: 0.16, variationPercent: 62 },
+    opening: {
+      size: { startPercent: 55 },
+      visibility: { brightnessPercent: 240, particlesPercent: 100, revealPercent: 8 },
+    },
+    closing: {
+      ...TRAIL_CLOSING_DEFAULTS,
+      size: { enabled: true, endPercent: 0, shrinkPercent: 24 },
+    },
+    placement: { headGapPercent: 24 },
+    spacing: { curve: 0.58, jitterPercent: 66 },
+    lifetime: {
+      mode: 'fixed',
+      percent: 0.12,
+      baseSeconds: 0.22,
+      variationPercent: 58,
+      afterglowSeconds: 0.16,
+    },
+    intensity: { brightness: 2.25, fadeSoftness: 0.55 },
+    flicker: { chance: 0.48, strength: 2.2, lifetimeMultiplier: 0.2 },
+    motion: {
+      gravity: -0.3,
+      drag: 3.2,
+      inheritedVelocity: 0.006,
+      turbulence: 1.25,
+      driftX: 0,
+      driftY: -0.12,
+      driftZ: 0,
+      spin: 2.8,
+    },
+    stops: [
+      burstTrailStop(0, 2.8, 1.8, 58, { circle: 42, square: 38, triangle: 20 }),
+      burstTrailStop(35, 1.4, 0.92, 72, { circle: 58, square: 28, triangle: 14 }),
+      burstTrailStop(100, 0.18, 0.2, 90, { circle: 82, square: 12, triangle: 6 }),
     ],
   },
   custom: {
@@ -2274,6 +2592,25 @@ export const DEFAULT_DESIGN: FireworkDesign = normaliseFireworkDesign(
 export function safeParseFireworkDesign(input: unknown): FireworkDesign {
   const parsed = FireworkDesignSchema.safeParse(input);
   return parsed.success ? normaliseFireworkDesign(parsed.data, input) : DEFAULT_DESIGN;
+}
+
+/**
+ * Validate a partial editor/default fragment against a complete design without
+ * silently replacing an invalid model with {@link DEFAULT_DESIGN}.
+ */
+export function fireworkDesignFragmentError(input: unknown): string | null {
+  if (!isRecord(input)) return 'Renderer settings must be a JSON object.';
+  const merged = deepMergeDesign(DEFAULT_DESIGN, hydrateBurstTrailDefaults(input));
+  const parsed = FireworkDesignSchema.safeParse(merged);
+  if (parsed.success) return null;
+
+  return parsed.error.issues
+    .slice(0, 4)
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : 'renderer settings';
+      return `${path}: ${issue.message}`;
+    })
+    .join('; ');
 }
 
 const FIREWORK_RENDER_DEFAULT_KEYS = new Set([
@@ -3056,8 +3393,8 @@ export function scaleDesignForEmphasis(
  * (quadratic drag, gravity, shell mass 0.5) closely enough for preview
  * timelines; it does not need to be frame-exact.
  */
-export function estimateDesignDurationSeconds(design: FireworkDesign): number {
-  return estimateFireworkDesignTiming(design).endSeconds;
+export function estimateDesignDurationSeconds(design: FireworkDesign, panDegrees = 0): number {
+  return estimateFireworkDesignTiming(design, panDegrees).endSeconds;
 }
 
 export type LaunchPosition = { x: number; y: number; z: number };

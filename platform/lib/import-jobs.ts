@@ -16,6 +16,12 @@ import { z } from 'zod';
 import type { ReplayCue } from '@/lib/show-domain';
 import { compileFireworkDesign } from '@/lib/fireworks/design';
 import {
+  adaptLegacyImportedFireworkSpec,
+  parseImportReconstruction,
+  reconstructionToReplayCues,
+  type ImportReconstructionPlan,
+} from '@/lib/import-reconstruction';
+import {
   FIREWORK_COLORS,
   FireworkSpecSchema,
   GLITTER_KINDS,
@@ -30,14 +36,19 @@ export const MAX_IMPORT_VIDEO_SECONDS = 60;
 
 export const OPENROUTER_MODEL_OPTIONS = [
   {
-    value: 'openai/gpt-4.1',
-    label: 'OpenAI GPT-4.1',
-    description: 'Best default for detailed firework video reconstruction.',
+    value: 'openai/gpt-5.4',
+    label: 'OpenAI GPT-5.4',
+    description: 'Highest-detail structured reconstruction and critic passes.',
   },
   {
-    value: 'openai/gpt-4.1-mini',
-    label: 'GPT-4.1 Mini',
-    description: 'Lower-cost OpenAI fallback for faster review passes.',
+    value: 'openai/gpt-5.4-mini',
+    label: 'GPT-5.4 Mini',
+    description: 'Faster, lower-cost option for iteration and refinement.',
+  },
+  {
+    value: 'google/gemini-2.5-pro',
+    label: 'Gemini 2.5 Pro',
+    description: 'Alternative vision model for difficult source footage.',
   },
 ] as const;
 
@@ -59,7 +70,12 @@ export const ImportedFireworkSpecSchema = z.preprocess(
   ImportedFireworkSpecBaseSchema,
 );
 
-export type ImportedFireworkSpec = z.infer<typeof ImportedFireworkSpecSchema>;
+type LegacyImportedFireworkSpec = z.infer<typeof ImportedFireworkSpecSchema>;
+
+export type ImportedFireworkSpec = LegacyImportedFireworkSpec & {
+  /** Strict renderer-native reconstruction, preferred by previews when present. */
+  reconstruction?: ImportReconstructionPlan;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -434,12 +450,83 @@ function normalizeImportedFireworkSpecInput(value: unknown): unknown {
   };
 }
 
+function reconstructionCandidate(value: unknown): unknown | null {
+  if (!isRecord(value)) return null;
+  if ('reconstruction' in value) return value.reconstruction;
+  return value.version === 1 && Array.isArray(value.designs) && Array.isArray(value.shots)
+    ? value
+    : null;
+}
+
+function parseLegacyImportedFireworkSpec(value: unknown): LegacyImportedFireworkSpec | null {
+  const direct = ImportedFireworkSpecSchema.safeParse(value);
+  if (direct.success) return direct.data;
+  if (!isRecord(value) || !('spec' in value)) return null;
+  const nested = ImportedFireworkSpecSchema.safeParse(value.spec);
+  return nested.success ? nested.data : null;
+}
+
+function legacyProjectionFromReconstruction(
+  reconstruction: ImportReconstructionPlan,
+): LegacyImportedFireworkSpec {
+  const previewCues = reconstructionToReplayCues(reconstruction, {
+    idPrefix: 'imported-spec',
+  });
+  const firstCue = previewCues[0];
+  const designsByKey = new Map(reconstruction.designs.map((entry) => [entry.key, entry]));
+  const shots: NonNullable<FireworkSpec['shots']> = reconstruction.shots.map((shot, index) => {
+    const design = designsByKey.get(shot.designKey);
+    return {
+      index,
+      timeOffsetSeconds: shot.timeOffsetSeconds,
+      position: shot.position,
+      panDegrees: shot.panDegrees,
+      tiltDegrees: shot.tiltDegrees,
+      scale: shot.scale,
+      seedOffset: shot.seed,
+      heightMeters: design?.heightMeters ?? undefined,
+      color: design?.colorPalette[0],
+      colorPalette: design?.colorPalette.length ? design.colorPalette : undefined,
+    };
+  });
+
+  return {
+    name: reconstruction.name,
+    description: reconstruction.description,
+    durationSeconds: reconstruction.durationSeconds,
+    heightMeters: reconstruction.heightMeters,
+    caliber: reconstruction.caliber,
+    confidence: reconstruction.confidence,
+    spec: {
+      ...firstCue.firework.spec,
+      shots,
+    },
+    fieldConfidence: reconstruction.observations.fieldConfidence,
+  };
+}
+
 export function parseImportedFireworkSpec(value: unknown): ImportedFireworkSpec | null {
-  const parsed = ImportedFireworkSpecSchema.safeParse(value);
-  if (parsed.success) return parsed.data;
+  const candidate = reconstructionCandidate(value);
+  const reconstruction = candidate == null ? null : parseImportReconstruction(candidate);
+  const legacy = parseLegacyImportedFireworkSpec(value);
+
+  if (reconstruction?.success) {
+    return {
+      ...legacyProjectionFromReconstruction(reconstruction.data),
+      reconstruction: reconstruction.data,
+    };
+  }
+
+  if (legacy) {
+    const adapted = adaptLegacyImportedFireworkSpec(legacy);
+    if (adapted.success) return { ...legacy, reconstruction: adapted.data };
+    return legacy;
+  }
+
+  const issues = reconstruction && !reconstruction.success ? reconstruction.issues : [];
   console.error(
     '[imports] parseImportedFireworkSpec failed',
-    parsed.error.issues.slice(0, 3).map((issue) => ({
+    issues.slice(0, 3).map((issue) => ({
       path: issue.path.join('.'),
       message: issue.message,
     })),
@@ -448,6 +535,15 @@ export function parseImportedFireworkSpec(value: unknown): ImportedFireworkSpec 
 }
 
 export function importedSpecToReplayCues(imported: ImportedFireworkSpec): ReplayCue[] {
+  if (imported.reconstruction) {
+    return reconstructionToReplayCues(imported.reconstruction, { idPrefix: 'imported-spec' });
+  }
+
+  const adapted = adaptLegacyImportedFireworkSpec(imported);
+  if (adapted.success) {
+    return reconstructionToReplayCues(adapted.data, { idPrefix: 'imported-spec' });
+  }
+
   const id = 'imported-spec';
   const spec: FireworkSpec = imported.spec;
   return [
@@ -490,11 +586,7 @@ export function latestImportedSpecFromOutputs(
     ) {
       continue;
     }
-    const candidate =
-      typeof output.payload === 'object' && output.payload !== null && 'spec' in output.payload
-        ? (output.payload as { spec?: unknown }).spec
-        : output.payload;
-    const parsed = parseImportedFireworkSpec(candidate);
+    const parsed = parseImportedFireworkSpec(output.payload);
     if (parsed) return parsed;
   }
   return null;

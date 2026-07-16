@@ -214,11 +214,7 @@ async function validatePublishablePreset(
   if (!parsed.success) return { ok: false, error: 'Fix unresolved cues before publishing.' };
   const products = await loadCatalogueProducts(parsed.data.map((cue) => cue.catalogueItemId));
   if (!products) return { ok: false, error: 'Fix unresolved cues before publishing.' };
-  const timelineValidation = validatePresetTimeline(
-    parsed.data,
-    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
-    preset.duration_seconds,
-  );
+  const timelineValidation = validatePresetTimeline(parsed.data, products, preset.duration_seconds);
   if (!timelineValidation.ok) return timelineValidation;
   return { ok: true, slug: preset.slug };
 }
@@ -446,14 +442,14 @@ export async function updateShowPresetDetails(
     if (!products) return { ok: false, error: 'Fix unresolved cues before saving details.' };
     const timelineValidation = validatePresetTimeline(
       cues.data,
-      new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+      products,
       parsed.data.durationSeconds,
     );
     if (!timelineValidation.ok) return timelineValidation;
   }
 
   const slug = parsed.data.slug ? slugifyTitle(parsed.data.slug) : slugifyTitle(parsed.data.title);
-  const { error } = await supabase
+  const { data: updatedPreset, error } = await supabase
     .from('show_presets')
     .update({
       slug,
@@ -468,9 +464,12 @@ export async function updateShowPresetDetails(
       sort_order: parsed.data.sortOrder,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', parsed.data.id);
+    .eq('id', parsed.data.id)
+    .select('slug')
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(slug);
+  if (!updatedPreset) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(updatedPreset.slug);
   return { ok: true };
 }
 
@@ -500,7 +499,7 @@ export async function replaceShowPresetCues(
   if (!products) return { ok: false, error: 'One or more catalogue items could not be found.' };
   const timelineValidation = validatePresetTimeline(
     parsed.data.cues,
-    new Map(Array.from(products, ([id, product]) => [id, product.durationSeconds])),
+    products,
     presetState.duration_seconds,
   );
   if (!timelineValidation.ok) return timelineValidation;
@@ -537,7 +536,8 @@ export async function replaceShowPresetCues(
     .select('slug')
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(preset?.slug);
+  if (!preset) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(preset.slug);
   return { ok: true };
 }
 
@@ -575,7 +575,8 @@ export async function setShowPresetPublished(
     .select('slug')
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
-  await refreshPresetPaths(slug ?? data?.slug);
+  if (!data) return { ok: false, error: 'Preset not found.' };
+  await refreshPresetPaths(slug ?? data.slug);
   return { ok: true };
 }
 

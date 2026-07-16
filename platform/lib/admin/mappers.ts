@@ -21,6 +21,7 @@ import type {
 } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
 import { parseCover } from '@/lib/cover';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 export type ProfileRow = Database['public']['Tables']['users']['Row'];
 export type RoleRow = Database['public']['Tables']['roles']['Row'];
@@ -35,6 +36,13 @@ export type ImportOutputRow = Database['public']['Tables']['import_outputs']['Ro
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row'];
 export type ShowTemplateRow = Database['public']['Tables']['show_presets']['Row'] & {
   show_preset_like_counts?: { like_count: number } | Array<{ like_count: number }> | null;
+};
+export type ShowTemplateSummaryRow = Omit<
+  ShowTemplateRow,
+  'composition_signature' | 'preview_cues'
+> & {
+  composition_signature?: string | null;
+  preview_cues?: Json;
 };
 
 const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user'];
@@ -110,6 +118,8 @@ export function mapImportJob(row: ImportJobRow): ImportJobSummary {
     approvedCatalogueItemId: row.approved_catalogue_item_id,
     rowCount: row.row_count,
     errorMessage: row.error_message,
+    archivedAt: row.archived_at,
+    archivedBy: row.archived_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -204,15 +214,31 @@ export function parseTemplateCues(value: Json): ShowTemplateCue[] {
   });
 }
 
-function showPresetLikeCount(row: ShowTemplateRow): number {
+function showPresetLikeCount(row: ShowTemplateSummaryRow): number {
   const joined = row.show_preset_like_counts;
   const count = Array.isArray(joined) ? joined[0]?.like_count : joined?.like_count;
   return Number.isInteger(count) && Number(count) >= 0 ? Number(count) : 0;
 }
 
-/** Map a DB show-template row to the domain {@link ShowTemplate}. */
-export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
-  const maybePublished = row as Partial<ShowTemplateRow>;
+function showPresetCompositionSignature(row: ShowTemplateSummaryRow): string {
+  const storedSignature = row.composition_signature?.trim();
+  if (storedSignature) return storedSignature;
+
+  if (!Array.isArray(row.preview_cues)) return `preset:${row.id}`;
+  const cueKeys = new Set<string>();
+  for (const cue of row.preview_cues) {
+    if (!isRecord(cue)) continue;
+    const key = [cue.catalogueItemId, cue.catalogueItemSlug, cue.fireworkSlug].find(
+      (value): value is string => typeof value === 'string' && value.length > 0,
+    );
+    if (key) cueKeys.add(key);
+  }
+  return cueKeys.size > 0 ? Array.from(cueKeys).sort().join('|') : `preset:${row.id}`;
+}
+
+/** Map metadata that is safe to serialise in public Explore list responses. */
+export function mapShowTemplateSummary(row: ShowTemplateSummaryRow): ShowTemplateSummary {
+  const maybePublished = row as Partial<ShowTemplateSummaryRow>;
   return {
     id: row.id,
     slug: row.slug,
@@ -223,9 +249,9 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     budgetCents: row.budget_cents,
     totalCents: row.total_cents,
     effectsCount: row.effects_count,
+    compositionSignature: showPresetCompositionSignature(row),
     timeOfDay: row.time_of_day,
     moodTags: row.mood_tags ?? [],
-    previewCues: parseTemplateCues(row.preview_cues),
     coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
     isFeatured: row.is_featured,
@@ -235,6 +261,14 @@ export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
     likeCount: showPresetLikeCount(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+/** Map a cue-bearing DB row for a scoped preview, detail or admin read. */
+export function mapShowTemplate(row: ShowTemplateRow): ShowTemplate {
+  return {
+    ...mapShowTemplateSummary(row),
+    previewCues: parseTemplateCues(row.preview_cues),
   };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * FireworkReplayViewer — interactive replay + cue editor used on the
+ * FireworkReplayViewer: interactive replay and cue editor used on the
  * authenticated show detail route. Wraps the 3D canvas with audio sync
  * controls and server actions for adding / deleting preview cues.
  * Cue mutations go through preview-cues server actions which reject
@@ -49,6 +49,16 @@ import { RowActionsMenu } from '@/app/components/ui/RowActionsMenu';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -95,6 +105,12 @@ type FireworkReplayViewerProps = {
 
 type CueDialogTab = 'manual' | 'ai';
 
+type CueDeletionTarget = {
+  cueId: string;
+  fireworkName: string;
+  timeLabel: string;
+};
+
 const LAUNCH_POSITION_OPTIONS = [
   { value: '0', label: 'Mortar 1 (left)' },
   { value: '1', label: 'Mortar 2 (centre)' },
@@ -135,7 +151,7 @@ function EmptyPreview() {
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8 text-center">
       <div className="border-outline-variant/15 bg-surface-container-low/85 max-w-md rounded-2xl border p-6 backdrop-blur">
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
-        <h3 className="text-on-surface text-xl font-bold">No typed fireworks yet</h3>
+        <h2 className="text-on-surface text-xl font-bold">No typed fireworks yet</h2>
         <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
           Add a cue below to preview the show.
         </p>
@@ -216,6 +232,8 @@ export function FireworkReplayViewer({
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [cuePage, setCuePage] = useState(0);
+  const [cueToDelete, setCueToDelete] = useState<CueDeletionTarget | null>(null);
+  const [deletingCueId, setDeletingCueId] = useState<string | null>(null);
   const CUES_PER_PAGE = 5;
   const formRef = useRef<HTMLFormElement>(null);
   const startedAt = useRef<number | null>(null);
@@ -227,6 +245,7 @@ export function FireworkReplayViewer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayStartedRef = useRef(false);
+  const deletingCueIdRef = useRef<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -244,7 +263,13 @@ export function FireworkReplayViewer({
   // Fullscreen overlay for the replay player. The hook owns the Esc + body
   // scroll-lock wiring; this component applies the overlay classes to the
   // player container and renders the shared backdrop.
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen({ dialogLabel: `${showName} preview` });
 
   // Keep the audio element in sync with playhead and play/pause state.
   useEffect(() => {
@@ -254,7 +279,7 @@ export function FireworkReplayViewer({
       const drift = Math.abs(audio.currentTime - elapsedRef.current);
       if (drift > 0.25) audio.currentTime = elapsedRef.current;
       void audio.play().catch(() => {
-        /* autoplay blocked or seek interrupted — ignore */
+        /* Autoplay was blocked or seeking was interrupted, so playback stays paused. */
       });
     } else {
       audio.pause();
@@ -262,8 +287,8 @@ export function FireworkReplayViewer({
   }, [isPlaying]);
 
   // Keep paused audio aligned with the playhead (e.g. cue-row jumps). While a
-  // drag is mid-flight the media element is left alone — seeking it at 15Hz
-  // forces repeated decodes — and commitScrub seeks it once on release.
+  // drag is mid-flight the media element is left alone, because seeking it at
+  // 15 Hz forces repeated decodes. commitScrub seeks it once on release.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || isPlaying) return;
@@ -607,7 +632,9 @@ export function FireworkReplayViewer({
     setAiPrompt('');
     setShowAddForm(false);
     setInsertBeforeTime(null);
-    toast.success(`Adding ${product.name} at ${formatDuration(timeSeconds)}`);
+    const refinementToastId = toast.loading(
+      `Adding ${product.name} at ${formatDuration(timeSeconds)}...`,
+    );
 
     startTransition(async () => {
       addOptimisticCue({
@@ -620,21 +647,44 @@ export function FireworkReplayViewer({
         firework: product,
       });
       const result = await addPreviewCueAction(formData);
-      if (isTubeBusyError(result)) {
+      if (!result.ok && isTubeBusyError(result)) {
         setActionResult(null);
+        toast.error(result.error, { id: refinementToastId });
         return;
       }
       setActionResult(result);
-      if (!result.ok) toast.error(result.error);
+      if (!result.ok) {
+        toast.error(result.error, { id: refinementToastId });
+        return;
+      }
+      toast.success(`Added ${product.name} at ${formatDuration(timeSeconds)}`, {
+        id: refinementToastId,
+      });
     });
   }
 
-  function deleteCue(cueId: string) {
+  function requestCueDeletion(target: CueDeletionTarget) {
+    if (deletingCueIdRef.current !== null) return;
+    setCueToDelete(target);
+  }
+
+  function deleteCue() {
+    const target = cueToDelete;
+    if (!target || deletingCueIdRef.current !== null) return;
+
+    deletingCueIdRef.current = target.cueId;
+    setDeletingCueId(target.cueId);
     const formData = new FormData();
-    formData.set('cueId', cueId);
+    formData.set('cueId', target.cueId);
     formData.set('showSlug', showSlug);
     startTransition(async () => {
-      setActionResult(await deletePreviewCueAction(formData));
+      try {
+        setActionResult(await deletePreviewCueAction(formData));
+        setCueToDelete(null);
+      } finally {
+        deletingCueIdRef.current = null;
+        setDeletingCueId(null);
+      }
     });
   }
 
@@ -659,6 +709,8 @@ export function FireworkReplayViewer({
           )}
         >
           <div
+            ref={fullscreenContainerRef}
+            {...fullscreenContainerProps}
             className={cn(
               'group/replay',
               isFullscreen
@@ -701,7 +753,7 @@ export function FireworkReplayViewer({
             {replayReady ? (
               <div
                 className={cn(
-                  'absolute inset-x-0 bottom-6 z-20 transition-all duration-300',
+                  'absolute inset-x-0 bottom-6 z-20 transition-opacity duration-300 motion-reduce:transition-none',
                   playbackControlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
                 )}
               >
@@ -731,7 +783,7 @@ export function FireworkReplayViewer({
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
               <div>
                 <Eyebrow tone="muted">Cue builder</Eyebrow>
-                <h3 className="text-on-surface mt-2 text-2xl font-bold">Cues</h3>
+                <h2 className="text-on-surface mt-2 text-2xl font-bold">Cues</h2>
               </div>
               <div className="flex items-center gap-3">
                 {actionResult ? (
@@ -906,6 +958,42 @@ export function FireworkReplayViewer({
               </DialogContent>
             </Dialog>
 
+            {cueToDelete ? (
+              <AlertDialog
+                open
+                onOpenChange={(open) => {
+                  if (!open && deletingCueId === null) setCueToDelete(null);
+                }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this cue?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently removes <strong>{cueToDelete.fireworkName}</strong> at{' '}
+                      <span className="font-mono tabular-nums">{cueToDelete.timeLabel}</span> from
+                      this show.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deletingCueId !== null}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      disabled={deletingCueId !== null}
+                      aria-busy={deletingCueId !== null}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        deleteCue();
+                      }}
+                    >
+                      <span aria-live="polite">
+                        {deletingCueId === cueToDelete.cueId ? 'Deleting…' : 'Delete cue'}
+                      </span>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+
             <div className="space-y-3">
               {builderCues.length > 0 ? (
                 <div>
@@ -936,27 +1024,31 @@ export function FireworkReplayViewer({
                           const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
                           const fireworkName =
                             productNameById.get(cue.productId) ?? cue.firework.name;
+                          const cueTimeLabel = formatDuration(cue.timeSeconds);
                           const isActive = activeBaseCueIds.has(baseCueId);
                           return (
                             <tr
                               key={baseCueId}
-                              onClick={() => {
-                                setIsPlaying(false);
-                                seekTo(cue.timeSeconds, false);
-                              }}
-                              aria-current={isActive ? 'true' : undefined}
                               className={tableRowClasses(
                                 cn(
-                                  'cursor-pointer',
                                   isActive &&
                                     'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
                                 ),
                               )}
                             >
                               <td className={tableCellClasses('h-14')}>
-                                <span className="text-tertiary font-mono text-sm font-bold tabular-nums">
-                                  {formatDuration(cue.timeSeconds)}
-                                </span>
+                                <button
+                                  type="button"
+                                  aria-label={`Seek to ${fireworkName} at ${cueTimeLabel}`}
+                                  aria-current={isActive ? 'true' : undefined}
+                                  onClick={() => {
+                                    setIsPlaying(false);
+                                    seekTo(cue.timeSeconds, false);
+                                  }}
+                                  className="text-tertiary hover:bg-muted hover:text-foreground focus-visible:ring-ring -my-2 -ml-2 inline-flex min-h-10 rounded-md px-2 font-mono text-sm font-bold tabular-nums transition-colors focus:outline-none focus-visible:ring-3"
+                                >
+                                  {cueTimeLabel}
+                                </button>
                               </td>
                               <td className={tableCellClasses('h-14')}>
                                 <TruncatedCell text={fireworkName} />
@@ -971,10 +1063,7 @@ export function FireworkReplayViewer({
                                   {mortarLabel}
                                 </span>
                               </td>
-                              <td
-                                className={tableCellClasses('h-14 text-right')}
-                                onClick={(event) => event.stopPropagation()}
-                              >
+                              <td className={tableCellClasses('h-14 text-right')}>
                                 <RowActionsMenu
                                   label="Cue actions"
                                   items={[
@@ -1006,8 +1095,13 @@ export function FireworkReplayViewer({
                                       label: 'Delete cue',
                                       icon: <Trash2 size={14} strokeWidth={2} />,
                                       destructive: true,
-                                      disabled: isPending,
-                                      onSelect: () => deleteCue(baseCueId),
+                                      disabled: isPending || deletingCueId !== null,
+                                      onSelect: () =>
+                                        requestCueDeletion({
+                                          cueId: baseCueId,
+                                          fireworkName,
+                                          timeLabel: cueTimeLabel,
+                                        }),
                                     },
                                   ]}
                                 />
@@ -1068,7 +1162,7 @@ export function FireworkReplayViewer({
             <div className="space-y-2">
               <StatChip
                 label="Total cost"
-                value={totalCents != null ? formatTotal(totalCents) : '—'}
+                value={totalCents != null ? formatTotal(totalCents) : '-'}
               />
               <StatChip label="Fireworks" value={String(builderCues.length)} />
               <StatChip label="Length" value={formatDuration(duration)} />
@@ -1084,10 +1178,10 @@ export function FireworkReplayViewer({
                 </div>
                 <div>
                   <Eyebrow tone="muted">Refine with prompt</Eyebrow>
-                  <h3 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h3>
+                  <h2 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h2>
                   <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
-                    Say what you want next — &ldquo;add green firework at the start&rdquo;,
-                    &ldquo;something gold at 1:20&rdquo; — and we&apos;ll drop a matching cue in.
+                    Say what you want next: &ldquo;add green firework at the start&rdquo; or
+                    &ldquo;something gold at 1:20&rdquo;, and we&apos;ll drop a matching cue in.
                   </p>
                   <p className="text-on-surface-variant mt-2 text-xs leading-relaxed">
                     This will use {REFINEMENT_CREDIT_COST} AI credits.

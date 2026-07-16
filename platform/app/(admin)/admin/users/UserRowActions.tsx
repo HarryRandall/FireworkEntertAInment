@@ -29,7 +29,7 @@ type Props = {
 
 export function UserRowActions({ userId, email, status, displayName, canImpersonate }: Props) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [impersonateConfirmOpen, setImpersonateConfirmOpen] = useState(false);
 
@@ -50,27 +50,36 @@ export function UserRowActions({ userId, email, status, displayName, canImperson
 
   const toggleStatus = () => {
     startTransition(async () => {
-      const next = isActive ? 'suspended' : 'active';
-      const result = await setUserStatusAction({ userId, status: next });
-      if (result.ok) {
-        toast.success(`User ${next === 'active' ? 'activated' : 'suspended'}`);
-        router.refresh();
-      } else {
-        toast.error(result.error);
+      try {
+        const next = isActive ? 'suspended' : 'active';
+        const result = await setUserStatusAction({ userId, status: next });
+        if (result.ok) {
+          toast.success(`User ${next === 'active' ? 'activated' : 'suspended'}`);
+          router.refresh();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('Could not update the user status');
       }
     });
   };
 
   const confirmDelete = () => {
     startTransition(async () => {
-      const result = await deleteUserAction({ userId });
-      if (result.ok) {
-        toast.success('User deleted');
-        router.refresh();
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await deleteUserAction({ userId });
+        if (result.ok) {
+          toast.success('User deleted');
+          router.refresh();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('Could not delete the user');
+      } finally {
+        setDeleteConfirmOpen(false);
       }
-      setDeleteConfirmOpen(false);
     });
   };
 
@@ -87,33 +96,42 @@ export function UserRowActions({ userId, email, status, displayName, canImperson
   return (
     <>
       <RowActionsMenu
+        busy={isPending}
         items={[
           {
             label: 'Impersonate',
             icon: <LogIn size={14} />,
-            disabled: !canImpersonate,
+            disabled: isPending || !canImpersonate,
             onSelect: () => setImpersonateConfirmOpen(true),
           },
           {
             label: 'Copy email',
             icon: <Copy size={14} />,
+            disabled: isPending,
             onSelect: copyEmail,
           },
           {
-            label: isActive ? 'Suspend' : 'Activate',
+            label: isPending ? 'Updating…' : isActive ? 'Suspend' : 'Activate',
             icon: isActive ? <PauseCircle size={14} /> : <PlayCircle size={14} />,
+            disabled: isPending,
             onSelect: toggleStatus,
           },
           {
             label: 'Delete',
             icon: <Trash2 size={14} />,
             destructive: true,
+            disabled: isPending,
             onSelect: () => setDeleteConfirmOpen(true),
           },
         ]}
       />
-      <AlertDialog open={impersonateConfirmOpen} onOpenChange={setImpersonateConfirmOpen}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={impersonateConfirmOpen}
+        onOpenChange={(open) => {
+          if (!isPending) setImpersonateConfirmOpen(open);
+        }}
+      >
+        <AlertDialogContent aria-busy={isPending || undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>Impersonate user?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -122,21 +140,27 @@ export function UserRowActions({ userId, email, status, displayName, canImperson
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={isPending}
               onClick={(e) => {
                 e.preventDefault();
                 startImpersonating();
               }}
             >
-              Start impersonating
+              {isPending ? 'Starting…' : 'Start impersonating'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          if (!isPending) setDeleteConfirmOpen(open);
+        }}
+      >
+        <AlertDialogContent aria-busy={isPending || undefined}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete user?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -144,15 +168,16 @@ export function UserRowActions({ userId, email, status, displayName, canImperson
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={isPending}
               onClick={(e) => {
                 e.preventDefault();
                 confirmDelete();
               }}
               variant="destructive"
             >
-              Delete
+              {isPending ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

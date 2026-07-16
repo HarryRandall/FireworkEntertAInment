@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Play } from 'lucide-react';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import type { ReplayCue } from '@/lib/show-domain';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { ShowSummaryCard } from '@/lib/show-summary';
@@ -135,6 +136,7 @@ function ShowReplayPreviewSurface({
 }
 
 export function ShowReplayPreviewProvider({ children }: { children: ReactNode }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [active, setActive] = useState<ActivePreview | null>(null);
   const [pending, setPending] = useState<{ id: string; element: HTMLElement } | null>(null);
   const [mountedPreview, setMountedPreview] = useState<MountedPreview | null>(null);
@@ -176,17 +178,26 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
     parkOverlay();
   }, [clearIntentTimer, parkOverlay]);
 
+  useEffect(() => {
+    if (!prefersReducedMotion) return;
+    cancelActivePreview();
+  }, [cancelActivePreview, prefersReducedMotion]);
+
   const confirmPreview = useCallback(
     async (serial: number, id: string, element: HTMLElement, show: ShowSummaryCard) => {
       let cues = cueCacheRef.current.get(show.id);
       if (!cues) {
         try {
           cues = await getShowReplayPreviewCues(show.id);
+          cueCacheRef.current.set(show.id, cues);
         } catch (error) {
           console.error('[show-replay] cue fetch failed', error);
-          cues = [];
+          if (requestSerialRef.current !== serial) return;
+          setPending((current) => (current && current.id === id ? null : current));
+          setActive(null);
+          parkOverlay();
+          return;
         }
-        cueCacheRef.current.set(show.id, cues);
       }
 
       if (requestSerialRef.current !== serial) return;
@@ -206,6 +217,8 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
 
   const requestPreview = useCallback(
     (id: string, element: HTMLElement, show: ShowSummaryCard) => {
+      if (prefersReducedMotion) return;
+
       requestSerialRef.current += 1;
       const serial = requestSerialRef.current;
       clearIntentTimer();
@@ -215,7 +228,7 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         void confirmPreview(serial, id, element, show);
       }, HOVER_INTENT_MS);
     },
-    [clearIntentTimer, confirmPreview],
+    [clearIntentTimer, confirmPreview, prefersReducedMotion],
   );
 
   const releasePreview = useCallback(
@@ -253,8 +266,11 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       return;
     }
 
-    let raf = 0;
-    const follow = () => {
+    // Scroll-like movement cancels the preview above. Remeasure only when the
+    // card or viewport resizes so overlay tracking does not force layout each frame.
+    let frame = 0;
+    const positionOverlay = () => {
+      frame = 0;
       if (!active.element.isConnected) {
         parkOverlay();
         return;
@@ -268,7 +284,6 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         rect.left >= window.innerWidth
       ) {
         overlay.style.opacity = '0';
-        raf = requestAnimationFrame(follow);
         return;
       }
 
@@ -277,12 +292,25 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
       overlay.style.width = `${rect.width}px`;
       overlay.style.height = `${rect.height}px`;
       overlay.style.clipPath = 'inset(0 round 0.75rem)';
-      raf = requestAnimationFrame(follow);
     };
 
-    follow();
-    return () => cancelAnimationFrame(raf);
-  }, [active, parkOverlay]);
+    const schedulePosition = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(positionOverlay);
+    };
+
+    schedulePosition();
+    window.addEventListener('resize', schedulePosition);
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedulePosition);
+    resizeObserver?.observe(active.element);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', schedulePosition);
+      resizeObserver?.disconnect();
+    };
+  }, [active, parkOverlay, ready]);
 
   return (
     <ShowReplayPreviewContext.Provider
@@ -304,7 +332,7 @@ export function ShowReplayPreviewProvider({ children }: { children: ReactNode })
         className="pointer-events-none fixed top-0 left-0 z-30 overflow-hidden rounded-xl opacity-0"
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
-        {mountedPreview ? (
+        {mountedPreview && !prefersReducedMotion ? (
           <>
             <ShowReplayPreviewSurface
               preview={mountedPreview}

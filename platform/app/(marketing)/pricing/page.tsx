@@ -1,17 +1,17 @@
-/** Marketing "Pricing" page. */
+/** Public plan information grounded in the current AI-credit implementation. */
 
 import type { Metadata } from 'next';
-import { Check, Sparkles } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Container } from '@/app/components/ui/Container';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
-import { Eyebrow } from '@/app/components/ui/Badge';
+import { Badge, Eyebrow } from '@/app/components/ui/Badge';
 import { PageHeader } from '@/app/components/marketing/PageHeader';
 
 export const metadata: Metadata = {
   title: 'Pricing · ShowCrafter',
   description:
-    'ShowCrafter is free to design. You only pay for the fireworks you actually fire — no subscription, no markup.',
+    'The ShowCrafter Free plan is available now with a starter AI-credit grant. Paid plan details are not yet published.',
 };
 
 type Plan = {
@@ -19,55 +19,49 @@ type Plan = {
   price: string;
   cadence: string;
   description: string;
-  cta: { href: string; label: string };
-  highlighted?: boolean;
-  features: string[];
+  status: 'Available' | 'Coming soon';
+  features: readonly string[];
+  cta?: { href: string; label: string };
+  available?: boolean;
 };
 
-const PLANS: Plan[] = [
+const FUTURE_PLAN_DETAILS = [
+  'Pricing is not published',
+  'Allowances are not published',
+  'No purchase or upgrade flow is available',
+] as const;
+
+const PLANS: readonly Plan[] = [
   {
-    name: 'Spark',
+    name: 'Free',
     price: '$0',
-    cadence: 'free forever',
-    description: 'Everything you need to design and preview a backyard show.',
-    cta: { href: '/signup', label: 'Start free' },
+    cadence: 'available now',
+    description: 'For trying ShowCrafter and building show plans during the beta.',
+    status: 'Available',
+    cta: { href: '/signup', label: 'Start on Free' },
+    available: true,
     features: [
-      'Up to 3 active shows',
-      'Songs up to 4 minutes',
-      'Live 3D preview',
-      'ICON Pyrotechnics catalogue',
-      'Printable show guide',
+      '150 starter AI credits',
+      'Catalogue-linked cue planning',
+      '3D show previews',
+      'Derived shopping lists',
     ],
   },
   {
-    name: 'Pyromaster',
-    price: '$19',
-    cadence: 'per month',
-    description: 'For enthusiasts running multiple shows a season.',
-    highlighted: true,
-    cta: { href: '/signup', label: 'Start 14-day trial' },
-    features: [
-      'Unlimited shows',
-      'Songs up to 12 minutes',
-      'Multi-segment finales',
-      'Audio click-track export',
-      'Custom safety zones',
-      'Priority email support',
-    ],
+    name: 'Pro',
+    price: 'Not available',
+    cadence: 'details not finalised',
+    description: 'A future paid plan shown for product direction only.',
+    status: 'Coming soon',
+    features: FUTURE_PLAN_DETAILS,
   },
   {
-    name: 'Vendor',
-    price: 'Custom',
-    cadence: 'talk to us',
-    description: 'For pyrotechnics retailers and licensed display operators.',
-    cta: { href: '/contact', label: 'Contact sales' },
-    features: [
-      'Everything in Pyromaster',
-      'White-label show designer',
-      'Live inventory integration',
-      'Customer show analytics',
-      'Dedicated success manager',
-    ],
+    name: 'Ultra',
+    price: 'Not available',
+    cadence: 'details not finalised',
+    description: 'A future paid plan shown for product direction only.',
+    status: 'Coming soon',
+    features: FUTURE_PLAN_DETAILS,
   },
 ];
 
@@ -76,9 +70,9 @@ export default function PricingPage() {
     <>
       <PageHeader
         eyebrow="Pricing"
-        title="Free to design."
-        highlight="Pay for the bang."
-        subtitle="No subscription required. Use ShowCrafter for free — only pay for the fireworks you choose to buy from ICON Pyrotechnics."
+        title="Free today."
+        highlight="Paid plans later."
+        subtitle="Free is the only plan available now. Pro and Ultra cannot be purchased, and their pricing and allowances have not been finalised."
       />
 
       <section className="py-24">
@@ -88,23 +82,26 @@ export default function PricingPage() {
               <Card
                 key={plan.name}
                 radius="lg"
-                elevation={plan.highlighted ? 'high' : 'low'}
+                shadow={plan.available}
                 className={`relative flex flex-col p-8 ${
-                  plan.highlighted ? 'border-primary/40 ring-primary/30 ring-1' : ''
+                  plan.available ? 'border-primary/40 ring-primary/30 ring-1' : ''
                 }`}
               >
-                {plan.highlighted ? (
-                  <span className="bg-primary-container text-on-primary-container absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.2em] uppercase shadow-[var(--shadow-cta)]">
-                    <Sparkles size={12} strokeWidth={2} />
-                    Most popular
-                  </span>
-                ) : null}
-                <Eyebrow tone={plan.highlighted ? 'primary' : 'muted'}>{plan.name}</Eyebrow>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-on-surface text-5xl font-extrabold tracking-tight tabular-nums">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-on-surface text-sm font-semibold tracking-wide uppercase">
+                    {plan.name}
+                  </h2>
+                  <Badge tone={plan.available ? 'primary' : 'neutral'}>{plan.status}</Badge>
+                </div>
+                <div className="mt-4">
+                  <span
+                    className={`text-on-surface block font-extrabold tracking-tight ${
+                      plan.available ? 'text-5xl tabular-nums' : 'text-3xl text-balance'
+                    }`}
+                  >
                     {plan.price}
                   </span>
-                  <span className="text-on-surface-variant text-sm">{plan.cadence}</span>
+                  <span className="text-on-surface-variant mt-1 block text-sm">{plan.cadence}</span>
                 </div>
                 <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
                   {plan.description}
@@ -113,32 +110,33 @@ export default function PricingPage() {
                   {plan.features.map((feature) => (
                     <li key={feature} className="text-on-surface flex items-start gap-3 text-sm">
                       <span className="bg-primary/15 text-primary mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
-                        <Check size={12} strokeWidth={2.5} />
+                        <Check aria-hidden size={12} strokeWidth={2.5} />
                       </span>
                       {feature}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8">
-                  <Button
-                    href={plan.cta.href}
-                    size="md"
-                    variant={plan.highlighted ? 'primary' : 'secondary'}
-                    className="w-full"
-                  >
-                    {plan.cta.label}
-                  </Button>
-                </div>
+                {plan.cta ? (
+                  <div className="mt-8">
+                    <Button href={plan.cta.href} size="md" className="w-full">
+                      {plan.cta.label}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-on-surface-variant mt-8 text-center text-sm font-medium">
+                    Not open for sign-up
+                  </p>
+                )}
               </Card>
             ))}
           </div>
 
           <div className="border-outline-variant/15 bg-surface-container-low mx-auto mt-20 max-w-2xl rounded-2xl border p-8 text-center">
-            <Eyebrow>The fine print</Eyebrow>
+            <Eyebrow>Beta configuration</Eyebrow>
             <p className="text-on-surface-variant mt-3 text-base leading-relaxed">
-              ShowCrafter never marks up fireworks. You always pay the ICON Pyrotechnics retail
-              price, and you can pick up your order at any authorised stockist. We make money from
-              the optional Pyromaster subscription, not from your pyro budget.
+              New AI-credit accounts currently receive a 150-credit starter grant. Generation costs
+              can vary by mode or model and are shown in the creation flow before the final Generate
+              action.
             </p>
           </div>
         </Container>

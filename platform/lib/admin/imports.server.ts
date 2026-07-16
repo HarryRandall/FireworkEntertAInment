@@ -5,10 +5,6 @@
  * which {@link createSignedImportVideoUrl} produces. We try the service-role
  * client first (works regardless of bucket policy) and fall back to the
  * user-scoped client.
- *
- * The list query has a "fallback" branch: older deploys may be on a schema
- * missing the newer columns, so if the wide select fails we retry with a
- * narrow select and synthesise the new fields.
  */
 import 'server-only';
 
@@ -29,98 +25,74 @@ import {
 } from './mappers';
 import { getServerClient } from './supabase';
 
+function throwImportReadError(operation: string, error: unknown): never {
+  console.error(`[admin.imports] ${operation} failed:`, error);
+  throw new Error('Import data could not be loaded.', { cause: error });
+}
+
 /**
  * Mints a 1-hour signed URL for an import video, preferring the service-role
- * client. Logs but never throws on failure — callers degrade to the raw URL.
+ * client and falling back to the caller's session.
  */
 async function createSignedImportVideoUrl(
-  storagePath: string,
+  storagePaths: string[],
   sessionSupabase: Awaited<ReturnType<typeof getServerClient>>,
-): Promise<string | null> {
+): Promise<string> {
   const service = createServiceRoleSupabase();
-  if (service) {
-    const svcResult = await service.storage
+  let lastError: unknown = new Error('Supabase Storage did not return a signed URL.');
+
+  for (const storagePath of storagePaths) {
+    if (service) {
+      const svcResult = await service.storage
+        .from(IMPORT_VIDEO_BUCKET)
+        .createSignedUrl(storagePath, 60 * 60);
+      if (!svcResult.error && svcResult.data?.signedUrl) {
+        return svcResult.data.signedUrl;
+      }
+      lastError = svcResult.error ?? lastError;
+      console.error(
+        '[admin.imports] createSignedImportVideoUrl service-role attempt failed:',
+        svcResult.error ?? 'missing URL',
+      );
+    }
+
+    const { data: signed, error: signedError } = await sessionSupabase.storage
       .from(IMPORT_VIDEO_BUCKET)
       .createSignedUrl(storagePath, 60 * 60);
-    if (!svcResult.error && svcResult.data?.signedUrl) {
-      return svcResult.data.signedUrl;
+    if (!signedError && signed?.signedUrl) {
+      return signed.signedUrl;
     }
+    lastError = signedError ?? lastError;
     console.error(
-      '[admin.server] service-role import video signing failed:',
-      svcResult.error?.message ?? 'unknown',
+      '[admin.imports] createSignedImportVideoUrl session attempt failed:',
+      signedError ?? 'missing URL',
     );
   }
 
-  const { data: signed, error: signedError } = await sessionSupabase.storage
-    .from(IMPORT_VIDEO_BUCKET)
-    .createSignedUrl(storagePath, 60 * 60);
-  if (signedError || !signed?.signedUrl) {
-    console.error(
-      '[admin.server] session import video signing failed:',
-      signedError?.message ?? 'missing URL',
-    );
-    return null;
-  }
-  return signed.signedUrl;
+  throwImportReadError('createSignedImportVideoUrl', lastError);
 }
 
 /** Returns the import-job list, or `[]` when unauthorised. Cached. */
-export async function listImportJobs(): Promise<ImportJobSummary[]> {
+export async function listImportJobs(
+  view: 'active' | 'archived' = 'active',
+): Promise<ImportJobSummary[]> {
   if (!(await requirePermission('admin.manage_imports'))) return [];
-  const cacheKey = getAdminImportsCacheKey();
+  const cacheKey = getAdminImportsCacheKey(view);
   const cached = await getCachedJson<ImportJobSummary[]>(cacheKey);
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, archived_at, archived_by, started_at, completed_at, created_at, updated_at',
     )
     .order('updated_at', { ascending: false });
+  query =
+    view === 'archived' ? query.not('archived_at', 'is', null) : query.is('archived_at', null);
+  const { data, error } = await query;
   if (error) {
-    // Older deployments are missing the wide column set — retry with a narrow
-    // select and synthesise the missing fields rather than blowing up.
-    const { data: fallbackData, error: fallbackError } = await supabase
-      .from('import_jobs')
-      .select(
-        'id, kind, status, source_name, source_url, row_count, error_message, created_at, updated_at',
-      )
-      .order('updated_at', { ascending: false });
-    if (fallbackError) {
-      console.error('[admin.server] listImportJobs failed:', fallbackError);
-      return [];
-    }
-    const fallbackMapped = (
-      (fallbackData ?? []) as Pick<
-        ImportJobRow,
-        | 'id'
-        | 'kind'
-        | 'status'
-        | 'source_name'
-        | 'source_url'
-        | 'row_count'
-        | 'error_message'
-        | 'created_at'
-        | 'updated_at'
-      >[]
-    ).map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      status: row.status,
-      sourceName: row.source_name,
-      sourceUrl: row.source_url,
-      mediaAssetId: null,
-      selectedModel: null,
-      processingProgress: row.status === 'complete' ? 100 : 0,
-      approvedCatalogueItemId: null,
-      rowCount: row.row_count,
-      errorMessage: row.error_message,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
-    await setCachedJson(cacheKey, fallbackMapped, ADMIN_CACHE_TTL_SECONDS);
-    return fallbackMapped;
+    throwImportReadError('listImportJobs', error);
   }
   const mapped = ((data ?? []) as ImportJobRow[]).map(mapImportJob);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
@@ -138,13 +110,12 @@ export async function getImportJobDetail(jobId: string): Promise<ImportJobDetail
   const { data: job, error: jobError } = await supabase
     .from('import_jobs')
     .select(
-      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, started_at, completed_at, created_at, updated_at',
+      'id, created_by, kind, status, source_name, source_url, media_asset_id, selected_model, processing_progress, processor_version, approved_catalogue_item_id, row_count, error_message, archived_at, archived_by, started_at, completed_at, created_at, updated_at',
     )
     .eq('id', jobId)
     .maybeSingle();
   if (jobError) {
-    console.error('[admin.server] getImportJobDetail failed:', jobError);
-    return null;
+    throwImportReadError('getImportJobDetail', jobError);
   }
   if (!job) return null;
 
@@ -166,10 +137,10 @@ export async function getImportJobDetail(jobId: string): Promise<ImportJobDetail
   ]);
 
   if (mediaResult.error) {
-    console.error('[admin.server] import media lookup failed:', mediaResult.error);
+    throwImportReadError('getImportJobDetail media lookup', mediaResult.error);
   }
   if (outputsResult.error) {
-    console.error('[admin.server] import outputs lookup failed:', outputsResult.error);
+    throwImportReadError('getImportJobDetail outputs lookup', outputsResult.error);
   }
 
   const media = mediaResult.data ? mapMediaAsset(mediaResult.data as MediaAssetRow) : null;
@@ -178,17 +149,12 @@ export async function getImportJobDetail(jobId: string): Promise<ImportJobDetail
     : { storagePath: null, mimeType: null };
   let videoUrl = media?.url ?? job.source_url ?? null;
   if (preferredVideo.storagePath) {
-    const signedUrl = await createSignedImportVideoUrl(preferredVideo.storagePath, supabase);
-    if (signedUrl) {
-      videoUrl = signedUrl;
-    } else if (media?.storagePath && media.storagePath !== preferredVideo.storagePath) {
-      // Preferred source (usually a normalised re-encode) didn't sign — try
-      // the original upload path before giving up.
-      const fallbackSignedUrl = await createSignedImportVideoUrl(media.storagePath, supabase);
-      if (fallbackSignedUrl) {
-        videoUrl = fallbackSignedUrl;
-      }
+    const storagePaths = [preferredVideo.storagePath];
+    if (media?.storagePath && media.storagePath !== preferredVideo.storagePath) {
+      storagePaths.push(media.storagePath);
     }
+    const signedUrl = await createSignedImportVideoUrl(storagePaths, supabase);
+    videoUrl = signedUrl;
   }
 
   return {

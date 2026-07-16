@@ -166,12 +166,14 @@ export function TemplateSummaryCardView({
 
 type PromptHeroProps = {
   className?: string;
+  headingLevel?: 'h1' | 'h2';
 };
 
-export function PromptHero({ className }: PromptHeroProps) {
+export function PromptHero({ className, headingLevel = 'h2' }: PromptHeroProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
   const router = useRouter();
+  const Heading = headingLevel;
 
   const goToWizard = () => {
     const trimmed = prompt.trim();
@@ -192,9 +194,9 @@ export function PromptHero({ className }: PromptHeroProps) {
   return (
     <section className={cn('relative isolate mx-auto w-full max-w-3xl py-10', className)}>
       <div className="prompt-hero-glow" aria-hidden />
-      <h2 className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+      <Heading className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
         Create any firework show you can imagine
-      </h2>
+      </Heading>
       <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
         <Textarea
           name="prompt"

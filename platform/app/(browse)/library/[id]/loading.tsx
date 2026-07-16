@@ -35,7 +35,7 @@ export default function LibraryDetailLoading() {
           className="bg-primary text-primary-foreground inline-flex h-11 w-full items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold opacity-70 sm:w-fit"
         >
           <Wand2 size={16} />
-          Use this show
+          Create from template
         </button>
       </header>
 

@@ -153,8 +153,8 @@ Staged so nothing in the live flow changes until we choose to flip it.
   `lighter`, and is capped to ~30fps.
 - Respects `prefers-reduced-motion`: CSS animations pause via the module's media
   query; the Bloom canvas draws a single static frame.
-- Keep cover params bounded (as the generators do) so covers never render
-  harsh/muddy, mirroring the guidance in the design-system skill.
+- Keep cover params bounded, as the generators do, so covers never render
+  harsh or muddy.
 - `mix-blend-mode: screen` needs a dark-ish base to read as "light"; the shared
   gradient base handles this. On very light themes, check contrast of the
   overlaid progress card (already has its own backdrop).

@@ -1,44 +1,36 @@
-/**
- * SocialProof — a quiet partner/retailer logo marquee under the hero,
- * reinforcing the ICON Pyrotechnics partnership and nationwide stocking.
- */
+/** Names the project's documented stakeholders without implying broader retailer coverage. */
+
 import { Container } from '@/app/components/ui/Container';
 import { Underline } from './landing/decor';
 
-const LOGOS = [
-  'PYRO CO.',
-  'SkyMart',
-  'BIG BANG SUPPLY',
-  'Nova Retail',
-  'Crackerjack',
-  'ICON PYRO',
-  'Festival Co',
-  'Boom & Co.',
-];
+const STAKEHOLDERS = [
+  'ICON Pyrotechnics International Co Ltd',
+  'International Fireworks Pty Ltd',
+] as const;
 
 export function SocialProof() {
-  const row = [...LOGOS, ...LOGOS];
   return (
-    <section className="pt-5 pb-10">
-      <Container className="flex flex-col gap-6">
+    <section className="pt-5 pb-10" aria-labelledby="project-stakeholders">
+      <Container className="flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-1.5">
-          <div className="text-on-surface-variant/80 text-center text-[11px] font-semibold tracking-[0.2em] uppercase">
-            Stocked at retailers nationwide
-          </div>
+          <h2
+            id="project-stakeholders"
+            className="text-on-surface-variant text-center text-xs font-semibold tracking-[0.18em] uppercase"
+          >
+            Project stakeholders
+          </h2>
           <Underline width={68} color="currentColor" className="text-on-surface-variant/45" />
         </div>
-        <div className="lp-marquee-mask overflow-hidden">
-          <div className="lp-marquee">
-            {row.map((l, i) => (
-              <span
-                key={i}
-                className="text-on-surface-variant/70 text-lg font-bold tracking-[-0.01em] whitespace-nowrap"
-              >
-                {l}
-              </span>
-            ))}
-          </div>
-        </div>
+        <ul className="flex flex-wrap justify-center gap-3">
+          {STAKEHOLDERS.map((stakeholder) => (
+            <li
+              key={stakeholder}
+              className="border-outline-variant/40 bg-surface-container-low text-on-surface rounded-full border px-5 py-2.5 text-center text-sm font-bold tracking-[-0.01em]"
+            >
+              {stakeholder}
+            </li>
+          ))}
+        </ul>
       </Container>
     </section>
   );

@@ -64,12 +64,14 @@ Before publication or cloning, require all of the following:
 - A non-empty bounded description and a valid `normal`, `accent`, or `peak`
   emphasis.
 - A resolved catalogue item and effective occupancy duration for every cue.
-- No time overlap between cues on the same launch position.
+- No time overlap between any occupied launch positions. A multishot reserves
+  its parent position and every valid absolute child override for its full
+  conservative duration.
 
-Use catalogue item duration when checking occupancy. Do not bypass timing
-validation in bulk imports, duplication, clone actions, or direct Data API
-writes. Postgres must reject an invalid published payload even if a caller
-bypasses the server action.
+Use catalogue item duration and multishot child-position metadata when checking
+occupancy. Do not bypass timing validation in bulk imports, duplication, clone
+actions, or direct Data API writes. Postgres must reject an invalid published
+payload even if a caller bypasses the server action.
 
 ## Likes
 

@@ -50,8 +50,8 @@
   /* Content (text/icons) */
   --color-content-emphasis: #24242a;
   --color-content-default: #3d3d45;
-  --color-content-subtle: #747680;
-  --color-content-muted: #9b9da7;
+  --color-content-subtle: #62646d;
+  --color-content-muted: #6b6d76;
   --color-content-inverted: #ffffff;
 
   /* Accent - neutral system colour. Use rainbow utilities for soft highlights. */
@@ -378,31 +378,46 @@ body {
 }
 
 /* ============================================================
-   Marketing landing page — decorative effects (prefix: lp-)
+   Marketing landing page - decorative effects (prefix: lp-)
    Type-forward green-accent homepage. Used only under (marketing).
    ============================================================ */
 
-/* Marker highlight behind a word (the 'look here' device) */
+/* Marker highlight wraps on phones, then restores its hand-drawn sweep on larger screens. */
 .lp-mark {
   position: relative;
-  white-space: nowrap;
+  padding-inline: 0.08em;
+  border-radius: 0.32em;
+  background: color-mix(in srgb, var(--hl) 34%, transparent);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .lp-mark > span {
   position: relative;
   z-index: 1;
 }
-.lp-mark::before {
-  content: '';
-  position: absolute;
-  left: -0.1em;
-  right: -0.1em;
-  top: 0.08em;
-  bottom: 0.04em;
-  background: var(--hl);
-  opacity: 0.34;
-  border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
-  transform: rotate(-1.4deg);
-  z-index: 0;
+
+@media (min-width: 40rem) {
+  .lp-mark {
+    padding-inline: 0;
+    white-space: nowrap;
+    border-radius: 0;
+    background: transparent;
+    -webkit-box-decoration-break: slice;
+    box-decoration-break: slice;
+  }
+  .lp-mark::before {
+    content: '';
+    position: absolute;
+    left: -0.1em;
+    right: -0.1em;
+    top: 0.08em;
+    bottom: 0.04em;
+    background: var(--hl);
+    opacity: 0.34;
+    border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
+    transform: rotate(-1.4deg);
+    z-index: 0;
+  }
 }
 
 /* Doodle illustrations, inlined from SVG source assets and driven by CSS vars. */
@@ -645,7 +660,8 @@ body {
 .lp-menu {
   position: relative;
 }
-.lp-menu:hover .lp-nav-pill svg {
+.lp-menu:hover .lp-nav-pill svg,
+.lp-menu:focus-within .lp-nav-pill svg {
   transform: rotate(180deg);
 }
 .lp-menu-panel {
@@ -675,7 +691,8 @@ body {
   top: -14px;
   height: 14px;
 }
-.lp-menu:hover .lp-menu-panel {
+.lp-menu:hover .lp-menu-panel,
+.lp-menu:focus-within .lp-menu-panel {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
@@ -702,6 +719,26 @@ body {
   border-radius: 8px;
   background: var(--hl-soft);
   color: var(--hl-ink);
+}
+
+.lp-mobile-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  max-height: calc(100dvh - 66px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-mobile-menu[data-state='open'] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 /* New-show wizard: step panel enter animation */
@@ -894,6 +931,12 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+
+  .lp-mobile-menu,
+  .lp-mobile-menu[data-state='open'] {
+    transform: none !important;
+    transition: none !important;
+  }
 }
 /*
  ---break---
@@ -956,23 +999,23 @@ body {
   --card-foreground: #24242a;
   --popover: #ffffff;
   --popover-foreground: #24242a;
-  --primary: #0e9d6a;
+  --primary: #075f40;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f6;
   --secondary-foreground: #24242a;
   --muted: #f4f4f6;
-  --muted-foreground: #747680;
+  --muted-foreground: #6b6d76;
   --accent: #e1e1e7;
   --accent-foreground: #24242a;
   --destructive: #dc2626;
   --border: #e5e5ea;
   --input: #d9d9e2;
-  --ring: #15bd8b;
+  --ring: #002f20;
 
   /* Brand highlight (marker green) + per-show palette accents */
   --hl: #15bd8b;
   --hl-soft: #d7f3e9;
-  --hl-ink: #0a7d57;
+  --hl-ink: #075f40;
   --hl-contrast: #05231a;
   --stage-night: #05070d;
   --show-gold: #efb93f;
@@ -987,13 +1030,13 @@ body {
   --chart-5: #e1e1e7;
   --radius: var(--radius-card);
   --sidebar: #f4f4f6;
-  --sidebar-foreground: #747680;
+  --sidebar-foreground: #62646d;
   --sidebar-primary: #09090b;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e1e1e7;
   --sidebar-accent-foreground: #24242a;
   --sidebar-border: #e5e5ea;
-  --sidebar-ring: #b9bbc6;
+  --sidebar-ring: #075f40;
 }
 
 .dark,

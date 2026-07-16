@@ -6,7 +6,7 @@
  * and a compact interpretation of the user's creative brief.
  */
 import type { CueSlot, SlotVibe } from '@/lib/beat-grid.server';
-import type { FireworkSpecification } from '@/lib/show-domain';
+import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
@@ -408,7 +408,10 @@ function shouldUseMultiShot(params: {
 
 function toProductInfo(product: FireworkSpecification): ProductInfo {
   const shotCount = Math.max(1, product.shotCount ?? product.spec.shots?.length ?? 1);
-  const durationSeconds = Math.max(product.durationSeconds ?? (shotCount > 1 ? 8 : 1), 0.5);
+  const durationSeconds = Math.max(
+    fireworkOccupancyDurationSeconds(product) ?? (shotCount > 1 ? 8 : 1),
+    0.5,
+  );
   const isMultiShot = shotCount > 1;
   const colourValues = [
     product.spec.color,

@@ -5,45 +5,56 @@
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Mail, CheckCircle, Sparkles } from 'lucide-react';
+import { requestPasswordRecoveryAction } from '@/app/actions/password-recovery';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
-import { createClient } from '@/utils/supabase/client';
 import { FormError } from '@/app/components/ui/FormError';
+
+type ForgotPasswordError = {
+  message: string;
+  field: 'email' | null;
+};
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ForgotPasswordError | null>(null);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
-
-  const supabase = createClient();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const result = await requestPasswordRecoveryAction(email);
+      if (!result.ok) {
+        setError({ message: result.error, field: null });
+        return;
+      }
+      setSent(true);
+    } catch (requestError) {
+      console.error('[password-recovery] request failed:', requestError);
+      setError({
+        message: 'Could not request a reset link. Check your connection and try again.',
+        field: null,
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-    setSent(true);
-    setLoading(false);
   };
 
   return (
     <AuthShell>
       {sent ? (
-        <div className="space-y-5 text-center">
+        <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
-            <CheckCircle size={22} strokeWidth={1.8} />
+            <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
@@ -54,7 +65,10 @@ export default function ForgotPasswordPage() {
               <span className="font-medium text-[color:var(--color-content-emphasis)]">
                 {email}
               </span>
-              , we&apos;ve sent a password reset link. The link expires in 1 hour.
+              , a password reset link may arrive shortly. Follow the link to continue.
+            </p>
+            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+              The link is single-use. If it expires, request another one here.
             </p>
           </div>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
@@ -73,8 +87,7 @@ export default function ForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="text-sm text-[color:var(--color-content-subtle)]">
-              Enter the email associated with your ShowCrafter account and we&apos;ll send you a
-              reset link.
+              Enter the email associated with your ShowCrafter account to request a reset link.
             </p>
           </div>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -87,6 +100,7 @@ export default function ForgotPasswordPage() {
               </label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => {
@@ -94,12 +108,20 @@ export default function ForgotPasswordPage() {
                   setError(null);
                 }}
                 placeholder="you@example.com"
-                iconLeft={<Mail size={16} />}
+                iconLeft={<Mail size={16} aria-hidden="true" />}
                 autoComplete="email"
-                autoFocus
+                spellCheck={false}
+                aria-describedby={
+                  error?.field === 'email' ? 'forgot-password-email-error' : undefined
+                }
+                invalid={error?.field === 'email'}
               />
             </div>
-            {error && <FormError message={error} />}
+            {error ? (
+              <div id="forgot-password-email-error" role="alert" aria-live="polite">
+                <FormError message={error.message} />
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" loading={loading}>
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>
@@ -127,7 +149,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
         className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-          <Sparkles size={14} strokeWidth={2.2} />
+          <Sparkles size={14} strokeWidth={2.2} aria-hidden="true" />
         </span>
         ShowCrafter
       </Link>

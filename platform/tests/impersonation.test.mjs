@@ -52,10 +52,38 @@ test('stop impersonation restores the admin session and clears the return cookie
   assert.match(actions, /export async function stopImpersonationAction/);
   assert.match(actions, /cookieStore\.get\(IMPERSONATION_RETURN_COOKIE\)/);
   assert.match(actions, /\.eq\('return_token_hash', hashReturnToken\(returnToken\)\)/);
+  assert.match(actions, /requestClient\.auth\.getUser\(\)/);
+  assert.match(actions, /currentUser\?\.id !== session\.target_user_id/);
+  assert.match(actions, /This impersonation session is no longer active/);
+  const stopActionIndex = actions.indexOf('export async function stopImpersonationAction');
+  assert.ok(
+    actions.indexOf('currentUser?.id !== session.target_user_id') <
+      actions.indexOf('restoreAdminSession(', stopActionIndex),
+  );
   assert.match(actions, /restoreAdminSession/);
   assert.match(actions, /markImpersonationEnded\(service, session\.id, reason\)/);
   assert.match(actions, /clearReturnCookie\(cookieStore\)/);
   assert.match(actions, /redirect\(`\/admin\/users\/\$\{session\.target_user_id\}`\)/);
+});
+
+test('active impersonation reads fail closed when verification is unavailable', () => {
+  const session = read('lib/impersonation.server.ts');
+
+  assert.match(session, /function throwImpersonationReadError/);
+  assert.match(
+    session,
+    /if \(error\) throwImpersonationReadError\('active session lookup', error\)/,
+  );
+  assert.match(session, /if \(!session\) return null/);
+  assert.match(
+    session,
+    /if \(profilesError\) throwImpersonationReadError\('profile lookup', profilesError\)/,
+  );
+  assert.match(
+    session,
+    /if \(!service\) \{[\s\S]*throwImpersonationReadError\([\s\S]*service client initialisation/,
+  );
+  assert.doesNotMatch(session, /if \(error \|\| !session\)/);
 });
 
 test('security mutations and UI are guarded while impersonating', () => {

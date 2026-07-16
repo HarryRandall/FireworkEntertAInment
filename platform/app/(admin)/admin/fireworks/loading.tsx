@@ -1,15 +1,19 @@
 /** Loading skeleton for the admin fireworks list. */
 
-import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
+import { FireworkBrowseGridSkeleton } from '@/app/components/app/FireworkBrowseCard';
+import { FilterSkeleton } from '@/app/components/app/RouteSkeletons';
+
 export default function AdminFireworksLoading() {
   return (
-    <AdminTableRouteSkeleton
-      searchPlaceholder="Search firework, effect, colour..."
-      headers={['Preview', 'Firework', 'Base effect', 'Colour', 'Calibre', 'Duration', 'Open']}
-      tableClassName="min-w-[960px]"
-      rows={8}
-      filterActionLabel="New firework"
-      ariaLabel="Loading fireworks"
-    />
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      aria-label="Loading fireworks"
+    >
+      <FilterSkeleton
+        searchPlaceholder="Search fireworks or effects..."
+        actionLabel="New firework"
+      />
+      <FireworkBrowseGridSkeleton count={8} />
+    </div>
   );
 }

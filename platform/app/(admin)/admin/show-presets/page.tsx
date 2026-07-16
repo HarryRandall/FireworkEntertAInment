@@ -16,14 +16,13 @@ import { FilterBar, type FilterConfig } from '@/app/components/ui/FilterBar';
 import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin.server';
+import { listShowPresetsForCoverBackfill } from '@/lib/admin/cover-posters.server';
 import { formatDuration, formatStableDateTime } from '@/lib/show-domain';
 import { DuplicateShowPresetButton, ShowPresetCreateActions } from './ShowPresetActions';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 };
-
-type ShowPresetSearchParams = Awaited<PageProps['searchParams']>;
 
 const FILTERS: FilterConfig[] = [
   {
@@ -38,10 +37,7 @@ const FILTERS: FilterConfig[] = [
   },
 ];
 
-export default async function AdminShowPresetsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const importableShows = await listAdminShowPresetImportShows();
-
+export default function AdminShowPresetsPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
       <Suspense
@@ -67,23 +63,22 @@ export default async function AdminShowPresetsPage({ searchParams }: PageProps) 
           </>
         }
       >
-        <ShowPresetsData params={params} importableShows={importableShows} />
+        <ShowPresetsData searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function ShowPresetsData({
-  params,
-  importableShows,
-}: {
-  params: ShowPresetSearchParams;
-  importableShows: Awaited<ReturnType<typeof listAdminShowPresetImportShows>>;
-}) {
+async function ShowPresetsData({ searchParams }: { searchParams: PageProps['searchParams'] }) {
+  const [params, presets, importableShows, coverPresets] = await Promise.all([
+    searchParams,
+    listAdminShowPresets(),
+    listAdminShowPresetImportShows(),
+    listShowPresetsForCoverBackfill(),
+  ]);
   const query = (params.q ?? '').trim().toLowerCase();
   const status = params.status;
   const requestedPage = Number(params.page ?? '1');
-  const presets = await listAdminShowPresets();
 
   const filtered = presets.filter((preset) => {
     const text = [preset.title, preset.slug, preset.theme, preset.description, ...preset.moodTags]
@@ -112,7 +107,7 @@ async function ShowPresetsData({
         <div className="min-w-0 flex-1">
           <FilterBar searchPlaceholder="Search curated shows..." filters={FILTERS} />
         </div>
-        <ShowPresetCreateActions importableShows={importableShows} />
+        <ShowPresetCreateActions importableShows={importableShows} coverPresets={coverPresets} />
       </div>
 
       <DataTableShell

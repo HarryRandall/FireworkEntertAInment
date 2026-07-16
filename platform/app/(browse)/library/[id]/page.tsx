@@ -1,7 +1,7 @@
 /** Show template detail page; lets the user clone a template into a new show. */
 
 import { notFound } from 'next/navigation';
-import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wand2, Wallet } from 'lucide-react';
+import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wallet } from 'lucide-react';
 import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import type * as React from 'react';
@@ -19,8 +19,9 @@ import {
   getCurrentShowPresetLikeState,
   getShowTemplateBySlug,
 } from '@/lib/admin.server';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
 import type { ShowTemplate } from '@/lib/admin.types';
+import { CloneTemplateSubmitButton } from './CloneTemplateSubmitButton';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -32,7 +33,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
   const { cloneError } = (await searchParams) ?? {};
   const template = await getShowTemplateBySlug(id);
   if (!template) notFound();
-  const specificationsPromise = listFireworkProducts();
+  const specificationsPromise = listReferencedShowTemplateSpecifications(template.previewCues);
   const currentProfilePromise = getCurrentProfile();
 
   return (
@@ -49,17 +50,14 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
         <form action={cloneShowTemplateAction} className="w-full sm:w-fit">
           <input type="hidden" name="slug" value={template.slug} />
           <input type="hidden" name="cloneToken" value={randomUUID()} />
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 focus-glow-action inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold shadow-[var(--shadow-cta)] transition-all active:scale-[0.98] sm:w-fit">
-            <Wand2 size={16} />
-            Use this show
-          </button>
+          <CloneTemplateSubmitButton />
         </form>
       </header>
 
       {cloneError ? (
         <InlineAlert tone="danger" title="This show could not be copied">
-          Its catalogue or timeline needs attention. Please try another show while an administrator
-          reviews it.
+          Its catalogue or timeline needs attention. Please try another template while an
+          administrator reviews it.
         </InlineAlert>
       ) : null}
 

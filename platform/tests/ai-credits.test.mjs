@@ -43,17 +43,22 @@ test('customer billing page stays billing-only without AI credit usage', () => {
   const page = read('app/(app)/settings/billing/page.tsx');
   assert.match(page, /Billing/);
   assert.match(page, /Invoices/);
-  assert.match(page, /Next invoice/);
+  assert.match(page, /Billing status/);
   assert.match(page, /BILLING_PLANS/);
   assert.match(page, /name: 'Free'/);
   assert.match(page, /name: 'Pro'/);
   assert.match(page, /name: 'Ultra'/);
-  assert.match(page, /3D site maps/);
-  assert.match(page, /Real location planning/);
-  assert.match(page, /Priority support/);
-  assert.match(page, /Coming soon/);
+  assert.match(page, /150 starter AI credits/);
+  assert.match(page, /Free is the only plan available today/);
+  assert.match(page, /No purchase or upgrade flow is available/);
+  assert.match(page, /There are no invoices for this account/);
+  assert.ok((page.match(/price: 'Unavailable'/g) ?? []).length >= 2);
+  assert.doesNotMatch(
+    page,
+    /3 starter show generations|20 flexible AI credits|30 show generations|100 show generations|3D site maps|Real location planning|Priority support/,
+  );
+  assert.doesNotMatch(page, /Next invoice|INVOICE_ROWS/);
   assert.doesNotMatch(page, /getCurrentUserAiCreditSummary/);
-  assert.doesNotMatch(page, /150 preview AI credits included/);
   assert.doesNotMatch(page, /What AI work costs/);
   assert.doesNotMatch(page, /show_generation_gpt4o/);
   assert.doesNotMatch(page, /credits\.available/);
@@ -62,39 +67,48 @@ test('customer billing page stays billing-only without AI credit usage', () => {
   assert.doesNotMatch(page, /weeklyRemaining/);
 });
 
-test('customer usage page shows free allowance, plan tiers, recent spend pagination, and upgrade', () => {
+test('customer usage page shows the live wallet, spend limits, and recent usage', () => {
   const page = read('app/(app)/settings/usage/page.tsx');
+  const loading = read('app/(app)/settings/usage/loading.tsx');
   assert.match(page, /getCurrentUserAiCreditSummary/);
-  assert.match(page, /Free allowance/);
-  assert.match(page, /FREE_SHOWS_INCLUDED = 3/);
-  assert.match(page, /FREE_AI_CREDITS_INCLUDED = 20/);
-  assert.match(page, /PLAN_TIERS/);
-  assert.match(page, /name: 'Free'/);
-  assert.match(page, /name: 'Pro'/);
-  assert.match(page, /name: 'Ultra'/);
-  assert.match(page, /href: '\/settings\/billing#plans'/);
-  assert.match(page, /PRO_WEEKLY_SHOW_CREDITS = 30/);
-  assert.match(page, /ULTRA_WEEKLY_SHOW_CREDITS = 100/);
+  assert.match(page, /AI credit balance/);
+  assert.match(page, /credits\.includedCredits/);
+  assert.match(page, /credits\.balance/);
+  assert.match(page, /credits\.available/);
+  assert.match(page, /credits\.reserved/);
+  assert.match(page, /credits\.hourlyRemaining/);
+  assert.match(page, /credits\.hourlyLimit/);
+  assert.match(page, /credits\.weeklyRemaining/);
+  assert.match(page, /credits\.weeklyLimit/);
+  assert.match(page, /The hourly limit is not an extra credit allowance/);
   assert.match(page, /RECENT_USAGE_PAGE_SIZE = 5/);
   assert.match(page, /TablePagination/);
   assert.match(page, /pageKey="usagePage"/);
   assert.match(page, /Recent usage/);
+  assert.match(page, /View billing details/);
+  assert.match(page, /You cannot change/);
+  assert.doesNotMatch(
+    page,
+    /FREE_SHOWS_INCLUDED|FREE_AI_CREDITS_INCLUDED|PLAN_TIERS|Upgrade plan|Refill|Top-up credits/,
+  );
   assert.doesNotMatch(page, /Credit costs/);
-  assert.doesNotMatch(page, /Hourly limit/);
-  assert.doesNotMatch(page, /Weekly limit/);
   assert.doesNotMatch(page, /Paid weekly plan/);
   assert.doesNotMatch(page, /Starter pack/);
   assert.doesNotMatch(page, /You are currently on Free/);
   assert.doesNotMatch(page, /show_generation_gpt4o/);
   assert.doesNotMatch(page, /show_generation_opus/);
-  assert.match(page, /Upgrade plan/);
+  assert.match(loading, /AI credit balance/);
+  assert.match(loading, /Usage limits/);
+  assert.match(loading, /Loading current plan details/);
+  assert.doesNotMatch(loading, /Free allowance|free shows|plan allowance/);
 });
 
-test('app shell renders a compact bottom-left show credits meter', () => {
+test('app shell renders a compact bottom-left AI credit meter', () => {
   const summaryRoute = read('app/api/me/summary/route.ts');
   const appShell = read('app/components/app/AppShell.tsx');
   const meterStart = appShell.indexOf('function SidebarAiUsageMeter');
-  const meterEnd = appShell.indexOf('function SidebarCreditSegments');
+  const meterEnd = appShell.indexOf('function AppSidebarFooter');
+  assert.ok(meterStart >= 0 && meterEnd > meterStart);
   const meterBlock = appShell.slice(meterStart, meterEnd);
   // AI usage ships via /api/me/summary (not the (app) layout) so the layout
   // drops a Supabase round-trip per render; the shell fills it client-side and
@@ -105,16 +119,40 @@ test('app shell renders a compact bottom-left show credits meter', () => {
   assert.match(appShell, /Skeleton/);
   assert.match(appShell, /SidebarAiUsageMeter/);
   assert.match(meterBlock, /href="\/settings\/usage"/);
-  assert.match(meterBlock, /shows left/);
-  assert.match(meterBlock, /Upgrade/);
-  assert.match(appShell, /SIDEBAR_FREE_SHOWS_INCLUDED = 3/);
+  assert.match(meterBlock, /aria-label="View AI credit usage"/);
+  assert.match(meterBlock, /credits available/);
+  assert.match(meterBlock, /balancePercentage/);
+  assert.match(meterBlock, /Usage/);
+  assert.doesNotMatch(meterBlock, /shows left|Upgrade/);
+  assert.doesNotMatch(appShell, /SIDEBAR_FREE_SHOWS_INCLUDED/);
   assert.doesNotMatch(meterBlock, /Hourly/);
   assert.doesNotMatch(meterBlock, /Weekly/);
   assert.match(meterBlock, /border-sidebar-border\/75/);
   assert.doesNotMatch(meterBlock, /bg-sidebar-accent\/20/);
-  assert.match(meterBlock, /usage\?\.totalSpent/);
+  assert.match(meterBlock, /usage\?\.balance/);
+  assert.match(meterBlock, /usage\?\.totalGranted/);
   assert.doesNotMatch(meterBlock, /Preview balance/);
   assert.match(meterBlock, /group-data-\[collapsible=icon\]:hidden/);
+  assert.match(appShell, /clearCachedAiUsage\(profileId\)/);
+  assert.match(appShell, /setAiUsage\(null\)/);
+});
+
+test('AI credit reads fail closed instead of fabricating balances or history', () => {
+  const credits = read('lib/ai-credits.server.ts');
+  const summaryRoute = read('app/api/me/summary/route.ts');
+
+  assert.match(credits, /export class AiCreditReadError extends Error/);
+  assert.match(credits, /if \(!usage\.ok\)[\s\S]*throw new AiCreditReadError/);
+  assert.match(credits, /if \(costsResult\.error\) throw new AiCreditReadError/);
+  assert.match(credits, /if \(transactionsResult\.error\) throw new AiCreditReadError/);
+  assert.match(credits, /if \(error\) throw new AiCreditReadError\(error\.message\)/);
+  assert.doesNotMatch(credits, /fallbackBalance|FALLBACK_COSTS/);
+  assert.match(summaryRoute, /error instanceof AiCreditReadError/);
+  assert.match(
+    credits,
+    /reserveAiCredits[\s\S]*try \{[\s\S]*getAiCreditCost[\s\S]*catch \(error\)[\s\S]*ok: false/,
+  );
+  assert.match(credits, /\.or\('transaction_type\.neq\.reserve,status\.eq\.reserved'\)/);
 });
 
 test('settings links keep usage after billing', () => {
@@ -147,6 +185,7 @@ test('show and music generation reserve, settle, and refund credits', () => {
     /creditActionForGenerationMode\(generationMode, selectedCueModel \?\? undefined\)/,
   );
   assert.match(newShowAction, /showGenerationReservationKey\(show\.id\)/);
+  assert.match(newShowAction, /if \(!reservation\.ok\)[\s\S]*\.from\('shows'\)[\s\S]*\.delete\(\)/);
   assert.match(newShowAction, /getShowGenerationPresentationAction/);
   assert.match(newShowAction, /getAiCreditCost/);
   assert.match(newShowAction, /generationMode === 'llm' \? requestedCueModel : null/);
@@ -165,25 +204,58 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   const previewCues = read('app/actions/preview-cues.ts');
   const replayViewer = read('app/components/app/FireworkReplayViewer.tsx');
   const credits = read('lib/ai-credits.server.ts');
+  const databaseTypes = read('lib/database.types.ts');
+  const refinementMigration = read(
+    'supabase/migrations/20260715091500_add_refinement_cues_atomically.sql',
+  );
   assert.match(credits, /showRefinementReservationKey/);
   assert.match(previewCues, /aiCreditAction: z\.enum\(\['show_refinement'\]\)\.optional\(\)/);
   assert.match(previewCues, /reserveAiCredits/);
-  assert.match(previewCues, /settleAiCreditReservation/);
+  assert.match(previewCues, /add_refinement_cue_and_settle_credits/);
   assert.match(previewCues, /refundAiCreditReservation/);
   assert.match(previewCues, /showRefinementReservationKey\(parsed\.data\.aiCreditReferenceId\)/);
+  assert.match(previewCues, /const refinementCommitted =/);
+  assert.match(previewCues, /invalidateSidebarAiUsageCache/);
   assert.match(replayViewer, /formData\.set\('aiCreditAction', 'show_refinement'\)/);
   assert.match(replayViewer, /formData\.set\('aiCreditReferenceId', crypto\.randomUUID\(\)\)/);
+  assert.doesNotMatch(replayViewer, /toast\.success\(`Adding /);
+  assert.match(
+    replayViewer,
+    /const result = await addPreviewCueAction\(formData\)[\s\S]*?toast\.success\(`Added /,
+  );
   assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
+  assert.match(
+    refinementMigration,
+    /create or replace function public\.add_refinement_cue_and_settle_credits\([\s\S]*?security definer[\s\S]*?set search_path = ''/,
+  );
+  assert.match(
+    refinementMigration,
+    /insert into public\.show_timeline_items \([\s\S]*?p_refinement_id[\s\S]*?settlement := public\.settle_ai_credit_reservation/,
+  );
+  assert.match(
+    refinementMigration,
+    /if not coalesce\(\(settlement ->> 'ok'\)::boolean, false\) then[\s\S]*?raise exception/,
+  );
+  assert.match(
+    refinementMigration,
+    /revoke execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?to authenticated;/,
+  );
+  assert.match(
+    databaseTypes,
+    /add_refinement_cue_and_settle_credits: \{[\s\S]*?p_refinement_id: string[\s\S]*?Returns: string/,
+  );
 });
 
-test('admin user detail exposes credit balance, recent spend, and grant controls', () => {
+test('user detail exposes credit balances and grant controls', () => {
   const shell = read('app/components/admin/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
   const grantDialog = read('app/(admin)/admin/users/[id]/GrantAiCreditsDialog.tsx');
   const actions = read('app/actions/admin-users.ts');
-  assert.doesNotMatch(shell, /\/admin\/billing/);
-  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing/page.tsx')), false);
+  // The standalone AI billing tab was removed; credit management lives on the
+  // user detail page.
+  assert.doesNotMatch(shell, /href: '\/admin\/billing'/);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/billing')), false);
   assert.match(userDetail, /AdminUserAiCreditsCard/);
   assert.match(userDetail, /Recent spend/);
   assert.match(userHeaderActions, /GrantAiCreditsDialog/);

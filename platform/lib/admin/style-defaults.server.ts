@@ -10,6 +10,7 @@ import type {
 import type { Database, Json } from '@/lib/database.types';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminStyleDefaultsCacheKey } from './cache-keys';
 import { requirePermission } from './current-user.server';
+import { listStyleDefaultEditorVersions } from './editor-versions.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
 import { getServerClient } from './supabase';
 import {
@@ -102,5 +103,12 @@ export async function getAdminStyleDefaultById(
   defaultId: string,
 ): Promise<AdminStyleDefaultDetail | null> {
   const defaults = await listAdminStyleDefaults();
-  return defaults.find((item) => item.id === defaultId) ?? null;
+  const styleDefault = defaults.find((item) => item.id === defaultId);
+  if (!styleDefault) return null;
+
+  const supabase = await getServerClient();
+  return {
+    ...styleDefault,
+    history: await listStyleDefaultEditorVersions(supabase, defaultId),
+  };
 }

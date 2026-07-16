@@ -1,5 +1,6 @@
 jsonschema>=4.23,<5
 numpy>=2.2,<3
 opencv-python-headless==4.10.0.84
+playwright>=1.50,<2
 requests==2.32.3
 supabase==2.10.0

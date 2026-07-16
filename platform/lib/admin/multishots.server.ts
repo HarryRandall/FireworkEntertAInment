@@ -9,6 +9,10 @@ import type {
 } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import {
+  resolveFireworkPreviewImage,
+  type FireworkPreviewImageRelation,
+} from '@/lib/firework-preview-image';
+import {
   ADMIN_CACHE_TTL_SECONDS,
   getAdminMultishotCacheKey,
   getAdminMultishotsCacheKey,
@@ -47,6 +51,7 @@ type MultishotRow = {
   shot_count: number;
   updated_at: string;
   multishot_fireworks?: MultishotShotRow[] | null;
+  firework_preview_images?: FireworkPreviewImageRelation;
 };
 
 const SHOT_SELECT =
@@ -104,6 +109,7 @@ function mapSummary(row: MultishotRow): AdminMultishotSummary {
     durationSeconds: numberOrNull(row.duration_seconds),
     shotCount: row.shot_count ?? shots.length,
     preview: previewFromShots(shots),
+    ...resolveFireworkPreviewImage(row.firework_preview_images),
     updatedAt: row.updated_at,
   };
 }
@@ -121,6 +127,7 @@ export async function listMultishots(): Promise<AdminMultishotSummary[]> {
     .from('multishots')
     .select(
       `id, slug, name, description, duration_seconds, shot_count, updated_at,
+       firework_preview_images(source_revision, renderer_version, storage_path),
        multishot_fireworks (${SHOT_SELECT})`,
     )
     .order('name', { ascending: true })
@@ -170,6 +177,7 @@ export async function getMultishotById(multishotId: string): Promise<AdminMultis
       .from('multishots')
       .select(
         `id, slug, name, description, duration_seconds, shot_count, updated_at,
+         firework_preview_images(source_revision, renderer_version, storage_path),
          multishot_fireworks (${SHOT_SELECT})`,
       )
       .eq('id', multishotId)

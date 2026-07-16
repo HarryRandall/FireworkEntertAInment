@@ -1,13 +1,11 @@
 'use client';
 
 /**
- * AudioAnalysisTimeline — client card that surfaces generated song context
- * for a show. Rendered inside the authenticated app shell on the show
- * detail route. Auto-refreshes via router.refresh while analysis is
- * running so the server-rendered snapshot transitions to "ready".
+ * Client card that surfaces generated song context for a show. While analysis
+ * is running, it polls a scoped JSON endpoint so this card can update without
+ * refreshing the surrounding route.
  */
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Card } from '@/app/components/ui/Card';
 import type {
   AnalyserKeyMoment,
@@ -19,6 +17,36 @@ type AudioAnalysisTimelineProps = {
   hasAudio: boolean;
   initialAnalysis: ShowAnalysisSnapshot | null;
 };
+
+const POLL_INTERVAL_MS = 5000;
+
+function parseAnalysisResponse(value: unknown): ShowAnalysisSnapshot | null {
+  if (typeof value !== 'object' || value === null || !('analysis' in value)) return null;
+  const analysis = value.analysis;
+  if (
+    typeof analysis !== 'object' ||
+    analysis === null ||
+    !('id' in analysis) ||
+    typeof analysis.id !== 'string' ||
+    !('showId' in analysis) ||
+    typeof analysis.showId !== 'string' ||
+    !('status' in analysis) ||
+    (analysis.status !== 'running' &&
+      analysis.status !== 'completed' &&
+      analysis.status !== 'failed')
+  ) {
+    return null;
+  }
+  return analysis as ShowAnalysisSnapshot;
+}
+
+function statusAnnouncement(hasAudio: boolean, analysis: ShowAnalysisSnapshot | null): string {
+  if (!hasAudio) return 'No audio is available for song analysis.';
+  if (!analysis) return 'Song analysis is not available.';
+  if (analysis.status === 'running') return 'Song analysis is in progress.';
+  if (analysis.status === 'failed') return 'Song analysis failed.';
+  return 'Song analysis completed.';
+}
 
 function statusDescription(hasAudio: boolean, analysis: ShowAnalysisSnapshot | null): string {
   if (!hasAudio) return 'Upload audio when creating the show to generate song context.';
@@ -125,17 +153,78 @@ function KpiTile({ label, value, detail }: { label: string; value: string; detai
 }
 
 export function AudioAnalysisTimeline({ hasAudio, initialAnalysis }: AudioAnalysisTimelineProps) {
-  const router = useRouter();
-  const shouldRefresh = hasAudio && (!initialAnalysis || initialAnalysis.status === 'running');
-  const contextMarkdown = initialAnalysis?.contextMarkdown ?? null;
-  const showStatusCopy = !contextMarkdown || initialAnalysis?.status !== 'completed';
-  const kpis = buildKpis(initialAnalysis?.analysis ?? null);
+  // Tie the client result to its server seed so navigation cannot reuse a
+  // previous show's locally polled snapshot.
+  const [pollState, setPollState] = useState(() => ({
+    source: initialAnalysis,
+    value: initialAnalysis,
+  }));
+  const analysis = pollState.source === initialAnalysis ? pollState.value : initialAnalysis;
+  const activeShowId = hasAudio && analysis?.status === 'running' ? analysis.showId : null;
+  const contextMarkdown = analysis?.contextMarkdown ?? null;
+  const showStatusCopy = !contextMarkdown || analysis?.status !== 'completed';
+  const kpis = buildKpis(analysis?.analysis ?? null);
 
   useEffect(() => {
-    if (!shouldRefresh) return;
-    const interval = window.setInterval(() => router.refresh(), 5000);
-    return () => window.clearInterval(interval);
-  }, [router, shouldRefresh]);
+    if (!activeShowId) return;
+    const showId = activeShowId;
+
+    let cancelled = false;
+    let timeoutId: number | null = null;
+    let requestController: AbortController | null = null;
+    let analysisIsRunning = true;
+
+    function schedulePoll(delay: number) {
+      if (cancelled || !analysisIsRunning || document.visibilityState === 'hidden') return;
+      timeoutId = window.setTimeout(poll, delay);
+    }
+
+    async function poll() {
+      timeoutId = null;
+      if (cancelled || document.visibilityState === 'hidden') return;
+
+      requestController = new AbortController();
+      try {
+        const response = await fetch(`/api/shows/${encodeURIComponent(showId)}/analysis`, {
+          cache: 'no-store',
+          signal: requestController.signal,
+        });
+        if (!response.ok) return;
+
+        const nextAnalysis = parseAnalysisResponse(await response.json());
+        if (cancelled || !nextAnalysis) return;
+
+        analysisIsRunning = nextAnalysis.status === 'running';
+        if (!analysisIsRunning) {
+          setPollState({ source: initialAnalysis, value: nextAnalysis });
+        }
+      } catch {
+        // A transient request failure does not change the analyser's state.
+      } finally {
+        requestController = null;
+        schedulePoll(POLL_INTERVAL_MS);
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        if (timeoutId !== null) window.clearTimeout(timeoutId);
+        timeoutId = null;
+        requestController?.abort();
+        return;
+      }
+      if (timeoutId === null && requestController === null) schedulePoll(0);
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    schedulePoll(POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      requestController?.abort();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activeShowId, initialAnalysis]);
 
   return (
     <div className="space-y-5">
@@ -149,19 +238,28 @@ export function AudioAnalysisTimeline({ hasAudio, initialAnalysis }: AudioAnalys
         </section>
       ) : null}
 
-      <Card elevation="low" radius="md" className="relative p-6">
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {statusAnnouncement(hasAudio, analysis)}
+      </p>
+
+      <Card
+        elevation="low"
+        radius="md"
+        className="relative p-6"
+        aria-busy={analysis?.status === 'running'}
+      >
         <div className="mb-5 space-y-2">
           <h2 className="text-on-surface text-xl font-extrabold">Song context</h2>
           {showStatusCopy ? (
             <p className="text-on-surface-variant max-w-2xl text-sm leading-relaxed">
-              {statusDescription(hasAudio, initialAnalysis)}
+              {statusDescription(hasAudio, analysis)}
             </p>
           ) : null}
         </div>
 
-        {initialAnalysis?.status === 'failed' ? (
+        {analysis?.status === 'failed' ? (
           <div className="border-error/35 bg-error/10 text-on-surface mb-5 flex items-start gap-3 rounded-lg border p-4 text-sm">
-            <span>{initialAnalysis.errorMessage ?? 'Analysis failed.'}</span>
+            <span>{analysis.errorMessage ?? 'Analysis failed.'}</span>
           </div>
         ) : null}
 

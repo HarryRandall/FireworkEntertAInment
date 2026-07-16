@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { PanelRightClose, Save, Undo2 } from 'lucide-react';
+import { CloudUpload, PanelRightClose, Save, Undo2 } from 'lucide-react';
 import { PreviewFullscreenBackdrop } from '@/app/components/admin/previewFullscreen';
 import {
   ReplayTransportControls,
@@ -297,7 +297,9 @@ export function FireworkEditorShell({
     >
       <div
         className={cn(
-          'grid h-full min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(360px,408px)]',
+          // The inspector needs room for full-length sliders plus their value
+          // inputs; anything narrower makes the tuning controls unusably small.
+          'grid h-full min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(420px,500px)]',
           inspectorCollapsed && 'lg:grid-cols-[minmax(0,1fr)_60px]',
         )}
       >
@@ -360,6 +362,16 @@ export function FireworkEditorShell({
                   </div>
                 ) : null}
                 <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+                  <span className="sr-only" aria-live="polite">
+                    {saving ? 'Saving in background' : dirty ? 'Unsaved changes' : 'Saved'}
+                  </span>
+                  <span
+                    className="hidden items-center gap-1.5 text-xs font-medium text-white/72 sm:inline-flex"
+                    aria-hidden
+                  >
+                    {saving ? <CloudUpload size={14} aria-hidden /> : null}
+                    {saving ? 'Saving in background' : dirty ? 'Unsaved changes' : 'Saved'}
+                  </span>
                   <Button
                     variant="secondary"
                     className="h-9 rounded-lg border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
@@ -370,8 +382,7 @@ export function FireworkEditorShell({
                     Revert
                   </Button>
                   <Button
-                    loading={saving}
-                    disabled={saveDisabled}
+                    disabled={saveDisabled || saving}
                     onClick={onSave}
                     className="text-hl-contrast h-9 rounded-lg bg-[color:var(--hl)] px-4 text-xs font-semibold hover:bg-[color:var(--hl)]/85"
                   >

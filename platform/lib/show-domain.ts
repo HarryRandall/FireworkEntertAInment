@@ -64,9 +64,21 @@ export type FireworkSpecification = {
   description: string | null;
   sortOrder: number;
   durationSeconds: number | null;
+  /** Conservative interval used by launch-position scheduling and validation. */
+  occupancyDurationSeconds?: number | null;
+  /**
+   * Cheapest available supplier price. Null means no supplier currently lists
+   * the item, so generated shows must not schedule it: the shopping list would
+   * show $0 for a product the user cannot buy.
+   */
+  minPriceCents?: number | null;
   heightMeters: number | null;
   caliber: string | null;
   shotCount: number | null;
+  /** Current renderer still in the public firework-previews bucket, when captured. */
+  previewImagePath?: string | null;
+  /** Visual-source revision used to key preview payload and poster caches. */
+  previewImageRevision?: number | null;
   /** Multishot children can leave the parent tube, which needs wider overlap modelling. */
   hasLaunchPositionOverrides?: boolean;
   /** Absolute launch positions used by multishot children. */
@@ -88,6 +100,12 @@ export type FireworkSpecification = {
     colorPalette: string[];
   } | null;
 };
+
+export function fireworkOccupancyDurationSeconds(
+  product: Pick<FireworkSpecification, 'durationSeconds' | 'occupancyDurationSeconds'>,
+): number | null {
+  return product.occupancyDurationSeconds ?? product.durationSeconds;
+}
 
 export type ReplayCue = ShowCue & {
   timeSeconds: number;

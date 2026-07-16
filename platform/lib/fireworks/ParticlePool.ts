@@ -49,6 +49,7 @@ export class ParticlePool {
   aliveIndices: Uint32Array;
   private activeSlots: Int32Array;
   private activeCount = 0;
+  private spawnHeadStyleSlot = 0;
   readonly capacity: number;
 
   constructor(capacity: number) {
@@ -70,6 +71,7 @@ export class ParticlePool {
     this.current = -1;
     this.aliveMax = -1;
     this.activeCount = 0;
+    this.spawnHeadStyleSlot = 0;
   }
 
   get aliveCount(): number {
@@ -120,6 +122,7 @@ export class ParticlePool {
     p.shape = prop.shape ?? 0;
     p.rotation = prop.rotation ?? 0;
     p.spin = prop.spin ?? 0;
+    p.headStyleSlot = this.spawnHeadStyleSlot;
     p.life = life;
     p.maxLife = life;
     p.mass = prop.mass && prop.mass > 0 ? prop.mass : 1;
@@ -144,6 +147,20 @@ export class ParticlePool {
   restore(index: number, particle: Particle): void {
     particle.alive = true;
     this.activate(index);
+  }
+
+  /**
+   * Propagate a cue's immutable head-style ownership through callback-spawned
+   * descendants without making every effect emitter thread renderer metadata.
+   */
+  withHeadStyleSlot<T>(slot: number, spawn: () => T): T {
+    const previous = this.spawnHeadStyleSlot;
+    this.spawnHeadStyleSlot = Number.isInteger(slot) && slot >= 0 ? slot : 0;
+    try {
+      return spawn();
+    } finally {
+      this.spawnHeadStyleSlot = previous;
+    }
   }
 
   private activate(index: number): void {

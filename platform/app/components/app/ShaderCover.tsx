@@ -20,6 +20,7 @@ import {
   type ShaderCover as ShaderCoverConfig,
 } from '@/lib/shader-cover';
 import { cn } from '@/lib/utils';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Skeleton } from '@/app/components/ui/Feedback';
 
@@ -36,11 +37,13 @@ export function ShaderCover({
   /** Mask the poster-to-canvas startup so cards reveal only once their shader has painted. */
   showSkeletonUntilReady?: boolean;
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const colorBack = shaderCoverBackdropColor(cover);
   const gradient = shaderCoverGradient(cover);
   const speed = animate ? cover.speed : 0;
   const rootClassName = cn('absolute inset-0 h-full w-full overflow-hidden', className);
+  const shouldShowSkeleton = showSkeletonUntilReady && !prefersReducedMotion;
   const readinessKey = useMemo(
     () => `${cover.kind}:${cover.frame}:${cover.colors.join('|')}`,
     [cover.colors, cover.frame, cover.kind],
@@ -130,7 +133,7 @@ export function ShaderCover({
       loadingNode.style.pointerEvents = 'none';
     }
 
-    if (!showSkeletonUntilReady) {
+    if (!shouldShowSkeleton) {
       setLoadingVisible(false);
       return;
     }
@@ -184,20 +187,20 @@ export function ShaderCover({
       window.cancelAnimationFrame(paintFrame);
       window.cancelAnimationFrame(settleFrame);
     };
-  }, [readinessKey, showSkeletonUntilReady]);
+  }, [readinessKey, shouldShowSkeleton]);
 
   return (
     <div ref={rootRef} className={rootClassName}>
       <div className="absolute inset-0 h-full w-full" style={{ background: gradient }} />
-      {shader}
-      {!animate ? (
+      {!prefersReducedMotion ? shader : null}
+      {!animate || prefersReducedMotion ? (
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 h-full w-full opacity-35"
           style={{ background: gradient }}
         />
       ) : null}
-      {showSkeletonUntilReady ? (
+      {shouldShowSkeleton ? (
         <div
           data-cover-loading
           aria-hidden="true"

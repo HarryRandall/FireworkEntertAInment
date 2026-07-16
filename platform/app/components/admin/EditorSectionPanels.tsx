@@ -98,7 +98,7 @@ export function EditorStyleDefaultControls({
 
   function confirmSave() {
     const trimmed = draftName.trim();
-    if (!trimmed) return;
+    if (!trimmed || saveDisabled) return;
     onSave(trimmed);
     setSaveDialogOpen(false);
   }
@@ -177,7 +177,7 @@ export function EditorStyleDefaultControls({
             />
           </Field>
           <DialogFooter>
-            <Button onClick={confirmSave} disabled={draftName.trim().length === 0}>
+            <Button onClick={confirmSave} disabled={saveDisabled || draftName.trim().length === 0}>
               Save
             </Button>
           </DialogFooter>

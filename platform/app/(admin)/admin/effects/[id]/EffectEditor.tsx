@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import {
   Braces,
   Circle,
@@ -20,11 +19,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
-  confirmEffectEditorVersions,
+  createStyleDefaultAndUpdateEffect,
   restoreEffectEditorVersion,
   updateEffect,
 } from '@/app/actions/admin-effects';
-import { createStyleDefault } from '@/app/actions/admin-style-defaults';
 import {
   EditorHistoryPanel,
   JsonReadOnlyPanel,
@@ -39,13 +37,14 @@ import {
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/app/components/admin/useEditorHistory';
 import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
-import {
-  FireworkRenderControls,
-  supportsGeometryTuningControls,
-} from '@/app/components/admin/FireworkRenderControls';
+import { FireworkRenderControls } from '@/app/components/admin/FireworkRenderControls';
 import { FireworkTimelineControls } from '@/app/components/admin/FireworkTimelineControls';
 import { Field, FieldLabel } from '@/app/components/ui/Field';
 import { Input, Textarea } from '@/app/components/ui/Input';
@@ -57,12 +56,14 @@ import type {
   AdminStyleDefaultOption,
 } from '@/lib/admin.types';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
+import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
 import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
 } from '@/lib/fireworks/design';
+import { isGroundFireworkEffect } from '@/lib/fireworks/timing';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   extractStyleDefaultsFromDesign,
@@ -98,8 +99,6 @@ const PREVIEW_START_SECONDS = 0;
 // fast scrub does not re-render the whole editor on every input event. The
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
-const HISTORY_CONFIRMATION_ATTEMPTS = 4;
-const HISTORY_CONFIRMATION_DELAY_MS = 300;
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -305,7 +304,6 @@ function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
 }
 
 export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
-  const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
@@ -328,15 +326,10 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<EffectEditorSavedSnapshot>(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
+  const editorTargetIdRef = useRef(effect.id);
   const [activeTab, setActiveTab] = useState('details');
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
-  const [historyVersions, setHistoryVersions] = useState(effect.history);
-  const pendingHistoryVersionIdsRef = useRef(new Set<string>());
-  const [pendingHistoryVersionIds, setPendingHistoryVersionIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const [historyWarning, setHistoryWarning] = useState<string | null>(null);
-  const historyEffectIdRef = useRef(effect.id);
+  const editorHistory = useEditorHistory({ targetKey: effect.id, initialVersions: effect.history });
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
@@ -411,7 +404,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   useLayoutEffect(() => {
     currentSignatureRef.current = currentSignature;
     savedSignatureRef.current = savedSignature;
-  }, [currentSignature, savedSignature]);
+    editorTargetIdRef.current = effect.id;
+  }, [currentSignature, effect.id, savedSignature]);
 
   useEffect(() => {
     const incomingSnapshot = incomingSavedSnapshot;
@@ -436,94 +430,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setSavedSignature(incomingSnapshot.signature);
   }, [incomingSavedSnapshot]);
 
-  useEffect(() => {
-    if (historyEffectIdRef.current !== effect.id) {
-      historyEffectIdRef.current = effect.id;
-      pendingHistoryVersionIdsRef.current.clear();
-      setPendingHistoryVersionIds(new Set());
-      setHistoryVersions(effect.history);
-      setHistoryWarning(null);
-      return;
-    }
-
-    const incomingIds = new Set(effect.history.map((version) => version.id));
-    for (const id of incomingIds) pendingHistoryVersionIdsRef.current.delete(id);
-    setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-    setHistoryVersions((current) => {
-      const pending = current.filter(
-        (version) =>
-          pendingHistoryVersionIdsRef.current.has(version.id) && !incomingIds.has(version.id),
-      );
-      return [...pending, ...effect.history]
-        .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
-        .slice(0, 24);
-    });
-  }, [effect.history, effect.id]);
-
-  useEffect(() => {
-    const initialIds = Array.from(pendingHistoryVersionIds).slice(0, 10);
-    if (initialIds.length === 0) return;
-    let cancelled = false;
-    let timeoutId: number | null = null;
-    let resolveDelay: (() => void) | null = null;
-
-    function waitForRetry() {
-      return new Promise<void>((resolve) => {
-        resolveDelay = resolve;
-        timeoutId = window.setTimeout(() => {
-          timeoutId = null;
-          resolveDelay = null;
-          resolve();
-        }, HISTORY_CONFIRMATION_DELAY_MS);
-      });
-    }
-
-    function failConfirmation(ids: string[]) {
-      for (const id of ids) pendingHistoryVersionIdsRef.current.delete(id);
-      setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-      setHistoryVersions((current) => current.filter((version) => !ids.includes(version.id)));
-      setHistoryWarning('Version history was not recorded. Your editor changes are still saved.');
-    }
-
-    async function confirmPendingVersions() {
-      let remainingIds = initialIds;
-      for (let attempt = 0; attempt < HISTORY_CONFIRMATION_ATTEMPTS; attempt += 1) {
-        if (attempt > 0) await waitForRetry();
-        if (cancelled) return;
-        let result: Awaited<ReturnType<typeof confirmEffectEditorVersions>>;
-        try {
-          result = await confirmEffectEditorVersions({
-            effectId: effect.id,
-            versionIds: remainingIds,
-          });
-        } catch {
-          if (!cancelled) failConfirmation(remainingIds);
-          return;
-        }
-        if (cancelled) return;
-        if (!result.ok) {
-          failConfirmation(remainingIds);
-          return;
-        }
-        const confirmed = new Set(result.confirmedIds);
-        for (const id of confirmed) pendingHistoryVersionIdsRef.current.delete(id);
-        if (confirmed.size > 0) {
-          setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-          setHistoryWarning(null);
-        }
-        remainingIds = remainingIds.filter((id) => !confirmed.has(id));
-        if (remainingIds.length === 0) return;
-      }
-      if (!cancelled) failConfirmation(remainingIds);
-    }
-
-    void confirmPendingVersions();
-    return () => {
-      cancelled = true;
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-      resolveDelay?.();
-    };
-  }, [effect.id, pendingHistoryVersionIds]);
   const modelHasColour = hasConcreteRendererColor(baseModel);
 
   useEffect(() => {
@@ -748,21 +654,33 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   }
 
   async function persistEffect(args: {
+    targetId: string;
     styleDefaultIdsMap: Record<FireworkStyleDefaultKind, string | null>;
     modelJson: string;
+    historyVersionId: string;
   }): Promise<UpdateEffectSuccess | null> {
-    const result = await updateEffect({
-      id: effect.id,
-      expectedUpdatedAt: lastSavedUpdatedAt,
-      name,
-      description,
-      patternKey,
-      sortOrder: sortOrderNumber,
-      starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
-      trailStyleDefaultId: args.styleDefaultIdsMap.trail ?? null,
-      styleDefaultIds: args.styleDefaultIdsMap,
-      modelJson: args.modelJson,
-    });
+    let result: Awaited<ReturnType<typeof updateEffect>>;
+    try {
+      result = await updateEffect({
+        id: effect.id,
+        expectedUpdatedAt: lastSavedUpdatedAt,
+        name,
+        description,
+        patternKey,
+        sortOrder: sortOrderNumber,
+        starStyleDefaultId: args.styleDefaultIdsMap.star ?? null,
+        trailStyleDefaultId: args.styleDefaultIdsMap.trail ?? null,
+        styleDefaultIds: args.styleDefaultIdsMap,
+        modelJson: args.modelJson,
+        historyVersionId: args.historyVersionId,
+      });
+    } catch {
+      if (editorTargetIdRef.current === args.targetId) {
+        setError('Could not save the effect. Try again.');
+      }
+      return null;
+    }
+    if (editorTargetIdRef.current !== args.targetId) return null;
     if (!result.ok) {
       setError(result.error);
       return null;
@@ -771,31 +689,132 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     return result;
   }
 
-  function prependPendingHistoryVersion(version: AdminEditorVersion) {
-    setHistoryWarning(null);
-    pendingHistoryVersionIdsRef.current.add(version.id);
-    setPendingHistoryVersionIds(new Set(pendingHistoryVersionIdsRef.current));
-    setHistoryVersions((current) =>
-      [version, ...current.filter((item) => item.id !== version.id)].slice(0, 24),
-    );
+  function currentLocalSnapshot(): EffectEditorSavedSnapshot {
+    return {
+      id: effect.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      patternKey,
+      sortOrder,
+      modelText,
+      styleDefaultIds: { ...styleDefaultIds },
+      signature: currentSignature,
+    };
   }
 
-  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, name: string) {
+  function applySnapshot(snapshot: EffectEditorSavedSnapshot) {
+    setName(snapshot.name);
+    setDescription(snapshot.description);
+    setPatternKey(snapshot.patternKey);
+    setSortOrder(snapshot.sortOrder);
+    setStyleDefaultIds({ ...snapshot.styleDefaultIds });
+    setModelText(snapshot.modelText);
+  }
+
+  function beginOptimisticMutation(
+    optimisticSnapshot: EffectEditorSavedSnapshot,
+    action: 'update' | 'restore',
+  ) {
+    const historyVersionId = crypto.randomUUID();
+    const previousSavedSnapshot = savedSnapshotRef.current;
+    const localSnapshot = currentLocalSnapshot();
+    savedSnapshotRef.current = optimisticSnapshot;
+    savedSignatureRef.current = optimisticSnapshot.signature;
+    currentSignatureRef.current = optimisticSnapshot.signature;
+    setSavedSignature(optimisticSnapshot.signature);
+    applySnapshot(optimisticSnapshot);
+    editorHistory.begin(
+      makeOptimisticEditorVersion({
+        id: historyVersionId,
+        targetKind: 'effect',
+        targetId: effect.id,
+        action,
+      }),
+    );
+    return {
+      targetId: effect.id,
+      historyVersionId,
+      localSnapshot,
+      optimisticSnapshot,
+      previousSavedSnapshot,
+    };
+  }
+
+  function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
+    if (editorTargetIdRef.current !== mutation.targetId) return;
+    editorHistory.discard(mutation.historyVersionId);
+    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
+      savedSnapshotRef.current = mutation.previousSavedSnapshot;
+      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
+      setSavedSignature(mutation.previousSavedSnapshot.signature);
+    }
+    if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
+      currentSignatureRef.current = mutation.localSnapshot.signature;
+      applySnapshot(mutation.localSnapshot);
+    }
+  }
+
+  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
+    if (isPending) return;
     setError(null);
     if (!parsedModel.ok) {
       setError(parsedModel.error);
       return;
     }
-    const saveStartedFromSignature = currentSignature;
+    const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
+    const savedModelText = JSON.stringify(savedModel, null, 2);
+    const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
+    const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
+    const optimisticSnapshot = effectSavedSnapshotFromFields({
+      id: effect.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      patternKey,
+      sortOrder: sortOrderNumber,
+      modelJson: savedModel,
+      styleDefaultIds: clearedStyleDefaultIds,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
     startTransition(async () => {
-      const result = await createStyleDefault({
-        kind,
-        name,
-        description: '',
-        defaultsJson: JSON.stringify(extractStyleDefaultsFromDesign(previewDesign, kind), null, 2),
-      });
+      let result: Awaited<ReturnType<typeof createStyleDefaultAndUpdateEffect>>;
+      try {
+        result = await createStyleDefaultAndUpdateEffect({
+          effect: {
+            id: effect.id,
+            expectedUpdatedAt: lastSavedUpdatedAt,
+            name,
+            description,
+            patternKey,
+            sortOrder: sortOrderNumber,
+            styleDefaultIds: clearedSaveMap,
+            modelJson: savedModelText,
+            historyVersionId: mutation.historyVersionId,
+          },
+          styleDefault: {
+            kind,
+            name: styleName,
+            description: '',
+            defaultsJson: JSON.stringify(
+              extractStyleDefaultsFromDesign(previewDesign, kind),
+              null,
+              2,
+            ),
+          },
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setError('Could not create the style default. Try again.');
+        }
+        return;
+      }
+
+      if (editorTargetIdRef.current !== mutation.targetId) return;
 
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
         setError(result.error);
         return;
       }
@@ -807,44 +826,35 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
         ],
       }));
-
-      const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
-      const savedModelText = JSON.stringify(savedModel, null, 2);
-      const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
-      const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
-      const persisted = await persistEffect({
-        styleDefaultIdsMap: clearedSaveMap,
-        modelJson: savedModelText,
-      });
-      if (!persisted) return;
+      setLastSavedUpdatedAt(result.saved.updatedAt);
       const applySavedSnapshot = canApplySavedEditorSnapshot(
-        saveStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       const savedSnapshot = effectSavedSnapshotFromFields({
-        ...persisted.saved,
+        ...result.saved,
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
-      prependPendingHistoryVersion(persisted.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
       if (applySavedSnapshot) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setPatternKey(savedSnapshot.patternKey);
-        setSortOrder(savedSnapshot.sortOrder);
-        setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
-        setModelText(savedSnapshot.modelText);
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Style default created and saved');
       } else {
         toast.success('Saved; newer effect edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function saveEffect() {
+    if (isPending) return;
     setError(null);
     if (!parsedModel.ok) {
       setError(parsedModel.error);
@@ -854,15 +864,30 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const savedModelText = JSON.stringify(savedModel, null, 2);
     const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
     const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
-    const saveStartedFromSignature = currentSignature;
+    const optimisticSnapshot = effectSavedSnapshotFromFields({
+      id: effect.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      patternKey,
+      sortOrder: sortOrderNumber,
+      modelJson: savedModel,
+      styleDefaultIds: clearedStyleDefaultIds,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
     startTransition(async () => {
       const persisted = await persistEffect({
+        targetId: mutation.targetId,
         styleDefaultIdsMap: clearedSaveMap,
         modelJson: savedModelText,
+        historyVersionId: mutation.historyVersionId,
       });
-      if (!persisted) return;
+      if (!persisted) {
+        rollbackOptimisticMutation(mutation);
+        return;
+      }
       const applySavedSnapshot = canApplySavedEditorSnapshot(
-        saveStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       const savedSnapshot = effectSavedSnapshotFromFields({
@@ -872,30 +897,24 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
-      prependPendingHistoryVersion(persisted.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: persisted.historyVersion,
+        recorded: persisted.historyRecorded,
+      });
       if (applySavedSnapshot) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setPatternKey(savedSnapshot.patternKey);
-        setSortOrder(savedSnapshot.sortOrder);
-        setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
-        setModelText(savedSnapshot.modelText);
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Effect saved');
       } else {
         toast.success('Effect saved; newer edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function revertLocalChanges() {
     const savedSnapshot = savedSnapshotRef.current;
-    setName(savedSnapshot.name);
-    setDescription(savedSnapshot.description);
-    setPatternKey(savedSnapshot.patternKey);
-    setSortOrder(savedSnapshot.sortOrder);
-    setModelText(savedSnapshot.modelText);
-    setStyleDefaultIds({ ...savedSnapshot.styleDefaultIds });
+    applySnapshot(savedSnapshot);
     setLastSavedUpdatedAt(savedSnapshot.updatedAt);
     setError(null);
     savedSignatureRef.current = savedSnapshot.signature;
@@ -903,17 +922,46 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   }
 
   function restoreVersion(version: AdminEditorVersion) {
+    if (isPending) return;
     setError(null);
+    const snapshot = parseEffectEditorSnapshot(version.snapshotJson);
+    if (!snapshot || snapshot.id !== effect.id) {
+      setError('That version cannot be restored.');
+      return;
+    }
+    const optimisticSnapshot = effectSavedSnapshotFromFields({
+      id: snapshot.id,
+      updatedAt: lastSavedUpdatedAt,
+      name: snapshot.name,
+      description: snapshot.description,
+      patternKey: snapshot.patternKey,
+      sortOrder: snapshot.sortOrder,
+      modelJson: snapshot.modelJson,
+      styleDefaultIds: emptyStyleDefaultIdMap(),
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'restore');
     setRestoringVersionId(version.id);
-    const restoreStartedFromSignature = currentSignature;
     startTransition(async () => {
-      const result = await restoreEffectEditorVersion({
-        effectId: effect.id,
-        versionId: version.id,
-        expectedUpdatedAt: lastSavedUpdatedAt,
-      });
+      let result: Awaited<ReturnType<typeof restoreEffectEditorVersion>>;
+      try {
+        result = await restoreEffectEditorVersion({
+          effectId: effect.id,
+          versionId: version.id,
+          expectedUpdatedAt: lastSavedUpdatedAt,
+          historyVersionId: mutation.historyVersionId,
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setRestoringVersionId(null);
+          setError('Could not restore that version. Try again.');
+        }
+        return;
+      }
+      if (editorTargetIdRef.current !== mutation.targetId) return;
       setRestoringVersionId(null);
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
         setError(result.error);
         return;
       }
@@ -922,26 +970,25 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         styleDefaultIds: emptyStyleDefaultIdMap(),
       });
       const applyRestoredSnapshot = canApplySavedEditorSnapshot(
-        restoreStartedFromSignature,
+        mutation.optimisticSnapshot.signature,
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
       savedSignatureRef.current = restoredSnapshot.signature;
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
-      prependPendingHistoryVersion(result.historyVersion);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
       if (applyRestoredSnapshot) {
-        setName(restoredSnapshot.name);
-        setDescription(restoredSnapshot.description);
-        setPatternKey(restoredSnapshot.patternKey);
-        setSortOrder(restoredSnapshot.sortOrder);
-        setModelText(restoredSnapshot.modelText);
-        setStyleDefaultIds({ ...restoredSnapshot.styleDefaultIds });
+        currentSignatureRef.current = restoredSnapshot.signature;
+        applySnapshot(restoredSnapshot);
         toast.success('Version restored');
       } else {
         toast.success('Version restored; newer effect edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
@@ -1068,12 +1115,14 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           selectedStyleDefaults[kind] ?? effect.styleDefaultLinks[kind] ?? null,
         )}
         disabled={!parsedModel.ok}
+        saveDisabled={isPending}
         onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
         onReset={() => resetLocalStyleDefaults(kind)}
       />
     );
   }
 
+  const isGroundEmitter = isGroundFireworkEffect(previewDesign);
   const tabs: FireworkEditorShellTab[] = [
     {
       id: 'details',
@@ -1083,27 +1132,26 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Details',
       content: detailsContent,
     },
-    ...(supportsGeometryTuningControls(previewDesign.geometry)
-      ? [
-          {
-            id: 'geometry',
-            label: 'Geometry',
-            icon: Shapes,
-            eyebrow: 'Shape',
-            title: 'Geometry',
-            content: (
-              <FireworkRenderControls
-                design={previewDesign}
-                defaults={renderDefaults}
-                calibrationDefaults={calibrationDefaults}
-                mutate={updateModelDefaults}
-                disabled={!parsedModel.ok}
-                controlScope="geometry"
-              />
-            ),
-          },
-        ]
-      : []),
+    {
+      id: 'geometry',
+      label: 'Geometry',
+      icon: Shapes,
+      eyebrow: 'Shape',
+      title: 'Geometry',
+      content: (
+        <div className="space-y-5">
+          <FireworkRenderControls
+            design={previewDesign}
+            defaults={renderDefaults}
+            calibrationDefaults={calibrationDefaults}
+            mutate={(updater) => updateModelDefaultsForStyle('geometry', updater)}
+            disabled={!parsedModel.ok}
+            controlScope="geometry"
+          />
+          {renderStyleDefaultControls('geometry')}
+        </div>
+      ),
+    },
     {
       id: 'launch-dot',
       label: 'Launch Dot',
@@ -1198,7 +1246,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
           design={previewDesign}
           defaults={renderDefaults}
           calibrationDefaults={calibrationDefaults}
-          mutate={updateModelDefaults}
+          mutate={(updater) => updateModelDefaultsForStyle('star', updater)}
           disabled={!parsedModel.ok}
           showStarCount
           controlScope="starInner"
@@ -1329,10 +1377,11 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Version history',
       content: (
         <EditorHistoryPanel
-          versions={historyVersions}
-          pendingVersionIds={pendingHistoryVersionIds}
-          warning={historyWarning}
+          versions={editorHistory.versions}
+          pendingVersionIds={editorHistory.pendingIds}
+          warning={editorHistory.warning}
           restoringVersionId={restoringVersionId}
+          mutationPending={isPending}
           onRestore={restoreVersion}
         />
       ),
@@ -1345,7 +1394,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Canonical model JSON',
       content: <JsonReadOnlyPanel value={baseModel as Json} />,
     },
-  ];
+  ].filter((tab) => !isGroundEmitter || (tab.id !== 'launch-dot' && tab.id !== 'launch-trail'));
 
   return (
     <FireworkEditorShell

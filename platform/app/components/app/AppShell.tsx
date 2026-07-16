@@ -48,7 +48,6 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
 import { Skeleton } from '@/app/components/ui/Feedback';
-import { HomePageSkeleton } from '@/app/components/app/HomeLoadingSkeleton';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -79,8 +78,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PaletteStrip } from '@/app/components/app/ShowSummaryCards';
+import { SkipLink } from '@/app/components/ui/SkipLink';
 import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
-import { createClient } from '@/utils/supabase/client';
+import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
@@ -100,7 +100,7 @@ const APP_LINKS: AppNavLink[] = [
   { href: '/library', label: 'Explore', icon: Star },
   { href: '/catalogue', label: 'Catalogue', icon: Box },
   { href: '/exports', label: 'Exports', icon: Download },
-  { href: '/safety', label: 'Safety', icon: TriangleAlert, permission: 'admin.view' },
+  { href: '/safety', label: 'Safety', icon: TriangleAlert },
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
@@ -170,7 +170,6 @@ type SidebarAiUsage = {
   totalSpent: number;
 };
 
-const SIDEBAR_FREE_SHOWS_INCLUDED = 3;
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
@@ -186,35 +185,59 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
   { value: 'system', label: 'System', icon: Laptop },
 ];
 
-type CachedWorkspaceSummary = WorkspaceSummary & { aiUsage?: SidebarAiUsage | null };
+type CachedWorkspaceSummary = WorkspaceSummary & {
+  aiUsage?: SidebarAiUsage | null;
+  cachedAt?: number;
+};
 
-const WORKSPACE_SUMMARY_CACHE_KEY = 'sc:workspace-summary:v1';
+const WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v3';
+const WORKSPACE_SUMMARY_CACHE_TTL_MS = 60_000;
 
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
 const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
-function readCachedWorkspaceSummary(): CachedWorkspaceSummary | null {
-  if (typeof window === 'undefined') return null;
+function workspaceSummaryCacheKey(profileId: string): string {
+  return `${WORKSPACE_SUMMARY_CACHE_KEY_PREFIX}:${profileId}`;
+}
+
+function readCachedWorkspaceSummary(profileId: string | null): CachedWorkspaceSummary | null {
+  if (typeof window === 'undefined' || !profileId) return null;
   try {
-    const raw = window.sessionStorage.getItem(WORKSPACE_SUMMARY_CACHE_KEY);
+    const raw = window.sessionStorage.getItem(workspaceSummaryCacheKey(profileId));
     return raw ? (JSON.parse(raw) as CachedWorkspaceSummary) : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedWorkspaceSummary(summary: CachedWorkspaceSummary | null) {
-  if (typeof window === 'undefined') return;
+function isWorkspaceSummaryFresh(summary: CachedWorkspaceSummary | null): boolean {
+  return Boolean(
+    summary?.cachedAt && Date.now() - summary.cachedAt < WORKSPACE_SUMMARY_CACHE_TTL_MS,
+  );
+}
+
+function writeCachedWorkspaceSummary(
+  profileId: string | null,
+  summary: CachedWorkspaceSummary | null,
+) {
+  if (typeof window === 'undefined' || !profileId) return;
   try {
+    const cacheKey = workspaceSummaryCacheKey(profileId);
     if (summary) {
-      window.sessionStorage.setItem(WORKSPACE_SUMMARY_CACHE_KEY, JSON.stringify(summary));
+      window.sessionStorage.setItem(cacheKey, JSON.stringify(summary));
     } else {
-      window.sessionStorage.removeItem(WORKSPACE_SUMMARY_CACHE_KEY);
+      window.sessionStorage.removeItem(cacheKey);
     }
   } catch {
     // Ignore storage failures; the sidebar just falls back to fetching.
   }
+}
+
+function clearCachedAiUsage(profileId: string | null) {
+  const cached = readCachedWorkspaceSummary(profileId);
+  if (!cached) return;
+  writeCachedWorkspaceSummary(profileId, { ...cached, aiUsage: null, cachedAt: 0 });
 }
 
 function isActivePath(pathname: string | null, href: string) {
@@ -408,6 +431,17 @@ function ProfileMenuButton({
 }) {
   const { isMobile } = useSidebar();
   const closeFromPointerOutsideRef = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const runSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await onSignOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -483,13 +517,15 @@ function ProfileMenuButton({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
+              disabled={isSigningOut}
+              aria-busy={isSigningOut}
               onSelect={(event) => {
                 event.preventDefault();
-                void onSignOut();
+                void runSignOut();
               }}
             >
               <LogOut />
-              Log out
+              {isSigningOut ? 'Signing out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -569,66 +605,46 @@ function SidebarAiUsageMeter({
 }) {
   if (!usage && !loading) return null;
 
-  const reserved = Math.max(usage?.reserved ?? 0, 0);
-  const usedOrReservedFreeShows = Math.min(
-    Math.max((usage?.totalSpent ?? 0) + reserved, 0),
-    SIDEBAR_FREE_SHOWS_INCLUDED,
-  );
-  const freeShowsRemaining = Math.max(SIDEBAR_FREE_SHOWS_INCLUDED - usedOrReservedFreeShows, 0);
-  const summary = `${freeShowsRemaining}/${SIDEBAR_FREE_SHOWS_INCLUDED} shows left`;
+  const balance = Math.max(usage?.balance ?? 0, 0);
+  const available = Math.max(usage?.available ?? 0, 0);
+  const granted = Math.max(usage?.totalGranted ?? 0, usage?.includedCredits ?? 0, balance, 1);
+  const balancePercentage = Math.min((balance / granted) * 100, 100);
+  const summary = `${available.toLocaleString('en-AU')} credits available`;
 
   return (
     <Link
       href="/settings/usage"
       prefetch={false}
+      aria-label="View AI credit usage"
       className="border-sidebar-border/75 hover:border-sidebar-border focus-visible:ring-sidebar-ring rounded-lg border px-2.5 py-2 transition-colors group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2"
     >
       {loading ? (
-        <div className="space-y-2">
-          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full" />
+        <div className="space-y-2" aria-hidden="true">
+          <div className="bg-sidebar-foreground/20 h-1.5 w-full animate-pulse rounded-full motion-reduce:animate-none" />
           <div className="flex items-center justify-between gap-2">
-            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md" />
-            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md" />
+            <div className="bg-sidebar-foreground/20 h-3 w-24 animate-pulse rounded-md motion-reduce:animate-none" />
+            <div className="bg-sidebar-foreground/20 h-5 w-12 animate-pulse rounded-md motion-reduce:animate-none" />
           </div>
         </div>
       ) : (
         <>
-          <SidebarCreditSegments
-            remaining={freeShowsRemaining}
-            total={SIDEBAR_FREE_SHOWS_INCLUDED}
-          />
+          <div className="bg-sidebar-foreground/20 h-1.5 overflow-hidden rounded-full" aria-hidden>
+            <span
+              className="block h-full rounded-full bg-[color:var(--hl)]"
+              style={{ width: `${balancePercentage}%` }}
+            />
+          </div>
           <div className="mt-2 flex items-center justify-between gap-2">
             <span className="text-sidebar-foreground/60 min-w-0 truncate text-[11px]">
               {summary}
             </span>
-            <span className="bg-sidebar-foreground text-sidebar inline-flex h-5 shrink-0 items-center rounded-md px-2 text-[10px] font-medium">
-              Upgrade
+            <span className="border-sidebar-border text-sidebar-foreground/70 inline-flex h-5 shrink-0 items-center rounded-md border px-2 text-[10px] font-medium">
+              Usage
             </span>
           </div>
         </>
       )}
     </Link>
-  );
-}
-
-function SidebarCreditSegments({ remaining, total }: { remaining: number; total: number }) {
-  const safeRemaining = Math.min(Math.max(remaining, 0), total);
-
-  return (
-    <div className="flex gap-1" aria-hidden>
-      {Array.from({ length: total }).map((_, index) => {
-        const isRemaining = index < safeRemaining;
-        return (
-          <span
-            key={index}
-            className={cn(
-              'h-1.5 flex-1 rounded-full',
-              isRemaining ? 'bg-[color:var(--hl)]' : 'bg-sidebar-foreground/25',
-            )}
-          />
-        );
-      })}
-    </div>
   );
 }
 
@@ -747,7 +763,51 @@ function getPendingRouteKind(pathname: string | null | undefined): PendingRouteK
 }
 
 function PendingHomeSkeleton() {
-  return <HomePageSkeleton />;
+  return (
+    <div
+      className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
+      aria-label="Loading home"
+      aria-busy="true"
+    >
+      <section className="mx-auto w-full max-w-3xl py-10">
+        <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+          Create any firework show you can imagine
+        </h1>
+        <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs">
+          <Skeleton className="h-28 w-full rounded-none" />
+          <div className="flex items-center justify-between gap-3 px-4 pt-2 pb-3">
+            <Skeleton className="h-9 w-36 rounded-full" />
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <Skeleton className="h-9 w-24 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3" aria-label="Loading featured shows">
+        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Watch real shows</h2>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <Skeleton key={index} className="min-h-56 rounded-2xl" />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3" aria-label="Loading Explore shows">
+        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Explore</h2>
+        <div className="flex gap-4 overflow-hidden pb-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="w-44 shrink-0 sm:w-48" aria-hidden="true">
+              <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+              <Skeleton className="mt-2.5 h-4 w-4/5" />
+              <Skeleton className="mt-2 h-3 w-3/5" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function PendingLibrarySkeleton() {
@@ -760,29 +820,42 @@ function PendingLibrarySkeleton() {
   ];
 
   return (
-    <div className="space-y-8" aria-label="Loading show library">
-      {shelves.map((title) => (
-        <section key={title}>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
-            <Skeleton className="h-7 w-20 rounded-full" />
-          </div>
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-4"
+      aria-label="Loading show library"
+      aria-busy="true"
+    >
+      <header>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          Preview published show templates and choose one as a starting point for your own plan.
+        </p>
+      </header>
 
-          <div className="flex gap-4 overflow-hidden">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="w-44 shrink-0 sm:w-48">
-                <Skeleton className="aspect-[4/5] w-full rounded-xl" />
-                <div className="mt-2.5 flex items-center gap-2">
-                  <Skeleton className="h-4 flex-1" />
-                  <Skeleton className="h-5 w-10 rounded-md" />
+      <div className="space-y-8">
+        {shelves.map((title) => (
+          <section key={title}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+              <Skeleton className="h-7 w-20 rounded-full" />
+            </div>
+
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="w-44 shrink-0 sm:w-48">
+                  <Skeleton className="aspect-[4/5] w-full rounded-xl" />
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-5 w-10 rounded-md" />
+                  </div>
+                  <Skeleton className="mt-2 h-3 w-24" />
+                  <Skeleton className="mt-2 h-3 w-32" />
                 </div>
-                <Skeleton className="mt-2 h-3 w-24" />
-                <Skeleton className="mt-2 h-3 w-32" />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
@@ -864,16 +937,20 @@ export function AppShell({
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummary | null>(null);
   const [aiUsage, setAiUsage] = useState<SidebarAiUsage | null>(null);
   const [aiUsageLoading, setAiUsageLoading] = useState(true);
+  const profileId = profile?.id ?? null;
 
-  // Seed the sidebar from the sessionStorage cache before first paint so usage
-  // and recent shows appear instantly while the background refetch runs.
+  // Scope cached account data to the authenticated profile and clear the
+  // previous profile before paint if the shell identity changes in-place.
   useHydrationLayoutEffect(() => {
-    const cached = readCachedWorkspaceSummary();
+    setWorkspaceSummary(null);
+    setAiUsage(null);
+    setAiUsageLoading(true);
+    const cached = readCachedWorkspaceSummary(profileId);
     if (!cached) return;
-    setWorkspaceSummary((current) => current ?? cached);
-    setAiUsage((current) => current ?? cached.aiUsage ?? null);
+    setWorkspaceSummary(cached);
+    setAiUsage(cached.aiUsage ?? null);
     setAiUsageLoading(false);
-  }, []);
+  }, [profileId]);
   const currentPath = normaliseAppPath(pathname);
   const pendingPath = pendingHref ? normaliseAppPath(pendingHref) : null;
   const pendingRouteKind =
@@ -890,9 +967,6 @@ export function AppShell({
   const workspaceLinks = APP_LINKS.map((link) => {
     if (link.href === '/shows' && workspaceSummary?.showCount) {
       return { ...link, badge: String(workspaceSummary.showCount) };
-    }
-    if (link.href === '/library') {
-      return { ...link, badge: 'New' };
     }
     return link;
   });
@@ -921,24 +995,44 @@ export function AppShell({
     let active = true;
 
     async function loadWorkspaceSummary() {
+      if (!profileId) {
+        setAiUsageLoading(false);
+        return;
+      }
+      const cached = readCachedWorkspaceSummary(profileId);
+      if (isWorkspaceSummaryFresh(cached)) {
+        setWorkspaceSummary(cached);
+        setAiUsage(cached?.aiUsage ?? null);
+        setAiUsageLoading(false);
+        return;
+      }
       try {
         const response = await fetch('/api/me/summary', {
           credentials: 'same-origin',
           headers: { Accept: 'application/json' },
         });
         if (!response.ok) {
-          if (active) setAiUsageLoading(false);
+          clearCachedAiUsage(profileId);
+          if (active) {
+            setAiUsage(null);
+            setAiUsageLoading(false);
+          }
           return;
         }
-        const nextSummary = (await response.json()) as CachedWorkspaceSummary;
-        writeCachedWorkspaceSummary(nextSummary);
+        const payload = (await response.json()) as CachedWorkspaceSummary;
+        const nextSummary: CachedWorkspaceSummary = { ...payload, cachedAt: Date.now() };
+        writeCachedWorkspaceSummary(profileId, nextSummary);
         if (active) {
           setWorkspaceSummary(nextSummary);
           setAiUsage(nextSummary.aiUsage ?? null);
           setAiUsageLoading(false);
         }
       } catch {
-        if (active) setAiUsageLoading(false);
+        clearCachedAiUsage(profileId);
+        if (active) {
+          setAiUsage(null);
+          setAiUsageLoading(false);
+        }
       }
     }
 
@@ -947,13 +1041,16 @@ export function AppShell({
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, [pathname, profileId]);
 
   const handleSignOut = async () => {
-    writeCachedWorkspaceSummary(null);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
+    const result = await signOutCurrentSession();
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    writeCachedWorkspaceSummary(profileId, null);
+    router.replace('/login');
     router.refresh();
   };
 
@@ -969,6 +1066,7 @@ export function AppShell({
       style={{ '--sidebar-width': 'calc(var(--spacing) * 64)' } as CSSProperties}
     >
       <ThemePreferenceSync themePreference={profile?.themePreference} />
+      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand onNavigate={handleNavigate} />
@@ -1050,7 +1148,9 @@ export function AppShell({
           // handover splash) can portal in and cover the whole content area,
           // including any route chrome, while the app shell stays visible.
           data-app-content
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 sm:px-8 sm:pb-12 lg:px-10"
+          id="main-content"
+          tabIndex={-1}
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 focus:outline-none sm:px-8 sm:pb-12 lg:px-10"
         >
           {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
         </main>

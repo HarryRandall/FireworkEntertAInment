@@ -138,7 +138,7 @@ export function ProgressIndicator({ label, value }: { label: string; value?: num
   return (
     <div className="space-y-2" role="status" aria-label={label}>
       <div className="text-muted-foreground flex items-center gap-2 text-xs">
-        <Loader2 size={14} className="animate-spin" />
+        <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
         {label}
       </div>
       <Progress value={value ?? 42} className="bg-muted [&>div]:bg-primary h-1" />

@@ -10,8 +10,10 @@ export default async function NotFound() {
   const homeHref = userId ? '/home' : '/';
 
   return (
-    <div className="bg-background relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-      {/* Floating sparks */}
+    <main
+      id="main-content"
+      className="bg-background relative flex min-h-dvh flex-col items-center justify-center overflow-hidden"
+    >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {[
           { top: '18%', left: '12%', size: 3, opacity: 0.35 },
@@ -23,27 +25,23 @@ export default async function NotFound() {
         ].map((spark, i) => (
           <span
             key={i}
-            className="bg-primary absolute animate-pulse rounded-full"
+            className="bg-primary absolute rounded-full"
             style={{
               top: spark.top,
               left: spark.left,
               width: spark.size,
               height: spark.size,
               opacity: spark.opacity,
-              animationDelay: `${i * 0.4}s`,
-              animationDuration: `${2.5 + i * 0.3}s`,
             }}
           />
         ))}
       </div>
 
       <Container className="relative z-10 flex flex-col items-center gap-8 py-24 text-center">
-        {/* Eyebrow */}
         <p className="text-on-surface-variant text-xs font-bold tracking-widest uppercase">
           Error 404
         </p>
 
-        {/* Headline */}
         <div className="flex flex-col gap-3">
           <h1 className="text-on-surface text-[clamp(72px,14vw,140px)] leading-none font-extrabold tracking-tighter tabular-nums select-none">
             4<span className="text-primary">0</span>4
@@ -53,17 +51,16 @@ export default async function NotFound() {
           </p>
         </div>
 
-        {/* Body */}
         <p className="text-on-surface-variant max-w-md text-base leading-relaxed">
           The page you're looking for doesn't exist, or it's been moved to a different part of the
           show. Head back and pick up where you left off.
         </p>
 
         <Button href={homeHref} size="lg">
-          <Home size={18} strokeWidth={1.75} />
+          <Home size={18} strokeWidth={1.75} aria-hidden="true" />
           Return Home
         </Button>
       </Container>
-    </div>
+    </main>
   );
 }

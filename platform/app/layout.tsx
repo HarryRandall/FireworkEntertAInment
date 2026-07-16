@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ShowCrafter — AI Fireworks Choreography',
+  title: 'ShowCrafter | Firework show planning',
   description:
-    'Pick a song, set a budget, and let AI choreograph a fireworks show using real products from your local store.',
+    'Build a catalogue-linked firework cue timeline, preview the show, and review its shopping list.',
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable} bg-background text-on-surface overflow-x-hidden`}
+        className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable} bg-background text-on-surface`}
         style={{ fontFamily: geistSans.style.fontFamily }}
       >
         <ThemeProvider>

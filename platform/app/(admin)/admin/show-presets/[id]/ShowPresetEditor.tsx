@@ -119,7 +119,7 @@ function normaliseLaunchPositionIndex(value: number): number {
 }
 
 function cueDurationOf(spec: FireworkSpecification | undefined): number {
-  const duration = spec?.durationSeconds;
+  const duration = spec?.occupancyDurationSeconds ?? spec?.durationSeconds;
   return duration && Number.isFinite(duration) && duration > 0
     ? duration
     : DEFAULT_CUE_DURATION_SECONDS;
@@ -396,7 +396,13 @@ export function ShowPresetEditor({
     initialCuesNeedCanonicalisation ? '__needs-canonical-cue-save__' : serialiseCues(initialCues),
   );
   const playbackRef = useRef(0);
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    exitFullscreen,
+    fullscreenContainerRef,
+    fullscreenContainerProps,
+  } = usePreviewFullscreen<HTMLElement>({ dialogLabel: `${preset.title} preview` });
 
   const parsedDuration = Number(durationSeconds);
   const lastCueEnd = cues.reduce((latest, cue) => {
@@ -645,6 +651,8 @@ export function ShowPresetEditor({
     <div className="flex min-h-0 flex-1 flex-col gap-5">
       <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section
+          ref={fullscreenContainerRef}
+          {...fullscreenContainerProps}
           className={cn(
             'bg-stage-night relative overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white',
             isFullscreen

@@ -1,16 +1,16 @@
 /** Loading skeleton for the admin multishots list. */
 
-import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
+import { FireworkBrowseGridSkeleton } from '@/app/components/app/FireworkBrowseCard';
+import { FilterSkeleton } from '@/app/components/app/RouteSkeletons';
 
 export default function AdminMultishotsLoading() {
   return (
-    <AdminTableRouteSkeleton
-      searchPlaceholder="Search multishot..."
-      headers={['Preview', 'Multishot', 'Shots', 'Duration', 'Open']}
-      tableClassName="min-w-[820px]"
-      rows={8}
-      filterActionLabel="New multishot"
-      ariaLabel="Loading multishots"
-    />
+    <div
+      className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      aria-label="Loading multishots"
+    >
+      <FilterSkeleton searchPlaceholder="Search multishot..." actionLabel="New multishot" />
+      <FireworkBrowseGridSkeleton count={8} />
+    </div>
   );
 }

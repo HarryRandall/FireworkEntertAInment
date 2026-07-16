@@ -237,6 +237,26 @@ function isStaleSupabaseAuthError(error: unknown) {
   );
 }
 
+function importRenderContentSecurityPolicy(nonce: string): string {
+  const developmentScript = process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : '';
+  const developmentConnect = process.env.NODE_ENV === 'development' ? ' ws: wss:' : '';
+  return [
+    "default-src 'none'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentScript}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "font-src 'self'",
+    `connect-src 'self'${developmentConnect}`,
+    "worker-src 'self' blob:",
+    "manifest-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+}
+
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete('x-showcrafter-user-id');
@@ -246,9 +266,19 @@ export async function proxy(request: NextRequest) {
       request: { headers: requestHeaders },
     });
 
-  let supabaseResponse = createSupabaseResponse();
-
   const { pathname } = request.nextUrl;
+  if (pathname === '/internal/import-render') {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const contentSecurityPolicy = importRenderContentSecurityPolicy(nonce);
+    requestHeaders.set('x-nonce', nonce);
+    requestHeaders.set('Content-Security-Policy', contentSecurityPolicy);
+    const response = createSupabaseResponse();
+    response.headers.set('Content-Security-Policy', contentSecurityPolicy);
+    response.headers.set('X-Frame-Options', 'DENY');
+    return response;
+  }
+
+  let supabaseResponse = createSupabaseResponse();
 
   const isProtected = PROTECTED_PREFIXES.some((p) => matchesPathPrefix(pathname, p));
   const isAuthPage = AUTH_ONLY_PATHS.includes(pathname);
@@ -353,5 +383,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Match everything except Next internals, static assets, the auth callback,
   // and API routes (which handle their own auth).
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|auth/callback).*)'],
+  matcher: ['/((?!_next/|favicon.ico|api/|auth/callback).*)'],
 };

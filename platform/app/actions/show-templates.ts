@@ -10,6 +10,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@/utils/supabase/server';
+import type { Json } from '@/lib/database.types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
 import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
@@ -125,7 +126,7 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   }
   const timingValidation = validatePresetTimeline(
     resolvedCues,
-    new Map(products.map((product) => [product.id, product.durationSeconds])),
+    new Map(products.map((product) => [product.id, product])),
     template.durationSeconds,
   );
   if (!timingValidation.ok) {
@@ -199,30 +200,45 @@ export async function cloneShowTemplateAction(formData: FormData): Promise<void>
   }
 
   if (resolvedCues.length > 0) {
-    const { error: cuesError } = await supabase.from('show_timeline_items').insert(
-      resolvedCues.map((cue) => ({
-        show_id: show.id,
-        position: cue.position,
-        time_seconds: cue.timeSeconds,
-        description: cue.description,
-        catalogue_item_id: cue.catalogueItemId,
-        launch_position_index: cue.launchPositionIndex,
-        emphasis: cue.emphasis,
-      })),
+    const timelineItems = resolvedCues.map((cue) => ({
+      position: cue.position,
+      time_seconds: cue.timeSeconds,
+      description: cue.description,
+      catalogue_item_id: cue.catalogueItemId,
+      launch_position_index: cue.launchPositionIndex,
+      emphasis: cue.emphasis,
+    }));
+    const { data: replacedCount, error: cuesError } = await supabase.rpc(
+      'replace_show_timeline_items',
+      {
+        p_show_id: show.id,
+        p_user_id: user.id,
+        p_items: timelineItems as Json,
+      },
     );
-    if (cuesError) {
+    if (cuesError || replacedCount !== timelineItems.length) {
       const removed = await removeIncompleteClone(supabase, user.id, show.id);
-      console.error('[cloneShowTemplateAction] cue insert failed:', cuesError, {
+      console.error('[cloneShowTemplateAction] cue replacement failed:', cuesError, {
+        expectedCount: timelineItems.length,
+        replacedCount,
         cleanupSucceeded: removed,
       });
       redirectToCloneError(slug);
     }
   }
 
-  await syncShowDerivedFieldsForUser(user.id, {
-    showId: show.id,
-    showSlug: show.slug,
-  });
+  try {
+    await syncShowDerivedFieldsForUser(user.id, {
+      showId: show.id,
+      showSlug: show.slug,
+    });
+  } catch (error) {
+    const removed = await removeIncompleteClone(supabase, user.id, show.id);
+    console.error('[cloneShowTemplateAction] derived-field sync failed:', error, {
+      cleanupSucceeded: removed,
+    });
+    redirectToCloneError(slug);
+  }
   revalidatePath('/home');
   redirect(`/shows/${show.slug}/preview`);
 }

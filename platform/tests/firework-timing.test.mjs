@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
+  applyFireworkTimelineBoundaryEdit,
   applyFireworkTimelineEdit,
   deriveFireworkEditorTimeline,
   estimateFireworkDesignTiming,
@@ -155,7 +156,20 @@ test('ground emitters skip lift and include their sequence duration', () => {
   assert.equal(timing.fadeFinishSeconds, 16);
 });
 
-test('legacy launch timing matches calibrated streak life and suppresses smoke', () => {
+test('lift timing uses the same pan-adjusted vertical velocity as the engine', () => {
+  const angled = design({ liftVelocity: 21.1043, shellLife: 2.3 });
+
+  assert.ok(Math.abs(estimateFireworkLiftTimeSeconds(angled, 30) - 1.8) < 0.0001);
+  assert.ok(Math.abs(estimateFireworkLiftTimeSeconds(angled) - 2.0666666667) < 0.0001);
+  assert.ok(
+    Math.abs(
+      estimateFireworkDesignTiming(angled, 30).liftTimeSeconds -
+        estimateFireworkLiftTimeSeconds(angled, 30),
+    ) < 0.0001,
+  );
+});
+
+test('legacy launch timing retains mortar smoke without extending it through ascent', () => {
   const outer = starLayer([1, 1]);
   outer.burstTrail = {
     enabled: true,
@@ -173,7 +187,13 @@ test('legacy launch timing matches calibrated streak life and suppresses smoke',
         height: 100,
         lifetime: { baseSeconds: 4, afterglowSeconds: 1, variationPercent: 0 },
       },
-      smoke: { enabled: true, particles: 100, lifeSeconds: 8 },
+      smoke: {
+        enabled: true,
+        particles: 100,
+        lifeSeconds: 8,
+        lifeVariationPercent: 40,
+        height: 360,
+      },
     },
   });
   const custom = structuredClone(inherited);
@@ -182,12 +202,12 @@ test('legacy launch timing matches calibrated streak life and suppresses smoke',
 
   assert.equal(usesLegacyLaunchLiftAppearance(inherited), true);
   assert.ok(Math.abs(estimateFireworkLaunchTrailEndSeconds(inherited) - (liftTime + 0.38)) < 0.001);
-  assert.equal(estimateFireworkLaunchSmokeEndSeconds(inherited), 0);
+  assert.ok(Math.abs(estimateFireworkLaunchSmokeEndSeconds(inherited) - 11.2) < 0.001);
   assert.ok(estimateFireworkLaunchTrailEndSeconds(custom) > liftTime + 4.9);
-  assert.ok(estimateFireworkLaunchSmokeEndSeconds(custom) > liftTime + 9);
+  assert.ok(Math.abs(estimateFireworkLaunchSmokeEndSeconds(custom) - (liftTime + 11.2)) < 0.001);
 });
 
-test('ground effects exclude launch particles and smoke from timeline tails', () => {
+test('ground effects exclude lift particles but retain mortar smoke in timeline tails', () => {
   const ground = design({
     geometry: 'fountain',
     launch: {
@@ -198,13 +218,37 @@ test('ground effects exclude launch particles and smoke from timeline tails', ()
         height: 100,
         lifetime: { baseSeconds: 8, afterglowSeconds: 6, variationPercent: 100 },
       },
-      smoke: { enabled: true, particles: 100, lifeSeconds: 12 },
+      smoke: {
+        enabled: true,
+        particles: 100,
+        lifeSeconds: 12,
+        lifeVariationPercent: 100,
+        height: 360,
+      },
     },
   });
 
   assert.equal(estimateFireworkLaunchTrailEndSeconds(ground), 0);
-  assert.equal(estimateFireworkLaunchSmokeEndSeconds(ground), 0);
+  assert.equal(estimateFireworkLaunchSmokeEndSeconds(ground), 24);
+  assert.equal(estimateFireworkDesignTiming(ground).endSeconds, 24);
   assert.equal(deriveFireworkEditorTimeline(ground).tailEditable, false);
+});
+
+test('zero-height aerial smoke retains only the mortar smoke tail', () => {
+  const aerial = design({
+    launch: {
+      liftParticles: { appearanceMode: 'custom' },
+      smoke: {
+        enabled: true,
+        particles: 100,
+        lifeSeconds: 4,
+        lifeVariationPercent: 75,
+        height: 0,
+      },
+    },
+  });
+
+  assert.equal(estimateFireworkLaunchSmokeEndSeconds(aerial), 7);
 });
 
 test('preview ticks consume the shared design-aware timing helper', () => {
@@ -302,6 +346,50 @@ test('fade edits align the renderer hold and enabled closing transitions', () =>
   assert.equal(patch.stars.outer.head.closing.size.shrinkPercent, fadePercent);
   const after = deriveFireworkEditorTimeline(mergeDesign(current, patch));
   assert.ok(Math.abs(after.phases.fade - 2) <= 0.02);
+});
+
+test('head phase sliders can claim the full shared life range', () => {
+  const current = design({
+    stars: {
+      outer: starLayer([8, 8]),
+      core: { ...starLayer([8, 8]), enabled: false },
+    },
+  });
+  const burnPatch = {};
+  applyFireworkTimelineEdit(burnPatch, current, 'burn', 8);
+  const burnTimeline = deriveFireworkEditorTimeline(mergeDesign(current, burnPatch));
+  assert.ok(Math.abs(burnTimeline.phases.burn - 8) <= 0.02);
+  assert.ok(burnTimeline.phases.fade <= 0.02);
+
+  const fadePatch = {};
+  applyFireworkTimelineEdit(fadePatch, current, 'fade', 8);
+  const fadeTimeline = deriveFireworkEditorTimeline(mergeDesign(current, fadePatch));
+  assert.ok(Math.abs(fadeTimeline.phases.fade - 8) <= 0.02);
+  assert.ok(fadeTimeline.phases.burn <= 0.02);
+});
+
+test('timeline boundary edits redistribute adjacent phases', () => {
+  const layer = starLayer([4, 4]);
+  layer.head.brightnessHoldPercent = 50;
+  const current = design({
+    stars: { outer: layer, core: { ...starLayer([4, 4]), enabled: false } },
+  });
+  const before = deriveFireworkEditorTimeline(current);
+  const headEnd = before.phases.ascent + before.phases.burn + before.phases.fade;
+  const patch = {};
+  applyFireworkTimelineBoundaryEdit(
+    patch,
+    current,
+    'burn',
+    before.phases.ascent + before.phases.burn + 1,
+  );
+  const after = deriveFireworkEditorTimeline(mergeDesign(current, patch));
+
+  assert.ok(after.phases.burn > before.phases.burn);
+  assert.ok(after.phases.fade < before.phases.fade);
+  assert.ok(
+    Math.abs(after.phases.ascent + after.phases.burn + after.phases.fade - headEnd) <= 0.03,
+  );
 });
 
 test('tail edits extend active burst trails without enabling inactive systems', () => {

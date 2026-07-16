@@ -77,7 +77,7 @@ test('app shell exposes only shipped V1 navigation routes', () => {
   assert.match(shell, /href: '\/home', label: 'Home'/);
   assert.match(shell, /href: '\/shows', label: 'My shows'/);
   assert.match(shell, /href: '\/library', label: 'Explore'/);
-  assert.match(shell, /badge: 'New'/);
+  assert.doesNotMatch(shell, /badge: 'New'/);
   assert.match(shell, /href: '\/catalogue', label: 'Catalogue'/);
   assert.match(shell, /href: '\/exports', label: 'Exports'/);
   assert.match(shell, /href: '\/safety', label: 'Safety'/);
@@ -131,7 +131,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showsPage, /Search results/);
   assert.doesNotMatch(showsPage, /<select/);
   assert.doesNotMatch(showsPage, /<table/);
-  assert.doesNotMatch(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
+  assert.match(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
 
   const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
   assert.match(showReplayCard, /CoverPoster/);
@@ -205,9 +205,11 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(cataloguePage, /<h1[^>]*>\s*Catalogue\s*<\/h1>/);
 
   const exportsPage = read('app/(app)/exports/page.tsx');
-  assert.match(exportsPage, /No exported files yet/);
+  assert.match(exportsPage, /Download a Finale 3D CSV/);
+  assert.match(exportsPage, /<h1[^>]*>Export files<\/h1>/);
+  assert.match(exportsPage, /show\.cueCount > 0/);
+  assert.match(exportsPage, /\/api\/shows\/\$\{show\.slug\}\/export/);
   assert.doesNotMatch(exportsPage, /Export history will appear here once files are generated/);
-  assert.doesNotMatch(exportsPage, /<h1[^>]*>\s*Exports\s*<\/h1>/);
 
   const libraryPage = read('app/(browse)/library/page.tsx');
   assert.doesNotMatch(libraryPage, /AppPageHeader/);
@@ -219,9 +221,9 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(libraryPage, /templateMatchesShelf/);
   assert.match(libraryPage, /if \(sort === 'featured'\) return template\.isFeatured/);
   assert.match(libraryPage, /templates: templatesForShelf\(templates, sort\)/);
-  assert.match(libraryPage, /templateFireworkSignature/);
   assert.match(libraryPage, /usedTemplateIds/);
-  assert.match(libraryPage, /usedFireworkSignatures/);
+  assert.match(libraryPage, /ShowTemplateSummary/);
+  assert.doesNotMatch(libraryPage, /previewCues/);
   assert.match(libraryPage, /activeShelf\.templates\.length\.toLocaleString\(\)/);
   assert.match(libraryPage, /activeShelf\.templates\.map/);
   assert.match(libraryPage, /href="\/library"/);
@@ -322,7 +324,8 @@ test('explore seed data supports database-managed factual library shelves', () =
   assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
   assert.match(templateReads, /if \(cached\) return cached/);
   assert.match(templateReads, /throw new Error\('Explore shows could not be loaded\.'\)/);
-  assert.match(templateReads, /map\(mapShowTemplate\)/);
+  assert.match(templateReads, /map\(mapShowTemplateSummary\)/);
+  assert.match(templateReads, /PUBLIC_SHOW_TEMPLATE_SUMMARIES_SELECT/);
 });
 
 test('shader-heavy app routes use neutral loading skeletons', () => {

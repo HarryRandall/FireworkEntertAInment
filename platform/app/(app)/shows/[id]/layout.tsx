@@ -26,7 +26,11 @@ export default async function ShowLayout({ children, params }: LayoutProps) {
   }
 
   return (
-    <ShowDetailChrome showSlug={show.slug} forceContentOnly={show.generationStatus === 'running'}>
+    <ShowDetailChrome
+      showSlug={show.slug}
+      showTitle={show.title}
+      forceContentOnly={show.generationStatus === 'running'}
+    >
       {children}
     </ShowDetailChrome>
   );

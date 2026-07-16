@@ -114,7 +114,7 @@ export function TableSkeleton({
 
 /** Filter bar placeholder for list routes. */
 export function FilterSkeleton({
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = 'Search…',
   actionLabel,
 }: {
   searchPlaceholder?: string;
@@ -670,7 +670,7 @@ export function AdminPromptsSkeleton() {
 export function AdminTableRouteSkeleton({
   rows = 8,
   headers,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = 'Search…',
   tableClassName,
   rowSize = 'default',
   hasAction = false,

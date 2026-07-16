@@ -30,13 +30,15 @@ export function getShoppingListCacheKey(userId: string, showId: string): string 
 }
 
 export function getFireworkSpecificationsCacheKey(): string {
-  return `${CACHE_PREFIX}:firework-specifications`;
+  return `${CACHE_PREFIX}:firework-specifications:preview-v1`;
 }
 
 export function getFireworkProductsCacheKey(lightweight = false): string {
+  // v2: payload gained supplier pricing and occupancy durations. Stale v1
+  // entries would let generation understate occupancy or miss purchasability.
   return lightweight
-    ? `${CACHE_PREFIX}:firework-catalogue-cards`
-    : `${CACHE_PREFIX}:firework-products`;
+    ? `${CACHE_PREFIX}:firework-catalogue-cards:preview-v2`
+    : `${CACHE_PREFIX}:firework-products:preview-v2`;
 }
 
 /** Invalidate the per-user shows list (e.g. after creating/deleting a show). */

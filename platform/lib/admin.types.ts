@@ -105,6 +105,8 @@ export type ImportJobSummary = {
   approvedCatalogueItemId: string | null;
   rowCount: number | null;
   errorMessage: string | null;
+  archivedAt: string | null;
+  archivedBy: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -158,7 +160,7 @@ export type AdminEffectPreview = {
   pattern: string | null;
 };
 
-export type AdminEditorVersionTargetKind = 'firework' | 'effect';
+export type AdminEditorVersionTargetKind = 'firework' | 'effect' | 'style_default';
 export type AdminEditorVersionAction = 'update' | 'restore';
 
 export type AdminEditorVersion = {
@@ -166,6 +168,7 @@ export type AdminEditorVersion = {
   targetKind: AdminEditorVersionTargetKind;
   fireworkId: string | null;
   fireworkEffectId: string | null;
+  fireworkStyleDefaultId: string | null;
   action: AdminEditorVersionAction;
   summary: string;
   snapshotJson: Json;
@@ -202,7 +205,9 @@ export type AdminStyleDefaultSummary = AdminStyleDefaultOption & {
   updatedAt: string;
 };
 
-export type AdminStyleDefaultDetail = AdminStyleDefaultSummary;
+export type AdminStyleDefaultDetail = AdminStyleDefaultSummary & {
+  history: AdminEditorVersion[];
+};
 
 export type AdminLinkedProduct = {
   id: string;
@@ -233,6 +238,8 @@ export type AdminEffectSummary = {
   trailStyleDefaultId: string | null;
   styleDefaultIds: AdminStyleDefaultIdMap;
   preview: AdminEffectPreview;
+  previewImagePath: string | null;
+  previewImageRevision: number | null;
   updatedAt: string;
 };
 
@@ -276,6 +283,8 @@ export type AdminFireworkSummary = {
   trailStyleDefaultId: string | null;
   styleDefaultIds: AdminStyleDefaultIdMap;
   preview: AdminEffectPreview;
+  previewImagePath: string | null;
+  previewImageRevision: number | null;
   updatedAt: string;
 };
 
@@ -337,6 +346,8 @@ export type AdminMultishotSummary = {
   durationSeconds: number | null;
   shotCount: number;
   preview: AdminEffectPreview;
+  previewImagePath: string | null;
+  previewImageRevision: number | null;
   updatedAt: string;
 };
 

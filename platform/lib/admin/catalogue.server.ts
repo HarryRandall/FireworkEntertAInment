@@ -26,6 +26,11 @@ type CatalogueItemRow = {
   updated_at: string;
 };
 
+function throwCatalogueReadError(operation: string, error: unknown): never {
+  console.error(`[admin.catalogue] ${operation} failed:`, error);
+  throw new Error('Catalogue products could not be loaded.', { cause: error });
+}
+
 /**
  * Returns the full catalogue (every firework and multishot in stock) ordered by
  * name. Each row reports its kind and whether it is linked to a firework or
@@ -46,8 +51,7 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
     .order('name', { ascending: true })
     .limit(1000);
   if (error) {
-    console.error('[admin.server] listCatalogueProducts failed:', error);
-    return [];
+    throwCatalogueReadError('listCatalogueProducts', error);
   }
   const mapped = ((data ?? []) as CatalogueItemRow[]).map((row) => ({
     id: row.id,

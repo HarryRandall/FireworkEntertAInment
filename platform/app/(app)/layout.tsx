@@ -28,6 +28,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   if (!userId) {
     redirect('/login');
   }
+  if (!profile || profile.status !== 'active') {
+    redirect('/account-unavailable');
+  }
 
   const sidebarPreference = parseSidebarCollapsedPreference(
     cookieStore.get(sidebarCollapsedCookieName)?.value,

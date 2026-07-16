@@ -175,6 +175,7 @@ export type Database = {
           firework_id: string | null
           firework_type: string | null
           id: string
+          is_listed: boolean
           manufacturer: string | null
           metadata: Json
           multishot_id: string | null
@@ -190,6 +191,7 @@ export type Database = {
           firework_id?: string | null
           firework_type?: string | null
           id?: string
+          is_listed?: boolean
           manufacturer?: string | null
           metadata?: Json
           multishot_id?: string | null
@@ -205,6 +207,7 @@ export type Database = {
           firework_id?: string | null
           firework_type?: string | null
           id?: string
+          is_listed?: boolean
           manufacturer?: string | null
           metadata?: Json
           multishot_id?: string | null
@@ -238,6 +241,7 @@ export type Database = {
           created_by_label: string
           firework_effect_id: string | null
           firework_id: string | null
+          firework_style_default_id: string | null
           id: string
           previous_snapshot_json: Json | null
           snapshot_json: Json
@@ -252,6 +256,7 @@ export type Database = {
           created_by_label: string
           firework_effect_id?: string | null
           firework_id?: string | null
+          firework_style_default_id?: string | null
           id?: string
           previous_snapshot_json?: Json | null
           snapshot_json: Json
@@ -266,6 +271,7 @@ export type Database = {
           created_by_label?: string
           firework_effect_id?: string | null
           firework_id?: string | null
+          firework_style_default_id?: string | null
           id?: string
           previous_snapshot_json?: Json | null
           snapshot_json?: Json
@@ -285,6 +291,13 @@ export type Database = {
             columns: ["firework_id"]
             isOneToOne: false
             referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_editor_versions_firework_style_default_id_fkey"
+            columns: ["firework_style_default_id"]
+            isOneToOne: false
+            referencedRelation: "firework_style_defaults"
             referencedColumns: ["id"]
           },
         ]
@@ -327,6 +340,76 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      firework_preview_images: {
+        Row: {
+          captured_at: string | null
+          created_at: string
+          firework_effect_id: string | null
+          firework_id: string | null
+          height: number | null
+          id: string
+          multishot_id: string | null
+          renderer_version: string | null
+          source_revision: number
+          source_signature: string | null
+          storage_path: string | null
+          updated_at: string
+          width: number | null
+        }
+        Insert: {
+          captured_at?: string | null
+          created_at?: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          height?: number | null
+          id?: string
+          multishot_id?: string | null
+          renderer_version?: string | null
+          source_revision?: number
+          source_signature?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Update: {
+          captured_at?: string | null
+          created_at?: string
+          firework_effect_id?: string | null
+          firework_id?: string | null
+          height?: number | null
+          id?: string
+          multishot_id?: string | null
+          renderer_version?: string | null
+          source_revision?: number
+          source_signature?: string | null
+          storage_path?: string | null
+          updated_at?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "firework_preview_images_firework_effect_id_fkey"
+            columns: ["firework_effect_id"]
+            isOneToOne: true
+            referencedRelation: "firework_effects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_preview_images_firework_id_fkey"
+            columns: ["firework_id"]
+            isOneToOne: true
+            referencedRelation: "fireworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "firework_preview_images_multishot_id_fkey"
+            columns: ["multishot_id"]
+            isOneToOne: true
+            referencedRelation: "multishots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       firework_style_defaults: {
         Row: {
@@ -515,9 +598,165 @@ export type Database = {
         }
         Relationships: []
       }
+      import_candidate_render_validations: {
+        Row: {
+          artifact_byte_size: number
+          artifact_output_id: string
+          artifact_sha256: string
+          artifact_storage_etag: string
+          artifact_storage_path: string
+          candidate_id: string
+          canonical_evidence: Json
+          created_at: string
+          evidence_hash: string
+          metrics_schema_version: string
+          renderer_contract_version: string
+          validator_version: string
+        }
+        Insert: {
+          artifact_byte_size: number
+          artifact_output_id: string
+          artifact_sha256: string
+          artifact_storage_etag: string
+          artifact_storage_path: string
+          candidate_id: string
+          canonical_evidence: Json
+          created_at?: string
+          evidence_hash: string
+          metrics_schema_version: string
+          renderer_contract_version: string
+          validator_version: string
+        }
+        Update: {
+          artifact_byte_size?: number
+          artifact_output_id?: string
+          artifact_sha256?: string
+          artifact_storage_etag?: string
+          artifact_storage_path?: string
+          candidate_id?: string
+          canonical_evidence?: Json
+          created_at?: string
+          evidence_hash?: string
+          metrics_schema_version?: string
+          renderer_contract_version?: string
+          validator_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_candidate_render_validations_artifact_output_id_fkey"
+            columns: ["artifact_output_id"]
+            isOneToOne: false
+            referencedRelation: "import_run_outputs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_candidate_render_validations_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "import_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_candidate_validations: {
+        Row: {
+          candidate_id: string
+          canonical_reconstruction: Json
+          content_hash: string
+          created_at: string
+          validator_version: string
+        }
+        Insert: {
+          candidate_id: string
+          canonical_reconstruction: Json
+          content_hash: string
+          created_at?: string
+          validator_version: string
+        }
+        Update: {
+          candidate_id?: string
+          canonical_reconstruction?: Json
+          content_hash?: string
+          created_at?: string
+          validator_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_candidate_validations_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "import_candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_candidates: {
+        Row: {
+          approved_at: string | null
+          content_hash: string
+          created_at: string
+          id: string
+          import_run_id: string
+          metrics: Json
+          ordinal: number
+          reconstruction: Json
+          rendered_video_path: string | null
+          schema_version: string
+          score: number
+          selected_at: string | null
+          validation: Json
+        }
+        Insert: {
+          approved_at?: string | null
+          content_hash: string
+          created_at?: string
+          id?: string
+          import_run_id: string
+          metrics?: Json
+          ordinal: number
+          reconstruction: Json
+          rendered_video_path?: string | null
+          schema_version: string
+          score: number
+          selected_at?: string | null
+          validation?: Json
+        }
+        Update: {
+          approved_at?: string | null
+          content_hash?: string
+          created_at?: string
+          id?: string
+          import_run_id?: string
+          metrics?: Json
+          ordinal?: number
+          reconstruction?: Json
+          rendered_video_path?: string | null
+          schema_version?: string
+          score?: number
+          selected_at?: string | null
+          validation?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_candidates_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_jobs: {
         Row: {
+          active_run_id: string | null
+          approval_request_hash: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_candidate_id: string | null
           approved_catalogue_item_id: string | null
+          approved_run_id: string | null
+          archived_at: string | null
+          archived_by: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -528,6 +767,9 @@ export type Database = {
           processing_progress: number
           processor_version: string | null
           row_count: number | null
+          selected_at: string | null
+          selected_by: string | null
+          selected_candidate_id: string | null
           selected_model: string | null
           source_name: string
           source_url: string | null
@@ -536,7 +778,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_run_id?: string | null
+          approval_request_hash?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_candidate_id?: string | null
           approved_catalogue_item_id?: string | null
+          approved_run_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -547,6 +797,9 @@ export type Database = {
           processing_progress?: number
           processor_version?: string | null
           row_count?: number | null
+          selected_at?: string | null
+          selected_by?: string | null
+          selected_candidate_id?: string | null
           selected_model?: string | null
           source_name: string
           source_url?: string | null
@@ -555,7 +808,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_run_id?: string | null
+          approval_request_hash?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_candidate_id?: string | null
           approved_catalogue_item_id?: string | null
+          approved_run_id?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -566,6 +827,9 @@ export type Database = {
           processing_progress?: number
           processor_version?: string | null
           row_count?: number | null
+          selected_at?: string | null
+          selected_by?: string | null
+          selected_candidate_id?: string | null
           selected_model?: string | null
           source_name?: string
           source_url?: string | null
@@ -575,6 +839,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "import_jobs_active_run_id_fkey"
+            columns: ["active_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_approved_candidate_id_fkey"
+            columns: ["approved_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "import_candidates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "import_jobs_approved_catalogue_item_id_fkey"
             columns: ["approved_catalogue_item_id"]
             isOneToOne: false
@@ -582,10 +860,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "import_jobs_approved_run_id_fkey"
+            columns: ["approved_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "import_jobs_media_asset_id_fkey"
             columns: ["media_asset_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_jobs_selected_candidate_id_fkey"
+            columns: ["selected_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "import_candidates"
             referencedColumns: ["id"]
           },
         ]
@@ -618,6 +910,207 @@ export type Database = {
             columns: ["import_job_id"]
             isOneToOne: false
             referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_run_outputs: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          id: string
+          import_run_id: string
+          output_type: string
+          payload: Json
+          schema_version: string
+          sequence: number
+          stage: string
+          storage_path: string | null
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          id?: string
+          import_run_id: string
+          output_type: string
+          payload: Json
+          schema_version: string
+          sequence: number
+          stage: string
+          storage_path?: string | null
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          id?: string
+          import_run_id?: string
+          output_type?: string
+          payload?: Json
+          schema_version?: string
+          sequence?: number
+          stage?: string
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_run_outputs_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      import_runs: {
+        Row: {
+          attempt_number: number
+          completed_at: string | null
+          completion_lease_token: string | null
+          completion_request_hash: string | null
+          created_at: string
+          created_by: string | null
+          credit_action_key: string | null
+          credit_reservation_key: string | null
+          credit_status: string | null
+          direct_dispatch_attempt_count: number
+          direct_dispatch_call_id: string | null
+          direct_dispatch_error: string | null
+          direct_dispatch_status: string
+          direct_dispatch_updated_at: string | null
+          engine_schema_version: string
+          error_message: string | null
+          failure_lease_token: string | null
+          failure_request_hash: string | null
+          heartbeat_at: string | null
+          id: string
+          idempotency_key: string
+          import_job_id: string
+          lease_expires_at: string | null
+          lease_recovery_count: number
+          lease_token: string | null
+          modal_call_id: string | null
+          model_snapshot: Json
+          parent_run_id: string | null
+          pipeline_version: string
+          progress: number
+          prompt_snapshot: Json
+          request_kind: string
+          request_prompt: string | null
+          selected_model: string
+          source_candidate_id: string | null
+          source_sha256: string | null
+          stage: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          video_model: string | null
+        }
+        Insert: {
+          attempt_number: number
+          completed_at?: string | null
+          completion_lease_token?: string | null
+          completion_request_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_action_key?: string | null
+          credit_reservation_key?: string | null
+          credit_status?: string | null
+          direct_dispatch_attempt_count?: number
+          direct_dispatch_call_id?: string | null
+          direct_dispatch_error?: string | null
+          direct_dispatch_status?: string
+          direct_dispatch_updated_at?: string | null
+          engine_schema_version?: string
+          error_message?: string | null
+          failure_lease_token?: string | null
+          failure_request_hash?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          idempotency_key: string
+          import_job_id: string
+          lease_expires_at?: string | null
+          lease_recovery_count?: number
+          lease_token?: string | null
+          modal_call_id?: string | null
+          model_snapshot?: Json
+          parent_run_id?: string | null
+          pipeline_version?: string
+          progress?: number
+          prompt_snapshot?: Json
+          request_kind: string
+          request_prompt?: string | null
+          selected_model: string
+          source_candidate_id?: string | null
+          source_sha256?: string | null
+          stage?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          video_model?: string | null
+        }
+        Update: {
+          attempt_number?: number
+          completed_at?: string | null
+          completion_lease_token?: string | null
+          completion_request_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_action_key?: string | null
+          credit_reservation_key?: string | null
+          credit_status?: string | null
+          direct_dispatch_attempt_count?: number
+          direct_dispatch_call_id?: string | null
+          direct_dispatch_error?: string | null
+          direct_dispatch_status?: string
+          direct_dispatch_updated_at?: string | null
+          engine_schema_version?: string
+          error_message?: string | null
+          failure_lease_token?: string | null
+          failure_request_hash?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          idempotency_key?: string
+          import_job_id?: string
+          lease_expires_at?: string | null
+          lease_recovery_count?: number
+          lease_token?: string | null
+          modal_call_id?: string | null
+          model_snapshot?: Json
+          parent_run_id?: string | null
+          pipeline_version?: string
+          progress?: number
+          prompt_snapshot?: Json
+          request_kind?: string
+          request_prompt?: string | null
+          selected_model?: string
+          source_candidate_id?: string | null
+          source_sha256?: string | null
+          stage?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          video_model?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_runs_import_job_id_fkey"
+            columns: ["import_job_id"]
+            isOneToOne: false
+            referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_runs_parent_run_id_fkey"
+            columns: ["parent_run_id"]
+            isOneToOne: false
+            referencedRelation: "import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_runs_source_candidate_id_fkey"
+            columns: ["source_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "import_candidates"
             referencedColumns: ["id"]
           },
         ]
@@ -1020,6 +1513,7 @@ export type Database = {
       show_presets: {
         Row: {
           budget_cents: number | null
+          composition_signature: string
           cover_image_path: string | null
           cover_shader: Json | null
           created_at: string
@@ -1043,6 +1537,7 @@ export type Database = {
         }
         Insert: {
           budget_cents?: number | null
+          composition_signature?: never
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
@@ -1066,6 +1561,7 @@ export type Database = {
         }
         Update: {
           budget_cents?: number | null
+          composition_signature?: never
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
@@ -1537,7 +2033,137 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_refinement_cue_and_settle_credits: {
+        Args: {
+          p_catalogue_item_id: string
+          p_emphasis: string
+          p_launch_position_index: number
+          p_metadata?: Json
+          p_position: number
+          p_refinement_id: string
+          p_show_id: string
+          p_time_seconds: number
+        }
+        Returns: string
+      }
       ai_credit_usage_payload: { Args: { p_user_id: string }; Returns: Json }
+      append_firework_import_run_output: {
+        Args: {
+          p_content_hash?: string
+          p_lease_token: string
+          p_output_type: string
+          p_payload: Json
+          p_run_id: string
+          p_schema_version: string
+          p_sequence: number
+          p_stage: string
+          p_storage_path?: string
+        }
+        Returns: string
+      }
+      approve_firework_import_candidate: {
+        Args: {
+          p_candidate_id: string
+          p_category?: string
+          p_firework_type?: string
+          p_job_id: string
+          p_manufacturer?: string
+          p_name: string
+          p_part_number: string
+        }
+        Returns: {
+          catalogue_item_id: string
+          firework_ids: string[]
+          multishot_id: string
+        }[]
+      }
+      archive_firework_import_job: {
+        Args: { p_job_id: string }
+        Returns: string
+      }
+      begin_firework_import_dispatch: {
+        Args: { p_run_id: string }
+        Returns: boolean
+      }
+      check_firework_import_dispatch_ready: { Args: never; Returns: boolean }
+      claim_firework_import_run: {
+        Args: {
+          p_lease_seconds?: number
+          p_processor_version: string
+          p_requested_run_id?: string
+        }
+        Returns: {
+          job_id: string
+          lease_token: string
+          parent_candidate: Json
+          request_kind: string
+          request_prompt: string
+          run_id: string
+          selected_model: string
+          source_name: string
+          storage_path: string
+        }[]
+      }
+      complete_firework_import_run: {
+        Args: {
+          p_candidates: Json
+          p_lease_token: string
+          p_run_id: string
+          p_selected_ordinal: number
+        }
+        Returns: string
+      }
+      create_style_default_and_update_effect: {
+        Args: {
+          p_effect_description: string | null
+          p_effect_id: string
+          p_effect_name: string
+          p_expected_updated_at: string
+          p_model_json: Json
+          p_pattern_key: string
+          p_sort_order: number
+          p_style_defaults_json: Json
+          p_style_description: string | null
+          p_style_kind: string
+          p_style_name: string
+          p_style_slug: string
+        }
+        Returns: Json
+      }
+      create_style_default_and_update_firework: {
+        Args: {
+          p_caliber: string | null
+          p_color_palette: string[] | null
+          p_duration_seconds: number | null
+          p_expected_updated_at: string
+          p_firework_description: string | null
+          p_firework_effect_id: string
+          p_firework_id: string
+          p_firework_name: string
+          p_height_meters: number | null
+          p_primary_color: string | null
+          p_render_overrides_json: Json
+          p_secondary_color: string | null
+          p_style_defaults_json: Json
+          p_style_description: string | null
+          p_style_kind: string
+          p_style_name: string
+          p_style_slug: string
+        }
+        Returns: Json
+      }
+      current_firework_import_render_validator_version: {
+        Args: never
+        Returns: string
+      }
+      current_firework_import_renderer_contract_version: {
+        Args: never
+        Returns: string
+      }
+      current_firework_import_validator_version: {
+        Args: never
+        Returns: string
+      }
       current_user_access: { Args: never; Returns: Json }
       current_user_has_permission: {
         Args: { permission_key: string }
@@ -1549,6 +2175,27 @@ export type Database = {
         Returns: Json
       }
       ensure_ai_credit_account: { Args: { p_user_id: string }; Returns: Json }
+      fail_firework_import_run: {
+        Args: {
+          p_error_message: string
+          p_lease_token: string
+          p_run_id: string
+        }
+        Returns: undefined
+      }
+      finalise_firework_video_import: {
+        Args: {
+          p_original_name: string
+          p_reported_duration_seconds?: number
+          p_selected_model: string
+          p_source_name: string
+          p_storage_path: string
+        }
+        Returns: {
+          job_id: string
+          run_id: string
+        }[]
+      }
       grant_ai_credits: {
         Args: {
           p_amount: number
@@ -1561,6 +2208,56 @@ export type Database = {
       has_permission: {
         Args: { permission_key: string; target_user_id: string }
         Returns: boolean
+      }
+      heartbeat_firework_import_run: {
+        Args: {
+          p_lease_seconds?: number
+          p_lease_token: string
+          p_progress: number
+          p_run_id: string
+          p_stage: string
+        }
+        Returns: undefined
+      }
+      lock_firework_import_lease: {
+        Args: { p_lease_token: string; p_run_id: string }
+        Returns: string
+      }
+      record_firework_import_media_probe: {
+        Args: {
+          p_duration_seconds: number
+          p_height: number
+          p_lease_token: string
+          p_normalized_preview?: Json
+          p_run_id: string
+          p_source_probe: Json
+          p_width: number
+        }
+        Returns: string
+      }
+      record_firework_import_dispatch_result: {
+        Args: {
+          p_attempt_count: number
+          p_call_id?: string
+          p_error?: string
+          p_outcome: string
+          p_run_id: string
+        }
+        Returns: string
+      }
+      record_firework_import_run_context: {
+        Args: {
+          p_engine_schema_version: string
+          p_lease_token: string
+          p_modal_call_id?: string
+          p_model_snapshot: Json
+          p_pipeline_version: string
+          p_prompt_snapshot: Json
+          p_run_id: string
+          p_source_sha256: string
+          p_video_model: string
+        }
+        Returns: undefined
       }
       refund_ai_credit_reservation: {
         Args: {
@@ -1587,6 +2284,32 @@ export type Database = {
         }
         Returns: Json
       }
+      set_user_permission_overrides: {
+        Args: { p_overrides: Json; p_user_id: string }
+        Returns: number
+      }
+      seal_firework_import_candidate: {
+        Args: {
+          p_candidate_id: string
+          p_canonical_reconstruction: Json
+          p_content_hash: string
+          p_validator_version: string
+        }
+        Returns: string
+      }
+      seal_firework_import_render_validation: {
+        Args: {
+          p_artifact_storage_path: string
+          p_candidate_id: string
+          p_canonical_evidence: Json
+          p_validator_version: string
+        }
+        Returns: string
+      }
+      select_firework_import_candidate: {
+        Args: { p_candidate_id: string; p_job_id: string }
+        Returns: string
+      }
       settle_ai_credit_reservation: {
         Args: {
           p_idempotency_key: string
@@ -1596,6 +2319,64 @@ export type Database = {
         }
         Returns: Json
       }
+      start_firework_import_run: {
+        Args: {
+          p_idempotency_key: string
+          p_job_id: string
+          p_request_kind: string
+          p_request_prompt?: string
+          p_selected_model: string
+        }
+        Returns: {
+          attempt_number: number
+          completed_at: string | null
+          completion_lease_token: string | null
+          completion_request_hash: string | null
+          created_at: string
+          created_by: string | null
+          credit_action_key: string | null
+          credit_reservation_key: string | null
+          credit_status: string | null
+          direct_dispatch_attempt_count: number
+          direct_dispatch_call_id: string | null
+          direct_dispatch_error: string | null
+          direct_dispatch_status: string
+          direct_dispatch_updated_at: string | null
+          engine_schema_version: string
+          error_message: string | null
+          failure_lease_token: string | null
+          failure_request_hash: string | null
+          heartbeat_at: string | null
+          id: string
+          idempotency_key: string
+          import_job_id: string
+          lease_expires_at: string | null
+          lease_recovery_count: number
+          lease_token: string | null
+          modal_call_id: string | null
+          model_snapshot: Json
+          parent_run_id: string | null
+          pipeline_version: string
+          progress: number
+          prompt_snapshot: Json
+          request_kind: string
+          request_prompt: string | null
+          selected_model: string
+          source_candidate_id: string | null
+          source_sha256: string | null
+          stage: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          video_model: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "import_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       sync_multishot_derived_state: {
         Args: { p_multishot_id: string }
         Returns: Json
@@ -1603,6 +2384,19 @@ export type Database = {
       toggle_show_preset_like: {
         Args: { p_show_preset_id: string }
         Returns: Json
+      }
+      update_prompt_config_atomically: {
+        Args: {
+          p_key: string
+          p_product_catalogue_fields?: Json
+          p_product_context_text?: string
+          p_system_prompt_text?: string
+        }
+        Returns: boolean
+      }
+      update_show_generation_mode: {
+        Args: { p_generation_mode: string }
+        Returns: boolean
       }
     }
     Enums: {

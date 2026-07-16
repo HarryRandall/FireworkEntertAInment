@@ -65,12 +65,16 @@ export async function computeShoppingListForShow(
 
   // Cheapest available price per catalogue item across all supplier inventories.
   const catalogueItemIds = Array.from(byCatalogueItem.keys());
-  const { data: inventoryRows } = await supabase
+  const { data: inventoryRows, error: inventoryError } = await supabase
     .from('supplier_inventory_items')
     .select('catalogue_item_id, price_cents')
     .in('catalogue_item_id', catalogueItemIds)
     .eq('available', true)
     .not('price_cents', 'is', null);
+  if (inventoryError) {
+    console.error('[shows.server] computeShoppingListForShow inventory failed:', inventoryError);
+    return null;
+  }
 
   const cheapestPrice = new Map<string, number>();
   for (const inv of inventoryRows ?? []) {

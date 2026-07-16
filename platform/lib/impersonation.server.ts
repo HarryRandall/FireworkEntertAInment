@@ -16,6 +16,11 @@ type ServiceRoleClient = SupabaseClient<Database>;
 
 export type ImpersonationEndReason = 'stopped' | 'expired' | 'sign_out' | 'error';
 
+function throwImpersonationReadError(operation: string, error: unknown): never {
+  console.error(`[impersonation] ${operation} failed:`, error);
+  throw new Error('Impersonation session could not be verified.', { cause: error });
+}
+
 export function createReturnToken() {
   return randomBytes(32).toString('base64url');
 }
@@ -67,10 +72,8 @@ async function getActiveSessionByToken(
     .gt('expires_at', new Date().toISOString())
     .maybeSingle();
 
-  if (error || !session) {
-    if (error) console.error('[impersonation] active session lookup failed:', error);
-    return null;
-  }
+  if (error) throwImpersonationReadError('active session lookup', error);
+  if (!session) return null;
 
   const userIds = [session.admin_user_id, session.target_user_id];
   const { data: users, error: profilesError } = await service
@@ -78,9 +81,7 @@ async function getActiveSessionByToken(
     .select('id, email, full_name')
     .in('id', userIds);
 
-  if (profilesError) {
-    console.error('[impersonation] profile lookup failed:', profilesError);
-  }
+  if (profilesError) throwImpersonationReadError('profile lookup', profilesError);
 
   return {
     id: session.id,
@@ -96,7 +97,12 @@ export const getActiveImpersonation = cache(async (): Promise<ActiveImpersonatio
   if (!token) return null;
 
   const service = createServiceRoleSupabase();
-  if (!service) return null;
+  if (!service) {
+    throwImpersonationReadError(
+      'service client initialisation',
+      new Error('SUPABASE_SERVICE_ROLE_KEY is not configured.'),
+    );
+  }
 
   return getActiveSessionByToken(service, token);
 });

@@ -11,29 +11,61 @@ import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
 import { AuthShell } from '../components/AuthShell';
 import { FormError } from '@/app/components/ui/FormError';
+import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth-redirect';
 
 type Step = 'email' | 'password';
-
-function getSafeNextPath(nextPath: string) {
-  return nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/home';
-}
+type LoginError = {
+  message: string;
+  field: Step | null;
+};
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoginPageFallback />}>
       <LoginPageInner />
     </Suspense>
   );
 }
 
+function LoginPageFallback() {
+  return (
+    <AuthShell>
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+          Welcome back
+        </h1>
+        <p
+          className="text-sm text-[color:var(--color-content-subtle)]"
+          role="status"
+          aria-live="polite"
+        >
+          Checking your sign-in link…
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
+
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get('next') || '/home';
+  const nextPath = getAuthCallbackDestination(searchParams.get('next'));
+  const callbackError = searchParams.get('error');
+  const accountDeleted = searchParams.get('deleted') === '1';
+  const accountSessionCleanupPartial =
+    accountDeleted && searchParams.get('session_cleanup') === 'partial';
 
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LoginError | null>(() =>
+    callbackError === 'confirmation_failed'
+      ? {
+          message:
+            'That confirmation link is invalid or has expired. Sign in if your account is already confirmed.',
+          field: null,
+        }
+      : null,
+  );
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -42,7 +74,9 @@ function LoginPageInner() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setStep('password');
@@ -50,19 +84,29 @@ function LoginPageInner() {
 
   const handleSignIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setError(null);
     if (!password) {
-      setError('Please enter your password.');
+      setError({ message: 'Please enter your password.', field: 'password' });
+      const passwordInput = form.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError({ message: signInError.message, field: 'password' });
+        const passwordInput = form.elements.namedItem('password');
+        if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
+        setLoading(false);
+        return;
+      }
+      window.location.replace(nextPath);
+    } catch (signInError) {
+      console.error('[auth] sign-in failed:', signInError);
+      setError({ message: 'Could not sign in. Check your connection and try again.', field: null });
       setLoading(false);
-    } else {
-      const dest = getSafeNextPath(nextPath);
-      window.location.replace(dest);
     }
   };
 
@@ -77,6 +121,21 @@ function LoginPageInner() {
         </p>
       </div>
 
+      {accountDeleted && step === 'email' ? (
+        <p
+          className={`rounded-md border border-[color:var(--color-border-subtle)] px-3.5 py-2.5 text-sm ${
+            accountSessionCleanupPartial
+              ? 'bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)]'
+              : 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
+          }`}
+          role={accountSessionCleanupPartial ? 'alert' : 'status'}
+        >
+          {accountSessionCleanupPartial
+            ? 'Your account has been deleted, but complete session cleanup could not be confirmed. Other access tokens may remain valid until they expire.'
+            : 'Your account has been deleted and you have been signed out.'}
+        </p>
+      ) : null}
+
       {step === 'email' ? (
         <form onSubmit={handleEmailContinue} noValidate className="space-y-4">
           <div className="space-y-2">
@@ -88,6 +147,7 @@ function LoginPageInner() {
             </label>
             <Input
               id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => {
@@ -95,12 +155,18 @@ function LoginPageInner() {
                 setError(null);
               }}
               placeholder="you@example.com"
-              iconLeft={<Mail size={16} />}
+              iconLeft={<Mail size={16} aria-hidden="true" />}
               autoComplete="email"
-              autoFocus
+              spellCheck={false}
+              aria-describedby={error?.field === 'email' ? 'login-email-error' : undefined}
+              invalid={error?.field === 'email'}
             />
           </div>
-          {error && <FormError message={error} />}
+          {error ? (
+            <div id="login-email-error" role="alert" aria-live="polite">
+              <FormError message={error.message} />
+            </div>
+          ) : null}
           <Button type="submit" className="w-full">
             Continue
           </Button>
@@ -115,7 +181,7 @@ function LoginPageInner() {
             }}
             className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={14} aria-hidden="true" />
             Use a different email
           </button>
 
@@ -137,6 +203,7 @@ function LoginPageInner() {
               </div>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 value={password}
                 onChange={(e) => {
@@ -144,12 +211,17 @@ function LoginPageInner() {
                   setError(null);
                 }}
                 placeholder="••••••••"
-                iconLeft={<Lock size={16} />}
+                iconLeft={<Lock size={16} aria-hidden="true" />}
                 autoComplete="current-password"
-                autoFocus
+                aria-describedby={error?.field === 'password' ? 'login-password-error' : undefined}
+                invalid={error?.field === 'password'}
               />
             </div>
-            {error && <FormError message={error} />}
+            {error ? (
+              <div id="login-password-error" role="alert" aria-live="polite">
+                <FormError message={error.message} />
+              </div>
+            ) : null}
             <Button type="submit" className="w-full" loading={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
@@ -160,7 +232,7 @@ function LoginPageInner() {
       <p className="text-sm text-[color:var(--color-content-subtle)]">
         No account?{' '}
         <Link
-          href="/signup"
+          href={buildAuthPageHref('/signup', nextPath)}
           className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
         >
           Create one free

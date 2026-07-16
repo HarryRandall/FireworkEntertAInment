@@ -44,15 +44,13 @@ export class Scheduler {
     return max;
   }
 
-  /**
-   * Returns cues that should fire in (prev, now], marking them fired.
-   */
+  /** Return unfired cues in [prev, now], marking them fired. */
   pop(prev: number, now: number): ReplayCue[] {
     const due: ReplayCue[] = [];
     for (const sc of this.cues) {
       if (sc.fired) continue;
-      const startsAtTimelineOrigin = prev <= 0 && sc.cue.timeSeconds === 0;
-      if ((startsAtTimelineOrigin || sc.cue.timeSeconds > prev) && sc.cue.timeSeconds <= now) {
+      const startsAtCurrentBoundary = Math.abs(sc.cue.timeSeconds - prev) <= 0.000001;
+      if ((startsAtCurrentBoundary || sc.cue.timeSeconds > prev) && sc.cue.timeSeconds <= now) {
         due.push(sc.cue);
         sc.fired = true;
       }

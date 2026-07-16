@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, Settings2 } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { PRODUCT_CATALOGUE_FIELD_KEYS, type ProductCatalogueField } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
+import { usePromptConfigFormState } from './PromptConfigForm';
 
 const PRODUCT_FIELD_LABELS: Record<ProductCatalogueField, string> = {
   id: 'ID',
@@ -48,10 +49,21 @@ type Props = {
   initialFields: readonly ProductCatalogueField[];
 };
 
-export function ProductCatalogueFieldsControl({ initialFields }: Props) {
-  const [fields, setFields] = useState<ProductCatalogueField[]>(() =>
-    PRODUCT_CATALOGUE_FIELD_KEYS.filter((field) => field === 'id' || initialFields.includes(field)),
+function normaliseFields(initialFields: readonly ProductCatalogueField[]) {
+  return PRODUCT_CATALOGUE_FIELD_KEYS.filter(
+    (field) => field === 'id' || initialFields.includes(field),
   );
+}
+
+export function ProductCatalogueFieldsControl({ initialFields }: Props) {
+  const { resetVersion } = usePromptConfigFormState();
+  const [fields, setFields] = useState<ProductCatalogueField[]>(() =>
+    normaliseFields(initialFields),
+  );
+
+  useEffect(() => {
+    setFields(normaliseFields(initialFields));
+  }, [initialFields, resetVersion]);
 
   const selected = useMemo(() => new Set(fields), [fields]);
   const selectedLabels = fields

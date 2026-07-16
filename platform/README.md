@@ -56,9 +56,10 @@ Follow [database safety](docs/database-safety.md) and
 
 ## Code And UI Conventions
 
-Read the repository [agent guide](../AGENTS.md) and the local
-[ShowCrafter design-system skill](../.agents/skills/showcrafter-design-system/SKILL.md)
-before editing the app.
+Read the repository [agent guide](../AGENTS.md) and the
+[pinned repo-local skill manifest](../.agents/skills/README.md) before editing
+the app. Use only the skills relevant to the task, with project guidance and
+the live implementation taking precedence.
 
 - Use `app/components/ui` for app primitives. `components/ui` is the low-level
   Radix/shadcn layer; only files explicitly marked as generated are non-editable.

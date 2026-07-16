@@ -47,6 +47,7 @@ const redis = redisConfig ? new Redis({ url: redisConfig.url, token: redisConfig
 
 const CACHE_TTL_SECONDS = 60;
 const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
+const memoryRateLimits = new Map<string, { count: number; expiresAt: number }>();
 
 function getRedisClient() {
   return redis;
@@ -54,6 +55,125 @@ function getRedisClient() {
 
 export function hasRedisCache() {
   return Boolean(getRedisClient());
+}
+
+export type FixedWindowRateLimitResult = {
+  allowed: boolean;
+  available: boolean;
+  count: number;
+  retryAfterSeconds: number;
+  durable: boolean;
+};
+
+export type FixedWindowRateLimit = {
+  key: string;
+  limit: number;
+  windowSeconds: number;
+};
+
+/**
+ * Atomically consume a set of fixed-window allowances. Security-sensitive callers
+ * must require `durable` in production because the memory fallback is scoped
+ * to one server process.
+ */
+export async function consumeFixedWindowRateLimits(
+  limits: readonly FixedWindowRateLimit[],
+): Promise<FixedWindowRateLimitResult> {
+  if (limits.length === 0) {
+    return {
+      allowed: true,
+      available: true,
+      count: 0,
+      retryAfterSeconds: 0,
+      durable: Boolean(getRedisClient()),
+    };
+  }
+
+  const client = getRedisClient();
+  if (!client) {
+    const now = Date.now();
+    const entries = limits.map((limit) => {
+      const existing = memoryRateLimits.get(limit.key);
+      return existing && existing.expiresAt > now
+        ? existing
+        : { count: 0, expiresAt: now + limit.windowSeconds * 1_000 };
+    });
+    const deniedIndex = entries.findIndex((entry, index) => entry.count >= limits[index].limit);
+    if (deniedIndex >= 0) {
+      const denied = entries[deniedIndex];
+      return {
+        allowed: false,
+        available: true,
+        count: denied.count,
+        retryAfterSeconds: Math.max(1, Math.ceil((denied.expiresAt - now) / 1_000)),
+        durable: false,
+      };
+    }
+
+    const consumed = entries.map((entry, index) => {
+      const next = { count: entry.count + 1, expiresAt: entry.expiresAt };
+      memoryRateLimits.set(limits[index].key, next);
+      return next;
+    });
+    return {
+      allowed: true,
+      available: true,
+      count: Math.max(...consumed.map((entry) => entry.count)),
+      retryAfterSeconds: Math.max(
+        1,
+        ...consumed.map((entry) => Math.ceil((entry.expiresAt - now) / 1_000)),
+      ),
+      durable: false,
+    };
+  }
+
+  try {
+    const [rawAllowed, , rawCount, rawTtl] = await client.eval<
+      number[],
+      [number, number, number, number]
+    >(
+      `for index, key in ipairs(KEYS) do
+  local current = tonumber(redis.call('GET', key) or '0')
+  local limit = tonumber(ARGV[((index - 1) * 2) + 1])
+  if current >= limit then
+    return { 0, index, current, redis.call('TTL', key) }
+  end
+end
+
+local highest = 0
+local longest_ttl = 1
+for index, key in ipairs(KEYS) do
+  local window = tonumber(ARGV[((index - 1) * 2) + 2])
+  local count = redis.call('INCR', key)
+  if count == 1 then redis.call('EXPIRE', key, window) end
+  local ttl = redis.call('TTL', key)
+  if count > highest then highest = count end
+  if ttl > longest_ttl then longest_ttl = ttl end
+end
+return { 1, 0, highest, longest_ttl }`,
+      limits.map((limit) => limit.key),
+      limits.flatMap((limit) => [limit.limit, limit.windowSeconds]),
+    );
+    const allowed = Number(rawAllowed) === 1;
+    const count = Number(rawCount);
+    const retryAfterSeconds = Math.max(1, Number(rawTtl));
+    return {
+      allowed: allowed && Number.isFinite(count),
+      available: Number.isFinite(count),
+      count: Number.isFinite(count) ? count : 1,
+      retryAfterSeconds,
+      durable: true,
+    };
+  } catch (error) {
+    console.error('[server-cache] rate limit failed:', error);
+    return {
+      allowed: false,
+      available: false,
+      count: 1,
+      retryAfterSeconds: Math.max(...limits.map((limit) => limit.windowSeconds)),
+      durable: true,
+    };
+  }
 }
 
 export async function getCachedJson<T>(key: string): Promise<T | null> {

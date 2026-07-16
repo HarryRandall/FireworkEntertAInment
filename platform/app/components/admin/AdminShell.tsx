@@ -24,7 +24,6 @@ import {
   CreditCard,
   Database,
   FileInput,
-  ImageIcon,
   Laptop,
   Layers,
   LayoutDashboard,
@@ -47,6 +46,7 @@ import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
+import { SkipLink } from '@/app/components/ui/SkipLink';
 import { toast } from '@/app/components/ui/toast';
 import {
   DropdownMenu,
@@ -76,7 +76,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
-import { createClient } from '@/utils/supabase/client';
+import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
@@ -126,12 +126,6 @@ const ADMIN_LINKS: AdminNavLink[] = [
     href: '/admin/show-presets',
     label: 'Explore shows',
     icon: Star,
-    permission: 'admin.manage_catalogue',
-  },
-  {
-    href: '/admin/cover-posters',
-    label: 'Cover posters',
-    icon: ImageIcon,
     permission: 'admin.manage_catalogue',
   },
   {
@@ -285,6 +279,17 @@ function ProfileMenuButton({
 }) {
   const { isMobile } = useSidebar();
   const closeFromPointerOutsideRef = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const runSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await onSignOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -356,13 +361,15 @@ function ProfileMenuButton({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
+              disabled={isSigningOut}
+              aria-busy={isSigningOut}
               onSelect={(event) => {
                 event.preventDefault();
-                void onSignOut();
+                void runSignOut();
               }}
             >
               <LogOut />
-              Log out
+              {isSigningOut ? 'Signing out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -532,9 +539,12 @@ export function AdminShell({
   }, [pathname]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
+    const result = await signOutCurrentSession();
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    router.replace('/login');
     router.refresh();
   };
 
@@ -550,6 +560,7 @@ export function AdminShell({
       style={{ '--sidebar-width': 'calc(var(--spacing) * 60)' } as CSSProperties}
     >
       <ThemePreferenceSync themePreference={profile.themePreference} />
+      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand />
@@ -594,7 +605,11 @@ export function AdminShell({
       <AdminBreadcrumbOverrideContext.Provider value={setBreadcrumbOverride}>
         <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
           <ShellTopBar breadcrumbs={breadcrumbs} />
-          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 sm:px-8 lg:px-10">
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 focus:outline-none sm:px-8 lg:px-10"
+          >
             {children}
           </main>
         </SidebarInset>

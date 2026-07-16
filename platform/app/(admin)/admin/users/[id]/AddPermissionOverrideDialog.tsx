@@ -5,7 +5,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, Plus, Search, X } from 'lucide-react';
-import { setUserPermissionOverrideAction } from '@/app/actions/admin-users';
+import { setUserPermissionOverridesAction } from '@/app/actions/admin-users';
 import { Button } from '@/app/components/ui/Button';
 import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
 import { Input } from '@/app/components/ui/Input';
@@ -116,28 +116,17 @@ export function AddPermissionOverrideDialog({ userId, permissions, onSaved, onFa
     setOpen(false);
     reset();
     startTransition(async () => {
-      const results = await Promise.all(
-        overrides.map(async (override) => ({
-          override,
-          result: await setUserPermissionOverrideAction({
-            userId,
-            permissionId: override.permission.id,
-            mode: override.mode,
-          }),
+      const result = await setUserPermissionOverridesAction({
+        userId,
+        overrides: overrides.map((override) => ({
+          permissionId: override.permission.id,
+          mode: override.mode,
         })),
-      );
-      const failed = results.filter(({ result }) => !result.ok);
+      });
 
-      if (failed.length > 0) {
-        onFailed?.(failed.map(({ override }) => override));
-        const firstFailed = failed[0];
-        const firstError = firstFailed?.result.ok === false ? firstFailed.result.error : null;
-        toast.error(
-          failed.length === 1
-            ? (firstError ?? 'Permission override failed.')
-            : `${failed.length} permission overrides failed.${firstError ? ` ${firstError}` : ''}`,
-          { id: toastId },
-        );
+      if (!result.ok) {
+        onFailed?.(overrides);
+        toast.error(result.error, { id: toastId });
         router.refresh();
         return;
       }
@@ -164,7 +153,7 @@ export function AddPermissionOverrideDialog({ userId, permissions, onSaved, onFa
         <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 pt-6 pb-4">
           <DialogTitle className="text-lg">Add permission override</DialogTitle>
           <DialogDescription className="max-w-lg text-sm text-[color:var(--color-content-subtle)]">
-            Add one exception to this user's role defaults.
+            Add one or more exceptions to this user's role defaults.
           </DialogDescription>
         </DialogHeader>
 

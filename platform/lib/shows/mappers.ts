@@ -5,6 +5,7 @@
 import { parseLaunchPositions } from '@/lib/fireworks/design';
 import { compileFireworkDesign } from '@/lib/fireworks/design';
 import { parseCover } from '@/lib/cover';
+import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
 import { safeParseFireworkSpec } from '@/lib/fireworks/spec';
 import type {
   FireworkSpecification,
@@ -110,9 +111,11 @@ export function mapCatalogueFireworkCard(
     description: row.description,
     sortOrder: index,
     durationSeconds: row.duration_seconds,
+    occupancyDurationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
     caliber,
     shotCount: null,
+    ...resolveFireworkPreviewImage(row.firework_preview_images),
     spec: safeParseFireworkSpec(null),
     rawSpec: null,
     renderDesign: null,
@@ -157,9 +160,11 @@ export function mapFireworkVariantSpecification(
     description: row.description,
     sortOrder: index,
     durationSeconds: row.duration_seconds,
+    occupancyDurationSeconds: row.duration_seconds,
     heightMeters: row.height_meters,
     caliber,
     shotCount: null,
+    ...resolveFireworkPreviewImage(row.firework_preview_images),
     spec: safeParseFireworkSpec(row.variant_json),
     rawSpec: row.render_overrides_json,
     renderDesign,

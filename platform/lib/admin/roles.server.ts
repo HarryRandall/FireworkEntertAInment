@@ -25,6 +25,18 @@ import {
 } from './mappers';
 import { getServerClient } from './supabase';
 
+type AdminRoleReadFailure = {
+  source: string;
+  error: unknown;
+};
+
+function throwAdminRoleReadError(operation: string, failures: AdminRoleReadFailure[]): never {
+  console.error(`[admin.roles] ${operation} failed:`, failures);
+  throw new Error('Admin role and permission data could not be loaded.', {
+    cause: failures[0]?.error,
+  });
+}
+
 /** Returns all roles ordered by `sort_order`. Cached. */
 export async function listRoles(): Promise<Role[]> {
   const cacheKey = getAdminRolesCacheKey();
@@ -37,8 +49,7 @@ export async function listRoles(): Promise<Role[]> {
     .select('id, key, name, description, sort_order, created_at, updated_at')
     .order('sort_order', { ascending: true });
   if (error) {
-    console.error('[admin.server] listRoles failed:', error);
-    return [];
+    throwAdminRoleReadError('listRoles', [{ source: 'roles', error }]);
   }
   const mapped = (data ?? []).map(mapRole);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
@@ -72,12 +83,14 @@ export async function listRolePermissionMatrix(): Promise<RolePermissionMatrix |
   ]);
 
   if (rolesError || permissionsError || grantsError) {
-    console.error('[admin.server] listRolePermissionMatrix failed:', {
-      rolesError,
-      permissionsError,
-      grantsError,
-    });
-    return { roles: [], permissions: [], grants: [] };
+    throwAdminRoleReadError(
+      'listRolePermissionMatrix',
+      [
+        { source: 'roles', error: rolesError },
+        { source: 'permissions', error: permissionsError },
+        { source: 'role permission grants', error: grantsError },
+      ].filter(({ error }) => error !== null),
+    );
   }
 
   const mapped: RolePermissionMatrix = {
@@ -106,8 +119,7 @@ export async function listPermissions(): Promise<Permission[]> {
     .order('category', { ascending: true })
     .order('key', { ascending: true });
   if (error) {
-    console.error('[admin.server] listPermissions failed:', error);
-    return [];
+    throwAdminRoleReadError('listPermissions', [{ source: 'permissions', error }]);
   }
   const mapped = (data ?? []).map(mapPermission);
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);

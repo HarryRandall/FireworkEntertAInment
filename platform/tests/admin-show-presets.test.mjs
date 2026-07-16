@@ -28,9 +28,10 @@ test('admin show preset routes and navigation are wired without old header bands
   const actions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
   assert.match(shell, /href: '\/admin\/show-presets'/);
   assert.match(shell, /label: 'Explore shows'/);
-  assert.match(shell, /href: '\/admin\/cover-posters'/);
-  assert.match(shell, /label: 'Cover posters'/);
-  assert.match(actions, /href="\/admin\/cover-posters"/);
+  // Cover posters are embedded in the curated-shows page, not a separate tab.
+  assert.doesNotMatch(shell, /href: '\/admin\/cover-posters'/);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/cover-posters')), false);
+  assert.match(actions, /CoverPosterBackfill/);
   assert.match(actions, /Cover posters/);
 });
 
@@ -67,6 +68,7 @@ test('public reads only use published presets while admin helpers include drafts
   const actions = read('app/actions/admin-show-presets.ts');
   const index = read('lib/admin/index.ts');
   const homePage = read('app/(app)/home/page.tsx');
+  const homeDiscovery = read('app/components/app/HomeDiscoverySections.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
   const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
 
@@ -86,6 +88,10 @@ test('public reads only use published presets while admin helpers include drafts
   );
   assert.match(timing, /const endSeconds = cue\.timeSeconds \+ durationSeconds/);
   assert.match(timing, /ends at.*show duration/);
+  assert.match(timing, /occupiedLaunchPositions/);
+  assert.match(timing, /const candidateWindows/);
+  assert.match(timing, /accepted\.push\(\.\.\.candidateWindows\)/);
+  assert.match(timing, /Position \$\{candidate\.launchPositionIndex \+ 1\} is still busy with/);
 
   for (const action of [
     'createShowPreset',
@@ -106,6 +112,11 @@ test('public reads only use published presets while admin helpers include drafts
     actions,
     /currentPreset\.is_published[\s\S]*validatePresetTimeline\([\s\S]*parsed\.data\.durationSeconds/,
   );
+  assert.ok((actions.match(/validatePresetTimeline\(/g) ?? []).length >= 3);
+  assert.doesNotMatch(
+    actions,
+    /new Map\(Array\.from\(products, \(\[id, product\]\) => \[id, product\.durationSeconds\]\)\)/,
+  );
   assert.match(actions, /is_published: false/);
   assert.match(actions, /published_at: null/);
   assert.match(actions, /createServiceRoleSupabase/);
@@ -119,9 +130,11 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(actions, /catalogueItemSlug: item\.part_number/);
   assert.match(actions, /source_show_id: show\.id/);
 
-  assert.match(homePage, /listFireworkProducts/);
-  assert.match(libraryPage, /listFireworkProducts/);
-  assert.match(libraryDetailPage, /listFireworkProducts/);
+  assert.doesNotMatch(homePage, /listFireworkProducts/);
+  assert.match(homeDiscovery, /loadExplorePreview/);
+  assert.doesNotMatch(libraryPage, /listFireworkProducts/);
+  assert.doesNotMatch(libraryDetailPage, /listFireworkProducts/);
+  assert.match(libraryDetailPage, /listReferencedShowTemplateSpecifications/);
 });
 
 test('cue parsing, previews, clone and import paths support catalogue-item cues', () => {
@@ -146,6 +159,7 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   assert.match(replayCues, /cue\.catalogueItemSlug/);
 
   assert.match(cloneAction, /validatePresetTimeline/);
+  assert.match(cloneAction, /new Map\(products\.map\(\(product\) => \[product\.id, product\]\)\)/);
   assert.match(cloneAction, /resolvedCues/);
   assert.match(cloneAction, /cue\.catalogueItemId/);
   assert.match(cloneAction, /cue\.catalogueItemSlug/);

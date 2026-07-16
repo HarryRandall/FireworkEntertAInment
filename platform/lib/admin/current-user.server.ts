@@ -53,6 +53,7 @@ function parseAccessRpc(value: Json): CurrentProfile | null {
   if (!isRecord(value)) return null;
   const profile = value.profile;
   if (!isRecord(profile) || typeof profile.id !== 'string') return null;
+  if (profile.status !== 'active' && profile.status !== 'suspended') return null;
   const roles = Array.isArray(value.roles)
     ? value.roles.filter((role): role is string => typeof role === 'string').map(asRoleKey)
     : [];
@@ -66,7 +67,7 @@ function parseAccessRpc(value: Json): CurrentProfile | null {
     email: typeof profile.email === 'string' ? profile.email : null,
     fullName: typeof profile.full_name === 'string' ? profile.full_name : null,
     phone: typeof profile.phone === 'string' ? profile.phone : null,
-    status: typeof profile.status === 'string' ? asProfileStatus(profile.status) : 'active',
+    status: profile.status,
     themePreference:
       profile.theme_preference === 'dark' ||
       profile.theme_preference === 'light' ||
@@ -101,12 +102,12 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   }
 
   const [
-    { data: profile },
-    { data: allRoles },
-    { data: userRoles },
-    { data: rolePermissions },
-    { data: allPermissions },
-    { data: overrides },
+    profileResult,
+    allRolesResult,
+    userRolesResult,
+    rolePermissionsResult,
+    allPermissionsResult,
+    overridesResult,
   ] = await Promise.all([
     supabase
       .from('users')
@@ -128,7 +129,31 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
       .eq('user_id', userId),
   ]);
 
+  const fallbackErrors = [
+    { source: 'profile', error: profileResult.error },
+    { source: 'roles', error: allRolesResult.error },
+    { source: 'user roles', error: userRolesResult.error },
+    { source: 'role permissions', error: rolePermissionsResult.error },
+    { source: 'permissions', error: allPermissionsResult.error },
+    { source: 'permission overrides', error: overridesResult.error },
+  ].filter(({ error }) => error !== null);
+
+  if (fallbackErrors.length > 0) {
+    console.error('[admin.current-user] fallback access reads failed:', fallbackErrors);
+    throw new Error('Current user access could not be loaded.', {
+      cause: fallbackErrors[0]?.error,
+    });
+  }
+
+  const profile = profileResult.data;
+  const allRoles = allRolesResult.data;
+  const userRoles = userRolesResult.data;
+  const rolePermissions = rolePermissionsResult.data;
+  const allPermissions = allPermissionsResult.data;
+  const overrides = overridesResult.data;
+
   if (!profile) return null;
+  if (profile.status !== 'active' && profile.status !== 'suspended') return null;
 
   const rolesById = new Map((allRoles ?? []).map((role) => [role.id, mapRole(role)]));
   const permissionsById = new Map(
@@ -182,6 +207,8 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
  */
 export async function requirePermission(permission: PermissionKey) {
   const profile = await getCurrentProfile();
-  if (!profile || !profile.permissions.includes(permission)) return null;
+  if (!profile || profile.status !== 'active' || !profile.permissions.includes(permission)) {
+    return null;
+  }
   return profile;
 }

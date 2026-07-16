@@ -62,6 +62,16 @@ function fallbackGenerationSetting(): GenerationSetting {
   return getDefaultShowGenerationSettings();
 }
 
+function throwPromptConfigReadError(operation: string, error: unknown): never {
+  console.error(`[admin.prompts] ${operation} failed:`, error);
+  throw new Error('Prompt configurations could not be loaded.', { cause: error });
+}
+
+function throwGenerationSettingReadError(operation: string, error: unknown): never {
+  console.error(`[admin.prompts] ${operation} failed:`, error);
+  throw new Error('Show generation settings could not be loaded.', { cause: error });
+}
+
 export async function listAdminPromptConfigs(): Promise<PromptConfig[] | null> {
   if (!(await requirePermission('admin.manage_prompts'))) return null;
 
@@ -78,8 +88,7 @@ export async function listAdminPromptConfigs(): Promise<PromptConfig[] | null> {
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('[admin.prompts] listAdminPromptConfigs failed:', error);
-    return [];
+    throwPromptConfigReadError('listAdminPromptConfigs', error);
   }
 
   const mapped = ((data ?? []) as PromptConfigRow[]).map(mapPromptConfig);
@@ -127,28 +136,35 @@ export async function getAdminPromptControlData(): Promise<AdminPromptControlDat
 
   let configs = cachedConfigs;
   if (!configs) {
-    if (configsResult?.error) {
-      console.error(
-        '[admin.prompts] getAdminPromptControlData configs failed:',
-        configsResult.error,
-      );
-      configs = [];
-    } else {
-      configs = ((configsResult?.data ?? []) as PromptConfigRow[]).map(mapPromptConfig);
-      await setCachedJson(promptConfigsCacheKey, configs, ADMIN_CACHE_TTL_SECONDS);
+    if (!configsResult) {
+      throw new Error('Prompt configurations query result was not available.');
     }
+
+    if (configsResult.error) {
+      throwPromptConfigReadError('getAdminPromptControlData configs', configsResult.error);
+    }
+
+    configs = ((configsResult.data ?? []) as PromptConfigRow[]).map(mapPromptConfig);
+    await setCachedJson(promptConfigsCacheKey, configs, ADMIN_CACHE_TTL_SECONDS);
   }
 
   let generationSetting = cachedGenerationSetting;
   if (!generationSetting) {
-    generationSetting =
-      generationSettingResult?.error || !generationSettingResult?.data
-        ? fallbackGenerationSetting()
-        : mapGenerationSetting(generationSettingResult.data as GenerationSettingRow);
-
-    if (!generationSettingResult?.error) {
-      await setCachedJson(generationSettingsCacheKey, generationSetting, ADMIN_CACHE_TTL_SECONDS);
+    if (!generationSettingResult) {
+      throw new Error('Show generation settings query result was not available.');
     }
+
+    if (generationSettingResult.error) {
+      throwGenerationSettingReadError(
+        'getAdminPromptControlData generation setting',
+        generationSettingResult.error,
+      );
+    }
+
+    generationSetting = generationSettingResult.data
+      ? mapGenerationSetting(generationSettingResult.data as GenerationSettingRow)
+      : fallbackGenerationSetting();
+    await setCachedJson(generationSettingsCacheKey, generationSetting, ADMIN_CACHE_TTL_SECONDS);
   }
 
   return {
@@ -172,7 +188,7 @@ export async function getAdminShowGenerationSetting(): Promise<GenerationSetting
     .maybeSingle();
 
   if (error) {
-    return fallbackGenerationSetting();
+    throwGenerationSettingReadError('getAdminShowGenerationSetting', error);
   }
 
   const mapped = data

@@ -9,7 +9,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ExploreCard } from '@/app/components/app/ExploreCard';
-import type { ShowTemplate } from '@/lib/admin.types';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
+import { cn } from '@/lib/utils';
 
 export function ExploreRow({
   title,
@@ -17,9 +19,10 @@ export function ExploreRow({
   seeAllHref,
 }: {
   title: string;
-  templates: ShowTemplate[];
+  templates: ShowTemplateSummary[];
   seeAllHref?: string;
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -49,7 +52,10 @@ export function ExploreRow({
   function scrollBy(direction: 1 | -1) {
     const node = scrollerRef.current;
     if (!node) return;
-    node.scrollBy({ left: direction * node.clientWidth * 0.85, behavior: 'smooth' });
+    node.scrollBy({
+      left: direction * node.clientWidth * 0.85,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
   }
 
   return (
@@ -71,7 +77,10 @@ export function ExploreRow({
         <div
           ref={scrollerRef}
           data-explore-scroll-viewport
-          className="-mt-4 -mb-6 flex gap-4 overflow-x-auto scroll-smooth pt-4 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={cn(
+            '-mt-4 -mb-6 flex gap-4 overflow-x-auto pt-4 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            prefersReducedMotion ? 'scroll-auto' : 'scroll-smooth',
+          )}
         >
           {templates.map((template) => (
             <ExploreCard key={template.id} template={template} />
@@ -89,21 +98,21 @@ export function ExploreRow({
         {canScrollLeft ? (
           <button
             type="button"
-            aria-label="Scroll left"
+            aria-label={`Scroll ${title} left`}
             onClick={() => scrollBy(-1)}
-            className="absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft aria-hidden="true" size={18} />
           </button>
         ) : null}
         {canScrollRight ? (
           <button
             type="button"
-            aria-label="Scroll right"
+            aria-label={`Scroll ${title} right`}
             onClick={() => scrollBy(1)}
-            className="absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
-            <ChevronRight size={18} />
+            <ChevronRight aria-hidden="true" size={18} />
           </button>
         ) : null}
       </div>

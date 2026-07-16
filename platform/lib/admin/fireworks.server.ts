@@ -9,6 +9,10 @@ import type {
   AdminStyleDefaultOption,
 } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
+import {
+  resolveFireworkPreviewImage,
+  type FireworkPreviewImageRelation,
+} from '@/lib/firework-preview-image';
 import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
 import {
   ADMIN_CACHE_TTL_SECONDS,
@@ -23,6 +27,7 @@ import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
+type CachedAdminFireworkDetail = Omit<AdminFireworkDetail, 'history'>;
 
 type FireworkEffectRow = {
   id: string;
@@ -47,12 +52,13 @@ type FireworkRow = {
   render_overrides_json: Json;
   updated_at: string;
   firework_effects: FireworkEffectRow | FireworkEffectRow[] | null;
+  firework_preview_images?: FireworkPreviewImageRelation;
 };
 
 const FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
 const LEGACY_FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
 const EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 const LEGACY_EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 
@@ -105,6 +111,7 @@ function mapSummary(row: FireworkRow): AdminFireworkSummary {
       } as Json,
       { pattern: effect?.name ?? null, name: row.name },
     ),
+    ...resolveFireworkPreviewImage(row.firework_preview_images),
     updatedAt: row.updated_at,
   };
 }
@@ -235,10 +242,15 @@ export async function getAdminFireworkById(
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
 
   const cacheKey = getAdminFireworkCacheKey(fireworkId);
-  const cached = await getCachedJson<AdminFireworkDetail>(cacheKey);
-  if (cached) return cached;
-
   const supabase = await getServerClient();
+  const cached = await getCachedJson<CachedAdminFireworkDetail>(cacheKey);
+  if (cached) {
+    return {
+      ...cached,
+      history: await listFireworkEditorVersions(supabase, fireworkId),
+    };
+  }
+
   const [fireworkResult, effectData] = await Promise.all([
     selectFireworkById(supabase, fireworkId),
     loadEffectOptionsAndModels(),
@@ -261,7 +273,7 @@ export async function getAdminFireworkById(
     listAdminStyleDefaultOptions(),
     listFireworkEditorVersions(supabase, row.id),
   ]);
-  const detail: AdminFireworkDetail = {
+  const detail: CachedAdminFireworkDetail = {
     ...mapSummary(row),
     renderOverridesJson: row.render_overrides_json ?? {},
     effectModelJson: (effect?.model_json ?? effectData.models[effect?.id ?? ''] ?? {}) as Json,
@@ -277,8 +289,7 @@ export async function getAdminFireworkById(
     effectStarStyleDefaults: effectData.starStyleDefaults,
     effectTrailStyleDefaults: effectData.trailStyleDefaults,
     effectStyleDefaultLinksByEffect: effectData.styleDefaultLinksByEffect,
-    history,
   };
   await setCachedJson(cacheKey, detail, ADMIN_CACHE_TTL_SECONDS);
-  return detail;
+  return { ...detail, history };
 }

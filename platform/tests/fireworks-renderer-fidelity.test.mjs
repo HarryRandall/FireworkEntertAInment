@@ -1,4 +1,4 @@
-/** Static-analysis "grep the source" test guarding the fireworks renderer fidelity invariants (do not modify test bodies). */
+/** Static-analysis tests guarding the fireworks renderer fidelity invariants. */
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -22,7 +22,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   assert.match(showMappers, /rawSpec: row\.render_overrides_json/);
   assert.match(showMappers, /mapFireworkVariantSpecification/);
   assert.match(showMappers, /baseModel: effect\?\.model_json/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v12'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v13'/);
   assert.match(showDomain, /rawSpec: unknown/);
   assert.match(showDomain, /renderDesign: FireworkDesign \| null/);
   assert.match(importJobs, /renderDesign: compileFireworkDesign\(\{ legacySpec: spec \}\)/);
@@ -139,7 +139,7 @@ test('firework audio separates launch and burst reports', () => {
   assert.match(effects, /setAudible\(audible: boolean\): void \{\s*this\.audible = audible;\s*\}/);
   assert.match(
     effects,
-    /action: \(p, dt, t\) => \{[\s\S]*this\.detonate\(p, dt, t, design, color, seed, rng, this\.audible\);[\s\S]*\},/,
+    /action: \(p, dt, t\) => \{[\s\S]*this\.detonate\(p, dt, t, design, color, seed, rng, this\.audible, budget\);[\s\S]*\},/,
   );
   assert.match(effects, /options\.audible && design\.sound\.launch/);
   assert.match(effects, /boom !== 'none'/);
@@ -147,6 +147,51 @@ test('firework audio separates launch and burst reports', () => {
   assert.match(controls, /sound\.launch = value/);
   assert.match(controls, /mortar\.sound = value/);
   assert.match(controls, /<FieldLabel>Burst report<\/FieldLabel>/);
+});
+
+test('admin controls hide aerial-only fields for ground emitters', () => {
+  const controls = read('app/components/admin/FireworkRenderControls.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const shell = read('app/components/admin/FireworkEditorShell.tsx');
+
+  for (const editor of [effectEditor, fireworkEditor]) {
+    assert.match(editor, /const isGroundEmitter = isGroundFireworkEffect\(previewDesign\)/);
+    assert.match(
+      editor,
+      /\.filter\(\(tab\) => !isGroundEmitter \|\| \(tab\.id !== 'launch-dot' && tab\.id !== 'launch-trail'\)\)/,
+    );
+  }
+  assert.match(controls, /\{isGroundEmitter \? null : renderBoomControl\(\)\}/);
+  assert.match(controls, /\{renderLaunchSoundControl\(\)\}/);
+  assert.match(shell, /tabs\.find\(\(tab\) => tab\.id === activeTab\) \?\? tabs\[0\]/);
+  assert.match(
+    shell,
+    /if \(currentTabId && currentTabId !== activeTab\) \{\s*onActiveTabChange\(currentTabId\)/,
+  );
+});
+
+test('expanded renderer controls expose honest ranges, palettes, and budget guidance', () => {
+  const controls = read('app/components/admin/FireworkRenderControls.tsx');
+
+  assert.match(controls, /const STAR_SPEED_MIN = 0/);
+  assert.match(controls, /const STAR_SPEED_MAX = 20/);
+  assert.match(controls, /const STAR_GRAVITY_MIN = -2/);
+  assert.match(controls, /const STAR_GRAVITY_MAX = 1/);
+  assert.match(controls, /const STAR_LIFE_MIN = 0\.05/);
+  assert.match(controls, /const STAR_LIFE_MAX = 30/);
+  assert.match(controls, /const BURST_TRAIL_SHELL_PARTICLE_BUDGET = 24_000/);
+  assert.match(controls, /const budgetedParticlesPerPath = Math\.max/);
+  assert.match(controls, /values above about \$\{budgetedParticlesPerPath\} may plateau/);
+  assert.match(controls, /Strobe phase varies colour selection/);
+  assert.match(controls, /<FieldLabel>Legacy effect profile<\/FieldLabel>/);
+  assert.match(controls, /function renderStarColourPatternControls/);
+  assert.match(controls, /setStarColourPatternValue\(layerKey, 'mode', value\)/);
+  assert.match(controls, /setStarColourPatternEntries/);
+  assert.match(
+    controls,
+    /isInnerLayer \? renderStarColourPatternControls\(layerKey, controlDisabled\) : null/,
+  );
 });
 
 test('renderer effects drive shell and trail colours from the selected design', () => {
@@ -206,6 +251,8 @@ test('renderer preserves named firework geometry and trail profiles', () => {
     'fish',
     'waterfall',
     'whirl',
+    'heart',
+    'five_point_star',
   ]) {
     assert.match(design, new RegExp(`'${key}'`));
   }
@@ -220,6 +267,8 @@ test('renderer preserves named firework geometry and trail profiles', () => {
     'fish',
     'waterfall',
     'whirl',
+    'heart',
+    'five_point_star',
   ]) {
     assert.match(effects, new RegExp(`'${key}'`));
   }
@@ -230,11 +279,11 @@ test('renderer preserves named firework geometry and trail profiles', () => {
   assert.match(design, /trailProfileToSettings/);
   assert.match(
     effects,
-    /this\.spawnStarLayer\('outer', particle, design, color, seed, rng, audible\)/,
+    /this\.spawnStarLayer\('outer', particle, design, color, seed, rng, audible, budget\)/,
   );
   assert.match(
     effects,
-    /this\.spawnStarLayer\('core', particle, design, color, seed, rng, audible\)/,
+    /this\.spawnStarLayer\('core', particle, design, color, seed, rng, audible, budget\)/,
   );
   assert.doesNotMatch(effects, /spawnPistil|design\.pistil/);
   assert.match(effects, /splitCrossette/);
@@ -246,14 +295,132 @@ test('renderer preserves named firework geometry and trail profiles', () => {
   // Geometry count scaling is design-driven via `geometryTuning` (defaults
   // preserve the old constants), not hardcoded multipliers.
   assert.match(effects, /Math\.max\(1, Math\.round\(layer\.count \* \(countPercent \/ 100\)\)\)/);
+  assert.match(effects, /function specialLayerCount\(/);
   assert.match(
     effects,
-    /Math\.max\(1, Math\.round\(design\.size \* \(shape\.countPercent \/ 100\)\)\)/,
+    /return layerKey === 'outer' \? Math\.max\(outerMinimum, scaledCount\) : scaledCount/,
   );
   assert.match(design, /geometryTuning: GeometryTuningSchema/);
   for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
     assert.match(migration, new RegExp(`'${slug}'`));
   }
+});
+
+test('heart and five-point-star geometries consume their editable planar tuning', () => {
+  const controls = read('app/components/admin/FireworkRenderControls.tsx');
+  const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+
+  assert.match(design, /'heart'/);
+  assert.match(design, /'five_point_star'/);
+  assert.match(
+    design,
+    /heart: z[\s\S]*countPercent:[\s\S]*scaleX:[\s\S]*scaleY:[\s\S]*depthScale:[\s\S]*outlineJitter:[\s\S]*tiltVariation:[\s\S]*rotationDegrees:/,
+  );
+  assert.match(
+    design,
+    /fivePointStar: z[\s\S]*points:[\s\S]*innerRadius:[\s\S]*scaleX:[\s\S]*scaleY:[\s\S]*depthScale:[\s\S]*outlineJitter:[\s\S]*tiltVariation:[\s\S]*rotationDegrees:/,
+  );
+  assert.match(controls, /heart: 'heart'/);
+  assert.match(controls, /five_point_star: 'fivePointStar'/);
+  assert.match(effects, /function heartOutlinePoint/);
+  assert.match(effects, /function starOutlinePoint/);
+  assert.match(
+    effects,
+    /case 'heart':[\s\S]*heartOutlinePoint\(index \/ count, shape\.rotationDegrees\)/,
+  );
+  assert.match(
+    effects,
+    /case 'five_point_star':[\s\S]*starOutlinePoint\([\s\S]*shape\.points,[\s\S]*shape\.innerRadius,[\s\S]*shape\.rotationDegrees/,
+  );
+  assert.match(effects, /point\.x \* shape\.scaleX \* speed \* jitter/);
+  assert.match(effects, /point\.y \* shape\.scaleY \* speed \* jitter/);
+  assert.match(effects, /\(rng\.next\(\) - 0\.5\) \* speed \* shape\.depthScale/);
+});
+
+test('special firework paths preserve outer and core layer controls', () => {
+  const effects = read('lib/fireworks/Effects.ts');
+  const paths = [
+    ['private fireMine(', 'private fireRomanCandle('],
+    ['private fireRomanCandle(', 'private fireFountain('],
+    ['private fireFountain(', 'private spawnMortarSmoke('],
+    ['private cometFinish(', 'private spawnFishSwarm('],
+    ['private spawnFishSwarm(', 'private spawnWaterfall('],
+    ['private spawnWaterfall(', 'private spawnWhirl('],
+    ['private spawnWhirl(', 'private crackleEffect('],
+  ];
+
+  for (const [startMarker, endMarker] of paths) {
+    const start = effects.indexOf(startMarker);
+    const end = effects.indexOf(endMarker, start + startMarker.length);
+    assert.notEqual(start, -1, `${startMarker} must exist`);
+    assert.notEqual(end, -1, `${endMarker} must follow ${startMarker}`);
+    const source = effects.slice(start, end);
+    assert.match(source, /for \(const layerKey of \['outer', 'core'\] as const\)/);
+    assert.match(source, /const layer = design\.stars\[layerKey\]/);
+    assert.match(source, /if \(!layer\.enabled\) continue/);
+    assert.match(source, /styleIndex: layerKey === 'core' \? 1 : 0/);
+    assert.match(source, /this\.starColor\(\s*design,\s*layer,\s*layerKey,\s*color/);
+  }
+});
+
+test('burst colour, split, flair, and brocade legacy controls reach live rendering', () => {
+  const effects = read('lib/fireworks/Effects.ts');
+  const starColor = effects.slice(
+    effects.indexOf('private starColor('),
+    effects.indexOf('private starLife('),
+  );
+  const patternIndex = starColor.indexOf('this.starColourPatternColor(');
+  const coreFallbackIndex = starColor.indexOf("if (layerKey === 'core') return baseColor");
+
+  assert.notEqual(patternIndex, -1);
+  assert.notEqual(coreFallbackIndex, -1);
+  assert.ok(patternIndex < coreFallbackIndex, 'core colour patterns must resolve before fallback');
+  assert.match(effects, /case 'split_cross': \{/);
+  assert.match(effects, /const arm = index % 4/);
+  assert.match(effects, /const angle = arm \* \(Math\.PI \/ 2\)/);
+
+  for (const [startMarker, endMarker] of [
+    ['private cometFinish(', 'private spawnFishSwarm('],
+    ['private spawnFishSwarm(', 'private spawnWaterfall('],
+    ['private spawnWaterfall(', 'private spawnWhirl('],
+    ['private spawnWhirl(', 'private crackleEffect('],
+  ]) {
+    const source = effects.slice(effects.indexOf(startMarker), effects.indexOf(endMarker));
+    assert.match(source, /split: layerKey === 'outer' && design\.split\.enabled/);
+    assert.match(source, /splitTrailStarCount:/);
+  }
+
+  for (const [startMarker, endMarker] of [
+    ['private fireMine(', 'private fireRomanCandle('],
+    ['private fireRomanCandle(', 'private fireFountain('],
+    ['private fireFountain(', 'private spawnMortarSmoke('],
+  ]) {
+    const source = effects.slice(effects.indexOf(startMarker), effects.indexOf(endMarker));
+    assert.doesNotMatch(source, /split:|splitCrossette\(/);
+  }
+
+  const brocade = effects.slice(
+    effects.indexOf('private spawnBrocadeBurst('),
+    effects.indexOf('private splitCrossette('),
+  );
+  assert.match(brocade, /const outerLayer = design\.stars\.outer/);
+  assert.match(brocade, /\.\.\.outerLayer\.burstTrail/);
+  assert.match(brocade, /const tubeScale = brocade\.tubeRadius \/ BROCADE_DEFAULT_TUBE_RADIUS/);
+  assert.match(
+    brocade,
+    /adaptiveTrailStep \* \(brocade\.trailStep \/ BROCADE_DEFAULT_TRAIL_STEP\)/,
+  );
+  assert.match(brocade, /streakTrailPalette\(brocadeTrail, trailSourceColor, brocadeGoldPalette\)/);
+  assert.match(brocade, /trailPalette\.hot/);
+  assert.match(brocade, /trailPalette\.cool/);
+  assert.match(brocade, /condition: design\.split\.enabled/);
+  assert.match(brocade, /this\.splitCrossette\(/);
+  assert.match(effects, /if \(goldPalette\)/);
+  assert.match(effects, /layer\.burst\.flairColorMode === 'random'/);
+  assert.match(effects, /layer\.burst\.flairColorMode === 'mixed'/);
+  assert.match(effects, /const flairSizeStrobe = layer\.burst\.flairSizeStrobe/);
+  assert.match(effects, /particle\.size = lit \? litSize : dimSize/);
 });
 
 test('replay carries multishot fan angles into launch physics', () => {
@@ -273,17 +440,29 @@ test('replay carries multishot fan angles into launch physics', () => {
   assert.match(effects, /lateralVelocity/);
 });
 
+test('replay preserves approved single-shot reconstruction launch metadata', () => {
+  const queries = read('lib/shows/queries.server.ts');
+
+  assert.match(queries, /function parseDirectReconstructionShot/);
+  assert.match(queries, /\.reconstructionShot/);
+  assert.match(queries, /parseDirectReconstructionShot\(directFirework\.variant_json\)/);
+  assert.match(queries, /panDegrees: reconstructionShot\?\.panDegrees \?\? null/);
+  assert.match(queries, /seedOverride: reconstructionShot\?\.seedOverride \?\? null/);
+});
+
 test('burst physics hang like firework stars instead of free-falling', () => {
+  const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const particle = read('lib/fireworks/Particle.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
 
   assert.match(effects, /const STAR_DRAG = 2\.15/);
-  assert.match(effects, /const MIN_STAR_GRAVITY = -1\.85/);
-  assert.match(effects, /const MAX_STAR_GRAVITY = 0\.28/);
+  assert.match(effects, /const MIN_STAR_GRAVITY = -2/);
+  assert.match(effects, /const MAX_STAR_GRAVITY = 1/);
+  assert.match(design, /gravity: z\.coerce\.number\(\)\.min\(-2\)\.max\(1\)/);
   assert.match(effects, /const shellSize = Math\.max\(size, 110\)/);
   assert.match(effects, /Star count can be tiny[\s\S]*trigger detonation/);
-  assert.match(effects, /clampStarGravity\(rangeRand\(design\.burst\.gravity, rng\)\)/);
+  assert.match(effects, /clampStarGravity\(rangeRand\(layer\.burst\.gravity, rng\)\)/);
   assert.match(effects, /starDrag\(design\)/);
   assert.match(effects, /const lockToShellPath = liftTubeRadius <= 0/);
   assert.match(effects, /gravity: lockToShellPath[\s\S]*liftParticles\.motion\.gravity/);
@@ -296,9 +475,10 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(particle, /maxLife = 0/);
   assert.match(particle, /Math\.exp\(-this\.drag \* dt\)/);
   assert.match(particle, /applyDragStep\(this\.vy, ay \* dt\) \+ this\.gravity \* dt/);
-  assert.match(engine, /SNAPSHOT_STRIDE = 21/);
+  assert.match(engine, /SNAPSHOT_STRIDE = 22/);
   assert.match(engine, /state\.data\[o \+ 8\] = p\.alpha/);
   assert.match(engine, /state\.data\[o \+ 20\] = p\.fadeIn \? 1 : 0/);
+  assert.match(engine, /state\.data\[o \+ 21\] = p\.headStyleSlot/);
   assert.match(engine, /state\.data\[o \+ 15\] = p\.drag/);
   assert.match(engine, /state\.data\[o \+ 16\] = p\.maxLife/);
   assert.match(engine, /state\.data\[o \+ 17\] = p\.shape/);
@@ -310,6 +490,43 @@ test('burst physics hang like firework stars instead of free-falling', () => {
   assert.match(engine, /p\.shape = state\.data\[o \+ 17\] \|\| 0/);
   assert.match(engine, /p\.rotation = state\.data\[o \+ 18\] \|\| 0/);
   assert.match(engine, /p\.spin = state\.data\[o \+ 19\] \|\| 0/);
+  assert.match(engine, /p\.headStyleSlot = state\.data\[o \+ 21\] \|\| 0/);
+});
+
+test('overlapping cues retain particle-owned head styles through callbacks and snapshots', () => {
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const particle = read('lib/fireworks/Particle.ts');
+  const pool = read('lib/fireworks/ParticlePool.ts');
+  const shaders = read('lib/fireworks/shaders.ts');
+
+  assert.match(particle, /headStyleSlot = 0/);
+  assert.match(pool, /private spawnHeadStyleSlot = 0/);
+  assert.match(pool, /p\.headStyleSlot = this\.spawnHeadStyleSlot/);
+  assert.match(pool, /withHeadStyleSlot<T>\(slot: number, spawn: \(\) => T\): T/);
+  assert.match(pool, /finally \{[\s\S]*this\.spawnHeadStyleSlot = previous/);
+  assert.match(engine, /private headStylePairs: HeadStylePairSnapshot\[\]/);
+  assert.match(engine, /private headStylePairSlots = new Map<string, number>\(\)/);
+  assert.match(engine, /for \(let slot = 1; slot < this\.headStylePairs\.length; slot\+\+\)/);
+  assert.match(engine, /setLayerHeadStyles\([\s\S]*\): number/);
+  assert.match(
+    engine,
+    /const headStyleSlot = this\.setLayerHeadStyles\([\s\S]*this\.pool\.withHeadStyleSlot\(headStyleSlot/,
+  );
+  assert.match(engine, /this\.pool\.withHeadStyleSlot\(headStyleSlot, \(\) => p\.update/);
+  assert.match(engine, /headStylePairs: this\.headStylePairs\.map\(cloneHeadStylePair\)/);
+  assert.match(engine, /snapshotStride: SNAPSHOT_STRIDE/);
+  assert.match(engine, /cache\.snapshotStride !== SNAPSHOT_STRIDE/);
+  assert.match(engine, /this\.replaceHeadStylePairs\(cache\.headStylePairs \?\? \[\]\)/);
+  assert.match(engine, /writeHeadRenderStyle\(/);
+  assert.match(engine, /this\.geometry\.setAttribute\('headStyleA'/);
+  assert.match(engine, /geometry\.setAttribute\('instanceHeadStyleA'/);
+  assert.match(shaders, /attribute vec4 headStyleA/);
+  assert.match(shaders, /attribute vec4 instanceHeadStyleA/);
+  assert.match(shaders, /float selectedGlowPadding = vHeadStyleA\.x/);
+  assert.match(shaders, /float selectedCoreBrightness = vHeadStyleB\.x/);
+  assert.match(shaders, /float selectedGlowOpacityFalloff = vHeadStyleC\.x/);
+  assert.doesNotMatch(shaders, /uniform vec2 glowPadding/);
+  assert.doesNotMatch(shaders, /varying float vHeadStyle/);
 });
 
 test('renderer draws compact mixed round, square, and triangle particles', () => {
@@ -342,10 +559,7 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(engine, /const live = this\.pool\.aliveIndices/);
   assert.match(engine, /let drawCount = 0/);
   assert.match(engine, /renderParticleSize\(p\)/);
-  assert.match(
-    engine,
-    /renderParticleAlpha\(\s*p,\s*this\.headHoldOuter[\s\S]*?\)\s*\*\s*twinkle\s*\*\s*clamp\(p\.alpha, 0, 1\)/,
-  );
+  assert.match(engine, /renderParticleAlpha\(p, headStyle\) \* twinkle \* clamp\(p\.alpha, 0, 1\)/);
   assert.match(engine, /shapeAttribute/);
   assert.match(engine, /rotationAttribute/);
   assert.match(engine, /this\.geometry\.setAttribute\('shape', this\.shapeAttribute\)/);
@@ -392,9 +606,16 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   );
   assert.match(design, /size: z\.coerce\.number\(\)\.min\(0\.08\)\.max\(24\)\.default\(1\)/);
   assert.match(design, /shapeWeights: BurstTrailShapeWeightsSchema/);
-  assert.match(effects, /function burstTrailParticlesPerStar/);
-  assert.match(effects, /return Math\.min\(requested, BURST_TRAIL_PARTICLES_PER_STAR_MAX\)/);
-  assert.doesNotMatch(effects, /BURST_TRAIL_PARTICLE_CAP|maxPerStar/);
+  assert.match(
+    effects,
+    /function burstTrailParticlesPerStar\(trail: BurstTrail, siblingStarCount = 1\): number/,
+  );
+  assert.match(effects, /const BURST_TRAIL_TOTAL_PARTICLE_BUDGET = 24_000/);
+  assert.match(effects, /Math\.floor\(BURST_TRAIL_TOTAL_PARTICLE_BUDGET \/ safeSiblingCount\)/);
+  assert.match(
+    effects,
+    /return Math\.min\(requested, BURST_TRAIL_PARTICLES_PER_STAR_MAX, perStarBudget\)/,
+  );
   assert.match(effects, /emitBurstTrailParticle/);
   assert.match(effects, /BROCADE_MAX_STREAKS = \d+/);
   assert.match(effects, /spawnBrocadeBurst/);
@@ -460,7 +681,48 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(canvas, /renderer\.sortObjects = false/);
 });
 
-test('renderer keeps glow bounded while adding realistic spark density', () => {
+test('smoke preserves configured colour and opacity while small head sizes remain responsive', () => {
+  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+  const shaders = read('lib/fireworks/shaders.ts');
+  const smokeShaders = shaders.slice(shaders.indexOf('export const SMOKE_VERTEX_SHADER'));
+
+  assert.ok(
+    [...effects.matchAll(/alpha: smoke\.opacity/g)].length >= 2,
+    'mortar and rising smoke must both preserve the configured maximum opacity',
+  );
+  assert.match(engine, /private smokeOpacities: Float32Array/);
+  assert.match(engine, /this\.smokeGeometry\.setAttribute\('smokeOpacity'/);
+  assert.match(engine, /renderParticleAlpha\(p, headStyle\) \* twinkle \* clamp\(p\.alpha, 0, 1\)/);
+  assert.match(
+    engine,
+    /if \(isSmoke\) \{[\s\S]*return clamp\(Math\.pow\(lifeRatio, 1\.18\), 0, 1\)/,
+  );
+  assert.match(engine, /smokeOpacities\[smokeDrawCount\] = alpha/);
+  assert.match(engine, /smokeColors\[si\] = clamp\(p\.color\.r, 0, 1\)/);
+  assert.match(engine, /smokeColors\[si \+ 1\] = clamp\(p\.color\.g, 0, 1\)/);
+  assert.match(engine, /smokeColors\[si \+ 2\] = clamp\(p\.color\.b, 0, 1\)/);
+  assert.doesNotMatch(engine, /SMOKE_BRIGHTNESS_BOOST|p\.color\.[rgb] \+ 0\.1[346]/);
+  assert.doesNotMatch(engine, /0\.34 \* Math\.pow\(lifeRatio, 1\.18\)/);
+
+  assert.match(smokeShaders, /attribute float smokeOpacity/);
+  assert.match(smokeShaders, /vSmokeOpacity = clamp\(smokeOpacity, 0\.0, 1\.0\)/);
+  assert.match(smokeShaders, /vec3 smokeColor = clamp\(vColor, vec3\(0\.0\), vec3\(1\.0\)\)/);
+  assert.match(
+    smokeShaders,
+    /float alpha = clamp\(coverage \* vSmokeOpacity \* vDepthFade, 0\.0, 1\.0\)/,
+  );
+  assert.doesNotMatch(smokeShaders, /vec3\(0\.22, 0\.24, 0\.28\)|vColor \* 0\.45/);
+
+  assert.match(shaders, /float minPointSize = 2\.0/);
+  assert.match(shaders, /clamp\(instanceSize \* distanceScale, 2\.0, maxCoreSize\)/);
+  assert.match(shaders, /clamp\(coreSize \+ haloPad \* 2\.0, 2\.0, 1280\.0\)/);
+  assert.doesNotMatch(shaders, /minPointSize = mix\(2\.0, 4\.0, isHead\)/);
+  assert.match(engine, /if \(p\.mass <= 0\.0006\) return clamp\(base, 2, 240\)/);
+  assert.doesNotMatch(engine, /if \(p\.mass <= 0\.0006\) return clamp\(base, 4, 240\)/);
+});
+
+test('renderer keeps glow bounded while budgeting and shaping realistic spark density', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const effects = read('lib/fireworks/Effects.ts');
 
@@ -474,11 +736,32 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(engine, /tickPhysics\(next - cursor\)/);
   assert.match(engine, /this\.syncGeometry\(\);[\s\S]*private tickPhysics/);
   assert.match(effects, /SHELL_TRAIL_DENSITY = 0\.68/);
-  assert.match(effects, /function burstTrailParticlesPerStar\(trail: BurstTrail\): number/);
+  assert.match(
+    effects,
+    /function burstTrailParticlesPerStar\(trail: BurstTrail, siblingStarCount = 1\): number/,
+  );
   assert.match(effects, /const requested = Math\.max\(0, Math\.round\(trail\.particlesPerStar\)\)/);
-  assert.match(effects, /return Math\.min\(requested, BURST_TRAIL_PARTICLES_PER_STAR_MAX\)/);
-  assert.doesNotMatch(effects, /Math\.floor\(BURST_TRAIL_PARTICLE_CAP|maxPerStar/);
+  assert.match(effects, /const safeSiblingCount = Math\.max\(1, Math\.round\(siblingStarCount\)\)/);
+  assert.match(effects, /Math\.floor\(BURST_TRAIL_TOTAL_PARTICLE_BUDGET \/ safeSiblingCount\)/);
+  assert.match(effects, /burstTrailParticlesPerStar\(layer\.burstTrail, o\.trailStarCount\)/);
+  assert.match(effects, /const budget = createShellEffectBudget\(\)/);
+  assert.match(effects, /trailParticlesRemaining: BURST_TRAIL_TOTAL_PARTICLE_BUDGET/);
+  assert.match(effects, /crackleFragmentsRemaining: CRACKLE_TOTAL_FRAGMENT_BUDGET/);
+  assert.match(effects, /crackleSoundsRemaining: CRACKLE_TOTAL_SOUND_BUDGET/);
+  assert.match(effects, /budget\.trailParticlesRemaining <= 0/);
+  assert.match(effects, /budget\.trailParticlesRemaining -= emittedCount/);
+  assert.match(
+    effects,
+    /Math\.min\(trailBudget - trailParticles, budget\.trailParticlesRemaining\)/,
+  );
+  assert.match(effects, /splitTrailStarCount: count \* Math\.max\(1, design\.split\.fragments\)/);
+  assert.match(
+    effects,
+    /Math\.ceil\(ratesPerSecond\.outer \* duration\) \+ Math\.ceil\(ratesPerSecond\.core \* duration\)/,
+  );
   assert.match(effects, /if \(!stop \|\| stop\.density <= 0\) return 0/);
+  assert.match(effects, /function burstTrailDensityAt/);
+  assert.match(effects, /const densityStep = trailStep \/ density/);
   assert.match(effects, /function burstTrailBalancedAge/);
   assert.match(effects, /function burstTrailSegmentProgress/);
   assert.match(effects, /function burstTrailParticleColorAt/);
@@ -491,12 +774,18 @@ test('renderer keeps glow bounded while adding realistic spark density', () => {
   assert.match(effects, /p\.color\.setRGB\(nextTone\.r, nextTone\.g, nextTone\.b\)/);
   assert.match(effects, /p\.size = burstTrailParticleSizeAt\(particleAge, headSize, tailSize\)/);
   assert.doesNotMatch(effects, /clusterCount/);
-  assert.match(effects, /const lifeMultiplier = clamp\(trail\.lifetime\.percent, 0, 2\)/);
-  assert.match(effects, /Math\.max\(0, headRemainingLife\) \*/);
+  assert.match(effects, /stop\.size \*/);
+  assert.match(effects, /stop\.sizeVariation \/ 100/);
+  assert.match(effects, /trail\.lifetime\.mode === 'fixed'/);
+  assert.match(effects, /trail\.lifetime\.baseSeconds \+ trail\.lifetime\.afterglowSeconds/);
+  assert.match(
+    effects,
+    /Math\.max\(0, headRemainingLife\) \* clamp\(trail\.lifetime\.percent, 0, 2\) \+\s*trail\.lifetime\.afterglowSeconds/,
+  );
   assert.match(effects, /function burstTrailWideTailAlpha/);
   assert.match(effects, /const initialFadePosition = pathPosition/);
   assert.match(effects, /p\.alpha = burstTrailWideTailAlpha\(trail, fadePosition\)/);
-  assert.doesNotMatch(effects, /dynamicLifeCeiling|fixedLifeCeiling/);
+  assert.match(effects, /Math\.max\(0, p\.life\),\s*closingLifeReference/);
   assert.match(effects, /mass: 0\.006/);
   assert.match(effects, /mass: 0\.002/);
 });
@@ -508,7 +797,7 @@ test('detonation only spawns designed stars and trails', () => {
   assert.doesNotMatch(effects, /fullQuality|Brief dense white-hot flash/);
   assert.doesNotMatch(effects, /emitSparkTrail/);
   assert.match(effects, /this\.spawnEffectStar\(\{/);
-  assert.match(effects, /this\.spawnBrocadeBurst\(particle, design, rng\)/);
+  assert.match(effects, /this\.spawnBrocadeBurst\(particle, design, rng, audible, budget\)/);
   assert.match(effects, /this\.emitBurstTrailParticle\(/);
 });
 
@@ -528,15 +817,20 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /const coreEnabled = design\.stars\.core\.enabled/);
   assert.match(controls, /renderStarLayerControls\('outer', 'Star'\)/);
   assert.match(controls, /renderStarLayerControls\('core', 'Star Inner'\)/);
-  assert.match(
-    controls,
-    /const starControlsAlwaysOpen = controlScope === 'star' \|\| controlScope === 'starInner'/,
-  );
-  assert.match(controls, /collapsible=\{!starControlsAlwaysOpen\}/);
-  assert.match(controls, /defaultExpanded=\{[\s\S]*starControlsAlwaysOpen/);
+  // Top-level categories always show their controls; only SubSections fold.
+  assert.doesNotMatch(controls, /starControlsAlwaysOpen/);
+  assert.doesNotMatch(controls, /<PanelSection[\s\S]{0,200}?collapsible/);
   assert.match(controls, /setStarLayerEnabled\(layerKey, value\)/);
   assert.match(controls, /setStarBurstRangeMid\(layerKey, 'speed'/);
   assert.match(controls, /setStarGravityUpper\(layerKey, value\)/);
+  assert.match(controls, /function setStarBurstScalar\(/);
+  assert.match(controls, /label="Air resistance"/);
+  assert.match(controls, /max=\{STAR_AIR_RESISTANCE_PERCENT_MAX\}/);
+  assert.match(controls, /setStarBurstScalar\(layerKey, 'airResistancePercent', value\)/);
+  assert.match(controls, /label="Terminal fall speed"/);
+  assert.match(controls, /max=\{STAR_TERMINAL_VELOCITY_MAX\}/);
+  assert.match(controls, /setStarBurstScalar\(layerKey, 'terminalVelocity', value\)/);
+  assert.match(controls, /ensureRecord\(draft, 'burst'\)\[key\] = next/);
   assert.match(controls, /setStarHeadSize\(layerKey, value\)/);
   assert.match(controls, /leadingControls\?: ReactNode/);
   assert.match(controls, /layerKey === 'outer' \? starControls : undefined/);
@@ -560,6 +854,16 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(design, /core: StarLayerSchema/);
   assert.match(design, /core: StarLayerSchema\.default\(\{[\s\S]*enabled: true/);
   assert.match(design, /core: StarLayerSchema\.parse\(\{ enabled: true \}\)/);
+  assert.match(design, /export const STAR_AIR_RESISTANCE_PERCENT_MAX = 300/);
+  assert.match(design, /export const STAR_TERMINAL_VELOCITY_MAX = 18/);
+  assert.match(
+    design,
+    /airResistancePercent: z\.coerce[\s\S]*?max\(STAR_AIR_RESISTANCE_PERCENT_MAX\)[\s\S]*?default\(100\)/,
+  );
+  assert.match(
+    design,
+    /terminalVelocity: z\.coerce[\s\S]*?max\(STAR_TERMINAL_VELOCITY_MAX\)[\s\S]*?default\(STAR_TERMINAL_VELOCITY_MAX\)/,
+  );
   assert.match(design, /enabled: outer\.enabled/);
   assert.match(design, /core: \{ enabled: headSize != null \}/);
   assert.match(design, /const StarColourPatternSchema/);
@@ -591,6 +895,15 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(design, /parseStarLayerInput\(stars\.outer, outerFallback\)/);
   assert.match(design, /parseStarLayerInput\(stars\.core, coreLayerFallback\(outer\)\)/);
   assert.match(effects, /private spawnStarLayer/);
+  assert.match(effects, /function layerAirResistance\(/);
+  assert.match(effects, /return drag \* \(scale \/ 100\)/);
+  assert.match(effects, /drag: layerAirResistance\(o\.drag, layer\)/);
+  assert.match(effects, /function layerVerticalVelocity\(/);
+  assert.match(effects, /return Math\.max\(velocityY, -terminalVelocity\)/);
+  assert.match(effects, /vy: layerVerticalVelocity\(o\.vy, layer\)/);
+  assert.match(effects, /particle\.vy = layerVerticalVelocity\(particle\.vy, layer\)/);
+  assert.match(effects, /const headDrag = layerAirResistance\(STAR_DRAG \* 0\.42, outerLayer\)/);
+  assert.match(effects, /vy: layerVerticalVelocity\(vy, outerLayer\)/);
   assert.match(effects, /const layer = design\.stars\[layerKey\]/);
   assert.match(effects, /if \(!layer\.enabled\) return/);
   assert.match(effects, /const styleIndex = layerKey === 'core' \? 1 : 0/);
@@ -652,7 +965,7 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
     effects,
     /weightedColourAt\(starPatternPosition\(design, pattern\.axis, index, count\)\)/,
   );
-  assert.match(effects, /const baseColor = layerColor \?\? color/);
+  assert.match(effects, /const baseColor =[\s\S]*layerColor \?\?[\s\S]*layerKey === 'core'/);
   assert.match(
     effects,
     /this\.starColourPatternColor\(design, layer, baseColor, index, count, rng\)/,
@@ -676,6 +989,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
     controls.indexOf('function renderStarLayerControls'),
   );
   const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
   const timing = read('lib/fireworks/timing.ts');
   const migration = read('supabase/migrations/20260615143000_unified_burst_trail_model.sql');
   const squareTrailMigration = read(
@@ -786,13 +1100,56 @@ test('unified burst trails are validated, migrated, and exposed through shared c
     squareTrailMigration,
     /coalesce\(render_overrides_json #>> '\{burstTrail,preset\}', ''\) <> 'custom'/,
   );
-  // Cut / replaced controls.
+  // Legacy labels stay removed, while advanced controls edit the unified model.
   assert.doesNotMatch(controls, /label="Clump"|applyBurstTrailFrontClump/);
   assert.doesNotMatch(controls, /label="Trail weighting"|TRAIL_WEIGHTING_OPTIONS/);
-  assert.doesNotMatch(controls, /Size variation/);
   assert.doesNotMatch(controls, /Taper curve/);
-  assert.doesNotMatch(controls, /Life variation/);
-  assert.doesNotMatch(burstTrailControls, /Flicker chance|Flicker strength|Flicker life/);
+  assert.match(controls, /trail\.lifetime\.mode/);
+  assert.match(controls, /setBurstTrailNested\(layerKey, 'lifetime', 'mode'/);
+  assert.match(controls, /setBurstTrailNested\(layerKey, 'lifetime', 'baseSeconds'/);
+  assert.match(controls, /setBurstTrailNested\(layerKey, 'lifetime', 'afterglowSeconds'/);
+  assert.match(burstTrailControls, /setBurstTrailNested\(layerKey, 'flicker', 'strength'/);
+  assert.match(
+    burstTrailControls,
+    /setBurstTrailNested\(\s*layerKey,\s*'flicker',\s*'lifetimeMultiplier'/,
+  );
+  assert.match(burstTrailControls, /stop\.density/);
+  assert.match(burstTrailControls, /stop\.size/);
+  assert.match(burstTrailControls, /stop\.sizeVariation/);
+  assert.match(
+    burstTrailControls,
+    /const previousPosition = source\[index - 1\]\?\.position \?\? 0;[\s\S]*const nextPosition = source\[index \+ 1\]\?\.position \?\? 100;[\s\S]*clampNumber\(patch\.position, previousPosition, nextPosition\)/,
+  );
+  assert.match(burstTrailControls, /key=\{`\$\{layerKey \?\? 'base'\}-trail-stop-\$\{index\}`\}/);
+  assert.doesNotMatch(burstTrailControls, /key=\{[^\n]*stop\.position/);
+  assert.match(
+    burstTrailControls,
+    /Position 0% is beside the star\s*head; 100% is the oldest tail\./,
+  );
+  assert.match(
+    effects,
+    /const exponent =\s*bias > 0 \? 1 \/ \(1 \+ bias \* curve\) : 1 \+ Math\.abs\(bias\) \* curve/,
+  );
+  assert.match(effects, /\(1 - burstTrailBalancedAge\(trail, headAge\)\) \* 100/);
+  assert.match(effects, /const spreadPositionPercent = \(1 - progress\) \* 100/);
+  assert.match(effects, /const pathPosition = \(1 - pathAge\) \* 100/);
+  assert.match(
+    effects,
+    /burstTrailEndpointRadius\(width\.tail, distanceBehindHead\) \* tailProgress/,
+  );
+  assert.match(
+    effects,
+    /burstTrailEndpointRadius\(width\.front, frontDistance\) \* \(1 - tailProgress\)/,
+  );
+  assert.match(
+    effects,
+    /const tailAmount = Math\.pow\(clamp\(positionPercent \/ 100, 0, 1\), 0\.75\)/,
+  );
+  assert.match(
+    effects,
+    /initialSpreadPosition \+ \(100 - initialSpreadPosition\) \* spreadProgress/,
+  );
+  assert.match(effects, /initialFadePosition \+ \(100 - initialFadePosition\) \* spreadProgress/);
   // The Motion settings sheet was removed entirely.
   assert.doesNotMatch(controls, /Motion settings|Trail motion|Width guide|SheetContent/);
   // Head-orb appearance is a shared, grouped helper with Opening/Core/Glow dropdowns.
@@ -828,8 +1185,6 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.doesNotMatch(controls, /formatPixels/);
   assert.doesNotMatch(controls, /label="White core size"|label="White core blur"/);
   assert.doesNotMatch(controls, /Reset to preset/);
-  assert.doesNotMatch(controls, /Advanced trails|Shape stops|Add stop|Remove trail stop/);
-  assert.doesNotMatch(controls, /normaliseWeights|updateStop|canAddStop/);
   assert.match(controls, /showNumberInput/);
   // SliderField number inputs: no native spinners, no step-validation tooltip.
   assert.match(slider, /showNumberInput\?: boolean/);
@@ -890,7 +1245,18 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
     /motion:[\s\S]*gravity:[\s\S]*drag:[\s\S]*spin[\s\S]*swirlStrength[\s\S]*swirlLoopCount[\s\S]*swirlLoopLength[\s\S]*swirlLoopHeight/,
   );
   assert.match(design, /smoke:[\s\S]*enabled:[\s\S]*particles:[\s\S]*drift:[\s\S]*height/);
-  assert.doesNotMatch(smokeSchema, /colour:/);
+  for (const property of [
+    'colour',
+    'opacity',
+    'sizeVariationPercent',
+    'lifeVariationPercent',
+    'expansionPerSecond',
+    'windX',
+    'windZ',
+    'turbulence',
+  ]) {
+    assert.match(smokeSchema, new RegExp(`${property}:`));
+  }
   assert.match(design, /DEFAULT_LAUNCH_SMOKE_COLOR/);
   assert.match(design, /launch: LaunchSchema/);
   assert.match(design, /FIREWORK_RENDER_DEFAULT_KEYS[\s\S]*'launch'/);
@@ -965,7 +1331,24 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
   assert.match(effects, /const sampleTime = from \? time - \(1 - progress\) \* dt : time/);
   assert.match(effects, /Math\.max\(visibleRadius, visibleLoopHeight \* 0\.55\)/);
   assert.match(effects, /const smokeCount =[\s\S]*smoke\.particles \/ 100/);
-  assert.match(effects, /const smokeColor = DEFAULT_LAUNCH_SMOKE_COLOR/);
+  assert.match(effects, /const color = smoke\.colour/);
+  assert.match(effects, /const smokeColor = smoke\.colour/);
+  for (const property of [
+    'opacity',
+    'sizeVariationPercent',
+    'lifeVariationPercent',
+    'expansionPerSecond',
+    'windX',
+    'windZ',
+    'turbulence',
+  ]) {
+    assert.ok(
+      [...effects.matchAll(new RegExp(`smoke\\.${property}`, 'g'))].length >= 2,
+      `mortar and rising smoke must both consume smoke.${property}`,
+    );
+  }
+  assert.match(effects, /p\.size = Math\.max\(0\.01, p\.size \+ smoke\.expansionPerSecond \* dt\)/);
+  assert.match(effects, /Math\.sin\(time \* curlRateX \+ curlPhaseX\) \* smoke\.turbulence \* dt/);
   assert.match(effects, /liftParticleDensityScale/);
   assert.doesNotMatch(effects, /spawnMortarSmoke\(position, design\.mortar\.smokeParticles, rng\)/);
 
@@ -1044,12 +1427,96 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
     /label="Rise height"[\s\S]*formatValue=\{formatPercent\}[\s\S]*setLaunchValue\('liftParticles', 'height'/,
   );
   assert.match(controls, /label="Smoke particles"[\s\S]*setLaunchValue\('smoke', 'particles'/);
-  assert.doesNotMatch(controls, /label="Smoke colour"|setLaunchValue\('smoke', 'colour'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'colour'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'opacity'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'sizeVariationPercent'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'lifeVariationPercent'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'expansionPerSecond'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'windX'/);
+  assert.match(controls, /setLaunchValue\('smoke', 'windZ'/);
+  assert.match(effects, /p\.vx \+= smoke\.windX \* dt/);
+  assert.match(effects, /p\.vz \+= smoke\.windZ \* dt/);
+  assert.match(controls, /setLaunchValue\('smoke', 'turbulence'/);
   assert.match(controls, /label="Smoke size"/);
   assert.match(controls, /label="Smoke life"/);
   assert.match(controls, /label="Smoke spread"/);
   assert.match(controls, /label="Smoke drift"/);
   assert.match(controls, /label="Rise height"[\s\S]*setLaunchValue\('smoke', 'height'/);
+});
+
+test('crackle customisation is schema-driven, editor-wired, and timestep-normalised', () => {
+  const controls = read('app/components/admin/FireworkRenderControls.tsx');
+  const design = read('lib/fireworks/design.ts');
+  const effects = read('lib/fireworks/Effects.ts');
+  const crackleSchemaStart = design.indexOf('  crackle: z');
+  const crackleSchemaEnd = design.indexOf('\n  sound: z', crackleSchemaStart);
+  const crackleSchema = design.slice(crackleSchemaStart, crackleSchemaEnd);
+  const crackleControlsStart = controls.indexOf('function renderCrackleControls()');
+  const crackleControlsEnd = controls.indexOf(
+    'function renderSplitControls()',
+    crackleControlsStart,
+  );
+  const crackleControls = controls.slice(crackleControlsStart, crackleControlsEnd);
+  const crackleEffectStart = effects.indexOf('private crackleEffect(');
+  const crackleEffect = effects.slice(crackleEffectStart);
+
+  for (const property of [
+    'triggerWindowSeconds',
+    'fragmentCount',
+    'fragmentCountVariationPercent',
+    'fragmentSize',
+    'fragmentSizeVariationPercent',
+    'fragmentSpeed',
+    'fragmentSpeedVariationPercent',
+    'fragmentLifeSeconds',
+    'fragmentLifeVariationPercent',
+    'fragmentGravity',
+    'colourMode',
+    'soundChance',
+    'soundVolume',
+  ]) {
+    assert.match(crackleSchema, new RegExp(`${property}:`));
+    assert.match(
+      crackleControls,
+      new RegExp(`crackle['.]?,?\\s*['\"]${property}['\"]|crackle\\.${property}`),
+    );
+  }
+
+  assert.match(
+    effects,
+    /1 - Math\.pow\(1 - clamp\(design\.crackle\.probability, 0, 1\), Math\.max\(0, dt\) \* 60\)/,
+  );
+  assert.match(effects, /particle\.life < design\.crackle\.triggerWindowSeconds/);
+  assert.match(effects, /budget\.crackleFragmentsRemaining > 0/);
+  assert.match(
+    crackleEffect,
+    /crackle\.fragmentCount \* variationFactor\(rng, crackle\.fragmentCountVariationPercent\)/,
+  );
+  assert.match(
+    crackleEffect,
+    /crackle\.fragmentSize \* variationFactor\(rng, crackle\.fragmentSizeVariationPercent\)/,
+  );
+  assert.match(
+    crackleEffect,
+    /crackle\.fragmentSpeed \* variationFactor\(rng, crackle\.fragmentSpeedVariationPercent\)/,
+  );
+  assert.match(
+    crackleEffect,
+    /crackle\.fragmentLifeSeconds \* variationFactor\(rng, crackle\.fragmentLifeVariationPercent\)/,
+  );
+  assert.match(crackleEffect, /gravity: crackle\.fragmentGravity/);
+  assert.match(crackleEffect, /crackle\.colourMode === 'gold'/);
+  assert.match(crackleEffect, /crackle\.colourMode === 'star'/);
+  assert.match(crackleEffect, /rng\.next\(\) < crackle\.soundChance/);
+  assert.match(crackleEffect, /crackle\.soundVolume/);
+  assert.match(crackleEffect, /budget\.crackleSoundsRemaining > 0/);
+  assert.match(crackleEffect, /budget\.crackleSoundsRemaining -= 1/);
+  assert.match(
+    crackleEffect,
+    /const count = Math\.min\(requestedCount, budget\.crackleFragmentsRemaining\)/,
+  );
+  assert.match(crackleEffect, /budget\.crackleFragmentsRemaining -= count/);
+  assert.doesNotMatch(crackleEffect, /crackle\.sound === ['"]heavyBoom['"][\s\S]*fragmentColour/);
 });
 
 test('effect editor canonicalises render defaults for shared controls', () => {
@@ -1098,8 +1565,9 @@ test('effect editor canonicalises render defaults for shared controls', () => {
   );
   assert.match(
     controls,
-    /setStarBurstRangeMid\(layerKey, 'speed', value, BROCADE_SPEED_HALF_WIDTH\)/,
+    /setStarBurstRangeMid\(layerKey, 'speed', value, rangeHalfWidth\(burst\.speed\)\)/,
   );
+  assert.match(controls, /setStarSpeedSpread\(layerKey, round2\(value\)\)/);
   assert.match(controls, /setStarHeadSize\(layerKey, value\)/);
   assert.match(controls, /setStarGlowStrength\(layerKey, value\)/);
   assert.match(
@@ -1110,7 +1578,7 @@ test('effect editor canonicalises render defaults for shared controls', () => {
   assert.match(controls, /role="radio"[\s\S]*aria-checked=\{active\}/);
   assert.match(
     controls,
-    /<PanelSection title="Launch" collapsible defaultExpanded=\{false\}>[\s\S]*renderLiftVelocityControl\([\s\S]*renderBoomControl\(\)[\s\S]*<\/PanelSection>/,
+    /<PanelSection title="Launch">[\s\S]*renderLiftVelocityControl\([\s\S]*renderBoomControl\(\)[\s\S]*<\/PanelSection>/,
   );
   assert.match(
     controls,
@@ -1260,15 +1728,12 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   // Compressed perspective keeps sprites readable at every zoom level, and
   // background glow room is compensated so the solid orb size is glow-independent.
   assert.match(shaders, /float exponent = mix\(0\.7, 0\.55, isHead\)/);
-  assert.match(shaders, /uniform vec2 glowPadding/);
-  assert.match(shaders, /uniform vec2 whiteCoreSizePercent/);
-  assert.match(shaders, /uniform vec2 whiteCoreBlurPercent/);
-  assert.match(shaders, /varying float vHeadStyle/);
-  assert.match(shaders, /float headStyle = step\(3\.0, shape\) \* isHead/);
-  assert.match(
-    shaders,
-    /float selectedGlowPadding = mix\(glowPadding\.x, glowPadding\.y, headStyle\)/,
-  );
+  assert.match(shaders, /attribute vec4 headStyleA/);
+  assert.match(shaders, /attribute vec4 headStyleB/);
+  assert.match(shaders, /attribute vec4 headStyleC/);
+  assert.match(shaders, /varying vec4 vHeadStyleA/);
+  assert.match(shaders, /float coreStyle = step\(3\.0, shape\) \* isHead/);
+  assert.match(shaders, /float selectedGlowPadding = headStyleA\.x/);
   assert.match(
     shaders,
     /float backgroundGlowScale = clamp\(selectedGlowPadding \/ 100\.0, 0\.0, 3\.0\) \* isHead/,
@@ -1464,7 +1929,7 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(engine, /HEAD_BILLBOARD_VERTEX_SHADER/);
   assert.match(engine, /this\.headBillboardGeometry\.instanceCount = headDrawCount/);
   assert.match(engine, /p\.shape > 1\.5 &&/);
-  assert.match(engine, /clamp\(base, 4, 240\)/);
+  assert.match(engine, /clamp\(base, 2, 240\)/);
   assert.match(particle, /const isBrocadeHead = this\.shape > 1\.5/);
   assert.match(particle, /const lateralLimit = isBrocadeHead \? 18 : VMAX_LATERAL/);
   assert.match(particle, /const downwardLimit = isBrocadeHead \? 18 : VMAX_DOWN/);
@@ -1490,10 +1955,26 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(editor, /calibrationDefaults=\{calibrationDefaults\}/);
   assert.match(fireworkEditor, /calibrationDefaults=\{calibrationDefaults\}/);
   assert.match(controls, /setBrocadeValue/);
+  assert.match(controls, /setBrocadeColour/);
+  assert.match(controls, /label="Green head colour"/);
+  assert.match(controls, /label="Red head colour"/);
+  assert.match(controls, /label="Green share"/);
+  assert.match(controls, /label="Hot trail colour"/);
+  assert.match(controls, /label="Ember trail colour"/);
   assert.match(controls, /ensureDraftStarLayer\(draft, 'outer'\)\.count = count/);
   assert.match(controls, /setBrocadeGravityUpper/);
-  assert.match(controls, /label="Floatiness"[\s\S]*max=\{0\}/);
-  assert.match(controls, /label="Burst size"[\s\S]*max=\{12\}/);
+  assert.match(
+    controls,
+    /label="Floatiness"[\s\S]*min=\{STAR_GRAVITY_MIN\}[\s\S]*max=\{STAR_GRAVITY_MAX\}/,
+  );
+  assert.match(
+    controls,
+    /label="Burst size"[\s\S]*min=\{STAR_SPEED_MIN\}[\s\S]*max=\{STAR_SPEED_MAX\}/,
+  );
+  assert.match(
+    controls,
+    /label="Hang time"[\s\S]*min=\{STAR_LIFE_MIN\}[\s\S]*max=\{STAR_LIFE_MAX\}/,
+  );
   // Outer, Core, and brocade Heads expose the full head appearance set via the
   // shared renderStarAppearance helper, written onto each star layer's head.
   assert.match(controls, /label="Head size"/);
@@ -1594,7 +2075,7 @@ test('preview duration estimate uses shared design-aware timing', () => {
   const design = read('lib/fireworks/design.ts');
   const timing = read('lib/fireworks/timing.ts');
 
-  assert.match(design, /estimateFireworkDesignTiming\(design\)\.endSeconds/);
+  assert.match(design, /estimateFireworkDesignTiming\(design, panDegrees\)\.endSeconds/);
   assert.match(timing, /estimateFireworkLayerLifeBounds/);
   assert.match(timing, /design\.split\.lifeBaseSeconds/);
   assert.match(timing, /design\.split\.lifeVariationSeconds/);

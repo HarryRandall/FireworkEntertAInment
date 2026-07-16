@@ -34,6 +34,12 @@ const analysisCleanupMigration = read(
 const rlsPerformanceMigration = read(
   'supabase/migrations/20260710023403_optimise_remaining_rls_policies.sql',
 );
+const activePermissionMigration = read(
+  'supabase/migrations/20260715083410_require_active_permission_users.sql',
+);
+const presetMultishotSafetyMigration = read(
+  'supabase/migrations/20260715104154_enforce_show_preset_multishot_lane_safety.sql',
+);
 
 test('AI credit internals are private and public wrappers deny anonymous or cross-user access', () => {
   assert.match(privilegeMigration, /create schema if not exists private/);
@@ -295,6 +301,28 @@ test('storage writes require a current active app user and cover upserts retain 
   );
 });
 
+test('effective permissions require a live active account', () => {
+  assert.match(
+    activePermissionMigration,
+    /create or replace function public\.current_user_has_permission\(permission_key text\)/,
+  );
+  assert.match(activePermissionMigration, /security definer/);
+  assert.match(activePermissionMigration, /set search_path = ''/);
+  assert.match(
+    activePermissionMigration,
+    /from public\.users app_user[\s\S]*?app_user\.id = \(select auth\.uid\(\)\)[\s\S]*?app_user\.status = 'active'/,
+  );
+  assert.match(activePermissionMigration, /public\.has_permission\(app_user\.id, permission_key\)/);
+  assert.match(
+    activePermissionMigration,
+    /revoke execute on function public\.current_user_has_permission\(text\)[\s\S]*?from public, anon, service_role/,
+  );
+  assert.match(
+    activePermissionMigration,
+    /grant execute on function public\.current_user_has_permission\(text\)[\s\S]*?to authenticated/,
+  );
+});
+
 test('anonymous Explore reads cannot expose generated-show provenance', () => {
   assert.match(provenanceMigration, /revoke select on table public\.show_presets from anon/);
   assert.match(
@@ -449,4 +477,38 @@ test('published presets enforce complete, resolvable and overlap-free cue timing
     /create trigger fireworks_validate_published_timing[\s\S]*?after update of duration_seconds/,
   );
   assert.match(scheduleMigration, /used by a published show preset and cannot be deleted/);
+});
+
+test('published presets reserve multishot parent and absolute child launch positions', () => {
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create or replace function private\.assert_show_preset_publishable\([\s\S]*?private\.catalogue_item_occupied_launch_positions\(/,
+  );
+  assert.ok(
+    (
+      presetMultishotSafetyMigration.match(
+        /foreach occupied_launch_position in array occupied_launch_positions loop/g,
+      ) ?? []
+    ).length >= 2,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /busy_until\[occupied_launch_position \+ 1\] > cue_time/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /busy_until\[occupied_launch_position \+ 1\] := cue_time \+ product_duration/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /select private\.assert_all_published_show_presets\(\);/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create or replace function private\.assert_show_timeline_after_source_mutation\(\)[\s\S]*?private\.assert_show_timeline_non_overlapping\(\)[\s\S]*?private\.assert_all_published_show_presets\(\)/,
+  );
+  assert.match(
+    presetMultishotSafetyMigration,
+    /create trigger show_presets_lock_timeline_sources\s*before insert or update or delete on public\.show_presets\s*for each statement\s*execute function private\.lock_show_timeline_sources_shared\(\)/,
+  );
 });

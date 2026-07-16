@@ -7,6 +7,7 @@ import {
 } from './design';
 
 export const FIREWORK_STYLE_DEFAULT_KINDS = [
+  'geometry',
   'star',
   'trail',
   'launch',
@@ -64,6 +65,10 @@ function cloneJson<T>(value: T): T {
 }
 
 export const INITIAL_STYLE_DEFAULT_JSON: Record<FireworkStyleDefaultKind, JsonRecord> = {
+  geometry: {
+    geometry: DEFAULT_DESIGN.geometry,
+    geometryTuning: cloneJson(DEFAULT_DESIGN.geometryTuning),
+  },
   star: {
     stars: {
       outer: {
@@ -287,6 +292,11 @@ export function extractStyleDefaultsFromDesign(
   kind: FireworkStyleDefaultKind,
 ): JsonRecord {
   switch (kind) {
+    case 'geometry':
+      return {
+        geometry: design.geometry,
+        geometryTuning: cloneJson(design.geometryTuning),
+      };
     case 'trail':
       return {
         burstTrail: cloneJson(design.burstTrail),
@@ -350,6 +360,8 @@ export function extractStyleDefaultsFromDesign(
 
 export function styleDefaultKindLabel(kind: FireworkStyleDefaultKind): string {
   switch (kind) {
+    case 'geometry':
+      return 'Geometry';
     case 'star':
       return 'Star';
     case 'trail':
@@ -405,8 +417,14 @@ export function removeStyleDefaultOverridesFromRecord(
   kind: FireworkStyleDefaultKind,
 ): void {
   switch (kind) {
+    case 'geometry':
+      delete defaults.geometry;
+      delete defaults.geometryTuning;
+      return;
     case 'star':
       delete defaults.stars;
+      delete defaults.burst;
+      delete defaults.brocade;
       return;
     case 'trail': {
       delete defaults.burstTrail;

@@ -8,14 +8,13 @@ import { ExploreCard } from '@/app/components/app/ExploreCard';
 import { ExploreRow } from '@/app/components/app/ExploreRow';
 import { ExplorePreviewProvider } from '@/app/components/app/ExplorePreviewContext';
 import { listShowTemplates } from '@/lib/admin.server';
-import { listFireworkProducts } from '@/lib/shows.server';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 type Shelf = {
   sort: LibrarySort;
   title: string;
   seeAllHref: string;
-  templates: ShowTemplate[];
+  templates: ShowTemplateSummary[];
 };
 
 type LibrarySort = 'featured' | 'popular' | 'curated' | 'recent' | 'shortest' | 'budget';
@@ -46,7 +45,7 @@ function parseSort(value: string | undefined): LibrarySort | null {
   return null;
 }
 
-function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTemplate[] {
+function sortTemplates(templates: ShowTemplateSummary[], sort: LibrarySort): ShowTemplateSummary[] {
   if (sort === 'popular') return [...templates].sort((a, b) => b.likeCount - a.likeCount);
   if (sort === 'featured') {
     return [...templates].sort(
@@ -69,47 +68,35 @@ function sortTemplates(templates: ShowTemplate[], sort: LibrarySort): ShowTempla
   return [...templates].sort((a, b) => a.sortOrder - b.sortOrder || a.title.localeCompare(b.title));
 }
 
-function templateMatchesShelf(template: ShowTemplate, sort: LibrarySort): boolean {
+function templateMatchesShelf(template: ShowTemplateSummary, sort: LibrarySort): boolean {
   if (sort === 'featured') return template.isFeatured;
   if (sort === 'shortest') return (template.durationSeconds ?? Number.MAX_SAFE_INTEGER) <= 75;
   return true;
 }
 
-function templateFireworkSignature(template: ShowTemplate): string {
-  const catalogueItemIds = Array.from(
-    new Set(
-      template.previewCues
-        .map((cue) => cue.catalogueItemId ?? cue.catalogueItemSlug ?? cue.fireworkSlug ?? null)
-        .filter((value): value is string => Boolean(value)),
-    ),
-  ).sort();
-
-  return catalogueItemIds.length > 0
-    ? catalogueItemIds.join('|')
-    : `template-without-cues:${template.id}`;
-}
-
 function templatesForShelf(
-  templates: ShowTemplate[],
+  templates: ShowTemplateSummary[],
   sort: LibrarySort,
   limit?: number,
   usedTemplateIds = new Set<string>(),
-  usedFireworkSignatures = new Set<string>(),
-): ShowTemplate[] {
+  usedCompositionSignatures = new Set<string>(),
+): ShowTemplateSummary[] {
   const matching = sortTemplates(templates, sort).filter((template) =>
     templateMatchesShelf(template, sort),
   );
-  const selected: ShowTemplate[] = [];
+  const selected: ShowTemplateSummary[] = [];
 
   for (const template of matching) {
-    const fireworkSignature = templateFireworkSignature(template);
-    if (usedTemplateIds.has(template.id) || usedFireworkSignatures.has(fireworkSignature)) {
+    if (
+      usedTemplateIds.has(template.id) ||
+      usedCompositionSignatures.has(template.compositionSignature)
+    ) {
       continue;
     }
 
     selected.push(template);
     usedTemplateIds.add(template.id);
-    usedFireworkSignatures.add(fireworkSignature);
+    usedCompositionSignatures.add(template.compositionSignature);
     if (limit != null && selected.length >= limit) break;
   }
 
@@ -117,9 +104,9 @@ function templatesForShelf(
 }
 
 /** Build factual shelves without repeating a show or its firework composition. */
-function buildShelves(templates: ShowTemplate[]): Shelf[] {
+function buildShelves(templates: ShowTemplateSummary[]): Shelf[] {
   const usedTemplateIds = new Set<string>();
-  const usedFireworkSignatures = new Set<string>();
+  const usedCompositionSignatures = new Set<string>();
   const shelfSorts: LibrarySort[] = ['featured', 'popular', 'curated', 'recent', 'shortest'];
   const shelves = shelfSorts.map((sort) => ({
     sort,
@@ -130,7 +117,7 @@ function buildShelves(templates: ShowTemplate[]): Shelf[] {
       sort,
       SHOWS_PER_SHELF,
       usedTemplateIds,
-      usedFireworkSignatures,
+      usedCompositionSignatures,
     ),
   }));
 
@@ -150,8 +137,7 @@ export default async function LibraryPage({ searchParams }: PageProps) {
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">Explore shows</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Preview complete, ready-to-use firework shows and choose one as the starting point for
-          your own display.
+          Preview published show templates and choose one as a starting point for your own plan.
         </p>
       </header>
       <Suspense
@@ -166,15 +152,12 @@ export default async function LibraryPage({ searchParams }: PageProps) {
 }
 
 async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
-  const [templates, specifications] = await Promise.all([
-    listShowTemplates(),
-    listFireworkProducts(),
-  ]);
+  const templates = await listShowTemplates();
 
   if (templates.length === 0) {
     return (
       <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
-        No shows are available right now. Check back later.
+        No show templates are available right now. Check back later.
       </p>
     );
   }
@@ -190,7 +173,7 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
     : null;
 
   return (
-    <ExplorePreviewProvider specifications={specifications}>
+    <ExplorePreviewProvider>
       {sort && activeShelf ? (
         <section className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -199,7 +182,8 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
                 {activeShelf.title}
               </h2>
               <p className="text-on-surface-variant mt-1 text-sm">
-                {activeShelf.templates.length.toLocaleString()} shows
+                {activeShelf.templates.length.toLocaleString()}{' '}
+                {activeShelf.templates.length === 1 ? 'template' : 'templates'}
               </p>
             </div>
             <Link
@@ -210,11 +194,17 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
               Back to shelves
             </Link>
           </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
-            {activeShelf.templates.map((template) => (
-              <ExploreCard key={template.id} template={template} className="w-full sm:w-full" />
-            ))}
-          </div>
+          {activeShelf.templates.length > 0 ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-x-4 gap-y-7">
+              {activeShelf.templates.map((template) => (
+                <ExploreCard key={template.id} template={template} className="w-full sm:w-full" />
+              ))}
+            </div>
+          ) : (
+            <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
+              No templates match this collection yet.
+            </p>
+          )}
         </section>
       ) : (
         <div className="space-y-8">

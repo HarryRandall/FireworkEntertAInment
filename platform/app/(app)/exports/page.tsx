@@ -1,7 +1,7 @@
-/** Exports page for generated files and download history. */
+/** Direct export surface for generated show timelines. */
 
 import { Suspense } from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { Card } from '@/app/components/ui/Card';
 import {
@@ -24,13 +24,13 @@ function ExportsIntroCard({ cta }: { cta: React.ReactNode }) {
     <Card radius="xl" className="p-6">
       <div className="flex max-w-2xl items-start gap-4">
         <span className="bg-muted text-foreground inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md">
-          <Download size={18} />
+          <Download size={18} aria-hidden="true" />
         </span>
         <div className="space-y-3">
           <div>
-            <h2 className="text-foreground text-base font-medium">No exported files yet</h2>
+            <h2 className="text-foreground text-base font-medium">Download a Finale 3D CSV</h2>
             <p className="text-muted-foreground mt-1 text-sm">
-              Open a show preview to create cue sheets, guides, and production exports.
+              Export a generated cue timeline with its product and launch-position details.
             </p>
           </div>
           {cta}
@@ -52,6 +52,12 @@ function ExportsLoadingSkeleton() {
 export default function ExportsPage() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <header>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">Export files</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          Download Finale 3D-compatible CSV files from shows that have generated cues.
+        </p>
+      </header>
       <Suspense fallback={<ExportsLoadingSkeleton />}>
         <ExportsContent />
       </Suspense>
@@ -61,15 +67,21 @@ export default function ExportsPage() {
 
 async function ExportsContent() {
   const summary = await getDashboardSummary();
-  const recentShows = summary.recentShows.slice(0, 5);
+  const recentShows = summary.allShows.filter((show) => show.cueCount > 0).slice(0, 5);
 
   return (
     <>
       <ExportsIntroCard
         cta={
           recentShows[0] ? (
-            <Button href={`/shows/${recentShows[0].slug}/preview`} variant="secondary" size="sm">
-              Open latest show
+            <Button
+              href={`/api/shows/${recentShows[0].slug}/export`}
+              prefetch={false}
+              download
+              variant="secondary"
+              size="sm"
+            >
+              Download latest CSV
             </Button>
           ) : (
             <Button href="/shows/new" variant="secondary" size="sm">
@@ -86,10 +98,18 @@ async function ExportsContent() {
             <table className={tableClasses('min-w-[560px]')}>
               <thead className={tableHeadClasses()}>
                 <tr>
-                  <th className={tableHeaderCellClasses()}>Show</th>
-                  <th className={tableHeaderCellClasses()}>Length</th>
-                  <th className={tableHeaderCellClasses()}>Cues</th>
-                  <th className={tableHeaderCellClasses('text-right')}>Action</th>
+                  <th scope="col" className={tableHeaderCellClasses()}>
+                    Show
+                  </th>
+                  <th scope="col" className={tableHeaderCellClasses()}>
+                    Length
+                  </th>
+                  <th scope="col" className={tableHeaderCellClasses()}>
+                    Cues
+                  </th>
+                  <th scope="col" className={tableHeaderCellClasses('text-right')}>
+                    Export
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -105,17 +125,19 @@ async function ExportsContent() {
                       {formatDuration(show.lengthSeconds)}
                     </td>
                     <td className={tableCellClasses('font-mono text-xs tabular-nums')}>
-                      {show.cueCount}
+                      {show.cueCount.toLocaleString('en-AU')}
                     </td>
                     <td className={tableCellClasses('text-right')}>
                       <Button
-                        href={`/shows/${show.slug}/preview`}
+                        href={`/api/shows/${show.slug}/export`}
+                        prefetch={false}
+                        download
                         variant="secondary"
                         size="sm"
                         className="text-xs"
                       >
-                        <FileText size={13} />
-                        Open
+                        <Download size={13} aria-hidden="true" />
+                        Download CSV
                       </Button>
                     </td>
                   </tr>

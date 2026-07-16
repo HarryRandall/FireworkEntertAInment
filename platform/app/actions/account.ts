@@ -72,6 +72,7 @@ export async function updatePasswordAction(
 
   const { error: updateError } = await supabase.auth.updateUser({
     password: parsed.data.newPassword,
+    current_password: parsed.data.currentPassword,
   });
   if (updateError) {
     return {
@@ -92,6 +93,21 @@ export type DeleteAccountState = {
   status: 'idle' | 'error';
   message?: string;
 };
+
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+
+function clearLocalSupabaseAuthCookies(cookieStore: CookieStore) {
+  for (const { name } of cookieStore.getAll()) {
+    if (!name.startsWith('sb-') || !name.includes('-auth-token')) continue;
+    cookieStore.set(name, '', {
+      httpOnly: false,
+      maxAge: 0,
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+}
 
 /** Delete the signed-in user's account after verifying their password; signs them out and redirects to /login. */
 export async function deleteAccountAction(
@@ -122,7 +138,8 @@ export async function deleteAccountAction(
     };
   }
 
-  const supabase = createClient(await cookies());
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   const {
     data: { user },
     error: userError,
@@ -155,6 +172,23 @@ export async function deleteAccountAction(
     };
   }
 
-  await supabase.auth.signOut();
+  let sessionCleanupFailed = false;
+  try {
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      sessionCleanupFailed = true;
+      console.error('[deleteAccountAction] session cleanup failed:', signOutError);
+    }
+  } catch (signOutError) {
+    sessionCleanupFailed = true;
+    console.error('[deleteAccountAction] session cleanup threw:', signOutError);
+  }
+
+  if (sessionCleanupFailed) {
+    // The identity is already deleted, so expire this browser's auth cookies and
+    // tell the user that revocation of other sessions could not be confirmed.
+    clearLocalSupabaseAuthCookies(cookieStore);
+    redirect('/login?deleted=1&session_cleanup=partial');
+  }
   redirect('/login?deleted=1');
 }

@@ -56,16 +56,21 @@ export async function backfillPresetCoverPoster(
     return { ok: false, error: uploadError.message };
   }
 
-  const { error: updateError } = await supabase
+  const { data: updatedPreset, error: updateError } = await supabase
     .from('show_presets')
     .update({ cover_image_path: path })
-    .eq('id', presetId);
+    .eq('id', presetId)
+    .select('cover_image_path')
+    .maybeSingle();
   if (updateError) {
     console.error('[cover-posters] row update failed:', updateError);
     return { ok: false, error: updateError.message };
   }
+  if (!updatedPreset?.cover_image_path) {
+    return { ok: false, error: 'Preset not found. Refresh the page and try again.' };
+  }
 
   revalidatePath('/library');
   revalidatePath('/home');
-  return { ok: true, path };
+  return { ok: true, path: updatedPreset.cover_image_path };
 }

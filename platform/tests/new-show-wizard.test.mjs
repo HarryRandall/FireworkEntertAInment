@@ -1,4 +1,4 @@
-/** Static-analysis "grep the source" test guarding the new-show wizard invariants (do not modify test bodies). */
+/** Static-analysis tests guarding the new-show wizard's interaction and creation invariants. */
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -65,9 +65,10 @@ test('new show wizard reflects the server generation mode and live credit costs'
 test('new show wizard exposes real shared show styles', () => {
   assert.match(page, /SHOW_STYLE_LIST\.map/);
   assert.match(page, /setStyleKey\(style\.key\)/);
-  assert.match(page, /role="radiogroup"/);
-  assert.match(page, /role="radio"/);
-  assert.match(page, /aria-checked=\{selected\}/);
+  assert.match(page, /type="radio"\s+name="showStyle"/);
+  assert.match(page, /checked=\{selected\}/);
+  assert.doesNotMatch(page, /role="radiogroup"/);
+  assert.doesNotMatch(page, /role="radio"/);
   assert.match(page, /data\.set\('showStyle', styleKey\)/);
   assert.match(page, /usesBeatPrecision \|\| fireworkTypes\.has\('aerial_shells'\)/);
   assert.match(actions, /Beat precision needs Aerial shells selected/);
@@ -88,12 +89,72 @@ test('new show wizard can prefill a prompt and continue to soundtrack', () => {
   assert.doesNotMatch(promptEffect, /triggerGenerate/);
 });
 
-test('new show wizard moves ready uploaded music into the AI brief step', () => {
+test('new show wizard advances ready uploaded music without hidden title validation', () => {
   assert.match(page, /setUploadedAudio\(uploaded\)/);
-  assert.match(page, /uploadedAudio &&\s+audioUploadState === 'ready' &&\s+title\.trim\(\)/s);
+  assert.match(page, /uploadedAudio &&\s+audioUploadState === 'ready'/s);
   assert.match(page, /setStepIndex\(2\)/);
-  assert.match(page, /setFieldError\('title'\)/);
-  assert.match(page, /focusTitleRequirement\(\)/);
+  assert.doesNotMatch(page, /setFieldError\('title'\)/);
+  assert.doesNotMatch(page, /focusTitleRequirement/);
+  assert.doesNotMatch(page, /type="hidden" name="title"/);
+  assert.match(page, /deriveTitleFromDescription\(description\)/);
+});
+
+test('new show wizard blocks invalid measured widths instead of substituting a preset', () => {
+  assert.match(page, /const measuredWidthError =/);
+  assert.match(page, /!Number\.isInteger\(measuredFeet\)/);
+  assert.match(page, /measuredFeet < 5/);
+  assert.match(page, /measuredFeet > 2000/);
+  assert.match(page, /if \(measuredWidthError\) \{/);
+  assert.match(page, /Boolean\(measuredWidthError\)/);
+  assert.match(page, /invalid=\{Boolean\(measuredWidthError\)\}/);
+  assert.match(page, /role="alert"/);
+  assert.match(page, /data\.set\('siteWidthFeet', String\(effectiveWidthFeet\)\)/);
+});
+
+test('new show wizard returns blocking upload errors to the visible soundtrack step', () => {
+  assert.match(page, /const returnToSoundtrackUploadError = \(message: string\)/);
+  assert.match(page, /shouldFocusAudioUploadErrorRef\.current = true/);
+  assert.match(page, /setAudioUploadState\('error'\)/);
+  assert.match(page, /setStepIndex\(1\)/);
+  assert.match(page, /audioUploadErrorRef\.current\?\.focus\(\)/);
+  assert.match(page, /Track upload error:/);
+});
+
+test('new show wizard uses labelled native selection controls', () => {
+  assert.match(page, /htmlFor="show-description"/);
+  assert.match(page, /id="show-description"/);
+  assert.match(page, /aria-describedby="show-description-hint"/);
+  assert.match(page, /htmlFor="measured-site-width"/);
+  assert.match(page, /id="measured-site-width"/);
+  assert.match(choiceCards, /type: 'radio' \| 'checkbox'/);
+  assert.match(choiceCards, /<input\s+type=\{type\}/s);
+  assert.match(choiceCards, /name=\{name\}/);
+  assert.match(choiceCards, /checked=\{selected\}/);
+  assert.match(page, /type="checkbox"\s+name="fireworkTypes"/);
+});
+
+test('radio-card answers stay on screen for keyboard review before continuing', () => {
+  assert.match(page, /onSelect=\{\(\) => setLengthChoice\('match'\)\}/);
+  assert.match(page, /onSelect=\{\(\) => setLengthChoice\(option\.minutes\)\}/);
+  assert.match(page, /onSelect=\{\(\) => setBudget\(tier\.value\)\}/);
+  assert.doesNotMatch(
+    page,
+    /onSelect=\{\(\) => \{\s*set(?:LengthChoice|Budget)\([^;]+;\s*goToStep\(stepIndex \+ 1\)/s,
+  );
+  assert.doesNotMatch(choiceCards, /onClick=\{\(event\) =>/);
+});
+
+test('single-choice steps reveal a primary Continue action after selection', () => {
+  assert.match(
+    page,
+    /\{lengthChoice !== null \? \(\s*<div className="flex justify-center pt-2">[\s\S]*?Continue[\s\S]*?<ArrowRight size=\{16\} \/>/,
+  );
+  assert.match(
+    page,
+    /\{budget !== null \? \(\s*<div className="flex justify-center pt-5">[\s\S]*?Continue[\s\S]*?<ArrowRight size=\{16\} \/>/,
+  );
+  assert.match(page, /stepIndex === 2 && lengthChoice !== null/);
+  assert.match(page, /stepIndex === 3 && budget !== null/);
 });
 
 test('new show wizard routes to the generation page immediately on launch', () => {
@@ -134,7 +195,7 @@ test('new show page avoids redundant chrome', () => {
 
 test('new show choice cards stay visible before hover', () => {
   assert.match(choiceCards, /border-2 bg-\[color:var\(--color-bg-elevated\)\]/);
-  assert.match(choiceCards, /selected \|\| multi/);
+  assert.match(choiceCards, /selected \|\| multiple/);
   assert.match(choiceCards, /\? 'border-\[color:var\(--color-content-emphasis\)\]'/);
   assert.doesNotMatch(choiceCards, /ring-ring\/30/);
   assert.doesNotMatch(choiceCards, /bg-\[color:var\(--color-bg-subtle\)\]\/55/);

@@ -45,12 +45,12 @@ export function getAdminCatalogueCacheKey(): string {
 
 /** Cache key for the reusable effect-spec list. */
 export function getAdminEffectsCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:effects`;
+  return `${ADMIN_CACHE_PREFIX}:effects:preview-v1`;
 }
 
 /** Cache key for one effect-spec detail view. */
 export function getAdminEffectCacheKey(effectId: string): string {
-  return `${ADMIN_CACHE_PREFIX}:effects:${effectId}`;
+  return `${ADMIN_CACHE_PREFIX}:effects:${effectId}:preview-v1`;
 }
 
 /** Cache key for reusable firework star/trail defaults. */
@@ -65,27 +65,27 @@ export function getAdminStyleDefaultCacheKey(defaultId: string): string {
 
 /** Cache key for product-level fireworks joined to their effect shots. */
 export function getAdminFireworksCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:fireworks`;
+  return `${ADMIN_CACHE_PREFIX}:fireworks:preview-v1`;
 }
 
 /** Cache key for one product-level firework detail editor. */
 export function getAdminFireworkCacheKey(productId: string): string {
-  return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}`;
+  return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}:preview-v1`;
 }
 
 /** Cache key for the multishot composition list. */
 export function getAdminMultishotsCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:multishots`;
+  return `${ADMIN_CACHE_PREFIX}:multishots:preview-v1`;
 }
 
 /** Cache key for one multishot detail editor. */
 export function getAdminMultishotCacheKey(multishotId: string): string {
-  return `${ADMIN_CACHE_PREFIX}:multishots:${multishotId}`;
+  return `${ADMIN_CACHE_PREFIX}:multishots:${multishotId}:preview-v1`;
 }
 
 /** Cache key for the import job list. */
-export function getAdminImportsCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:imports`;
+export function getAdminImportsCacheKey(view: 'active' | 'archived' = 'active'): string {
+  return `${ADMIN_CACHE_PREFIX}:imports:${view}`;
 }
 
 /** Cache key for the role list. */
@@ -115,9 +115,8 @@ export function getAdminGenerationSettingsCacheKey(): string {
 
 /** Cache key for public curated show presets. */
 export function getShowTemplatesCacheKey(): string {
-  // Versioned after removing code-only fallback templates so an older merged
-  // payload cannot remain visible for the previous ten-minute cache window.
-  return `${PLATFORM_CACHE_PREFIX}:show-templates:database-v3`;
+  // Keep cue-bearing list payloads from surviving the summary-only rollout.
+  return `${PLATFORM_CACHE_PREFIX}:show-templates:database-v4`;
 }
 
 /**
@@ -170,7 +169,7 @@ export async function invalidateAdminMultishotsCache(multishotId?: string): Prom
 
 /** Invalidate the cached import jobs list. */
 export async function invalidateAdminImportsCache(): Promise<void> {
-  await deleteCachedKeys([getAdminImportsCacheKey()]);
+  await deleteCachedKeys([getAdminImportsCacheKey('active'), getAdminImportsCacheKey('archived')]);
 }
 
 /**

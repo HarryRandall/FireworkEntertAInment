@@ -85,7 +85,20 @@ test('(app) layout requires an authenticated user before rendering the app shell
   assert.match(layout, /import \{ redirect \} from 'next\/navigation'/);
   assert.match(layout, /if \(!userId\)/);
   assert.match(layout, /redirect\('\/login'\)/);
+  assert.match(layout, /!profile \|\| profile\.status !== 'active'/);
+  assert.match(layout, /redirect\('\/account-unavailable'\)/);
+  assert.equal(existsSync(join(root, 'app/(marketing)/account-unavailable/page.tsx')), true);
   assert.doesNotMatch(layout, /isAuthenticated=/);
+});
+
+test('suspended profiles fail closed and access mutations invalidate authorisation caches', () => {
+  const currentUser = read('lib/admin/current-user.server.ts');
+  const actions = read('app/actions/admin-users.ts');
+
+  assert.match(currentUser, /profile\.status !== 'active'/);
+  assert.match(currentUser, /profile\.status !== 'active' \|\| !profile\.permissions\.includes/);
+  assert.match(actions, /invalidateUserProfileCache/);
+  assert.ok(actions.match(/invalidateUserProfileCache\(parsed\.data\.userId\)/g)?.length >= 4);
 });
 
 test('browse routes allow guests and retain the app shell for signed-in users', () => {

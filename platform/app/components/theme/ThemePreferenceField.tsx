@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ThemePreferenceField — segmented dark/light/system selector used on
+ * Segmented dark/light/system selector used on
  * the settings page under `/app`. Updates both next-themes and (via
  * the parent form) the persisted users.theme_preference column.
  */
@@ -59,34 +59,37 @@ export function ThemePreferenceField({ initialTheme }: { initialTheme: ThemePref
       <legend className="text-on-surface-variant text-[11px] font-bold tracking-[0.18em] uppercase">
         Interface theme
       </legend>
-      <input type="hidden" name="themePreference" value={selected} />
       <div className="grid gap-3 sm:grid-cols-3">
         {OPTIONS.map((option) => {
           const Icon = option.icon;
           const active = mounted ? selected === option.value : initialTheme === option.value;
           return (
-            <button
+            <label
               key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => chooseTheme(option.value)}
               className={cn(
-                'focus-glow-action flex min-h-24 flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all focus:outline-none focus-visible:outline-none',
+                'has-[input:focus-visible]:ring-primary/45 has-[input:focus-visible]:ring-offset-background flex min-h-24 cursor-pointer touch-manipulation flex-col items-start gap-3 rounded-xl border p-4 text-left transition-[background-color,border-color,color,box-shadow] has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-offset-2 motion-reduce:transition-none',
                 active
                   ? 'border-primary/50 bg-surface-container-high text-on-surface shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-primary)_18%,transparent),0_18px_48px_-34px_color-mix(in_srgb,var(--color-primary)_68%,transparent)]'
                   : 'border-outline-variant/55 bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container-low',
               )}
             >
+              <input
+                className="sr-only"
+                type="radio"
+                name="themePreference"
+                value={option.value}
+                checked={active}
+                onChange={() => chooseTheme(option.value)}
+              />
               <span className="flex w-full items-center justify-between gap-3">
-                <Icon size={18} className={active ? 'text-on-surface' : ''} />
-                {active ? <Check size={16} className="text-primary" /> : null}
+                <Icon size={18} className={active ? 'text-on-surface' : ''} aria-hidden="true" />
+                {active ? <Check size={16} className="text-primary" aria-hidden="true" /> : null}
               </span>
               <span>
                 <span className="text-on-surface block text-sm font-bold">{option.label}</span>
                 <span className="mt-1 block text-xs leading-relaxed">{option.description}</span>
               </span>
-            </button>
+            </label>
           );
         })}
       </div>

@@ -11,19 +11,45 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
+function readDollarQuotedJson(source, tag) {
+  const marker = `$${tag}$`;
+  const start = source.indexOf(marker);
+  const end = source.indexOf(marker, start + marker.length);
+  assert.notEqual(start, -1, `${marker} opening marker not found`);
+  assert.notEqual(end, -1, `${marker} closing marker not found`);
+  return JSON.parse(source.slice(start + marker.length, end));
+}
+
+function functionBody(source, name) {
+  const start = source.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `${name} not found`);
+  const brace = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = brace; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    if (source[index] === '}') depth -= 1;
+    if (depth === 0) return source.slice(brace + 1, index);
+  }
+  throw new Error(`${name} body was not closed`);
+}
+
 test('style default schema keeps saved defaults and prunes live links', () => {
   const baseMigrationPath = 'supabase/migrations/20260618051341_live_firework_style_defaults.sql';
   const generalisedMigrationPath =
     'supabase/migrations/20260618081656_generalised_firework_style_defaults.sql';
   const copyMigrationPath =
     'supabase/migrations/20260709082959_copy_style_defaults_and_clean_indexes.sql';
+  const geometryMigrationPath =
+    'supabase/migrations/20260715031905_add_geometry_style_defaults.sql';
   assert.equal(existsSync(join(root, baseMigrationPath)), true);
   assert.equal(existsSync(join(root, generalisedMigrationPath)), true);
   assert.equal(existsSync(join(root, copyMigrationPath)), true);
+  assert.equal(existsSync(join(root, geometryMigrationPath)), true);
 
   const baseMigration = read(baseMigrationPath);
   const generalisedMigration = read(generalisedMigrationPath);
   const copyMigration = read(copyMigrationPath);
+  const geometryMigration = read(geometryMigrationPath);
   const types = read('lib/database.types.ts');
 
   assert.match(baseMigration, /create table if not exists public\.firework_style_defaults/);
@@ -63,6 +89,8 @@ test('style default schema keeps saved defaults and prunes live links', () => {
   assert.match(copyMigration, /drop column if exists trail_style_default_id/);
   assert.match(copyMigration, /drop index if exists public\.show_analyses_show_latest_idx/);
   assert.match(copyMigration, /drop index if exists public\.show_analyses_user_created_idx/);
+  assert.match(geometryMigration, /'geometry'/);
+  assert.match(geometryMigration, /firework_style_defaults_kind_check/);
   assert.doesNotMatch(types, /firework_effect_style_default_links: \{/);
   assert.doesNotMatch(types, /firework_style_default_links: \{/);
   assert.doesNotMatch(types, /star_style_default_id:/);
@@ -94,7 +122,7 @@ test('resolved render designs use copied JSON instead of live default links', ()
     /deepMergeDesign\(\s*deepMergeDesign\(withBase, fireworkStyleDefaults\),\s*variantOverrides,\s*\)/,
   );
 
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v12'/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v13'/);
   assert.doesNotMatch(showTypes, /style_default_links:firework_style_default_links/);
   assert.doesNotMatch(showTypes, /style_default_links:firework_effect_style_default_links/);
   assert.doesNotMatch(showMappers, /styleDefaultArrayFromLinks/);
@@ -133,9 +161,107 @@ test('admin actions save copied default settings without live assignments', () =
   assert.match(fireworkActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
   assert.match(effectEditor, /function copySelectedStyleDefaultsIntoModel/);
-  assert.match(effectEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
+  assert.match(effectEditor, /applySnapshot\(savedSnapshot\)/);
   assert.match(fireworkEditor, /function copySelectedStyleDefaultsIntoOverrides/);
-  assert.match(fireworkEditor, /setStyleDefaultIds\(\{ \.\.\.savedSnapshot\.styleDefaultIds \}\)/);
+  assert.match(fireworkEditor, /applySnapshot\(savedSnapshot\)/);
+});
+
+test('style default saves, archives, and restores record live editor history', () => {
+  const migration = read(
+    'supabase/migrations/20260715032141_add_style_default_editor_version_history.sql',
+  );
+  const types = read('lib/database.types.ts');
+  const adminTypes = read('lib/admin.types.ts');
+  const snapshots = read('lib/admin/editor-snapshots.ts');
+  const actions = read('app/actions/admin-style-defaults.ts');
+  const loader = read('lib/admin/style-defaults.server.ts');
+  const versions = read('lib/admin/editor-versions.server.ts');
+  const editor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
+
+  assert.match(migration, /add column firework_style_default_id uuid/);
+  assert.match(migration, /references public\.firework_style_defaults\(id\) on delete cascade/);
+  assert.match(migration, /target_kind in \('firework', 'effect', 'style_default'\)/);
+  assert.match(migration, /target_kind = 'style_default'/);
+  assert.match(migration, /firework_editor_versions_style_default_created_at_idx/);
+  assert.match(types, /firework_style_default_id: string \| null/);
+  assert.match(types, /foreignKeyName: "firework_editor_versions_firework_style_default_id_fkey"/);
+  assert.match(
+    adminTypes,
+    /AdminEditorVersionTargetKind = 'firework' \| 'effect' \| 'style_default'/,
+  );
+  assert.match(adminTypes, /AdminStyleDefaultDetail = AdminStyleDefaultSummary & \{/);
+  assert.match(adminTypes, /history: AdminEditorVersion\[\]/);
+  assert.match(snapshots, /export type StyleDefaultEditorSnapshot/);
+  assert.match(snapshots, /export function makeStyleDefaultEditorSnapshot/);
+  assert.match(snapshots, /export function parseStyleDefaultEditorSnapshot/);
+
+  assert.match(loader, /listStyleDefaultEditorVersions/);
+  assert.match(loader, /history: await listStyleDefaultEditorVersions\(supabase, defaultId\)/);
+  assert.match(versions, /export async function listStyleDefaultEditorVersions/);
+  assert.match(versions, /\.eq\('firework_style_default_id', styleDefaultId\)/);
+  assert.match(versions, /throwHistoryReadError\('listStyleDefaultEditorVersions', error\)/);
+
+  for (const name of [
+    'updateStyleDefault',
+    'archiveStyleDefault',
+    'restoreStyleDefaultEditorVersion',
+  ]) {
+    const body = functionBody(actions, name);
+    assert.match(body, /historyVersionId: parsed\.data\.historyVersionId/);
+    assert.match(body, /const historyRecorded = await recordStyleDefaultVersion/);
+    assert.match(body, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
+    assert.ok(
+      body.indexOf('await recordStyleDefaultVersion') < body.indexOf('await refresh'),
+      `${name} must observe history before invalidating caches`,
+    );
+  }
+  const restoreBody = functionBody(actions, 'restoreStyleDefaultEditorVersion');
+  assert.match(restoreBody, /parseStyleDefaultEditorSnapshot/);
+  assert.match(restoreBody, /action: 'restore'/);
+  assert.match(restoreBody, /Restored version from/);
+
+  assert.match(editor, /restoreStyleDefaultEditorVersion/);
+  assert.match(editor, /parseStyleDefaultEditorSnapshot/);
+  assert.match(editor, /id: 'history'/);
+  assert.match(editor, /label: 'History'/);
+  assert.match(editor, /<EditorHistoryPanel/);
+  assert.match(editor, /versions=\{editorHistory\.versions\}/);
+  assert.match(editor, /pendingVersionIds=\{editorHistory\.pendingIds\}/);
+  assert.match(editor, /onRestore=\{restoreVersion\}/);
+  assert.doesNotMatch(editor, /router\.refresh\(\)/);
+});
+
+test('inline style-default creation and parent editor saves are atomic', () => {
+  const migration = read(
+    'supabase/migrations/20260715034851_atomically_create_editor_style_defaults.sql',
+  );
+  const effectActions = read('app/actions/admin-effects.ts');
+  const fireworkActions = read('app/actions/admin-fireworks.ts');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+
+  for (const target of ['effect', 'firework']) {
+    assert.match(
+      migration,
+      new RegExp(`create or replace function public\\.create_style_default_and_update_${target}`),
+    );
+  }
+  assert.match(migration, /security definer/g);
+  assert.match(migration, /set search_path = ''/g);
+  assert.match(migration, /auth\.uid\(\) is null/);
+  assert.match(migration, /current_user_has_permission\('admin\.manage_catalogue'\)/);
+  assert.match(migration, /revoke execute[\s\S]*from public, anon, authenticated/);
+  assert.match(migration, /grant execute[\s\S]*to authenticated/);
+  assert.match(migration, /and updated_at = p_expected_updated_at/);
+
+  assert.match(effectActions, /export async function createStyleDefaultAndUpdateEffect/);
+  assert.match(effectActions, /rpc\('create_style_default_and_update_effect'/);
+  assert.match(fireworkActions, /export async function createStyleDefaultAndUpdateFirework/);
+  assert.match(fireworkActions, /rpc\('create_style_default_and_update_firework'/);
+  assert.match(effectEditor, /createStyleDefaultAndUpdateEffect\(\{/);
+  assert.match(fireworkEditor, /createStyleDefaultAndUpdateFirework\(\{/);
+  assert.doesNotMatch(effectEditor, /await createStyleDefault\(\{/);
+  assert.doesNotMatch(fireworkEditor, /await createStyleDefault\(\{/);
 });
 
 test('style default admin UI exposes every kind without the black accent badge', () => {
@@ -186,7 +312,17 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.doesNotMatch(defaultsEditor, /id: 'star'|id: 'trail'|id: 'launch'|id: 'fx'/);
 
   assert.match(effectEditor, /EditorStyleDefaultControls/);
-  for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
+  for (const kind of [
+    'geometry',
+    'star',
+    'trail',
+    'launch',
+    'strobe',
+    'crackle',
+    'split',
+    'smoke',
+    'sound',
+  ]) {
     assert.match(effectEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
   }
   assert.doesNotMatch(effectEditor, /id: 'defaults'/);
@@ -205,7 +341,17 @@ test('style default admin UI exposes every kind without the black accent badge',
   assert.match(styleDefaults, /brocadeDefaults\.streakCount = design\.stars\.outer\.count/);
   assert.match(styleDefaults, /starDefaults\.brocade = brocadeDefaults/);
   assert.match(fireworkEditor, /EditorStyleDefaultControls/);
-  for (const kind of ['star', 'trail', 'launch', 'strobe', 'crackle', 'split', 'smoke', 'sound']) {
+  for (const kind of [
+    'geometry',
+    'star',
+    'trail',
+    'launch',
+    'strobe',
+    'crackle',
+    'split',
+    'smoke',
+    'sound',
+  ]) {
     assert.match(fireworkEditor, new RegExp(`renderStyleDefaultControls\\('${kind}'\\)`));
   }
   assert.doesNotMatch(fireworkEditor, /Effect default: \$\{inherited\.name\}/);
@@ -242,7 +388,17 @@ test('style default admin UI exposes every kind without the black accent badge',
 test('style default helpers extract only the requested section', () => {
   const styleDefaults = read('lib/fireworks/style-defaults.ts');
 
-  for (const kind of ['star', 'trail', 'launch', 'smoke', 'strobe', 'crackle', 'split', 'sound']) {
+  for (const kind of [
+    'geometry',
+    'star',
+    'trail',
+    'launch',
+    'smoke',
+    'strobe',
+    'crackle',
+    'split',
+    'sound',
+  ]) {
     assert.match(styleDefaults, new RegExp(`'${kind}'`));
   }
 
@@ -255,10 +411,22 @@ test('style default helpers extract only the requested section', () => {
   assert.match(styleDefaults, /crackle: cloneJson\(design\.crackle\)/);
   assert.match(styleDefaults, /split: cloneJson\(design\.split\)/);
   assert.match(styleDefaults, /sound: cloneJson\(design\.sound\)/);
+  assert.match(styleDefaults, /geometryTuning: cloneJson\(design\.geometryTuning\)/);
   assert.match(styleDefaults, /removeStyleDefaultOverridesFromRecord/);
+  assert.match(
+    styleDefaults,
+    /case 'star':[\s\S]*delete defaults\.stars;[\s\S]*delete defaults\.burst;[\s\S]*delete defaults\.brocade;/,
+  );
   assert.match(styleDefaults, /deleteNested\(defaults, \['launch', 'smoke'\]\)/);
   assert.match(styleDefaults, /deleteNested\(defaults, \['mortar', 'sound'\]\)/);
   assert.match(styleDefaults, /hydrateBurstTrailDefaults\(source\)/);
+});
+
+test('style default writes reject invalid renderer fragments', () => {
+  const actions = read('app/actions/admin-style-defaults.ts');
+
+  assert.match(actions, /fireworkDesignFragmentError\(parsed\)/);
+  assert.match(actions, /fireworkDesignFragmentError\(snapshot\.defaultsJson\)/);
 });
 
 test('built-in partial trail defaults are hydrated by follow-up migration', () => {
@@ -284,4 +452,60 @@ test('built-in partial trail defaults are hydrated by follow-up migration', () =
   assert.match(migration, /defaults\.defaults_json #> '\{burstTrail,particlesPerStar\}' is null/);
   assert.match(migration, /defaults\.defaults_json #> '\{burstTrail,stops\}' is null/);
   assert.doesNotMatch(migration, /square-star-fade-trail/);
+});
+
+test('realistic preset and shaped-effect seeds stay reusable without creating base fireworks', () => {
+  const defaultsMigration = read(
+    'supabase/migrations/20260715065634_seed_realistic_firework_style_defaults.sql',
+  );
+  const effectsMigration = read(
+    'supabase/migrations/20260715071512_add_heart_and_outlined_star_effects.sql',
+  );
+  const defaults = readDollarQuotedJson(defaultsMigration, 'seed');
+  const effects = readDollarQuotedJson(effectsMigration, 'effects');
+
+  assert.equal(defaults.length, 51);
+  assert.deepEqual(
+    new Set(defaults.map((entry) => entry.kind)),
+    new Set([
+      'geometry',
+      'star',
+      'trail',
+      'launch',
+      'smoke',
+      'strobe',
+      'crackle',
+      'split',
+      'sound',
+    ]),
+  );
+  assert.match(defaultsMigration, /insert into public\.firework_style_defaults/);
+
+  assert.deepEqual(
+    effects.map((entry) => ({
+      slug: entry.slug,
+      family: entry.family,
+      source: entry.source,
+      geometry: entry.model_json?.renderDefaults?.geometry,
+    })),
+    [
+      {
+        slug: 'heart-shell',
+        family: 'aerial_burst',
+        source: 'manual',
+        geometry: 'heart',
+      },
+      {
+        slug: 'outlined-star-shell',
+        family: 'aerial_burst',
+        source: 'manual',
+        geometry: 'five_point_star',
+      },
+    ],
+  );
+  assert.match(effectsMigration, /insert into public\.firework_effects/);
+  assert.doesNotMatch(
+    effectsMigration,
+    /insert into public\.(?:fireworks|firework_variants|catalogue_items|products)/,
+  );
 });

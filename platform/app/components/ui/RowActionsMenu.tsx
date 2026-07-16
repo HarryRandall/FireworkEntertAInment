@@ -23,9 +23,10 @@ export type RowAction = {
 type RowActionsMenuProps = {
   items: RowAction[];
   label?: string;
+  busy?: boolean;
 };
 
-export function RowActionsMenu({ items, label = 'Actions' }: RowActionsMenuProps) {
+export function RowActionsMenu({ items, label = 'Actions', busy = false }: RowActionsMenuProps) {
   const safeItems = items.filter(Boolean);
   const firstDestructiveIndex = safeItems.findIndex((i) => i.destructive);
 
@@ -35,7 +36,9 @@ export function RowActionsMenu({ items, label = 'Actions' }: RowActionsMenuProps
         <button
           type="button"
           aria-label={label}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-3"
+          aria-busy={busy || undefined}
+          disabled={busy}
+          className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring/50 inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <MoreHorizontal size={16} />
         </button>

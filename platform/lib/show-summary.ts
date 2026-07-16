@@ -1,6 +1,6 @@
 import type { Show } from '@/lib/show-domain';
-import type { ShowTemplate } from '@/lib/admin.types';
 import type { ShowCover } from '@/lib/cover';
+import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 export type VisualPalette = {
   names: [string, string, string];
@@ -161,11 +161,11 @@ export function mapShowToSummary(show: Show): ShowSummaryCard {
   };
 }
 
-export function mapTemplateToSummary(template: ShowTemplate): TemplateSummaryCard {
+export function mapTemplateToSummary(template: ShowTemplateSummary): TemplateSummaryCard {
   const seed = [template.id, template.title, template.theme, template.description]
     .filter(Boolean)
     .join(':');
-  const cueCount = template.previewCues.length || template.effectsCount;
+  const cueCount = template.effectsCount;
 
   return {
     id: template.id,

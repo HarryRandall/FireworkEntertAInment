@@ -7,11 +7,12 @@
  */
 
 export const VERTEX_SHADER = /* glsl */ `
-uniform vec2 glowPadding;
-uniform vec2 whiteCoreSizePercent;
 attribute float size;
 attribute float shape;
 attribute float rotation;
+attribute vec4 headStyleA;
+attribute vec4 headStyleB;
+attribute vec4 headStyleC;
 varying vec3 vColor;
 varying float vDepthFade;
 varying float vShape;
@@ -21,7 +22,9 @@ varying float vHeadCoreRadius;
 varying float vHeadWhiteCoreRadius;
 varying float vHeadGlowStrength;
 varying float vHeadSizeAtten;
-varying float vHeadStyle;
+varying vec4 vHeadStyleA;
+varying vec4 vHeadStyleB;
+varying vec4 vHeadStyleC;
 
 void main() {
   vColor = color;
@@ -31,10 +34,10 @@ void main() {
   float depth = max(-mvPosition.z, 1.0);
   float linearScale = 500.0 / depth;
   float isHead = step(1.5, shape);
-  float headStyle = step(3.0, shape) * isHead;
-  float decodedShape = shape - headStyle;
-  float selectedGlowPadding = mix(glowPadding.x, glowPadding.y, headStyle);
-  float selectedWhiteCoreSizePercent = mix(whiteCoreSizePercent.x, whiteCoreSizePercent.y, headStyle);
+  float coreStyle = step(3.0, shape) * isHead;
+  float decodedShape = shape - coreStyle;
+  float selectedGlowPadding = headStyleA.x;
+  float selectedWhiteCoreSizePercent = headStyleA.y;
   // Compressed perspective response (exponent < 1) so apparent sprite size
   // changes far less with zoom: close-up sprites stop slamming into their
   // pixel caps and reading tiny against the scene, and far sprites never
@@ -47,7 +50,9 @@ void main() {
   // cap, zooming right in let trail squares catch up to the heads so the
   // heads read smaller than their own trail. Heads must stay dominant.
   float maxPointSize = mix(96.0, 1280.0, isHead);
-  float minPointSize = mix(2.0, 4.0, isHead);
+  // A two-pixel floor keeps heads visible without flattening the editable
+  // 10..16 size range into the same four-pixel sprite at normal distances.
+  float minPointSize = 2.0;
   // Background glow size is stored in the legacy glowPadding field, but the
   // value is now a percentage of the star core size. 300% reserves three star
   // sizes of room on each side of the core for the broad coloured wash.
@@ -69,7 +74,9 @@ void main() {
     headCoreRadius
   ) * isHead;
   vHeadGlowStrength = headGlowStrength;
-  vHeadStyle = headStyle;
+  vHeadStyleA = headStyleA;
+  vHeadStyleB = headStyleB;
+  vHeadStyleC = headStyleC;
   // Larger point sprites cover more pixels, which can read as "brighter" even
   // when the centre value is unchanged. Attenuate large heads so size edits
   // change scale, not heat.
@@ -84,17 +91,6 @@ void main() {
 `;
 
 export const FRAGMENT_SHADER = /* glsl */ `
-uniform vec2 glowPadding;
-uniform vec2 whiteCoreBlurPercent;
-uniform vec2 coreSoftness;
-uniform vec2 coreBrightness;
-uniform vec2 coreOpacityFalloff;
-uniform vec2 glowSize;
-uniform vec2 glowSoftness;
-uniform vec2 glowOpacityFalloff;
-uniform vec2 glowBlur;
-uniform vec2 backgroundGlowOpacityFalloff;
-uniform vec2 backgroundGlowSoftness;
 varying vec3 vColor;
 varying float vDepthFade;
 varying float vShape;
@@ -104,7 +100,9 @@ varying float vHeadCoreRadius;
 varying float vHeadWhiteCoreRadius;
 varying float vHeadGlowStrength;
 varying float vHeadSizeAtten;
-varying float vHeadStyle;
+varying vec4 vHeadStyleA;
+varying vec4 vHeadStyleB;
+varying vec4 vHeadStyleC;
 
 void main() {
   vec2 centered = gl_PointCoord - vec2(0.5);
@@ -145,17 +143,17 @@ void main() {
 
   // Head orb: a coloured core with a separate halo. Glow strength
   // only multiplies the halo; it never changes the core radius or opacity.
-  float selectedGlowPadding = mix(glowPadding.x, glowPadding.y, vHeadStyle);
-  float selectedWhiteCoreBlurPercent = mix(whiteCoreBlurPercent.x, whiteCoreBlurPercent.y, vHeadStyle);
-  float selectedCoreSoftness = mix(coreSoftness.x, coreSoftness.y, vHeadStyle);
-  float selectedCoreBrightness = mix(coreBrightness.x, coreBrightness.y, vHeadStyle);
-  float selectedCoreOpacityFalloff = mix(coreOpacityFalloff.x, coreOpacityFalloff.y, vHeadStyle);
-  float selectedGlowSize = mix(glowSize.x, glowSize.y, vHeadStyle);
-  float selectedGlowSoftness = mix(glowSoftness.x, glowSoftness.y, vHeadStyle);
-  float selectedGlowOpacityFalloff = mix(glowOpacityFalloff.x, glowOpacityFalloff.y, vHeadStyle);
-  float selectedGlowBlur = mix(glowBlur.x, glowBlur.y, vHeadStyle);
-  float selectedBackgroundGlowOpacityFalloff = mix(backgroundGlowOpacityFalloff.x, backgroundGlowOpacityFalloff.y, vHeadStyle);
-  float selectedBackgroundGlowSoftness = mix(backgroundGlowSoftness.x, backgroundGlowSoftness.y, vHeadStyle);
+  float selectedGlowPadding = vHeadStyleA.x;
+  float selectedWhiteCoreBlurPercent = vHeadStyleA.z;
+  float selectedCoreSoftness = vHeadStyleA.w;
+  float selectedCoreBrightness = vHeadStyleB.x;
+  float selectedCoreOpacityFalloff = vHeadStyleB.y;
+  float selectedGlowSize = vHeadStyleB.z;
+  float selectedGlowSoftness = vHeadStyleB.w;
+  float selectedGlowOpacityFalloff = vHeadStyleC.x;
+  float selectedGlowBlur = vHeadStyleC.y;
+  float selectedBackgroundGlowOpacityFalloff = vHeadStyleC.z;
+  float selectedBackgroundGlowSoftness = vHeadStyleC.w;
   float headGlowStrength = clamp(vHeadGlowStrength, 0.0, 3.0);
   float glowT = headGlowStrength / 3.0;
   float coreRadius = clamp(vHeadCoreRadius, 0.001, 0.5);
@@ -276,14 +274,15 @@ void main() {
 `;
 
 export const HEAD_BILLBOARD_VERTEX_SHADER = /* glsl */ `
-uniform vec2 glowPadding;
-uniform vec2 whiteCoreSizePercent;
 uniform vec2 viewport;
 attribute vec2 quadCorner;
 attribute vec3 instancePosition;
 attribute vec3 instanceColor;
 attribute float instanceSize;
 attribute float instanceShape;
+attribute vec4 instanceHeadStyleA;
+attribute vec4 instanceHeadStyleB;
+attribute vec4 instanceHeadStyleC;
 varying vec2 vSpriteCoord;
 varying vec3 vColor;
 varying float vDepthFade;
@@ -292,7 +291,9 @@ varying float vHeadCoreRadius;
 varying float vHeadWhiteCoreRadius;
 varying float vHeadGlowStrength;
 varying float vHeadSizeAtten;
-varying float vHeadStyle;
+varying vec4 vHeadStyleA;
+varying vec4 vHeadStyleB;
+varying vec4 vHeadStyleC;
 
 void main() {
   vSpriteCoord = quadCorner * 0.5 + vec2(0.5);
@@ -301,15 +302,15 @@ void main() {
   float depth = max(-mvPosition.z, 1.0);
   float linearScale = 500.0 / depth;
   float distanceScale = pow(linearScale, 0.55);
-  float headStyle = step(3.0, instanceShape);
-  float decodedShape = instanceShape - headStyle;
-  float selectedGlowPadding = mix(glowPadding.x, glowPadding.y, headStyle);
-  float selectedWhiteCoreSizePercent = mix(whiteCoreSizePercent.x, whiteCoreSizePercent.y, headStyle);
+  float coreStyle = step(3.0, instanceShape);
+  float decodedShape = instanceShape - coreStyle;
+  float selectedGlowPadding = instanceHeadStyleA.x;
+  float selectedWhiteCoreSizePercent = instanceHeadStyleA.y;
   float backgroundGlowScale = clamp(selectedGlowPadding / 100.0, 0.0, 3.0);
   float maxCoreSize = 1280.0 / max(1.0 + backgroundGlowScale * 2.0, 1.0);
-  float coreSize = clamp(instanceSize * distanceScale, 4.0, maxCoreSize);
+  float coreSize = clamp(instanceSize * distanceScale, 2.0, maxCoreSize);
   float haloPad = coreSize * backgroundGlowScale;
-  float pointSize = clamp(coreSize + haloPad * 2.0, 4.0, 1280.0);
+  float pointSize = clamp(coreSize + haloPad * 2.0, 2.0, 1280.0);
   float headCoreRadius = coreSize / max(pointSize * 2.0, 0.0001);
   vHeadCoreRadius = headCoreRadius;
   float whiteCoreVisualRadius = headCoreRadius * clamp(selectedWhiteCoreSizePercent / 100.0, 0.0, 1.0);
@@ -319,7 +320,9 @@ void main() {
   );
   vHeadGlowStrength = clamp(max(decodedShape - 2.0, 0.0) * 4.0, 0.0, 3.0);
   vHeadSizeAtten = clamp(pow(16.0 / max(instanceSize, 1.0), 0.38), 0.58, 1.22);
-  vHeadStyle = headStyle;
+  vHeadStyleA = instanceHeadStyleA;
+  vHeadStyleB = instanceHeadStyleB;
+  vHeadStyleC = instanceHeadStyleC;
   vDepthFade = smoothstep(6200.0, 800.0, -mvPosition.z);
   vZoomAtten = pow(clamp(linearScale, 0.0, 1.0), 0.5);
 
@@ -332,17 +335,6 @@ void main() {
 `;
 
 export const HEAD_BILLBOARD_FRAGMENT_SHADER = /* glsl */ `
-uniform vec2 glowPadding;
-uniform vec2 whiteCoreBlurPercent;
-uniform vec2 coreSoftness;
-uniform vec2 coreBrightness;
-uniform vec2 coreOpacityFalloff;
-uniform vec2 glowSize;
-uniform vec2 glowSoftness;
-uniform vec2 glowOpacityFalloff;
-uniform vec2 glowBlur;
-uniform vec2 backgroundGlowOpacityFalloff;
-uniform vec2 backgroundGlowSoftness;
 varying vec2 vSpriteCoord;
 varying vec3 vColor;
 varying float vDepthFade;
@@ -351,7 +343,9 @@ varying float vHeadCoreRadius;
 varying float vHeadWhiteCoreRadius;
 varying float vHeadGlowStrength;
 varying float vHeadSizeAtten;
-varying float vHeadStyle;
+varying vec4 vHeadStyleA;
+varying vec4 vHeadStyleB;
+varying vec4 vHeadStyleC;
 
 void main() {
   vec2 centered = vSpriteCoord - vec2(0.5);
@@ -360,17 +354,17 @@ void main() {
 
   float headGlowStrength = clamp(vHeadGlowStrength, 0.0, 3.0);
   float glowT = headGlowStrength / 3.0;
-  float selectedGlowPadding = mix(glowPadding.x, glowPadding.y, vHeadStyle);
-  float selectedWhiteCoreBlurPercent = mix(whiteCoreBlurPercent.x, whiteCoreBlurPercent.y, vHeadStyle);
-  float selectedCoreSoftness = mix(coreSoftness.x, coreSoftness.y, vHeadStyle);
-  float selectedCoreBrightness = mix(coreBrightness.x, coreBrightness.y, vHeadStyle);
-  float selectedCoreOpacityFalloff = mix(coreOpacityFalloff.x, coreOpacityFalloff.y, vHeadStyle);
-  float selectedGlowSize = mix(glowSize.x, glowSize.y, vHeadStyle);
-  float selectedGlowSoftness = mix(glowSoftness.x, glowSoftness.y, vHeadStyle);
-  float selectedGlowOpacityFalloff = mix(glowOpacityFalloff.x, glowOpacityFalloff.y, vHeadStyle);
-  float selectedGlowBlur = mix(glowBlur.x, glowBlur.y, vHeadStyle);
-  float selectedBackgroundGlowOpacityFalloff = mix(backgroundGlowOpacityFalloff.x, backgroundGlowOpacityFalloff.y, vHeadStyle);
-  float selectedBackgroundGlowSoftness = mix(backgroundGlowSoftness.x, backgroundGlowSoftness.y, vHeadStyle);
+  float selectedGlowPadding = vHeadStyleA.x;
+  float selectedWhiteCoreBlurPercent = vHeadStyleA.z;
+  float selectedCoreSoftness = vHeadStyleA.w;
+  float selectedCoreBrightness = vHeadStyleB.x;
+  float selectedCoreOpacityFalloff = vHeadStyleB.y;
+  float selectedGlowSize = vHeadStyleB.z;
+  float selectedGlowSoftness = vHeadStyleB.w;
+  float selectedGlowOpacityFalloff = vHeadStyleC.x;
+  float selectedGlowBlur = vHeadStyleC.y;
+  float selectedBackgroundGlowOpacityFalloff = vHeadStyleC.z;
+  float selectedBackgroundGlowSoftness = vHeadStyleC.w;
   float coreRadius = clamp(vHeadCoreRadius, 0.001, 0.5);
   float coreEdge = max(fwidth(roundDistance) * 1.5, 0.0015);
   float headCore = 1.0 - smoothstep(coreRadius - coreEdge, coreRadius + coreEdge, roundDistance);
@@ -459,11 +453,14 @@ void main() {
 
 export const SMOKE_VERTEX_SHADER = /* glsl */ `
 attribute float size;
+attribute float smokeOpacity;
 varying vec3 vColor;
 varying float vDepthFade;
+varying float vSmokeOpacity;
 
 void main() {
   vColor = color;
+  vSmokeOpacity = clamp(smokeOpacity, 0.0, 1.0);
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   float distanceScale = 520.0 / max(-mvPosition.z, 1.0);
   gl_PointSize = clamp(size * distanceScale, 5.0, 56.0);
@@ -475,6 +472,7 @@ void main() {
 export const SMOKE_FRAGMENT_SHADER = /* glsl */ `
 varying vec3 vColor;
 varying float vDepthFade;
+varying float vSmokeOpacity;
 
 void main() {
   vec2 centered = gl_PointCoord - vec2(0.5);
@@ -483,9 +481,9 @@ void main() {
 
   float body = 1.0 - smoothstep(0.1, 0.54, roundDistance);
   float rim = smoothstep(0.22, 0.38, roundDistance) * (1.0 - smoothstep(0.38, 0.56, roundDistance));
-  float strength = clamp(max(max(vColor.r, vColor.g), vColor.b) * 3.1, 0.0, 1.0);
-  vec3 smokeColor = clamp(vec3(0.22, 0.24, 0.28) + vColor * 0.45, vec3(0.0), vec3(0.38));
-  float alpha = (body * 0.36 + rim * 0.22) * strength * vDepthFade;
+  float coverage = clamp(body + rim * 0.22, 0.0, 1.0);
+  vec3 smokeColor = clamp(vColor, vec3(0.0), vec3(1.0));
+  float alpha = clamp(coverage * vSmokeOpacity * vDepthFade, 0.0, 1.0);
 
   if (alpha < 0.01) discard;
   gl_FragColor = vec4(smokeColor, alpha);

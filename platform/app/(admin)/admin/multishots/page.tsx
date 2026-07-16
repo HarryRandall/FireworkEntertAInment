@@ -1,22 +1,18 @@
 /** Admin multishots page: compositions of fireworks placed on a timeline. */
 
-import Link from 'next/link';
 import { Suspense } from 'react';
-import { ArrowRight } from 'lucide-react';
-import { EffectPreviewIcon } from '@/app/components/admin/EffectPreviewIcon';
-import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { Badge } from '@/app/components/ui/Badge';
+import { Clock3, Layers3 } from 'lucide-react';
 import {
-  DataTableShell,
-  tableCellClasses,
-  tableClasses,
-  tableHeadClasses,
-  tableHeaderCellClasses,
-  tableRowClasses,
-} from '@/app/components/ui/DataTable';
+  FireworkBrowseCard,
+  FireworkBrowseGridSkeleton,
+} from '@/app/components/app/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
+import { FilterSkeleton } from '@/app/components/app/RouteSkeletons';
+import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { FilterBar } from '@/app/components/ui/FilterBar';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
 import { listMultishots } from '@/lib/admin.server';
+import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
 import { NewMultishotButton } from './NewMultishotButton';
 
@@ -34,13 +30,7 @@ export default async function AdminMultishotsPage({ searchParams }: PageProps) {
         fallback={
           <>
             <FilterSkeleton searchPlaceholder="Search multishot..." actionLabel="New multishot" />
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <TableSkeleton
-                rows={TABLE_PAGE_SIZE}
-                headers={['Preview', 'Multishot', 'Shots', 'Duration', 'Open']}
-                tableClassName="min-w-[820px]"
-              />
-            </div>
+            <FireworkBrowseGridSkeleton count={8} />
           </>
         }
       >
@@ -66,74 +56,79 @@ async function MultishotsData({ params }: { params: MultishotsSearchParams }) {
     : 1;
   const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
   const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
+  const posterBackfillTargets = filtered
+    .filter((multishot) => !multishot.previewImagePath)
+    .map((multishot) => ({
+      id: `multishot-${multishot.id}`,
+      previewUrl: withFireworkPreviewRevision(
+        `/api/admin/firework-previews/multishot/${multishot.id}`,
+        multishot.previewImageRevision,
+      ),
+    }));
 
   return (
     <>
       <FilterBar searchPlaceholder="Search multishot…" action={<NewMultishotButton />} />
 
-      <DataTableShell
-        viewport
-        footer={
-          <TablePagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            searchParams={params}
-            visibleItems={paginated.length}
-            totalItems={filtered.length}
-            itemLabel="multishot"
-          />
-        }
-      >
-        <table className={tableClasses('min-w-[820px]')}>
-          <thead className={tableHeadClasses()}>
-            <tr>
-              <th className={tableHeaderCellClasses()}>Preview</th>
-              <th className={tableHeaderCellClasses()}>Multishot</th>
-              <th className={tableHeaderCellClasses()}>Shots</th>
-              <th className={tableHeaderCellClasses()}>Duration</th>
-              <th className={tableHeaderCellClasses('text-right')}>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((multishot) => (
-              <tr key={multishot.id} className={tableRowClasses()}>
-                <td className={tableCellClasses()}>
-                  <EffectPreviewIcon preview={multishot.preview} />
-                </td>
-                <td className={tableCellClasses()}>
-                  <div className="line-clamp-2 max-w-md font-medium text-[color:var(--color-content-emphasis)]">
-                    {multishot.name}
-                  </div>
-                  <div className="mt-1 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums">
-                    {multishot.slug}
-                  </div>
-                </td>
-                <td className={tableCellClasses()}>
-                  <Badge tone="neutral" solid>
-                    {multishot.shotCount} shots
-                  </Badge>
-                </td>
-                <td
-                  className={tableCellClasses(
-                    'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+      <div className="space-y-5">
+        {paginated.length === 0 ? (
+          <EmptyNotice>
+            {query ? 'No multishots match that search.' : 'No multishots have been created yet.'}
+          </EmptyNotice>
+        ) : (
+          <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {paginated.map((multishot) => (
+                <FireworkBrowseCard
+                  key={multishot.id}
+                  previewId={`multishot-${multishot.id}`}
+                  previewUrl={withFireworkPreviewRevision(
+                    `/api/admin/firework-previews/multishot/${multishot.id}`,
+                    multishot.previewImageRevision,
                   )}
+                  persistedPosterUrl={fireworkPreviewImageUrl(multishot.previewImagePath)}
+                  persistPoster
+                  label={multishot.name}
+                  href={`/admin/multishots/${multishot.id}`}
                 >
-                  {formatDuration(multishot.durationSeconds)}
-                </td>
-                <td className={tableCellClasses('text-right')}>
-                  <Link
-                    href={`/admin/multishots/${multishot.id}`}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
-                    aria-label={`Open ${multishot.name}`}
-                  >
-                    <ArrowRight size={16} />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </DataTableShell>
+                  <div className="p-4">
+                    <h2 className="text-foreground line-clamp-2 text-sm leading-5 font-semibold">
+                      {multishot.name}
+                    </h2>
+                    <p className="text-muted-foreground mt-1 truncate font-mono text-xs tabular-nums">
+                      {multishot.slug}
+                    </p>
+                    <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Layers3 size={13} aria-hidden />
+                        <span className="tabular-nums">
+                          {multishot.shotCount.toLocaleString()}{' '}
+                          {multishot.shotCount === 1 ? 'shot' : 'shots'}
+                        </span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock3 size={13} aria-hidden />
+                        <span className="font-mono tabular-nums">
+                          {formatDuration(multishot.durationSeconds)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </FireworkBrowseCard>
+              ))}
+            </div>
+          </FireworkBrowsePreviewProvider>
+        )}
+
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          searchParams={params}
+          visibleItems={paginated.length}
+          totalItems={filtered.length}
+          itemLabel="multishot"
+        />
+      </div>
     </>
   );
 }

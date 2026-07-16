@@ -59,11 +59,16 @@ export function AudioUpload({
           )}
         >
           {uploadState === 'uploading' ? (
-            <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+            <Loader2
+              size={18}
+              strokeWidth={1.75}
+              className="animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
           ) : uploadState === 'error' ? (
-            <AlertTriangle size={18} strokeWidth={1.75} />
+            <AlertTriangle size={18} strokeWidth={1.75} aria-hidden="true" />
           ) : (
-            <Music4 size={18} strokeWidth={1.75} />
+            <Music4 size={18} strokeWidth={1.75} aria-hidden="true" />
           )}
         </span>
         <div className="min-w-0 flex-1">
@@ -72,19 +77,22 @@ export function AudioUpload({
               <Loader2
                 size={14}
                 strokeWidth={2}
-                className="shrink-0 animate-spin text-[color:var(--color-content-muted)]"
+                className="shrink-0 animate-spin text-[color:var(--color-content-muted)] motion-reduce:animate-none"
+                aria-hidden="true"
               />
             ) : uploadState === 'error' ? (
               <AlertTriangle
                 size={14}
                 strokeWidth={2.5}
                 className="shrink-0 text-[color:var(--color-status-danger)]"
+                aria-hidden="true"
               />
             ) : (
               <Check
                 size={14}
                 strokeWidth={2.5}
                 className="shrink-0 text-[color:var(--color-status-success)]"
+                aria-hidden="true"
               />
             )}
             <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
@@ -125,7 +133,7 @@ export function AudioUpload({
   }
 
   return (
-    <label className="group relative flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] hover:border-[color:var(--color-content-emphasis)]/40 hover:shadow-md active:scale-[0.99]">
+    <label className="group has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-ring/50 has-[input:focus-visible]:ring-offset-background relative flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-6 text-center shadow-sm transition-[border-color,box-shadow,transform] hover:border-[color:var(--color-content-emphasis)]/40 hover:shadow-md active:scale-[0.99] has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-offset-2">
       <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] text-[color:var(--color-content-muted)] transition-colors group-hover:text-[color:var(--color-content-emphasis)]">
         <CloudUpload size={19} strokeWidth={1.75} />
       </span>

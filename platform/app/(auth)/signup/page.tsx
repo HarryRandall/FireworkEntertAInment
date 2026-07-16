@@ -3,23 +3,63 @@
 /** Signup page (Supabase email/password sign-up). */
 
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState, type FormEvent } from 'react';
 import { Mail, Lock, User, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
 import { AuthShell } from '../components/AuthShell';
 import { FormError } from '@/app/components/ui/FormError';
+import {
+  buildAuthCallbackUrl,
+  buildAuthPageHref,
+  getAuthCallbackDestination,
+} from '@/lib/auth-redirect';
 
 type Step = 'email' | 'details' | 'confirm';
+type SignupErrorField = 'email' | 'fullName' | 'password' | 'confirmPassword';
+type SignupError = {
+  message: string;
+  field: SignupErrorField | null;
+};
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupPageFallback />}>
+      <SignupPageInner />
+    </Suspense>
+  );
+}
+
+function SignupPageFallback() {
+  return (
+    <AuthShell>
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+          Create your account
+        </h1>
+        <p
+          className="text-sm text-[color:var(--color-content-subtle)]"
+          role="status"
+          aria-live="polite"
+        >
+          Preparing account creation…
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
+
+function SignupPageInner() {
+  const searchParams = useSearchParams();
+  const nextPath = getAuthCallbackDestination(searchParams.get('next'));
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SignupError | null>(null);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -28,7 +68,9 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError({ message: 'Please enter a valid email address.', field: 'email' });
+      const emailInput = e.currentTarget.elements.namedItem('email');
+      if (emailInput instanceof HTMLInputElement) emailInput.focus();
       return;
     }
     setStep('details');
@@ -36,42 +78,58 @@ export default function SignupPage() {
 
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setError(null);
     if (!fullName.trim()) {
-      setError('Please enter your full name.');
+      setError({ message: 'Please enter your full name.', field: 'fullName' });
+      const fullNameInput = form.elements.namedItem('fullName');
+      if (fullNameInput instanceof HTMLInputElement) fullNameInput.focus();
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setError({ message: 'Password must be at least 8 characters.', field: 'password' });
+      const passwordInput = form.elements.namedItem('password');
+      if (passwordInput instanceof HTMLInputElement) passwordInput.focus();
       return;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError({ message: 'Passwords do not match.', field: 'confirmPassword' });
+      const confirmPasswordInput = form.elements.namedItem('confirmPassword');
+      if (confirmPasswordInput instanceof HTMLInputElement) confirmPasswordInput.focus();
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
+    try {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName.trim() },
+          emailRedirectTo: buildAuthCallbackUrl(window.location.origin, nextPath),
+        },
+      });
+      if (signUpError) {
+        setError({ message: signUpError.message, field: null });
+        return;
+      }
       setStep('confirm');
+    } catch (signUpError) {
+      console.error('[auth] sign-up failed:', signUpError);
+      setError({
+        message: 'Could not create your account. Check your connection and try again.',
+        field: null,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <AuthShell>
       {step === 'confirm' ? (
-        <div className="space-y-5 text-center">
+        <div className="space-y-5 text-center" role="status" aria-live="polite">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
-            <CheckCircle size={22} strokeWidth={1.8} />
+            <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
@@ -84,11 +142,14 @@ export default function SignupPage() {
               </span>
               . Click it to activate your account.
             </p>
+            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+              For security, open the link in this browser on this device.
+            </p>
           </div>
           <p className="text-sm text-[color:var(--color-content-subtle)]">
             Already confirmed?{' '}
             <Link
-              href="/login"
+              href={buildAuthPageHref('/login', nextPath)}
               className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
             >
               Sign in
@@ -117,6 +178,7 @@ export default function SignupPage() {
                 </label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => {
@@ -124,12 +186,18 @@ export default function SignupPage() {
                     setError(null);
                   }}
                   placeholder="you@example.com"
-                  iconLeft={<Mail size={16} />}
+                  iconLeft={<Mail size={16} aria-hidden="true" />}
                   autoComplete="email"
-                  autoFocus
+                  spellCheck={false}
+                  aria-describedby={error?.field === 'email' ? 'signup-email-error' : undefined}
+                  invalid={error?.field === 'email'}
                 />
               </div>
-              {error && <FormError message={error} />}
+              {error ? (
+                <div id="signup-email-error" role="alert" aria-live="polite">
+                  <FormError message={error.message} />
+                </div>
+              ) : null}
               <Button type="submit" className="w-full">
                 Continue
               </Button>
@@ -144,7 +212,7 @@ export default function SignupPage() {
                 }}
                 className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
               >
-                <ArrowLeft size={14} />
+                <ArrowLeft size={14} aria-hidden="true" />
                 Use a different email
               </button>
 
@@ -158,6 +226,7 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="fullName"
+                    name="fullName"
                     type="text"
                     value={fullName}
                     onChange={(e) => {
@@ -165,9 +234,12 @@ export default function SignupPage() {
                       setError(null);
                     }}
                     placeholder="Your full name"
-                    iconLeft={<User size={16} />}
+                    iconLeft={<User size={16} aria-hidden="true" />}
                     autoComplete="name"
-                    autoFocus
+                    aria-describedby={
+                      error?.field === 'fullName' ? 'signup-details-error' : undefined
+                    }
+                    invalid={error?.field === 'fullName'}
                   />
                 </div>
                 <div className="space-y-2">
@@ -179,15 +251,22 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       setError(null);
                     }}
-                    placeholder="Create a password"
-                    iconLeft={<Lock size={16} />}
+                    placeholder="At least 8 characters"
+                    iconLeft={<Lock size={16} aria-hidden="true" />}
                     autoComplete="new-password"
+                    aria-describedby={
+                      error?.field === 'password' ? 'signup-details-error' : undefined
+                    }
+                    minLength={8}
+                    maxLength={128}
+                    invalid={error?.field === 'password'}
                   />
                 </div>
                 <div className="space-y-2">
@@ -199,6 +278,7 @@ export default function SignupPage() {
                   </label>
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => {
@@ -206,11 +286,21 @@ export default function SignupPage() {
                       setError(null);
                     }}
                     placeholder="Repeat your password"
-                    iconLeft={<Lock size={16} />}
+                    iconLeft={<Lock size={16} aria-hidden="true" />}
                     autoComplete="new-password"
+                    minLength={8}
+                    maxLength={128}
+                    aria-describedby={
+                      error?.field === 'confirmPassword' ? 'signup-details-error' : undefined
+                    }
+                    invalid={error?.field === 'confirmPassword'}
                   />
                 </div>
-                {error && <FormError message={error} />}
+                {error ? (
+                  <div id="signup-details-error" role="alert" aria-live="polite">
+                    <FormError message={error.message} />
+                  </div>
+                ) : null}
                 <Button type="submit" className="w-full" loading={loading}>
                   {loading ? 'Creating account…' : 'Create account'}
                 </Button>
@@ -221,7 +311,7 @@ export default function SignupPage() {
           <p className="text-sm text-[color:var(--color-content-subtle)]">
             Already have an account?{' '}
             <Link
-              href="/login"
+              href={buildAuthPageHref('/login', nextPath)}
               className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
             >
               Sign in

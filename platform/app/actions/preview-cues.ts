@@ -17,11 +17,12 @@ import {
   getProductDurationSeconds,
 } from '@/lib/cue-overlap.server';
 import {
+  invalidateSidebarAiUsageCache,
   refundAiCreditReservation,
   reserveAiCredits,
-  settleAiCreditReservation,
   showRefinementReservationKey,
 } from '@/lib/ai-credits.server';
+import { addShowTimelineItem, deleteShowTimelineItem } from '@/lib/show-timeline-mutations.server';
 
 export type CueActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -88,7 +89,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
   const cueDescription = productRow.name.trim();
 
   let newDuration = MIN_PRODUCT_DURATION_SECONDS;
-  let nextPosition = 1;
   const existingWindows: Array<{
     timeSeconds: number;
     durationSeconds: number;
@@ -122,16 +122,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
         description: cue.description,
       });
     }
-
-    const { data: lastCue, error: lastCueError } = await supabase
-      .from('show_timeline_items')
-      .select('position')
-      .eq('show_id', parsed.data.showId)
-      .order('position', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (lastCueError) throw lastCueError;
-    nextPosition = (lastCue?.position ?? 0) + 1;
   } catch (error) {
     console.error('[addPreviewCueAction] schedule validation failed:', error);
     return { ok: false, error: 'Could not validate the cue schedule. Try again.' };
@@ -186,52 +176,123 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     }
   }
 
-  const { error } = await supabase.from('show_timeline_items').insert({
-    show_id: parsed.data.showId,
-    position: nextPosition,
-    time_seconds: parsed.data.timeSeconds,
-    description: cueDescription,
-    catalogue_item_id: parsed.data.productId,
-    launch_position_index: parsed.data.launchPositionIndex,
-    emphasis: parsed.data.emphasis,
-  });
+  if (refinementReservationKey && user && parsed.data.aiCreditReferenceId) {
+    const { data: cueId, error: refinementError } = await supabase.rpc(
+      'add_refinement_cue_and_settle_credits',
+      {
+        p_catalogue_item_id: parsed.data.productId,
+        p_emphasis: parsed.data.emphasis,
+        p_launch_position_index: parsed.data.launchPositionIndex,
+        p_metadata: {
+          cueDescription,
+          productId: parsed.data.productId,
+          showId: parsed.data.showId,
+          showSlug: parsed.data.showSlug,
+        },
+        // The RPC keeps this legacy argument for compatibility, while the
+        // locked database schedule allocates the authoritative position.
+        p_position: 1,
+        p_refinement_id: parsed.data.aiCreditReferenceId,
+        p_show_id: parsed.data.showId,
+        p_time_seconds: parsed.data.timeSeconds,
+      },
+    );
 
-  if (error) {
-    console.error('[addPreviewCueAction] insert failed:', error);
-    if (refinementReservationKey && user) {
-      await refundAiCreditReservation(supabase, {
+    let committedAfterResponseError = false;
+    if (refinementError) {
+      // A lost response can arrive after PostgreSQL committed. The deterministic
+      // cue UUID and debit key let us confirm both halves before compensation.
+      const [cueConfirmation, debitConfirmation] = await Promise.all([
+        supabase
+          .from('show_timeline_items')
+          .select('id, show_id, catalogue_item_id')
+          .eq('id', parsed.data.aiCreditReferenceId)
+          .eq('show_id', parsed.data.showId)
+          .eq('catalogue_item_id', parsed.data.productId)
+          .maybeSingle(),
+        supabase
+          .from('ai_credit_transactions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('idempotency_key', `${refinementReservationKey}:debit`)
+          .eq('transaction_type', 'debit')
+          .eq('status', 'applied')
+          .maybeSingle(),
+      ]);
+      committedAfterResponseError =
+        !cueConfirmation.error &&
+        cueConfirmation.data != null &&
+        !debitConfirmation.error &&
+        debitConfirmation.data != null;
+      if (cueConfirmation.error || debitConfirmation.error) {
+        console.error('[addPreviewCueAction] refinement confirmation failed:', {
+          cueError: cueConfirmation.error,
+          debitError: debitConfirmation.error,
+        });
+      }
+    }
+
+    const refinementCommitted =
+      cueId === parsed.data.aiCreditReferenceId ||
+      (refinementError != null && committedAfterResponseError);
+    if (!refinementCommitted) {
+      console.error('[addPreviewCueAction] atomic refinement failed:', refinementError);
+      const refunded = await refundAiCreditReservation(supabase, {
         userId: user.id,
         reservationKey: refinementReservationKey,
         metadata: {
-          reason: 'cue_insert_failed',
+          reason: 'refinement_cue_failed',
           showId: parsed.data.showId,
           showSlug: parsed.data.showSlug,
         },
       });
+      if (!refunded.ok) {
+        console.error('[addPreviewCueAction] refinement refund failed:', refunded.error);
+      }
+      if (refinementError?.code === '23514') {
+        return {
+          ok: false,
+          error: 'That launch position became busy. Pick a different time or tube and try again.',
+        };
+      }
+      return { ok: false, error: 'Could not add that firework cue.' };
     }
-    return { ok: false, error: 'Could not add that firework cue.' };
-  }
 
-  if (refinementReservationKey && user) {
-    const settled = await settleAiCreditReservation(supabase, {
-      userId: user.id,
-      reservationKey: refinementReservationKey,
-      metadata: {
-        cueDescription,
-        productId: parsed.data.productId,
-        showId: parsed.data.showId,
-        showSlug: parsed.data.showSlug,
-      },
+    await invalidateSidebarAiUsageCache(user.id);
+  } else {
+    const { data: insertedCueId, error } = await addShowTimelineItem(supabase, {
+      p_catalogue_item_id: parsed.data.productId,
+      p_emphasis: parsed.data.emphasis,
+      p_launch_position_index: parsed.data.launchPositionIndex,
+      p_show_id: parsed.data.showId,
+      p_time_seconds: parsed.data.timeSeconds,
     });
-    if (!settled.ok)
-      console.error('[addPreviewCueAction] credit settlement failed:', settled.error);
+
+    if (error?.code === '23514') {
+      return {
+        ok: false,
+        error: 'That launch position became busy. Pick a different time or tube and try again.',
+      };
+    }
+    if (error || !insertedCueId) {
+      console.error('[addPreviewCueAction] insert failed:', error);
+      return { ok: false, error: 'Could not add that firework cue.' };
+    }
   }
 
   if (user) {
-    await syncShowDerivedFieldsForUser(user.id, {
-      showId: parsed.data.showId,
-      showSlug: parsed.data.showSlug,
-    });
+    try {
+      await syncShowDerivedFieldsForUser(user.id, {
+        showId: parsed.data.showId,
+        showSlug: parsed.data.showSlug,
+      });
+    } catch (error) {
+      console.error('[addPreviewCueAction] derived-field sync failed:', error);
+      return {
+        ok: false,
+        error: 'The cue was added, but show totals could not refresh. Reload before retrying.',
+      };
+    }
   }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: 'Cue added.' };
@@ -252,29 +313,31 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: deletedCue, error } = await supabase
-    .from('show_timeline_items')
-    .delete()
-    .eq('id', parsed.data.cueId)
-    .select('show_id')
-    .maybeSingle();
+  const { data: deletedShowId, error } = await deleteShowTimelineItem(supabase, parsed.data.cueId);
 
   if (error) {
     console.error('[deletePreviewCueAction] delete failed:', error);
     return { ok: false, error: 'Could not remove that firework cue.' };
   }
 
-  // No row came back means nothing matched (wrong id or blocked by RLS); don't
-  // tell the user it was removed when it wasn't.
-  if (!deletedCue) {
+  // No show ID means the guarded mutation did not confirm a deleted row.
+  if (!deletedShowId) {
     return { ok: false, error: 'Could not find that cue to remove.' };
   }
 
-  if (user && deletedCue?.show_id) {
-    await syncShowDerivedFieldsForUser(user.id, {
-      showId: deletedCue.show_id,
-      showSlug: parsed.data.showSlug,
-    });
+  if (user) {
+    try {
+      await syncShowDerivedFieldsForUser(user.id, {
+        showId: deletedShowId,
+        showSlug: parsed.data.showSlug,
+      });
+    } catch (error) {
+      console.error('[deletePreviewCueAction] derived-field sync failed:', error);
+      return {
+        ok: false,
+        error: 'The cue was removed, but show totals could not refresh. Reload before retrying.',
+      };
+    }
   }
   revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
   return { ok: true, message: 'Cue removed.' };

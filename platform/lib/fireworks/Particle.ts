@@ -43,6 +43,8 @@ export class Particle {
   shape = 0;
   rotation = 0;
   spin = 0;
+  /** Stable outer/core style-pair slot owned by the cue that spawned this particle. */
+  headStyleSlot = 0;
   color = new THREE.Color();
   decay = 0;
   life = 0;
@@ -139,6 +141,7 @@ export class Particle {
     this.shape = 0;
     this.rotation = 0;
     this.spin = 0;
+    this.headStyleSlot = 0;
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;
