@@ -25,6 +25,7 @@ import type { GenerationMode } from '@/lib/prompt-configs';
 import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
+import { fireworkOccupancyDurationSeconds } from '@/lib/show-domain';
 import {
   refundAiCreditReservation,
   settleAiCreditReservation,
@@ -99,7 +100,10 @@ function estimateAchievableCueCount(params: {
   const { products, songDuration, maxTubes, slotCount } = params;
   let cheapestTubeSeconds = Infinity;
   for (const product of products) {
-    const duration = Math.max(product.durationSeconds ?? MIN_PRODUCT_DURATION_SECONDS, 0.5);
+    const duration = Math.max(
+      fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS,
+      0.5,
+    );
     for (let tube = 0; tube < maxTubes; tube += 1) {
       const occupiedTubes = occupiedLaunchPositions(product, tube as 0 | 1 | 2, maxTubes);
       if (!occupiedTubes) continue;
@@ -264,6 +268,14 @@ export async function generateCuesForShow(params: {
     products = await listFireworkProducts();
     if (products.length === 0) {
       throw new Error('Product catalogue contains no firework products.');
+    }
+    // A generated show must resolve to a purchasable shopping list. Items with
+    // no available supplier price (e.g. style-default demo fireworks) would
+    // produce a $0 show the user cannot actually buy, so they never enter the
+    // planning pool.
+    products = products.filter((product) => product.minPriceCents != null);
+    if (products.length === 0) {
+      throw new Error('No purchasable fireworks are available from supplier inventory.');
     }
     // Multishot child positions are absolute. Products that address a launch
     // position outside this site's width cannot be scheduled safely.
@@ -497,7 +509,9 @@ export async function generateCuesForShow(params: {
       const acceptedWindows: CueWindow[] = [];
       for (const cue of reconstructed) {
         const product = productIndex.get(cue.productId);
-        const productDuration = product?.durationSeconds ?? MIN_PRODUCT_DURATION_SECONDS;
+        const productDuration = product
+          ? (fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS)
+          : MIN_PRODUCT_DURATION_SECONDS;
         const occupiedTubes = product ? occupiedLaunchPositions(product, cue.tube, maxTubes) : null;
         if (!occupiedTubes) {
           dropped.push({

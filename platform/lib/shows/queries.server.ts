@@ -12,7 +12,16 @@ import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
+import { FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS } from '@/lib/firework-card-preview';
 import type { LaunchPosition } from '@/lib/fireworks/design';
+import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
+import {
+  parseReconstructionShotVariant,
+  parseShotLaunchPositionIndex,
+  parseShotPositionOverride,
+  parseShotSeedOverride,
+  type ReconstructionShotMetadata,
+} from '@/lib/reconstruction-shot';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 import type {
@@ -48,6 +57,7 @@ import {
   SHOW_CUE_SELECT,
   SHOW_SELECT,
   type FireworkVariantProjection,
+  type FireworkPreviewImageProjectionRelation,
   type ReplayCueRow,
   type CatalogueFireworkCardProjection,
 } from './types';
@@ -87,33 +97,33 @@ function firstVariant<T>(variant: T | T[] | null | undefined): T | null {
   return Array.isArray(variant) ? (variant[0] ?? null) : variant;
 }
 
-function parseShotPositionOverride(input: unknown): LaunchPosition | null {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) return null;
-  const record = input as Record<string, unknown>;
-  const x = Number(record.x);
-  const y = Number(record.y);
-  const z = Number(record.z);
-  if (![x, y, z].every(Number.isFinite)) return null;
-  return { x, y, z };
-}
-
-/**
- * Reads the per-shot launch tube the admin multishot editor persists into
- * `position_override_json` as `{ launchPositionIndex }`. Returns `null` when
- * absent so callers can fall back to the parent cue's tube. Mirrors the clamp
- * in `admin/multishots.server.ts` `launchPositionFromOverride`.
- */
-function parseShotLaunchPositionIndex(input: unknown): number | null {
-  if (typeof input !== 'object' || input === null || Array.isArray(input)) return null;
-  const raw = (input as Record<string, unknown>).launchPositionIndex;
-  const n = Number(raw);
-  if (!Number.isFinite(n)) return null;
-  return Math.max(0, Math.min(2, Math.floor(n)));
+/** `variant_json.reconstructionShot` is shared by show replay and card previews. */
+function parseDirectReconstructionShot(input: unknown): ReconstructionShotMetadata | null {
+  return parseReconstructionShotVariant(input);
 }
 
 function finiteOrZero(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
+}
+
+function conservativeProductDuration(...values: Array<number | null | undefined>): number | null {
+  const durations = values.filter(
+    (value): value is number => value != null && Number.isFinite(value) && value > 0,
+  );
+  return durations.length > 0 ? Math.max(...durations) : null;
+}
+
+/** Cheapest purchasable supplier price for a catalogue item; null when unlisted. */
+function cheapestAvailablePriceCents(
+  rows: Array<{ price_cents: number | null; available: boolean | null }> | null | undefined,
+): number | null {
+  let cheapest: number | null = null;
+  for (const row of rows ?? []) {
+    if (!row.available || row.price_cents == null || !Number.isFinite(row.price_cents)) continue;
+    if (cheapest == null || row.price_cents < cheapest) cheapest = row.price_cents;
+  }
+  return cheapest;
 }
 
 /** Returns every show owned by the current user, sorted by `updated_at` desc. */
@@ -240,10 +250,12 @@ export const listFireworkProducts = cache(
         .from('catalogue_items')
         .select(
           `id, name, part_number, description, duration_seconds, catalogue_item_kind,
+       supplier_inventory_items (price_cents, available),
        fireworks (${fireworkSelect}),
        multishots (
          id,
          shot_count,
+         firework_preview_images(source_revision, renderer_version, storage_path),
          multishot_fireworks (
            sequence_index,
            caliber,
@@ -266,6 +278,10 @@ export const listFireworkProducts = cache(
         description: string | null;
         duration_seconds: number | null;
         catalogue_item_kind: string;
+        supplier_inventory_items: Array<{
+          price_cents: number | null;
+          available: boolean | null;
+        }> | null;
         fireworks:
           | FireworkVariantProjection
           | FireworkVariantProjection[]
@@ -275,6 +291,7 @@ export const listFireworkProducts = cache(
         multishots: {
           id: string;
           shot_count: number;
+          firework_preview_images: FireworkPreviewImageProjectionRelation;
           multishot_fireworks: Array<{
             sequence_index: number;
             caliber: string | null;
@@ -317,13 +334,26 @@ export const listFireworkProducts = cache(
               mapped.length,
               firstMultishotFirework?.caliber ?? null,
             );
+        const previewImage =
+          row.catalogue_item_kind === 'multishot'
+            ? resolveFireworkPreviewImage(row.multishots?.firework_preview_images)
+            : {
+                previewImagePath: base.previewImagePath ?? null,
+                previewImageRevision: base.previewImageRevision ?? null,
+              };
         mapped.push({
           ...base,
+          ...previewImage,
           id: row.id,
           slug: row.part_number,
           name: row.name,
           description: row.description ?? base.description,
+          minPriceCents: cheapestAvailablePriceCents(row.supplier_inventory_items),
           durationSeconds: row.duration_seconds ?? base.durationSeconds,
+          occupancyDurationSeconds: conservativeProductDuration(
+            row.duration_seconds,
+            base.durationSeconds,
+          ),
           shotCount:
             row.catalogue_item_kind === 'multishot'
               ? (row.multishots?.shot_count ?? multishotRows.length)
@@ -347,6 +377,7 @@ type CatalogueFireworkRow = {
   multishots: {
     id: string;
     multishot_fireworks: Array<{
+      id: string;
       sequence_index: number;
       time_offset_seconds: number;
       pan_degrees: number | null;
@@ -358,13 +389,20 @@ type CatalogueFireworkRow = {
   } | null;
 };
 
-type ShotSpec = {
+export type CatalogueItemShotSpec = {
+  sourceCueId: string;
   timeOffsetSeconds: number;
   panDegrees: number | null;
   tiltDegrees: number | null;
   positionOverride: LaunchPosition | null;
   launchPositionIndex: number | null;
+  seedOverride: number | null;
   firework: FireworkSpecification;
+};
+
+type FetchCatalogueItemShotsOptions = {
+  /** Card-preview APIs must surface read failures instead of treating them as no preview. */
+  failOnError?: boolean;
 };
 
 /**
@@ -373,11 +411,12 @@ type ShotSpec = {
  * `multishot_fireworks` row. Shared by the per-show and batched replay loaders
  * so the catalogue join logic has one source of truth.
  */
-async function fetchShotsByCatalogueItem(
+export async function fetchShotsByCatalogueItem(
   supabase: SupabaseClient<Database>,
   catalogueItemIds: string[],
-): Promise<Map<string, ShotSpec[]>> {
-  const shotsByCatalogueItem = new Map<string, ShotSpec[]>();
+  options: FetchCatalogueItemShotsOptions = {},
+): Promise<Map<string, CatalogueItemShotSpec[]>> {
+  const shotsByCatalogueItem = new Map<string, CatalogueItemShotSpec[]>();
   if (catalogueItemIds.length === 0) return shotsByCatalogueItem;
 
   const { data, error } = await supabase
@@ -388,6 +427,7 @@ async function fetchShotsByCatalogueItem(
        multishots (
          id,
          multishot_fireworks (
+           id,
            sequence_index,
            time_offset_seconds,
            pan_degrees,
@@ -401,7 +441,9 @@ async function fetchShotsByCatalogueItem(
     .in('id', catalogueItemIds);
 
   if (error) {
-    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+    if (options.failOnError || isSupabaseTransientNetworkError(error)) {
+      throw new ShowsNetworkError(error);
+    }
     console.error('[shows.server] catalogue_items load failed:', error);
     return shotsByCatalogueItem;
   }
@@ -409,13 +451,16 @@ async function fetchShotsByCatalogueItem(
   for (const item of (data ?? []) as CatalogueFireworkRow[]) {
     const directFirework = firstVariant(item.fireworks);
     if (directFirework) {
+      const reconstructionShot = parseDirectReconstructionShot(directFirework.variant_json);
       shotsByCatalogueItem.set(item.id, [
         {
-          timeOffsetSeconds: 0,
-          panDegrees: null,
-          tiltDegrees: null,
-          positionOverride: null,
-          launchPositionIndex: null,
+          sourceCueId: `${directFirework.id}-card-preview`,
+          timeOffsetSeconds: FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS,
+          panDegrees: reconstructionShot?.panDegrees ?? null,
+          tiltDegrees: reconstructionShot?.tiltDegrees ?? null,
+          positionOverride: reconstructionShot?.positionOverride ?? null,
+          launchPositionIndex: reconstructionShot?.launchPositionIndex ?? null,
+          seedOverride: reconstructionShot?.seedOverride ?? null,
           firework: mapFireworkVariantSpecification(directFirework, 0),
         },
       ]);
@@ -425,16 +470,18 @@ async function fetchShotsByCatalogueItem(
     const multishotRows = [...(item.multishots?.multishot_fireworks ?? [])].sort(
       (a, b) => a.sequence_index - b.sequence_index,
     );
-    const shots: ShotSpec[] = [];
+    const shots: CatalogueItemShotSpec[] = [];
     for (const shot of multishotRows) {
       const firework = firstVariant(shot.fireworks);
       if (!firework) continue;
       shots.push({
+        sourceCueId: shot.id,
         timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
         panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
         tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
         positionOverride: parseShotPositionOverride(shot.position_override_json),
         launchPositionIndex: parseShotLaunchPositionIndex(shot.position_override_json),
+        seedOverride: parseShotSeedOverride(shot.position_override_json),
         firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
       });
     }
@@ -451,7 +498,7 @@ async function fetchShotsByCatalogueItem(
  */
 function expandReplayCues(
   rows: ReplayCueRow[],
-  shotsByCatalogueItem: Map<string, ShotSpec[]>,
+  shotsByCatalogueItem: Map<string, CatalogueItemShotSpec[]>,
 ): ReplayCue[] {
   const expanded: ReplayCue[] = [];
   for (const row of rows) {
@@ -470,6 +517,7 @@ function expandReplayCues(
         // Each multishot shot can fire from its own tube; fall back to the
         // parent cue's tube when the shot doesn't override it.
         launchPositionIndex: shots[i].launchPositionIndex ?? baseCue.launchPositionIndex,
+        seedOverride: shots[i].seedOverride ?? baseCue.seedOverride,
         firework: shots[i].firework,
         shotPanDegrees: shots[i].panDegrees,
         shotTiltDegrees: shots[i].tiltDegrees,
