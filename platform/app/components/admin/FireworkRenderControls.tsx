@@ -22,6 +22,11 @@ import {
   BURST_TRAIL_FLICKER_LIFE_MAX,
   BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX,
   BURST_TRAIL_PARTICLES_PER_STAR_MAX,
+  FIREWORK_GEOMETRIES,
+  FIREWORK_PATTERNS,
+  FIREWORK_TRAIL_PROFILES,
+  STAR_AIR_RESISTANCE_PERCENT_MAX,
+  STAR_TERMINAL_VELOCITY_MAX,
   makeBurstTrailPreset,
   type BurstTrailPreset,
   type FireworkDesign,
@@ -30,8 +35,6 @@ import {
   type LaunchShellShape,
   type StarLayerKey,
 } from '@/lib/fireworks/design';
-import { nonNegativeRangeFromMidpoint } from '@/lib/fireworks/editor-ranges';
-import { clearNestedStarBurstTrails } from '@/lib/fireworks/style-defaults';
 import { cn } from '@/lib/utils';
 import {
   DEFAULT_BACKGROUND_GLOW_OPACITY_FALLOFF,
@@ -62,9 +65,13 @@ import {
   MAX_WHITE_CORE_SIZE_PERCENT,
   MIN_BACKGROUND_GLOW_OPACITY_FALLOFF,
   MIN_BACKGROUND_GLOW_SOFTNESS,
+  MAX_BRIGHTNESS_HOLD_EXPONENT,
+  MAX_BRIGHTNESS_HOLD_PERCENT,
   MIN_CORE_BRIGHTNESS,
   MIN_CORE_OPACITY_FALLOFF,
   MIN_CORE_SOFTNESS,
+  MIN_BRIGHTNESS_HOLD_EXPONENT,
+  MIN_BRIGHTNESS_HOLD_PERCENT,
   MIN_GLOW_BLUR,
   MIN_GLOW_OPACITY_FALLOFF,
   MIN_GLOW_PADDING,
@@ -76,6 +83,7 @@ import {
 } from '@/lib/fireworks/render-tuning';
 
 export type JsonRecord = Record<string, unknown>;
+type StarColourPatternEntry = FireworkStarLayer['colourPattern']['colours'][number];
 
 /** Which geometry-tuning group drives each burst geometry. Geometries without
  *  bespoke shape behaviour (sphere, split_cross) have no entry and show no
@@ -89,6 +97,8 @@ const GEOMETRY_TUNING_GROUPS: Partial<Record<FireworkDesign['geometry'], Geometr
     falling_tail: 'fallingTail',
     pearls: 'pearls',
     fragment_cloud: 'fragmentCloud',
+    heart: 'heart',
+    five_point_star: 'fivePointStar',
     bowtie: 'bowtie',
     fish: 'fish',
     waterfall: 'waterfall',
@@ -98,10 +108,6 @@ const GEOMETRY_TUNING_GROUPS: Partial<Record<FireworkDesign['geometry'], Geometr
     roman_candle: 'romanCandle',
     fountain: 'fountain',
   };
-
-export function supportsGeometryTuningControls(geometry: FireworkDesign['geometry']): boolean {
-  return GEOMETRY_TUNING_GROUPS[geometry] != null;
-}
 
 type GeometryTuningSlider = {
   key: string;
@@ -442,6 +448,138 @@ const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTuningSlid
       max: 2,
       step: 0.01,
       hint: 'Random extra speed so the cloud looks uneven.',
+    },
+  ],
+  heart: [
+    {
+      key: 'countPercent',
+      label: 'Outline stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'scaleX',
+      label: 'Width',
+      min: 0.2,
+      max: 2.5,
+      step: 0.01,
+      hint: 'Horizontal scale of the heart outline.',
+    },
+    {
+      key: 'scaleY',
+      label: 'Height',
+      min: 0.2,
+      max: 2.5,
+      step: 0.01,
+      hint: 'Vertical scale of the heart outline.',
+    },
+    {
+      key: 'depthScale',
+      label: 'Depth',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      hint: 'Front-to-back thickness. 0 keeps the heart perfectly planar.',
+    },
+    {
+      key: 'outlineJitter',
+      label: 'Outline variation',
+      min: 0,
+      max: 0.4,
+      step: 0.005,
+      hint: 'Seeded scatter around the mathematical heart outline.',
+    },
+    {
+      key: 'tiltVariation',
+      label: 'Tilt variation',
+      min: 0,
+      max: 3,
+      step: 0.05,
+      hint: 'Random tilt of the heart plane, in radians.',
+    },
+    {
+      key: 'rotationDegrees',
+      label: 'Rotation',
+      min: -180,
+      max: 180,
+      step: 1,
+      hint: 'Rotation of the heart inside its plane, in degrees.',
+    },
+  ],
+  fivePointStar: [
+    {
+      key: 'countPercent',
+      label: 'Outline stars',
+      min: 1,
+      max: 100,
+      step: 1,
+      hint: PERCENT_HINTS.count,
+    },
+    {
+      key: 'points',
+      label: 'Points',
+      min: 3,
+      max: 12,
+      step: 1,
+      hint: 'Number of points in the outlined star polygon.',
+    },
+    {
+      key: 'innerRadius',
+      label: 'Inner radius',
+      min: 0.08,
+      max: 0.95,
+      step: 0.01,
+      hint: 'Depth of the valleys between points. Lower values make sharper points.',
+    },
+    {
+      key: 'scaleX',
+      label: 'Width',
+      min: 0.2,
+      max: 2.5,
+      step: 0.01,
+      hint: 'Horizontal scale of the star outline.',
+    },
+    {
+      key: 'scaleY',
+      label: 'Height',
+      min: 0.2,
+      max: 2.5,
+      step: 0.01,
+      hint: 'Vertical scale of the star outline.',
+    },
+    {
+      key: 'depthScale',
+      label: 'Depth',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      hint: 'Front-to-back thickness. 0 keeps the star perfectly planar.',
+    },
+    {
+      key: 'outlineJitter',
+      label: 'Outline variation',
+      min: 0,
+      max: 0.4,
+      step: 0.005,
+      hint: 'Seeded scatter around the polygon outline.',
+    },
+    {
+      key: 'tiltVariation',
+      label: 'Tilt variation',
+      min: 0,
+      max: 3,
+      step: 0.05,
+      hint: 'Random tilt of the star plane, in radians.',
+    },
+    {
+      key: 'rotationDegrees',
+      label: 'Rotation',
+      min: -180,
+      max: 180,
+      step: 1,
+      hint: 'Rotation of the star inside its plane, in degrees.',
     },
   ],
   bowtie: [
@@ -1202,7 +1340,98 @@ const TRAIL_PRESET_OPTIONS = [
   { value: 'willowHang', label: 'Willow hang' },
   { value: 'cometTail', label: 'Comet tail' },
   { value: 'denseBrocade', label: 'Dense brocade' },
+  { value: 'silverRain', label: 'Silver rain' },
+  { value: 'ghostFade', label: 'Ghost fade' },
+  { value: 'dragonEgg', label: 'Dragon egg' },
+  { value: 'titaniumFlash', label: 'Titanium flash' },
   { value: 'custom', label: 'Custom' },
+];
+
+const GEOMETRY_OPTIONS = FIREWORK_GEOMETRIES.filter((geometry) => geometry !== 'pistil').map(
+  (geometry) => ({
+    value: geometry,
+    label:
+      {
+        sphere: 'Sphere',
+        crown: 'Crown',
+        weeping: 'Weeping willow',
+        radial_arms: 'Radial arms',
+        ring: 'Ring',
+        split_cross: 'Split cross',
+        falling_tail: 'Falling tail',
+        single_tail: 'Single comet',
+        upward_fan: 'Upward fan',
+        fragment_cloud: 'Fragment cloud',
+        heart: 'Heart',
+        five_point_star: 'Outlined star',
+        pearls: 'Pearls',
+        fish: 'Flying fish',
+        waterfall: 'Waterfall',
+        whirl: 'Tourbillion',
+        bowtie: 'Bow tie',
+        roman_candle: 'Roman candle',
+        fountain: 'Fountain',
+      }[geometry] ?? geometry,
+  }),
+);
+
+const PATTERN_OPTIONS = FIREWORK_PATTERNS.map((pattern) => ({
+  value: pattern,
+  label:
+    {
+      fibonacci: 'Fibonacci sphere',
+      wave: 'Wave phase',
+      strobe: 'Strobe phase',
+    }[pattern] ?? pattern,
+}));
+
+const STAR_COLOUR_PATTERN_OPTIONS = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'random', label: 'Random mix' },
+  { value: 'bands', label: 'Bands' },
+  { value: 'stripes', label: 'Stripes' },
+] as const;
+
+const STAR_COLOUR_AXIS_OPTIONS = [
+  { value: 'vertical', label: 'Vertical' },
+  { value: 'horizontal', label: 'Horizontal' },
+] as const;
+
+const TRAIL_PROFILE_OPTIONS = FIREWORK_TRAIL_PROFILES.map((profile) => ({
+  value: profile,
+  label:
+    {
+      none: 'None',
+      spark: 'Spark',
+      glitter: 'Glitter',
+      long_hang: 'Long hang',
+      thick_tail: 'Thick tail',
+      fragmenting: 'Fragmenting',
+      spray: 'Spray',
+      blink: 'Blink',
+      crackle: 'Crackle',
+      pearls: 'Pearls',
+      fish: 'Flying fish',
+      waterfall: 'Waterfall',
+      whirl: 'Tourbillion',
+    }[profile] ?? profile,
+}));
+
+const TRAIL_LIFETIME_MODE_OPTIONS = [
+  { value: 'dynamic', label: 'Follow star life' },
+  { value: 'fixed', label: 'Fixed duration' },
+];
+
+const CRACKLE_COLOUR_OPTIONS = [
+  { value: 'silver', label: 'Silver' },
+  { value: 'star', label: 'Star colour' },
+  { value: 'gold', label: 'Gold' },
+];
+
+const CRACKLE_SOUND_OPTIONS = [
+  { value: 'crackle', label: 'Crackle' },
+  { value: 'lightBoom', label: 'Light report' },
+  { value: 'heavyBoom', label: 'Heavy report' },
 ];
 
 const TRAIL_COLOR_OPTIONS = [
@@ -1237,7 +1466,6 @@ const CONTROL_GRID_CLASS =
 
 const BROCADE_SPEED_HALF_WIDTH = 0.6;
 const BROCADE_LIFE_HALF_WIDTH = 0.6;
-const BROCADE_GRAVITY_HALF_WIDTH = 0.12;
 const BROCADE_HEAD_SIZE_MIN = 100;
 const BROCADE_HEAD_SIZE_MAX = 4000;
 const BROCADE_HEAD_SIZE_STEP = 50;
@@ -1246,6 +1474,10 @@ const STAR_COUNT_MAX = 100;
 const STAR_SIZE_MIN = 10;
 const STAR_SIZE_MAX = 1000;
 const STAR_SIZE_STEP = 10;
+const STAR_SPEED_MIN = 0;
+const STAR_SPEED_MAX = 20;
+const STAR_GRAVITY_MIN = -2;
+const STAR_GRAVITY_MAX = 1;
 const STAR_OPENING_COLOUR_HEX = '#ff6b14';
 const STAR_OPENING_PERCENT_MIN = 1;
 const STAR_OPENING_PERCENT_MAX = 100;
@@ -1254,9 +1486,10 @@ const STAR_CLOSING_PERCENT_MIN = 1;
 const STAR_CLOSING_PERCENT_MAX = 100;
 const STAR_CLOSING_END_PERCENT_MIN = 0;
 const STAR_CLOSING_END_PERCENT_MAX = 100;
-const STAR_LIFE_MIN = 0.5;
-const STAR_LIFE_MAX = 8;
-const STAR_LIFE_VARIATION_MAX = 4;
+const STAR_LIFE_MIN = 0.05;
+const STAR_LIFE_MAX = 30;
+const STAR_COLOUR_PATTERN_MAX_COLOURS = 8;
+const BURST_TRAIL_SHELL_PARTICLE_BUDGET = 24_000;
 const TRAIL_PARTICLE_SIZE_MAX = 24;
 const TRAIL_PARTICLE_SCALE_MAX = 4;
 const TRAIL_PARTICLE_LIFE_MAX = 2;
@@ -1420,12 +1653,23 @@ function lifeRangeFromMidAndHalfWidth(mid: number, halfWidth: number): [number, 
   return [round2(safeMid - safeHalfWidth), round2(safeMid + safeHalfWidth)];
 }
 
+function boundedRangeFromMidpoint(
+  mid: number,
+  halfWidth: number,
+  min: number,
+  max: number,
+): [number, number] {
+  const safeMid = clampNumber(mid, min, max);
+  const safeHalfWidth = clampNumber(halfWidth, 0, Math.min(safeMid - min, max - safeMid));
+  return [round2(safeMid - safeHalfWidth), round2(safeMid + safeHalfWidth)];
+}
+
 function formatSeconds(value: number): string {
-  return `${value.toFixed(1)}s`;
+  return `${value.toFixed(Number.isInteger(value * 10) ? 1 : 2)}s`;
 }
 
 function formatLifeVariation(value: number): string {
-  return value <= 0 ? 'None' : `+/-${value.toFixed(1)}s`;
+  return value <= 0 ? 'None' : `+/-${value.toFixed(Number.isInteger(value * 10) ? 1 : 2)}s`;
 }
 
 function formatPercent(value: number): string {
@@ -1665,26 +1909,24 @@ function shapeOptionFromWeights(weights: BurstTrailStop['shapeWeights']): TrailP
   return 'mixed';
 }
 
+/**
+ * Top-level editor category (Star, Trail, Smoke, ...). Categories are never
+ * collapsible: the section rail navigates to them, so their controls stay
+ * visible and only nested {@link SubSection} groups fold away detail.
+ */
 export function PanelSection({
   title,
   titleAccessory,
   action,
-  collapsible = false,
-  defaultExpanded = false,
   inactive = false,
   children,
 }: {
   title: string;
   titleAccessory?: ReactNode;
   action?: ReactNode;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
   inactive?: boolean;
   children: ReactNode;
 }) {
-  const contentId = useId();
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const showContent = collapsible ? expanded : true;
   const titleClassName = cn(
     'text-sm font-semibold',
     inactive ? 'text-muted-foreground' : 'text-[color:var(--color-content-emphasis)]',
@@ -1693,36 +1935,13 @@ export function PanelSection({
   return (
     <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-5 first:border-t-0 first:pt-0">
       <div className="flex min-h-10 items-center gap-2.5">
-        {collapsible ? (
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls={contentId}
-            className="focus-visible:ring-ring/50 hover:text-foreground focus-visible:ring-offset-background -ml-1 flex min-h-10 items-center gap-2 rounded-md px-1 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-            onClick={() => setExpanded((value) => !value)}
-          >
-            <ChevronDown
-              className={cn(
-                'text-muted-foreground size-4 shrink-0 transition-transform',
-                !expanded && '-rotate-90',
-              )}
-              aria-hidden
-            />
-            <span className={titleClassName}>{title}</span>
-          </button>
-        ) : (
-          <div className="flex min-h-10 items-center gap-2">
-            <h3 className={titleClassName}>{title}</h3>
-          </div>
-        )}
+        <div className="flex min-h-10 items-center gap-2">
+          <h3 className={titleClassName}>{title}</h3>
+        </div>
         {titleAccessory ? <div className="flex items-center">{titleAccessory}</div> : null}
         {action ? <div className="ml-auto flex items-center gap-2.5">{action}</div> : null}
       </div>
-      {showContent ? (
-        <div id={contentId} className={cn('transition-opacity', inactive && 'opacity-55')}>
-          {children}
-        </div>
-      ) : null}
+      <div className={cn('transition-opacity', inactive && 'opacity-55')}>{children}</div>
     </div>
   );
 }
@@ -1734,11 +1953,14 @@ export function PanelSection({
  */
 export function SubSection({
   title,
+  hint,
   action,
   defaultExpanded = false,
   children,
 }: {
   title: string;
+  /** Optional InfoTooltip copy. Keep helper prose here, not inline in panels. */
+  hint?: ReactNode;
   action?: ReactNode;
   defaultExpanded?: boolean;
   children: ReactNode;
@@ -1755,12 +1977,14 @@ export function SubSection({
           : 'border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)]/40',
       )}
     >
-      <div className="relative">
+      {/* Tooltip and action triggers sit beside the disclosure button; they
+          cannot nest inside it because all three are interactive. */}
+      <div className="flex items-center">
         <button
           type="button"
           aria-expanded={expanded}
           aria-controls={contentId}
-          className="focus-visible:ring-ring/50 flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left transition-colors outline-none hover:bg-[color:var(--color-bg-subtle)]/60 focus-visible:ring-2"
+          className="focus-visible:ring-ring/50 flex min-h-11 min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left transition-colors outline-none hover:bg-[color:var(--color-bg-subtle)]/60 focus-visible:ring-2"
           onClick={() => setExpanded((value) => !value)}
         >
           <ChevronDown
@@ -1774,11 +1998,12 @@ export function SubSection({
             {title}
           </span>
         </button>
-        {action ? (
-          <div className="absolute top-1/2 right-3 z-10 flex -translate-y-1/2 items-center">
-            {action}
+        {hint ? (
+          <div className="flex shrink-0 items-center pr-3">
+            <InfoTooltip text={hint} />
           </div>
         ) : null}
+        {action ? <div className="flex shrink-0 items-center pr-3">{action}</div> : null}
       </div>
       {expanded ? (
         <div
@@ -1895,9 +2120,10 @@ export function FireworkRenderControls({
   const mortarDefaults = readRecord(defaults, 'mortar');
   const calibrationSource = calibrationDefaults ?? defaults;
   const calibrationStarsRecord = readRecord(calibrationSource, 'stars');
+  const calibrationLayer = controlScope === 'starInner' ? 'core' : 'outer';
   const calibrationStars =
-    Object.keys(readRecord(readRecord(calibrationStarsRecord, 'outer'), 'head')).length > 0
-      ? readRecord(readRecord(calibrationStarsRecord, 'outer'), 'head')
+    Object.keys(readRecord(readRecord(calibrationStarsRecord, calibrationLayer), 'head')).length > 0
+      ? readRecord(readRecord(calibrationStarsRecord, calibrationLayer), 'head')
       : readRecord(calibrationStarsRecord, 'heads');
   const calibrationBrocade = readRecord(calibrationSource, 'brocade');
   const headGlowStrengthRange = withCalibrationDefault(
@@ -1955,6 +2181,10 @@ export function FireworkRenderControls({
   );
 
   const isBrocade = design.geometry === 'crown' && design.trailProfile === 'glitter';
+  const isGroundEmitter =
+    design.geometry === 'upward_fan' ||
+    design.geometry === 'roman_candle' ||
+    design.geometry === 'fountain';
   const headsEnabled = design.brocade.headsEnabled;
   const outerEnabled = isBrocade ? headsEnabled : design.stars.outer.enabled;
   const coreEnabled = design.stars.core.enabled;
@@ -2222,11 +2452,7 @@ export function FireworkRenderControls({
 
     if (controlScope === 'launchShell') return content;
 
-    return (
-      <SubSection title="Shell particle" defaultExpanded>
-        {content}
-      </SubSection>
-    );
+    return <SubSection title="Shell particle">{content}</SubSection>;
   }
 
   function renderLaunchShellTrailControls() {
@@ -2296,11 +2522,7 @@ export function FireworkRenderControls({
 
     if (controlScope === 'launchTrail') return content;
 
-    return (
-      <SubSection title="Shell trail" defaultExpanded>
-        {content}
-      </SubSection>
-    );
+    return <SubSection title="Shell trail">{content}</SubSection>;
   }
 
   function renderLiftParticleControls() {
@@ -2325,8 +2547,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title="Lift particles"
-        collapsible
-        defaultExpanded={controlScope === 'launchTrail' || controlScope === 'launch'}
         inactive={!liftParticlesEnabled}
         titleAccessory={<InfoTooltip text="Glowing ascent particles that climb with the shell." />}
         action={
@@ -2953,6 +3173,28 @@ export function FireworkRenderControls({
     const smoke = design.launch.smoke;
     const smokeContent = (
       <div className={CONTROL_GRID_CLASS}>
+        <ColorField
+          label="Smoke colour"
+          value={rgbObjectToHex(smoke.colour) ?? '#8f9298'}
+          disabled={sectionDisabled.smoke}
+          hint="Tint used by both mortar smoke and the puffs emitted along the rising shell path."
+          onChange={(value) =>
+            setLaunchValue('smoke', 'colour', hexToRgbObject(value ?? '#8f9298'))
+          }
+        />
+        <SliderField
+          label="Smoke opacity"
+          min={0}
+          max={1}
+          step={0.01}
+          value={smoke.opacity}
+          formatValue={formatProbability}
+          showNumberInput
+          inputAriaLabel="Smoke opacity value"
+          disabled={sectionDisabled.smoke}
+          hint="Maximum opacity of a fresh smoke puff before it begins fading."
+          onChange={(value) => setLaunchValue('smoke', 'opacity', round2(value))}
+        />
         <SliderField
           label="Smoke particles"
           min={0}
@@ -3027,6 +3269,82 @@ export function FireworkRenderControls({
           hint="The height where rising smoke stops being emitted."
           onChange={(value) => setLaunchValue('smoke', 'height', round2(value))}
         />
+        <AdvancedControls>
+          <SliderField
+            label="Size variation"
+            min={0}
+            max={100}
+            step={1}
+            value={smoke.sizeVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Smoke size variation value"
+            disabled={sectionDisabled.smoke}
+            hint="Seeded difference between the smallest and largest smoke puffs."
+            onChange={(value) => setLaunchValue('smoke', 'sizeVariationPercent', round2(value))}
+          />
+          <SliderField
+            label="Life variation"
+            min={0}
+            max={100}
+            step={1}
+            value={smoke.lifeVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Smoke life variation value"
+            disabled={sectionDisabled.smoke}
+            hint="Seeded variation in how long individual puffs remain visible."
+            onChange={(value) => setLaunchValue('smoke', 'lifeVariationPercent', round2(value))}
+          />
+          <SliderField
+            label="Expansion"
+            min={-120}
+            max={240}
+            step={1}
+            value={smoke.expansionPerSecond}
+            showNumberInput
+            inputAriaLabel="Smoke expansion value"
+            disabled={sectionDisabled.smoke}
+            hint="Change in puff size per second. Negative values contract; positive values billow outward."
+            onChange={(value) => setLaunchValue('smoke', 'expansionPerSecond', round2(value))}
+          />
+          <SliderField
+            label="Wind X"
+            min={-4}
+            max={4}
+            step={0.05}
+            value={smoke.windX}
+            showNumberInput
+            inputAriaLabel="Smoke horizontal wind value"
+            disabled={sectionDisabled.smoke}
+            hint="Constant sideways wind. Negative moves left; positive moves right."
+            onChange={(value) => setLaunchValue('smoke', 'windX', round2(value))}
+          />
+          <SliderField
+            label="Wind depth"
+            min={-4}
+            max={4}
+            step={0.05}
+            value={smoke.windZ}
+            showNumberInput
+            inputAriaLabel="Smoke depth wind value"
+            disabled={sectionDisabled.smoke}
+            hint="Constant front-to-back wind through the smoke column."
+            onChange={(value) => setLaunchValue('smoke', 'windZ', round2(value))}
+          />
+          <SliderField
+            label="Turbulence"
+            min={0}
+            max={4}
+            step={0.05}
+            value={smoke.turbulence}
+            showNumberInput
+            inputAriaLabel="Smoke turbulence value"
+            disabled={sectionDisabled.smoke}
+            hint="Curling noise applied over time. Higher values make the column more chaotic."
+            onChange={(value) => setLaunchValue('smoke', 'turbulence', round2(value))}
+          />
+        </AdvancedControls>
       </div>
     );
 
@@ -3048,8 +3366,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title="Smoke"
-        collapsible
-        defaultExpanded={false}
         inactive={!smokeEnabled}
         titleAccessory={<InfoTooltip text="Launch smoke from the mortar and rising shell path." />}
         action={
@@ -3089,8 +3405,10 @@ export function FireworkRenderControls({
     mutate((draft) => {
       const next =
         key === 'gravity'
-          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
-          : nonNegativeRangeFromMidpoint(mid, halfWidth);
+          ? boundedRangeFromMidpoint(mid, halfWidth, STAR_GRAVITY_MIN, STAR_GRAVITY_MAX)
+          : key === 'life'
+            ? lifeRangeFromMidAndHalfWidth(mid, halfWidth)
+            : boundedRangeFromMidpoint(mid, halfWidth, STAR_SPEED_MIN, STAR_SPEED_MAX);
       const burst = ensureRecord(draft, 'burst');
       burst[key] = next;
       if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst')[key] = next;
@@ -3098,11 +3416,10 @@ export function FireworkRenderControls({
   }
 
   function setBrocadeGravityUpper(maxGravity: number) {
+    const spread = Math.abs(design.burst.gravity[1] - design.burst.gravity[0]);
     mutate((draft) => {
-      const next = [
-        round2(Math.min(0, maxGravity) - BROCADE_GRAVITY_HALF_WIDTH),
-        round2(Math.min(0, maxGravity)),
-      ];
+      const upper = clampNumber(maxGravity, STAR_GRAVITY_MIN, STAR_GRAVITY_MAX);
+      const next = [round2(Math.max(STAR_GRAVITY_MIN, upper - spread)), round2(upper)];
       const burst = ensureRecord(draft, 'burst');
       burst.gravity = next;
       if (isBrocade) ensureDraftStarNested(draft, 'outer', 'burst').gravity = next;
@@ -3117,6 +3434,18 @@ export function FireworkRenderControls({
       if (key === 'headSize') ensureDraftStarNested(draft, 'outer', 'head').size = value;
       if (key === 'glowStrength')
         ensureDraftStarNested(draft, 'outer', 'head').glowStrength = value;
+    });
+  }
+
+  function setBrocadeColour(
+    group: 'headColors' | 'palette',
+    key: 'green' | 'red' | 'hot' | 'ember',
+    value: string | null,
+  ) {
+    if (!value) return;
+    mutate((draft) => {
+      const brocade = ensureRecord(draft, 'brocade');
+      ensureRecord(brocade, group)[key] = hexToRgbObject(value);
     });
   }
 
@@ -3154,6 +3483,75 @@ export function FireworkRenderControls({
     });
   }
 
+  function setStarLayerColour(layerKey: StarLayerKey, value: string | null) {
+    mutate((draft) => {
+      const layer = ensureDraftStarLayer(draft, layerKey);
+      if (value) layer.color = hexToRgbObject(value);
+      else delete layer.color;
+    });
+  }
+
+  function setStarColourPatternValue(
+    layerKey: StarLayerKey,
+    key: 'mode' | 'axis' | 'count',
+    value: unknown,
+  ) {
+    mutate((draft) => {
+      const pattern = ensureRecord(ensureDraftStarLayer(draft, layerKey), 'colourPattern');
+      pattern[key] = value;
+      if (
+        key === 'mode' &&
+        value !== 'solid' &&
+        design.stars[layerKey].colourPattern.colours.length === 0
+      ) {
+        pattern.colours = [
+          { color: { r: 1, g: 0.84, b: 0.4 }, weight: 100 },
+          { color: { r: 1, g: 0.32, b: 0.12 }, weight: 100 },
+        ];
+      }
+    });
+  }
+
+  function setStarColourPatternEntries(layerKey: StarLayerKey, entries: StarColourPatternEntry[]) {
+    mutate((draft) => {
+      const pattern = ensureRecord(ensureDraftStarLayer(draft, layerKey), 'colourPattern');
+      pattern.colours = entries;
+    });
+  }
+
+  function updateStarColourPatternEntry(
+    layerKey: StarLayerKey,
+    index: number,
+    patch: Partial<StarColourPatternEntry>,
+  ) {
+    const entries = design.stars[layerKey].colourPattern.colours.map((entry, entryIndex) =>
+      entryIndex === index ? { ...entry, ...patch } : entry,
+    );
+    setStarColourPatternEntries(layerKey, entries);
+  }
+
+  function addStarColourPatternEntry(layerKey: StarLayerKey) {
+    const entries = design.stars[layerKey].colourPattern.colours;
+    if (entries.length >= STAR_COLOUR_PATTERN_MAX_COLOURS) return;
+    const fallbackColours = ['#ffd666', '#ff6b14', '#67e8f9', '#f472b6'];
+    setStarColourPatternEntries(layerKey, [
+      ...entries,
+      {
+        color: hexToRgbObject(
+          fallbackColours[entries.length % fallbackColours.length] ?? '#ffd666',
+        ),
+        weight: 100,
+      },
+    ]);
+  }
+
+  function removeStarColourPatternEntry(layerKey: StarLayerKey, index: number) {
+    setStarColourPatternEntries(
+      layerKey,
+      design.stars[layerKey].colourPattern.colours.filter((_, entryIndex) => entryIndex !== index),
+    );
+  }
+
   function setStarBurstRangeMid(
     layerKey: StarLayerKey,
     key: 'speed' | 'gravity' | 'life',
@@ -3169,7 +3567,7 @@ export function FireworkRenderControls({
 
   function setStarBurstLifeMid(layerKey: StarLayerKey, mid: number) {
     if (isBrocade && layerKey === 'outer') {
-      setBurstRangeMid('life', mid, BROCADE_LIFE_HALF_WIDTH);
+      setBurstRangeMid('life', mid, rangeHalfWidth(design.burst.life));
       return;
     }
     setLayerBurstLifeMid(layerKey, mid);
@@ -3183,12 +3581,63 @@ export function FireworkRenderControls({
     setLayerGravityUpper(layerKey, maxGravity);
   }
 
+  function setStarSpeedSpread(layerKey: StarLayerKey, halfWidth: number) {
+    const burst = isBrocade && layerKey === 'outer' ? design.burst : design.stars[layerKey].burst;
+    setStarBurstRangeMid(layerKey, 'speed', rangeMid(burst.speed), halfWidth);
+  }
+
+  function setStarGravitySpread(layerKey: StarLayerKey, spread: number) {
+    const burst = isBrocade && layerKey === 'outer' ? design.burst : design.stars[layerKey].burst;
+    const upper = rangeUpper(burst.gravity);
+    const next: [number, number] = [
+      round2(Math.max(STAR_GRAVITY_MIN, upper - spread)),
+      round2(upper),
+    ];
+    mutate((draft) => {
+      const target =
+        isBrocade && layerKey === 'outer'
+          ? ensureRecord(draft, 'burst')
+          : ensureDraftStarNested(draft, layerKey, 'burst');
+      target.gravity = next;
+      if (isBrocade && layerKey === 'outer') {
+        ensureDraftStarNested(draft, 'outer', 'burst').gravity = next;
+      }
+    });
+  }
+
+  function setStarBurstScalar(
+    layerKey: StarLayerKey,
+    key: 'airResistancePercent' | 'terminalVelocity',
+    value: number,
+  ) {
+    const maximum =
+      key === 'airResistancePercent' ? STAR_AIR_RESISTANCE_PERCENT_MAX : STAR_TERMINAL_VELOCITY_MAX;
+    const next = round2(clampNumber(value, 0, maximum));
+    mutate((draft) => {
+      const layerBurst = ensureDraftStarNested(draft, layerKey, 'burst');
+      layerBurst[key] = next;
+      if (isBrocade && layerKey === 'outer') {
+        ensureRecord(draft, 'burst')[key] = next;
+      }
+    });
+  }
+
   function setStarHeadSize(layerKey: StarLayerKey, value: number) {
     mutate((draft) => {
       ensureDraftStarNested(draft, layerKey, 'head').size = value;
       if (isBrocade && layerKey === 'outer') {
         const brocade = ensureRecord(draft, 'brocade');
         brocade.headSize = value;
+      }
+    });
+  }
+
+  function setStarHeadVisible(layerKey: StarLayerKey, value: boolean) {
+    mutate((draft) => {
+      ensureDraftStarNested(draft, layerKey, 'head').visible = value;
+      if (isBrocade && layerKey === 'outer') {
+        const brocade = ensureRecord(draft, 'brocade');
+        brocade.headsEnabled = value;
       }
     });
   }
@@ -3268,19 +3717,161 @@ export function FireworkRenderControls({
       const burst = ensureRecord(layer, 'burst');
       burst[key] =
         key === 'gravity'
-          ? [round2(mid - halfWidth), round2(mid + halfWidth)]
-          : nonNegativeRangeFromMidpoint(mid, halfWidth);
+          ? boundedRangeFromMidpoint(mid, halfWidth, STAR_GRAVITY_MIN, STAR_GRAVITY_MAX)
+          : key === 'life'
+            ? lifeRangeFromMidAndHalfWidth(mid, halfWidth)
+            : boundedRangeFromMidpoint(mid, halfWidth, STAR_SPEED_MIN, STAR_SPEED_MAX);
     });
   }
 
   function setLayerGravityUpper(layerKey: StarLayerKey, maxGravity: number) {
+    const current = design.stars[layerKey].burst.gravity;
+    const spread = Math.abs(current[1] - current[0]);
     mutate((draft) => {
       const stars = ensureRecord(draft, 'stars');
       const layer = ensureRecord(stars, layerKey);
       const burst = ensureRecord(layer, 'burst');
-      const upper = Math.min(0, maxGravity);
-      burst.gravity = [round2(upper - BROCADE_GRAVITY_HALF_WIDTH), round2(upper)];
+      const upper = clampNumber(maxGravity, STAR_GRAVITY_MIN, STAR_GRAVITY_MAX);
+      burst.gravity = [round2(Math.max(STAR_GRAVITY_MIN, upper - spread)), round2(upper)];
     });
+  }
+
+  function renderStarColourPatternControls(layerKey: StarLayerKey, controlDisabled: boolean) {
+    const layer = design.stars[layerKey];
+    const pattern = layer.colourPattern;
+    const positionalPattern = pattern.mode === 'bands' || pattern.mode === 'stripes';
+
+    return (
+      <SubSection title="Colour pattern">
+        <div className="space-y-4">
+          <div className={CONTROL_GRID_CLASS}>
+            <ColorField
+              label="Base colour"
+              value={rgbObjectToHex(layer.color)}
+              allowClear
+              disabled={controlDisabled}
+              hint="Leave clear to inherit the firework's accent colour. Pattern colours override it where configured."
+              onChange={(value) => setStarLayerColour(layerKey, value)}
+            />
+            <Field>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Pattern</FieldLabel>
+                <InfoTooltip text="Solid uses the base colour. Random mixes the palette per star; bands and stripes place it across the burst." />
+              </div>
+              <SelectField
+                value={pattern.mode}
+                onChange={(value) => setStarColourPatternValue(layerKey, 'mode', value)}
+                options={[...STAR_COLOUR_PATTERN_OPTIONS]}
+                ariaLabel="Star Inner colour pattern"
+                disabled={controlDisabled}
+              />
+            </Field>
+            {positionalPattern ? (
+              <>
+                <Field>
+                  <div className="flex items-center gap-1.5">
+                    <FieldLabel>Direction</FieldLabel>
+                    <InfoTooltip text="Direction used to place the colour bands or stripes across the burst." />
+                  </div>
+                  <SelectField
+                    value={pattern.axis}
+                    onChange={(value) => setStarColourPatternValue(layerKey, 'axis', value)}
+                    options={[...STAR_COLOUR_AXIS_OPTIONS]}
+                    ariaLabel="Star Inner colour pattern direction"
+                    disabled={controlDisabled}
+                  />
+                </Field>
+                <SliderField
+                  label={pattern.mode === 'bands' ? 'Band count' : 'Stripe count'}
+                  min={1}
+                  max={6}
+                  step={1}
+                  value={pattern.count}
+                  showNumberInput
+                  inputAriaLabel="Star Inner colour pattern count"
+                  disabled={controlDisabled}
+                  hint="How often the palette repeats across this inner layer."
+                  onChange={(value) =>
+                    setStarColourPatternValue(
+                      layerKey,
+                      'count',
+                      Math.min(6, Math.max(1, Math.round(value))),
+                    )
+                  }
+                />
+              </>
+            ) : null}
+          </div>
+
+          {pattern.mode !== 'solid' ? (
+            <div className="space-y-3">
+              {pattern.colours.length > 0 ? (
+                pattern.colours.map((entry, index) => (
+                  <div
+                    key={`${layerKey}-pattern-colour-${index}`}
+                    className="space-y-3 rounded-lg border border-[color:var(--color-border-subtle)] p-3"
+                  >
+                    <div className={CONTROL_GRID_CLASS}>
+                      <ColorField
+                        label={`Palette colour ${index + 1}`}
+                        value={rgbObjectToHex(entry.color) ?? '#ffffff'}
+                        disabled={controlDisabled}
+                        hint="Colour available to this pattern."
+                        onChange={(value) => {
+                          if (!value) return;
+                          updateStarColourPatternEntry(layerKey, index, {
+                            color: hexToRgbObject(value),
+                          });
+                        }}
+                      />
+                      <SliderField
+                        label="Weight"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={entry.weight}
+                        formatValue={formatPercent}
+                        showNumberInput
+                        inputAriaLabel={`Palette colour ${index + 1} weight`}
+                        disabled={controlDisabled}
+                        hint="Relative share of this colour when the pattern selects from the palette."
+                        onChange={(value) =>
+                          updateStarColourPatternEntry(layerKey, index, {
+                            weight: Math.min(100, Math.max(0, Math.round(value))),
+                          })
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[color:var(--color-content-subtle)] underline-offset-2 hover:text-[color:var(--color-content-emphasis)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={controlDisabled}
+                      onClick={() => removeStarColourPatternEntry(layerKey, index)}
+                    >
+                      Remove colour
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm leading-relaxed text-[color:var(--color-content-muted)]">
+                  Add at least one palette colour for this pattern.
+                </p>
+              )}
+              <button
+                type="button"
+                className="min-h-9 rounded-lg border border-[color:var(--color-border-default)] px-3 text-sm font-medium text-[color:var(--color-content-emphasis)] transition-colors hover:bg-[color:var(--color-bg-subtle)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-focus-ring)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={
+                  controlDisabled || pattern.colours.length >= STAR_COLOUR_PATTERN_MAX_COLOURS
+                }
+                onClick={() => addStarColourPatternEntry(layerKey)}
+              >
+                Add colour
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </SubSection>
+    );
   }
 
   function renderStarOpeningControls(layerKey: StarLayerKey, controlDisabled: boolean) {
@@ -3290,7 +3881,7 @@ export function FireworkRenderControls({
 
     return (
       <SubSection title="Opening">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <div className={CONTROL_GRID_CLASS}>
           <SwitchField
             label="Colour fade"
             checked={colourEnabled}
@@ -3377,12 +3968,12 @@ export function FireworkRenderControls({
 
     return (
       <SubSection title="Closing">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <div className={CONTROL_GRID_CLASS}>
           <SliderField
             label="Burn time"
             min={STAR_LIFE_MIN}
             max={STAR_LIFE_MAX}
-            step={0.1}
+            step={0.05}
             value={round2(rangeMid(layer.burst.life))}
             formatValue={formatSeconds}
             showNumberInput
@@ -3394,9 +3985,15 @@ export function FireworkRenderControls({
           <SliderField
             label="Burn spread"
             min={0}
-            max={STAR_LIFE_VARIATION_MAX}
-            step={0.1}
-            value={Math.min(STAR_LIFE_VARIATION_MAX, round2(rangeHalfWidth(layer.burst.life)))}
+            max={Math.max(
+              0,
+              Math.min(
+                rangeMid(layer.burst.life) - STAR_LIFE_MIN,
+                STAR_LIFE_MAX - rangeMid(layer.burst.life),
+              ),
+            )}
+            step={0.05}
+            value={round2(rangeHalfWidth(layer.burst.life))}
             formatValue={formatLifeVariation}
             showNumberInput
             inputAriaLabel="Burn spread value"
@@ -3509,8 +4106,42 @@ export function FireworkRenderControls({
         {leadingControls}
         {showOpeningControls ? renderStarOpeningControls(layerKey, controlDisabled) : null}
         {showOpeningControls ? renderStarClosingControls(layerKey, controlDisabled) : null}
+        <SubSection title="Brightness curve">
+          <div className={CONTROL_GRID_CLASS}>
+            <SliderField
+              label="Brightness hold"
+              min={MIN_BRIGHTNESS_HOLD_PERCENT}
+              max={MAX_BRIGHTNESS_HOLD_PERCENT}
+              step={1}
+              value={heads.brightnessHoldPercent}
+              formatValue={formatPercent}
+              showNumberInput
+              inputAriaLabel="Star brightness hold value"
+              disabled={controlDisabled}
+              hint="Percentage of the star's life held at full brightness before its final fade begins."
+              onChange={(value) =>
+                setLayerNestedValue(layerKey, 'head', 'brightnessHoldPercent', round2(value))
+              }
+            />
+            <SliderField
+              label="Fade exponent"
+              min={MIN_BRIGHTNESS_HOLD_EXPONENT}
+              max={MAX_BRIGHTNESS_HOLD_EXPONENT}
+              step={0.05}
+              value={heads.brightnessHoldExponent}
+              formatValue={formatMultiplier}
+              showNumberInput
+              inputAriaLabel="Star brightness fade exponent value"
+              disabled={controlDisabled}
+              hint="Shape of the post-hold fade. Higher values keep the star brighter before a sharper wink-out."
+              onChange={(value) =>
+                setLayerNestedValue(layerKey, 'head', 'brightnessHoldExponent', round2(value))
+              }
+            />
+          </div>
+        </SubSection>
         <SubSection title="Core">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
             <CalibratedSliderField
               label="Core blur"
               range={coreSoftnessRange}
@@ -3561,7 +4192,7 @@ export function FireworkRenderControls({
           </div>
         </SubSection>
         <SubSection title="Glow">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
             <CalibratedSliderField
               label="Star glow radius"
               range={glowSizeRange}
@@ -3639,7 +4270,8 @@ export function FireworkRenderControls({
     mutate((draft) => {
       if (!layerKey) {
         draft.burstTrail = next;
-        clearNestedStarBurstTrails(draft);
+        const stars = draft.stars;
+        if (isRecord(stars) && isRecord(stars.outer)) delete stars.outer.burstTrail;
         return;
       }
       const stars = ensureRecord(draft, 'stars');
@@ -3684,7 +4316,7 @@ export function FireworkRenderControls({
       | 'intensity'
       | 'flicker'
       | 'motion',
-  >(layerKey: StarLayerKey | undefined, section: T, key: keyof BurstTrail[T], value: number) {
+  >(layerKey: StarLayerKey | undefined, section: T, key: keyof BurstTrail[T], value: unknown) {
     patchBurstTrail(layerKey, (trail) => ({
       ...trail,
       [section]: {
@@ -3754,8 +4386,8 @@ export function FireworkRenderControls({
       disabled || !trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false);
 
     return (
-      <SubSection title="Opening" defaultExpanded={false}>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+      <SubSection title="Opening">
+        <div className={CONTROL_GRID_CLASS}>
           <SliderField
             label="Start particles"
             min={0}
@@ -3831,23 +4463,54 @@ export function FireworkRenderControls({
     const spreadFadeEnabled = closing.spreadFade.enabled;
 
     return (
-      <SubSection title="Closing" defaultExpanded={false}>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <SliderField
-            label="Particle life"
-            min={0}
-            max={TRAIL_PARTICLE_LIFE_MAX}
-            step={0.05}
-            value={trail.lifetime.percent}
-            formatValue={formatMultiplier}
-            showNumberInput
-            inputAriaLabel="Particle life value"
-            disabled={controlDisabled}
-            hint="Multiplier of the current star's remaining life. 1x dies with that star; 2x lasts twice as long."
-            onChange={(value) =>
-              setBurstTrailNested(layerKey, 'lifetime', 'percent', round2(value))
-            }
-          />
+      <SubSection title="Closing">
+        <div className={CONTROL_GRID_CLASS}>
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Lifetime model</FieldLabel>
+              <InfoTooltip text="Follow star life scales every particle from its parent star's remaining burn. Fixed duration gives every emitted particle its own duration." />
+            </div>
+            <SelectField
+              value={trail.lifetime.mode}
+              onChange={(value) => setBurstTrailNested(layerKey, 'lifetime', 'mode', value)}
+              options={TRAIL_LIFETIME_MODE_OPTIONS}
+              ariaLabel="Trail lifetime model"
+              disabled={controlDisabled}
+            />
+          </Field>
+          {trail.lifetime.mode === 'dynamic' ? (
+            <SliderField
+              label="Star-life share"
+              min={0}
+              max={TRAIL_PARTICLE_LIFE_MAX}
+              step={0.05}
+              value={trail.lifetime.percent}
+              formatValue={formatMultiplier}
+              showNumberInput
+              inputAriaLabel="Trail star life share value"
+              disabled={controlDisabled}
+              hint="Multiplier of the parent star's remaining life. 1x dies with that star; 2x lasts twice as long."
+              onChange={(value) =>
+                setBurstTrailNested(layerKey, 'lifetime', 'percent', round2(value))
+              }
+            />
+          ) : (
+            <SliderField
+              label="Fixed life"
+              min={0.05}
+              max={8}
+              step={0.05}
+              value={trail.lifetime.baseSeconds}
+              formatValue={formatSeconds}
+              showNumberInput
+              inputAriaLabel="Trail fixed life value"
+              disabled={controlDisabled}
+              hint="Base lifetime of every newly emitted trail particle."
+              onChange={(value) =>
+                setBurstTrailNested(layerKey, 'lifetime', 'baseSeconds', round2(value))
+              }
+            />
+          )}
           <SliderField
             label="Life random"
             min={0}
@@ -3861,6 +4524,21 @@ export function FireworkRenderControls({
             hint="Seeded variation in each particle's individual life. Replay stays deterministic."
             onChange={(value) =>
               setBurstTrailNested(layerKey, 'lifetime', 'variationPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Afterglow"
+            min={0}
+            max={6}
+            step={0.05}
+            value={trail.lifetime.afterglowSeconds}
+            formatValue={formatSeconds}
+            showNumberInput
+            inputAriaLabel="Trail afterglow value"
+            disabled={controlDisabled}
+            hint="Extra time added after the selected lifetime model, useful for hanging embers."
+            onChange={(value) =>
+              setBurstTrailNested(layerKey, 'lifetime', 'afterglowSeconds', round2(value))
             }
           />
           <SwitchField
@@ -3974,7 +4652,22 @@ export function FireworkRenderControls({
       burstTrail.stops.length > 0 ? burstTrail.stops : makeBurstTrailPreset(fallbackPreset).stops;
     const particleShape = shapeOptionFromStops(editableStops);
     const trailBias = trailBiasFromFrontClump(burstTrail.frontClump);
-    const showTrailPresetSelect = controlScope !== 'trail';
+    const activeLayerPathCount = isBrocade
+      ? normaliseStarCount(design.brocade.streakCount ?? design.size)
+      : (['outer', 'core'] as const).reduce((total, key) => {
+          const layer = design.stars[key];
+          return layer.enabled ? total + layer.count : total;
+        }, 0);
+    const splitPathMultiplier = design.split.enabled ? Math.max(1, design.split.fragments) : 1;
+    const budgetedPathCount = Math.max(1, activeLayerPathCount * splitPathMultiplier);
+    const budgetedParticlesPerPath = Math.max(
+      1,
+      Math.floor(BURST_TRAIL_SHELL_PARTICLE_BUDGET / budgetedPathCount),
+    );
+    const amountHint =
+      budgetedParticlesPerPath < BURST_TRAIL_PARTICLES_PER_STAR_MAX
+        ? `Requested particles in each star trail. The shell-wide safety budget is shared across up to ${budgetedPathCount} active paths in this design, so values above about ${budgetedParticlesPerPath} may plateau. Geometry-specific emission can lower the effective limit further.`
+        : 'Requested particles in each star trail. Dense shells share a shell-wide safety budget, so very high values can plateau as more star paths are enabled.';
 
     function patchBurstTrailStops(updater: (stop: BurstTrailStop) => BurstTrailStop) {
       patchBurstTrail(layerKey, (trail) => {
@@ -3998,11 +4691,35 @@ export function FireworkRenderControls({
       patchBurstTrailStops((stop) => ({ ...stop, shapeWeights: { ...weights } }));
     }
 
+    function patchBurstTrailStop(index: number, patch: Partial<BurstTrailStop>) {
+      patchBurstTrail(layerKey, (trail) => {
+        const source =
+          trail.stops.length > 0
+            ? trail.stops
+            : makeBurstTrailPreset(trail.preset === 'custom' ? 'custom' : trail.preset).stops;
+        const previousPosition = source[index - 1]?.position ?? 0;
+        const nextPosition = source[index + 1]?.position ?? 100;
+        const boundedPatch =
+          patch.position == null
+            ? patch
+            : {
+                ...patch,
+                position: round2(clampNumber(patch.position, previousPosition, nextPosition)),
+              };
+        return {
+          ...trail,
+          stops: source.map((stop, stopIndex) =>
+            stopIndex === index
+              ? { ...stop, ...boundedPatch, shapeWeights: { ...stop.shapeWeights } }
+              : { ...stop, shapeWeights: { ...stop.shapeWeights } },
+          ),
+        };
+      });
+    }
+
     return (
       <PanelSection
         title={title}
-        collapsible
-        defaultExpanded={false}
         inactive={!trailsEnabled || (layerKey ? !design.stars[layerKey].enabled : false)}
         titleAccessory={
           <InfoTooltip text="Master switch for burst trail particles behind the star paths." />
@@ -4018,27 +4735,20 @@ export function FireworkRenderControls({
         }
       >
         <div className="space-y-4">
-          <div
-            className={cn(
-              'grid gap-x-6 gap-y-4',
-              showTrailPresetSelect ? 'grid-cols-2' : 'grid-cols-1',
-            )}
-          >
-            {showTrailPresetSelect ? (
-              <Field>
-                <div className="flex items-center gap-1.5">
-                  <FieldLabel>Trail style</FieldLabel>
-                  <InfoTooltip text="Presets seed the unified burst trail model. Any numeric edit switches the trail to Custom." />
-                </div>
-                <SelectField
-                  value={burstTrail.preset}
-                  onChange={(value) => setBurstTrailPreset(layerKey, value as BurstTrailPreset)}
-                  options={TRAIL_PRESET_OPTIONS}
-                  ariaLabel="Trail style"
-                  disabled={controlDisabled}
-                />
-              </Field>
-            ) : null}
+          <div className={CONTROL_GRID_CLASS}>
+            <Field>
+              <div className="flex items-center gap-1.5">
+                <FieldLabel>Trail style</FieldLabel>
+                <InfoTooltip text="Presets seed the unified burst trail model. Any numeric edit switches the trail to Custom." />
+              </div>
+              <SelectField
+                value={burstTrail.preset}
+                onChange={(value) => setBurstTrailPreset(layerKey, value as BurstTrailPreset)}
+                options={TRAIL_PRESET_OPTIONS}
+                ariaLabel="Trail style"
+                disabled={controlDisabled}
+              />
+            </Field>
             <Field>
               <div className="flex items-center gap-1.5">
                 <FieldLabel>Trail colour</FieldLabel>
@@ -4054,8 +4764,29 @@ export function FireworkRenderControls({
             </Field>
           </div>
 
-          <SubSection title="Particles" defaultExpanded={false}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          {isBrocade && !layerKey ? (
+            <SubSection title="Brocade trail palette">
+              <div className={CONTROL_GRID_CLASS}>
+                <ColorField
+                  label="Hot trail colour"
+                  value={rgbObjectToHex(design.brocade.palette.hot) ?? '#ffedb8'}
+                  disabled={controlDisabled}
+                  hint="Colour at the fresh, white-hot end of each brocade trail."
+                  onChange={(value) => setBrocadeColour('palette', 'hot', value)}
+                />
+                <ColorField
+                  label="Ember trail colour"
+                  value={rgbObjectToHex(design.brocade.palette.ember) ?? '#ff6b24'}
+                  disabled={controlDisabled}
+                  hint="Colour the brocade trail cools towards as it fades."
+                  onChange={(value) => setBrocadeColour('palette', 'ember', value)}
+                />
+              </div>
+            </SubSection>
+          ) : null}
+
+          <SubSection title="Particles">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Amount"
                 min={0}
@@ -4065,7 +4796,7 @@ export function FireworkRenderControls({
                 showNumberInput
                 inputAriaLabel="Amount value"
                 disabled={controlDisabled}
-                hint="Total number of particles in each star's trail. Higher is thicker and fuller."
+                hint={amountHint}
                 onChange={(value) =>
                   setBurstTrailValue(layerKey, 'particlesPerStar', Math.round(value))
                 }
@@ -4163,11 +4894,88 @@ export function FireworkRenderControls({
             </div>
           </SubSection>
 
+          <SubSection
+            title="Trail progression"
+            hint="Each stop changes the particle mix along the path. Position 0% is beside the star head; 100% is the oldest tail."
+          >
+            <div className="space-y-4">
+              {editableStops.map((stop, index) => (
+                <div
+                  key={`${layerKey ?? 'base'}-trail-stop-${index}`}
+                  className="rounded-lg border border-[color:var(--color-border-subtle)] p-3"
+                >
+                  <p className="mb-3 text-xs font-semibold text-[color:var(--color-content-emphasis)]">
+                    Stop {index + 1}
+                  </p>
+                  <div className={CONTROL_GRID_CLASS}>
+                    <SliderField
+                      label="Position"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={stop.position}
+                      formatValue={formatPercent}
+                      showNumberInput
+                      inputAriaLabel={`Trail stop ${index + 1} position value`}
+                      disabled={controlDisabled}
+                      hint="Location of this stop from the fresh head to the oldest tail."
+                      onChange={(value) => patchBurstTrailStop(index, { position: round2(value) })}
+                    />
+                    <SliderField
+                      label="Density"
+                      min={0}
+                      max={4}
+                      step={0.05}
+                      value={stop.density}
+                      formatValue={formatMultiplier}
+                      showNumberInput
+                      inputAriaLabel={`Trail stop ${index + 1} density value`}
+                      disabled={controlDisabled}
+                      hint="Emission density around this part of the trail. 0 creates a gap."
+                      onChange={(value) => patchBurstTrailStop(index, { density: round2(value) })}
+                    />
+                    <SliderField
+                      label="Size"
+                      min={0.08}
+                      max={TRAIL_PARTICLE_SCALE_MAX}
+                      step={0.05}
+                      value={stop.size}
+                      formatValue={formatMultiplier}
+                      showNumberInput
+                      // The slider covers the useful multiplier range; typed
+                      // values may still use the full schema range (0.08-24).
+                      numberInputMax={24}
+                      inputAriaLabel={`Trail stop ${index + 1} size value`}
+                      disabled={controlDisabled}
+                      hint="Particle-size multiplier at this point in the trail."
+                      onChange={(value) => patchBurstTrailStop(index, { size: round2(value) })}
+                    />
+                    <SliderField
+                      label="Size variation"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={stop.sizeVariation}
+                      formatValue={formatPercent}
+                      showNumberInput
+                      inputAriaLabel={`Trail stop ${index + 1} size variation value`}
+                      disabled={controlDisabled}
+                      hint="Seeded particle-size scatter local to this stop."
+                      onChange={(value) =>
+                        patchBurstTrailStop(index, { sizeVariation: round2(value) })
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SubSection>
+
           {renderBurstTrailOpeningControls(layerKey)}
           {renderBurstTrailClosingControls(layerKey)}
 
-          <SubSection title="Placement" defaultExpanded={false}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SubSection title="Placement">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Head-tail balance"
                 min={TRAIL_BIAS_MIN}
@@ -4256,12 +5064,129 @@ export function FireworkRenderControls({
                     setBurstTrailNested(layerKey, 'width', 'tail', round2(value))
                   }
                 />
+                <SliderField
+                  label="Width curve"
+                  min={0.2}
+                  max={4}
+                  step={0.05}
+                  value={burstTrail.width.curve}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Trail width curve value"
+                  disabled={controlDisabled}
+                  hint="Shapes the transition from the front angle to the tail angle."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'width', 'curve', round2(value))
+                  }
+                />
               </AdvancedControls>
             </div>
           </SubSection>
 
-          <SubSection title="Glow" defaultExpanded={false}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <SubSection title="Motion">
+            <div className={CONTROL_GRID_CLASS}>
+              <SliderField
+                label="Gravity"
+                min={-2}
+                max={1}
+                step={0.01}
+                value={burstTrail.motion.gravity}
+                showNumberInput
+                inputAriaLabel="Trail gravity value"
+                disabled={controlDisabled}
+                hint="Vertical acceleration of detached trail particles. More negative falls faster."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'gravity', round2(value))
+                }
+              />
+              <SliderField
+                label="Drag"
+                min={0}
+                max={6}
+                step={0.05}
+                value={burstTrail.motion.drag}
+                showNumberInput
+                inputAriaLabel="Trail drag value"
+                disabled={controlDisabled}
+                hint="Air resistance. Higher values stop inherited movement sooner."
+                onChange={(value) => setBurstTrailNested(layerKey, 'motion', 'drag', round2(value))}
+              />
+              <SliderField
+                label="Inherited speed"
+                min={0}
+                max={1}
+                step={0.01}
+                value={burstTrail.motion.inheritedVelocity}
+                formatValue={formatProbability}
+                showNumberInput
+                inputAriaLabel="Trail inherited speed value"
+                disabled={controlDisabled}
+                hint="Share of the parent star's velocity retained when a trail particle is released."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'inheritedVelocity', round2(value))
+                }
+              />
+              <SliderField
+                label="Turbulence"
+                min={0}
+                max={2}
+                step={0.01}
+                value={burstTrail.motion.turbulence}
+                showNumberInput
+                inputAriaLabel="Trail turbulence value"
+                disabled={controlDisabled}
+                hint="Seeded velocity scatter that roughens a perfectly smooth trail."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'turbulence', round2(value))
+                }
+              />
+              <SliderField
+                label="Drift X"
+                min={-2}
+                max={2}
+                step={0.01}
+                value={burstTrail.motion.driftX}
+                showNumberInput
+                inputAriaLabel="Trail horizontal drift value"
+                disabled={controlDisabled}
+                hint="Constant left-right drift applied after emission."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'driftX', round2(value))
+                }
+              />
+              <SliderField
+                label="Drift Y"
+                min={-2}
+                max={2}
+                step={0.01}
+                value={burstTrail.motion.driftY}
+                showNumberInput
+                inputAriaLabel="Trail vertical drift value"
+                disabled={controlDisabled}
+                hint="Constant vertical drift added independently of gravity."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'driftY', round2(value))
+                }
+              />
+              <SliderField
+                label="Drift depth"
+                min={-2}
+                max={2}
+                step={0.01}
+                value={burstTrail.motion.driftZ}
+                showNumberInput
+                inputAriaLabel="Trail depth drift value"
+                disabled={controlDisabled}
+                hint="Constant front-to-back drift applied after emission."
+                onChange={(value) =>
+                  setBurstTrailNested(layerKey, 'motion', 'driftZ', round2(value))
+                }
+              />
+            </div>
+          </SubSection>
+
+          <SubSection title="Glow">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Brightness"
                 min={0}
@@ -4304,6 +5229,35 @@ export function FireworkRenderControls({
                     setBurstTrailNested(layerKey, 'flicker', 'chance', round2(value))
                   }
                 />
+                <SliderField
+                  label="Flicker strength"
+                  min={0}
+                  max={3}
+                  step={0.05}
+                  value={burstTrail.flicker.strength}
+                  showNumberInput
+                  inputAriaLabel="Trail flicker strength value"
+                  disabled={controlDisabled}
+                  hint="Brightness multiplier for white-hot flicker flashes."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'flicker', 'strength', round2(value))
+                  }
+                />
+                <SliderField
+                  label="Flicker life"
+                  min={0}
+                  max={BURST_TRAIL_FLICKER_LIFE_MAX}
+                  step={0.01}
+                  value={burstTrail.flicker.lifetimeMultiplier}
+                  formatValue={formatMultiplier}
+                  showNumberInput
+                  inputAriaLabel="Trail flicker life value"
+                  disabled={controlDisabled}
+                  hint="Lifetime multiplier for a particle selected to flicker."
+                  onChange={(value) =>
+                    setBurstTrailNested(layerKey, 'flicker', 'lifetimeMultiplier', round2(value))
+                  }
+                />
               </AdvancedControls>
             </div>
           </SubSection>
@@ -4321,7 +5275,6 @@ export function FireworkRenderControls({
       : sectionDisabled[layerKey];
     const toggleId = layerKey === 'outer' ? outerToggleId : coreToggleId;
     const isInnerLayer = layerKey === 'core';
-    const starControlsAlwaysOpen = controlScope === 'star' || controlScope === 'starInner';
     const burst = usesBrocadeStarPath ? design.burst : layer.burst;
     const starCount = usesBrocadeStarPath
       ? (design.brocade.streakCount ?? design.size)
@@ -4334,8 +5287,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title={title}
-        collapsible={!starControlsAlwaysOpen}
-        defaultExpanded={starControlsAlwaysOpen}
         inactive={!layerEnabled}
         titleAccessory={
           <InfoTooltip text={`${title} has its own burst, head, colour, and trail settings.`} />
@@ -4351,7 +5302,16 @@ export function FireworkRenderControls({
         }
       >
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
+            {!usesBrocadeStarPath ? (
+              <SwitchField
+                label="Head dot"
+                checked={layer.head.visible}
+                disabled={controlDisabled}
+                hint="Render the luminous star head. Turn this off for a trail-only effect while keeping its trajectory alive."
+                onChange={(value) => setStarHeadVisible(layerKey, value)}
+              />
+            ) : null}
             {showStarCount ? (
               <SliderField
                 label="Star count"
@@ -4370,8 +5330,8 @@ export function FireworkRenderControls({
             ) : null}
             <SliderField
               label="Burst size"
-              min={0.5}
-              max={12}
+              min={STAR_SPEED_MIN}
+              max={STAR_SPEED_MAX}
               step={0.1}
               value={round2(rangeMid(burst.speed))}
               disabled={controlDisabled}
@@ -4381,14 +5341,29 @@ export function FireworkRenderControls({
                   : 'How far Star flies from the centre.'
               }
               onChange={(value) =>
-                setStarBurstRangeMid(layerKey, 'speed', value, BROCADE_SPEED_HALF_WIDTH)
+                setStarBurstRangeMid(layerKey, 'speed', value, rangeHalfWidth(burst.speed))
               }
+            />
+            <SliderField
+              label="Burst variation"
+              min={0}
+              max={Math.min(
+                rangeMid(burst.speed) - STAR_SPEED_MIN,
+                STAR_SPEED_MAX - rangeMid(burst.speed),
+              )}
+              step={0.05}
+              value={round2(rangeHalfWidth(burst.speed))}
+              showNumberInput
+              inputAriaLabel={`${title} burst variation value`}
+              disabled={controlDisabled}
+              hint="Seeded speed spread around Burst size. 0 gives every star the same radial speed."
+              onChange={(value) => setStarSpeedSpread(layerKey, round2(value))}
             />
             <SliderField
               label="Hang time"
               min={STAR_LIFE_MIN}
               max={STAR_LIFE_MAX}
-              step={0.1}
+              step={0.05}
               value={round2(rangeMid(burst.life))}
               formatValue={formatSeconds}
               disabled={controlDisabled}
@@ -4397,13 +5372,50 @@ export function FireworkRenderControls({
             />
             <SliderField
               label="Floatiness"
-              min={-1.85}
-              max={0}
+              min={STAR_GRAVITY_MIN}
+              max={STAR_GRAVITY_MAX}
               step={0.01}
               value={round2(rangeUpper(burst.gravity))}
               disabled={controlDisabled}
-              hint="0 keeps this layer almost flat; more negative values let it sink faster."
+              hint="Upper gravity bound. 0 floats; negative values sink; positive values continue rising."
               onChange={(value) => setStarGravityUpper(layerKey, value)}
+            />
+            <SliderField
+              label="Gravity variation"
+              min={0}
+              max={Math.max(0, rangeUpper(burst.gravity) - STAR_GRAVITY_MIN)}
+              step={0.01}
+              value={round2(Math.abs(burst.gravity[1] - burst.gravity[0]))}
+              showNumberInput
+              inputAriaLabel={`${title} gravity variation value`}
+              disabled={controlDisabled}
+              hint="Seeded spread below the Floatiness value. Higher produces a mix of hanging and fast-falling stars."
+              onChange={(value) => setStarGravitySpread(layerKey, round2(value))}
+            />
+            <SliderField
+              label="Air resistance"
+              min={0}
+              max={STAR_AIR_RESISTANCE_PERCENT_MAX}
+              step={1}
+              value={burst.airResistancePercent}
+              formatValue={formatPercent}
+              showNumberInput
+              inputAriaLabel={`${title} air resistance value`}
+              disabled={controlDisabled}
+              hint="Damping applied after this geometry's own drag tuning. 100% preserves its calibrated motion; 0% removes damping."
+              onChange={(value) => setStarBurstScalar(layerKey, 'airResistancePercent', value)}
+            />
+            <SliderField
+              label="Terminal fall speed"
+              min={0}
+              max={STAR_TERMINAL_VELOCITY_MAX}
+              step={0.1}
+              value={burst.terminalVelocity}
+              showNumberInput
+              inputAriaLabel={`${title} terminal fall speed value`}
+              disabled={controlDisabled}
+              hint="Maximum downward speed for this layer. 18 preserves the existing renderer cap; 0 almost arrests descent."
+              onChange={(value) => setStarBurstScalar(layerKey, 'terminalVelocity', value)}
             />
             <SliderField
               label="Star size"
@@ -4424,6 +5436,8 @@ export function FireworkRenderControls({
               onChange={(value) => setStarGlowStrength(layerKey, value)}
             />
           </div>
+
+          {isInnerLayer ? renderStarColourPatternControls(layerKey, controlDisabled) : null}
 
           {renderStarAppearance(
             layerKey,
@@ -4491,9 +5505,7 @@ export function FireworkRenderControls({
 
     return (
       <>
-        <PanelSection title="Launch" collapsible defaultExpanded={false}>
-          {launchContent}
-        </PanelSection>
+        <PanelSection title="Launch">{launchContent}</PanelSection>
 
         {includeLiftParticles ? renderLiftParticleControls() : null}
       </>
@@ -4504,7 +5516,7 @@ export function FireworkRenderControls({
     const soundContent = (
       <div className={CONTROL_GRID_CLASS}>
         {renderLaunchSoundControl()}
-        {renderBoomControl()}
+        {isGroundEmitter ? null : renderBoomControl()}
       </div>
     );
 
@@ -4512,11 +5524,7 @@ export function FireworkRenderControls({
       return soundContent;
     }
 
-    return (
-      <PanelSection title="Sound" collapsible defaultExpanded={false}>
-        {soundContent}
-      </PanelSection>
-    );
+    return <PanelSection title="Sound">{soundContent}</PanelSection>;
   }
 
   function setGeometryTuningValue(group: GeometryTuningGroupKey, key: string, value: unknown) {
@@ -4530,34 +5538,89 @@ export function FireworkRenderControls({
   function renderGeometryControls() {
     // Brocade crowns burst through their own calibrated path, tuned by the
     // dedicated brocade panel rather than the shared geometry tuning.
-    if (isBrocade) return null;
     const group = GEOMETRY_TUNING_GROUPS[design.geometry];
-    if (!group) return null;
-    const values = design.geometryTuning[group] as Record<string, number>;
+    const content = (
+      <div className="space-y-5">
+        <div className={CONTROL_GRID_CLASS}>
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Geometry</FieldLabel>
+              <InfoTooltip text="The main trajectory layout. Ground emitters such as fountains and roman candles skip the shell-lift phase." />
+            </div>
+            <SelectField
+              value={design.geometry}
+              onChange={(value) => setRenderValue('geometry', value)}
+              options={GEOMETRY_OPTIONS}
+              ariaLabel="Firework geometry"
+              disabled={disabled}
+            />
+          </Field>
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Star distribution</FieldLabel>
+              <InfoTooltip text="Seeded distribution used inside the selected geometry. Strobe phase varies colour selection; configure actual blinking in the Strobe tab." />
+            </div>
+            <SelectField
+              value={design.pattern}
+              onChange={(value) => setRenderValue('pattern', value)}
+              options={PATTERN_OPTIONS}
+              ariaLabel="Star distribution pattern"
+              disabled={disabled}
+            />
+          </Field>
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Legacy effect profile</FieldLabel>
+              <InfoTooltip text="Compatibility profile used by imported effects and a few renderer presets. Geometry controls motion; the Trail and Effects tabs control the visible treatment." />
+            </div>
+            <SelectField
+              value={design.trailProfile}
+              onChange={(value) => setRenderValue('trailProfile', value)}
+              options={TRAIL_PROFILE_OPTIONS}
+              ariaLabel="Legacy effect profile"
+              disabled={disabled}
+            />
+          </Field>
+        </div>
+        {group && !isBrocade ? (
+          <SubSection title="Shape tuning">
+            <div className={CONTROL_GRID_CLASS}>
+              {GEOMETRY_TUNING_SLIDERS[group].map((slider) => {
+                const values = design.geometryTuning[group] as Record<string, number>;
+                return (
+                  <SliderField
+                    key={slider.key}
+                    label={slider.label}
+                    min={slider.min}
+                    max={slider.max}
+                    step={slider.step}
+                    value={round2(values[slider.key] ?? slider.min)}
+                    disabled={disabled}
+                    hint={slider.hint}
+                    onChange={(value) => setGeometryTuningValue(group, slider.key, round2(value))}
+                  />
+                );
+              })}
+            </div>
+          </SubSection>
+        ) : (
+          <p className="text-muted-foreground text-xs leading-5">
+            This geometry uses the renderer's calibrated shape and has no additional tuning.
+          </p>
+        )}
+      </div>
+    );
+
+    if (controlScope === 'geometry') return content;
+
     return (
       <PanelSection
         title="Geometry"
-        collapsible
-        defaultExpanded={false}
         titleAccessory={
           <InfoTooltip text="Shape tuning for this burst geometry. These values save with the effect JSON and were previously fixed inside the renderer." />
         }
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          {GEOMETRY_TUNING_SLIDERS[group].map((slider) => (
-            <SliderField
-              key={slider.key}
-              label={slider.label}
-              min={slider.min}
-              max={slider.max}
-              step={slider.step}
-              value={round2(values[slider.key] ?? slider.min)}
-              disabled={disabled}
-              hint={slider.hint}
-              onChange={(value) => setGeometryTuningValue(group, slider.key, round2(value))}
-            />
-          ))}
-        </div>
+        {content}
       </PanelSection>
     );
   }
@@ -4566,8 +5629,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title="Strobe"
-        collapsible
-        defaultExpanded={controlScope === 'strobe'}
         inactive={!strobeEnabled}
         titleAccessory={<InfoTooltip text="Stars blink rapidly instead of burning steadily." />}
         action={
@@ -4580,7 +5641,7 @@ export function FireworkRenderControls({
           />
         }
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+        <div className={CONTROL_GRID_CLASS}>
           <SliderField
             label="Blink rate"
             min={2}
@@ -4640,8 +5701,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title="Crackle"
-        collapsible
-        defaultExpanded={controlScope === 'crackle'}
         inactive={!crackleEnabled}
         titleAccessory={
           <InfoTooltip text="Stars pop into crackling silver fragments as they die." />
@@ -4656,16 +5715,213 @@ export function FireworkRenderControls({
           />
         }
       >
-        <SliderField
-          label="Crackle probability"
-          min={0}
-          max={1}
-          step={0.01}
-          value={design.crackle.probability}
-          disabled={sectionDisabled.crackle}
-          hint="Per-frame chance a dying star pops. 0.05 is a gentle fizz; 0.3 is a full dragon-egg cloud."
-          onChange={(value) => setNestedRenderValue('crackle', 'probability', round2(value))}
-        />
+        <div className={CONTROL_GRID_CLASS}>
+          <SliderField
+            label="Ignition chance"
+            min={0}
+            max={1}
+            step={0.01}
+            value={design.crackle.probability}
+            formatValue={formatProbability}
+            showNumberInput
+            inputAriaLabel="Crackle ignition chance value"
+            disabled={sectionDisabled.crackle}
+            hint="Time-normalised chance that an eligible dying star ignites its crackle."
+            onChange={(value) => setNestedRenderValue('crackle', 'probability', round2(value))}
+          />
+          <SliderField
+            label="Trigger window"
+            min={0.1}
+            max={4}
+            step={0.05}
+            value={design.crackle.triggerWindowSeconds}
+            formatValue={formatSeconds}
+            showNumberInput
+            inputAriaLabel="Crackle trigger window value"
+            disabled={sectionDisabled.crackle}
+            hint="How early before star death the crackle may ignite."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'triggerWindowSeconds', round2(value))
+            }
+          />
+          <SliderField
+            label="Fragment count"
+            min={1}
+            max={200}
+            step={1}
+            value={design.crackle.fragmentCount}
+            showNumberInput
+            inputAriaLabel="Crackle fragment count value"
+            disabled={sectionDisabled.crackle}
+            hint="Base number of hot fragments released by each crackle event."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentCount', Math.round(value))
+            }
+          />
+          <SliderField
+            label="Count variation"
+            min={0}
+            max={100}
+            step={1}
+            value={design.crackle.fragmentCountVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Crackle fragment count variation value"
+            disabled={sectionDisabled.crackle}
+            hint="Seeded variation in fragment count between crackle events."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentCountVariationPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Fragment size"
+            min={1}
+            max={120}
+            step={1}
+            value={design.crackle.fragmentSize}
+            showNumberInput
+            inputAriaLabel="Crackle fragment size value"
+            disabled={sectionDisabled.crackle}
+            hint="Base luminous size of each crackle fragment."
+            onChange={(value) => setNestedRenderValue('crackle', 'fragmentSize', round2(value))}
+          />
+          <SliderField
+            label="Size variation"
+            min={0}
+            max={100}
+            step={1}
+            value={design.crackle.fragmentSizeVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Crackle fragment size variation value"
+            disabled={sectionDisabled.crackle}
+            hint="Seeded size variation within each crackle cloud."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentSizeVariationPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Fragment speed"
+            min={0}
+            max={6}
+            step={0.05}
+            value={design.crackle.fragmentSpeed}
+            showNumberInput
+            inputAriaLabel="Crackle fragment speed value"
+            disabled={sectionDisabled.crackle}
+            hint="Base force pushing fragments away from the parent star."
+            onChange={(value) => setNestedRenderValue('crackle', 'fragmentSpeed', round2(value))}
+          />
+          <SliderField
+            label="Speed variation"
+            min={0}
+            max={100}
+            step={1}
+            value={design.crackle.fragmentSpeedVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Crackle fragment speed variation value"
+            disabled={sectionDisabled.crackle}
+            hint="Seeded speed variation that breaks up a uniform spherical pop."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentSpeedVariationPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Fragment life"
+            min={0.05}
+            max={4}
+            step={0.05}
+            value={design.crackle.fragmentLifeSeconds}
+            formatValue={formatSeconds}
+            showNumberInput
+            inputAriaLabel="Crackle fragment life value"
+            disabled={sectionDisabled.crackle}
+            hint="Base burn time of each crackle fragment."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentLifeSeconds', round2(value))
+            }
+          />
+          <SliderField
+            label="Life variation"
+            min={0}
+            max={100}
+            step={1}
+            value={design.crackle.fragmentLifeVariationPercent}
+            formatValue={formatPercent}
+            showNumberInput
+            inputAriaLabel="Crackle fragment life variation value"
+            disabled={sectionDisabled.crackle}
+            hint="Seeded burn-time variation across the fragment cloud."
+            onChange={(value) =>
+              setNestedRenderValue('crackle', 'fragmentLifeVariationPercent', round2(value))
+            }
+          />
+          <SliderField
+            label="Fragment gravity"
+            min={-2}
+            max={1}
+            step={0.01}
+            value={design.crackle.fragmentGravity}
+            showNumberInput
+            inputAriaLabel="Crackle fragment gravity value"
+            disabled={sectionDisabled.crackle}
+            hint="Gravity applied to fragments independently of the parent star."
+            onChange={(value) => setNestedRenderValue('crackle', 'fragmentGravity', round2(value))}
+          />
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Fragment colour</FieldLabel>
+              <InfoTooltip text="Use metallic silver or gold, or inherit each parent star's colour." />
+            </div>
+            <SelectField
+              value={design.crackle.colourMode}
+              onChange={(value) => setNestedRenderValue('crackle', 'colourMode', value)}
+              options={CRACKLE_COLOUR_OPTIONS}
+              ariaLabel="Crackle fragment colour"
+              disabled={sectionDisabled.crackle}
+            />
+          </Field>
+          <Field>
+            <div className="flex items-center gap-1.5">
+              <FieldLabel>Crackle sound</FieldLabel>
+              <InfoTooltip text="Sound event eligible to play when a crackle cloud ignites." />
+            </div>
+            <SelectField
+              value={design.crackle.sound}
+              onChange={(value) => setNestedRenderValue('crackle', 'sound', value)}
+              options={CRACKLE_SOUND_OPTIONS}
+              ariaLabel="Crackle sound"
+              disabled={sectionDisabled.crackle}
+            />
+          </Field>
+          <SliderField
+            label="Sound chance"
+            min={0}
+            max={1}
+            step={0.01}
+            value={design.crackle.soundChance}
+            formatValue={formatProbability}
+            showNumberInput
+            inputAriaLabel="Crackle sound chance value"
+            disabled={sectionDisabled.crackle}
+            hint="Chance that an audible crackle event plays its selected sound."
+            onChange={(value) => setNestedRenderValue('crackle', 'soundChance', round2(value))}
+          />
+          <SliderField
+            label="Sound volume"
+            min={0}
+            max={1}
+            step={0.01}
+            value={design.crackle.soundVolume}
+            formatValue={formatProbability}
+            showNumberInput
+            inputAriaLabel="Crackle sound volume value"
+            disabled={sectionDisabled.crackle}
+            hint="Volume multiplier for the selected crackle sound."
+            onChange={(value) => setNestedRenderValue('crackle', 'soundVolume', round2(value))}
+          />
+        </div>
       </PanelSection>
     );
   }
@@ -4676,8 +5932,6 @@ export function FireworkRenderControls({
     return (
       <PanelSection
         title="Split"
-        collapsible
-        defaultExpanded={controlScope === 'split'}
         inactive={!design.split.enabled}
         titleAccessory={<InfoTooltip text="Crossette stars split into smaller fragments." />}
         action={
@@ -4691,7 +5945,7 @@ export function FireworkRenderControls({
         }
       >
         {design.split.enabled ? (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+          <div className={CONTROL_GRID_CLASS}>
             <SliderField
               label="Split fragments"
               min={2}
@@ -4711,6 +5965,19 @@ export function FireworkRenderControls({
               disabled={sectionDisabled.split}
               hint="How hard the fragments kick away from the split."
               onChange={(value) => setNestedRenderValue('split', 'speed', round2(value))}
+            />
+            <SliderField
+              label="Split timing"
+              min={0.15}
+              max={0.85}
+              step={0.01}
+              value={design.split.delayRatio}
+              formatValue={formatProbability}
+              showNumberInput
+              inputAriaLabel="Split timing value"
+              disabled={sectionDisabled.split}
+              hint="Point in the parent star's life when it divides. Lower splits earlier; higher splits near the end."
+              onChange={(value) => setNestedRenderValue('split', 'delayRatio', round2(value))}
             />
             <SliderField
               label="Fragment life"
@@ -4771,9 +6038,9 @@ export function FireworkRenderControls({
   if (isBrocade) {
     return (
       <>
-        <PanelSection title="Burst" collapsible defaultExpanded={false}>
+        <PanelSection title="Burst">
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               {showStarCount ? (
                 <SliderField
                   label="Streak count"
@@ -4788,8 +6055,8 @@ export function FireworkRenderControls({
               ) : null}
               <SliderField
                 label="Burst size"
-                min={0.5}
-                max={12}
+                min={STAR_SPEED_MIN}
+                max={STAR_SPEED_MAX}
                 step={0.1}
                 value={round2(rangeMid(design.burst.speed))}
                 disabled={disabled}
@@ -4798,9 +6065,9 @@ export function FireworkRenderControls({
               />
               <SliderField
                 label="Hang time"
-                min={0.5}
-                max={8}
-                step={0.1}
+                min={STAR_LIFE_MIN}
+                max={STAR_LIFE_MAX}
+                step={0.05}
                 value={round2(rangeMid(design.burst.life))}
                 formatValue={formatSeconds}
                 disabled={disabled}
@@ -4809,8 +6076,8 @@ export function FireworkRenderControls({
               />
               <SliderField
                 label="Floatiness"
-                min={-1.85}
-                max={0}
+                min={STAR_GRAVITY_MIN}
+                max={STAR_GRAVITY_MAX}
                 step={0.01}
                 value={round2(rangeUpper(design.burst.gravity))}
                 disabled={disabled}
@@ -4840,8 +6107,6 @@ export function FireworkRenderControls({
 
         <PanelSection
           title="Heads"
-          collapsible
-          defaultExpanded={false}
           inactive={!headsEnabled}
           titleAccessory={
             <InfoTooltip text="Turn the glowing head orbs off to leave just the trails." />
@@ -4857,7 +6122,7 @@ export function FireworkRenderControls({
           }
         >
           <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            <div className={CONTROL_GRID_CLASS}>
               <SliderField
                 label="Head size"
                 min={100}
@@ -4877,6 +6142,39 @@ export function FireworkRenderControls({
                 onChange={(value) => setBrocadeValue('glowStrength', round2(value))}
               />
             </div>
+            <SubSection title="Head palette">
+              <div className={CONTROL_GRID_CLASS}>
+                <ColorField
+                  label="Green head colour"
+                  value={rgbObjectToHex(design.brocade.headColors.green) ?? '#66ff80'}
+                  disabled={sectionDisabled.heads}
+                  hint="Colour used by brocade heads assigned to the green side of the mix."
+                  onChange={(value) => setBrocadeColour('headColors', 'green', value)}
+                />
+                <ColorField
+                  label="Red head colour"
+                  value={rgbObjectToHex(design.brocade.headColors.red) ?? '#ff4752'}
+                  disabled={sectionDisabled.heads}
+                  hint="Colour used by brocade heads assigned to the red side of the mix."
+                  onChange={(value) => setBrocadeColour('headColors', 'red', value)}
+                />
+                <SliderField
+                  label="Green share"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={round2(design.brocade.greenRatio * 100)}
+                  formatValue={formatPercent}
+                  showNumberInput
+                  inputAriaLabel="Brocade green head share"
+                  disabled={sectionDisabled.heads}
+                  hint="Percentage of brocade heads assigned the green colour. The remainder use red."
+                  onChange={(value) =>
+                    setBrocadeValue('greenRatio', round2(clampNumber(value, 0, 100) / 100))
+                  }
+                />
+              </div>
+            </SubSection>
             {renderStarAppearance('outer', sectionDisabled.heads, undefined, false)}
           </div>
         </PanelSection>

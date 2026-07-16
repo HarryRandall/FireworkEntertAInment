@@ -30,7 +30,7 @@ test('admin Explore data starts inside Suspense and loads independent sources to
   assert.match(page, /<ShowPresetsData searchParams=\{searchParams\} \/>/);
   assert.match(
     page,
-    /const \[params, presets, importableShows\] = await Promise\.all\(\[[\s\S]*?searchParams,[\s\S]*?listAdminShowPresets\(\),[\s\S]*?listAdminShowPresetImportShows\(\),[\s\S]*?\]\)/,
+    /const \[params, presets, importableShows, coverPresets\] = await Promise\.all\(\[[\s\S]*?searchParams,[\s\S]*?listAdminShowPresets\(\),[\s\S]*?listAdminShowPresetImportShows\(\),[\s\S]*?listShowPresetsForCoverBackfill\(\),[\s\S]*?\]\)/,
   );
   assert.doesNotMatch(
     page,

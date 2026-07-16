@@ -1,12 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import {
   Archive,
   Braces,
   Cloud,
+  History,
   Rocket,
+  Shapes,
   SlidersHorizontal,
   Sparkles,
   Volume2,
@@ -15,8 +16,15 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { archiveStyleDefault, updateStyleDefault } from '@/app/actions/admin-style-defaults';
-import { JsonReadOnlyPanel } from '@/app/components/admin/EditorInspectorPanels';
+import {
+  archiveStyleDefault,
+  restoreStyleDefaultEditorVersion,
+  updateStyleDefault,
+} from '@/app/actions/admin-style-defaults';
+import {
+  EditorHistoryPanel,
+  JsonReadOnlyPanel,
+} from '@/app/components/admin/EditorInspectorPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,
   estimateLaunchPreviewDurationSeconds,
@@ -28,6 +36,10 @@ import {
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/app/components/admin/FireworkEditorShell';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/app/components/admin/useEditorHistory';
 import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
@@ -42,7 +54,8 @@ import { Input, Textarea } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
 import { toast } from '@/app/components/ui/toast';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
-import type { AdminStyleDefaultDetail } from '@/lib/admin.types';
+import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import { compileFireworkDesign, estimateDesignDurationSeconds } from '@/lib/fireworks/design';
 import {
@@ -88,6 +101,7 @@ const TRAIL_PREVIEW_STAR_OPTIONS = [
 ];
 
 const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
+  geometry: Shapes,
   star: Sparkles,
   trail: Wind,
   launch: Rocket,
@@ -209,6 +223,13 @@ function styleDefaultSavedSnapshotFromDetail(
   });
 }
 
+function calibrationDefaultsFromSnapshot(
+  snapshot: StyleDefaultEditorSavedSnapshot,
+): Record<string, unknown> {
+  const parsed = parseJsonObject(snapshot.defaultsText);
+  return parsed.ok ? parsed.value : {};
+}
+
 function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
   const candidateTime = Date.parse(candidate);
   const referenceTime = Date.parse(reference);
@@ -220,7 +241,6 @@ function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
 }
 
 export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleDefaultDetail }) {
-  const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
@@ -251,9 +271,19 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     ),
   );
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
+  const [savedCalibrationDefaults, setSavedCalibrationDefaults] = useState<Record<string, unknown>>(
+    () => calibrationDefaultsFromSnapshot(incomingSavedSnapshot),
+  );
   const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
+  const editorTargetIdRef = useRef(styleDefault.id);
   const [activeTab, setActiveTab] = useState<string>(styleDefault.kind);
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const editorHistory = useEditorHistory({
+    targetKey: styleDefault.id,
+    initialVersions: styleDefault.history,
+  });
   const [error, setError] = useState<string | null>(null);
   const playbackRef = useRef(PREVIEW_START_SECONDS);
   const startedAtRef = useRef(0);
@@ -302,7 +332,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   useLayoutEffect(() => {
     currentSignatureRef.current = currentSignature;
     savedSignatureRef.current = savedSignature;
-  }, [currentSignature, savedSignature]);
+    editorTargetIdRef.current = styleDefault.id;
+  }, [currentSignature, savedSignature, styleDefault.id]);
 
   useEffect(() => {
     const incomingSnapshot = incomingSavedSnapshot;
@@ -319,6 +350,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
 
     savedSnapshotRef.current = incomingSnapshot;
     savedSignatureRef.current = incomingSnapshot.signature;
+    setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(incomingSnapshot));
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
     setKind(incomingSnapshot.kind);
@@ -329,6 +361,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
     setDefaultsText(incomingSnapshot.defaultsText);
     setActiveTab(incomingSnapshot.kind);
+    setRestoringVersionId(null);
+    setArchiving(false);
     setError(null);
     setSavedSignature(incomingSnapshot.signature);
   }, [incomingSavedSnapshot]);
@@ -501,27 +535,119 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     );
   }
 
+  function currentLocalSnapshot(): StyleDefaultEditorSavedSnapshot {
+    return {
+      id: styleDefault.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      kind,
+      sortOrder,
+      isArchived,
+      defaultsText,
+      signature: currentSignature,
+    };
+  }
+
+  function applySnapshot(snapshot: StyleDefaultEditorSavedSnapshot) {
+    setName(snapshot.name);
+    setDescription(snapshot.description);
+    setKind(snapshot.kind);
+    setSortOrder(snapshot.sortOrder);
+    setIsArchived(snapshot.isArchived);
+    setDefaultsText(snapshot.defaultsText);
+    setActiveTab(snapshot.kind);
+  }
+
+  function beginOptimisticMutation(
+    optimisticSnapshot: StyleDefaultEditorSavedSnapshot,
+    action: 'update' | 'restore',
+    visibleSnapshot = optimisticSnapshot,
+  ) {
+    const historyVersionId = crypto.randomUUID();
+    const previousSavedSnapshot = savedSnapshotRef.current;
+    const localSnapshot = currentLocalSnapshot();
+    savedSnapshotRef.current = optimisticSnapshot;
+    savedSignatureRef.current = optimisticSnapshot.signature;
+    currentSignatureRef.current = visibleSnapshot.signature;
+    setSavedSignature(optimisticSnapshot.signature);
+    applySnapshot(visibleSnapshot);
+    editorHistory.begin(
+      makeOptimisticEditorVersion({
+        id: historyVersionId,
+        targetKind: 'style_default',
+        targetId: styleDefault.id,
+        action,
+      }),
+    );
+    return {
+      targetId: styleDefault.id,
+      historyVersionId,
+      localSnapshot,
+      optimisticSnapshot,
+      previousSavedSnapshot,
+      visibleSnapshot,
+    };
+  }
+
+  function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
+    if (editorTargetIdRef.current !== mutation.targetId) return;
+    editorHistory.discard(mutation.historyVersionId);
+    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
+      savedSnapshotRef.current = mutation.previousSavedSnapshot;
+      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
+      setSavedSignature(mutation.previousSavedSnapshot.signature);
+    }
+    if (currentSignatureRef.current === mutation.visibleSnapshot.signature) {
+      currentSignatureRef.current = mutation.localSnapshot.signature;
+      applySnapshot(mutation.localSnapshot);
+    }
+  }
+
   function save() {
+    if (isPending) return;
     setError(null);
     if (!parsedDefaults.ok) {
       setError(parsedDefaults.error);
       return;
     }
-    const saveStartedFromSignature = currentSignature;
     const savedDefaultsText = JSON.stringify(parsedDefaults.value, null, 2);
+    const optimisticSnapshot = styleDefaultSavedSnapshotFromFields({
+      id: styleDefault.id,
+      updatedAt: lastSavedUpdatedAt,
+      name,
+      description,
+      kind,
+      sortOrder: sortOrderNumber,
+      isArchived,
+      defaultsJson: parsedDefaults.value,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
 
     startTransition(async () => {
-      const result = await updateStyleDefault({
-        id: styleDefault.id,
-        expectedUpdatedAt: lastSavedUpdatedAt,
-        name,
-        description,
-        kind,
-        sortOrder: sortOrderNumber,
-        isArchived,
-        defaultsJson: savedDefaultsText,
-      });
+      let result: Awaited<ReturnType<typeof updateStyleDefault>>;
+      try {
+        result = await updateStyleDefault({
+          id: styleDefault.id,
+          expectedUpdatedAt: lastSavedUpdatedAt,
+          name,
+          description,
+          kind,
+          sortOrder: sortOrderNumber,
+          isArchived,
+          defaultsJson: savedDefaultsText,
+          historyVersionId: mutation.historyVersionId,
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setError('Could not save the style default. Try again.');
+        }
+        return;
+      }
+      if (editorTargetIdRef.current !== mutation.targetId) return;
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
         setError(result.error);
         return;
       }
@@ -529,76 +655,183 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
+      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(savedSnapshot));
       setSavedSignature(savedSnapshot.signature);
-      if (canApplySavedEditorSnapshot(saveStartedFromSignature, currentSignatureRef.current)) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setKind(savedSnapshot.kind);
-        setSortOrder(savedSnapshot.sortOrder);
-        setIsArchived(savedSnapshot.isArchived);
-        setDefaultsText(savedSnapshot.defaultsText);
-        setActiveTab(savedSnapshot.kind);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
+      if (
+        canApplySavedEditorSnapshot(mutation.visibleSnapshot.signature, currentSignatureRef.current)
+      ) {
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Style default saved');
       } else {
         toast.success('Style default saved; newer edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function archiveDefault() {
+    if (isPending) return;
     setError(null);
-    const archiveStartedFromSignature = currentSignature;
-    const archiveStartedClean = archiveStartedFromSignature === savedSignatureRef.current;
+    const previousSavedSnapshot = savedSnapshotRef.current;
+    const optimisticSnapshot = styleDefaultSavedSnapshotFromFields({
+      id: previousSavedSnapshot.id,
+      updatedAt: previousSavedSnapshot.updatedAt,
+      name: previousSavedSnapshot.name,
+      description: previousSavedSnapshot.description,
+      kind: previousSavedSnapshot.kind,
+      sortOrder: Number(previousSavedSnapshot.sortOrder),
+      isArchived: true,
+      defaultsJson: JSON.parse(previousSavedSnapshot.defaultsText),
+    });
+    const visibleSnapshot = currentLocalSnapshot();
+    visibleSnapshot.isArchived = true;
+    visibleSnapshot.signature = styleDefaultEditorSignature({
+      name,
+      description,
+      kind,
+      sortOrder: sortOrderNumber,
+      isArchived: true,
+      defaultsJson: parsedDefaults.ok
+        ? normaliseStyleDefaultJson(kind, parsedDefaults.value)
+        : defaultsText,
+    });
+    const archiveStartedClean = currentSignature === savedSignatureRef.current;
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update', visibleSnapshot);
+    setArchiving(true);
     startTransition(async () => {
-      const result = await archiveStyleDefault({
-        id: styleDefault.id,
-        expectedUpdatedAt: lastSavedUpdatedAt,
-      });
+      let result: Awaited<ReturnType<typeof archiveStyleDefault>>;
+      try {
+        result = await archiveStyleDefault({
+          id: styleDefault.id,
+          expectedUpdatedAt: lastSavedUpdatedAt,
+          historyVersionId: mutation.historyVersionId,
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setArchiving(false);
+          setError('Could not archive the style default. Try again.');
+        }
+        return;
+      }
+      if (editorTargetIdRef.current !== mutation.targetId) return;
       if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
+        setArchiving(false);
         setError(result.error);
         return;
       }
+      setArchiving(false);
       const savedSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
       const applySavedSnapshot =
         archiveStartedClean &&
-        canApplySavedEditorSnapshot(archiveStartedFromSignature, currentSignatureRef.current);
+        canApplySavedEditorSnapshot(
+          mutation.visibleSnapshot.signature,
+          currentSignatureRef.current,
+        );
       savedSnapshotRef.current = savedSnapshot;
       savedSignatureRef.current = savedSnapshot.signature;
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       setSavedSignature(savedSnapshot.signature);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
       if (applySavedSnapshot) {
-        setName(savedSnapshot.name);
-        setDescription(savedSnapshot.description);
-        setKind(savedSnapshot.kind);
-        setSortOrder(savedSnapshot.sortOrder);
-        setIsArchived(savedSnapshot.isArchived);
-        setDefaultsText(savedSnapshot.defaultsText);
-        setActiveTab(savedSnapshot.kind);
+        currentSignatureRef.current = savedSnapshot.signature;
+        applySnapshot(savedSnapshot);
         toast.success('Style default archived');
       } else {
         setIsArchived(savedSnapshot.isArchived);
         toast.success('Style default archived; newer edits remain unsaved');
       }
-      router.refresh();
     });
   }
 
   function revertLocalChanges() {
     const savedSnapshot = savedSnapshotRef.current;
-    setName(savedSnapshot.name);
-    setDescription(savedSnapshot.description);
-    setKind(savedSnapshot.kind);
-    setSortOrder(savedSnapshot.sortOrder);
-    setIsArchived(savedSnapshot.isArchived);
+    applySnapshot(savedSnapshot);
     setLastSavedUpdatedAt(savedSnapshot.updatedAt);
     setTrailPreviewStarMode('none');
     setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
-    setDefaultsText(savedSnapshot.defaultsText);
-    setActiveTab(savedSnapshot.kind);
     setError(null);
     savedSignatureRef.current = savedSnapshot.signature;
     setSavedSignature(savedSnapshot.signature);
+  }
+
+  function restoreVersion(version: AdminEditorVersion) {
+    if (isPending) return;
+    setError(null);
+    const snapshot = parseStyleDefaultEditorSnapshot(version.snapshotJson);
+    if (!snapshot || snapshot.id !== styleDefault.id) {
+      setError('That version cannot be restored.');
+      return;
+    }
+    const optimisticSnapshot = styleDefaultSavedSnapshotFromFields({
+      id: snapshot.id,
+      updatedAt: lastSavedUpdatedAt,
+      name: snapshot.name,
+      description: snapshot.description,
+      kind: snapshot.styleKind,
+      sortOrder: snapshot.sortOrder,
+      isArchived: snapshot.isArchived,
+      defaultsJson: snapshot.defaultsJson,
+    });
+    const mutation = beginOptimisticMutation(optimisticSnapshot, 'restore');
+    setRestoringVersionId(version.id);
+    startTransition(async () => {
+      let result: Awaited<ReturnType<typeof restoreStyleDefaultEditorVersion>>;
+      try {
+        result = await restoreStyleDefaultEditorVersion({
+          styleDefaultId: styleDefault.id,
+          versionId: version.id,
+          expectedUpdatedAt: lastSavedUpdatedAt,
+          historyVersionId: mutation.historyVersionId,
+        });
+      } catch {
+        rollbackOptimisticMutation(mutation);
+        if (editorTargetIdRef.current === mutation.targetId) {
+          setRestoringVersionId(null);
+          setError('Could not restore that version. Try again.');
+        }
+        return;
+      }
+      if (editorTargetIdRef.current !== mutation.targetId) return;
+      setRestoringVersionId(null);
+      if (!result.ok) {
+        rollbackOptimisticMutation(mutation);
+        setError(result.error);
+        return;
+      }
+      const restoredSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
+      const applyRestoredSnapshot = canApplySavedEditorSnapshot(
+        mutation.visibleSnapshot.signature,
+        currentSignatureRef.current,
+      );
+      savedSnapshotRef.current = restoredSnapshot;
+      savedSignatureRef.current = restoredSnapshot.signature;
+      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(restoredSnapshot));
+      setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
+      setSavedSignature(restoredSnapshot.signature);
+      editorHistory.settle({
+        optimisticId: mutation.historyVersionId,
+        persistedVersion: result.historyVersion,
+        recorded: result.historyRecorded,
+      });
+      if (applyRestoredSnapshot) {
+        currentSignatureRef.current = restoredSnapshot.signature;
+        applySnapshot(restoredSnapshot);
+        toast.success('Version restored');
+      } else {
+        toast.success('Version restored; newer edits remain unsaved');
+      }
+    });
   }
 
   const preview = (
@@ -708,7 +941,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         </Field>
       </div>
 
-      <PanelSection title="Archive" collapsible defaultExpanded={false}>
+      <PanelSection title="Archive">
         <div className="space-y-3">
           <p className="text-sm leading-relaxed text-[color:var(--color-content-muted)]">
             Archive this default when it should no longer be offered for new assignments.
@@ -716,8 +949,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
           <Button
             variant="destructive"
             onClick={archiveDefault}
-            loading={isPending}
-            disabled={isArchived}
+            loading={archiving}
+            disabled={isArchived || isPending}
           >
             <Archive size={16} />
             {isArchived ? 'Archived' : 'Archive default'}
@@ -735,8 +968,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
           titleAccessory={
             <InfoTooltip text="Adds an optional star only for judging this trail in the preview. The saved default still contains only the trail settings." />
           }
-          collapsible
-          defaultExpanded={false}
         >
           <div className="space-y-5">
             <Field>
@@ -752,7 +983,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
               <FireworkRenderControls
                 design={previewDesign}
                 defaults={customTrailPreviewStarDefaults}
-                calibrationDefaults={customTrailPreviewStarDefaults}
+                calibrationDefaults={defaultTrailPreviewStarDefaults}
                 mutate={mutateTrailPreviewStarDefaults}
                 disabled={!parsedDefaults.ok}
                 showStarCount
@@ -766,7 +997,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       <FireworkRenderControls
         design={previewDesign}
         defaults={defaultsRecord}
-        calibrationDefaults={defaultsRecord}
+        calibrationDefaults={savedCalibrationDefaults}
         mutate={mutateDefaults}
         disabled={!parsedDefaults.ok}
         showStarCount={kind === 'star'}
@@ -798,6 +1029,23 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       eyebrow: 'Defaults',
       title: `${kindLabel} defaults`,
       content: kindControls,
+    },
+    {
+      id: 'history',
+      label: 'History',
+      icon: History,
+      eyebrow: 'Versions',
+      title: 'Version history',
+      content: (
+        <EditorHistoryPanel
+          versions={editorHistory.versions}
+          pendingVersionIds={editorHistory.pendingIds}
+          warning={editorHistory.warning}
+          restoringVersionId={restoringVersionId}
+          mutationPending={isPending}
+          onRestore={restoreVersion}
+        />
+      ),
     },
     {
       id: 'json',
