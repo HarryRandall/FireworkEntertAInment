@@ -1,8 +1,8 @@
 /** Shared split-screen shell for the auth pages (login and signup). */
 
 import Link from 'next/link';
-import { Sparkles } from 'lucide-react';
 import { SkipLink } from '@/app/components/ui/SkipLink';
+import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { authIllustrationMarkup } from './authIllustration';
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
@@ -11,14 +11,8 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <SkipLink />
       {/* Form column: tall, narrow, centred. */}
       <div className="flex w-full flex-col px-6 py-10 sm:px-10 lg:w-[480px] lg:shrink-0 lg:px-14">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-            <Sparkles size={14} strokeWidth={2.2} aria-hidden="true" />
-          </span>
-          ShowCrafter
+        <Link href="/" className="text-[color:var(--color-content-emphasis)]">
+          <BrandLockup />
         </Link>
 
         <main

@@ -1,5 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="7" fill="#0b0d12"/>
-  <path d="M16 6.5l1.9 4.8L22.7 13l-4.8 1.9L16 19.7l-1.9-4.8L9.3 13l4.8-1.7L16 6.5z" fill="#e6f0ff"/>
-  <path d="M16 19.7l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z" fill="#7dd3fc"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <style>
+    .bars { stroke: #18181b; }
+    .blue-core { fill: #0284c7; }
+    .burst { stroke: #0e9d6a; }
+    .blue-start { stop-color: #1e3a8a; }
+    .blue-end { stop-color: #2563eb; }
+    .green-start { stop-color: #14532d; }
+    .green-end { stop-color: #15803d; }
+
+    @media (prefers-color-scheme: dark) {
+      .bars { stroke: #ffffff; }
+      .blue-core { fill: #22d3ee; }
+      .burst { stroke: #2ee0a3; }
+      .blue-start { stop-color: #1d4ed8; }
+      .blue-end { stop-color: #3b82f6; }
+      .green-start { stop-color: #166534; }
+      .green-end { stop-color: #22c55e; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="green-trail" gradientUnits="userSpaceOnUse" x1="38.5" y1="42" x2="31" y2="15">
+      <stop class="green-start" offset="0%" stop-opacity="0.52"/>
+      <stop class="green-end" offset="100%" stop-opacity="0.96"/>
+    </linearGradient>
+    <linearGradient id="blue-trail" gradientUnits="userSpaceOnUse" x1="8" y1="40" x2="18" y2="19.5">
+      <stop class="blue-start" offset="0%" stop-opacity="0"/>
+      <stop class="blue-end" offset="100%"/>
+    </linearGradient>
+  </defs>
+  <path d="M38.5 42 C38 34 35 23 31 15" fill="none" stroke="url(#green-trail)" stroke-width="2.2" stroke-linecap="round"/>
+  <g class="burst" fill="none" opacity="0.9" stroke-width="1.35" stroke-linecap="round">
+    <line x1="31" y1="15" x2="31" y2="5.5"/>
+    <line x1="31" y1="15" x2="35.8" y2="6.8"/>
+    <line x1="31" y1="15" x2="39.2" y2="10.2"/>
+    <line x1="31" y1="15" x2="40.5" y2="15"/>
+    <line x1="31" y1="15" x2="39.2" y2="19.8"/>
+    <line x1="31" y1="15" x2="35.8" y2="23.2"/>
+    <line x1="31" y1="15" x2="31" y2="24.5"/>
+    <line x1="31" y1="15" x2="26.2" y2="23.2"/>
+    <line x1="31" y1="15" x2="22.8" y2="19.8"/>
+    <line x1="31" y1="15" x2="21.5" y2="15"/>
+    <line x1="31" y1="15" x2="22.8" y2="10.2"/>
+    <line x1="31" y1="15" x2="26.2" y2="6.8"/>
+  </g>
+  <path d="M8 40 C10.5 33 13 27 17 21" fill="none" stroke="url(#blue-trail)" stroke-width="2.2" stroke-linecap="round"/>
+  <circle class="blue-core" cx="18" cy="19.5" r="1.8"/>
+  <g class="bars" stroke-width="2.6" stroke-linecap="round">
+    <line x1="10.5" y1="28" x2="10.5" y2="35"/>
+    <line x1="17" y1="25" x2="17" y2="38"/>
+    <line x1="23.5" y1="29" x2="23.5" y2="34"/>
+    <line x1="30" y1="22" x2="30" y2="38"/>
+    <line x1="36.5" y1="27" x2="36.5" y2="36"/>
+  </g>
 </svg>

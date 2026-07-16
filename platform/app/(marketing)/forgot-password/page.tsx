@@ -4,8 +4,9 @@
 
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
-import { Mail, CheckCircle, Sparkles } from 'lucide-react';
+import { Mail, CheckCircle } from 'lucide-react';
 import { requestPasswordRecoveryAction } from '@/app/actions/password-recovery';
+import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { Input } from '@/app/components/ui/Input';
 import { Button } from '@/app/components/ui/Button';
 import { FormError } from '@/app/components/ui/FormError';
@@ -144,14 +145,8 @@ export default function ForgotPasswordPage() {
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg-muted)] px-4 py-12">
-      <Link
-        href="/"
-        className="mb-8 flex items-center gap-2 text-sm font-semibold tracking-tight text-[color:var(--color-content-emphasis)]"
-      >
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)]">
-          <Sparkles size={14} strokeWidth={2.2} aria-hidden="true" />
-        </span>
-        ShowCrafter
+      <Link href="/" className="mb-8 text-[color:var(--color-content-emphasis)]">
+        <BrandLockup />
       </Link>
       <div className="w-full max-w-sm space-y-6 rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-8 shadow-[var(--shadow-card)]">
         {children}

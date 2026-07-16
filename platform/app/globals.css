@@ -256,12 +256,26 @@ body {
 }
 
 .brand-logo-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-content-emphasis);
-  color: var(--color-content-inverted);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-content-emphasis) 10%, transparent);
+  --brand-logo-bars: #18181b;
+  --brand-logo-blue-core: #0284c7;
+  --brand-logo-blue-end: #2563eb;
+  --brand-logo-blue-start: #1e3a8a;
+  --brand-logo-burst: #0e9d6a;
+  --brand-logo-trail-end: #15803d;
+  --brand-logo-trail-start: #14532d;
+  display: block;
+  flex: none;
+}
+
+[data-theme='dark'] .brand-logo-mark,
+.dark .brand-logo-mark {
+  --brand-logo-bars: #ffffff;
+  --brand-logo-blue-core: #22d3ee;
+  --brand-logo-blue-end: #3b82f6;
+  --brand-logo-blue-start: #1d4ed8;
+  --brand-logo-burst: #2ee0a3;
+  --brand-logo-trail-end: #22c55e;
+  --brand-logo-trail-start: #166534;
 }
 
 .hero-rainbow-wash {

@@ -1,6 +1,6 @@
 /** Site-wide footer for verified public marketing destinations. */
 import Link from 'next/link';
-import { Sparkles } from 'lucide-react';
+import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { Container } from '@/app/components/ui/Container';
 
 const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] = [
@@ -29,14 +29,8 @@ export function MarketingFooter() {
     <footer className="bg-background border-outline-variant/60 mt-auto w-full border-t pt-14 pb-10">
       <Container className="flex flex-wrap justify-between gap-12">
         <div className="max-w-[280px]">
-          <Link
-            href="/"
-            className="text-on-surface flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]"
-          >
-            <span className="brand-logo-mark h-[30px] w-[30px] rounded-[9px]">
-              <Sparkles aria-hidden="true" size={16} strokeWidth={2} />
-            </span>
-            ShowCrafter
+          <Link href="/" className="text-on-surface">
+            <BrandLockup />
           </Link>
           <p className="text-on-surface-variant mt-4 text-[13px] leading-relaxed">
             AI-assisted show planning, developed with ICON Pyrotechnics International.

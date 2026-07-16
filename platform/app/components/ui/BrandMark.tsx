@@ -1,0 +1,105 @@
+import { useId } from 'react';
+import { cn } from '@/lib/utils';
+
+type BrandLockupProps = {
+  className?: string;
+  labelClassName?: string;
+  markClassName?: string;
+};
+
+export function BrandMark({ className }: { className?: string }) {
+  const id = useId().replaceAll(':', '');
+  const greenTrailId = `${id}-green-trail`;
+  const blueTrailId = `${id}-blue-trail`;
+
+  return (
+    <svg
+      aria-hidden="true"
+      className={cn('brand-logo-mark', className)}
+      focusable="false"
+      viewBox="0 0 48 48"
+    >
+      <defs>
+        <linearGradient
+          id={greenTrailId}
+          gradientUnits="userSpaceOnUse"
+          x1="38.5"
+          y1="42"
+          x2="31"
+          y2="15"
+        >
+          <stop offset="0%" stopColor="var(--brand-logo-trail-start)" stopOpacity="0.52" />
+          <stop offset="100%" stopColor="var(--brand-logo-trail-end)" stopOpacity="0.96" />
+        </linearGradient>
+        <linearGradient
+          id={blueTrailId}
+          gradientUnits="userSpaceOnUse"
+          x1="8"
+          y1="40"
+          x2="18"
+          y2="19.5"
+        >
+          <stop offset="0%" stopColor="var(--brand-logo-blue-start)" stopOpacity="0" />
+          <stop offset="100%" stopColor="var(--brand-logo-blue-end)" />
+        </linearGradient>
+      </defs>
+
+      <path
+        d="M38.5 42 C38 34 35 23 31 15"
+        fill="none"
+        stroke={`url(#${greenTrailId})`}
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+      <g
+        fill="none"
+        opacity="0.9"
+        stroke="var(--brand-logo-burst)"
+        strokeLinecap="round"
+        strokeWidth="1.35"
+      >
+        <line x1="31" y1="15" x2="31" y2="5.5" />
+        <line x1="31" y1="15" x2="35.8" y2="6.8" />
+        <line x1="31" y1="15" x2="39.2" y2="10.2" />
+        <line x1="31" y1="15" x2="40.5" y2="15" />
+        <line x1="31" y1="15" x2="39.2" y2="19.8" />
+        <line x1="31" y1="15" x2="35.8" y2="23.2" />
+        <line x1="31" y1="15" x2="31" y2="24.5" />
+        <line x1="31" y1="15" x2="26.2" y2="23.2" />
+        <line x1="31" y1="15" x2="22.8" y2="19.8" />
+        <line x1="31" y1="15" x2="21.5" y2="15" />
+        <line x1="31" y1="15" x2="22.8" y2="10.2" />
+        <line x1="31" y1="15" x2="26.2" y2="6.8" />
+      </g>
+      <path
+        d="M8 40 C10.5 33 13 27 17 21"
+        fill="none"
+        stroke={`url(#${blueTrailId})`}
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+      <circle cx="18" cy="19.5" r="1.8" fill="var(--brand-logo-blue-core)" />
+      <g stroke="var(--brand-logo-bars)" strokeLinecap="round" strokeWidth="2.6">
+        <line x1="10.5" y1="28" x2="10.5" y2="35" />
+        <line x1="17" y1="25" x2="17" y2="38" />
+        <line x1="23.5" y1="29" x2="23.5" y2="34" />
+        <line x1="30" y1="22" x2="30" y2="38" />
+        <line x1="36.5" y1="27" x2="36.5" y2="36" />
+      </g>
+    </svg>
+  );
+}
+
+export function BrandLockup({ className, labelClassName, markClassName }: BrandLockupProps) {
+  return (
+    <span
+      className={cn(
+        'text-on-surface inline-flex min-w-0 items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]',
+        className,
+      )}
+    >
+      <BrandMark className={cn('h-10 w-10 shrink-0 -translate-y-1.5', markClassName)} />
+      <span className={cn('truncate', labelClassName)}>ShowCrafter</span>
+    </span>
+  );
+}
