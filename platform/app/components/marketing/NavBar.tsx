@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { Container } from '@/app/components/ui/Container';
 import { Button } from '@/app/components/ui/Button';
 import { createClient } from '@/utils/supabase/client';
@@ -162,14 +163,8 @@ export function MarketingNavBar() {
   return (
     <nav className="border-outline-variant/60 sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--background)_80%,transparent)] backdrop-blur-xl">
       <Container className="flex h-[66px] items-center justify-between">
-        <Link
-          href={authenticated ? '/home' : '/'}
-          className="text-on-surface flex items-center gap-2.5 text-xl font-semibold tracking-[-0.02em]"
-        >
-          <span className="brand-logo-mark h-[30px] w-[30px] rounded-[9px]">
-            <Sparkles aria-hidden="true" size={16} strokeWidth={2} />
-          </span>
-          ShowCrafter
+        <Link href={authenticated ? '/home' : '/'} className="text-on-surface">
+          <BrandLockup />
         </Link>
 
         <div className="hidden items-center gap-0.5 lg:flex">

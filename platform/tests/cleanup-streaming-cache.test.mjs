@@ -48,7 +48,6 @@ test('app and admin routes have granular loading coverage and streaming boundari
     'app/(app)/shows/[id]/preview/loading.tsx',
     'app/(app)/shows/[id]/shopping-list/loading.tsx',
     'app/(app)/shows/[id]/show-guide/loading.tsx',
-    'app/(admin)/admin/loading.tsx',
     'app/(admin)/admin/users/loading.tsx',
     'app/(admin)/admin/users/[id]/loading.tsx',
     'app/(admin)/admin/suppliers/loading.tsx',
@@ -60,6 +59,12 @@ test('app and admin routes have granular loading coverage and streaming boundari
   ]) {
     assert.equal(existsSync(join(root, path)), true, `${path} exists`);
   }
+
+  assert.equal(
+    existsSync(join(root, 'app/(admin)/admin/loading.tsx')),
+    false,
+    'the shared /admin loader must not mask route-specific loading states',
+  );
 
   for (const path of [
     'app/(app)/home/page.tsx',

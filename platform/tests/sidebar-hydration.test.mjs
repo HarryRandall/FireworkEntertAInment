@@ -17,8 +17,13 @@ for (const path of ['app/components/app/AppShell.tsx', 'app/components/admin/Adm
     assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
     assert.match(source, /hover:bg-sidebar-accent/);
     assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
-    assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-100/);
-    assert.match(source, /group-data-\[collapsible=icon\]:group-hover:opacity-0/);
+    assert.match(source, /group-data-\[collapsible=icon\]:group-hover\/brand:opacity-100/);
+    assert.match(source, /group\/brand relative flex/);
+    assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
+    assert.match(source, /h-10 w-10 shrink-0 self-center/);
+    assert.match(source, /group-data-\[collapsible=icon\]:left-1\/2/);
+    assert.match(source, /group-data-\[collapsible=icon\]:-translate-x-1\/2/);
+    assert.match(source, /className="w-full gap-0 text-lg/);
     assert.match(source, /<SidebarTrigger className=\{SIDEBAR_HEADER_TRIGGER_CLASS\} \/>/);
     assert.doesNotMatch(source, /<SidebarTrigger className="-ml-1" \/>/);
     assert.match(source, /overflow-hidden/);
@@ -28,6 +33,17 @@ for (const path of ['app/components/app/AppShell.tsx', 'app/components/admin/Adm
     assert.doesNotMatch(source, /window\.localStorage/);
   });
 }
+
+test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
+  const source = readFileSync(join(root, 'app/components/shell-utils.ts'), 'utf8');
+  assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
+  assert.match(source, /text-on-surface/);
+  assert.match(source, /overflow-visible/);
+  assert.match(source, /hover:bg-sidebar-accent/);
+  assert.match(source, /hover:text-on-surface/);
+  assert.match(source, /\[&_svg\.brand-logo-mark\]:size-10!/);
+  assert.match(source, /group-data-\[collapsible=icon\]:group-hover\/brand:opacity-0/);
+});
 
 test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs', () => {
   const appSource = readFileSync(join(root, 'app/components/app/AppShell.tsx'), 'utf8');

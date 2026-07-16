@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { updateProfileAction } from '@/app/actions/platform-admin';
 import { ImpersonationBanner } from '@/app/components/app/ImpersonationBanner';
+import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { ThemePreferenceSync } from '@/app/components/theme/ThemePreferenceSync';
 import { useSidebarPreference } from '@/app/components/app/useSidebarPreference';
 import { GeneratedAvatar } from '@/app/components/ui/GeneratedAvatar';
@@ -75,7 +76,11 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { isPlainLeftClick, isThemePreference } from '@/app/components/shell-utils';
+import {
+  isPlainLeftClick,
+  isThemePreference,
+  SIDEBAR_BRAND_BUTTON_CLASS,
+} from '@/app/components/shell-utils';
 import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
@@ -143,7 +148,7 @@ const ADMIN_LINKS: AdminNavLink[] = [
 ];
 
 const SIDEBAR_HEADER_TRIGGER_CLASS =
-  'h-8 w-8 shrink-0 cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover:pointer-events-auto group-data-[collapsible=icon]:group-hover:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
+  'h-10 w-10 shrink-0 self-center cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:left-1/2 group-data-[collapsible=icon]:right-auto group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:-translate-x-1/2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover/brand:pointer-events-auto group-data-[collapsible=icon]:group-hover/brand:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 
 type ProfileSummary = {
   displayName: string;
@@ -191,14 +196,14 @@ function SidebarBrand() {
   const { isMobile, setOpenMobile } = useSidebar();
 
   return (
-    <div className="relative flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:justify-center">
+    <div className="group/brand relative flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center">
       <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
             size="lg"
-            tooltip="ShowCrafter Admin"
-            className="h-10 transition-opacity duration-150 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:group-hover:opacity-0"
+            tooltip="ShowCrafter"
+            className={SIDEBAR_BRAND_BUTTON_CLASS}
           >
             <Link
               href="/admin"
@@ -207,17 +212,11 @@ function SidebarBrand() {
                 if (isMobile) setOpenMobile(false);
               }}
             >
-              <span className="brand-logo-mark flex h-7 w-7 shrink-0 items-center justify-center rounded-md group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
-                <Sparkles size={16} strokeWidth={2.2} />
-              </span>
-              <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-                <span className="block truncate text-sm font-semibold tracking-tight">
-                  ShowCrafter
-                </span>
-                <span className="text-muted-foreground block truncate text-[10px] font-medium tracking-wide uppercase">
-                  Admin
-                </span>
-              </span>
+              <BrandLockup
+                className="w-full gap-0 text-lg group-data-[collapsible=icon]:justify-center"
+                markClassName="group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:translate-y-0"
+                labelClassName="group-data-[collapsible=icon]:hidden"
+              />
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
