@@ -376,7 +376,7 @@ export function TemplateReplayPreview({
             scrubbing={isScrubbing}
             interactive={isDetail}
             muted={isDetail ? !isPlaying : true}
-            maxDevicePixelRatio={isDetail ? 1.25 : 1.75}
+            maxDevicePixelRatio={2}
             antialias
             primeSnapshots={isDetail}
             loadingBarPosition="bottom"

@@ -32,9 +32,9 @@ test('browse previews share one ready-gated and abort-safe canvas', () => {
 test('browse previews capture representative renderer frames into a bounded Blob URL cache', () => {
   const source = read('app/components/app/FireworkBrowsePreviewContext.tsx');
 
-  assert.match(source, /const POSTER_WIDTH = 640/);
-  assert.match(source, /const POSTER_HEIGHT = 400/);
-  assert.match(source, /const POSTER_WEBP_QUALITY = 0\.82/);
+  assert.match(source, /const POSTER_WIDTH = 1600/);
+  assert.match(source, /const POSTER_HEIGHT = 1000/);
+  assert.match(source, /const POSTER_WEBP_QUALITY = 0\.9/);
   assert.match(source, /const MAX_PREVIEW_CACHE_ENTRIES = 64/);
   assert.match(source, /const MAX_POSTER_CACHE_ENTRIES = 48/);
   assert.match(source, /while \(previewCache\.size > MAX_PREVIEW_CACHE_ENTRIES\)/);
@@ -54,6 +54,9 @@ test('browse previews capture representative renderer frames into a bounded Blob
   assert.match(source, /estimateFireworkDesignTiming/);
   assert.match(source, /isGroundFireworkEffect/);
   assert.match(source, /function cueVisualWindow\(cue: ReplayCue\)/);
+  assert.match(source, /const hasVisibleBurstLayer/);
+  assert.match(source, /timing\.liftTimeSeconds > 0 && !hasVisibleBurstLayer/);
+  assert.match(source, /timing\.liftTimeSeconds \* 0\.55/);
   assert.match(source, /function staticPreviewTime\(preview: CachedPreview\)/);
   assert.match(source, /onReady=\{handleCanvasReady\}/);
   assert.match(source, /completePreviewFrame\(current, mounted, requestSerialRef\.current\)/);
@@ -64,8 +67,9 @@ test('browse previews capture representative renderer frames into a bounded Blob
   assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
 });
 
-test('missing admin posters are backfilled sequentially through the shared canvas', () => {
+test('missing persisted and session-only posters backfill sequentially through one canvas', () => {
   const source = read('app/components/app/FireworkBrowsePreviewContext.tsx');
+  const effectsBrowser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
 
   assert.match(source, /const MAX_BACKGROUND_CAPTURE_ATTEMPTS = 2/);
   assert.match(source, /const BACKGROUND_CAPTURE_DELAY_MS = 350/);
@@ -76,8 +80,12 @@ test('missing admin posters are backfilled sequentially through the shared canva
   assert.match(source, /queuePosterCapture:/);
   assert.match(source, /unqueuePosterCapture:/);
   assert.match(source, /persist: true,\s*background: true/);
-  assert.match(source, /displayPoster: false/);
+  assert.match(source, /const persist = target\.persist \?\? true/);
+  assert.match(source, /const displayPoster = target\.displayPoster \?\? false/);
+  assert.match(source, /displayPoster && posterUrlCache\.has\(target\.previewUrl\)/);
+  assert.match(source, /persist,\s*background: true,\s*displayPoster/);
   assert.match(source, /if \(target\.displayPoster && providerMountedRef\.current\)/);
+  assert.match(source, /if \(!target\.persist\) return true/);
   assert.match(
     source,
     /if \(active \|\| pending \|\| posterQueueRef\.current\.size === 0\) return/,
@@ -87,6 +95,8 @@ test('missing admin posters are backfilled sequentially through the shared canva
   assert.match(source, /void activatePreview\(nextTarget\)/);
   assert.match(source, /void capture\.then\(\(success\) => finishBackgroundCapture/);
   assert.match(source, /Direct interaction always takes priority over sequential backfill/);
+  assert.match(effectsBrowser, /persist: false/);
+  assert.match(effectsBrowser, /displayPoster: true/);
   assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
 });
 

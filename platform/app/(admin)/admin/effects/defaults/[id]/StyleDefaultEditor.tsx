@@ -57,11 +57,11 @@ import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
-import { compileFireworkDesign, estimateDesignDurationSeconds } from '@/lib/fireworks/design';
+import { estimateDesignDurationSeconds } from '@/lib/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
+  compileStyleDefaultPreviewDesign,
   extractStyleDefaultsFromDesign,
-  makeStyleDefaultPreviewBaseModel,
   makeTrailPreviewStarDefaults,
   normaliseStyleDefaultJson,
   styleDefaultKindLabel,
@@ -81,7 +81,6 @@ const LazyFireworkReplayCanvas = dynamic(
   },
 );
 
-const PREVIEW_COLOR = '#22d3ee';
 const PREVIEW_CUE_TIME_SECONDS = 0.05;
 const PREVIEW_START_SECONDS = 0;
 // Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
@@ -126,21 +125,6 @@ function parseJsonObject(text: string): ParsedJson {
 
 function cloneRecord(value: Record<string, unknown>): Record<string, unknown> {
   return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
-}
-
-function compileStyleDefaultPreviewDesign(
-  kind: FireworkStyleDefaultKind,
-  defaultsJson: unknown,
-  trailPreviewStarDefaults?: unknown,
-) {
-  const normalisedDefaults = normaliseStyleDefaultJson(kind, defaultsJson);
-  return compileFireworkDesign({
-    baseModel: makeStyleDefaultPreviewBaseModel(kind),
-    fireworkStyleDefaults:
-      kind === 'trail' && trailPreviewStarDefaults ? [trailPreviewStarDefaults] : undefined,
-    variantOverrides: normalisedDefaults,
-    primaryColor: kind === 'trail' || kind === 'smoke' || kind === 'launch' ? PREVIEW_COLOR : null,
-  });
 }
 
 function styleDefaultEditorSignature(fields: {

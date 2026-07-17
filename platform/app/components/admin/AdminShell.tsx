@@ -5,7 +5,7 @@
  * Admin destinations stay RBAC-gated upstream by server components and middleware.
  */
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
   createContext,
@@ -70,6 +70,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
@@ -82,6 +85,14 @@ import {
   SIDEBAR_BRAND_BUTTON_CLASS,
 } from '@/app/components/shell-utils';
 import { signOutCurrentSession } from '@/app/components/app/sign-out.client';
+import {
+  ADMIN_EFFECTS_VIEWS,
+  adminEffectsViewHref,
+  adminEffectsViewLabel,
+  isAdminEffectsView,
+  parseAdminEffectsView,
+  type AdminEffectsView,
+} from '@/lib/admin-effects-navigation';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
@@ -255,6 +266,85 @@ function SidebarNavItem({
           <span>{link.label}</span>
         </Link>
       </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function AdminEffectsNavItem({
+  active,
+  activeView,
+  onNavigate,
+}: {
+  active: boolean;
+  activeView: AdminEffectsView | null;
+  onNavigate: (href: string) => void;
+}) {
+  const { isMobile, setOpen, setOpenMobile, state } = useSidebar();
+  const [expanded, setExpanded] = useState(active);
+
+  useEffect(() => {
+    if (active) setExpanded(true);
+  }, [active]);
+
+  const submenuVisible = expanded && (isMobile || state === 'expanded');
+
+  const toggleExpanded = () => {
+    if (!isMobile && state === 'collapsed') {
+      setOpen(true);
+      setExpanded(true);
+      return;
+    }
+    setExpanded((current) => !current);
+  };
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        type="button"
+        isActive={active}
+        tooltip="Effects"
+        aria-expanded={submenuVisible}
+        aria-controls="admin-effects-navigation"
+        onClick={toggleExpanded}
+      >
+        <Sparkles size={16} strokeWidth={2} />
+        <span>Effects</span>
+        <ChevronRight
+          aria-hidden
+          className={cn(
+            'ml-auto transition-transform duration-200 motion-reduce:transition-none',
+            expanded && 'rotate-90',
+          )}
+        />
+      </SidebarMenuButton>
+
+      {submenuVisible ? (
+        <SidebarMenuSub id="admin-effects-navigation">
+          {ADMIN_EFFECTS_VIEWS.map((view) => {
+            const href = adminEffectsViewHref(view);
+            const selected = activeView === view;
+            return (
+              <SidebarMenuSubItem key={view}>
+                <SidebarMenuSubButton asChild isActive={selected} className="h-11 md:h-7">
+                  <Link
+                    href={href}
+                    prefetch={false}
+                    aria-current={selected ? 'page' : undefined}
+                    onClick={(event) => {
+                      if (isPlainLeftClick(event)) {
+                        onNavigate(href);
+                        if (isMobile) setOpenMobile(false);
+                      }
+                    }}
+                  >
+                    <span>{adminEffectsViewLabel(view)}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            );
+          })}
+        </SidebarMenuSub>
+      ) : null}
     </SidebarMenuItem>
   );
 }
@@ -515,15 +605,32 @@ export function AdminShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [breadcrumbOverride, setBreadcrumbOverride] = useState<Breadcrumb | null>(null);
-  const effectivePath = pendingHref ?? pathname;
+  const currentSearch = searchParams.toString();
+  const pendingPath = pendingHref?.split(/[?#]/, 1)[0] ?? null;
+  const effectivePath = pendingPath ?? pathname;
+  const pendingSearchParams = pendingHref?.includes('?')
+    ? new URLSearchParams(pendingHref.slice(pendingHref.indexOf('?') + 1))
+    : null;
+  const requestedEffectsView = pendingSearchParams?.get('view') ?? searchParams.get('view');
+  const requestedLegacyEffectsTab = pendingSearchParams?.get('tab') ?? searchParams.get('tab');
+  const effectsView = effectivePath?.startsWith('/admin/effects/defaults/')
+    ? isAdminEffectsView(requestedEffectsView)
+      ? requestedEffectsView
+      : null
+    : parseAdminEffectsView(requestedEffectsView, requestedLegacyEffectsTab);
   const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
     useSidebarPreference({
       initialCollapsed: initialSidebarCollapsed,
       hasInitialCookie: hasInitialSidebarCollapsedCookie,
     });
-  const baseBreadcrumbs = getAdminBreadcrumbs(effectivePath);
+  const baseBreadcrumbs = getAdminBreadcrumbs(effectivePath).map((breadcrumb) =>
+    breadcrumb.href === '/admin/effects' && effectsView
+      ? { ...breadcrumb, href: adminEffectsViewHref(effectsView) }
+      : breadcrumb,
+  );
   const breadcrumbs = breadcrumbOverride
     ? [...baseBreadcrumbs, breadcrumbOverride]
     : baseBreadcrumbs;
@@ -535,7 +642,7 @@ export function AdminShell({
 
   useEffect(() => {
     setPendingHref(null);
-  }, [pathname]);
+  }, [currentSearch, pathname]);
 
   const handleSignOut = async () => {
     const result = await signOutCurrentSession();
@@ -571,14 +678,22 @@ export function AdminShell({
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {ADMIN_LINKS.filter((link) => profile.permissions.includes(link.permission)).map(
-                  (link) => (
-                    <SidebarNavItem
-                      key={link.href}
-                      link={link}
-                      active={isActivePath(effectivePath, link.href)}
-                      onNavigate={setPendingHref}
-                    />
-                  ),
+                  (link) =>
+                    link.href === '/admin/effects' ? (
+                      <AdminEffectsNavItem
+                        key={link.href}
+                        active={isActivePath(effectivePath, link.href)}
+                        activeView={isActivePath(effectivePath, link.href) ? effectsView : null}
+                        onNavigate={setPendingHref}
+                      />
+                    ) : (
+                      <SidebarNavItem
+                        key={link.href}
+                        link={link}
+                        active={isActivePath(effectivePath, link.href)}
+                        onNavigate={setPendingHref}
+                      />
+                    ),
                 )}
               </SidebarMenu>
             </SidebarGroupContent>

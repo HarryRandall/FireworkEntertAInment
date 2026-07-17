@@ -626,7 +626,7 @@ test('renderer draws compact mixed round, square, and triangle particles', () =>
   assert.match(shaders, /float pointSize = clamp\(coreSize \+ haloPad \* 2\.0/);
   assert.match(shaders, /vec3 headSparkColor = mix\(vColor, vec3\(1\.0\), whiteCore\)/);
   assert.doesNotMatch(shaders, /projectionScale = projectionMatrix\[1\]\[1\]/);
-  assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 1\.25/);
+  assert.match(canvas, /MAX_DEVICE_PIXEL_RATIO = 2/);
   assert.match(canvas, /DEFAULT_CAMERA_POSITION = new THREE\.Vector3\(0, 64, 2850\)/);
   assert.match(canvas, /DEFAULT_CAMERA_TARGET = new THREE\.Vector3\(0, 1000, 0\)/);
   assert.match(canvas, /renderOverscanPx\?: number/);

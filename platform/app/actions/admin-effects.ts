@@ -463,7 +463,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   ]);
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${parsed.data.id}`);
-  revalidatePath('/admin/effects?tab=defaults');
   revalidatePath('/admin/fireworks');
   revalidatePath('/admin/multishots');
   return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion, historyRecorded };
@@ -563,7 +562,6 @@ export async function createStyleDefaultAndUpdateEffect(
   ]);
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${saved.id}`);
-  revalidatePath('/admin/effects?tab=defaults');
   revalidatePath('/admin/fireworks');
   revalidatePath('/admin/multishots');
   return {
@@ -684,7 +682,6 @@ export async function restoreEffectEditorVersion(
   ]);
   revalidatePath('/admin/effects');
   revalidatePath(`/admin/effects/${parsed.data.effectId}`);
-  revalidatePath('/admin/effects?tab=defaults');
   revalidatePath('/admin/fireworks');
   revalidatePath('/admin/multishots');
   return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion, historyRecorded };

@@ -141,7 +141,7 @@ test('firework admin lists use paginated hover-preview card grids', () => {
   assert.doesNotMatch(multishots, /\{multishot\.description\s*\?\?/);
 });
 
-test('effects use preview cards while style defaults retain the admin table', () => {
+test('base effects and style defaults both use renderer preview card grids', () => {
   const source = readFileSync(join(root, 'app/(admin)/admin/effects/EffectsBrowser.tsx'), 'utf8');
   const loading = readFileSync(join(root, 'app/(admin)/admin/effects/loading.tsx'), 'utf8');
 
@@ -159,16 +159,27 @@ test('effects use preview cards while style defaults retain the admin table', ()
   );
   assert.match(source, /\bpersistPoster\b/);
   assert.match(source, /posterBackfillTargets/);
-  assert.match(source, /effectsActive \? \(/);
-  assert.match(source, /<DataTableShell/);
   assert.match(source, /filteredDefaults\.map/);
+  assert.match(source, /\/api\/admin\/firework-previews\/style-default\//);
+  assert.match(source, /persist: false/);
+  assert.match(source, /displayPoster: true/);
+  assert.match(
+    source,
+    /href=\{`\/admin\/effects\/defaults\/\$\{item\.id\}\?view=\$\{item\.kind\}`\}/,
+  );
+  assert.match(source, /grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4/);
   assert.match(source, /effect\.patternKey/);
   assert.match(source, /effect\.variantCount\.toLocaleString\(\)/);
   assert.doesNotMatch(source, /preview=\{/);
+  assert.doesNotMatch(source, /<DataTableShell|<table|tableCellClasses|tableRowClasses/);
+  assert.doesNotMatch(source, /role="tablist"|function Tabs\(/);
   assert.doesNotMatch(source, /\{effect\.description\s*\?\?/);
   assert.doesNotMatch(source, /formatStableDateTime\(effect\.updatedAt\)/);
   assert.match(loading, /Effects/);
-  assert.match(loading, /Style defaults/);
+  assert.match(loading, /useSearchParams/);
+  assert.match(loading, /adminEffectsViewLabel\(view\)/);
+  assert.match(loading, /adminEffectsViewDescription\(view\)/);
+  assert.doesNotMatch(loading, /role="tablist"|aria-label="Effects view"/);
   assert.match(loading, /FireworkBrowseGridSkeleton/);
 });
 

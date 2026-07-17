@@ -1,4 +1,5 @@
 import {
+  compileFireworkDesign,
   DEFAULT_DESIGN,
   hydrateBurstTrailDefaults,
   makeBurstTrailPreset,
@@ -232,7 +233,7 @@ export function makeStyleDefaultPreviewBaseModel(
   const starLayers =
     kind === 'trail'
       ? makeHiddenTrailCarrierStarLayers()
-      : kind === 'launch'
+      : kind === 'launch' || kind === 'smoke'
         ? makeLaunchPreviewStarLayers()
         : makeNeutralStarPreviewLayers();
   const launchDefaults = makeNeutralLaunchDefaults();
@@ -272,6 +273,20 @@ export function normaliseStyleDefaultJson(
 
   const hydrated = hydrateBurstTrailDefaults(source);
   return isRecord(hydrated) ? hydrated : source;
+}
+
+export function compileStyleDefaultPreviewDesign(
+  kind: FireworkStyleDefaultKind,
+  defaultsJson: unknown,
+  trailPreviewStarDefaults?: unknown,
+) {
+  return compileFireworkDesign({
+    baseModel: makeStyleDefaultPreviewBaseModel(kind),
+    fireworkStyleDefaults:
+      kind === 'trail' && trailPreviewStarDefaults ? [trailPreviewStarDefaults] : undefined,
+    variantOverrides: normaliseStyleDefaultJson(kind, defaultsJson),
+    primaryColor: kind === 'trail' || kind === 'smoke' || kind === 'launch' ? '#22d3ee' : null,
+  });
 }
 
 function stripColourFields(layer: FireworkStarLayer): JsonRecord {

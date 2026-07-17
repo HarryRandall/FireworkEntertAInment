@@ -127,7 +127,7 @@ function ShowReplayPreviewSurface({
       playbackRef={elapsedRef}
       interactive={false}
       muted
-      maxDevicePixelRatio={1.75}
+      maxDevicePixelRatio={2}
       antialias
       showLoadingBar={false}
       onReady={onReady}

@@ -1,33 +1,15 @@
 'use client';
 
-/**
- * Client-side browser for the admin Effects and Style defaults tabs.
- *
- * Both datasets are small and fetched once on the server, so all searching,
- * filtering, and tab switching happen instantly in the browser with no extra
- * round-trips. Filters live behind a compact popover and creation happens in a
- * dialog, keeping the page itself minimal: a tab switch, a search box, and the
- * current browse surface.
- */
+/** URL-backed browser for base effects and renderer style defaults. */
 
-import { useMemo, useState, useTransition } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ChevronRight, ListFilter, Plus, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ListFilter, Plus, Search } from 'lucide-react';
 import { createCustomStarEffect } from '@/app/actions/admin-effects';
 import { createStyleDefaultFromKind } from '@/app/actions/admin-style-defaults';
 import { FireworkBrowseCard } from '@/app/components/app/FireworkBrowseCard';
 import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
 import { Badge } from '@/app/components/ui/Badge';
 import { Button } from '@/app/components/ui/Button';
-import {
-  DataTableShell,
-  tableCellClasses,
-  tableClasses,
-  tableHeadClasses,
-  tableHeaderCellClasses,
-  tableRowClasses,
-} from '@/app/components/ui/DataTable';
 import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { Input } from '@/app/components/ui/Input';
 import { SelectField } from '@/app/components/ui/SelectField';
@@ -43,21 +25,24 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  ADMIN_EFFECTS_BASE_VIEW,
+  adminEffectsViewDescription,
+  adminEffectsViewLabel,
+  type AdminEffectsView,
+} from '@/lib/admin-effects-navigation';
+import type { AdminEffectSummary, AdminStyleDefaultSummary } from '@/lib/admin.types';
+import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
 } from '@/lib/fireworks/style-defaults';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatStableDateTime } from '@/lib/show-domain';
-import type { AdminEffectSummary, AdminStyleDefaultSummary } from '@/lib/admin.types';
-import { cn } from '@/lib/utils';
-
-type EffectsTab = 'effects' | 'defaults';
 
 type Props = {
   effects: AdminEffectSummary[];
   styleDefaults: AdminStyleDefaultSummary[];
-  initialTab: EffectsTab;
+  initialView: AdminEffectsView;
 };
 
 const ALL = '__all';
@@ -80,13 +65,18 @@ function styleDefaultBadgeTone(kind: FireworkStyleDefaultKind) {
       return 'warning' as const;
     case 'sound':
       return 'success' as const;
+    case 'geometry':
+      return 'neutral' as const;
   }
 }
 
 function matches(query: string, parts: (string | null | undefined)[]) {
   if (!query) return true;
-  const haystack = parts.filter(Boolean).join(' ').toLowerCase();
-  return haystack.includes(query);
+  return parts.filter(Boolean).join(' ').toLowerCase().includes(query);
+}
+
+function styleDefaultPreviewUrl(item: AdminStyleDefaultSummary): string {
+  return `/api/admin/firework-previews/style-default/${item.id}?revision=${encodeURIComponent(item.updatedAt)}`;
 }
 
 type Option = { value: string; label: string };
@@ -94,11 +84,15 @@ type Option = { value: string; label: string };
 function FilterPopover({
   activeCount,
   onReset,
-  children,
+  options,
+  value,
+  onChange,
 }: {
   activeCount: number;
   onReset: () => void;
-  children: React.ReactNode;
+  options: Option[];
+  value: string | null;
+  onChange: (value: string | null) => void;
 }) {
   return (
     <Popover>
@@ -126,68 +120,17 @@ function FilterPopover({
             </button>
           ) : null}
         </div>
-        {children}
+        <label className="flex flex-col gap-1.5">
+          <span className="text-muted-foreground text-xs font-medium">Source</span>
+          <SelectField
+            value={value ?? ALL}
+            ariaLabel="Source"
+            onChange={(next) => onChange(next === ALL ? null : next)}
+            options={[{ value: ALL, label: 'All sources' }, ...options]}
+          />
+        </label>
       </PopoverContent>
     </Popover>
-  );
-}
-
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string | null;
-  options: Option[];
-  onChange: (value: string | null) => void;
-}) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-muted-foreground text-xs font-medium">{label}</span>
-      <SelectField
-        value={value ?? ALL}
-        ariaLabel={label}
-        onChange={(next) => onChange(next === ALL ? null : next)}
-        options={[{ value: ALL, label: `All ${label.toLowerCase()}` }, ...options]}
-      />
-    </label>
-  );
-}
-
-function Tabs({ value, onChange }: { value: EffectsTab; onChange: (tab: EffectsTab) => void }) {
-  const options: { value: EffectsTab; label: string }[] = [
-    { value: 'effects', label: 'Effects' },
-    { value: 'defaults', label: 'Style defaults' },
-  ];
-  return (
-    <div
-      className="border-border bg-background inline-flex h-10 shrink-0 items-center rounded-lg border p-1 shadow-xs"
-      role="tablist"
-      aria-label="Effects view"
-    >
-      {options.map((option) => {
-        const selected = value === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              'focus-visible:ring-ring/50 inline-flex h-8 items-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-3',
-              selected
-                ? 'bg-primary text-primary-foreground shadow-xs'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -224,8 +167,9 @@ function CreateEffectAction() {
   );
 }
 
-function StyleDefaultCreateAction() {
-  const [kind, setKind] = useState<FireworkStyleDefaultKind>('star');
+function StyleDefaultCreateAction({ initialKind }: { initialKind: FireworkStyleDefaultKind }) {
+  const [kind, setKind] = useState<FireworkStyleDefaultKind>(initialKind);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -269,15 +213,12 @@ function StyleDefaultCreateAction() {
   );
 }
 
-export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [tab, setTab] = useState<EffectsTab>(initialTab);
+export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
   const [query, setQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<string | null>(null);
-
   const normalisedQuery = query.trim().toLowerCase();
+  const effectsActive = initialView === ADMIN_EFFECTS_BASE_VIEW;
+  const activeKind = effectsActive ? null : initialView;
 
   const sourceOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(effects.map((effect) => effect.source)));
@@ -286,83 +227,85 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [effects]);
 
-  const kindOptions = useMemo<Option[]>(() => {
-    const present = new Set(styleDefaults.map((item) => item.kind));
-    return FIREWORK_STYLE_DEFAULT_KINDS.filter((kind) => present.has(kind)).map((kind) => ({
-      value: kind,
-      label: styleDefaultKindLabel(kind),
-    }));
-  }, [styleDefaults]);
+  const defaultsForView = useMemo(
+    () =>
+      activeKind === null
+        ? []
+        : styleDefaults.filter((styleDefault) => styleDefault.kind === activeKind),
+    [activeKind, styleDefaults],
+  );
 
-  const filteredEffects = useMemo(() => {
-    return effects.filter((effect) => {
-      const matchesQuery = matches(normalisedQuery, [
-        effect.name,
-        effect.slug,
-        effect.description,
-        effect.patternKey,
-        effect.source,
-      ]);
-      const matchesSource = !sourceFilter || effect.source === sourceFilter;
-      return matchesQuery && matchesSource;
-    });
-  }, [effects, normalisedQuery, sourceFilter]);
+  const filteredEffects = useMemo(
+    () =>
+      effects.filter(
+        (effect) =>
+          matches(normalisedQuery, [
+            effect.name,
+            effect.slug,
+            effect.description,
+            effect.patternKey,
+            effect.source,
+          ]) &&
+          (!sourceFilter || effect.source === sourceFilter),
+      ),
+    [effects, normalisedQuery, sourceFilter],
+  );
 
-  const filteredDefaults = useMemo(() => {
-    return styleDefaults.filter((item) => {
-      const matchesQuery = matches(normalisedQuery, [
-        item.name,
-        item.slug,
-        item.description,
-        styleDefaultKindLabel(item.kind),
-      ]);
-      const matchesKind = !kindFilter || item.kind === kindFilter;
-      return matchesQuery && matchesKind;
-    });
-  }, [styleDefaults, normalisedQuery, kindFilter]);
+  const filteredDefaults = useMemo(
+    () =>
+      defaultsForView.filter((item) =>
+        matches(normalisedQuery, [item.name, item.slug, item.description]),
+      ),
+    [defaultsForView, normalisedQuery],
+  );
 
   const posterBackfillTargets = useMemo(
     () =>
-      filteredEffects
-        .filter((effect) => !effect.previewImagePath)
-        .map((effect) => ({
-          id: `effect-${effect.id}`,
-          previewUrl: withFireworkPreviewRevision(
-            `/api/admin/firework-previews/effect/${effect.id}`,
-            effect.previewImageRevision,
-          ),
-        })),
-    [filteredEffects],
+      effectsActive
+        ? filteredEffects
+            .filter((effect) => !effect.previewImagePath)
+            .map((effect) => ({
+              id: `effect-${effect.id}`,
+              previewUrl: withFireworkPreviewRevision(
+                `/api/admin/firework-previews/effect/${effect.id}`,
+                effect.previewImageRevision,
+              ),
+            }))
+        : filteredDefaults.map((item) => ({
+            id: `style-default-${item.id}`,
+            previewUrl: styleDefaultPreviewUrl(item),
+            persist: false,
+            displayPoster: true,
+          })),
+    [effectsActive, filteredDefaults, filteredEffects],
   );
 
-  const open = (href: string) => {
-    startTransition(() => router.push(href));
-  };
-
-  const effectsActive = tab === 'effects';
-  const activeFilterCount = effectsActive ? (sourceFilter ? 1 : 0) : kindFilter ? 1 : 0;
-
-  const resetFilters = () => {
-    setSourceFilter(null);
-    setKindFilter(null);
-  };
-
-  const totalCount = effectsActive ? effects.length : styleDefaults.length;
   const visibleCount = effectsActive ? filteredEffects.length : filteredDefaults.length;
-  const itemLabel = effectsActive ? 'effect' : 'style default';
+  const totalCount = effectsActive ? effects.length : defaultsForView.length;
+  const itemLabel = effectsActive ? 'base effect' : 'style default';
+  const hasFilters = Boolean(normalisedQuery || sourceFilter);
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <Tabs
-          value={tab}
-          onChange={(next) => {
-            setTab(next);
-            setQuery('');
-            resetFilters();
-          }}
-        />
-        {effectsActive ? <CreateEffectAction /> : <StyleDefaultCreateAction />}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            Effects
+          </p>
+          <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight">
+            {adminEffectsViewLabel(initialView)}
+          </h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
+            {adminEffectsViewDescription(initialView)}
+          </p>
+        </div>
+        <div className="shrink-0">
+          {activeKind === null ? (
+            <CreateEffectAction />
+          ) : (
+            <StyleDefaultCreateAction initialKind={activeKind} />
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -370,42 +313,33 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={effectsActive ? 'Search effects…' : 'Search style defaults…'}
+            placeholder={effectsActive ? 'Search base effects…' : 'Search style defaults…'}
             iconLeft={<Search size={16} />}
             aria-label="Search"
           />
         </div>
-        <FilterPopover activeCount={activeFilterCount} onReset={resetFilters}>
-          {effectsActive ? (
-            <FilterSelect
-              label="Source"
-              value={sourceFilter}
-              options={sourceOptions}
-              onChange={setSourceFilter}
-            />
-          ) : (
-            <FilterSelect
-              label="Kind"
-              value={kindFilter}
-              options={kindOptions}
-              onChange={setKindFilter}
-            />
-          )}
-        </FilterPopover>
+        {effectsActive ? (
+          <FilterPopover
+            activeCount={sourceFilter ? 1 : 0}
+            onReset={() => setSourceFilter(null)}
+            options={sourceOptions}
+            value={sourceFilter}
+            onChange={setSourceFilter}
+          />
+        ) : null}
       </div>
 
-      {effectsActive ? (
-        <div className="space-y-5">
-          {filteredEffects.length === 0 ? (
-            <EmptyNotice>
-              {normalisedQuery || activeFilterCount
-                ? 'No effects match your search and filters.'
-                : 'No effects have been created yet.'}
-            </EmptyNotice>
-          ) : (
-            <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {filteredEffects.map((effect) => (
+      {visibleCount === 0 ? (
+        <EmptyNotice>
+          {hasFilters
+            ? 'No items match your search and filters.'
+            : `No ${itemLabel}s have been created in this category yet.`}
+        </EmptyNotice>
+      ) : (
+        <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {effectsActive
+              ? filteredEffects.map((effect) => (
                   <FireworkBrowseCard
                     key={effect.id}
                     previewId={`effect-${effect.id}`}
@@ -437,87 +371,44 @@ export function EffectsBrowser({ effects, styleDefaults, initialTab }: Props) {
                       </div>
                     </div>
                   </FireworkBrowseCard>
-                ))}
-              </div>
-            </FireworkBrowsePreviewProvider>
-          )}
-          <BrowserCount visibleCount={visibleCount} totalCount={totalCount} itemLabel={itemLabel} />
-        </div>
-      ) : (
-        <DataTableShell
-          viewport
-          footer={
-            <BrowserCount
-              visibleCount={visibleCount}
-              totalCount={totalCount}
-              itemLabel={itemLabel}
-            />
-          }
-        >
-          <table className={tableClasses('min-w-[720px]')}>
-            <thead className={tableHeadClasses()}>
-              <tr>
-                <th className={tableHeaderCellClasses()}>Default</th>
-                <th className={tableHeaderCellClasses()}>Kind</th>
-                <th className={tableHeaderCellClasses()}>Updated</th>
-                <th className={tableHeaderCellClasses('w-10')}>
-                  <span className="sr-only">Open</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDefaults.length === 0 ? (
-                <EmptyRow colSpan={4} hasFilters={Boolean(normalisedQuery || activeFilterCount)} />
-              ) : (
-                filteredDefaults.map((item) => {
-                  const href = `/admin/effects/defaults/${item.id}`;
-                  return (
-                    <tr
-                      key={item.id}
-                      onClick={() => open(href)}
-                      className={tableRowClasses(
-                        'group cursor-pointer hover:bg-[color:var(--color-bg-muted)]',
-                      )}
-                    >
-                      <td className={tableCellClasses()}>
-                        <Link
-                          href={href}
-                          onClick={(event) => event.stopPropagation()}
-                          className="block max-w-xs truncate font-medium text-[color:var(--color-content-emphasis)] hover:underline focus:outline-none focus-visible:underline"
-                        >
+                ))
+              : filteredDefaults.map((item) => (
+                  <FireworkBrowseCard
+                    key={item.id}
+                    previewId={`style-default-${item.id}`}
+                    previewUrl={styleDefaultPreviewUrl(item)}
+                    label={item.name}
+                    href={`/admin/effects/defaults/${item.id}?view=${item.kind}`}
+                  >
+                    <div className="p-4">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <h2 className="text-foreground line-clamp-2 min-w-0 text-sm leading-5 font-semibold">
                           {item.name}
-                        </Link>
-                        <div className="mt-0.5 max-w-md truncate text-xs text-[color:var(--color-content-subtle)]">
-                          {item.description ?? item.slug}
+                        </h2>
+                        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                          <Badge tone={styleDefaultBadgeTone(item.kind)} solid>
+                            {styleDefaultKindLabel(item.kind)}
+                          </Badge>
+                          {item.isArchived ? <Badge tone="neutral">Archived</Badge> : null}
                         </div>
-                      </td>
-                      <td className={tableCellClasses()}>
-                        <Badge tone={styleDefaultBadgeTone(item.kind)} solid>
-                          {styleDefaultKindLabel(item.kind)}
-                        </Badge>
-                      </td>
-                      <td
-                        className={tableCellClasses(
-                          'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-                        )}
-                      >
-                        {formatStableDateTime(item.updatedAt)}
-                      </td>
-                      <td className={tableCellClasses('text-right')}>
-                        <ChevronRight
-                          size={16}
-                          className="text-[color:var(--color-content-subtle)] transition-transform group-hover:translate-x-0.5 group-hover:text-[color:var(--color-content-emphasis)]"
-                          aria-hidden
-                        />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </DataTableShell>
+                      </div>
+                      <p className="text-muted-foreground mt-2 line-clamp-2 min-h-10 text-xs leading-5">
+                        {item.description ?? item.slug}
+                      </p>
+                      <p className="text-muted-foreground mt-3 text-xs">
+                        Updated{' '}
+                        <time dateTime={item.updatedAt} className="font-mono tabular-nums">
+                          {formatStableDateTime(item.updatedAt)}
+                        </time>
+                      </p>
+                    </div>
+                  </FireworkBrowseCard>
+                ))}
+          </div>
+        </FireworkBrowsePreviewProvider>
       )}
+
+      <BrowserCount visibleCount={visibleCount} totalCount={totalCount} itemLabel={itemLabel} />
     </div>
   );
 }
@@ -537,15 +428,5 @@ function BrowserCount({
       <span className="tabular-nums">{totalCount}</span>{' '}
       {totalCount === 1 ? itemLabel : `${itemLabel}s`}
     </p>
-  );
-}
-
-function EmptyRow({ colSpan, hasFilters }: { colSpan: number; hasFilters: boolean }) {
-  return (
-    <tr>
-      <td colSpan={colSpan} className="text-muted-foreground px-4 py-16 text-center text-sm">
-        {hasFilters ? 'No matches for your search and filters.' : 'There is nothing here yet.'}
-      </td>
-    </tr>
   );
 }

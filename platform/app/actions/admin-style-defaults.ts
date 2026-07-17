@@ -353,7 +353,7 @@ export async function createStyleDefault(
 
 export async function createStyleDefaultFromKind(formData: FormData): Promise<void> {
   if (!(await requirePermission('admin.manage_catalogue'))) {
-    redirect('/admin/effects?tab=defaults');
+    redirect('/admin/effects?view=star');
   }
 
   const kind = StyleDefaultKindSchema.safeParse(formData.get('kind'));
@@ -366,7 +366,7 @@ export async function createStyleDefaultFromKind(formData: FormData): Promise<vo
   });
 
   if (!result.ok) throw new Error(result.error);
-  redirect(`/admin/effects/defaults/${result.id}`);
+  redirect(`/admin/effects/defaults/${result.id}?view=${parsedKind}`);
 }
 
 export async function updateStyleDefault(

@@ -21,6 +21,9 @@ import {
 
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
 
+const STYLE_DEFAULT_SUMMARY_SELECT =
+  'id, slug, name, description, kind, defaults_json, sort_order, is_archived, created_at, updated_at';
+
 function normaliseKind(kind: string): FireworkStyleDefaultKind {
   return isFireworkStyleDefaultKind(kind) ? kind : 'star';
 }
@@ -32,6 +35,17 @@ function toOption(row: StyleDefaultRow): AdminStyleDefaultOption {
     name: row.name,
     description: row.description,
     defaultsJson: row.defaults_json as Json,
+  };
+}
+
+function toSummary(row: StyleDefaultRow): AdminStyleDefaultSummary {
+  return {
+    ...toOption(row),
+    slug: row.slug,
+    sortOrder: row.sort_order,
+    isArchived: row.is_archived,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
 }
 
@@ -66,9 +80,7 @@ export async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary
   const supabase = await getServerClient();
   const defaultsResult = await supabase
     .from('firework_style_defaults')
-    .select(
-      'id, slug, name, description, kind, defaults_json, sort_order, is_archived, created_at, updated_at',
-    )
+    .select(STYLE_DEFAULT_SUMMARY_SELECT)
     .order('kind', { ascending: true })
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
@@ -82,17 +94,30 @@ export async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary
     }
     return [];
   }
-  const mapped = ((defaultsResult.data ?? []) as StyleDefaultRow[]).map((row) => ({
-    ...toOption(row),
-    slug: row.slug,
-    sortOrder: row.sort_order,
-    isArchived: row.is_archived,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
+  const mapped = ((defaultsResult.data ?? []) as StyleDefaultRow[]).map(toSummary);
 
   await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return mapped;
+}
+
+export async function getAdminStyleDefaultPreviewSourceById(
+  defaultId: string,
+): Promise<AdminStyleDefaultSummary | null> {
+  if (!(await requirePermission('admin.manage_catalogue'))) return null;
+
+  const supabase = await getServerClient();
+  const result = await supabase
+    .from('firework_style_defaults')
+    .select(STYLE_DEFAULT_SUMMARY_SELECT)
+    .eq('id', defaultId)
+    .maybeSingle();
+
+  if (result.error) {
+    throw new Error('Could not load the style default preview source.', {
+      cause: result.error,
+    });
+  }
+  return result.data ? toSummary(result.data as StyleDefaultRow) : null;
 }
 
 export async function listAdminStyleDefaultOptions(): Promise<AdminStyleDefaultOptions> {
