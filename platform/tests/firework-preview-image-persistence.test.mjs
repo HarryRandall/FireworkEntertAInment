@@ -177,33 +177,33 @@ test('preview URL helpers expose only the current renderer version', () => {
     } = loadPreviewImageModule();
 
     assert.equal(FIREWORK_PREVIEW_BUCKET, 'firework-previews');
-    assert.equal(FIREWORK_PREVIEW_RENDERER_VERSION, 'v1');
-    assert.equal(isCurrentFireworkPreviewImagePath('v1/firework/item/poster.webp'), true);
-    assert.equal(isCurrentFireworkPreviewImagePath('v0/firework/item/poster.webp'), false);
+    assert.equal(FIREWORK_PREVIEW_RENDERER_VERSION, 'v2');
+    assert.equal(isCurrentFireworkPreviewImagePath('v2/firework/item/poster.webp'), true);
+    assert.equal(isCurrentFireworkPreviewImagePath('v1/firework/item/poster.webp'), false);
     assert.deepEqual(
       resolveFireworkPreviewImage({
         source_revision: 4,
-        renderer_version: 'v1',
-        storage_path: 'v1/firework/item/poster.webp',
+        renderer_version: 'v2',
+        storage_path: 'v2/firework/item/poster.webp',
       }),
       {
-        previewImagePath: 'v1/firework/item/poster.webp',
+        previewImagePath: 'v2/firework/item/poster.webp',
         previewImageRevision: 4,
       },
     );
     assert.deepEqual(
       resolveFireworkPreviewImage({
         source_revision: 5,
-        renderer_version: 'v0',
-        storage_path: 'v0/firework/item/poster.webp',
+        renderer_version: 'v1',
+        storage_path: 'v1/firework/item/poster.webp',
       }),
       { previewImagePath: null, previewImageRevision: 5 },
     );
     assert.equal(
-      fireworkPreviewImageUrl('v1/firework/item/poster.webp'),
-      'https://example.supabase.co/storage/v1/object/public/firework-previews/v1/firework/item/poster.webp',
+      fireworkPreviewImageUrl('v2/firework/item/poster.webp'),
+      'https://example.supabase.co/storage/v1/object/public/firework-previews/v2/firework/item/poster.webp',
     );
-    assert.equal(fireworkPreviewImageUrl('v0/firework/item/poster.webp'), null);
+    assert.equal(fireworkPreviewImageUrl('v1/firework/item/poster.webp'), null);
     assert.equal(withFireworkPreviewRevision('/api/preview', 7), '/api/preview?revision=7');
     assert.equal(
       withFireworkPreviewRevision('/api/preview?kind=firework', 7),
@@ -254,7 +254,7 @@ test('admin POST validates WebP capture metadata and the catalogue route stays r
   assert.equal(adminRoute.match(/requirePermission\('admin\.manage_catalogue'\)/g)?.length, 2);
   assert.equal(packageJson.dependencies.sharp, '^0.34.5');
   assert.match(adminRoute, /import sharp from 'sharp'/);
-  assert.match(adminRoute, /const MAX_POSTER_BYTES = 1024 \* 1024/);
+  assert.match(adminRoute, /const MAX_POSTER_BYTES = 2 \* 1024 \* 1024/);
   assert.match(adminRoute, /const MAX_POSTER_INPUT_PIXELS = POSTER_WIDTH \* POSTER_HEIGHT/);
   assert.match(adminRoute, /contentType !== 'image\/webp'/);
   assert.match(adminRoute, /image\.toString\('ascii', 0, 4\) === 'RIFF'/);

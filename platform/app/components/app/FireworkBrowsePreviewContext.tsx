@@ -29,9 +29,13 @@ import type { ReplayCue } from '@/lib/show-domain';
 
 const HOVER_INTENT_MS = 500;
 const MAX_STATIC_PREVIEW_SECONDS = 1.8;
-const POSTER_WIDTH = 640;
-const POSTER_HEIGHT = 400;
-const POSTER_WEBP_QUALITY = 0.82;
+// Posters are shown up to ~800 CSS px wide on wide grids, so 2x density needs
+// ~1600 physical px; smaller captures leave the browser upscaling into mush.
+// The background capture stage below is sized so a 2x display renders exactly
+// these dimensions, avoiding any resample of the persisted frame.
+const POSTER_WIDTH = 1600;
+const POSTER_HEIGHT = 1000;
+const POSTER_WEBP_QUALITY = 0.9;
 const MAX_PREVIEW_CACHE_ENTRIES = 64;
 const MAX_POSTER_CACHE_ENTRIES = 48;
 const MAX_BACKGROUND_CAPTURE_ATTEMPTS = 2;
@@ -52,7 +56,10 @@ type PreviewTarget = {
   displayPoster: boolean;
 };
 
-type PosterBackfillTarget = Pick<PreviewTarget, 'id' | 'previewUrl'>;
+type PosterBackfillTarget = Pick<PreviewTarget, 'id' | 'previewUrl'> & {
+  persist?: boolean;
+  displayPoster?: boolean;
+};
 
 type LoadedPreview = {
   id: string;
@@ -142,6 +149,24 @@ function cueVisualWindow(cue: ReplayCue): CueVisualWindow {
   }
 
   const timing = estimateFireworkDesignTiming(design);
+  const hasVisibleBurstLayer = [design.stars.outer, design.stars.core].some(
+    (layer) =>
+      layer.enabled &&
+      (layer.head.visible || (layer.burstTrail.enabled && layer.burstTrail.particlesPerStar > 0)),
+  );
+  if (!isGroundFireworkEffect(design) && timing.liftTimeSeconds > 0 && !hasVisibleBurstLayer) {
+    const launchOffset = clamp(
+      timing.liftTimeSeconds * 0.55,
+      0.2,
+      Math.max(0.2, timing.liftTimeSeconds * 0.85),
+    );
+    return {
+      startSeconds: cue.timeSeconds,
+      representativeSeconds: cue.timeSeconds + launchOffset,
+      endSeconds: cue.timeSeconds + timing.liftTimeSeconds,
+    };
+  }
+
   const visibleDuration = Math.max(0.25, timing.fadeFinishSeconds - timing.effectStartSeconds);
   const developedOffset = isGroundFireworkEffect(design)
     ? clamp(visibleDuration * 0.38, 0.45, 4)
@@ -434,7 +459,12 @@ export function FireworkBrowsePreviewProvider({
     }
 
     for (const target of targets) {
-      if (persistedPosterCaptures.has(target.previewUrl)) {
+      const persist = target.persist ?? true;
+      const displayPoster = target.displayPoster ?? false;
+      const alreadyCaptured = persist
+        ? persistedPosterCaptures.has(target.previewUrl)
+        : displayPoster && posterUrlCache.has(target.previewUrl);
+      if (alreadyCaptured) {
         const current = posterQueueRef.current.get(target.id);
         if (current?.element === element) {
           posterQueueRef.current.delete(target.id);
@@ -445,13 +475,21 @@ export function FireworkBrowsePreviewProvider({
       }
 
       const current = posterQueueRef.current.get(target.id);
-      if (current?.previewUrl === target.previewUrl && current.element.isConnected) continue;
+      if (
+        current?.previewUrl === target.previewUrl &&
+        current.element.isConnected &&
+        current.persist === persist &&
+        current.displayPoster === displayPoster
+      ) {
+        continue;
+      }
       posterQueueRef.current.set(target.id, {
-        ...target,
+        id: target.id,
+        previewUrl: target.previewUrl,
         element,
-        persist: true,
+        persist,
         background: true,
-        displayPoster: false,
+        displayPoster,
       });
       changed = true;
     }
@@ -972,7 +1010,7 @@ export function FireworkBrowsePreviewProvider({
       <div
         ref={backgroundTargetRef}
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 -z-50 h-[400px] w-[640px] opacity-0"
+        className="pointer-events-none fixed top-0 left-0 -z-50 h-[500px] w-[800px] opacity-0"
       />
       <div
         ref={overlayRef}
@@ -990,7 +1028,7 @@ export function FireworkBrowsePreviewProvider({
             controlsVisible={false}
             showCameraControls={false}
             muted
-            maxDevicePixelRatio={1.25}
+            maxDevicePixelRatio={2}
             antialias
             showLoadingBar={false}
             onReady={handleCanvasReady}

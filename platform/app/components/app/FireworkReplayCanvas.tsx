@@ -224,7 +224,11 @@ export type FireworkReplayCaptureController = {
   reset(): void;
 };
 
-const MAX_DEVICE_PIXEL_RATIO = 1.25;
+// Cap at 2 so Retina displays render at native density; anything above 2
+// costs quadratic fill rate (and a full-resolution bloom pass) for detail the
+// eye cannot resolve. Values below the display ratio leave the browser
+// upscaling the canvas, which reads as a blurry preview.
+const MAX_DEVICE_PIXEL_RATIO = 2;
 // Orbit centre sits at y=1000 (upper-show). Camera is low and pulled back so the
 // default looks up into the show from below; zooming in tracks toward the centre
 // and is stopped by the keep-out sphere before it rises into the burst. At this

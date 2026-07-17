@@ -3,8 +3,10 @@ import sharp from 'sharp';
 import { requirePermission } from '@/lib/admin/current-user.server';
 import {
   FireworkCardPreviewReadError,
+  loadAdminFireworkCardPreview,
   loadAdminFireworkCardPreviewForPersistence,
   type AdminFireworkCardPreviewKind,
+  type AdminFireworkCardPreviewSourceKind,
 } from '@/lib/firework-card-preview.server';
 import { persistFireworkPreviewImage } from '@/lib/firework-preview-persistence.server';
 
@@ -12,11 +14,19 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store, max-age=0' } as const;
-const MAX_POSTER_BYTES = 1024 * 1024;
-const POSTER_WIDTH = 640;
-const POSTER_HEIGHT = 400;
+// Dimensions must match the client capture in FireworkBrowsePreviewContext;
+// the byte cap allows a busy 1280x800 WebP frame while still bounding uploads.
+const MAX_POSTER_BYTES = 2 * 1024 * 1024;
+const POSTER_WIDTH = 1600;
+const POSTER_HEIGHT = 1000;
 const MAX_POSTER_INPUT_PIXELS = POSTER_WIDTH * POSTER_HEIGHT;
-const ADMIN_PREVIEW_KINDS = new Set<AdminFireworkCardPreviewKind>([
+const ADMIN_PREVIEW_KINDS = new Set<AdminFireworkCardPreviewSourceKind>([
+  'effect',
+  'firework',
+  'multishot',
+  'style-default',
+]);
+const PERSISTABLE_ADMIN_PREVIEW_KINDS = new Set<AdminFireworkCardPreviewKind>([
   'effect',
   'firework',
   'multishot',
@@ -63,7 +73,7 @@ function readCaptureMetadata(request: Request): CaptureMetadata | null {
 
   if (
     !kind ||
-    !ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewKind) ||
+    !PERSISTABLE_ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewKind) ||
     !sourceId ||
     !UUID.test(sourceId) ||
     sourceRevision === null ||
@@ -162,15 +172,18 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const { kind, id } = await context.params;
-  if (!ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewKind) || !UUID.test(id)) {
+  if (!ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewSourceKind) || !UUID.test(id)) {
     return response({ error: 'not_found' }, 404);
   }
 
   try {
-    const preview = await loadAdminFireworkCardPreviewForPersistence(
-      kind as AdminFireworkCardPreviewKind,
-      id,
-    );
+    const preview =
+      kind === 'style-default'
+        ? await loadAdminFireworkCardPreview('style-default', id)
+        : await loadAdminFireworkCardPreviewForPersistence(
+            kind as AdminFireworkCardPreviewKind,
+            id,
+          );
     if (!preview) return response({ error: 'not_found' }, 404);
     return response(preview);
   } catch (error) {
@@ -188,7 +201,10 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const { kind, id } = await context.params;
-  if (!ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewKind) || !UUID.test(id)) {
+  if (
+    !PERSISTABLE_ADMIN_PREVIEW_KINDS.has(kind as AdminFireworkCardPreviewKind) ||
+    !UUID.test(id)
+  ) {
     return response({ error: 'not_found' }, 404);
   }
 

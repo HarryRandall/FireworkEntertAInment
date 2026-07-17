@@ -116,7 +116,9 @@ export function FireworkBrowseCard({
       ref={mediaRef}
       className="bg-stage-night relative aspect-[16/10] overflow-hidden border-b border-[color:var(--color-border-subtle)]"
     >
-      {!posterLoaded ? (
+      {/* Shimmer only while a real poster is loading. Cards without a
+          persisted poster show the stage backdrop, not a permanent skeleton. */}
+      {posterUrl && failedPosterUrl !== posterUrl && !posterLoaded ? (
         <Skeleton className="absolute inset-0 h-full w-full rounded-none" aria-hidden />
       ) : null}
       {posterUrl && failedPosterUrl !== posterUrl ? (
