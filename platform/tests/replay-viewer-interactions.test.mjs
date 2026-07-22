@@ -17,13 +17,19 @@ test('cue rows expose a labelled keyboard-operable seek action', () => {
   assert.match(cueTable, /<button\s+type="button"/);
   assert.match(cueTable, /aria-label=\{`Seek to \$\{fireworkName\} at \$\{cueTimeLabel\}`\}/);
   assert.match(cueTable, /aria-current=\{isActive \? 'true' : undefined\}/);
+  // The time button still seeks paused, but now stops propagation so the row's
+  // play-from-here handler does not also fire.
   assert.match(
     cueTable,
-    /onClick=\{\(\) => \{\s*setIsPlaying\(false\);\s*seekTo\(cue\.timeSeconds, false\);/,
+    /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*setIsPlaying\(false\);\s*seekTo\(cue\.timeSeconds, false\);/,
   );
   assert.match(cueTable, /focus-visible:ring-3/);
-  assert.doesNotMatch(cueTable, /<tr[^>]*onClick=/);
-  assert.doesNotMatch(cueTable, /cursor-pointer/);
+  // Selecting a row plays the show live from that cue (same as the menu action).
+  assert.match(cueTable, /onClick=\{\(\) => playFrom\(cue\.timeSeconds\)\}/);
+  assert.match(cueTable, /title="Play from here"/);
+  assert.match(cueTable, /cursor-pointer/);
+  // The actions cell stops propagation so opening the menu never plays the row.
+  assert.match(cueTable, /onClick=\{\(event\) => event\.stopPropagation\(\)\}/);
   assert.match(cueTable, /isActive &&\s*'bg-\[color:var\(--color-bg-muted\)\]/);
 });
 
