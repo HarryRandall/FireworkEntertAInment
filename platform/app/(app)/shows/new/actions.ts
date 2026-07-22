@@ -12,6 +12,7 @@ import { parseCover, randomCover } from '@/lib/cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
 import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
+import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { DEFAULT_SHOW_STYLE, SHOW_STYLES, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';
 import {
   FIREWORK_TYPE_KEYS,
@@ -112,7 +113,10 @@ export async function getShowGenerationPresentationAction(): Promise<ShowGenerat
   const actionKeys = Array.from(
     new Set<AiCreditActionKey>(['show_generation_fast', ...modelActionKeys.values()]),
   );
-  const costs = await Promise.all(actionKeys.map((key) => getAiCreditCost(supabase, key)));
+  const [costs, warmth] = await Promise.all([
+    Promise.all(actionKeys.map((key) => getAiCreditCost(supabase, key))),
+    getAnalyserWarmthState(),
+  ]);
   const costByAction = new Map(costs.map((cost) => [cost.key, cost.amount]));
 
   return {
@@ -127,6 +131,7 @@ export async function getShowGenerationPresentationAction(): Promise<ShowGenerat
           costByAction.get(actionKey) ?? 1,
         ]),
       ),
+      analyserWarm: warmth.active,
     },
   };
 }

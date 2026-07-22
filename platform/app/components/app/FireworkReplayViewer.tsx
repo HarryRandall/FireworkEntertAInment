@@ -1029,8 +1029,15 @@ export function FireworkReplayViewer({
                           return (
                             <tr
                               key={baseCueId}
+                              // Selecting a row plays the show live from that cue
+                              // (the same as the row menu's "Play from here"). The
+                              // time button and actions menu stop propagation so
+                              // they keep their own seek/menu behaviour.
+                              onClick={() => playFrom(cue.timeSeconds)}
+                              title="Play from here"
                               className={tableRowClasses(
                                 cn(
+                                  'cursor-pointer',
                                   isActive &&
                                     'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
                                 ),
@@ -1041,7 +1048,8 @@ export function FireworkReplayViewer({
                                   type="button"
                                   aria-label={`Seek to ${fireworkName} at ${cueTimeLabel}`}
                                   aria-current={isActive ? 'true' : undefined}
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.stopPropagation();
                                     setIsPlaying(false);
                                     seekTo(cue.timeSeconds, false);
                                   }}
@@ -1063,7 +1071,10 @@ export function FireworkReplayViewer({
                                   {mortarLabel}
                                 </span>
                               </td>
-                              <td className={tableCellClasses('h-14 text-right')}>
+                              <td
+                                className={tableCellClasses('h-14 text-right')}
+                                onClick={(event) => event.stopPropagation()}
+                              >
                                 <RowActionsMenu
                                   label="Cue actions"
                                   items={[

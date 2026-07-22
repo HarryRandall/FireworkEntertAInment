@@ -12,6 +12,10 @@ export type ShowGenerationPresentation = {
   defaultCueModel: string;
   fastCreditCost: number;
   modelCreditCosts: Record<string, number>;
+  /** Whether the analyser container is warm, so the wizard's launch splash uses
+   * the same time estimate as the /generating route and hands over without a
+   * visible progress jump. */
+  analyserWarm: boolean;
 };
 
 /** Successfully-uploaded audio metadata persisted to the create-show form. */

@@ -1,11 +1,11 @@
 /** My shows page listing every show outside the dashboard. */
 import { Suspense } from 'react';
-import { EmptyShowsPanel } from '@/app/components/app/ShowSummaryCards';
 import { Skeleton } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 import { ShowsToolbar, type ShowsSortKey } from './ShowsToolbar';
+import { ShowsEmptyState } from './ShowsEmptyState';
 import { ShowReplayCoverCard } from './ShowReplayCoverCard';
 import { ShowReplayPreviewProvider } from './ShowReplayPreviewContext';
 
@@ -80,6 +80,9 @@ export default async function ShowsPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q ?? '';
   const sort = parseSort(params.sort);
+  // `getDashboardSummary` is request-cached, so reading it here to decide
+  // whether the user has any shows does not double-fetch for `ShowsGrid`.
+  const summary = await getDashboardSummary();
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
@@ -89,10 +92,16 @@ export default async function ShowsPage({ searchParams }: PageProps) {
           Search, preview and continue editing your saved show plans.
         </p>
       </header>
-      <ShowsToolbar query={query} sort={sort} sorts={SORTS} />
-      <Suspense fallback={<ShowsGridSkeleton />}>
-        <ShowsGrid query={query} sort={sort} page={params.page} />
-      </Suspense>
+      {summary.showCount === 0 ? (
+        <ShowsEmptyState />
+      ) : (
+        <>
+          <ShowsToolbar query={query} sort={sort} sorts={SORTS} />
+          <Suspense fallback={<ShowsGridSkeleton />}>
+            <ShowsGrid query={query} sort={sort} page={params.page} />
+          </Suspense>
+        </>
+      )}
     </div>
   );
 }
@@ -107,14 +116,6 @@ async function ShowsGrid({ query, sort, page }: { query: string; sort: SortKey; 
   const paginatedShows = shouldPaginate
     ? shows.slice(pageStart, pageStart + SHOWS_PAGE_SIZE)
     : shows;
-
-  if (summary.showCount === 0) {
-    return (
-      <div className="mx-auto w-full">
-        <EmptyShowsPanel />
-      </div>
-    );
-  }
 
   return (
     <section className="space-y-4">

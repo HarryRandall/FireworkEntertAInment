@@ -99,7 +99,12 @@ export function planCuesOnBeats(params: {
         if (!timing) continue;
         const window: OccupiedWindow = {
           start: timing.launchTimeSeconds,
-          end: timing.launchTimeSeconds + Math.max(product.durationSeconds ?? 0.5, 0.5),
+          // Reserve the tube for the same conservative duration the database
+          // enforces, not just the base burst duration, or two nearby beats can
+          // pass the planner and then fail the timeline-safety trigger.
+          end:
+            timing.launchTimeSeconds +
+            Math.max(fireworkOccupancyDurationSeconds(product) ?? 0.5, 0.5),
           tube,
         };
         if (overlaps(window, occupied)) continue;

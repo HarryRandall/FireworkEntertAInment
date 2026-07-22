@@ -798,18 +798,11 @@ export default function NewShowPage() {
                     <div className="bg-[linear-gradient(180deg,transparent_0%,color-mix(in_srgb,var(--color-bg-default)_24%,transparent)_100%)] px-4 pt-2 pb-3">
                       <div className="flex items-center justify-between gap-3">
                         {generationPresentation ? (
-                          usesBeatPrecision ? (
-                            <span
-                              className="border-border bg-background/80 text-foreground inline-flex h-7 min-w-0 items-center gap-1.5 rounded-full border px-2 text-[13px] shadow-sm backdrop-blur-xl"
-                              aria-label={`Beat precision planner, ${generationPresentation.fastCreditCost} AI credit${generationPresentation.fastCreditCost === 1 ? '' : 's'}`}
-                            >
-                              <Waves size={14} aria-hidden="true" />
-                              <span className="truncate font-medium">Beat precision</span>
-                              <span className="bg-muted text-muted-foreground inline-flex h-[1.125rem] min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] leading-none font-medium tabular-nums">
-                                {generationPresentation.fastCreditCost}
-                              </span>
-                            </span>
-                          ) : generationPresentation.generationMode === 'llm' ? (
+                          // Beat precision still uses AI to choose the fireworks;
+                          // it only takes over the cue timing. So the AI model
+                          // selector stays for every style and is never replaced
+                          // by a planner chip when Beat precision is selected.
+                          generationPresentation.generationMode === 'llm' ? (
                             <CueModelSelect
                               value={effectiveCueModel}
                               onChange={setSelectedCueModel}
@@ -1031,19 +1024,18 @@ export default function NewShowPage() {
                       );
                     })}
                   </div>
-                  {lengthChoice !== null ? (
-                    <div className="flex justify-center pt-2">
-                      <Button
-                        type="button"
-                        onClick={() => goToStep(stepIndex + 1)}
-                        size="lg"
-                        className="rounded-full px-8"
-                      >
-                        Continue
-                        <ArrowRight size={16} />
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      type="button"
+                      onClick={() => goToStep(stepIndex + 1)}
+                      disabled={mounted && lengthChoice === null}
+                      size="lg"
+                      className="rounded-full px-8"
+                    >
+                      Continue
+                      <ArrowRight size={16} />
+                    </Button>
+                  </div>
                 </fieldset>
               </StepPanel>
 
@@ -1065,19 +1057,18 @@ export default function NewShowPage() {
                       />
                     ))}
                   </div>
-                  {budget !== null ? (
-                    <div className="flex justify-center pt-5">
-                      <Button
-                        type="button"
-                        onClick={() => goToStep(stepIndex + 1)}
-                        size="lg"
-                        className="rounded-full px-8"
-                      >
-                        Continue
-                        <ArrowRight size={16} />
-                      </Button>
-                    </div>
-                  ) : null}
+                  <div className="flex justify-center pt-5">
+                    <Button
+                      type="button"
+                      onClick={() => goToStep(stepIndex + 1)}
+                      disabled={mounted && budget === null}
+                      size="lg"
+                      className="rounded-full px-8"
+                    >
+                      Continue
+                      <ArrowRight size={16} />
+                    </Button>
+                  </div>
                 </fieldset>
               </StepPanel>
 
@@ -1253,10 +1244,7 @@ export default function NewShowPage() {
             </Button>
           )}
           <StepDots stepIndex={stepIndex} total={STEPS.length} />
-          {stepIndex === 0 ||
-          isFinalStep ||
-          (stepIndex === 2 && lengthChoice !== null) ||
-          (stepIndex === 3 && budget !== null) ? (
+          {stepIndex === 0 || isFinalStep ? (
             <span className="inline-block h-10 w-10" aria-hidden="true" />
           ) : (
             <Button
@@ -1275,7 +1263,12 @@ export default function NewShowPage() {
       {/* Instant splash: covers the round trip to the /generating route so the
           swap on Generate has no visible gap. */}
       {isLaunching && launch ? (
-        <LaunchOverlay slug={launch.slug} title={launch.title} hasAudio={launch.hasAudio} />
+        <LaunchOverlay
+          slug={launch.slug}
+          title={launch.title}
+          hasAudio={launch.hasAudio}
+          isWarm={generationPresentation?.analyserWarm ?? false}
+        />
       ) : null}
     </form>
   );

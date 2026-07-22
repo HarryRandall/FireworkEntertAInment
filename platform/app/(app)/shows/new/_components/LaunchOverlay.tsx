@@ -13,10 +13,14 @@ export function LaunchOverlay({
   slug,
   title,
   hasAudio,
+  isWarm,
 }: {
   slug: string;
   title: string;
   hasAudio: boolean;
+  /** Forwarded from the generation presentation so this splash uses the same
+   * time estimate as the /generating route and hands over without a jump. */
+  isWarm: boolean;
 }) {
   return (
     // While launching, the wizard form extends to the true bottom edge of the
@@ -32,6 +36,7 @@ export function LaunchOverlay({
         showTitle={title}
         persistKey={slug}
         hasAudio={hasAudio}
+        isWarm={isWarm}
         phase={hasAudio ? 'analysing' : 'generating'}
         randomiseCoverOnLoad
         pollIntervalMs={60_000}

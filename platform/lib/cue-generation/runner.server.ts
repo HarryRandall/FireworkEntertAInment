@@ -67,6 +67,55 @@ import {
 
 type AppSupabase = SupabaseClient<Database>;
 
+/** Two-decimal rounding that mirrors the `numeric(8,2)` timeline column. */
+function toStoredTimeSeconds(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Final guarantee that the persisted set satisfies the database timeline-safety
+ * trigger, applied to every planner path (beat, fast, and LLM).
+ *
+ * The planners avoid overlaps with their own duration model, but the database
+ * stores `time_seconds` as `numeric(8,2)` and reserves each tube for the
+ * catalogue item's *greatest* stored or child duration. Re-checking with
+ * database-identical rounding and conservative durations means a straggler is
+ * dropped here rather than failing the whole guarded RPC with
+ * "Timeline item overlaps an occupied launch position".
+ */
+function enforceTimelineTubeSafety(
+  cues: ReconstructedCue[],
+  products: Awaited<ReturnType<typeof listFireworkProducts>>,
+  maxTubes: 1 | 2 | 3,
+): ReconstructedCue[] {
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const ordered = [...cues].sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
+  const kept: ReconstructedCue[] = [];
+  const acceptedWindows: CueWindow[] = [];
+  for (const cue of ordered) {
+    const product = productById.get(cue.productId);
+    if (!product) continue;
+    const occupiedTubes = occupiedLaunchPositions(product, cue.tube, maxTubes);
+    if (!occupiedTubes) continue;
+    // Compare on the rounded value the trigger will actually see, and reserve
+    // the tube for the same conservative duration the database enforces.
+    const storedTime = toStoredTimeSeconds(cue.timeSeconds);
+    const durationSeconds = Math.max(
+      fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS,
+      MIN_PRODUCT_DURATION_SECONDS,
+    );
+    const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
+      timeSeconds: storedTime,
+      durationSeconds,
+      launchPositionIndex,
+    }));
+    if (windows.some((window) => findTubeOverlap(window, acceptedWindows))) continue;
+    kept.push({ ...cue, timeSeconds: storedTime });
+    acceptedWindows.push(...windows);
+  }
+  return kept;
+}
+
 /** Generated cue with the slot context preserved for downstream validation. */
 type ReconstructedCue = {
   /** Renderer launch time. */
@@ -577,6 +626,10 @@ export async function generateCuesForShow(params: {
       }
     }
   }
+
+  // Guarantee database-safe spacing for every path before the guarded write.
+  accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+  acceptedCount = accepted.length;
 
   if (accepted.length === 0) {
     const message =
