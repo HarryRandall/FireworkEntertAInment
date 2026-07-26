@@ -7,9 +7,9 @@
  *   3. Parse the analyser JSON, persist a `song_analyses` / `show_generation_runs`
  *      row, and let the caller render markdown.
  *
- * Failures are recorded on the analysis row (`status = 'failed'`,
- * `error_message`) so the UI can surface them; this function never throws
- * past the caller boundary for "expected" analyser failures.
+ * Upload-scoped runs use database leases. Only the worker holding the current
+ * lease token can complete, retry, or fail an attempt, so a stale Modal call
+ * cannot overwrite a recovered result.
  */
 import 'server-only';
 
@@ -19,9 +19,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 
-const ANALYSER_SCHEMA_VERSION = '1.4.0';
+const ANALYSER_SCHEMA_VERSION = '1.5.0';
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
+const ANALYSIS_LEASE_SECONDS = 900;
+const MAX_ANALYSIS_ATTEMPTS = 3;
+const RETRY_DELAYS_SECONDS = [30, 120] as const;
 
 type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -39,21 +42,32 @@ type ShowForAnalysis = {
 };
 
 type MusicAnalysisRow = {
-  id: string;
+  analysis_id: string;
   user_id: string;
   audio_path: string;
   personality: string;
+  attempt_count: number;
+  lease_token: string;
 };
 
 export type RunShowAnalysisResult =
-  | { ok: true; analysisId: string; contextMarkdown: string }
-  | { ok: false; error: string; analysisId?: string; cancelled?: false }
-  | { ok: false; error: string; analysisId: string; cancelled: true };
+  | { ok: true; analysisId: string; userId?: string; contextMarkdown: string }
+  | {
+      ok: false;
+      error: string;
+      analysisId?: string;
+      userId?: string;
+      cancelled?: boolean;
+      pending?: boolean;
+      retryScheduled?: boolean;
+      idle?: boolean;
+    };
 
 class AnalyseError extends Error {
   constructor(
     message: string,
     readonly status = 500,
+    readonly retryable = false,
   ) {
     super(message);
   }
@@ -159,6 +173,9 @@ function buildAiContextMarkdown(params: {
     '',
     '## Timing Reference',
     '',
+    `- Beats per bar: ${analysis.beats_per_bar ?? 4}`,
+    `- Bar-grid confidence: ${analysis.bar_grid_confidence ?? 'legacy/unknown'}`,
+    `- Downbeat sample: ${(analysis.downbeat_times ?? []).slice(0, 40).join(', ')}`,
     `- Beat sample: ${(analysis.beat_times ?? []).slice(0, 80).join(', ')}`,
     `- Onset sample: ${(analysis.onset_times ?? []).slice(0, 80).join(', ')}`,
     '',
@@ -208,46 +225,100 @@ async function runHostedAnalyser(params: {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new AnalyseError(`Could not reach the song analyser: ${message}`, 502);
+    throw new AnalyseError(`Could not reach the song analyser: ${message}`, 502, true);
   }
 
-  const bodyText = await response.text();
+  let bodyText: string;
+  try {
+    bodyText = await response.text();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AnalyseError(`Could not read the song analyser response: ${message}`, 502, true);
+  }
   if (!response.ok) {
+    const retryable =
+      response.status === 408 ||
+      response.status === 425 ||
+      response.status === 429 ||
+      response.status >= 500;
     throw new AnalyseError(
       truncate(bodyText || `Analyser returned HTTP ${response.status}.`),
-      response.status === 401 ? 500 : 422,
+      response.status,
+      retryable,
     );
   }
 
+  let parsed: unknown;
   try {
-    return JSON.parse(bodyText) as AnalyserResult;
+    parsed = JSON.parse(bodyText);
   } catch {
     throw new AnalyseError('The analyser did not return JSON output.', 422);
   }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new AnalyseError('The analyser returned an invalid result object.', 422);
+  }
+  const result = parsed as Record<string, unknown>;
+  if (result.schema_version !== ANALYSER_SCHEMA_VERSION) {
+    throw new AnalyseError(
+      `The analyser returned schema ${String(result.schema_version)}; expected ${ANALYSER_SCHEMA_VERSION}.`,
+      422,
+    );
+  }
+  if (
+    typeof result.bar_grid_confidence !== 'number' ||
+    !Number.isFinite(result.bar_grid_confidence) ||
+    result.bar_grid_confidence < 0 ||
+    result.bar_grid_confidence > 1
+  ) {
+    throw new AnalyseError('The analyser returned invalid bar-grid confidence.', 422);
+  }
+  if (!Array.isArray(result.downbeat_times) || ![2, 3, 4].includes(Number(result.beats_per_bar))) {
+    throw new AnalyseError('The analyser returned an invalid bar grid.', 422);
+  }
+  return parsed as AnalyserResult;
 }
 
-async function markMusicAnalysisFailed(params: {
+async function classifyUnclaimedMusicAnalysis(params: {
   supabase: AppSupabaseClient;
-  analysisId: string;
-  runtimeMs: number;
-  errorMessage: string;
-}): Promise<'updated' | 'missing' | 'error'> {
-  const { data, error } = await params.supabase
-    .from('song_analyses')
-    .update({
-      status: 'failed',
-      runtime_ms: params.runtimeMs,
-      error_message: truncate(params.errorMessage, 2000),
-    })
-    .eq('id', params.analysisId)
-    .eq('status', 'running')
-    .select('id')
-    .maybeSingle();
-  if (error) {
-    console.error('[show-analysis-runner] failed to persist music failure state:', error);
-    return 'error';
+  analysisId?: string;
+  fallbackUserId?: string;
+  error: string;
+}): Promise<RunShowAnalysisResult> {
+  if (!params.analysisId) {
+    return { ok: false, pending: true, idle: true, error: params.error };
   }
-  return data ? 'updated' : 'missing';
+
+  const { data: row, error: lookupError } = await params.supabase
+    .from('song_analyses')
+    .select('id, user_id, status')
+    .eq('id', params.analysisId)
+    .maybeSingle();
+  if (lookupError) {
+    console.error('[show-analysis-runner] music analysis state lookup failed:', lookupError);
+    return {
+      ok: false,
+      analysisId: params.analysisId,
+      userId: params.fallbackUserId,
+      pending: true,
+      error: params.error,
+    };
+  }
+  if (!row) {
+    return {
+      ok: false,
+      analysisId: params.analysisId,
+      userId: params.fallbackUserId,
+      cancelled: true,
+      error: 'Music analysis was discarded.',
+    };
+  }
+  return {
+    ok: false,
+    analysisId: row.id,
+    userId: row.user_id,
+    pending: true,
+    error: params.error,
+  };
 }
 
 async function markShowAnalysisFailed(params: {
@@ -271,61 +342,60 @@ async function markShowAnalysisFailed(params: {
 
 export async function runMusicAnalysisForUpload(params: {
   supabase: AppSupabaseClient;
-  userId: string;
-  analysisId: string;
+  userId?: string;
+  analysisId?: string;
   personality?: 'balanced' | 'bold' | 'cinematic' | 'elegant' | 'intimate' | 'playful';
 }): Promise<RunShowAnalysisResult> {
-  const { data: row, error: lookupError } = await params.supabase
-    .from('song_analyses')
-    .select('id, user_id, audio_path, personality')
-    .eq('id', params.analysisId)
-    .eq('user_id', params.userId)
-    .maybeSingle();
-
-  if (lookupError) {
-    console.error('[show-analysis-runner] music analysis lookup failed:', lookupError);
-    return { ok: false, error: 'Could not load music analysis record.' };
-  }
-  if (!row) return { ok: false, error: 'Music analysis record not found.' };
-
-  const typedRow = row as MusicAnalysisRow;
-  const personality = params.personality ?? typedRow.personality ?? 'balanced';
-  const startedAt = Date.now();
-
-  const { data: claimed, error: claimError } = await params.supabase
-    .from('song_analyses')
-    .update({
-      status: 'running',
-      error_message: null,
-      runner_version: ANALYSER_RUNNER_VERSION,
-      schema_version: ANALYSER_SCHEMA_VERSION,
-      personality,
-    })
-    .eq('id', typedRow.id)
-    .eq('user_id', params.userId)
-    .eq('status', 'running')
-    .select('id')
-    .maybeSingle();
-
+  const { data: claimedRows, error: claimError } = await params.supabase.rpc(
+    'claim_song_analysis_attempt',
+    {
+      p_analysis_id: params.analysisId,
+      p_lease_seconds: ANALYSIS_LEASE_SECONDS,
+      p_max_attempts: MAX_ANALYSIS_ATTEMPTS,
+    },
+  );
   if (claimError) {
     console.error('[show-analysis-runner] music analysis claim failed:', claimError);
-    return { ok: false, analysisId: typedRow.id, error: 'Could not start music analysis.' };
-  }
-  if (!claimed) {
     return {
       ok: false,
-      analysisId: typedRow.id,
-      cancelled: true,
-      error: 'Music analysis was discarded.',
+      analysisId: params.analysisId,
+      userId: params.userId,
+      pending: true,
+      error: 'Could not claim music analysis work.',
     };
   }
+
+  const typedRow = (claimedRows?.[0] ?? null) as MusicAnalysisRow | null;
+  if (!typedRow) {
+    return classifyUnclaimedMusicAnalysis({
+      supabase: params.supabase,
+      analysisId: params.analysisId,
+      fallbackUserId: params.userId,
+      error: params.analysisId
+        ? 'Music analysis is already claimed or waiting to retry.'
+        : 'No song analysis is ready to reconcile.',
+    });
+  }
+  if (params.userId && typedRow.user_id !== params.userId) {
+    console.error('[show-analysis-runner] claimed music analysis owner did not match caller.');
+    return {
+      ok: false,
+      analysisId: typedRow.analysis_id,
+      userId: typedRow.user_id,
+      pending: true,
+      error: 'Could not claim music analysis work.',
+    };
+  }
+
+  const personality = params.personality ?? typedRow.personality ?? 'balanced';
+  const startedAt = Date.now();
 
   try {
     const analysis = await runHostedAnalyser({
       supabase: params.supabase,
       audioPath: typedRow.audio_path,
       personality,
-      analysisId: typedRow.id,
+      analysisId: typedRow.analysis_id,
     });
     const contextMarkdown = buildAiContextMarkdown({
       personality,
@@ -333,53 +403,127 @@ export async function runMusicAnalysisForUpload(params: {
     });
     const runtimeMs = Date.now() - startedAt;
 
-    const { data: completed, error: updateError } = await params.supabase
-      .from('song_analyses')
-      .update({
-        status: 'completed',
-        schema_version: analysis.schema_version,
-        completed_at: new Date().toISOString(),
-        runtime_ms: runtimeMs,
-        analysis_json: analysis as unknown as Json,
-        markdown: contextMarkdown,
-        error_message: null,
-      })
-      .eq('id', typedRow.id)
-      .eq('user_id', params.userId)
-      .eq('status', 'running')
-      .select('id')
-      .maybeSingle();
+    const { data: completed, error: updateError } = await params.supabase.rpc(
+      'complete_song_analysis_attempt',
+      {
+        p_analysis_id: typedRow.analysis_id,
+        p_lease_token: typedRow.lease_token,
+        p_analysis_json: analysis as unknown as Json,
+        p_markdown: contextMarkdown,
+        p_schema_version: analysis.schema_version,
+        p_runner_version: ANALYSER_RUNNER_VERSION,
+        p_runtime_ms: runtimeMs,
+      },
+    );
     if (updateError) {
-      throw new AnalyseError(`Could not save analysis output: ${updateError.message}`, 500);
-    }
-    if (!completed) {
+      console.error('[show-analysis-runner] music analysis completion failed:', updateError);
       return {
         ok: false,
-        analysisId: typedRow.id,
-        cancelled: true,
-        error: 'Music analysis was discarded.',
+        analysisId: typedRow.analysis_id,
+        userId: typedRow.user_id,
+        pending: true,
+        error: 'Could not save analysis output. The lease will be recovered.',
       };
     }
+    if (!completed) {
+      return classifyUnclaimedMusicAnalysis({
+        supabase: params.supabase,
+        analysisId: typedRow.analysis_id,
+        fallbackUserId: typedRow.user_id,
+        error: 'Music analysis completion lost its lease.',
+      });
+    }
 
-    return { ok: true, analysisId: typedRow.id, contextMarkdown };
+    return {
+      ok: true,
+      analysisId: typedRow.analysis_id,
+      userId: typedRow.user_id,
+      contextMarkdown,
+    };
   } catch (error) {
     const runtimeMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : String(error);
-    const failureState = await markMusicAnalysisFailed({
-      supabase: params.supabase,
-      analysisId: typedRow.id,
-      runtimeMs,
-      errorMessage: message,
-    });
-    if (failureState === 'missing') {
+    const retryable = error instanceof AnalyseError && error.retryable;
+
+    if (retryable && typedRow.attempt_count < MAX_ANALYSIS_ATTEMPTS) {
+      const retryDelay =
+        RETRY_DELAYS_SECONDS[
+          Math.min(typedRow.attempt_count - 1, RETRY_DELAYS_SECONDS.length - 1)
+        ] ?? RETRY_DELAYS_SECONDS[RETRY_DELAYS_SECONDS.length - 1];
+      const { data: scheduled, error: retryError } = await params.supabase.rpc(
+        'schedule_song_analysis_retry',
+        {
+          p_analysis_id: typedRow.analysis_id,
+          p_lease_token: typedRow.lease_token,
+          p_error_message: truncate(message, 2000),
+          p_runtime_ms: runtimeMs,
+          p_retry_delay_seconds: retryDelay,
+        },
+      );
+      if (retryError) {
+        console.error('[show-analysis-runner] music analysis retry scheduling failed:', retryError);
+        return {
+          ok: false,
+          analysisId: typedRow.analysis_id,
+          userId: typedRow.user_id,
+          pending: true,
+          error: `${message} The lease will be recovered.`,
+        };
+      }
+      if (!scheduled) {
+        return classifyUnclaimedMusicAnalysis({
+          supabase: params.supabase,
+          analysisId: typedRow.analysis_id,
+          fallbackUserId: typedRow.user_id,
+          error: 'Music analysis retry lost its lease.',
+        });
+      }
       return {
         ok: false,
-        analysisId: typedRow.id,
-        cancelled: true,
-        error: 'Music analysis was discarded.',
+        analysisId: typedRow.analysis_id,
+        userId: typedRow.user_id,
+        pending: true,
+        retryScheduled: true,
+        error: message,
       };
     }
-    return { ok: false, analysisId: typedRow.id, error: message };
+
+    const { data: failed, error: failureError } = await params.supabase.rpc(
+      'fail_song_analysis_attempt',
+      {
+        p_analysis_id: typedRow.analysis_id,
+        p_lease_token: typedRow.lease_token,
+        p_error_message: truncate(message, 2000),
+        p_runtime_ms: runtimeMs,
+      },
+    );
+    if (failureError) {
+      console.error(
+        '[show-analysis-runner] music analysis failure persistence failed:',
+        failureError,
+      );
+      return {
+        ok: false,
+        analysisId: typedRow.analysis_id,
+        userId: typedRow.user_id,
+        pending: true,
+        error: `${message} The lease will be recovered.`,
+      };
+    }
+    if (!failed) {
+      return classifyUnclaimedMusicAnalysis({
+        supabase: params.supabase,
+        analysisId: typedRow.analysis_id,
+        fallbackUserId: typedRow.user_id,
+        error: 'Music analysis failure lost its lease.',
+      });
+    }
+    return {
+      ok: false,
+      analysisId: typedRow.analysis_id,
+      userId: typedRow.user_id,
+      error: message,
+    };
   }
 }
 

@@ -37,9 +37,9 @@ test('generation, cloning, and cue edits cannot present failed total syncs as su
   const preview = read('app/actions/preview-cues.ts');
 
   const syncIndex = runner.indexOf('await syncShowDerivedFieldsForUser');
-  const completeIndex = runner.indexOf("generation_status: 'completed'", syncIndex);
+  const completeIndex = runner.indexOf("'complete_cue_generation_attempt'", syncIndex);
   assert.ok(syncIndex >= 0 && completeIndex > syncIndex);
-  assert.match(runner, /derived-field sync failed:[\s\S]*generation_status: 'failed'/);
+  assert.match(runner, /derived-field sync failed:[\s\S]*finishFailure\(message, true\)/);
   assert.match(templates, /derived-field sync failed:[\s\S]*cleanupSucceeded: removed/);
   assert.match(preview, /The cue was added, but show totals could not refresh/);
   assert.match(preview, /The cue was removed, but show totals could not refresh/);

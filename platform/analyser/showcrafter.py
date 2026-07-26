@@ -22,6 +22,10 @@ from scipy.signal import find_peaks, savgol_filter
 # Bumped when the output contract changes. Downstream harnesses can read
 # `schema_version` from the result / LLM payload to gate compatibility.
 #
+# 1.5.0 - added bar_grid_confidence and genre/structure-aware meter scoring.
+# 1.4.0 - added downbeat_times + beats_per_bar (bar grid), drop/build/breakdown
+#         section labels, hardened chorus detection, and a top-level `derived`
+#         block (finale window, anchor windows, energy rank) on the result.
 # 1.3.0 - added analyser timing metadata and fast-path runtime markers.
 # 1.2.0 - added Pydantic validation for analysis + LLM payloads; compact
 #         LLM payload now summarises/samples heuristic cues instead of
@@ -30,10 +34,7 @@ from scipy.signal import find_peaks, savgol_filter
 #         decided by relative prominence ranking (top quartile = climax)
 #         instead of an absolute energy threshold.
 # 1.0.0 - initial versioned contract.
-# 1.4.0 - added downbeat_times + beats_per_bar (bar grid), drop/build/breakdown
-#         section labels, hardened chorus detection, and a top-level `derived`
-#         block (finale window, anchor windows, energy rank) on the result.
-SCHEMA_VERSION = "1.4.0"
+SCHEMA_VERSION = "1.5.0"
 ANALYSER_MODE = "fast"
 ANALYSER_RUNNER_VERSION = "local-librosa-2"
 
@@ -147,7 +148,7 @@ PERSONALITY_PRESETS = {
     },
 }
 
-SchemaVersion = Literal["1.3.0", "1.4.0"]
+SchemaVersion = Literal["1.3.0", "1.4.0", "1.5.0"]
 Score = Annotated[float, Field(ge=0.0, le=1.0)]
 NonNegativeFloat = Annotated[float, Field(ge=0.0)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
@@ -406,10 +407,10 @@ class AnalysisResultModel(SchemaModel):
     show_personality: ShowPersonalityModel
     firework_cues: list[FireworkCueModel]
     derived: DerivedFeaturesModel
-    # Bar grid (schema 1.4.0). Optional with defaults so older 1.3.0 payloads
-    # still validate; `analyse_song` always populates them for new runs.
+    # Bar grid fields retain defaults so older payloads still validate.
     downbeat_times: list[NonNegativeFloat] = Field(default_factory=list)
-    beats_per_bar: NonNegativeInt = 4
+    beats_per_bar: Literal[2, 3, 4] = 4
+    bar_grid_confidence: Score = 0.0
 
     @model_validator(mode="after")
     def validate_times_within_duration(self):
@@ -905,19 +906,42 @@ def select_climax_indices(
     return set(selected[:target])
 
 
-def estimate_downbeats(beat_times, onset_env, sr, hop_length):
-    """
-    Lightweight bar/downbeat estimator for pyromusical sync.
+def meter_prior(beats_per_bar: int, genre_hint: str | None) -> float:
+    base_prior = {4: 0.06, 3: 0.015, 2: -0.02}[beats_per_bar]
+    genre_priors = {
+        "edm": {4: 0.10, 3: -0.04, 2: -0.08},
+        "pop": {4: 0.10, 3: -0.03, 2: -0.08},
+        "rock": {4: 0.09, 3: -0.03, 2: -0.07},
+        "hiphop": {4: 0.08, 3: -0.03, 2: -0.06},
+        "cinematic": {4: 0.05, 3: 0.04, 2: -0.05},
+        "ballad": {4: 0.04, 3: 0.04, 2: -0.04},
+        "hybrid": {4: 0.05, 3: 0.01, 2: -0.04},
+    }
+    return base_prior + genre_priors.get(genre_hint or "", {}).get(beats_per_bar, 0.0)
 
-    Groups detected beats into bars of `beats_per_bar` (2, 3, or 4) and picks
-    the phase offset whose bar-1 beats carry the most onset energy on average,
-    so cues can land on musical bars instead of on every kick-drum beat.
-    Returns ``(downbeat_times, beats_per_bar)``. Falls back to ``([], 4)`` when
-    there are too few beats or no onset envelope to trust.
+
+def estimate_downbeats(
+    beat_times,
+    onset_env,
+    sr,
+    hop_length,
+    *,
+    genre_hint: str | None = None,
+    section_starts=(),
+):
+    """
+    Estimate a bar grid from beat accents, structural boundaries, and genre.
+
+    Two-beat kick/snare accents are common inside 4/4 bars, so raw onset
+    contrast alone cannot safely distinguish 2/4 from 4/4. The score therefore
+    combines beat-position contrast, consistency across bars, section-boundary
+    alignment, and a conservative genre prior. Confidence expresses the joint
+    reliability of the meter and phase, allowing consumers to ignore a weak
+    grid without discarding the full beat timeline.
     """
     beats = np.asarray(beat_times, dtype=float)
     if beats.size < 8 or onset_env is None or len(onset_env) == 0:
-        return [], 4
+        return [], 4, 0.0
 
     fps = sr / hop_length
     # Sample the onset envelope around each beat (small window so a slightly
@@ -932,42 +956,127 @@ def estimate_downbeats(beat_times, onset_env, sr, hop_length):
             beat_strengths[i] = float(np.mean(onset_env[lo:hi]))
 
     span = float(beat_strengths.max() - beat_strengths.min())
-    if span > 1e-6:
-        beat_strengths = (beat_strengths - beat_strengths.min()) / span
+    if span <= 1e-6:
+        return [], 4, 0.0
+    beat_strengths = (beat_strengths - beat_strengths.min()) / span
 
     n = beats.shape[0]
-    best_score = -1.0
-    best_contrast = -1.0
-    best_bpb = 4
-    best_phase = 0
+    beat_interval = float(np.median(np.diff(beats))) if n > 1 else 0.5
+    boundary_indices = []
+    for start in section_starts:
+        nearest = int(np.argmin(np.abs(beats - float(start))))
+        if abs(float(beats[nearest]) - float(start)) <= max(0.08, beat_interval * 0.6):
+            boundary_indices.append(nearest)
+
+    candidates = []
     for bpb in (4, 3, 2):
         if n < bpb * 2:
             continue
-        # Slight prior toward 4/4, the dominant meter in pop/edm/rock.
-        prior = 0.04 if bpb == 4 else (0.02 if bpb == 3 else 0.0)
         for phase in range(bpb):
-            down_list = list(range(phase, n, bpb))
-            down_set = set(down_list)
-            other_list = [i for i in range(n) if i not in down_set]
-            if not other_list:
+            complete_bar_count = (n - phase) // bpb
+            if complete_bar_count < 2:
                 continue
-            down_mean = float(np.mean(beat_strengths[down_list]))
-            other_mean = float(np.mean(beat_strengths[other_list]))
-            score = (down_mean - other_mean) + prior
-            if score > best_score:
-                best_score = score
-                best_contrast = down_mean - other_mean
-                best_bpb = bpb
-                best_phase = phase
+            bars = beat_strengths[
+                phase : phase + complete_bar_count * bpb
+            ].reshape(complete_bar_count, bpb)
+            position_means = np.mean(bars, axis=0)
+            down_contrast = float(position_means[0] - np.mean(position_means[1:]))
+            bar_advantages = bars[:, 0] - np.mean(bars[:, 1:], axis=1)
+            consistency = float(np.mean(bar_advantages > 0.0))
 
-    # A flat or weak onset pattern does not contain enough evidence to name a
-    # bar phase. Returning no downbeats lets the app preserve the full beat
-    # grid instead of confidently pruning verses against a guessed bar.
-    if best_contrast < 0.06:
-        return [], 4
+            accent_evidence = down_contrast
+            if bpb == 4:
+                half_bar_contrast = float(
+                    np.mean(position_means[[0, 2]])
+                    - np.mean(position_means[[1, 3]])
+                )
+                primary_hierarchy = float(position_means[0] - position_means[2])
+                common_time_evidence = (
+                    0.8 * half_bar_contrast
+                    + 0.2 * max(0.0, primary_hierarchy)
+                )
+                accent_evidence = max(down_contrast, common_time_evidence)
 
-    downbeat_times = [round(float(beats[i]), 3) for i in range(best_phase, n, best_bpb)]
-    return downbeat_times, best_bpb
+            if boundary_indices:
+                boundary_alignment = float(
+                    np.mean(
+                        [
+                            1.0
+                            - min(
+                                (index - phase) % bpb,
+                                (phase - index) % bpb,
+                            )
+                            / max(1.0, bpb / 2.0)
+                            for index in boundary_indices
+                        ]
+                    )
+                )
+            else:
+                boundary_alignment = 0.0
+
+            score = (
+                accent_evidence
+                + 0.04 * (consistency - 0.5)
+                + 0.08 * boundary_alignment
+                + meter_prior(bpb, genre_hint)
+                + (0.01 if phase == 0 else 0.0)
+            )
+            candidates.append(
+                {
+                    "score": score,
+                    "accent_evidence": accent_evidence,
+                    "boundary_alignment": boundary_alignment,
+                    "bpb": bpb,
+                    "phase": phase,
+                }
+            )
+
+    if not candidates:
+        return [], 4, 0.0
+
+    candidates.sort(key=lambda candidate: candidate["score"], reverse=True)
+    best = candidates[0]
+    best_by_meter = []
+    for bpb in (4, 3, 2):
+        meter_candidates = [
+            candidate for candidate in candidates if candidate["bpb"] == bpb
+        ]
+        if meter_candidates:
+            best_by_meter.append(meter_candidates[0])
+    best_by_meter.sort(key=lambda candidate: candidate["score"], reverse=True)
+    second_meter_score = (
+        best_by_meter[1]["score"] if len(best_by_meter) > 1 else best["score"]
+    )
+    same_meter_phases = [
+        candidate for candidate in candidates if candidate["bpb"] == best["bpb"]
+    ]
+    second_phase_score = (
+        same_meter_phases[1]["score"]
+        if len(same_meter_phases) > 1
+        else best["score"]
+    )
+
+    evidence_score = clamp01(max(0.0, best["accent_evidence"]) / 0.18)
+    meter_margin = clamp01((best["score"] - second_meter_score) / 0.15)
+    phase_margin = clamp01((best["score"] - second_phase_score) / 0.12)
+    confidence = clamp01(
+        0.45 * evidence_score
+        + 0.25 * meter_margin
+        + 0.20 * phase_margin
+        + 0.10 * max(0.0, best["boundary_alignment"])
+    )
+
+    # Structural alignment can support a quiet downbeat, but without either
+    # accent or boundary evidence there is no defensible phase estimate.
+    if best["accent_evidence"] < 0.015 and best["boundary_alignment"] < 0.4:
+        return [], int(best["bpb"]), round(confidence, 3)
+
+    best_bpb = int(best["bpb"])
+    best_phase = int(best["phase"])
+    downbeat_times = [
+        round(float(beats[i]), 3) for i in range(best_phase, n, best_bpb)
+    ]
+    return downbeat_times, best_bpb, round(confidence, 3)
 
 
 def refine_event_times(event_frames, onset_env, sr, hop_length, radius=2):
@@ -1058,10 +1167,6 @@ def analyse_song(
     beat_times = refine_event_times(beat_frames, onset_env, sr, hop_length)
     tempo_value = float(np.atleast_1d(tempo)[0])
     timings["beat_ms"] += elapsed_ms(beat_start)
-
-    # Bar/downbeat grid (schema 1.4.0) so cues can lock to musical bars
-    # instead of firing on every kick-drum beat.
-    downbeat_times, beats_per_bar = estimate_downbeats(beat_times, onset_env, sr, hop_length)
 
     # ──────────────────────────────────────────────
     # 2. ENERGY CURVE (RMS, normalised 0-1)
@@ -1179,6 +1284,17 @@ def analyse_song(
     show_personality = build_show_personality(music_profile, personality_preset)
     timings["profile_ms"] += elapsed_ms(profile_start)
 
+    meter_start = time.perf_counter()
+    downbeat_times, beats_per_bar, bar_grid_confidence = estimate_downbeats(
+        beat_times,
+        onset_env,
+        sr,
+        hop_length,
+        genre_hint=music_profile["genre_hint"],
+        section_starts=[section["start"] for section in sections],
+    )
+    timings["beat_ms"] += elapsed_ms(meter_start)
+
     # ──────────────────────────────────────────────
     # 8. FIREWORK CUES
     # ──────────────────────────────────────────────
@@ -1213,6 +1329,7 @@ def analyse_song(
         "onset_times": [round(t, 3) for t in onset_times],
         "downbeat_times": downbeat_times,
         "beats_per_bar": beats_per_bar,
+        "bar_grid_confidence": bar_grid_confidence,
         "energy_timeline": energy_timeline,
         "sections": sections,
         "key_moments": key_moments,
@@ -2126,6 +2243,7 @@ def write_markdown(result: dict, output_path: str):
     lines.append(f"- **Total beats:** {r['total_beats']}")
     lines.append(f"- **Beats per bar:** {r.get('beats_per_bar', 4)}")
     lines.append(f"- **Downbeats:** {len(r.get('downbeat_times', []))}")
+    lines.append(f"- **Bar-grid confidence:** {r.get('bar_grid_confidence', 0.0)}")
     lines.append(f"- **Total firework cues:** {len(r['firework_cues'])}")
     lines.append(f"- **Climax moments:** {sum(1 for m in r['key_moments'] if m['type'] == 'climax')}")
     lines.append(f"- **Build-ups detected:** {len(r['buildups'])}")

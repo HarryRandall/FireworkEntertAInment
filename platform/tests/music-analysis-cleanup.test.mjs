@@ -54,9 +54,11 @@ test('the analyser cannot settle or restore a row discarded during an in-flight 
     runner.indexOf('export async function runMusicAnalysisForUpload'),
     runner.indexOf('export async function runShowAnalysisForShow'),
   );
-  assert.match(uploadRunner, /\.eq\('status', 'running'\)\s+\.select\('id'\)\s+\.maybeSingle\(\)/);
-  assert.match(uploadRunner, /if \(!completed\) \{[\s\S]*cancelled: true/);
-  assert.match(uploadRunner, /if \(failureState === 'missing'\) \{[\s\S]*cancelled: true/);
+  assert.match(uploadRunner, /claim_song_analysis_attempt/);
+  assert.match(uploadRunner, /complete_song_analysis_attempt/);
+  assert.match(uploadRunner, /p_lease_token: typedRow\.lease_token/);
+  assert.match(uploadRunner, /classifyUnclaimedMusicAnalysis/);
+  assert.match(runner, /if \(!row\) \{[\s\S]*cancelled: true/);
   assert.match(route, /if \(result\.cancelled\) \{[\s\S]*refundAiCreditReservation/);
 });
 
@@ -85,7 +87,7 @@ test('replacing or clearing ready audio and stale POST responses trigger cleanup
   assert.match(noSoundtrackHandler, /clearAudio\(\)/);
 
   const successfulPost = page.slice(
-    page.indexOf('const uploaded = {\n      audioPath'),
+    page.indexOf('const uploaded = {'),
     page.indexOf('return uploaded;'),
   );
   assert.match(successfulPost, /if \(uploadTokenRef\.current !== token\)/);

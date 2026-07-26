@@ -20,25 +20,26 @@ test('cue generation leaves running music analysis pending instead of failing', 
   assert.match(runner, /analysisResult\.status === 'completed'/);
   assert.match(runner, /analysisResult\.status === 'running'/);
   assert.match(runner, /reason: 'music_analysis_running'/);
-  assert.match(schemas, /pending: true; reason: 'music_analysis_running'/);
+  assert.match(schemas, /pending: true;[\s\S]*'music_analysis_running'/);
   assert.doesNotMatch(runner, /Music analysis is still finishing/);
 });
 
 test('music analysis completion resumes linked running show generation', () => {
   const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
+  const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
+  const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
 
-  assert.match(route, /listRunningShowsForAnalysis/);
   assert.match(route, /resumeCueGenerationForCompletedAnalysis/);
-  assert.match(route, /generateCuesForShow/);
-  assert.match(route, /\.eq\('music_analysis_id', params\.musicAnalysisId\)/);
-  assert.match(route, /\.eq\('generation_status', 'running'\)/);
-  assert.match(route, /\.is\('generation_completed_at', null\)/);
   assert.match(route, /await resumeCueGenerationForCompletedAnalysis/);
-  assert.match(route, /selected_cue_model, show_style/);
-  assert.match(route, /\.from\('ai_credit_transactions'\)/);
-  assert.match(route, /reservationAction === 'show_generation_fast'/);
-  assert.match(route, /show\.show_style === 'beat_test'\s+\? 'beat'/);
-  assert.match(route, /show\.selected_cue_model\s+\? 'llm'\s+: 'fast'/s);
+  assert.match(lifecycle, /listRunningShowsForAnalysis/);
+  assert.match(lifecycle, /generateCuesForShow/);
+  assert.match(lifecycle, /\.eq\('music_analysis_id', params\.musicAnalysisId\)/);
+  assert.match(lifecycle, /\.eq\('generation_status', 'running'\)/);
+  assert.match(lifecycle, /\.is\('generation_completed_at', null\)/);
+  assert.match(lifecycle, /selected_cue_model/);
+  assert.match(lifecycle, /showId: show\.id/);
+  assert.match(runner, /claim\.credit_action_key === 'show_generation_fast'/);
+  assert.match(runner, /claim\.show_style === 'beat_test'/);
 });
 
 test('show creation pins its effective generation mode for the runner', () => {
@@ -78,12 +79,12 @@ test('failed generation uses a safe, recoverable customer error state', () => {
 
 test('music analysis failure marks linked running show generation failed', () => {
   const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
+  const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
 
   assert.match(route, /markLinkedShowGenerationFailed/);
-  assert.match(route, /markGenerationStatus/);
-  assert.match(route, /Music analysis failed: \$\{params\.error\}/);
-  assert.match(route, /generation_status: 'failed'/);
-  assert.match(route, /generation_completed_at: new Date\(\)\.toISOString\(\)/);
+  assert.match(lifecycle, /Music analysis failed: \$\{params\.error\}/);
+  assert.match(lifecycle, /fail_waiting_show_generation/);
+  assert.match(lifecycle, /p_error_message: message/);
 });
 
 test('synthetic beat fallback is only used when no music analysis id exists', () => {

@@ -79,5 +79,6 @@ the live implementation taking precedence.
 ## Additional Documentation
 
 - [Analyser runner](docs/analyser-runner.md)
+- [Backend lifecycle](docs/backend-lifecycle.md)
 - [Fireworks engine v2](docs/fireworks-engine-v2.md)
 - [Shader cover plan](docs/css-covers-plan.md)

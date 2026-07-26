@@ -31,6 +31,9 @@ const multishotMigration = read(
 const analysisCleanupMigration = read(
   'supabase/migrations/20260710020448_discard_unused_song_analyses.sql',
 );
+const backendLifecycleMigration = read(
+  'supabase/migrations/20260727103000_backend_lifecycle_operations.sql',
+);
 const rlsPerformanceMigration = read(
   'supabase/migrations/20260710023403_optimise_remaining_rls_policies.sql',
 );
@@ -93,19 +96,23 @@ test('every application RPC has an explicit authenticated execution grant', () =
     [...rpcSources.matchAll(/\.rpc\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]),
   );
   assert.deepEqual([...rpcNames].sort(), [
+    'claim_cue_generation_attempt',
+    'complete_cue_generation_attempt',
     'current_user_access',
     'discard_unused_song_analysis',
     'ensure_ai_credit_account',
+    'fail_cue_generation_attempt',
     'grant_ai_credits',
     'refund_ai_credit_reservation',
     'replace_show_timeline_items',
     'reserve_ai_credits',
+    'schedule_cue_generation_retry',
     'settle_ai_credit_reservation',
     'sync_multishot_derived_state',
     'toggle_show_preset_like',
   ]);
 
-  const finalGrantMigrations = `${privilegeMigration}\n${likeMigration}\n${multishotMigration}\n${analysisCleanupMigration}`;
+  const finalGrantMigrations = `${privilegeMigration}\n${likeMigration}\n${multishotMigration}\n${analysisCleanupMigration}\n${backendLifecycleMigration}`;
   for (const rpcName of rpcNames) {
     assert.match(
       finalGrantMigrations,

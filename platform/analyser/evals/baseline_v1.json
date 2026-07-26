@@ -1,0 +1,202 @@
+{
+  "evaluation_version": 1,
+  "description": "ShowCrafter analyser 1.5.0 open-licence Jamendo regression baseline",
+  "fixtures": [
+    {
+      "name": "jamendo_1930820_dance_pop",
+      "category": "pop",
+      "track_id": "1930820",
+      "attribution": "Upbeat Summer Modern Dance Pop by Sevennotes",
+      "licence": "CC BY 3.0",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1930820",
+      "path": "../../../data/media/audio/jamendo/jamendo_1930820.mp3",
+      "sha256": "f969b200b969da58290262c011e343afa06fcb4b8c6888bb79be25293c16cfc1",
+      "expected": {
+        "schema_version": "1.5.0",
+        "duration_seconds": 122.0,
+        "tempo_bpm": 117.5,
+        "total_beats": 234,
+        "downbeat_count": 59,
+        "beats_per_bar": 4,
+        "bar_grid_confidence": 0.64,
+        "section_labels": ["intro", "chorus", "verse", "build", "chorus", "verse"],
+        "section_starts": [0.0, 20.04, 32.04, 56.17, 76.14, 92.04],
+        "climax_times": [28.84, 84.82],
+        "buildup_peaks": [],
+        "finale_window": {
+          "start": 76.14,
+          "end": 122.0
+        }
+      },
+      "tolerances": {
+        "duration_seconds": 0.15,
+        "tempo_bpm": 2.0,
+        "total_beats": 6,
+        "downbeat_count": 4,
+        "bar_grid_confidence": 0.12,
+        "section_count": 1,
+        "section_label_similarity": 0.75,
+        "section_anchor_seconds": 5.0,
+        "climax_count": 1,
+        "climax_anchor_seconds": 4.0,
+        "buildup_count": 1,
+        "buildup_anchor_seconds": 4.0,
+        "finale_start_seconds": 6.0
+      }
+    },
+    {
+      "name": "jamendo_1891977_pop_song",
+      "category": "pop",
+      "track_id": "1891977",
+      "attribution": "My Love by MODUS",
+      "licence": "CC BY 3.0",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1891977",
+      "path": "../../../data/media/audio/jamendo/jamendo_1891977.mp3",
+      "sha256": "5ee115b1b647196165cdc550d93f991e42c6d5244720c026fc582d60229b0748",
+      "expected": {
+        "schema_version": "1.5.0",
+        "duration_seconds": 233.81,
+        "tempo_bpm": 117.5,
+        "total_beats": 454,
+        "downbeat_count": 113,
+        "beats_per_bar": 4,
+        "bar_grid_confidence": 0.555,
+        "section_labels": ["intro", "verse", "chorus", "verse", "chorus", "chorus", "verse"],
+        "section_starts": [0.0, 16.83, 47.86, 81.36, 111.85, 159.85, 192.35],
+        "climax_times": [49.64, 73.63, 129.64, 161.63],
+        "buildup_peaks": [17.65],
+        "finale_window": {
+          "start": 159.85,
+          "end": 233.81
+        }
+      },
+      "tolerances": {
+        "duration_seconds": 0.15,
+        "tempo_bpm": 2.0,
+        "total_beats": 8,
+        "downbeat_count": 4,
+        "bar_grid_confidence": 0.12,
+        "section_count": 1,
+        "section_label_similarity": 0.75,
+        "section_anchor_seconds": 5.0,
+        "climax_count": 1,
+        "climax_anchor_seconds": 4.0,
+        "buildup_count": 1,
+        "buildup_anchor_seconds": 4.0,
+        "finale_start_seconds": 6.0
+      }
+    },
+    {
+      "name": "jamendo_360552_vivaldi",
+      "category": "classical",
+      "track_id": "360552",
+      "attribution": "Antonio Vivaldi: Four Seasons - Excerpt 1 by Marco Tezza",
+      "licence": "CC BY 3.0",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/360552",
+      "path": "../../../data/media/audio/jamendo/jamendo_360552.mp3",
+      "sha256": "13fafeba552a4dd1b851bcc5c9ff41f7dbff0a009954b34c6e29ae6520ceac68",
+      "expected": {
+        "schema_version": "1.5.0",
+        "duration_seconds": 205.47,
+        "tempo_bpm": 112.3,
+        "total_beats": 386,
+        "downbeat_count": 97,
+        "beats_per_bar": 4,
+        "bar_grid_confidence": 0.36,
+        "section_labels": [
+          "chorus",
+          "verse",
+          "verse",
+          "bridge",
+          "bridge",
+          "pre-chorus",
+          "chorus",
+          "outro"
+        ],
+        "section_starts": [0.0, 28.51, 62.18, 82.83, 101.68, 119.86, 153.67, 179.79],
+        "climax_times": [13.54, 87.49, 110.92, 161.12],
+        "buildup_peaks": [14.58, 66.71, 133.93, 155.13, 182.04],
+        "finale_window": {
+          "start": 153.67,
+          "end": 205.47
+        }
+      },
+      "tolerances": {
+        "duration_seconds": 0.15,
+        "tempo_bpm": 2.0,
+        "total_beats": 8,
+        "downbeat_count": 4,
+        "bar_grid_confidence": 0.12,
+        "section_count": 1,
+        "section_label_similarity": 0.75,
+        "section_anchor_seconds": 5.0,
+        "climax_count": 1,
+        "climax_anchor_seconds": 4.0,
+        "buildup_count": 1,
+        "buildup_anchor_seconds": 4.0,
+        "finale_start_seconds": 6.0
+      }
+    },
+    {
+      "name": "jamendo_1930003_contrapunctus",
+      "category": "classical",
+      "track_id": "1930003",
+      "attribution": "Contrapunctus No 2 by CHASMA",
+      "licence": "CC BY 3.0",
+      "licence_url": "http://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1930003",
+      "path": "../../../data/media/audio/jamendo/jamendo_1930003.mp3",
+      "sha256": "a1ed6665ed4c9b760c3252ee9f2baf9f01a495ae78304ff9f9cda02db74325c8",
+      "expected": {
+        "schema_version": "1.5.0",
+        "duration_seconds": 202.0,
+        "tempo_bpm": 117.5,
+        "total_beats": 401,
+        "downbeat_count": 101,
+        "beats_per_bar": 4,
+        "bar_grid_confidence": 0.549,
+        "section_labels": [
+          "verse",
+          "verse",
+          "verse",
+          "verse",
+          "verse",
+          "pre-chorus",
+          "chorus",
+          "chorus",
+          "build",
+          "chorus",
+          "build",
+          "chorus"
+        ],
+        "section_starts": [
+          0.0, 18.58, 33.55, 50.04, 69.54, 86.05, 100.54, 117.05, 133.54, 150.56, 169.55, 186.55
+        ],
+        "climax_times": [83.73, 118.77, 147.03, 183.07],
+        "buildup_peaks": [47.76, 83.73, 100.45, 118.77],
+        "finale_window": {
+          "start": 169.55,
+          "end": 202.0
+        }
+      },
+      "tolerances": {
+        "duration_seconds": 0.15,
+        "tempo_bpm": 2.0,
+        "total_beats": 8,
+        "downbeat_count": 4,
+        "bar_grid_confidence": 0.12,
+        "section_count": 1,
+        "section_label_similarity": 0.8,
+        "section_anchor_seconds": 5.0,
+        "climax_count": 1,
+        "climax_anchor_seconds": 4.0,
+        "buildup_count": 1,
+        "buildup_anchor_seconds": 4.0,
+        "finale_start_seconds": 6.0
+      }
+    }
+  ]
+}

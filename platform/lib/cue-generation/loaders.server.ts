@@ -79,14 +79,16 @@ export async function markGenerationStatus(
   showId: string,
   patch: Database['public']['Tables']['shows']['Update'],
 ) {
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('shows')
     .update(patch)
     .eq('id', showId)
-    .eq('user_id', userId);
-  if (error) {
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
+  if (error || !updated) {
     console.error('[cue-generation] status update failed:', error);
-    return;
+    return { ok: false as const, error: error?.message ?? 'Show status row was not updated.' };
   }
   const { data: show } = await supabase
     .from('shows')
@@ -103,4 +105,5 @@ export async function markGenerationStatus(
     revalidatePath(`/shows/${show.slug}/generating`);
     revalidatePath(`/shows/${show.slug}/preview`);
   }
+  return { ok: true as const };
 }

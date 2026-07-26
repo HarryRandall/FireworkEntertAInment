@@ -38,7 +38,7 @@ export type AnalyserWarmthRefreshResult =
   | { ok: true; active: false; skipped: 'inactive'; state: AnalyserWarmthState }
   | { ok: true; active: true; skipped: 'recent'; state: AnalyserWarmthState }
   | { ok: true; active: true; warmed: true; state: AnalyserWarmthState }
-  | { ok: false; active: true; error: string; state: AnalyserWarmthState };
+  | { ok: false; active: false; error: string; state: AnalyserWarmthState };
 
 export type AnalyserWarmthPingResult =
   | { ok: true; warmedAt: string }
@@ -65,7 +65,7 @@ function toPublicState(stored: StoredAnalyserWarmthState): AnalyserWarmthState {
   if (!Number.isFinite(warmUntilMs) || warmUntilMs <= Date.now()) return inactiveState();
 
   return {
-    active: true,
+    active: stored.lastWarmupOk === true,
     warmUntil: stored.warmUntil,
     enabledAt: stored.enabledAt,
     lastWarmupAt: stored.lastWarmupAt ?? null,
@@ -199,6 +199,7 @@ export async function refreshAnalyserWarmth({
   const lastWarmupMs = stored.lastWarmupAt ? Date.parse(stored.lastWarmupAt) : 0;
   if (
     !force &&
+    stored.lastWarmupOk === true &&
     Number.isFinite(lastWarmupMs) &&
     Date.now() - lastWarmupMs < WARMUP_MIN_INTERVAL_MS
   ) {
@@ -220,7 +221,7 @@ export async function refreshAnalyserWarmth({
   const updatedState = await writeStoredState(updated);
 
   if (!result.ok) {
-    return { ok: false, active: true, error: result.error, state: updatedState };
+    return { ok: false, active: false, error: result.error, state: updatedState };
   }
 
   return { ok: true, active: true, warmed: true, state: updatedState };

@@ -24,8 +24,10 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
     };
   }
   const beatTimes = analysis.beat_times ?? [];
-  const downbeatTimes = analysis.downbeat_times ?? [];
-  const beatsPerBar = analysis.beats_per_bar ?? 4;
+  const barGridConfidence = analysis.bar_grid_confidence;
+  const hasReliableBarGrid = barGridConfidence == null || barGridConfidence >= 0.3;
+  const downbeatTimes = hasReliableBarGrid ? (analysis.downbeat_times ?? []) : [];
+  const beatsPerBar = hasReliableBarGrid ? (analysis.beats_per_bar ?? 4) : 4;
   const sections = analysis.sections.map((section) => ({
     ...section,
     beatCount: beatTimes.filter((beat) => beat >= section.start && beat < section.end).length,
@@ -39,6 +41,7 @@ export function buildAnalysisSummary(analysis: AnalyserResult | null, durationSe
     beatGrid: describeBeatGrid(beatTimes, analysis.tempo_bpm, beatsPerBar, downbeatTimes.length),
     downbeats: downbeatTimes,
     beatsPerBar,
+    barGridConfidence: barGridConfidence ?? null,
     derived: analysis.derived ?? null,
     energyTimeline: downsampleEnergy(analysis.energy_timeline ?? []),
     musicProfile: analysis.music_profile,

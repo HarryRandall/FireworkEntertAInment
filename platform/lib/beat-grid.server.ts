@@ -88,7 +88,9 @@ export function buildCueSlots(
   const buildups = analysis?.buildups ?? [];
   const keyMoments = analysis?.key_moments ?? [];
   const tempoBpm = clampTempo(analysis?.tempo_bpm ?? 120);
-  const beatsPerBar = clampBeatsPerBar(analysis?.beats_per_bar ?? 4);
+  const barGridConfidence = analysis?.bar_grid_confidence;
+  const hasReliableBarGrid = barGridConfidence == null || barGridConfidence >= 0.3;
+  const beatsPerBar = clampBeatsPerBar(hasReliableBarGrid ? (analysis?.beats_per_bar ?? 4) : 4);
   const finaleWindow = analysis?.derived?.finale_window ?? null;
 
   // 1. Beat times: prefer AI's, fall back to synthetic from tempo if sparse.
@@ -109,14 +111,13 @@ export function buildCueSlots(
     }
   }
 
-  // Bar / downbeat grid (schema 1.4.0). When the analyser provides downbeats
-  // we lock sparse sections to one fire per bar; without downbeats (older
-  // 1.3.0 analyses) we fall back to the original every-beat windowed sampling
-  // so nothing regresses.
+  // With a reliable schema 1.5.0 grid, downbeats lock sparse sections to one
+  // fire per bar. Without one, the original every-beat windowed sampling
+  // remains available so uncertain analysis does not thin the show.
   const downbeatTimes = (analysis?.downbeat_times ?? [])
     .filter((t) => Number.isFinite(t) && t >= 0 && t < songDuration)
     .map((t) => Number(t.toFixed(3)));
-  const hasDownbeats = downbeatTimes.length > 0 && !needsSynth;
+  const hasDownbeats = downbeatTimes.length > 0 && !needsSynth && hasReliableBarGrid;
   const nearDownbeat = (t: number) => downbeatTimes.some((d) => Math.abs(d - t) <= 0.06);
 
   const finaleStart = finaleWindow?.start ?? null;

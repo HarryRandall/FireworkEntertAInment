@@ -166,6 +166,57 @@ export type Database = {
           },
         ]
       }
+      backend_dead_letters: {
+        Row: {
+          attempt_count: number
+          first_observed_at: string
+          id: string
+          last_observed_at: string
+          metadata: Json
+          occurrence_count: number
+          reason: string
+          resolution_note: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          user_id: string | null
+          work_key: string
+          work_type: string
+        }
+        Insert: {
+          attempt_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          metadata?: Json
+          occurrence_count?: number
+          reason: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          user_id?: string | null
+          work_key: string
+          work_type: string
+        }
+        Update: {
+          attempt_count?: number
+          first_observed_at?: string
+          id?: string
+          last_observed_at?: string
+          metadata?: Json
+          occurrence_count?: number
+          reason?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          user_id?: string | null
+          work_key?: string
+          work_type?: string
+        }
+        Relationships: []
+      }
       catalogue_items: {
         Row: {
           catalogue_item_kind: string
@@ -1675,8 +1726,14 @@ export type Database = {
           effects_count: number
           firework_types: string[] | null
           generated_cue_count: number | null
+          generation_attempt_count: number
           generation_completed_at: string | null
           generation_error: string | null
+          generation_last_attempt_at: string | null
+          generation_lease_expires_at: string | null
+          generation_lease_token: string | null
+          generation_next_retry_at: string | null
+          generation_runtime_ms: number | null
           generation_started_at: string | null
           generation_status: string
           id: string
@@ -1710,8 +1767,14 @@ export type Database = {
           effects_count?: number
           firework_types?: string[] | null
           generated_cue_count?: number | null
+          generation_attempt_count?: number
           generation_completed_at?: string | null
           generation_error?: string | null
+          generation_last_attempt_at?: string | null
+          generation_lease_expires_at?: string | null
+          generation_lease_token?: string | null
+          generation_next_retry_at?: string | null
+          generation_runtime_ms?: number | null
           generation_started_at?: string | null
           generation_status?: string
           id?: string
@@ -1745,8 +1808,14 @@ export type Database = {
           effects_count?: number
           firework_types?: string[] | null
           generated_cue_count?: number | null
+          generation_attempt_count?: number
           generation_completed_at?: string | null
           generation_error?: string | null
+          generation_last_attempt_at?: string | null
+          generation_lease_expires_at?: string | null
+          generation_lease_token?: string | null
+          generation_next_retry_at?: string | null
+          generation_runtime_ms?: number | null
           generation_started_at?: string | null
           generation_status?: string
           id?: string
@@ -1781,13 +1850,18 @@ export type Database = {
       song_analyses: {
         Row: {
           analysis_json: Json | null
+          attempt_count: number
           audio_path: string
           completed_at: string | null
           content_type: string | null
           created_at: string
           error_message: string | null
           id: string
+          last_attempt_at: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
           markdown: string | null
+          next_retry_at: string | null
           original_filename: string | null
           personality: string
           runner_version: string | null
@@ -1800,13 +1874,18 @@ export type Database = {
         }
         Insert: {
           analysis_json?: Json | null
+          attempt_count?: number
           audio_path: string
           completed_at?: string | null
           content_type?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          last_attempt_at?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           markdown?: string | null
+          next_retry_at?: string | null
           original_filename?: string | null
           personality?: string
           runner_version?: string | null
@@ -1819,13 +1898,18 @@ export type Database = {
         }
         Update: {
           analysis_json?: Json | null
+          attempt_count?: number
           audio_path?: string
           completed_at?: string | null
           content_type?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
+          last_attempt_at?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
           markdown?: string | null
+          next_retry_at?: string | null
           original_filename?: string | null
           personality?: string
           runner_version?: string | null
@@ -2086,6 +2170,38 @@ export type Database = {
         Returns: boolean
       }
       check_firework_import_dispatch_ready: { Args: never; Returns: boolean }
+      claim_cue_generation_attempt: {
+        Args: {
+          p_lease_seconds?: number
+          p_max_attempts?: number
+          p_show_id?: string
+        }
+        Returns: {
+          attempt_count: number
+          credit_action_key: string
+          lease_token: string
+          music_analysis_id: string | null
+          selected_cue_model: string | null
+          show_id: string
+          show_style: string
+          user_id: string
+        }[]
+      }
+      claim_song_analysis_attempt: {
+        Args: {
+          p_analysis_id?: string
+          p_lease_seconds?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          analysis_id: string
+          attempt_count: number
+          audio_path: string
+          lease_token: string
+          personality: string
+          user_id: string
+        }[]
+      }
       claim_firework_import_run: {
         Args: {
           p_lease_seconds?: number
@@ -2112,6 +2228,15 @@ export type Database = {
           p_selected_ordinal: number
         }
         Returns: string
+      }
+      complete_cue_generation_attempt: {
+        Args: {
+          p_cue_count: number
+          p_lease_token: string
+          p_runtime_ms: number
+          p_show_id: string
+        }
+        Returns: boolean
       }
       create_style_default_and_update_effect: {
         Args: {
@@ -2170,11 +2295,62 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_active: { Args: never; Returns: boolean }
+      complete_song_analysis_attempt: {
+        Args: {
+          p_analysis_id: string
+          p_analysis_json: Json
+          p_lease_token: string
+          p_markdown: string
+          p_runner_version: string
+          p_runtime_ms: number
+          p_schema_version: string
+        }
+        Returns: boolean
+      }
       discard_unused_song_analysis: {
         Args: { p_analysis_id: string; p_audio_path: string }
         Returns: Json
       }
       ensure_ai_credit_account: { Args: { p_user_id: string }; Returns: Json }
+      expire_exhausted_cue_generations: {
+        Args: { p_limit?: number; p_max_attempts?: number }
+        Returns: {
+          error_message: string
+          show_id: string
+          user_id: string
+        }[]
+      }
+      expire_exhausted_song_analyses: {
+        Args: { p_limit?: number; p_max_attempts?: number }
+        Returns: {
+          analysis_id: string
+          error_message: string
+          user_id: string
+        }[]
+      }
+      fail_song_analysis_attempt: {
+        Args: {
+          p_analysis_id: string
+          p_error_message: string
+          p_lease_token: string
+          p_runtime_ms: number
+        }
+        Returns: boolean
+      }
+      fail_cue_generation_attempt: {
+        Args: {
+          p_dead_letter?: boolean
+          p_error_message: string
+          p_lease_token: string
+          p_runtime_ms: number
+          p_show_id: string
+        }
+        Returns: boolean
+      }
+      fail_waiting_show_generation: {
+        Args: { p_error_message: string; p_show_id: string }
+        Returns: boolean
+      }
       fail_firework_import_run: {
         Args: {
           p_error_message: string
@@ -2222,6 +2398,31 @@ export type Database = {
       lock_firework_import_lease: {
         Args: { p_lease_token: string; p_run_id: string }
         Returns: string
+      }
+      list_orphan_audio_objects: {
+        Args: { p_grace_hours?: number; p_limit?: number }
+        Returns: { audio_path: string }[]
+      }
+      purge_expired_song_analyses: {
+        Args: { p_limit?: number; p_retention_days?: number }
+        Returns: {
+          analysis_id: string
+          analysis_status: string
+          audio_path: string
+          user_id: string
+        }[]
+      }
+      record_backend_dead_letter: {
+        Args: {
+          p_attempt_count: number
+          p_metadata?: Json
+          p_reason: string
+          p_severity: string
+          p_user_id: string | null
+          p_work_key: string
+          p_work_type: string
+        }
+        Returns: undefined
       }
       record_firework_import_media_probe: {
         Args: {
@@ -2283,6 +2484,39 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      get_backend_lifecycle_health: { Args: never; Returns: Json }
+      resolve_reconciled_show_generation_credit: {
+        Args: { p_outcome: string; p_reason: string; p_show_id: string }
+        Returns: undefined
+      }
+      resolve_backend_dead_letter: {
+        Args: {
+          p_dead_letter_id: string
+          p_resolution_note: string
+          p_status: string
+        }
+        Returns: boolean
+      }
+      schedule_cue_generation_retry: {
+        Args: {
+          p_error_message: string
+          p_lease_token: string
+          p_retry_delay_seconds: number
+          p_runtime_ms: number
+          p_show_id: string
+        }
+        Returns: boolean
+      }
+      schedule_song_analysis_retry: {
+        Args: {
+          p_analysis_id: string
+          p_error_message: string
+          p_lease_token: string
+          p_retry_delay_seconds: number
+          p_runtime_ms: number
+        }
+        Returns: boolean
       }
       set_user_permission_overrides: {
         Args: { p_overrides: Json; p_user_id: string }
