@@ -80,15 +80,11 @@ import { cn } from '@/lib/utils';
 
 const REFINEMENT_CREDIT_COST = 2;
 
-type ReplayExtras = {
-  specifications: FireworkSpecification[];
-  audioUrl: string | null;
-};
-
 type FireworkReplayViewerProps = {
   showId: string;
   showSlug: string;
   showName: string;
+  hasSoundtrack: boolean;
   durationSeconds: number | null;
   totalCents?: number | null;
   launchPositions: LaunchPosition[];
@@ -97,10 +93,10 @@ type FireworkReplayViewerProps = {
    * canvas can mount with an empty scene immediately and populate fireworks
    * the moment the cues land, without waiting on the heavier catalogue. */
   replayCuesPromise: Promise<ReplayCue[]>;
-  /** Server-streamed catalogue specifications and signed audio URL. These are
-   * only needed for the add-firework dialog and audio playback, so they stream
-   * separately and never gate the fireworks. */
-  replayExtrasPromise: Promise<ReplayExtras>;
+  /** Server-streamed catalogue specifications for the add-firework dialog. */
+  fireworkSpecificationsPromise: Promise<FireworkSpecification[]>;
+  /** Server-streamed signed audio URL, kept independent from catalogue work. */
+  audioUrlPromise: Promise<string | null>;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -187,25 +183,33 @@ export function FireworkReplayViewer({
   showId,
   showSlug,
   showName,
+  hasSoundtrack,
   durationSeconds,
   totalCents = null,
   launchPositions,
   canEditFireworks = false,
   replayCuesPromise,
-  replayExtrasPromise,
+  fireworkSpecificationsPromise,
+  audioUrlPromise,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
-  const [replayExtras, setReplayExtras] = useState<ReplayExtras | null>(null);
+  const [streamedSpecifications, setStreamedSpecifications] = useState<
+    FireworkSpecification[] | null
+  >(null);
+  const [streamedAudioUrl, setStreamedAudioUrl] = useState<string | null | undefined>(undefined);
   const cues = streamedCues ?? EMPTY_CUES;
-  const specifications = replayExtras?.specifications ?? EMPTY_SPECS;
-  const audioUrl = replayExtras?.audioUrl ?? null;
+  const specifications = streamedSpecifications ?? EMPTY_SPECS;
+  const audioUrl = streamedAudioUrl ?? null;
   const replayDataReady = streamedCues !== null;
   const hasFireworkSpecifications = specifications.length > 0;
   const handleReplayCuesLoaded = useCallback((data: ReplayCue[]) => {
     setStreamedCues(data);
   }, []);
-  const handleReplayExtrasLoaded = useCallback((data: ReplayExtras) => {
-    setReplayExtras(data);
+  const handleFireworkSpecificationsLoaded = useCallback((data: FireworkSpecification[]) => {
+    setStreamedSpecifications(data);
+  }, []);
+  const handleAudioUrlLoaded = useCallback((data: string | null) => {
+    setStreamedAudioUrl(data);
   }, []);
   const [optimisticCues, addOptimisticCue] = useOptimistic(
     cues,
@@ -271,19 +275,13 @@ export function FireworkReplayViewer({
     fullscreenContainerProps,
   } = usePreviewFullscreen({ dialogLabel: `${showName} preview` });
 
-  // Keep the audio element in sync with playhead and play/pause state.
+  // Starting audible media belongs in the user's event handler so browser
+  // activation is preserved. This effect only propagates pause state from
+  // non-interaction paths such as reaching the end of the show.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      const drift = Math.abs(audio.currentTime - elapsedRef.current);
-      if (drift > 0.25) audio.currentTime = elapsedRef.current;
-      void audio.play().catch(() => {
-        /* Autoplay was blocked or seeking was interrupted, so playback stays paused. */
-      });
-    } else {
-      audio.pause();
-    }
+    if (!audio || isPlaying) return;
+    audio.pause();
   }, [isPlaying]);
 
   // Keep paused audio aligned with the playhead (e.g. cue-row jumps). While a
@@ -500,6 +498,34 @@ export function FireworkReplayViewer({
       return;
     }
     if (elapsedRef.current >= duration) seekTo(0, false);
+    startPlayback();
+  }
+
+  function startPlayback() {
+    const audio = audioRef.current;
+    if (hasSoundtrack) {
+      if (!audio) {
+        toast.error(
+          streamedAudioUrl === undefined
+            ? 'Your soundtrack is still loading. Try again in a moment.'
+            : 'Your soundtrack could not be loaded. Refresh the page and try again.',
+        );
+        return;
+      }
+      const drift = Math.abs(audio.currentTime - elapsedRef.current);
+      if (drift > 0.25) audio.currentTime = elapsedRef.current;
+      // Calling play synchronously from the interaction preserves the browser's
+      // media activation. Only start the replay clock after audio really starts.
+      void audio
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch((error) => {
+          console.error('[firework-replay] soundtrack playback failed:', error);
+          setIsPlaying(false);
+          toast.error('The soundtrack could not start. Try pressing Play again.');
+        });
+      return;
+    }
     setIsPlaying(true);
   }
 
@@ -547,14 +573,20 @@ export function FireworkReplayViewer({
   }
 
   function playFrom(timeSeconds: number) {
-    seekTo(timeSeconds, true);
-    setIsPlaying(true);
+    seekTo(timeSeconds, false);
+    startPlayback();
   }
 
   useEffect(() => {
     if (searchParams.get('autoplay') !== '1') return;
     if (autoplayStartedRef.current || !hasReplayCues || !isCanvasReady) return;
     autoplayStartedRef.current = true;
+    // Browsers block audible autoplay after the generation redirect. Keep a
+    // soundtrack show paused so the next Play click can supply activation.
+    if (hasSoundtrack) {
+      router.replace(`/shows/${showSlug}/preview`, { scroll: false });
+      return;
+    }
     elapsedRef.current = 0;
     lastUIElapsedRef.current = 0;
     playheadStart.current = 0;
@@ -565,7 +597,7 @@ export function FireworkReplayViewer({
     setElapsed(0);
     setIsPlaying(true);
     router.replace(`/shows/${showSlug}/preview`, { scroll: false });
-  }, [hasReplayCues, isCanvasReady, router, searchParams, showSlug]);
+  }, [hasReplayCues, hasSoundtrack, isCanvasReady, router, searchParams, showSlug]);
 
   function openCueDialog(tab: CueDialogTab, prompt?: string) {
     if (!hasFireworkSpecifications) return;
@@ -694,7 +726,13 @@ export function FireworkReplayViewer({
         <StreamedDataReader promise={replayCuesPromise} onLoaded={handleReplayCuesLoaded} />
       </Suspense>
       <Suspense fallback={null}>
-        <StreamedDataReader promise={replayExtrasPromise} onLoaded={handleReplayExtrasLoaded} />
+        <StreamedDataReader
+          promise={fireworkSpecificationsPromise}
+          onLoaded={handleFireworkSpecificationsLoaded}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StreamedDataReader promise={audioUrlPromise} onLoaded={handleAudioUrlLoaded} />
       </Suspense>
       <div className="space-y-6">
         <Card
