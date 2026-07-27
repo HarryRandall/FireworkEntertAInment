@@ -91,6 +91,25 @@ export type ShowGenerationPresentationResult =
   | { ok: true; presentation: ShowGenerationPresentation }
   | { ok: false; error: string };
 
+const PRESENTATION_WARMTH_TIMEOUT_MS = 750;
+
+async function getPresentationAnalyserWarmth(): Promise<boolean> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      getAnalyserWarmthState().then((state) => state.active),
+      new Promise<boolean>((resolve) => {
+        timeoutId = setTimeout(() => resolve(false), PRESENTATION_WARMTH_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (error) {
+    console.warn('[shows/new] analyser warmth unavailable:', error);
+    return false;
+  } finally {
+    if (timeoutId !== null) clearTimeout(timeoutId);
+  }
+}
+
 /** Return only the customer-facing generation mode and current credit costs.
  * Prompt text and other admin settings remain server-only. */
 export async function getShowGenerationPresentationAction(): Promise<ShowGenerationPresentationResult> {
@@ -115,7 +134,7 @@ export async function getShowGenerationPresentationAction(): Promise<ShowGenerat
   );
   const [costs, warmth] = await Promise.all([
     Promise.all(actionKeys.map((key) => getAiCreditCost(supabase, key))),
-    getAnalyserWarmthState(),
+    getPresentationAnalyserWarmth(),
   ]);
   const costByAction = new Map(costs.map((cost) => [cost.key, cost.amount]));
 
@@ -131,7 +150,7 @@ export async function getShowGenerationPresentationAction(): Promise<ShowGenerat
           costByAction.get(actionKey) ?? 1,
         ]),
       ),
-      analyserWarm: warmth.active,
+      analyserWarm: warmth,
     },
   };
 }

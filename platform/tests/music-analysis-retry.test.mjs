@@ -12,7 +12,7 @@ const migration = readFileSync(
 );
 const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 const route = readFileSync(join(root, 'app/api/admin/analyser/reconcile/route.ts'), 'utf8');
-const uploadRoute = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
+const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
 const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
 
 test('song analyses store bounded attempts, retry timing, and paired leases', () => {
@@ -84,7 +84,7 @@ test('runner retries only transient failures and leaves pending work reserved', 
   assert.match(runner, /complete_song_analysis_attempt/);
   assert.match(runner, /fail_song_analysis_attempt/);
   assert.match(runner, /p_lease_token: typedRow\.lease_token/);
-  assert.match(uploadRoute, /if \(result\.pending\) return/);
+  assert.match(starter, /if \(result\.pending\) return/);
 });
 
 test('protected reconciliation repairs stale analyses, cues, retention, and credits', () => {

@@ -11,7 +11,7 @@ function read(path) {
 
 test('show creation keeps file focus visible without forcing mobile keyboard focus', () => {
   const upload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
-  const wizard = read('app/(app)/shows/new/page.tsx');
+  const wizard = read('app/(app)/shows/new/NewShowPageClient.tsx');
 
   assert.match(upload, /has-\[input:focus-visible\]:ring-3/);
   assert.match(upload, /has-\[input:focus-visible\]:ring-offset-2/);

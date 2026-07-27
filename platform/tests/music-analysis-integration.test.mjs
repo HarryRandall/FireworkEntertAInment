@@ -150,12 +150,15 @@ test('show song context exposes stored analysis context', () => {
   assert.doesNotMatch(indexPage, /ShowPreviewRedirect/);
   assert.match(page, /ShowSongContextPage/);
   assert.match(page, /getLatestAnalysisForShow\(show\.id\)/);
+  assert.match(page, /getSoundtrackAttribution\(show\.musicAnalysisId\)/);
+  assert.match(page, /Promise\.all/);
   assert.match(page, /generationStatus === 'running'/);
-  assert.match(
-    page,
-    /<AudioAnalysisTimeline hasAudio=\{Boolean\(show\.audioPath\)\} initialAnalysis=\{latestAnalysis\} \/>/,
-  );
+  assert.match(page, /<AudioAnalysisTimeline/);
+  assert.match(page, /hasAudio=\{Boolean\(show\.audioPath\)\}/);
+  assert.match(page, /initialAnalysis=\{latestAnalysis\}/);
+  assert.match(page, /soundtrackAttribution=\{soundtrackAttribution\}/);
   assert.match(timeline, /Song context/);
+  assert.match(timeline, /SoundtrackProfile/);
   assert.match(timeline, /contextMarkdown/);
   assert.match(timeline, /buildKpis/);
   assert.match(timeline, /\/api\/shows\/\$\{encodeURIComponent\(showId\)\}\/analysis/);

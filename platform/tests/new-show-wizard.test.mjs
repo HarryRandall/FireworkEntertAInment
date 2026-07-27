@@ -6,7 +6,8 @@ import { test } from 'node:test';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const page = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
+const serverPage = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
+const page = readFileSync(join(root, 'app/(app)/shows/new/NewShowPageClient.tsx'), 'utf8');
 const choiceCards = readFileSync(join(root, 'app/(app)/shows/new/_components/cards.tsx'), 'utf8');
 const audioUpload = readFileSync(
   join(root, 'app/(app)/shows/new/_components/AudioUpload.tsx'),
@@ -41,7 +42,15 @@ test('new show wizard uploads audio before final submit', () => {
 });
 
 test('new show wizard reflects the server generation mode and live credit costs', () => {
+  assert.match(serverPage, /await Promise\.race\(\[[\s\S]*getShowGenerationPresentationAction\(\)/);
+  assert.match(serverPage, /initialGenerationPresentation/);
+  assert.match(serverPage, /INITIAL_GENERATION_PRESENTATION_TIMEOUT_MS = 12_000/);
   assert.match(page, /getShowGenerationPresentationAction/);
+  assert.match(page, /GENERATION_PRESENTATION_TIMEOUT_MS = 12_000/);
+  assert.match(
+    page,
+    /useState<ShowGenerationPresentation \| null>\(initialGenerationPresentation\)/,
+  );
   assert.match(page, /generationPresentation\.generationMode === 'llm'/);
   assert.match(page, /Fast planner/);
   assert.match(page, /generationPresentation\.fastCreditCost/);

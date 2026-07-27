@@ -8,15 +8,25 @@
  */
 'use client';
 
-import { AlertTriangle, Check, CloudUpload, Loader2, Music4, Pencil, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  CloudUpload,
+  ExternalLink,
+  Loader2,
+  Music4,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/app/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
 import { formatDuration } from '@/lib/show-domain';
+import type { SoundtrackAttribution } from '@/lib/music-library.types';
 import { formatBytes } from '../utils';
 
 export function AudioUpload({
-  file,
+  track,
   duration,
   uploadState,
   error,
@@ -24,7 +34,11 @@ export function AudioUpload({
   onFile,
   onClear,
 }: {
-  file: File | null;
+  track: {
+    name: string;
+    sizeBytes: number;
+    source?: SoundtrackAttribution;
+  } | null;
   duration: number | null;
   uploadState: AudioUploadState;
   error: string | null;
@@ -32,93 +46,162 @@ export function AudioUpload({
   onFile: (file: File | null) => void;
   onClear: () => void;
 }) {
-  if (file) {
-    const statusText =
+  if (track) {
+    const source = track.source;
+    const statusLabel =
       uploadState === 'uploading'
-        ? 'Uploading track'
+        ? 'Uploading'
         : uploadState === 'error'
-          ? (error ?? 'Upload failed')
-          : 'Track ready';
+          ? 'Needs attention'
+          : 'Ready';
+
     return (
       <div
         className={cn(
-          'flex items-center gap-3 rounded-xl border p-4',
+          'relative flex min-h-36 flex-col gap-4 overflow-hidden rounded-xl border bg-[color:var(--color-bg-elevated)] p-4 pl-5 shadow-sm sm:flex-row sm:items-center',
           uploadState === 'error'
             ? 'border-[color:var(--color-status-danger)]/40 bg-[color-mix(in_srgb,var(--color-status-danger)_8%,transparent)]'
-            : 'border-[color:var(--color-status-success)]/40 bg-[color-mix(in_srgb,var(--color-status-success)_8%,transparent)]',
+            : 'border-[color:var(--color-border-default)]',
         )}
         role={uploadState === 'error' ? 'alert' : 'status'}
         aria-live="polite"
       >
         <span
           className={cn(
-            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-bg-default)]',
+            'absolute inset-y-3 left-0 w-0.5 rounded-full',
             uploadState === 'error'
-              ? 'text-[color:var(--color-status-danger)]'
-              : 'text-[color:var(--color-status-success)]',
+              ? 'bg-[color:var(--color-status-danger)]'
+              : uploadState === 'uploading'
+                ? 'bg-[color:var(--color-content-muted)]'
+                : 'bg-[color:var(--color-status-success)]',
           )}
-        >
-          {uploadState === 'uploading' ? (
-            <Loader2
-              size={18}
-              strokeWidth={1.75}
-              className="animate-spin motion-reduce:animate-none"
-              aria-hidden="true"
+          aria-hidden="true"
+        />
+
+        <span className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-muted)]">
+          <Music4 size={20} strokeWidth={1.75} aria-hidden="true" />
+          {source?.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={source.imageUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(event) => {
+                event.currentTarget.hidden = true;
+              }}
             />
-          ) : uploadState === 'error' ? (
-            <AlertTriangle size={18} strokeWidth={1.75} aria-hidden="true" />
-          ) : (
-            <Music4 size={18} strokeWidth={1.75} aria-hidden="true" />
-          )}
+          ) : null}
         </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {uploadState === 'uploading' ? (
-              <Loader2
-                size={14}
-                strokeWidth={2}
-                className="shrink-0 animate-spin text-[color:var(--color-content-muted)] motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-            ) : uploadState === 'error' ? (
-              <AlertTriangle
-                size={14}
-                strokeWidth={2.5}
-                className="shrink-0 text-[color:var(--color-status-danger)]"
-                aria-hidden="true"
-              />
-            ) : (
-              <Check
-                size={14}
-                strokeWidth={2.5}
-                className="shrink-0 text-[color:var(--color-status-success)]"
-                aria-hidden="true"
-              />
-            )}
-            <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
-              {file.name}
+
+        <div className="min-w-0 flex-1 self-stretch sm:self-center">
+          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+                uploadState === 'error'
+                  ? 'border-[color:var(--color-status-danger)]/30 text-[color:var(--color-status-danger)]'
+                  : uploadState === 'uploading'
+                    ? 'border-[color:var(--color-border-default)] text-[color:var(--color-content-muted)]'
+                    : 'border-[color:var(--color-status-success)]/30 bg-[color-mix(in_srgb,var(--color-status-success)_7%,transparent)] text-[color:var(--color-status-success)]',
+              )}
+            >
+              {uploadState === 'uploading' ? (
+                <Loader2
+                  size={11}
+                  strokeWidth={2}
+                  className="animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : uploadState === 'error' ? (
+                <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
+              ) : (
+                <Check size={11} strokeWidth={2.5} aria-hidden="true" />
+              )}
+              {statusLabel}
             </span>
           </div>
-          <div className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-            {formatBytes(file.size)}
-            {duration ? ` · ${formatDuration(duration)}` : ''}
-            {` · ${statusText}`}
+
+          {source ? (
+            <>
+              <h4 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                <a
+                  href={source.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex max-w-full items-center gap-1 hover:underline"
+                >
+                  <span className="line-clamp-2">{source.title}</span>
+                  <ExternalLink
+                    size={11}
+                    aria-hidden="true"
+                    className="shrink-0 text-[color:var(--color-content-muted)]"
+                  />
+                </a>
+              </h4>
+              <p className="mt-0.5 truncate text-xs text-[color:var(--color-content-subtle)]">
+                {source.artist}
+              </p>
+            </>
+          ) : (
+            <h4 className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+              {track.name}
+            </h4>
+          )}
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[color:var(--color-content-subtle)]">
+            {duration ? (
+              <span className="font-mono tabular-nums">{formatDuration(duration)}</span>
+            ) : null}
+            <span className="font-mono tabular-nums">{formatBytes(track.sizeBytes)}</span>
+            {source ? (
+              <a
+                href={source.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[color:var(--color-border-default)] underline-offset-2 hover:text-[color:var(--color-content-emphasis)]"
+              >
+                Jamendo
+              </a>
+            ) : null}
+            {source ? (
+              <a
+                href={source.licenceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-[color:var(--color-border-default)] underline-offset-2 hover:text-[color:var(--color-content-emphasis)]"
+              >
+                {source.licenceName}
+              </a>
+            ) : null}
           </div>
+          {uploadState === 'error' ? (
+            <p className="mt-2 text-xs text-[color:var(--color-status-danger)]">
+              {error ?? 'Upload failed'}
+            </p>
+          ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button type="button" variant="ghost" size="sm" onClick={() => inputRef.current?.click()}>
-            <Pencil size={13} />
-            Replace
-          </Button>
+
+        <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
+          {!source ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Pencil size={13} aria-hidden="true" />
+              Replace file
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
             size="icon"
             aria-label="Remove track"
             onClick={onClear}
-            className="h-8 w-8"
+            className="h-8 w-8 hover:bg-[color-mix(in_srgb,var(--color-status-danger)_9%,transparent)] hover:text-[color:var(--color-status-danger)]"
           >
-            <Trash2 size={14} />
+            <Trash2 size={14} aria-hidden="true" />
           </Button>
         </div>
         <input

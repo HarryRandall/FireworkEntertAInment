@@ -170,9 +170,10 @@ test('settings links keep usage after billing', () => {
 
 test('show and music generation reserve, settle, and refund credits', () => {
   const newShowAction = read('app/(app)/shows/new/actions.ts');
-  const newShowPage = read('app/(app)/shows/new/page.tsx');
+  const newShowPage = read('app/(app)/shows/new/NewShowPageClient.tsx');
   const runner = read('lib/cue-generation/runner.server.ts');
   const musicRoute = read('app/api/music-analysis/route.ts');
+  const musicStarter = read('lib/start-music-analysis.server.ts');
   const retryMigration = read('supabase/migrations/20260727090000_song_analysis_retry_leases.sql');
   const lifecycleMigration = read(
     'supabase/migrations/20260727103000_backend_lifecycle_operations.sql',
@@ -203,8 +204,9 @@ test('show and music generation reserve, settle, and refund credits', () => {
   assert.match(lifecycleMigration, /'show-generation:' \|\| show_row\.id::text \|\| ':reserve'/);
   assert.match(lifecycleMigration, /'settled'/);
   assert.match(lifecycleMigration, /'refunded'/);
-  assert.match(musicRoute, /musicAnalysisReservationKey/);
-  assert.match(musicRoute, /refundAiCreditReservation/);
+  assert.match(musicRoute, /startMusicAnalysisForStoredAudio/);
+  assert.match(musicStarter, /musicAnalysisReservationKey/);
+  assert.match(musicStarter, /refundAiCreditReservation/);
   assert.match(retryMigration, /private\.resolve_song_analysis_credit/);
   assert.match(retryMigration, /'music-analysis:' \|\| analysis_row\.id::text \|\| ':reserve'/);
   assert.match(retryMigration, /'settled'/);

@@ -2,6 +2,8 @@
  * Shared types for the new-show flow. All pure type declarations — no I/O.
  */
 
+import type { SoundtrackAttribution } from '@/lib/music-library.types';
+
 /** State of the per-file audio upload state machine in the flow. */
 export type AudioUploadState = 'idle' | 'uploading' | 'ready' | 'error';
 
@@ -25,4 +27,9 @@ export type UploadedAudio = {
   originalName: string;
   sizeBytes: number;
   contentType: string;
+  durationSeconds?: number;
+  /** Existing show-owned analyses stay referenced and must not be discarded
+   * when this wizard changes its selection. */
+  reusedAnalysis?: boolean;
+  source?: SoundtrackAttribution;
 };
