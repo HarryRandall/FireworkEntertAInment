@@ -34,5 +34,8 @@ export const supabaseFetch = createSupabaseFetch(8_000);
 /** Nested catalogue joins can exceed the default read timeout on cold starts. */
 export const supabaseFetchCatalogue = createSupabaseFetch(20_000);
 
+/** Writes with trigger-owned follow-up rows can outlast the interactive read budget on cold starts. */
+export const supabaseFetchMutation = createSupabaseFetch(20_000);
+
 /** Service-role uploads (PNG cover backfill, firework imports): allow 30s. */
 export const supabaseFetchLong = createSupabaseFetch(30_000);

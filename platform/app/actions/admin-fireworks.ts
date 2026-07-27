@@ -33,6 +33,7 @@ import {
 } from '@/lib/fireworks/style-defaults';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
+import { supabaseFetchMutation } from '@/utils/supabase/fetch';
 
 type FireworkRow = Database['public']['Tables']['fireworks']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
@@ -406,7 +407,7 @@ export async function createFirework(
   const parsed = CreateFireworkSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
-  const supabase = createClient(await cookies());
+  const supabase = createClient(await cookies(), supabaseFetchMutation);
   const baseSlug = slugify(parsed.data.name) || 'firework';
   const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -423,7 +424,23 @@ export async function createFirework(
     .select('id')
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    // The insert can commit after the client loses its response. Re-read the
+    // request-scoped slug before reporting failure, so a retry cannot create a
+    // second firework for the same action submission.
+    if (isSupabaseTransientNetworkError(error)) {
+      const { data: committed, error: lookupError } = await supabase
+        .from('fireworks')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (!lookupError && committed) {
+        await refresh(committed.id);
+        return { ok: true, id: committed.id };
+      }
+    }
+    return { ok: false, error: error.message };
+  }
   if (!data) return { ok: false, error: 'Could not create firework.' };
   await refresh(data.id);
   return { ok: true, id: data.id };

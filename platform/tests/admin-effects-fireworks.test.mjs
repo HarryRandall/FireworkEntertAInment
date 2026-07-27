@@ -154,6 +154,18 @@ test('base effect classification column is removed from schema and migrations', 
   assert.doesNotMatch(fireworkEffectsTypes, /\n\s+family\??:/);
 });
 
+test('firework creation tolerates an ambiguous mutation response', () => {
+  const actions = read('app/actions/admin-fireworks.ts');
+  const fetch = read('utils/supabase/fetch.ts');
+  const createBody = functionBody(actions, 'createFirework');
+
+  assert.match(fetch, /supabaseFetchMutation = createSupabaseFetch\(20_000\)/);
+  assert.match(createBody, /createClient\(await cookies\(\), supabaseFetchMutation\)/);
+  assert.match(createBody, /isSupabaseTransientNetworkError\(error\)/);
+  assert.match(createBody, /\.eq\('slug', slug\)/);
+  assert.match(createBody, /await refresh\(committed\.id\)/);
+});
+
 test('firework edits use conflict detection and immutable version history', () => {
   const actions = read('app/actions/admin-fireworks.ts');
   const updateBody = functionBody(actions, 'updateFirework');
