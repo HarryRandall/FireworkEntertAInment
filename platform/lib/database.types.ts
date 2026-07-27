@@ -1166,6 +1166,27 @@ export type Database = {
           },
         ]
       }
+      jamendo_response_cache: {
+        Row: {
+          cache_key: string
+          expires_at: string
+          payload: Json
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          expires_at: string
+          payload: Json
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          expires_at?: string
+          payload?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           created_at: string
@@ -1868,6 +1889,13 @@ export type Database = {
           runtime_ms: number | null
           schema_version: string
           size_bytes: number | null
+          source_artist: string | null
+          source_licence_name: string | null
+          source_licence_url: string | null
+          source_provider: string | null
+          source_title: string | null
+          source_track_id: string | null
+          source_url: string | null
           status: string
           updated_at: string
           user_id: string
@@ -1892,6 +1920,13 @@ export type Database = {
           runtime_ms?: number | null
           schema_version?: string
           size_bytes?: number | null
+          source_artist?: string | null
+          source_licence_name?: string | null
+          source_licence_url?: string | null
+          source_provider?: string | null
+          source_title?: string | null
+          source_track_id?: string | null
+          source_url?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -1916,6 +1951,13 @@ export type Database = {
           runtime_ms?: number | null
           schema_version?: string
           size_bytes?: number | null
+          source_artist?: string | null
+          source_licence_name?: string | null
+          source_licence_url?: string | null
+          source_provider?: string | null
+          source_title?: string | null
+          source_track_id?: string | null
+          source_url?: string | null
           status?: string
           updated_at?: string
           user_id?: string

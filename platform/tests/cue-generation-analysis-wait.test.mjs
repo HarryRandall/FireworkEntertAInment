@@ -25,12 +25,12 @@ test('cue generation leaves running music analysis pending instead of failing', 
 });
 
 test('music analysis completion resumes linked running show generation', () => {
-  const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
+  const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
   const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
   const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
 
-  assert.match(route, /resumeCueGenerationForCompletedAnalysis/);
-  assert.match(route, /await resumeCueGenerationForCompletedAnalysis/);
+  assert.match(starter, /resumeCueGenerationForCompletedAnalysis/);
+  assert.match(starter, /await resumeCueGenerationForCompletedAnalysis/);
   assert.match(lifecycle, /listRunningShowsForAnalysis/);
   assert.match(lifecycle, /generateCuesForShow/);
   assert.match(lifecycle, /\.eq\('music_analysis_id', params\.musicAnalysisId\)/);
@@ -78,10 +78,10 @@ test('failed generation uses a safe, recoverable customer error state', () => {
 });
 
 test('music analysis failure marks linked running show generation failed', () => {
-  const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
+  const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
   const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
 
-  assert.match(route, /markLinkedShowGenerationFailed/);
+  assert.match(starter, /markLinkedShowGenerationFailed/);
   assert.match(lifecycle, /Music analysis failed: \$\{params\.error\}/);
   assert.match(lifecycle, /fail_waiting_show_generation/);
   assert.match(lifecycle, /p_error_message: message/);

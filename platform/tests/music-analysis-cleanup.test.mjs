@@ -7,6 +7,7 @@ const root = process.cwd();
 const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
 const page = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
 const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
+const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
 const migration = readFileSync(
   join(root, 'supabase/migrations/20260710020448_discard_unused_song_analyses.sql'),
   'utf8',
@@ -59,7 +60,7 @@ test('the analyser cannot settle or restore a row discarded during an in-flight 
   assert.match(uploadRunner, /p_lease_token: typedRow\.lease_token/);
   assert.match(uploadRunner, /classifyUnclaimedMusicAnalysis/);
   assert.match(runner, /if \(!row\) \{[\s\S]*cancelled: true/);
-  assert.match(route, /if \(result\.cancelled\) \{[\s\S]*refundAiCreditReservation/);
+  assert.match(starter, /if \(result\.cancelled\) \{[\s\S]*refundAiCreditReservation/);
 });
 
 test('replacing or clearing ready audio and stale POST responses trigger cleanup', () => {
@@ -86,9 +87,10 @@ test('replacing or clearing ready audio and stale POST responses trigger cleanup
   );
   assert.match(noSoundtrackHandler, /clearAudio\(\)/);
 
+  const uploadStart = page.indexOf('const uploadAudioAndStartAnalysis');
   const successfulPost = page.slice(
-    page.indexOf('const uploaded = {'),
-    page.indexOf('return uploaded;'),
+    page.indexOf('const uploaded = {', uploadStart),
+    page.indexOf('return uploaded;', uploadStart),
   );
   assert.match(successfulPost, /if \(uploadTokenRef\.current !== token\)/);
   assert.match(successfulPost, /await cleanupUnusedMusicAnalysis\(uploaded\)/);

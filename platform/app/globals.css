@@ -772,8 +772,13 @@ body {
 .new-show-wizard-screen {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   background: var(--background);
+}
+
+.new-show-wizard-screen[data-launching='true'] {
+  overflow: hidden;
 }
 
 /* Lightweight route progress (kept, restyled minimal) */

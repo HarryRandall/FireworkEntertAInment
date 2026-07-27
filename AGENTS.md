@@ -116,6 +116,7 @@ Variables.
 | `PASSWORD_RECOVERY_SIGNING_SECRET`                    | yes for password recovery                                 | trusted server                   | Signs the short-lived recovery proof cookie. Generate at least 32 random bytes                       |
 | `ANALYSER_URL`                                        | yes for analysis                                          | server                           | Hosted Modal song analyser URL                                                                       |
 | `ANALYSER_SHARED_SECRET`                              | yes for analysis                                          | server and Modal                 | Bearer token shared with the Modal `showcrafter` secret                                              |
+| `JAMENDO_CLIENT_ID`                                   | optional                                                  | server                           | Enables authenticated CC0/CC BY soundtrack search through the Jamendo developer API                  |
 | `CRON_SECRET`                                         | deployed backend jobs                                     | server                           | Authorises analyser warm-up, lifecycle reconciliation, and backend health operations                 |
 | `CUE_GENERATION_MODE`                                 | optional                                                  | server                           | Defaults to `fast`; set `llm` to opt into OpenRouter cue assignment                                  |
 | `OPENROUTER_API_KEY`                                  | optional for default generation, required for LLM/imports | server and import worker         | Enables LLM cue assignment and firework-video reconstruction                                         |
@@ -177,6 +178,10 @@ derived decoration. See `platform/docs/explore-presets.md`.
   generation.
 - Audio upload writes directly to the private Supabase `audio` bucket under the
   user's prefix, then posts metadata to `/api/music-analysis`.
+- Optional Jamendo search is server-authenticated and server-only. Selecting a
+  downloadable CC0 or CC BY track copies it into the same private user prefix,
+  persists its artist/provider/licence attribution, and starts the same music
+  analysis lifecycle as a direct upload.
 - `/api/music-analysis` validates object ownership, MIME type, and 50 MB size,
   reserves AI credits, creates a `song_analyses` row, and starts Modal analysis
   in `after()`.

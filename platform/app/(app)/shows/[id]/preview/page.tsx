@@ -7,6 +7,7 @@ import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
 import { getCurrentProfile } from '@/lib/admin/current-user.server';
 import {
   getAudioSignedUrl,
+  getSoundtrackAttribution,
   getShowBySlug,
   listFireworkProducts,
   listReplayCuesForShow,
@@ -45,6 +46,7 @@ async function ShowPreviewReplay(props: PageProps) {
   const replayCuesPromise = listReplayCuesForShow(show.id);
   const fireworkSpecificationsPromise = listFireworkProducts();
   const audioUrlPromise = getAudioSignedUrl(show.audioPath);
+  const soundtrackAttributionPromise = getSoundtrackAttribution(show.musicAnalysisId);
   const currentProfile = await currentProfilePromise;
   const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
 
@@ -61,6 +63,7 @@ async function ShowPreviewReplay(props: PageProps) {
       replayCuesPromise={replayCuesPromise}
       fireworkSpecificationsPromise={fireworkSpecificationsPromise}
       audioUrlPromise={audioUrlPromise}
+      soundtrackAttributionPromise={soundtrackAttributionPromise}
     />
   );
 }

@@ -77,6 +77,7 @@ import {
   clearPersistedGenerationStart,
 } from '@/lib/generation-progress-storage';
 import { cn } from '@/lib/utils';
+import type { SoundtrackAttribution } from '@/lib/music-library.types';
 
 const REFINEMENT_CREDIT_COST = 2;
 
@@ -97,6 +98,8 @@ type FireworkReplayViewerProps = {
   fireworkSpecificationsPromise: Promise<FireworkSpecification[]>;
   /** Server-streamed signed audio URL, kept independent from catalogue work. */
   audioUrlPromise: Promise<string | null>;
+  /** Persisted provider attribution, streamed independently from playback. */
+  soundtrackAttributionPromise: Promise<SoundtrackAttribution | null>;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -191,12 +194,16 @@ export function FireworkReplayViewer({
   replayCuesPromise,
   fireworkSpecificationsPromise,
   audioUrlPromise,
+  soundtrackAttributionPromise,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
   const [streamedSpecifications, setStreamedSpecifications] = useState<
     FireworkSpecification[] | null
   >(null);
   const [streamedAudioUrl, setStreamedAudioUrl] = useState<string | null | undefined>(undefined);
+  const [soundtrackAttribution, setSoundtrackAttribution] = useState<SoundtrackAttribution | null>(
+    null,
+  );
   const cues = streamedCues ?? EMPTY_CUES;
   const specifications = streamedSpecifications ?? EMPTY_SPECS;
   const audioUrl = streamedAudioUrl ?? null;
@@ -210,6 +217,9 @@ export function FireworkReplayViewer({
   }, []);
   const handleAudioUrlLoaded = useCallback((data: string | null) => {
     setStreamedAudioUrl(data);
+  }, []);
+  const handleSoundtrackAttributionLoaded = useCallback((data: SoundtrackAttribution | null) => {
+    setSoundtrackAttribution(data);
   }, []);
   const [optimisticCues, addOptimisticCue] = useOptimistic(
     cues,
@@ -734,6 +744,12 @@ export function FireworkReplayViewer({
       <Suspense fallback={null}>
         <StreamedDataReader promise={audioUrlPromise} onLoaded={handleAudioUrlLoaded} />
       </Suspense>
+      <Suspense fallback={null}>
+        <StreamedDataReader
+          promise={soundtrackAttributionPromise}
+          onLoaded={handleSoundtrackAttributionLoaded}
+        />
+      </Suspense>
       <div className="space-y-6">
         <Card
           elevation="low"
@@ -815,6 +831,29 @@ export function FireworkReplayViewer({
             ) : null}
           </div>
         </Card>
+
+        {soundtrackAttribution ? (
+          <p className="text-on-surface-variant text-center text-xs">
+            Soundtrack:{' '}
+            <a
+              href={soundtrackAttribution.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-on-surface font-medium underline underline-offset-2"
+            >
+              {soundtrackAttribution.title}
+            </a>{' '}
+            by {soundtrackAttribution.artist}, supplied by Jamendo ·{' '}
+            <a
+              href={soundtrackAttribution.licenceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              {soundtrackAttribution.licenceName}
+            </a>
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
           <Card elevation="high" radius="md" className="space-y-5 p-6 xl:col-span-2">

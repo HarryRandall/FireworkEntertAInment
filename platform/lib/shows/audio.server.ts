@@ -7,6 +7,7 @@
  */
 import 'server-only';
 
+import type { SoundtrackAttribution } from '@/lib/music-library.types';
 import { getServerClient } from './supabase';
 
 /**
@@ -29,4 +30,43 @@ export async function getAudioSignedUrl(
     return null;
   }
   return data?.signedUrl ?? null;
+}
+
+/** Resolve persisted provider attribution for the soundtrack linked to a show. */
+export async function getSoundtrackAttribution(
+  musicAnalysisId: string | null,
+): Promise<SoundtrackAttribution | null> {
+  if (!musicAnalysisId) return null;
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from('song_analyses')
+    .select(
+      'source_provider, source_track_id, source_title, source_artist, source_url, source_licence_name, source_licence_url',
+    )
+    .eq('id', musicAnalysisId)
+    .maybeSingle();
+  if (error) {
+    console.error('[shows.server] getSoundtrackAttribution failed:', error);
+    throw new Error('Soundtrack attribution could not be loaded.', { cause: error });
+  }
+  if (
+    data?.source_provider !== 'jamendo' ||
+    !data.source_track_id ||
+    !data.source_title ||
+    !data.source_artist ||
+    !data.source_url ||
+    !data.source_licence_name ||
+    !data.source_licence_url
+  ) {
+    return null;
+  }
+  return {
+    provider: 'jamendo',
+    trackId: data.source_track_id,
+    title: data.source_title,
+    artist: data.source_artist,
+    sourceUrl: data.source_url,
+    licenceName: data.source_licence_name,
+    licenceUrl: data.source_licence_url,
+  };
 }

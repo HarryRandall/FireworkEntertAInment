@@ -1,0 +1,151 @@
+/** Static contracts for authenticated Jamendo soundtrack search and import. */
+
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { test } from 'node:test';
+
+const root = process.cwd();
+const read = (path) => readFileSync(join(root, path), 'utf8');
+
+const envExample = read('.env.example');
+const server = read('lib/jamendo.server.ts');
+const route = read('app/api/music-library/jamendo/route.ts');
+const starter = read('lib/start-music-analysis.server.ts');
+const wizard = read('app/(app)/shows/new/page.tsx');
+const search = read('app/(app)/shows/new/_components/JamendoSongSearch.tsx');
+const audioUpload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
+const replay = read('app/components/app/FireworkReplayViewer.tsx');
+const audioReader = read('lib/shows/audio.server.ts');
+const migration = read(
+  'supabase/migrations/20260727121754_add_song_analysis_source_attribution.sql',
+);
+const restrictionMigration = read(
+  'supabase/migrations/20260727150001_restrict_jamendo_soundtrack_licences.sql',
+);
+const cacheMigration = read('supabase/migrations/20260727032350_add_jamendo_response_cache.sql');
+const databaseTypes = read('lib/database.types.ts');
+
+test('Jamendo access is server-only, explicit, cached, and bounded', () => {
+  assert.match(envExample, /^JAMENDO_CLIENT_ID=/m);
+  assert.doesNotMatch(envExample, /NEXT_PUBLIC_JAMENDO/);
+  assert.match(server, /import 'server-only'/);
+  assert.match(server, /process\.env\.JAMENDO_CLIENT_ID/);
+  assert.match(server, /JAMENDO_SEARCH_CACHE_SECONDS = 60/);
+  assert.match(server, /JAMENDO_SEARCH_RESULT_LIMIT = 8/);
+  assert.match(server, /JAMENDO_RESPONSE_LIMIT_BYTES/);
+  assert.match(server, /JAMENDO_REQUEST_TIMEOUT_MS/);
+  assert.match(server, /durationbetween/);
+  assert.match(server, /showcrafter:jamendo:browse:v4/);
+  assert.match(search, /role="search"/);
+  assert.doesNotMatch(search, /<form/);
+  assert.match(search, /event\.stopPropagation\(\)/);
+  assert.doesNotMatch(search, /useEffect\([\s\S]*searchJamendoTracks/);
+});
+
+test('search and import require an active user and enforce per-user limits', () => {
+  assert.match(route, /getCurrentProfile/);
+  assert.match(route, /profile\.status !== 'active'/);
+  assert.match(route, /showcrafter:rate:jamendo:\$\{operation\}:\$\{userId\}/);
+  assert.match(route, /operation === 'search' \? 20 : 5/);
+  assert.match(route, /Retry-After/);
+  assert.match(route, /export async function GET/);
+  assert.match(route, /export async function POST/);
+  assert.doesNotMatch(route, /request[\s\S]*client_id/);
+});
+
+test('only downloadable CC0 or CC BY MP3 tracks can enter private storage', () => {
+  assert.match(server, /track\.audiodownload_allowed/);
+  assert.match(server, /licencePath === 'publicdomain\/zero'/);
+  assert.match(server, /parameters\.set\('ccnc', 'false'\)/);
+  assert.match(server, /parameters\.set\('ccnd', 'false'\)/);
+  assert.match(server, /parameters\.set\('ccsa', 'false'\)/);
+  assert.doesNotMatch(server, /by-nc|by-nd|by-sa/);
+  assert.match(server, /isTrustedJamendoAudioUrl\(response\.url\)/);
+  assert.match(server, /JAMENDO_TRACK_FILE_URL/);
+  assert.match(server, /redirect: 'manual'/);
+  assert.match(server, /action: 'download'/);
+  assert.match(server, /JAMENDO_MAX_AUDIO_BYTES = 50 \* 1024 \* 1024/);
+  assert.match(server, /looksLikeMp3/);
+  assert.match(route, /audioPath = `\$\{auth\.profile\.id\}\//);
+  assert.match(route, /\.from\('audio'\)[\s\S]*\.upload\(audioPath/);
+  assert.match(route, /upsert: false/);
+  assert.match(route, /startMusicAnalysisForStoredAudio/);
+  assert.match(route, /\.from\('audio'\)\.remove\(\[audioPath\]\)/);
+  assert.match(route, /unavailable: true/);
+  assert.match(search, /It has been removed from these results/);
+  assert.match(route, /imageUrl: track\.imageUrl/);
+});
+
+test('provider tracks use the existing analysis credit lifecycle', () => {
+  assert.match(starter, /actionKey: 'music_analysis'/);
+  assert.match(starter, /reserveAiCredits/);
+  assert.match(starter, /\.from\('song_analyses'\)/);
+  assert.match(starter, /after\(async \(\) =>/);
+  assert.match(starter, /runMusicAnalysisForUpload/);
+  assert.match(starter, /refundAiCreditReservation/);
+  assert.match(starter, /resumeCueGenerationForCompletedAnalysis/);
+});
+
+test('the wizard keeps soundtrack import separate from explicit show generation', () => {
+  assert.match(wizard, /<JamendoSongSearch[\s\S]*onSelect=\{attachJamendoTrack\}/);
+  assert.match(wizard, /hasSelection=\{Boolean\(uploadedAudio\?\.source\)\}/);
+  assert.match(wizard, /fetch\('\/api\/music-library\/jamendo'/);
+  assert.match(wizard, /uploadPromiseRef\.current = importPromise/);
+  assert.match(wizard, /await uploadPromiseRef\.current/);
+  assert.match(wizard, /const result = await createShowAction\(data\)/);
+  assert.match(search, /Search uses no AI credits/);
+  assert.match(search, /using a track starts[\s\S]*the usual music analysis/);
+});
+
+test('an attached Jamendo track is presented as a neutral song profile', () => {
+  assert.match(search, /Browse more music/);
+  assert.match(search, /Search by track, artist, mood, or genre/);
+  assert.match(audioUpload, /source\?\.imageUrl/);
+  assert.match(audioUpload, /bg-\[color:var\(--color-bg-elevated\)\]/);
+  assert.match(audioUpload, /bg-\[color:var\(--color-status-success\)\]/);
+  assert.doesNotMatch(
+    audioUpload,
+    /bg-\[color-mix\(in_srgb,var\(--color-status-success\)_8%,transparent\)\]/,
+  );
+});
+
+test('Jamendo attribution is constrained, typed, stored, and shown during replay', () => {
+  for (const column of [
+    'source_provider',
+    'source_track_id',
+    'source_title',
+    'source_artist',
+    'source_url',
+    'source_licence_name',
+    'source_licence_url',
+  ]) {
+    assert.match(migration, new RegExp(`add column if not exists ${column}`));
+    assert.match(databaseTypes, new RegExp(`${column}:`));
+    assert.match(starter, new RegExp(`${column}:`));
+  }
+  assert.match(restrictionMigration, /source_provider = 'jamendo'/);
+  assert.match(restrictionMigration, /\^\(CC BY\|CC0\)/);
+  assert.doesNotMatch(restrictionMigration, /BY-NC|BY-ND|BY-SA/);
+  assert.match(audioReader, /getSoundtrackAttribution/);
+  assert.match(replay, /soundtrackAttribution/);
+  assert.match(replay, /supplied by Jamendo/);
+});
+
+test('Jamendo responses persist in a durable, service-role-only Postgres cache', () => {
+  assert.match(cacheMigration, /create table if not exists public\.jamendo_response_cache/);
+  assert.match(cacheMigration, /enable row level security/);
+  assert.match(cacheMigration, /create policy jamendo_response_cache_no_client_access/);
+  assert.match(cacheMigration, /using \(false\)/);
+  assert.match(
+    cacheMigration,
+    /revoke all on public\.jamendo_response_cache from anon, authenticated/,
+  );
+  assert.match(databaseTypes, /jamendo_response_cache:/);
+  assert.match(server, /createServiceRoleSupabase/);
+  assert.match(server, /readJamendoCache/);
+  assert.match(server, /writeJamendoCache/);
+  assert.match(server, /setDurableCache/);
+  // Cache reads must fail open to the live API, never break search or browse.
+  assert.match(server, /durable cache read failed/);
+});

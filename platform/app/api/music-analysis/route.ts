@@ -1,19 +1,10 @@
 /** Music-analysis API endpoint exposing analyser status/results for a track. */
 
 import { cookies } from 'next/headers';
-import { after, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
-import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
-import {
-  musicAnalysisReservationKey,
-  refundAiCreditReservation,
-  reserveAiCredits,
-} from '@/lib/ai-credits.server';
-import {
-  markLinkedShowGenerationFailed,
-  resumeCueGenerationForCompletedAnalysis,
-} from '@/lib/music-analysis-lifecycle.server';
+import { startMusicAnalysisForStoredAudio } from '@/lib/start-music-analysis.server';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -165,101 +156,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const analysisId = crypto.randomUUID();
-  const reservationKey = musicAnalysisReservationKey(analysisId);
-  const reservation = await reserveAiCredits(supabase, {
+  const result = await startMusicAnalysisForStoredAudio({
+    supabase,
     userId: user.id,
-    actionKey: 'music_analysis',
-    referenceType: 'song_analyses',
-    referenceId: analysisId,
-    reservationKey,
-    metadata: {
-      audioPath: parsed.data.audioPath,
-      contentType: storedAudio.contentType,
-      originalFilename: parsed.data.originalFilename ?? null,
-      sizeBytes: storedAudio.sizeBytes,
-    },
+    audioPath: parsed.data.audioPath,
+    contentType: storedAudio.contentType,
+    originalFilename: parsed.data.originalFilename ?? null,
+    sizeBytes: storedAudio.sizeBytes,
   });
-
-  if (!reservation.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: reservation.error ?? 'You do not have enough AI credits to analyse this track.',
-      },
-      { status: 402 },
-    );
+  if (!result.ok) {
+    return NextResponse.json({ ok: false, error: result.error }, { status: result.status });
   }
-
-  const { data, error } = await supabase
-    .from('song_analyses')
-    .insert({
-      id: analysisId,
-      user_id: user.id,
-      audio_path: parsed.data.audioPath,
-      original_filename: parsed.data.originalFilename || null,
-      content_type: storedAudio.contentType,
-      size_bytes: storedAudio.sizeBytes,
-      personality: 'balanced',
-      status: 'running',
-      runner_version: 'modal-librosa-2',
-      schema_version: '1.4.0',
-    })
-    .select('id')
-    .single();
-
-  if (error || !data) {
-    console.error('[api/music-analysis] insert failed:', error);
-    await refundAiCreditReservation(supabase, {
-      userId: user.id,
-      reservationKey,
-      metadata: { reason: 'Could not prepare music analysis.' },
-    });
-    return NextResponse.json(
-      { ok: false, error: 'Could not prepare music analysis.' },
-      { status: 500 },
-    );
-  }
-
-  after(async () => {
-    const result = await runMusicAnalysisForUpload({
-      supabase,
-      userId: user.id,
-      analysisId: data.id,
-      personality: 'balanced',
-    });
-    if (!result.ok) {
-      if (result.pending) return;
-      if (result.cancelled) {
-        await refundAiCreditReservation(supabase, {
-          userId: user.id,
-          reservationKey,
-          metadata: { reason: 'Unused music analysis discarded.' },
-        });
-        return;
-      }
-      console.error('[api/music-analysis] background analysis failed:', result.error);
-      await refundAiCreditReservation(supabase, {
-        userId: user.id,
-        reservationKey,
-        metadata: { reason: result.error },
-      });
-      await markLinkedShowGenerationFailed({
-        supabase,
-        userId: user.id,
-        musicAnalysisId: data.id,
-        error: result.error,
-      });
-      return;
-    }
-    await resumeCueGenerationForCompletedAnalysis({
-      supabase,
-      userId: user.id,
-      musicAnalysisId: data.id,
-    });
-  });
-
-  return NextResponse.json({ ok: true, musicAnalysisId: data.id });
+  return NextResponse.json(result);
 }
 
 export async function DELETE(request: Request) {

@@ -59,6 +59,7 @@ import {
   type ShowStyleKey,
 } from '@/lib/cue-generation/show-styles';
 import { CUE_MODEL_OPTIONS, FALLBACK_CUE_MODEL, normaliseCueModel } from '@/lib/cue-models';
+import type { JamendoSearchTrack, SoundtrackAttribution } from '@/lib/music-library.types';
 import {
   clearPersistedGenerationCover,
   clearPersistedGenerationStart,
@@ -70,6 +71,7 @@ import { formatDuration, slugifyTitle } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { createShowAction, getShowGenerationPresentationAction } from './actions';
 import { AudioUpload } from './_components/AudioUpload';
+import { JamendoSongSearch } from './_components/JamendoSongSearch';
 import { LaunchOverlay } from './_components/LaunchOverlay';
 import { ChoiceCard, PositionDots } from './_components/cards';
 import { StepDots } from './_components/StepDots';
@@ -101,6 +103,9 @@ type LengthChoice = 'match' | (typeof SHOW_LENGTH_PRESETS)[number]['minutes'];
 const LENGTH_PRESET_ICONS = [Zap, Timer, Hourglass] as const;
 
 type MusicAnalysisResponse = { ok: true; musicAnalysisId: string } | { ok: false; error: string };
+type JamendoImportResponse =
+  | { ok: true; uploadedAudio: UploadedAudio }
+  | { ok: false; error: string; unavailable?: boolean };
 
 function parseMusicAnalysisResponse(value: unknown, responseOk: boolean): MusicAnalysisResponse {
   if (
@@ -124,6 +129,75 @@ function parseMusicAnalysisResponse(value: unknown, responseOk: boolean): MusicA
     return { ok: false, error: value.error };
   }
   return { ok: false, error: 'Could not start music analysis. Please try again.' };
+}
+
+function parseSoundtrackAttribution(value: unknown): SoundtrackAttribution | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const source = value as Partial<SoundtrackAttribution>;
+  if (
+    source.provider !== 'jamendo' ||
+    typeof source.trackId !== 'string' ||
+    typeof source.title !== 'string' ||
+    typeof source.artist !== 'string' ||
+    typeof source.sourceUrl !== 'string' ||
+    typeof source.licenceName !== 'string' ||
+    typeof source.licenceUrl !== 'string' ||
+    !(
+      source.imageUrl === undefined ||
+      source.imageUrl === null ||
+      typeof source.imageUrl === 'string'
+    )
+  ) {
+    return undefined;
+  }
+  return source as SoundtrackAttribution;
+}
+
+function parseJamendoImportResponse(value: unknown, responseOk: boolean): JamendoImportResponse {
+  if (responseOk && typeof value === 'object' && value !== null && 'uploadedAudio' in value) {
+    const uploaded = value.uploadedAudio;
+    if (typeof uploaded === 'object' && uploaded !== null) {
+      const audio = uploaded as Partial<UploadedAudio>;
+      if (
+        typeof audio.audioPath === 'string' &&
+        typeof audio.musicAnalysisId === 'string' &&
+        typeof audio.originalName === 'string' &&
+        typeof audio.sizeBytes === 'number' &&
+        typeof audio.contentType === 'string' &&
+        typeof audio.durationSeconds === 'number'
+      ) {
+        const source = parseSoundtrackAttribution(audio.source);
+        if (source) {
+          return {
+            ok: true,
+            uploadedAudio: {
+              audioPath: audio.audioPath,
+              musicAnalysisId: audio.musicAnalysisId,
+              originalName: audio.originalName,
+              sizeBytes: audio.sizeBytes,
+              contentType: audio.contentType,
+              durationSeconds: audio.durationSeconds,
+              source,
+            },
+          };
+        }
+      }
+    }
+  }
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'error' in value &&
+    typeof value.error === 'string' &&
+    value.error.trim()
+  ) {
+    return {
+      ok: false,
+      error: value.error,
+      unavailable: 'unavailable' in value && value.unavailable === true,
+    };
+  }
+  return { ok: false, error: 'The selected Jamendo track could not be attached.' };
 }
 
 async function cleanupUnusedMusicAnalysis(uploaded: UploadedAudio): Promise<void> {
@@ -250,7 +324,16 @@ export default function NewShowPage() {
 
   // A track is attached (still uploading or ready). Drives whether the Length
   // step offers the "match the track" option.
-  const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile);
+  const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile || uploadedAudio);
+  const attachedTrack = audioFile
+    ? { name: audioFile.name, sizeBytes: audioFile.size }
+    : uploadedAudio
+      ? {
+          name: uploadedAudio.originalName,
+          sizeBytes: uploadedAudio.sizeBytes,
+          source: uploadedAudio.source,
+        }
+      : null;
 
   useEffect(() => setMounted(true), []);
 
@@ -382,6 +465,7 @@ export default function NewShowPage() {
       if (uploadedAudio) discardUploadedAudio(uploadedAudio);
       uploadTokenRef.current += 1;
       setAudioFile(null);
+      setAudioDuration(null);
       setUploadedAudio(null);
       setAudioUploadState('idle');
       setAudioUploadError(null);
@@ -409,6 +493,7 @@ export default function NewShowPage() {
     setSoundtrackMode('song');
     setLengthChoice(null);
     setAudioFile(file);
+    setAudioDuration(null);
     setUploadedAudio(null);
     setAudioUploadError(null);
     const token = uploadTokenRef.current + 1;
@@ -426,6 +511,7 @@ export default function NewShowPage() {
     if (uploadedAudio) discardUploadedAudio(uploadedAudio);
     uploadTokenRef.current += 1;
     setAudioFile(null);
+    setAudioDuration(null);
     setUploadedAudio(null);
     setAudioUploadState('idle');
     setAudioUploadError(null);
@@ -440,6 +526,70 @@ export default function NewShowPage() {
     setSoundtrackMode('none');
     setLengthChoice(null);
     goToStep(stepIndex + 1);
+  };
+
+  const importJamendoTrackAndStartAnalysis = async (
+    track: JamendoSearchTrack,
+    token: number,
+  ): Promise<UploadedAudio> => {
+    let result: JamendoImportResponse;
+    try {
+      const response = await fetch('/api/music-library/jamendo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackId: track.trackId }),
+      });
+      const value: unknown = await response.json();
+      result = parseJamendoImportResponse(value, response.ok);
+    } catch (error) {
+      result = {
+        ok: false,
+        error: error instanceof Error ? error.message : 'The selected song could not be attached.',
+      };
+    }
+    if (!result.ok) {
+      if (uploadTokenRef.current === token) {
+        setAudioUploadState('error');
+        setAudioUploadError(result.error);
+      }
+      throw Object.assign(new Error(result.error), { unavailable: result.unavailable === true });
+    }
+
+    const uploaded = result.uploadedAudio;
+    if (uploadTokenRef.current !== token) {
+      try {
+        await cleanupUnusedMusicAnalysis(uploaded);
+      } catch (error) {
+        console.error('[shows/new] stale Jamendo audio cleanup failed:', error);
+      }
+      throw new Error('Audio selection changed before analysis was attached.');
+    }
+
+    setUploadedAudio(uploaded);
+    setAudioDuration(uploaded.durationSeconds ?? track.durationSeconds);
+    setAudioUploadState('ready');
+    setAudioUploadError(null);
+    return uploaded;
+  };
+
+  const attachJamendoTrack = async (track: JamendoSearchTrack): Promise<void> => {
+    if (uploadedAudio) discardUploadedAudio(uploadedAudio);
+    if (!title.trim()) setTitle(track.title);
+    setSoundtrackMode('song');
+    setLengthChoice(null);
+    setAudioFile(null);
+    setAudioDuration(null);
+    setUploadedAudio(null);
+    setAudioUploadState('uploading');
+    setAudioUploadError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    const token = uploadTokenRef.current + 1;
+    uploadTokenRef.current = token;
+    const importPromise = importJamendoTrackAndStartAnalysis(track, token);
+    uploadPromiseRef.current = importPromise;
+    await importPromise;
+    toast.success('Track attached', { description: `${track.title} by ${track.artist}` });
   };
 
   /**
@@ -628,7 +778,7 @@ export default function NewShowPage() {
     const generationCover = resolvePersistedGenerationCover(desiredSlug);
     // Show the client-side splash overlay right away; the route's own splash
     // resumes the same persisted progress once it streams in.
-    const hasAudio = Boolean(audioFile);
+    const hasAudio = Boolean(audioFile || uploadedAudio || uploadPromiseRef.current);
     setLaunch({ slug: desiredSlug, title: finalTitle, hasAudio });
     // `a=1` carries the soundtrack flag so the route's provisional splash
     // renders the same stage list as this overlay: no stage-row swap mid-run.
@@ -648,7 +798,7 @@ export default function NewShowPage() {
     };
     startTransition(async () => {
       let finalUploadedAudio = uploadedAudio;
-      if (audioFile && !finalUploadedAudio && uploadPromiseRef.current) {
+      if (!finalUploadedAudio && uploadPromiseRef.current) {
         try {
           finalUploadedAudio = await uploadPromiseRef.current;
         } catch (error) {
@@ -658,7 +808,7 @@ export default function NewShowPage() {
           return;
         }
       }
-      if (audioFile && audioUploadState === 'error') {
+      if (soundtrackMode === 'song' && audioUploadState === 'error') {
         returnToSoundtrackUploadError(audioUploadError ?? 'Try replacing the audio file.');
         return;
       }
@@ -749,8 +899,9 @@ export default function NewShowPage() {
       noValidate
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
+      data-launching={launch ? 'true' : undefined}
       className={cn(
-        'new-show-wizard-screen relative -mx-6 -mt-6 flex flex-1 sm:-mx-8 lg:-mx-10',
+        'new-show-wizard-screen relative -mx-6 -mt-6 flex min-h-full flex-1 sm:-mx-8 lg:-mx-10',
         // While the launch splash is up, cancel all of the app main's bottom
         // padding (the form's overflow-hidden would clip any overlay that
         // tried to extend past it) so the splash reaches the true bottom edge
@@ -899,72 +1050,78 @@ export default function NewShowPage() {
               </StepPanel>
 
               <StepPanel active={stepIndex === 1}>
-                <div className="mx-auto w-full max-w-3xl space-y-4">
-                  <div
-                    ref={audioUploadErrorRef}
-                    tabIndex={-1}
-                    aria-label={
-                      audioUploadState === 'error'
-                        ? `Track upload error: ${audioUploadError ?? 'Upload failed'}`
-                        : undefined
-                    }
-                    className={cn(
-                      'rounded-xl focus:outline-none focus-visible:ring-3 focus-visible:ring-[color:var(--color-status-danger)]/35',
-                      soundtrackMode === 'none' && 'opacity-50',
-                    )}
-                  >
-                    <AudioUpload
-                      file={audioFile}
-                      duration={audioDuration}
-                      uploadState={audioUploadState}
-                      error={audioUploadError}
-                      inputRef={fileInputRef}
-                      onFile={onFilePicked}
-                      onClear={clearAudio}
-                    />
-                  </div>
+                <div className="mx-auto w-full max-w-4xl space-y-4">
+                  <JamendoSongSearch
+                    onSelect={attachJamendoTrack}
+                    hasSelection={Boolean(uploadedAudio?.source)}
+                  />
                   <div className="flex items-center gap-3 py-1">
                     <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
                     <span className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
-                      or
+                      or choose another option
                     </span>
                     <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
                   </div>
-                  <button
-                    type="button"
-                    aria-label="Continue without a soundtrack"
-                    onClick={chooseNoSoundtrack}
-                    className={cn(
-                      'focus-visible:ring-ring/50 relative flex w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
-                      soundtrackMode === 'none'
-                        ? 'border-[color:var(--color-content-emphasis)]'
-                        : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
-                    )}
-                  >
-                    {soundtrackMode === 'none' ? (
-                      <span
-                        aria-hidden="true"
-                        className="absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm"
-                      >
-                        <Check size={12} strokeWidth={3} />
-                      </span>
-                    ) : null}
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]">
-                      <MicOff
-                        size={18}
-                        strokeWidth={1.75}
-                        className="text-[color:var(--color-content-muted)]"
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div
+                      ref={audioUploadErrorRef}
+                      tabIndex={-1}
+                      aria-label={
+                        audioUploadState === 'error'
+                          ? `Track upload error: ${audioUploadError ?? 'Upload failed'}`
+                          : undefined
+                      }
+                      className={cn(
+                        'rounded-xl focus:outline-none focus-visible:ring-3 focus-visible:ring-[color:var(--color-status-danger)]/35',
+                        soundtrackMode === 'none' && 'opacity-50',
+                      )}
+                    >
+                      <AudioUpload
+                        track={attachedTrack}
+                        duration={audioDuration}
+                        uploadState={audioUploadState}
+                        error={audioUploadError}
+                        inputRef={fileInputRef}
+                        onFile={onFilePicked}
+                        onClear={clearAudio}
                       />
-                    </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)] sm:text-base">
-                        No soundtrack
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Continue without a soundtrack"
+                      onClick={chooseNoSoundtrack}
+                      className={cn(
+                        'focus-visible:ring-ring/50 relative flex min-h-36 w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-5 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
+                        soundtrackMode === 'none'
+                          ? 'border-[color:var(--color-content-emphasis)]'
+                          : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
+                      )}
+                    >
+                      {soundtrackMode === 'none' ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm"
+                        >
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                      ) : null}
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]">
+                        <MicOff
+                          size={18}
+                          strokeWidth={1.75}
+                          className="text-[color:var(--color-content-muted)]"
+                        />
                       </span>
-                      <span className="text-xs leading-relaxed text-[color:var(--color-content-subtle)] sm:text-sm">
-                        Design to a rhythm instead - the show builds its own arc.
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                          No soundtrack
+                        </span>
+                        <span className="text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
+                          Design to a rhythm instead - the show builds its own arc.
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                 </div>
               </StepPanel>
 
@@ -1229,7 +1386,7 @@ export default function NewShowPage() {
 
         {/* === Footer: circular Back (left edge), minimal dot stepper (centre),
                 pill Skip (right edge) - spans the full content width ========== */}
-        <div className="flex w-full items-center justify-between gap-3">
+        <div className="flex w-full shrink-0 items-center justify-between gap-3 pt-4">
           {stepIndex === 0 ? (
             <span className="inline-block h-10 w-10" aria-hidden="true" />
           ) : (
