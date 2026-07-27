@@ -6,7 +6,9 @@
  * refreshing the surrounding route.
  */
 import { useEffect, useState } from 'react';
+import { ExternalLink, Music2 } from 'lucide-react';
 import { Card } from '@/app/components/ui/Card';
+import type { SoundtrackAttribution } from '@/lib/music-library.types';
 import type {
   AnalyserKeyMoment,
   AnalyserResult,
@@ -16,6 +18,7 @@ import type {
 type AudioAnalysisTimelineProps = {
   hasAudio: boolean;
   initialAnalysis: ShowAnalysisSnapshot | null;
+  soundtrackAttribution: SoundtrackAttribution | null;
 };
 
 const POLL_INTERVAL_MS = 5000;
@@ -152,7 +155,65 @@ function KpiTile({ label, value, detail }: { label: string; value: string; detai
   );
 }
 
-export function AudioAnalysisTimeline({ hasAudio, initialAnalysis }: AudioAnalysisTimelineProps) {
+function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }) {
+  return (
+    <section
+      aria-labelledby="soundtrack-profile-title"
+      className="border-outline-variant/55 bg-surface-container-low flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
+    >
+      <span className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
+        <Music2 size={20} strokeWidth={1.75} aria-hidden="true" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+          Soundtrack
+        </p>
+        <h2 id="soundtrack-profile-title" className="text-on-surface mt-1 text-base font-semibold">
+          <a
+            href={soundtrack.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="focus-visible:ring-ring inline-flex max-w-full items-center gap-1.5 rounded-sm hover:underline focus-visible:ring-3 focus-visible:outline-none"
+          >
+            <span className="line-clamp-2">{soundtrack.title}</span>
+            <ExternalLink
+              size={12}
+              aria-hidden="true"
+              className="text-on-surface-variant shrink-0"
+            />
+          </a>
+        </h2>
+        <p className="text-on-surface-variant mt-0.5 truncate text-sm">{soundtrack.artist}</p>
+      </div>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
+        <a
+          href={soundtrack.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="border-outline-variant/60 bg-surface text-on-surface-variant hover:text-on-surface focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
+        >
+          Jamendo
+        </a>
+        <a
+          href={soundtrack.licenceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="border-outline-variant/60 bg-surface text-on-surface-variant hover:text-on-surface focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-mono font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
+        >
+          {soundtrack.licenceName}
+        </a>
+      </div>
+    </section>
+  );
+}
+
+export function AudioAnalysisTimeline({
+  hasAudio,
+  initialAnalysis,
+  soundtrackAttribution,
+}: AudioAnalysisTimelineProps) {
   // Tie the client result to its server seed so navigation cannot reuse a
   // previous show's locally polled snapshot.
   const [pollState, setPollState] = useState(() => ({
@@ -228,6 +289,8 @@ export function AudioAnalysisTimeline({ hasAudio, initialAnalysis }: AudioAnalys
 
   return (
     <div className="space-y-5">
+      {soundtrackAttribution ? <SoundtrackProfile soundtrack={soundtrackAttribution} /> : null}
+
       {kpis.length ? (
         <section aria-label="Song planning summary">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

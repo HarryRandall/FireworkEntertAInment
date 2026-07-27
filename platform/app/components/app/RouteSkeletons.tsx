@@ -1257,6 +1257,19 @@ export function ReplayPanelSkeleton() {
 export function SongContextSkeleton() {
   return (
     <div className="space-y-5" aria-label="Loading song context">
+      <div className="border-outline-variant/55 bg-surface-container-low flex items-center gap-4 rounded-lg border p-4">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-lg" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton className="h-2.5 w-20" />
+          <Skeleton className="h-5 w-48 max-w-full" />
+          <Skeleton className="h-3.5 w-28" />
+        </div>
+        <div className="hidden gap-2 sm:flex">
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div

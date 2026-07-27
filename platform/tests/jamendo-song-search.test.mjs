@@ -16,6 +16,7 @@ const wizard = read('app/(app)/shows/new/page.tsx');
 const search = read('app/(app)/shows/new/_components/JamendoSongSearch.tsx');
 const audioUpload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
 const replay = read('app/components/app/FireworkReplayViewer.tsx');
+const songContext = read('app/components/app/AudioAnalysisTimeline.tsx');
 const audioReader = read('lib/shows/audio.server.ts');
 const migration = read(
   'supabase/migrations/20260727121754_add_song_analysis_source_attribution.sql',
@@ -36,7 +37,7 @@ test('Jamendo access is server-only, explicit, cached, and bounded', () => {
   assert.match(server, /JAMENDO_RESPONSE_LIMIT_BYTES/);
   assert.match(server, /JAMENDO_REQUEST_TIMEOUT_MS/);
   assert.match(server, /durationbetween/);
-  assert.match(server, /showcrafter:jamendo:browse:v4/);
+  assert.match(server, /showcrafter:jamendo:browse:v5/);
   assert.match(search, /role="search"/);
   assert.doesNotMatch(search, /<form/);
   assert.match(search, /event\.stopPropagation\(\)/);
@@ -60,6 +61,11 @@ test('only downloadable CC0 or CC BY MP3 tracks can enter private storage', () =
   assert.match(server, /parameters\.set\('ccnc', 'false'\)/);
   assert.match(server, /parameters\.set\('ccnd', 'false'\)/);
   assert.match(server, /parameters\.set\('ccsa', 'false'\)/);
+  assert.match(
+    server,
+    /if \(!parameters\.has\('id'\)\) \{[\s\S]*parameters\.set\('ccnc', 'false'\)/,
+  );
+  assert.match(server, /By-ID lookups[\s\S]*normaliseTrack/);
   assert.doesNotMatch(server, /by-nc|by-nd|by-sa/);
   assert.match(server, /isTrustedJamendoAudioUrl\(response\.url\)/);
   assert.match(server, /JAMENDO_TRACK_FILE_URL/);
@@ -75,6 +81,11 @@ test('only downloadable CC0 or CC BY MP3 tracks can enter private storage', () =
   assert.match(route, /unavailable: true/);
   assert.match(search, /It has been removed from these results/);
   assert.match(route, /imageUrl: track\.imageUrl/);
+  assert.match(server, /JAMENDO_IMPORT_LOOKUP_ATTEMPTS = 3/);
+  assert.match(server, /showcrafter:jamendo:track-selection:v1/);
+  assert.match(server, /cacheJamendoTrackSelections/);
+  assert.match(server, /getCachedJamendoTrackSelection\(trackId\)/);
+  assert.match(server, /if \(cachedSelection\) return cachedSelection/);
 });
 
 test('provider tracks use the existing analysis credit lifecycle', () => {
@@ -110,7 +121,7 @@ test('an attached Jamendo track is presented as a neutral song profile', () => {
   );
 });
 
-test('Jamendo attribution is constrained, typed, stored, and shown during replay', () => {
+test('Jamendo attribution is constrained, stored, and shown in song context', () => {
   for (const column of [
     'source_provider',
     'source_track_id',
@@ -128,8 +139,12 @@ test('Jamendo attribution is constrained, typed, stored, and shown during replay
   assert.match(restrictionMigration, /\^\(CC BY\|CC0\)/);
   assert.doesNotMatch(restrictionMigration, /BY-NC|BY-ND|BY-SA/);
   assert.match(audioReader, /getSoundtrackAttribution/);
-  assert.match(replay, /soundtrackAttribution/);
-  assert.match(replay, /supplied by Jamendo/);
+  assert.doesNotMatch(replay, /soundtrackAttribution/);
+  assert.doesNotMatch(replay, /Soundtrack:\{' '\}/);
+  assert.match(songContext, /SoundtrackProfile/);
+  assert.match(songContext, /soundtrack\.title/);
+  assert.match(songContext, /soundtrack\.artist/);
+  assert.match(songContext, /soundtrack\.licenceName/);
 });
 
 test('Jamendo responses persist in a durable, service-role-only Postgres cache', () => {

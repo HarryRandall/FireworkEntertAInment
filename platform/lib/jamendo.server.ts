@@ -24,6 +24,8 @@ const JAMENDO_RESPONSE_LIMIT_BYTES = 2 * 1024 * 1024;
 const JAMENDO_SEARCH_CACHE_SECONDS = 60;
 const JAMENDO_SEARCH_RESULT_LIMIT = 8;
 const JAMENDO_SEARCH_FETCH_LIMIT = 50;
+const JAMENDO_TRACK_SELECTION_CACHE_SECONDS = 5 * 60;
+const JAMENDO_IMPORT_LOOKUP_ATTEMPTS = 3;
 const JAMENDO_BROWSE_FETCH_LIMIT = 30;
 const JAMENDO_BROWSE_MAX_OFFSET = 600;
 // Availability and licence can change at the provider. Keep browse caching
@@ -137,6 +139,26 @@ function normaliseCreativeCommonsLicence(
 
 const WAVEFORM_PEAKS = 64;
 
+const CachedJamendoTrackSchema = z
+  .object({
+    provider: z.literal('jamendo'),
+    trackId: z.string().regex(/^[0-9]+$/),
+    title: z.string().trim().min(1).max(180),
+    artist: z.string().trim().min(1).max(180),
+    durationSeconds: z.coerce
+      .number()
+      .int()
+      .min(JAMENDO_MIN_DURATION_SECONDS)
+      .max(JAMENDO_MAX_DURATION_SECONDS),
+    previewUrl: z.string().url(),
+    imageUrl: z.string().url().nullable(),
+    peaks: z.array(z.number().min(0).max(1)).max(WAVEFORM_PEAKS).nullable(),
+    sourceUrl: z.string().url(),
+    licenceName: z.string().trim().min(1).max(80),
+    licenceUrl: z.string().url(),
+  })
+  .strict();
+
 /** Parse Jamendo's waveform JSON and downsample to a fixed set of 0-1 amplitudes. */
 function parseWaveformPeaks(raw: string | undefined): number[] | null {
   if (!raw) return null;
@@ -165,6 +187,23 @@ function parseWaveformPeaks(raw: string | undefined): number[] | null {
   const max = Math.max(...averaged, 1);
   // Normalise to 0-1 and keep a visible floor so quiet sections still render.
   return averaged.map((value) => Math.max(0.12, Math.min(1, value / max)));
+}
+
+function normaliseCachedTrack(value: unknown): JamendoImportTrack | null {
+  const parsed = CachedJamendoTrackSchema.safeParse(value);
+  if (!parsed.success) return null;
+  const track = parsed.data;
+  const licence = normaliseCreativeCommonsLicence(track.licenceUrl);
+  if (
+    !licence ||
+    licence.licenceName !== track.licenceName ||
+    track.sourceUrl !== `https://www.jamendo.com/track/${track.trackId}` ||
+    !isJamendoUrl(track.previewUrl) ||
+    (track.imageUrl !== null && !isJamendoUrl(track.imageUrl))
+  ) {
+    return null;
+  }
+  return track;
 }
 
 function normaliseTrack(raw: unknown): JamendoImportTrack | null {
@@ -209,12 +248,12 @@ async function fetchJamendoPage(parameters: URLSearchParams): Promise<JamendoFet
   parameters.set('imagesize', '200');
   parameters.set('audioformat', 'mp32');
   parameters.set('audiodlformat', 'mp32');
-  parameters.set('ccnc', 'false');
-  parameters.set('ccnd', 'false');
-  parameters.set('ccsa', 'false');
-  // Jamendo returns zero results when `durationbetween` is combined with `id`,
-  // so only apply the duration window to search/browse lookups, not by-id ones.
+  // By-ID lookups are revalidated locally by normaliseTrack, while catalogue
+  // queries use provider-side filters to avoid returning unsupported results.
   if (!parameters.has('id')) {
+    parameters.set('ccnc', 'false');
+    parameters.set('ccnd', 'false');
+    parameters.set('ccsa', 'false');
     parameters.set(
       'durationbetween',
       `${JAMENDO_MIN_DURATION_SECONDS}_${JAMENDO_MAX_DURATION_SECONDS}`,
@@ -274,7 +313,7 @@ async function fetchJamendoTracks(parameters: URLSearchParams): Promise<JamendoI
 
 function searchCacheKey(query: string): string {
   const digest = createHash('sha256').update(query).digest('hex');
-  return `showcrafter:jamendo:search:v4:${digest}`;
+  return `showcrafter:jamendo:search:v5:${digest}`;
 }
 
 function toSearchTrack(track: JamendoImportTrack): JamendoSearchTrack {
@@ -360,6 +399,64 @@ async function writeJamendoCache<T>(
   await setDurableCache(cacheKey, value, fastTtlSeconds);
 }
 
+function trackSelectionCacheKey(trackId: string): string {
+  return `showcrafter:jamendo:track-selection:v1:${trackId}`;
+}
+
+/**
+ * Preserve the exact server-validated tracks offered to the user. Jamendo's
+ * by-ID catalogue lookup can intermittently return an empty result for an ID
+ * that its browse endpoint and file endpoint both serve, so import may fall
+ * back to this short-lived selection without trusting client metadata.
+ */
+async function cacheJamendoTrackSelections(tracks: JamendoSearchTrack[]): Promise<void> {
+  if (tracks.length === 0) return;
+  const uniqueTracks = [
+    ...new Map(
+      tracks
+        .map(normaliseCachedTrack)
+        .filter((track): track is JamendoImportTrack => track !== null)
+        .map((track) => [track.trackId, track] as const),
+    ).values(),
+  ];
+  if (uniqueTracks.length === 0) return;
+  await Promise.all(
+    uniqueTracks.map((track) =>
+      setCachedJson(
+        trackSelectionCacheKey(track.trackId),
+        track,
+        JAMENDO_TRACK_SELECTION_CACHE_SECONDS,
+      ),
+    ),
+  );
+
+  const supabase = createServiceRoleSupabase();
+  if (!supabase) return;
+  const now = Date.now();
+  try {
+    const { error } = await supabase.from(JAMENDO_CACHE_TABLE).upsert(
+      uniqueTracks.map((track) => ({
+        cache_key: trackSelectionCacheKey(track.trackId),
+        payload: track as never,
+        expires_at: new Date(now + JAMENDO_TRACK_SELECTION_CACHE_SECONDS * 1000).toISOString(),
+        updated_at: new Date(now).toISOString(),
+      })),
+      { onConflict: 'cache_key' },
+    );
+    if (error) console.error('[jamendo] track selection cache write failed:', error);
+  } catch (error) {
+    console.error('[jamendo] track selection cache write failed:', error);
+  }
+}
+
+async function getCachedJamendoTrackSelection(trackId: string): Promise<JamendoImportTrack | null> {
+  const cached = await readJamendoCache<unknown>(
+    trackSelectionCacheKey(trackId),
+    JAMENDO_TRACK_SELECTION_CACHE_SECONDS,
+  );
+  return normaliseCachedTrack(cached);
+}
+
 export async function searchJamendoTracks(query: string): Promise<JamendoSearchTrack[]> {
   const normalisedQuery = query.trim().replace(/\s+/g, ' ').slice(0, 80);
   const cacheKey = searchCacheKey(normalisedQuery.toLowerCase());
@@ -380,7 +477,10 @@ export async function searchJamendoTracks(query: string): Promise<JamendoSearchT
   const tracks = (await fetchJamendoTracks(parameters))
     .slice(0, JAMENDO_SEARCH_RESULT_LIMIT)
     .map(toSearchTrack);
-  await writeJamendoCache(cacheKey, tracks, JAMENDO_SEARCH_CACHE_SECONDS);
+  await Promise.all([
+    writeJamendoCache(cacheKey, tracks, JAMENDO_SEARCH_CACHE_SECONDS),
+    cacheJamendoTrackSelections(tracks),
+  ]);
   return tracks;
 }
 
@@ -393,7 +493,7 @@ const JAMENDO_BROWSE_MAX_COUNT = 30;
 const JAMENDO_BROWSE_MAX_WINDOWS = 5;
 
 function browseCacheKey(genre: string, offset: number, count: number): string {
-  return `showcrafter:jamendo:browse:v4:${genre || 'all'}:${offset}:${count}`;
+  return `showcrafter:jamendo:browse:v5:${genre || 'all'}:${offset}:${count}`;
 }
 
 /**
@@ -449,24 +549,41 @@ export async function browseJamendoTracks(
   };
   // Do not persist an empty page: it is usually transient (a sparse offset), and
   // caching it would wrongly show "no tracks" after the provider recovers.
-  if (collected.length > 0) await writeJamendoCache(cacheKey, page, JAMENDO_BROWSE_CACHE_SECONDS);
+  if (collected.length > 0) {
+    await Promise.all([
+      writeJamendoCache(cacheKey, page, JAMENDO_BROWSE_CACHE_SECONDS),
+      cacheJamendoTrackSelections(collected),
+    ]);
+  }
   return page;
 }
 
 export async function getJamendoTrackForImport(trackId: string): Promise<JamendoImportTrack> {
-  const tracks = await fetchJamendoTracks(
-    new URLSearchParams({
-      id: trackId,
-      limit: '1',
-    }),
-  );
-  const track = tracks.find((candidate) => candidate.trackId === trackId);
-  if (!track) {
-    throw new JamendoTrackUnavailableError(
-      'This Jamendo track is unavailable under a supported licence.',
-    );
+  const cachedSelection = await getCachedJamendoTrackSelection(trackId);
+  if (cachedSelection) return cachedSelection;
+
+  let requestError: JamendoRequestError | null = null;
+
+  for (let attempt = 0; attempt < JAMENDO_IMPORT_LOOKUP_ATTEMPTS; attempt += 1) {
+    try {
+      const tracks = await fetchJamendoTracks(
+        new URLSearchParams({
+          id: trackId,
+          limit: '1',
+        }),
+      );
+      const track = tracks.find((candidate) => candidate.trackId === trackId);
+      if (track) return track;
+    } catch (error) {
+      if (!(error instanceof JamendoRequestError)) throw error;
+      requestError = error;
+    }
   }
-  return track;
+
+  if (requestError) throw requestError;
+  throw new JamendoTrackUnavailableError(
+    'This Jamendo track is unavailable under a supported licence.',
+  );
 }
 
 export function isTrustedJamendoAudioUrl(value: string): boolean {
