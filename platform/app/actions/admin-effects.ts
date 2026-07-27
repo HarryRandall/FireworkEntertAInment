@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { supabaseFetchLong } from '@/utils/supabase/fetch';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
@@ -390,7 +391,7 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   const model = parseModelJson(parsed.data.modelJson);
   if (!model.ok) return { ok: false, error: model.error };
 
-  const supabase = createClient(await cookies());
+  const supabase = createClient(await cookies(), supabaseFetchLong);
   const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -483,7 +484,7 @@ export async function createStyleDefaultAndUpdateEffect(
   const defaults = parseStyleDefaultJson(parsed.data.styleDefault.defaultsJson);
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
-  const supabase = createClient(await cookies());
+  const supabase = createClient(await cookies(), supabaseFetchLong);
   const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.effect.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -583,7 +584,7 @@ export async function restoreEffectEditorVersion(
   const parsed = RestoreEffectVersionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
-  const supabase = createClient(await cookies());
+  const supabase = createClient(await cookies(), supabaseFetchLong);
   const { data: version, error: versionError } = await supabase
     .from('firework_editor_versions')
     .select('id, snapshot_json, created_by_label, created_at')
@@ -699,7 +700,7 @@ export async function createCustomStarEffect(formData?: FormData): Promise<void>
       ? nameInput.trim().slice(0, 180)
       : 'Custom Star';
 
-  const supabase = createClient(await cookies());
+  const supabase = createClient(await cookies(), supabaseFetchLong);
   const slug = `custom-star-${Date.now().toString(36)}`;
   const { data, error } = await supabase
     .from('firework_effects')
@@ -719,9 +720,11 @@ export async function createCustomStarEffect(formData?: FormData): Promise<void>
     throw new Error(error?.message ?? 'Could not create custom effect.');
   }
 
-  await invalidateAdminEffectsCache(data.id);
-  await invalidateAdminFireworksCache();
-  await invalidateFireworkCatalogueCaches();
+  await Promise.all([
+    invalidateAdminEffectsCache(data.id),
+    invalidateAdminFireworksCache(),
+    invalidateFireworkCatalogueCaches(),
+  ]);
   revalidatePath('/admin/effects');
   revalidatePath('/admin/fireworks');
   redirect(`/admin/effects/${data.id}`);

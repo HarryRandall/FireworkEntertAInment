@@ -4,6 +4,11 @@ import { notFound } from 'next/navigation';
 import { getAdminEffectById } from '@/lib/admin.server';
 import { EffectEditor } from './EffectEditor';
 
+// Effect save/restore actions write full model_json payloads through RLS checks, so
+// they need the same longer budget as catalogue reads/uploads instead of the platform
+// default (see utils/supabase/fetch.ts) — otherwise a slow write surfaces as a timeout.
+export const maxDuration = 60;
+
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function AdminEffectDetailPage({ params }: PageProps) {
