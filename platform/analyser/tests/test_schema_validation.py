@@ -145,7 +145,6 @@ def make_analysis_payload():
         ],
         "downbeat_times": [0.0, 2.0],
         "beats_per_bar": 2,
-        "bar_grid_confidence": 0.8,
         "derived": {
             "finale_window": None,
             "quietest_section_index": 0,
@@ -166,36 +165,24 @@ def make_analysis_payload():
 
 
 class SchemaValidationTests(unittest.TestCase):
-    def test_valid_analysis_payload_passes_schema_v15(self):
+    def test_valid_analysis_payload_passes_schema_v14(self):
         validated = validate_analysis_result(make_analysis_payload())
 
-        self.assertEqual(validated["schema_version"], "1.5.0")
+        self.assertEqual(validated["schema_version"], "1.4.0")
         self.assertEqual(validated["analysis_meta"]["mode"], "fast")
         self.assertGreaterEqual(validated["analysis_meta"]["timings_ms"]["total_ms"], 0.0)
         self.assertEqual(validated["firework_cues"][0]["effect"], "barrage")
-        # Schema 1.5.0 confidence-aware bar grid + derived block.
+        # Schema 1.4.0 bar grid + derived block.
         self.assertEqual(validated["beats_per_bar"], 2)
         self.assertEqual(validated["downbeat_times"], [0.0, 2.0])
-        self.assertEqual(validated["bar_grid_confidence"], 0.8)
         self.assertEqual(validated["derived"]["repeated_chorus_count"], 1)
 
     def test_out_of_range_energy_fails_loudly(self):
         payload = make_analysis_payload()
         payload["key_moments"][0]["energy"] = 1.1
 
-        with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.5.0"):
+        with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.4.0"):
             validate_analysis_result(payload)
-
-    def test_invalid_bar_grid_contract_fails_loudly(self):
-        invalid_meter = make_analysis_payload()
-        invalid_meter["beats_per_bar"] = 5
-        with self.assertRaisesRegex(ValueError, "beats_per_bar"):
-            validate_analysis_result(invalid_meter)
-
-        invalid_confidence = make_analysis_payload()
-        invalid_confidence["bar_grid_confidence"] = 1.1
-        with self.assertRaisesRegex(ValueError, "bar_grid_confidence"):
-            validate_analysis_result(invalid_confidence)
 
     def test_llm_payload_summarises_baseline_cues(self):
         validated = validate_analysis_result(make_analysis_payload())
@@ -261,75 +248,19 @@ class SchemaValidationTests(unittest.TestCase):
             frame = int(round(bar_start * 0.5 * fps))
             onset_env[frame] = 1.0
 
-        downbeats, bpb, confidence = estimate_downbeats(
-            beat_times,
-            onset_env,
-            sr,
-            hop_length,
-        )
+        downbeats, bpb = estimate_downbeats(beat_times, onset_env, sr, hop_length)
 
         self.assertEqual(bpb, 4)
         self.assertEqual(downbeats, [0.0, 2.0])
-        self.assertGreater(confidence, 0.3)
-
-    def test_estimate_downbeats_keeps_two_beat_pop_accents_in_common_time(self):
-        sr, hop_length = 22050, 512
-        fps = sr / hop_length
-        beat_times = [round(i * 0.5, 3) for i in range(16)]
-        onset_env = np.zeros(int(16 * fps) + 8, dtype=float)
-        for beat_index in range(0, 16, 2):
-            frame = int(round(beat_index * 0.5 * fps))
-            onset_env[frame] = 1.0
-
-        downbeats, bpb, confidence = estimate_downbeats(
-            beat_times,
-            onset_env,
-            sr,
-            hop_length,
-            genre_hint="pop",
-            section_starts=[0.0, 2.0, 4.0, 6.0],
-        )
-
-        self.assertEqual(bpb, 4)
-        self.assertEqual(downbeats, [0.0, 2.0, 4.0, 6.0])
-        self.assertGreaterEqual(confidence, 0.35)
-
-    def test_estimate_downbeats_can_select_triple_meter(self):
-        sr, hop_length = 22050, 512
-        fps = sr / hop_length
-        beat_times = [round(i * 0.5, 3) for i in range(18)]
-        onset_env = np.zeros(int(18 * fps) + 8, dtype=float)
-        for beat_index in range(0, 18, 3):
-            frame = int(round(beat_index * 0.5 * fps))
-            onset_env[frame] = 1.0
-
-        downbeats, bpb, confidence = estimate_downbeats(
-            beat_times,
-            onset_env,
-            sr,
-            hop_length,
-            genre_hint="cinematic",
-            section_starts=[0.0, 3.0, 6.0],
-        )
-
-        self.assertEqual(bpb, 3)
-        self.assertEqual(downbeats, [0.0, 1.5, 3.0, 4.5, 6.0, 7.5])
-        self.assertGreaterEqual(confidence, 0.35)
 
     def test_estimate_downbeats_rejects_a_flat_unreliable_phase(self):
         beat_times = [round(i * 0.5, 3) for i in range(12)]
         onset_env = np.ones(300, dtype=float)
 
-        downbeats, bpb, confidence = estimate_downbeats(
-            beat_times,
-            onset_env,
-            22050,
-            512,
-        )
+        downbeats, bpb = estimate_downbeats(beat_times, onset_env, 22050, 512)
 
         self.assertEqual(downbeats, [])
         self.assertEqual(bpb, 4)
-        self.assertEqual(confidence, 0.0)
 
     def test_event_refinement_moves_to_the_local_transient_peak(self):
         onset_env = np.zeros(20, dtype=float)

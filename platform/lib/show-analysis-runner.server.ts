@@ -19,7 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 
-const ANALYSER_SCHEMA_VERSION = '1.5.0';
+const ANALYSER_SCHEMA_VERSION = '1.4.0';
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
 const ANALYSIS_LEASE_SECONDS = 900;
@@ -173,9 +173,6 @@ function buildAiContextMarkdown(params: {
     '',
     '## Timing Reference',
     '',
-    `- Beats per bar: ${analysis.beats_per_bar ?? 4}`,
-    `- Bar-grid confidence: ${analysis.bar_grid_confidence ?? 'legacy/unknown'}`,
-    `- Downbeat sample: ${(analysis.downbeat_times ?? []).slice(0, 40).join(', ')}`,
     `- Beat sample: ${(analysis.beat_times ?? []).slice(0, 80).join(', ')}`,
     `- Onset sample: ${(analysis.onset_times ?? []).slice(0, 80).join(', ')}`,
     '',
@@ -248,34 +245,11 @@ async function runHostedAnalyser(params: {
     );
   }
 
-  let parsed: unknown;
   try {
-    parsed = JSON.parse(bodyText);
+    return JSON.parse(bodyText) as AnalyserResult;
   } catch {
     throw new AnalyseError('The analyser did not return JSON output.', 422);
   }
-  if (!parsed || typeof parsed !== 'object') {
-    throw new AnalyseError('The analyser returned an invalid result object.', 422);
-  }
-  const result = parsed as Record<string, unknown>;
-  if (result.schema_version !== ANALYSER_SCHEMA_VERSION) {
-    throw new AnalyseError(
-      `The analyser returned schema ${String(result.schema_version)}; expected ${ANALYSER_SCHEMA_VERSION}.`,
-      422,
-    );
-  }
-  if (
-    typeof result.bar_grid_confidence !== 'number' ||
-    !Number.isFinite(result.bar_grid_confidence) ||
-    result.bar_grid_confidence < 0 ||
-    result.bar_grid_confidence > 1
-  ) {
-    throw new AnalyseError('The analyser returned invalid bar-grid confidence.', 422);
-  }
-  if (!Array.isArray(result.downbeat_times) || ![2, 3, 4].includes(Number(result.beats_per_bar))) {
-    throw new AnalyseError('The analyser returned an invalid bar grid.', 422);
-  }
-  return parsed as AnalyserResult;
 }
 
 async function classifyUnclaimedMusicAnalysis(params: {

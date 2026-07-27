@@ -203,7 +203,7 @@ export async function POST(request: Request) {
       personality: 'balanced',
       status: 'running',
       runner_version: 'modal-librosa-2',
-      schema_version: '1.5.0',
+      schema_version: '1.4.0',
     })
     .select('id')
     .single();

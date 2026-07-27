@@ -132,11 +132,9 @@ export type AnalyserResult = {
   buildups: AnalyserBuildup[];
   beat_times?: number[];
   onset_times?: number[];
-  /** Bar grid, introduced in schema 1.4.0. */
+  /** Bar grid (schema 1.4.0). Absent on older 1.3.0 analyses. */
   downbeat_times?: number[];
   beats_per_bar?: number;
-  /** Joint meter and downbeat-phase confidence, added in schema 1.5.0. */
-  bar_grid_confidence?: number;
   derived?: AnalyserDerivedFeatures;
   music_profile?: AnalyserMusicProfile;
   show_personality?: AnalyserShowPersonality;

@@ -28,8 +28,8 @@ generation claimable.
 
 Song analysis uses a 15-minute lease and at most three claims. Network failures
 and HTTP 408, 425, 429, or 5xx responses retry after 30 then 120 seconds.
-Configuration, authentication, schema, and invalid-output errors fail
-immediately. Analysis output and its credit resolution commit together.
+Configuration, authentication, and invalid-output errors fail immediately.
+Analysis output and its credit resolution commit together.
 
 ## Cue generation
 

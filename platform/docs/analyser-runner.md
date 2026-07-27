@@ -16,8 +16,8 @@ creates the show and starts cue generation.
    `ANALYSER_SHARED_SECRET`.
 4. `platform/analyser/modal_app.py` downloads the signed audio into temporary
    storage and runs `showcrafter.analyse_song` inside the Modal container.
-5. The server validates the response and completes the leased attempt through
-   a guarded RPC. Analysis output and credit settlement commit together, then
+5. The server parses the response and completes the leased attempt through a
+   guarded RPC. Analysis output and credit settlement commit together, then
    any cue generation waiting on this analysis resumes.
 
 The client can continue through the wizard while analysis is queued or running.
@@ -63,90 +63,32 @@ to a show.
 Each worker claim increments `attempt_count` and receives a 15-minute lease
 token. Network failures and HTTP 408, 425, 429, or 5xx responses retry after 30
 then 120 seconds, with at most three claimed attempts. Configuration,
-authentication, schema, and invalid-output failures are terminal. A stale
-worker cannot write after its lease expires because every completion, retry,
-and failure RPC requires the current token.
+authentication, and invalid-output failures are terminal. A stale worker cannot
+write after its lease expires because every completion, retry, and failure RPC
+requires the current token.
 
 The reconciliation route reclaims expired leases, fails exhausted attempts,
 makes shows with terminal analyses claimable for cue generation, and repairs
 terminal show credit reservations. These operations are bounded and
 idempotent.
 
-The analysis result currently uses schema `1.5.0`. Any schema change must
-update the analyser models, TypeScript consumer, tests, and real-audio baseline
-together.
-
-Schema 1.5 adds `bar_grid_confidence` in the range 0-1. Meter estimation
-combines beat accents, consistency across bars, section-boundary alignment, and
-a conservative genre prior. Cue planners consume the analysed downbeats only
-when confidence is at least 0.3; lower-confidence results retain the full beat
-grid and fall back to conservative 4/4 bar spacing.
+The repository analyser currently emits schema `1.4.0`. Older stored analyses
+remain readable because the bar-grid fields are optional to consumers.
 
 ## Verification
 
-Run unit tests and the four versioned real-audio regressions from
-`platform/analyser`:
+Run the analyser unit tests from `platform/analyser`:
 
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -p "*test*.py"
-python evaluate.py
 ```
-
-`evaluate.py` verifies the fixture hashes and compares duration, tempo, beat
-and downbeat grids, bar-grid confidence, section structure, climaxes, buildups,
-and finale windows against `evals/baseline_v1.json`. It writes
-`evaluation-report.json` and exits non-zero when a material regression is
-detected. GitHub Actions uploads that report even when the evaluation fails.
 
 For local timing investigation, without pass or fail thresholds:
 
 ```bash
 python benchmark.py --repeat 2
 ```
-
-### Open-licence fixture candidates
-
-The Jamendo fixture importer searches tracks and records their source and
-licence. Jamendo requires a client ID for every API call. For local use, add it
-to the gitignored `platform/analyser/.env.local`:
-
-```dotenv
-JAMENDO_CLIENT_ID=your_read_client_id
-```
-
-Then search or import from `platform/analyser`:
-
-```bash
-python jamendo_fixture_importer.py search "cinematic instrumental" --limit 5
-python jamendo_fixture_importer.py import TRACK_ID
-```
-
-Jamendo documents a public read-only testing ID, but that application currently
-returns a suspended-application error. The importer therefore refuses to
-pretend that a registration-free API path works and requires
-`JAMENDO_CLIENT_ID`, `analyser/.env.local`, or `--client-id`. Only the public
-client ID is needed. Do not store a Jamendo account password or API client
-secret in the repository.
-
-Imports require an explicit Jamendo download permission and default to CC0 or
-CC BY tracks. For non-commercial research, NC, ND, SA, or unknown licences can
-be imported only after manual review:
-
-```bash
-python jamendo_fixture_importer.py import TRACK_ID --allow-restricted-licence
-```
-
-The importer limits files to 50 MB, verifies MP3 content, hashes the result, and
-records source, attribution, licence, and tags in
-`evals/jamendo_fixtures.json`. New imports remain `candidate` fixtures. CI must
-not call Jamendo directly, and a candidate's musical summary must be reviewed
-before it is promoted into `evals/baseline_v1.json`.
-
-The current baseline contains two pop tracks and two classical tracks, all
-licensed CC BY 3.0. Attribution and source URLs live in both the baseline and
-the Jamendo manifest so that the checked-in MP3 files remain auditable without
-network access.
 
 ## Manual route
 

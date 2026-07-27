@@ -83,14 +83,3 @@ jobs:
 
       - name: Run analyser unit tests
         run: python -m unittest discover -s tests -p "*test*.py"
-
-      - name: Run analyser real-audio regression
-        run: python evaluate.py
-
-      - name: Upload analyser evaluation report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: analyser-evaluation-report
-          path: platform/analyser/evaluation-report.json
-          if-no-files-found: warn

@@ -172,10 +172,8 @@ function selectBeatTargets(
     start: Math.max(0, songDuration - 18),
     end: songDuration,
   };
-  const barGridConfidence = analysis?.bar_grid_confidence;
-  const hasReliableBarGrid = barGridConfidence == null || barGridConfidence >= 0.3;
-  const analysedDownbeats = hasReliableBarGrid ? (analysis?.downbeat_times ?? []) : [];
-  const beatsPerBar = Math.max(2, hasReliableBarGrid ? (analysis?.beats_per_bar ?? 4) : 4);
+  const analysedDownbeats = analysis?.downbeat_times ?? [];
+  const beatsPerBar = Math.max(2, analysis?.beats_per_bar ?? 4);
   const targets = beats.map((time, sourceIndex) => ({
     time,
     sourceIndex,

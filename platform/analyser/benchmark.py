@@ -20,10 +20,9 @@ from showcrafter import analyse_song
 
 
 DEFAULT_AUDIO = [
-    Path("../../data/media/audio/jamendo/jamendo_1930820.mp3"),
-    Path("../../data/media/audio/jamendo/jamendo_1891977.mp3"),
-    Path("../../data/media/audio/jamendo/jamendo_360552.mp3"),
-    Path("../../data/media/audio/jamendo/jamendo_1930003.mp3"),
+    Path("../../data/media/audio/example_1.mp3"),
+    Path("../../data/media/audio/example_2.mp3"),
+    Path("../../data/media/audio/example_3.mp3"),
 ]
 
 
