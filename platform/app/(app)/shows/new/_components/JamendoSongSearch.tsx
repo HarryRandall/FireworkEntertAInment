@@ -127,7 +127,7 @@ function waveformBars(seed: string): number[] {
 }
 
 const LICENCE_NOTE =
-  'Only downloadable Creative Commons tracks are shown. Search uses no AI credits; using a track starts the usual music analysis.';
+  'Only downloadable Creative Commons tracks are shown. Search uses no AI credits; your completed analysis is reused when available.';
 
 export function JamendoSongSearch({
   onSelect,

@@ -170,7 +170,7 @@ test('settings links keep usage after billing', () => {
 
 test('show and music generation reserve, settle, and refund credits', () => {
   const newShowAction = read('app/(app)/shows/new/actions.ts');
-  const newShowPage = read('app/(app)/shows/new/page.tsx');
+  const newShowPage = read('app/(app)/shows/new/NewShowPageClient.tsx');
   const runner = read('lib/cue-generation/runner.server.ts');
   const musicRoute = read('app/api/music-analysis/route.ts');
   const musicStarter = read('lib/start-music-analysis.server.ts');

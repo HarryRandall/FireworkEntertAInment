@@ -28,5 +28,8 @@ export type UploadedAudio = {
   sizeBytes: number;
   contentType: string;
   durationSeconds?: number;
+  /** Existing show-owned analyses stay referenced and must not be discarded
+   * when this wizard changes its selection. */
+  reusedAnalysis?: boolean;
   source?: SoundtrackAttribution;
 };

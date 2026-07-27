@@ -5,7 +5,7 @@ import { test } from 'node:test';
 
 const root = process.cwd();
 const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
-const page = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
+const page = readFileSync(join(root, 'app/(app)/shows/new/NewShowPageClient.tsx'), 'utf8');
 const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
 const migration = readFileSync(
@@ -65,6 +65,7 @@ test('the analyser cannot settle or restore a row discarded during an in-flight 
 
 test('replacing or clearing ready audio and stale POST responses trigger cleanup', () => {
   assert.match(page, /async function cleanupUnusedMusicAnalysis/);
+  assert.match(page, /if \(uploaded\.reusedAnalysis\) return/);
   assert.match(page, /method: 'DELETE'/);
   assert.match(page, /musicAnalysisId: uploaded\.musicAnalysisId/);
   assert.match(page, /audioPath: uploaded\.audioPath/);

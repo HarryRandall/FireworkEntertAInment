@@ -31,6 +31,8 @@ function response(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: NO_STORE_HEADERS });
 }
 
+type AppSupabaseClient = ReturnType<typeof createClient>;
+
 async function requireActiveProfile() {
   const profile = await getCurrentProfile();
   if (!profile) return { ok: false as const, response: response({ ok: false }, 401) };
@@ -74,6 +76,99 @@ function importFilename(title: string, artist: string): string {
     .trim()
     .slice(0, 140);
   return `${base || 'jamendo-track'}.mp3`;
+}
+
+async function storedAudioExists(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  audioPath: string;
+}): Promise<boolean> {
+  const prefix = `${params.userId}/`;
+  if (!params.audioPath.startsWith(prefix)) return false;
+  const fileName = params.audioPath.slice(prefix.length);
+  if (!fileName || fileName.includes('/')) return false;
+
+  const { data, error } = await params.supabase.storage.from('audio').list(params.userId, {
+    limit: 2,
+    search: fileName,
+  });
+  if (error) {
+    console.error('[api/jamendo] reusable audio lookup failed:', error);
+    return false;
+  }
+  return (data ?? []).some((object) => object.name === fileName);
+}
+
+async function findReusableJamendoAnalysis(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  trackId: string;
+}) {
+  const { data: candidates, error: candidateError } = await params.supabase
+    .from('song_analyses')
+    .select(
+      'id, audio_path, original_filename, content_type, size_bytes, source_track_id, source_title, source_artist, source_url, source_licence_name, source_licence_url',
+    )
+    .eq('user_id', params.userId)
+    .eq('source_provider', 'jamendo')
+    .eq('source_track_id', params.trackId)
+    .eq('status', 'completed')
+    .not('analysis_json', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(5);
+
+  if (candidateError) {
+    console.error('[api/jamendo] reusable analysis lookup failed:', candidateError);
+    return null;
+  }
+  if (!candidates?.length) return null;
+
+  const { data: linkedShows, error: linkedShowsError } = await params.supabase
+    .from('shows')
+    .select('music_analysis_id')
+    .eq('user_id', params.userId)
+    .in(
+      'music_analysis_id',
+      candidates.map((candidate) => candidate.id),
+    );
+
+  if (linkedShowsError) {
+    console.error('[api/jamendo] reusable analysis reference lookup failed:', linkedShowsError);
+    return null;
+  }
+
+  const linkedAnalysisIds = new Set(
+    (linkedShows ?? [])
+      .map((show) => show.music_analysis_id)
+      .filter((id): id is string => typeof id === 'string'),
+  );
+
+  for (const candidate of candidates) {
+    if (
+      !linkedAnalysisIds.has(candidate.id) ||
+      !candidate.content_type ||
+      !candidate.size_bytes ||
+      !candidate.source_track_id ||
+      !candidate.source_title ||
+      !candidate.source_artist ||
+      !candidate.source_url ||
+      !candidate.source_licence_name ||
+      !candidate.source_licence_url
+    ) {
+      continue;
+    }
+    if (
+      await storedAudioExists({
+        supabase: params.supabase,
+        userId: params.userId,
+        audioPath: candidate.audio_path,
+      })
+    ) {
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 function jamendoReadError(error: unknown, context: 'search' | 'browse') {
@@ -161,6 +256,37 @@ export async function POST(request: Request) {
   let audioPath: string | null = null;
   try {
     const track = await getJamendoTrackForImport(parsed.data.trackId);
+    const reusableAnalysis = await findReusableJamendoAnalysis({
+      supabase,
+      userId: auth.profile.id,
+      trackId: track.trackId,
+    });
+    if (reusableAnalysis) {
+      return response({
+        ok: true,
+        uploadedAudio: {
+          audioPath: reusableAnalysis.audio_path,
+          musicAnalysisId: reusableAnalysis.id,
+          originalName:
+            reusableAnalysis.original_filename ?? importFilename(track.title, track.artist),
+          sizeBytes: reusableAnalysis.size_bytes,
+          contentType: reusableAnalysis.content_type,
+          durationSeconds: track.durationSeconds,
+          reusedAnalysis: true,
+          source: {
+            provider: 'jamendo',
+            trackId: reusableAnalysis.source_track_id,
+            title: reusableAnalysis.source_title,
+            artist: reusableAnalysis.source_artist,
+            sourceUrl: reusableAnalysis.source_url,
+            licenceName: reusableAnalysis.source_licence_name,
+            licenceUrl: reusableAnalysis.source_licence_url,
+            imageUrl: track.imageUrl,
+          },
+        },
+      });
+    }
+
     const audio = await downloadJamendoTrack(track);
     const originalFilename = importFilename(track.title, track.artist);
     audioPath = `${auth.profile.id}/${crypto.randomUUID()}-${originalFilename}`;

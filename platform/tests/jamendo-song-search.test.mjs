@@ -12,7 +12,7 @@ const envExample = read('.env.example');
 const server = read('lib/jamendo.server.ts');
 const route = read('app/api/music-library/jamendo/route.ts');
 const starter = read('lib/start-music-analysis.server.ts');
-const wizard = read('app/(app)/shows/new/page.tsx');
+const wizard = read('app/(app)/shows/new/NewShowPageClient.tsx');
 const search = read('app/(app)/shows/new/_components/JamendoSongSearch.tsx');
 const audioUpload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
 const replay = read('app/components/app/FireworkReplayViewer.tsx');
@@ -25,7 +25,11 @@ const restrictionMigration = read(
   'supabase/migrations/20260727150001_restrict_jamendo_soundtrack_licences.sql',
 );
 const cacheMigration = read('supabase/migrations/20260727032350_add_jamendo_response_cache.sql');
+const reuseMigration = read(
+  'supabase/migrations/20260727163000_index_reusable_jamendo_analyses.sql',
+);
 const databaseTypes = read('lib/database.types.ts');
+const wizardTypes = read('app/(app)/shows/new/types.ts');
 
 test('Jamendo access is server-only, explicit, cached, and bounded', () => {
   assert.match(envExample, /^JAMENDO_CLIENT_ID=/m);
@@ -98,6 +102,31 @@ test('provider tracks use the existing analysis credit lifecycle', () => {
   assert.match(starter, /resumeCueGenerationForCompletedAnalysis/);
 });
 
+test('completed Jamendo analyses already attached to an owned show are reused', () => {
+  assert.match(route, /async function findReusableJamendoAnalysis/);
+  assert.match(route, /\.eq\('user_id', params\.userId\)/);
+  assert.match(route, /\.eq\('source_provider', 'jamendo'\)/);
+  assert.match(route, /\.eq\('source_track_id', params\.trackId\)/);
+  assert.match(route, /\.eq\('status', 'completed'\)/);
+  assert.match(route, /\.not\('analysis_json', 'is', null\)/);
+  assert.match(route, /\.from\('shows'\)[\s\S]*\.in\(\s*'music_analysis_id'/);
+  assert.match(route, /await storedAudioExists/);
+
+  const post = route.slice(route.indexOf('export async function POST'));
+  const reuseLookup = post.indexOf('await findReusableJamendoAnalysis');
+  const download = post.indexOf('await downloadJamendoTrack');
+  assert.ok(reuseLookup >= 0 && reuseLookup < download);
+  assert.match(post, /reusedAnalysis: true/);
+  assert.match(wizardTypes, /reusedAnalysis\?: boolean/);
+  assert.match(wizard, /if \(uploaded\.reusedAnalysis\) return/);
+
+  assert.match(reuseMigration, /create index if not exists song_analyses_jamendo_reuse_idx/);
+  assert.match(reuseMigration, /\(user_id, source_track_id, completed_at desc\)/);
+  assert.match(reuseMigration, /source_provider = 'jamendo'/);
+  assert.match(reuseMigration, /status = 'completed'/);
+  assert.match(reuseMigration, /analysis_json is not null/);
+});
+
 test('the wizard keeps soundtrack import separate from explicit show generation', () => {
   assert.match(wizard, /<JamendoSongSearch[\s\S]*onSelect=\{attachJamendoTrack\}/);
   assert.match(wizard, /hasSelection=\{Boolean\(uploadedAudio\?\.source\)\}/);
@@ -106,7 +135,7 @@ test('the wizard keeps soundtrack import separate from explicit show generation'
   assert.match(wizard, /await uploadPromiseRef\.current/);
   assert.match(wizard, /const result = await createShowAction\(data\)/);
   assert.match(search, /Search uses no AI credits/);
-  assert.match(search, /using a track starts[\s\S]*the usual music analysis/);
+  assert.match(search, /completed analysis is reused when available/);
 });
 
 test('an attached Jamendo track is presented as a neutral song profile', () => {
