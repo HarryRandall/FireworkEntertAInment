@@ -18,8 +18,12 @@ import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
+import {
+  ANALYSER_SCHEMA_VERSION,
+  AnalyserOutputValidationError,
+  parseAnalyserResponse,
+} from '@/lib/show-analysis-validation';
 
-const ANALYSER_SCHEMA_VERSION = '1.4.0';
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
 const ANALYSIS_LEASE_SECONDS = 900;
@@ -246,9 +250,13 @@ async function runHostedAnalyser(params: {
   }
 
   try {
-    return JSON.parse(bodyText) as AnalyserResult;
-  } catch {
-    throw new AnalyseError('The analyser did not return JSON output.', 422);
+    return parseAnalyserResponse(bodyText);
+  } catch (error) {
+    const message =
+      error instanceof AnalyserOutputValidationError
+        ? error.message
+        : 'The analyser returned invalid output.';
+    throw new AnalyseError(message, 422);
   }
 }
 

@@ -66,3 +66,4 @@ models/trained/
 .coverage
 htmlcov/
 .pytest_cache/
+platform/analyser/evaluation-report.json

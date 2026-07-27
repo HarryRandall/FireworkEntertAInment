@@ -1,0 +1,473 @@
+import { z } from 'zod';
+import type { AnalyserResult } from '@/lib/show-analysis.types';
+
+export const ANALYSER_SCHEMA_VERSION = '1.4.0';
+
+const finiteNumber = z.number().finite();
+const nonNegativeNumber = finiteNumber.nonnegative();
+const positiveNumber = finiteNumber.positive();
+const score = finiteNumber.min(0).max(1);
+const nonNegativeInteger = z.number().int().finite().nonnegative();
+const nonEmptyString = z.string().min(1);
+
+const styleVectorSchema = z
+  .object({
+    boldness: score,
+    elegance: score,
+    playfulness: score,
+    warmth: score,
+    brightness: score,
+    grandeur: score,
+    tension: score,
+    precision: score,
+  })
+  .strict();
+
+const descriptorSchema = z
+  .object({
+    energy: score,
+    drive: score,
+    brightness: score,
+    warmth: score,
+    tension: score,
+    grandeur: score,
+    playfulness: score,
+    precision: score,
+    dynamic_range: score,
+    bass_impact: score,
+    section_contrast: score,
+  })
+  .strict();
+
+const timingBreakdownSchema = z
+  .object({
+    download_ms: nonNegativeNumber,
+    decode_ms: nonNegativeNumber,
+    beat_ms: nonNegativeNumber,
+    energy_ms: nonNegativeNumber,
+    onset_ms: nonNegativeNumber,
+    section_ms: nonNegativeNumber,
+    profile_ms: nonNegativeNumber,
+    validation_ms: nonNegativeNumber,
+    total_ms: nonNegativeNumber,
+  })
+  .strict();
+
+const analysisMetaSchema = z
+  .object({
+    mode: z.literal('fast'),
+    runner_version: nonEmptyString,
+    timings_ms: timingBreakdownSchema,
+  })
+  .strict();
+
+const energyPointSchema = z
+  .object({
+    time: nonNegativeNumber,
+    energy: score,
+  })
+  .strict();
+
+const sectionSchema = z
+  .object({
+    start: nonNegativeNumber,
+    end: nonNegativeNumber,
+    duration: nonNegativeNumber,
+    avg_energy: score,
+    peak_energy: score,
+    intensity: z.enum(['low', 'medium', 'high']),
+    cluster_id: z.number().int().finite(),
+    label: z.enum([
+      'intro',
+      'verse',
+      'pre-chorus',
+      'chorus',
+      'bridge',
+      'drop',
+      'build',
+      'breakdown',
+      'outro',
+      'unknown',
+    ]),
+  })
+  .strict()
+  .superRefine((section, context) => {
+    if (section.end < section.start) {
+      context.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: 'must be greater than or equal to section start',
+      });
+    }
+    if (Math.abs(section.duration - (section.end - section.start)) > 0.06) {
+      context.addIssue({
+        code: 'custom',
+        path: ['duration'],
+        message: 'must match section end minus start',
+      });
+    }
+  });
+
+const keyMomentSchema = z
+  .object({
+    time: nonNegativeNumber,
+    energy: score,
+    prominence: nonNegativeNumber,
+    type: z.enum(['build', 'climax']),
+  })
+  .strict();
+
+const buildupSchema = z
+  .object({
+    start: nonNegativeNumber,
+    peak: nonNegativeNumber,
+    duration: nonNegativeNumber,
+    energy_rise: nonNegativeNumber,
+  })
+  .strict()
+  .superRefine((buildup, context) => {
+    if (buildup.peak < buildup.start) {
+      context.addIssue({
+        code: 'custom',
+        path: ['peak'],
+        message: 'must be greater than or equal to buildup start',
+      });
+    }
+    if (Math.abs(buildup.duration - (buildup.peak - buildup.start)) > 0.06) {
+      context.addIssue({
+        code: 'custom',
+        path: ['duration'],
+        message: 'must match buildup peak minus start',
+      });
+    }
+  });
+
+const musicProfileSchema = z
+  .object({
+    genre_hint: nonEmptyString,
+    key_signature: z
+      .object({
+        root: nonEmptyString,
+        mode: z.enum(['major', 'minor']),
+        confidence: score,
+      })
+      .strict(),
+    descriptors: descriptorSchema,
+    style_vector: styleVectorSchema,
+    dominant_traits: z.array(nonEmptyString),
+    raw_metrics: z
+      .object({
+        tempo_bpm: nonNegativeNumber,
+        onset_density_per_sec: nonNegativeNumber,
+        key_moments_per_min: nonNegativeNumber,
+        buildups_per_min: nonNegativeNumber,
+        beat_stability: score,
+        section_contrast: nonNegativeNumber,
+        bass_ratio: nonNegativeNumber,
+      })
+      .strict(),
+  })
+  .strict();
+
+const showPersonalitySchema = z
+  .object({
+    preset: z.enum(['balanced', 'bold', 'cinematic', 'elegant', 'intimate', 'playful']),
+    blend_weights: z
+      .object({
+        user: score,
+        music: score,
+      })
+      .strict(),
+    dimensions: styleVectorSchema,
+    dominant_traits: z.array(nonEmptyString),
+    palette_direction: z
+      .object({
+        primary: nonEmptyString,
+        secondary: nonEmptyString,
+        accent: nonEmptyString,
+      })
+      .strict(),
+    density_level: z.enum(['low', 'medium', 'high']),
+    genre_hint: nonEmptyString,
+  })
+  .strict();
+
+const fireworkCueSchema = z
+  .object({
+    time: nonNegativeNumber,
+    end: nonNegativeNumber.optional(),
+    effect: z.enum(['barrage', 'accent', 'crackle', 'single']),
+    reason: nonEmptyString,
+    energy: score,
+    section: z.enum([
+      'intro',
+      'verse',
+      'pre-chorus',
+      'chorus',
+      'bridge',
+      'drop',
+      'build',
+      'breakdown',
+      'outro',
+      'unknown',
+    ]),
+    palette: nonEmptyString,
+    shape: nonEmptyString,
+    height: nonEmptyString,
+    spread: nonEmptyString,
+    density: nonEmptyString,
+    style_tags: z.array(nonEmptyString),
+    genre_hint: nonEmptyString,
+  })
+  .strict()
+  .superRefine((cue, context) => {
+    if (cue.end != null && cue.end < cue.time) {
+      context.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: 'must be greater than or equal to cue time',
+      });
+    }
+  });
+
+const finaleWindowSchema = z
+  .object({
+    start: nonNegativeNumber,
+    end: nonNegativeNumber,
+  })
+  .strict()
+  .refine((window) => window.end >= window.start, {
+    path: ['end'],
+    message: 'must be greater than or equal to finale start',
+  });
+
+const anchorWindowSchema = z
+  .object({
+    type: z.enum(['climax', 'buildup']),
+    anchor_time: nonNegativeNumber,
+    start: nonNegativeNumber,
+    end: nonNegativeNumber,
+    energy: score.optional(),
+    energy_rise: nonNegativeNumber.optional(),
+  })
+  .strict()
+  .superRefine((window, context) => {
+    if (window.end < window.start) {
+      context.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: 'must be greater than or equal to anchor start',
+      });
+    }
+    if (window.anchor_time < window.start || window.anchor_time > window.end) {
+      context.addIssue({
+        code: 'custom',
+        path: ['anchor_time'],
+        message: 'must be inside the anchor window',
+      });
+    }
+    if (window.type === 'climax' && window.energy == null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['energy'],
+        message: 'is required for climax anchors',
+      });
+    }
+    if (window.type === 'buildup' && window.energy_rise == null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['energy_rise'],
+        message: 'is required for buildup anchors',
+      });
+    }
+  });
+
+const derivedFeaturesSchema = z
+  .object({
+    finale_window: finaleWindowSchema.nullable(),
+    quietest_section_index: nonNegativeInteger.nullable(),
+    highest_energy_section_index: nonNegativeInteger.nullable(),
+    repeated_chorus_count: nonNegativeInteger,
+    section_rank_by_energy: z.array(nonNegativeInteger),
+    anchor_windows: z.array(anchorWindowSchema),
+  })
+  .strict();
+
+const analyserResultSchema = z
+  .object({
+    schema_version: z.literal(ANALYSER_SCHEMA_VERSION),
+    file: nonEmptyString,
+    analysis_meta: analysisMetaSchema,
+    duration_seconds: positiveNumber,
+    tempo_bpm: positiveNumber,
+    total_beats: nonNegativeInteger,
+    beat_times: z.array(nonNegativeNumber).max(200_000),
+    onset_times: z.array(nonNegativeNumber).max(200_000),
+    energy_timeline: z.array(energyPointSchema).max(50_000),
+    sections: z.array(sectionSchema).min(1).max(1_000),
+    key_moments: z.array(keyMomentSchema).max(10_000),
+    buildups: z.array(buildupSchema).max(10_000),
+    music_profile: musicProfileSchema,
+    show_personality: showPersonalitySchema,
+    firework_cues: z.array(fireworkCueSchema).max(200_000),
+    derived: derivedFeaturesSchema,
+    downbeat_times: z.array(nonNegativeNumber).max(200_000),
+    beats_per_bar: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+  })
+  .strict()
+  .superRefine((analysis, context) => {
+    const maximumTime = analysis.duration_seconds + 0.75;
+    const addIssue = (path: PropertyKey[], message: string) => {
+      context.addIssue({ code: 'custom', path, message });
+    };
+
+    if (analysis.total_beats !== analysis.beat_times.length) {
+      addIssue(['total_beats'], 'must equal the number of beat_times');
+    }
+
+    validateOrderedTimes(analysis.beat_times, true, ['beat_times'], addIssue);
+    validateOrderedTimes(analysis.onset_times, false, ['onset_times'], addIssue);
+    validateOrderedTimes(analysis.downbeat_times, true, ['downbeat_times'], addIssue);
+    validateOrderedTimes(
+      analysis.energy_timeline.map((point) => point.time),
+      true,
+      ['energy_timeline'],
+      addIssue,
+    );
+    validateOrderedTimes(
+      analysis.key_moments.map((moment) => moment.time),
+      false,
+      ['key_moments'],
+      addIssue,
+    );
+    validateOrderedTimes(
+      analysis.buildups.map((buildup) => buildup.peak),
+      false,
+      ['buildups'],
+      addIssue,
+    );
+    validateOrderedTimes(
+      analysis.firework_cues.map((cue) => cue.time),
+      false,
+      ['firework_cues'],
+      addIssue,
+    );
+
+    const timedValues = [
+      ...analysis.beat_times,
+      ...analysis.onset_times,
+      ...analysis.downbeat_times,
+      ...analysis.energy_timeline.map((point) => point.time),
+      ...analysis.sections.map((section) => section.end),
+      ...analysis.key_moments.map((moment) => moment.time),
+      ...analysis.buildups.map((buildup) => buildup.peak),
+      ...analysis.firework_cues.map((cue) => cue.end ?? cue.time),
+    ];
+    if (timedValues.some((value) => value > maximumTime)) {
+      addIssue([], 'timed analysis fields must not exceed song duration');
+    }
+
+    for (let index = 1; index < analysis.sections.length; index += 1) {
+      if (analysis.sections[index].start < analysis.sections[index - 1].end) {
+        addIssue(['sections', index, 'start'], 'sections must be ordered and non-overlapping');
+        break;
+      }
+    }
+
+    if (!everyTimeMatchesGrid(analysis.downbeat_times, analysis.beat_times, 0.06)) {
+      addIssue(['downbeat_times'], 'every downbeat must align with a beat within 60 ms');
+    }
+
+    const sectionCount = analysis.sections.length;
+    for (const key of ['quietest_section_index', 'highest_energy_section_index'] as const) {
+      const value = analysis.derived[key];
+      if (value != null && value >= sectionCount) {
+        addIssue(['derived', key], 'must refer to an existing section');
+      }
+    }
+    const rank = analysis.derived.section_rank_by_energy;
+    if (
+      rank.length !== sectionCount ||
+      new Set(rank).size !== rank.length ||
+      rank.some((index) => index >= sectionCount)
+    ) {
+      addIssue(
+        ['derived', 'section_rank_by_energy'],
+        'must contain every section index exactly once',
+      );
+    }
+
+    const finale = analysis.derived.finale_window;
+    if (finale && finale.end > maximumTime) {
+      addIssue(['derived', 'finale_window', 'end'], 'must not exceed song duration');
+    }
+    analysis.derived.anchor_windows.forEach((window, index) => {
+      if (window.end > maximumTime) {
+        addIssue(['derived', 'anchor_windows', index, 'end'], 'must not exceed song duration');
+      }
+    });
+  });
+
+type AddIssue = (path: PropertyKey[], message: string) => void;
+
+function validateOrderedTimes(
+  values: number[],
+  strict: boolean,
+  path: PropertyKey[],
+  addIssue: AddIssue,
+) {
+  for (let index = 1; index < values.length; index += 1) {
+    const invalid = strict ? values[index] <= values[index - 1] : values[index] < values[index - 1];
+    if (invalid) {
+      addIssue(
+        [...path, index],
+        strict ? 'times must be strictly increasing' : 'times must be sorted',
+      );
+      return;
+    }
+  }
+}
+
+function everyTimeMatchesGrid(values: number[], grid: number[], tolerance: number) {
+  let gridIndex = 0;
+  for (const value of values) {
+    while (gridIndex < grid.length && grid[gridIndex] < value - tolerance) {
+      gridIndex += 1;
+    }
+    if (gridIndex >= grid.length || Math.abs(grid[gridIndex] - value) > tolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export class AnalyserOutputValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AnalyserOutputValidationError';
+  }
+}
+
+export function parseAnalyserResult(value: unknown): AnalyserResult {
+  const parsed = analyserResultSchema.safeParse(value);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .slice(0, 8)
+      .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
+      .join('; ');
+    throw new AnalyserOutputValidationError(
+      `The analyser returned invalid schema ${ANALYSER_SCHEMA_VERSION} output: ${details}`,
+    );
+  }
+  return parsed.data;
+}
+
+export function parseAnalyserResponse(bodyText: string): AnalyserResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(bodyText);
+  } catch {
+    throw new AnalyserOutputValidationError('The analyser did not return JSON output.');
+  }
+  return parseAnalyserResult(value);
+}

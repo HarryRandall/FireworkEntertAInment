@@ -84,6 +84,40 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -p "*test*.py"
 ```
 
+Run the schema 1.4.0 real-audio regression separately:
+
+```bash
+python evaluate.py
+```
+
+The regression analyses four versioned Jamendo MP3s: two pop tracks and two
+classical recordings. Their attribution, source URLs, CC BY 3.0 licence, file
+sizes, and SHA-256 values are recorded in
+`platform/analyser/evals/jamendo_fixtures.json`. The reviewed musical baseline
+is `platform/analyser/evals/baseline_v1.json`.
+
+The evaluator verifies each immutable audio file before analysis, validates the
+schema 1.4.0 result, and checks duration, tempo, beat and downbeat grids,
+sections, climaxes, buildups, and the finale window. Timing and count checks use
+bounded cross-platform tolerances, while schema versions, timeline ordering,
+file hashes, and licence provenance are exact.
+
+Hosted Modal responses are also validated at the Next.js boundary before any
+completion write. The validator requires schema 1.4.0, rejects missing or
+unexpected fields and non-finite values, checks score ranges, and enforces
+ordered in-range beats, downbeats, sections, anchors, buildups, cues, and the
+finale window. Invalid output is terminal HTTP 422 analyser work, not a
+retryable transport failure.
+
+GitHub Actions runs the unit suite first and the real-audio regression second.
+The local `evaluation-report.json` is ignored by Git; CI uploads that complete
+JSON report even when the regression step fails. To preserve an existing local
+report, select another path:
+
+```bash
+python evaluate.py --report ../../.tmp_analyser/evaluation-report.json
+```
+
 For local timing investigation, without pass or fail thresholds:
 
 ```bash
