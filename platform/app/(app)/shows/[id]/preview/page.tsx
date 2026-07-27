@@ -38,14 +38,13 @@ async function ShowPreviewReplay(props: PageProps) {
   // awaiting it here. The cues are the payload the user is waiting on, so they
   // stream on their own and populate the timeline the moment they land; the
   // much heavier full catalogue (only needed for the add-firework dialog) and
-  // the signed audio URL stream separately so they never gate the fireworks.
+  // the signed audio URL each stream independently so neither gates fireworks
+  // or delays the other.
   // The show row itself is awaited so notFound/redirect still run on the
   // server before anything renders.
   const replayCuesPromise = listReplayCuesForShow(show.id);
-  const replayExtrasPromise = Promise.all([
-    listFireworkProducts(),
-    getAudioSignedUrl(show.audioPath),
-  ]).then(([specifications, audioUrl]) => ({ specifications, audioUrl }));
+  const fireworkSpecificationsPromise = listFireworkProducts();
+  const audioUrlPromise = getAudioSignedUrl(show.audioPath);
   const currentProfile = await currentProfilePromise;
   const canEditFireworks = currentProfile?.permissions.includes('admin.manage_catalogue') ?? false;
 
@@ -54,12 +53,14 @@ async function ShowPreviewReplay(props: PageProps) {
       showId={show.id}
       showSlug={show.slug}
       showName={show.title}
+      hasSoundtrack={Boolean(show.audioPath)}
       durationSeconds={show.durationSeconds}
       totalCents={show.totalCents}
       launchPositions={show.launchPositions}
       canEditFireworks={canEditFireworks}
       replayCuesPromise={replayCuesPromise}
-      replayExtrasPromise={replayExtrasPromise}
+      fireworkSpecificationsPromise={fireworkSpecificationsPromise}
+      audioUrlPromise={audioUrlPromise}
     />
   );
 }

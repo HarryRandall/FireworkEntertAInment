@@ -94,7 +94,10 @@ test('app and admin routes have granular loading coverage and streaming boundari
   assert.doesNotMatch(previewShell, /getAudioSignedUrl\(/);
   assert.match(previewLoader, /const \{ id \} = await params/);
   assert.match(previewLoader, /getShowBySlug\(id\)/);
-  assert.match(previewLoader, /Promise\.all\(/);
+  assert.match(previewLoader, /const replayCuesPromise = listReplayCuesForShow\(show\.id\)/);
+  assert.match(previewLoader, /const fireworkSpecificationsPromise = listFireworkProducts\(\)/);
+  assert.match(previewLoader, /const audioUrlPromise = getAudioSignedUrl\(show\.audioPath\)/);
+  assert.doesNotMatch(previewLoader, /Promise\.all\(/);
 });
 
 test('replay canvases are lazy loaded without console warning monkey patches', () => {
