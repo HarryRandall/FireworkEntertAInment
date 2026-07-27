@@ -1,68 +1,109 @@
-# Local Analyser Runner
+# Hosted Analyser Runner
 
-The analyser runs automatically after the browser uploads a music file in the
-new-show wizard. It is separate from show creation and there is no user-facing
-"run analysis" action.
+Music analysis starts quietly after the browser uploads a file in the new-show
+wizard. It remains separate from show creation: only the final Generate action
+creates the show and starts cue generation.
 
 ## Runtime
 
-- The browser uploads audio directly to the private `audio` storage bucket.
-- `startMusicAnalysisAction` creates a `song_analyses` row and schedules
-  `runMusicAnalysisForUpload` with `after`.
-- `runMusicAnalysisForUpload` runs on the server, downloads the Supabase Storage
-  audio object, writes it to a temporary directory, and spawns Python.
-- The Python entry point is `platform/analyser/showcrafter.py`.
-- The preferred interpreter is `platform/analyser/.venv/bin/python`; if that is
-  missing, the runner falls back to `python3`.
-- Temporary audio and the scratch Markdown report are deleted after the run.
+1. The browser uploads audio directly to the user's prefix in the private
+   Supabase `audio` bucket.
+2. `POST /api/music-analysis` verifies ownership, MIME type, and the 50 MB
+   limit, reserves credits, creates a `song_analyses` row, and schedules
+   `runMusicAnalysisForUpload` with Next.js `after()`.
+3. The server mints a short-lived signed Storage URL and calls the Modal
+   endpoint configured by `ANALYSER_URL`, authenticated with
+   `ANALYSER_SHARED_SECRET`.
+4. `platform/analyser/modal_app.py` downloads the signed audio into temporary
+   storage and runs `showcrafter.analyse_song` inside the Modal container.
+5. The server parses the response and completes the leased attempt through a
+   guarded RPC. Analysis output and credit settlement commit together, then
+   any cue generation waiting on this analysis resumes.
 
-The analysis does not run in the browser. The client may continue through the
-wizard while the server-side job is queued or running.
+The client can continue through the wizard while analysis is queued or running.
+Hidden background state is surfaced only when an error blocks generation.
 
-## Persistence
+## Deployment
 
-The database stores rich structured output in `song_analyses.analysis_json`
-and a readable Markdown context in `song_analyses.markdown`. The JSON is the
-source for cue generation; the Markdown exists for inspection/debugging.
+The analyser image installs `platform/analyser/requirements.txt` and runs with
+2 CPU cores, 4 GB memory, a 600-second timeout, and Modal memory snapshots.
 
-The Python script prints its structured result to stdout with `--no-json-file`,
-so no JSON or LLM payload files are written to disk by the server runner.
-
-## Manual Route
-
-`POST /api/analyse` remains as a thin authenticated wrapper around the legacy
-show-scoped runner for development and repair use. The product flow uses
-upload-scoped `song_analyses` instead and does not expose the API as a button.
-
-```http
-POST /api/analyse
-Content-Type: application/json
+```bash
+cd platform/analyser
+modal deploy modal_app.py
 ```
 
-```json
-{
-  "showId": "00000000-0000-0000-0000-000000000000",
-  "personality": "balanced"
-}
+Configure these values in the Next.js deployment:
+
+- `ANALYSER_URL`, the deployed Modal web endpoint.
+- `ANALYSER_SHARED_SECRET`, the bearer token shared with the Modal
+  `showcrafter` secret.
+- `SUPABASE_SERVICE_ROLE_KEY`, required by trusted reconciliation.
+- `CRON_SECRET`, required by the protected analyser warm-up and reconciliation
+  routes.
+
+Supabase, Modal, and Vercel must use matching production values. Never expose
+the shared secret to the browser.
+
+Configure a scheduler to call `GET /api/admin/analyser/reconcile` with
+`Authorization: Bearer <CRON_SECRET>` every minute. The route is intentionally
+not added to `vercel.json`, so projects can use Vercel Cron or another trusted
+scheduler without changing the analyser warm-up policy. The same route now
+reconciles cue generation, dead letters, credit crash windows, and private
+audio retention. See [Backend lifecycle](backend-lifecycle.md).
+
+## Persistence and cleanup
+
+`song_analyses.analysis_json` is the source for cue generation, while
+`song_analyses.markdown` is readable diagnostic context. Replacing or clearing
+an upload uses the guarded cleanup RPC, resolves the active reservation, and
+removes the private audio object. Cleanup refuses an analysis already linked
+to a show.
+
+Each worker claim increments `attempt_count` and receives a 15-minute lease
+token. Network failures and HTTP 408, 425, 429, or 5xx responses retry after 30
+then 120 seconds, with at most three claimed attempts. Configuration,
+authentication, and invalid-output failures are terminal. A stale worker cannot
+write after its lease expires because every completion, retry, and failure RPC
+requires the current token.
+
+The reconciliation route reclaims expired leases, fails exhausted attempts,
+makes shows with terminal analyses claimable for cue generation, and repairs
+terminal show credit reservations. These operations are bounded and
+idempotent.
+
+The repository analyser currently emits schema `1.4.0`. Older stored analyses
+remain readable because the bar-grid fields are optional to consumers.
+
+## Verification
+
+Run the analyser unit tests from `platform/analyser`:
+
+```bash
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -p "*test*.py"
 ```
 
-The response contains:
+For local timing investigation, without pass or fail thresholds:
 
-- `analysisId`
-- `contextMarkdown`
+```bash
+python benchmark.py --repeat 2
+```
 
-## Failure Modes
+## Manual route
 
-- `400` when the request is invalid or the show has no uploaded audio.
-- `401` when the user is not signed in.
-- `422` when Python rejects or cannot decode the audio.
-- `500` when server setup, storage, or persistence fails.
+`POST /api/analyse` remains an authenticated legacy wrapper for development and
+repair. The product flow uses upload-scoped `song_analyses` and does not expose
+this route as a user-facing button.
 
-## Production Notes
+## Failure boundaries
 
-- Supabase environment variables must be configured in the server environment.
-- The `song_analyses` / show-generation migrations must be applied.
-- The Python dependencies from `platform/analyser/requirements.txt` must be
-  available wherever the Next.js server runs.
-- Production hosting must allow spawning Python, temporary filesystem writes,
-  and enough execution time for audio analysis.
+- Invalid requests and unsupported uploads fail before credits are spent.
+- Missing analyser configuration fails closed without retry.
+- Transient Modal transport and service errors retain the reservation while a
+  bounded retry is pending.
+- Terminal analysis state and credit resolution share one database
+  transaction. If that transaction fails, the lease expires for
+  reconciliation rather than presenting partial success.
+- Cue generation may wait for an in-progress analysis, but it must not treat a
+  failed or unreadable analysis as an empty successful result.

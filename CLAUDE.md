@@ -111,12 +111,12 @@ Variables.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`                       | optional fallback                                         | browser and server               | Legacy anon key alias                                                                                |
 | `SUPABASE_URL`                                        | optional fallback                                         | server                           | Server-only Supabase URL fallback                                                                    |
 | `SUPABASE_PUBLISHABLE_KEY` / `SUPABASE_ANON_KEY`      | optional fallback                                         | server                           | Server-only public key fallbacks                                                                     |
-| `SUPABASE_SERVICE_ROLE_KEY`                           | feature-gated                                             | trusted server and import worker | Admin signing, prompt lookup, imports, impersonation, and worker writes. Never expose to the browser |
+| `SUPABASE_SERVICE_ROLE_KEY`                           | feature-gated                                             | trusted server and workers       | Admin signing, prompt lookup, imports, impersonation, analyser reconciliation, and worker writes. Never expose to the browser |
 | `APP_ORIGIN`                                          | yes when deployed                                         | trusted server                   | Canonical HTTPS app origin for server-generated authentication redirects                             |
 | `PASSWORD_RECOVERY_SIGNING_SECRET`                    | yes for password recovery                                 | trusted server                   | Signs the short-lived recovery proof cookie. Generate at least 32 random bytes                       |
 | `ANALYSER_URL`                                        | yes for analysis                                          | server                           | Hosted Modal song analyser URL                                                                       |
 | `ANALYSER_SHARED_SECRET`                              | yes for analysis                                          | server and Modal                 | Bearer token shared with the Modal `showcrafter` secret                                              |
-| `CRON_SECRET`                                         | deployed warm-up                                          | server                           | Authorises `/api/admin/analyser/warm`                                                                |
+| `CRON_SECRET`                                         | deployed backend jobs                                     | server                           | Authorises analyser warm-up, lifecycle reconciliation, and backend health operations                 |
 | `CUE_GENERATION_MODE`                                 | optional                                                  | server                           | Defaults to `fast`; set `llm` to opt into OpenRouter cue assignment                                  |
 | `OPENROUTER_API_KEY`                                  | optional for default generation, required for LLM/imports | server and import worker         | Enables LLM cue assignment and firework-video reconstruction                                         |
 | `OPENROUTER_CUE_MODEL`                                | optional                                                  | server                           | Cue model override                                                                                   |
@@ -193,6 +193,12 @@ derived decoration. See `platform/docs/explore-presets.md`.
   analysis completes.
 - Accepted cues are written to `show_timeline_items` through the
   `replace_show_timeline_items` RPC.
+- Cue generation uses bounded lease-token claims. Only the current worker may
+  retry, complete, or fail the generation, and terminal show state resolves
+  its credit reservation in the same database transaction.
+- Trusted reconciliation expires exhausted analysis and cue claims, records
+  dead letters, repairs legacy credit crash windows, and removes unreferenced
+  private audio after the documented retention period.
 - Keep upload-scoped analysis and explicit show generation separate. Uploading
   a song must not create the final show by itself.
 

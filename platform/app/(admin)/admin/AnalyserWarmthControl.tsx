@@ -20,6 +20,11 @@ function getRemainingMinutes(warmUntil: string | null, now: number): number {
 }
 
 function statusCopy(state: AnalyserWarmthState, now: number): string {
+  if (state.lastWarmupOk === false) {
+    return state.lastWarmupError
+      ? `Warm-up failed: ${state.lastWarmupError}`
+      : 'Warm-up failed. Check the analyser configuration and try again.';
+  }
   const remainingMinutes = getRemainingMinutes(state.warmUntil, now);
   if (!state.active || remainingMinutes === 0) return 'Idle: next analysis may cold start.';
   if (remainingMinutes <= 1) return 'Live for less than a minute.';
@@ -43,7 +48,9 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const active = state.active && getRemainingMinutes(state.warmUntil, now) > 0;
+  const active =
+    state.active && state.lastWarmupOk === true && getRemainingMinutes(state.warmUntil, now) > 0;
+  const failed = state.lastWarmupOk === false;
 
   const keepWarm = () => {
     if (!canManage) {
@@ -54,7 +61,8 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
     startTransition(async () => {
       const result = await setAnalyserWarmthAction({ enabled: true });
       if (!result.ok) {
-        toast.error(result.error);
+        if (result.state) setState(result.state);
+        toast.error('Analyser did not warm up', { description: result.error });
         return;
       }
 
@@ -106,7 +114,9 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
   }, [active, canManage]);
 
   return (
-    <Card className={cn('gap-0 p-4', active && 'ring-green-500/30')}>
+    <Card
+      className={cn('gap-0 p-4', active && 'ring-green-500/30', failed && 'ring-destructive/30')}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -114,7 +124,9 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
               'flex size-8 shrink-0 items-center justify-center rounded-md border',
               active
                 ? 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-300'
-                : 'border-border bg-muted text-muted-foreground',
+                : failed
+                  ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                  : 'border-border bg-muted text-muted-foreground',
             )}
           >
             <Gauge aria-hidden className="h-4 w-4" />
@@ -127,10 +139,12 @@ export function AnalyserWarmthControl({ initialState, canManage }: Props) {
                 className={cn(
                   active
                     ? 'bg-green-500/10 text-green-700 dark:bg-green-500/15 dark:text-green-300'
-                    : 'bg-secondary text-secondary-foreground',
+                    : failed
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-secondary text-secondary-foreground',
                 )}
               >
-                {active ? 'Live' : 'Idle'}
+                {active ? 'Live' : failed ? 'Failed' : 'Idle'}
               </Badge>
               <InfoTooltip text="Keeps the analyser container ready for demos or rapid testing. It turns off automatically after 30 minutes." />
             </div>

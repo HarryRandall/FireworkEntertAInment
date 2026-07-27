@@ -1,13 +1,17 @@
 /**
  * Top-level cue-generation runner.
  *
- * Pipeline stages (each one writes a `generation_status` row on failure):
+ * Pipeline stages:
  *   1. Load brief, analyser JSON, catalogue, build the cue slot grid.
  *   2. Use the fast local planner by default, or optionally call OpenRouter.
  *   3. Parse + validate the optional LLM response.
  *   4. Apply per-tube overlap dedupe for the optional LLM response.
  *   5. Replace the show's existing `show_timeline_items` with the accepted set.
- *   6. Mark the show `completed` and refresh derived fields.
+ *   6. Atomically mark the show `completed` and settle its credit reservation.
+ *
+ * A database lease fences every write. Retryable failures release the lease
+ * with a short back-off; terminal failures atomically fail the show and refund
+ * its reservation.
  */
 import 'server-only';
 
@@ -26,20 +30,10 @@ import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/promp
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { fireworkOccupancyDurationSeconds } from '@/lib/show-domain';
-import {
-  refundAiCreditReservation,
-  settleAiCreditReservation,
-  showGenerationReservationKey,
-} from '@/lib/ai-credits.server';
 import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import { parseCreativeDirection } from './creative-direction';
-import {
-  loadAnalysisState,
-  loadBrief,
-  markGenerationStatus,
-  type AnalysisJsonLoadResult,
-} from './loaders.server';
+import { loadAnalysisState, loadBrief, type AnalysisJsonLoadResult } from './loaders.server';
 import {
   buildAnalysisSummary,
   buildSystemPrompt,
@@ -66,6 +60,88 @@ import {
 } from './schemas';
 
 type AppSupabase = SupabaseClient<Database>;
+const CUE_GENERATION_LEASE_SECONDS = 900;
+const MAX_CUE_GENERATION_ATTEMPTS = 3;
+const CUE_RETRY_DELAYS_SECONDS = [30, 120] as const;
+
+type CueGenerationClaim = {
+  show_id: string;
+  user_id: string;
+  music_analysis_id: string | null;
+  selected_cue_model: string | null;
+  show_style: string;
+  credit_action_key: string;
+  attempt_count: number;
+  lease_token: string;
+};
+
+function isRetryableDatabaseError(error: { code?: string | null }): boolean {
+  const code = error.code ?? '';
+  return (
+    code.startsWith('08') ||
+    code.startsWith('53') ||
+    code === '40001' ||
+    code === '40P01' ||
+    code === '55P03' ||
+    code === '57P01' ||
+    code.startsWith('PGRST')
+  );
+}
+
+async function classifyUnclaimedCueGeneration(params: {
+  supabase: AppSupabase;
+  showId?: string;
+}): Promise<GenerateCuesResult> {
+  if (!params.showId) {
+    return { ok: true, pending: true, reason: 'no_generation_ready' };
+  }
+  const { data: show, error } = await params.supabase
+    .from('shows')
+    .select(
+      'id, user_id, music_analysis_id, generation_status, generation_error, generated_cue_count',
+    )
+    .eq('id', params.showId)
+    .maybeSingle();
+  if (error) return { ok: false, error: `Could not inspect cue generation: ${error.message}` };
+  if (!show) return { ok: false, error: 'Show not found.' };
+  if (show.generation_status === 'completed') {
+    return {
+      ok: true,
+      cueCount: show.generated_cue_count ?? 0,
+      showId: show.id,
+      userId: show.user_id,
+    };
+  }
+  if (show.generation_status === 'failed') {
+    return { ok: false, error: show.generation_error ?? 'Cue generation failed.' };
+  }
+  if (show.music_analysis_id) {
+    const { data: analysis, error: analysisError } = await params.supabase
+      .from('song_analyses')
+      .select('status')
+      .eq('id', show.music_analysis_id)
+      .maybeSingle();
+    if (analysisError) {
+      return { ok: false, error: `Could not inspect music analysis: ${analysisError.message}` };
+    }
+    if (analysis?.status === 'running') {
+      return {
+        ok: true,
+        pending: true,
+        reason: 'music_analysis_running',
+        showId: show.id,
+        userId: show.user_id,
+      };
+    }
+  }
+  return {
+    ok: true,
+    pending: true,
+    reason: 'generation_already_claimed',
+    showId: show.id,
+    userId: show.user_id,
+  };
+}
 
 /** Two-decimal rounding that mirrors the `numeric(8,2)` timeline column. */
 function toStoredTimeSeconds(value: number): number {
@@ -166,26 +242,62 @@ function estimateAchievableCueCount(params: {
 }
 
 /**
- * Generate cues for a show end-to-end. Returns `{ ok: true }` on success and
- * `{ ok: false, error }` on any failure mode; failure also writes the error
- * to `shows.generation_error` so the UI can surface it.
+ * Generate cues for one explicitly requested show, or claim the next ready
+ * show when invoked by the reconciliation worker.
  */
 export async function generateCuesForShow(params: {
   supabase: AppSupabase;
-  userId: string;
-  showId: string;
-  musicAnalysisId: string | null;
+  userId?: string;
+  showId?: string;
+  musicAnalysisId?: string | null;
   selectedCueModel?: string | null;
   generationMode?: GenerationMode | 'beat';
 }): Promise<GenerateCuesResult> {
-  const { supabase, userId, showId, musicAnalysisId, selectedCueModel } = params;
-  const creditReservationKey = showGenerationReservationKey(showId);
+  const { supabase } = params;
+  let generationSettings: Awaited<ReturnType<typeof getShowCueGenerationSettings>>;
+  try {
+    generationSettings = await getShowCueGenerationSettings();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: `Could not load cue generation settings: ${message}` };
+  }
+  const { data: claimedRows, error: claimError } = await supabase.rpc(
+    'claim_cue_generation_attempt',
+    {
+      p_show_id: params.showId,
+      p_lease_seconds: CUE_GENERATION_LEASE_SECONDS,
+      p_max_attempts: MAX_CUE_GENERATION_ATTEMPTS,
+    },
+  );
+  if (claimError) {
+    return { ok: false, error: `Could not claim cue generation: ${claimError.message}` };
+  }
+  const claim = (claimedRows?.[0] ?? null) as CueGenerationClaim | null;
+  if (!claim) {
+    return classifyUnclaimedCueGeneration({
+      supabase,
+      showId: params.showId,
+    });
+  }
+  if (params.userId && params.userId !== claim.user_id) {
+    return { ok: false, error: 'Cue generation owner did not match the claimed show.' };
+  }
+
+  const userId = claim.user_id;
+  const showId = claim.show_id;
+  const musicAnalysisId = claim.music_analysis_id;
+  const selectedCueModel = claim.selected_cue_model ?? params.selectedCueModel;
   let model = normalisePersistedCueModel(selectedCueModel, DEFAULT_CUE_MODEL);
-  const generationSettings = await getShowCueGenerationSettings();
   // The global setting decides fast vs LLM for normal styles. The dedicated
   // Beat precision style remains a deterministic override.
   let generationMode: GenerationMode | 'beat' =
-    params.generationMode ?? generationSettings.generationMode;
+    claim.show_style === 'beat_test'
+      ? 'beat'
+      : claim.credit_action_key === 'show_generation_fast'
+        ? 'fast'
+        : selectedCueModel
+          ? 'llm'
+          : (params.generationMode ?? generationSettings.generationMode);
   let showStyle: ShowStyleKey | null = null;
   /** Launch positions the site supports (capped by `shows.site_width_feet`). */
   let maxTubes: 1 | 2 | 3 = 3;
@@ -232,40 +344,50 @@ export async function generateCuesForShow(params: {
       ...extra,
     });
   };
-  const refundGenerationCredits = async (reason: string) => {
-    const result = await refundAiCreditReservation(supabase, {
-      userId,
-      reservationKey: creditReservationKey,
-      metadata: { reason },
-    });
-    if (!result.ok && result.error !== 'Credit reservation was not found.') {
-      console.error('[cue-generation] credit refund failed:', result.error);
+  const finishFailure = async (message: string, retryable = false): Promise<GenerateCuesResult> => {
+    const runtimeMs = elapsedMs(totalStart);
+    if (retryable && claim.attempt_count < MAX_CUE_GENERATION_ATTEMPTS) {
+      const retryDelay =
+        CUE_RETRY_DELAYS_SECONDS[
+          Math.min(claim.attempt_count - 1, CUE_RETRY_DELAYS_SECONDS.length - 1)
+        ] ?? CUE_RETRY_DELAYS_SECONDS[CUE_RETRY_DELAYS_SECONDS.length - 1];
+      const { data: scheduled, error } = await supabase.rpc('schedule_cue_generation_retry', {
+        p_show_id: showId,
+        p_lease_token: claim.lease_token,
+        p_error_message: message,
+        p_runtime_ms: runtimeMs,
+        p_retry_delay_seconds: retryDelay,
+      });
+      if (!error && scheduled) {
+        return {
+          ok: true,
+          pending: true,
+          reason: 'cue_generation_retry_scheduled',
+          showId,
+          userId,
+        };
+      }
+      if (error) {
+        console.error('[cue-generation] retry scheduling failed:', error);
+      }
     }
-  };
-  const settleGenerationCredits = async () => {
-    const result = await settleAiCreditReservation(supabase, {
-      userId,
-      reservationKey: creditReservationKey,
-      metadata: {
-        acceptedCount,
-        generationMode,
-        model,
-        promptBytes,
-        rawResponseBytes,
-      },
-    });
-    if (!result.ok && result.error !== 'Credit reservation was not found.') {
-      console.error('[cue-generation] credit settlement failed:', result.error);
-    }
-  };
 
-  await markGenerationStatus(supabase, userId, showId, {
-    generation_status: 'running',
-    generation_error: null,
-    generated_cue_count: null,
-    generation_started_at: new Date().toISOString(),
-    generation_completed_at: null,
-  });
+    const { data: failed, error } = await supabase.rpc('fail_cue_generation_attempt', {
+      p_show_id: showId,
+      p_lease_token: claim.lease_token,
+      p_error_message: message,
+      p_runtime_ms: runtimeMs,
+      p_dead_letter: retryable,
+    });
+    if (error || !failed) {
+      console.error('[cue-generation] terminal state persistence failed:', error);
+      return {
+        ok: false,
+        error: `${message} The generation lease will be reconciled.`,
+      };
+    }
+    return { ok: false, error: message };
+  };
 
   // === Stage 1: load + validate inputs ====================================
   let brief: ShowBriefRow | null;
@@ -358,294 +480,291 @@ export async function generateCuesForShow(params: {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!timings.loadInputsMs) timings.loadInputsMs = elapsedMs(loadStart);
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
-    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
-    return { ok: false, error: message };
+    return finishFailure(message);
   }
 
-  const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
-  const creativeDirection = parseCreativeDirection(
-    [brief.title, brief.description, ...(brief.mood_tags ?? [])].filter(Boolean).join(' '),
-    asShowStyleKey(brief.show_style),
-  );
-  const sparseGeneration = showStyle === 'minimalist' || creativeDirection.density === 'sparse';
   let accepted: ReconstructedCue[] = [];
+  try {
+    const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
+    const creativeDirection = parseCreativeDirection(
+      [brief.title, brief.description, ...(brief.mood_tags ?? [])].filter(Boolean).join(' '),
+      asShowStyleKey(brief.show_style),
+    );
+    const sparseGeneration = showStyle === 'minimalist' || creativeDirection.density === 'sparse';
 
-  /** Rescue path: deterministic local plan when the LLM cannot deliver. */
-  const runFastFallback = () => {
-    const planStart = performance.now();
-    const plan = planCuesFast({
-      brief: brief!,
-      analysis,
-      slots,
-      products,
-      songDuration,
-    });
-    accepted = plan.cues;
-    acceptedCount = accepted.length;
-    droppedCount = plan.skippedSlots;
-    timings.fastPlanMs = elapsedMs(planStart);
-  };
-
-  if (generationMode === 'beat') {
-    // === Stage 2: deterministic beat-precision planning ==================
-    // Every accepted direct shell bursts on its analysed beat. Unsafe or
-    // physically impossible hits are skipped instead of being shifted late.
-    const planStart = performance.now();
-    const plan = planCuesOnBeats({ analysis, products, songDuration, brief, maxTubes });
-    accepted = plan.cues;
-    acceptedCount = accepted.length;
-    droppedCount = plan.skippedSlots;
-    timings.fastPlanMs = elapsedMs(planStart);
-  } else if (generationMode === 'fast') {
-    // === Stage 2: fast local music-aware planning =========================
-    runFastFallback();
-  } else {
-    // === Stage 2: build prompt + call the LLM ============================
-    const promptStart = performance.now();
-    catalogue = projectCatalogue(products, generationSettings.productCatalogueFields);
-    const productIndex = new Map(products.map((product) => [product.id, product]));
-    const slotIndex = new Map(slots.map((s) => [s.index, s]));
-
-    const userPayload = {
-      userPrompt:
-        (brief.description ?? '').trim() ||
-        '(The user did not supply a prompt, design a tasteful default show that follows the song structure.)',
-      brief: {
-        title: brief.title,
-        moodTags: brief.mood_tags ?? [],
-        timeOfDay: brief.time_of_day,
-        location: brief.location,
-        requestedDurationSeconds: brief.duration_seconds,
-        budgetUsd: brief.budget_cents != null ? Math.round(brief.budget_cents / 100) : null,
-        showStyle: showStyle ? SHOW_STYLES[showStyle].name : null,
-        siteWidthFeet: brief.site_width_feet,
-        launchPositions: maxTubes,
-        fireworkTypes: parseFireworkTypes(brief.firework_types),
-      },
-      analysisSummary: buildAnalysisSummary(analysis, songDuration),
-      catalogue,
-      slots: projectSlotsForLLM(slots),
-      targets: {
-        slotCount: slots.length,
-        minFillRatio: sparseGeneration ? 0.5 : 0.75,
-        maxFillRatio: sparseGeneration ? 0.68 : 0.95,
-        chorusFillRatio: sparseGeneration ? 0.72 : 1,
-        songDurationSeconds: songDuration,
-      },
-    };
-
-    const promptConfig = await getActivePromptConfig('show_cue_generation');
-    const systemPrompt = buildSystemPrompt({
-      systemPromptText: promptConfig?.systemPromptText,
-      productContextText: promptConfig?.productContextText,
-      productCatalogueFields: generationSettings.productCatalogueFields,
-      showStyle,
-    });
-    const userContent = JSON.stringify(userPayload);
-    promptBytes = jsonByteLength(systemPrompt) + jsonByteLength(userContent);
-    timings.promptBuildMs = elapsedMs(promptStart);
-    let rawResponse: string | null = null;
-    const llmStart = performance.now();
-    try {
-      const client = getOpenRouterClient();
-      const completion = await client.chat.completions.create({
-        model,
-        temperature: 0.5,
-        max_tokens: 6000,
-        // `json_object` is the widely-supported structured-output mode on
-        // OpenRouter. `json_schema` is OpenAI-only.
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-      });
-      rawResponse = completion.choices[0]?.message?.content ?? '';
-      if (!rawResponse) throw new Error('LLM returned an empty response.');
-      rawResponseBytes = jsonByteLength(rawResponse);
-      timings.openRouterMs = elapsedMs(llmStart);
-    } catch (error) {
-      if (!timings.openRouterMs) timings.openRouterMs = elapsedMs(llmStart);
-      const providerDetail = extractProviderError(error);
-      const baseMessage = error instanceof Error ? error.message : String(error);
-      const message = providerDetail
-        ? `${baseMessage} - ${providerDetail} (model: ${model})`
-        : `${baseMessage} (model: ${model})`;
-      // The user must still get a show: rescue with the local fast planner
-      // instead of failing the whole run.
-      console.error('[cue-generation] LLM call failed, falling back to fast planner:', {
-        model,
-        error: message,
-      });
-      rawResponse = null;
-    }
-
-    // === Stage 3: parse + validate the LLM response ======================
-    let parsed: ReturnType<typeof GenerationResponseSchema.parse> | null = null;
-    const parseStart = performance.now();
-    if (rawResponse) {
-      try {
-        parsed = GenerationResponseSchema.parse(JSON.parse(stripJsonFence(rawResponse)));
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? `Could not parse LLM response: ${error.message}`
-            : 'Could not parse LLM response.';
-        console.error('[cue-generation] parse failed, falling back to fast planner:', message);
-        parsed = null;
-      }
-    }
-
-    if (!parsed) {
-      timings.parseValidateMs = elapsedMs(parseStart);
-      runFastFallback();
-    } else {
-      // Drop unknown slots / unknown products / duplicate slot indices.
-      const seenSlot = new Set<number>();
-      const reconstructed: ReconstructedCue[] = [];
-      const dropped: Array<{ assignment: Assignment; reason: string }> = [];
-
-      for (const a of parsed.cues) {
-        const slot = slotIndex.get(a.slotIndex);
-        if (!slot) {
-          dropped.push({ assignment: a, reason: 'unknown slotIndex' });
-          continue;
-        }
-        if (seenSlot.has(a.slotIndex)) {
-          dropped.push({ assignment: a, reason: 'duplicate slotIndex' });
-          continue;
-        }
-        const product = productIndex.get(a.productId);
-        if (!product) {
-          dropped.push({ assignment: a, reason: 'unknown productId' });
-          continue;
-        }
-        const emphasis = a.emphasis ?? slot.emphasis;
-        const timing = scheduleProductForCueSlot({
-          product,
-          emphasis,
-          targetTimeSeconds: slot.time,
-        });
-        if (!timing) {
-          dropped.push({
-            assignment: a,
-            reason: 'impact requires a launch before the show starts',
-          });
-          continue;
-        }
-        seenSlot.add(a.slotIndex);
-        reconstructed.push({
-          timeSeconds: timing.launchTimeSeconds,
-          impactTimeSeconds: timing.impactTimeSeconds,
-          liftTimeSeconds: timing.liftTimeSeconds,
-          tube: slot.tube,
-          productId: a.productId,
-          description: a.description ?? product.name,
-          slotIndex: slot.index,
-          intensity: slot.intensity,
-          emphasis,
-        });
-      }
-
-      // === Stage 4: tube-overlap dedupe with real product durations ========
-      reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
-      const acceptedWindows: CueWindow[] = [];
-      for (const cue of reconstructed) {
-        const product = productIndex.get(cue.productId);
-        const productDuration = product
-          ? (fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS)
-          : MIN_PRODUCT_DURATION_SECONDS;
-        const occupiedTubes = product ? occupiedLaunchPositions(product, cue.tube, maxTubes) : null;
-        if (!occupiedTubes) {
-          dropped.push({
-            assignment: {
-              slotIndex: cue.slotIndex,
-              productId: cue.productId,
-              description: cue.description,
-            },
-            reason: 'product uses a launch position outside the site',
-          });
-          continue;
-        }
-        const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
-          timeSeconds: cue.timeSeconds,
-          durationSeconds: productDuration,
-          launchPositionIndex,
-        }));
-        const conflict = windows.some((window) => findTubeOverlap(window, acceptedWindows));
-        if (conflict) {
-          dropped.push({
-            assignment: {
-              slotIndex: cue.slotIndex,
-              productId: cue.productId,
-              description: cue.description,
-            },
-            reason: 'tube overlap',
-          });
-          continue;
-        }
-        accepted.push(cue);
-        acceptedWindows.push(...windows);
-      }
-      acceptedCount = accepted.length;
-      droppedCount = dropped.length;
-      timings.parseValidateMs = elapsedMs(parseStart);
-
-      // A barely surviving response still looks broken. Require the requested
-      // fill target and defining musical peaks, bounded by catalogue capacity.
-      const targetFillRatio = sparseGeneration ? 0.5 : 0.75;
-      const targetMinimumCount = Math.ceil(slots.length * targetFillRatio);
-      const achievableCount = estimateAchievableCueCount({
+    /** Rescue path: deterministic local plan when the LLM cannot deliver. */
+    const runFastFallback = () => {
+      const planStart = performance.now();
+      const plan = planCuesFast({
+        brief: brief!,
+        analysis,
+        slots,
         products,
         songDuration,
-        maxTubes,
-        slotCount: slots.length,
       });
-      const minimumViableCount = Math.min(targetMinimumCount, achievableCount);
-      const acceptedSlotIndices = new Set(accepted.map((cue) => cue.slotIndex));
-      const missingProtectedSlots = slots.filter(
-        (slot) =>
-          (slot.nearClimax || slot.emphasis === 'peak') && !acceptedSlotIndices.has(slot.index),
-      );
-      if (accepted.length < minimumViableCount || missingProtectedSlots.length > 0) {
-        console.error(
-          '[cue-generation] LLM did not meet viable show requirements after validation, falling back to fast planner.',
-          {
-            acceptedCount: accepted.length,
-            minimumViableCount,
-            missingProtectedSlotCount: missingProtectedSlots.length,
-          },
-        );
+      accepted = plan.cues;
+      acceptedCount = accepted.length;
+      droppedCount = plan.skippedSlots;
+      timings.fastPlanMs = elapsedMs(planStart);
+    };
+
+    if (generationMode === 'beat') {
+      // === Stage 2: deterministic beat-precision planning ==================
+      // Every accepted direct shell bursts on its analysed beat. Unsafe or
+      // physically impossible hits are skipped instead of being shifted late.
+      const planStart = performance.now();
+      const plan = planCuesOnBeats({ analysis, products, songDuration, brief, maxTubes });
+      accepted = plan.cues;
+      acceptedCount = accepted.length;
+      droppedCount = plan.skippedSlots;
+      timings.fastPlanMs = elapsedMs(planStart);
+    } else if (generationMode === 'fast') {
+      // === Stage 2: fast local music-aware planning =========================
+      runFastFallback();
+    } else {
+      // === Stage 2: build prompt + call the LLM ============================
+      const promptStart = performance.now();
+      catalogue = projectCatalogue(products, generationSettings.productCatalogueFields);
+      const productIndex = new Map(products.map((product) => [product.id, product]));
+      const slotIndex = new Map(slots.map((s) => [s.index, s]));
+
+      const userPayload = {
+        userPrompt:
+          (brief.description ?? '').trim() ||
+          '(The user did not supply a prompt, design a tasteful default show that follows the song structure.)',
+        brief: {
+          title: brief.title,
+          moodTags: brief.mood_tags ?? [],
+          timeOfDay: brief.time_of_day,
+          location: brief.location,
+          requestedDurationSeconds: brief.duration_seconds,
+          budgetUsd: brief.budget_cents != null ? Math.round(brief.budget_cents / 100) : null,
+          showStyle: showStyle ? SHOW_STYLES[showStyle].name : null,
+          siteWidthFeet: brief.site_width_feet,
+          launchPositions: maxTubes,
+          fireworkTypes: parseFireworkTypes(brief.firework_types),
+        },
+        analysisSummary: buildAnalysisSummary(analysis, songDuration),
+        catalogue,
+        slots: projectSlotsForLLM(slots),
+        targets: {
+          slotCount: slots.length,
+          minFillRatio: sparseGeneration ? 0.5 : 0.75,
+          maxFillRatio: sparseGeneration ? 0.68 : 0.95,
+          chorusFillRatio: sparseGeneration ? 0.72 : 1,
+          songDurationSeconds: songDuration,
+        },
+      };
+
+      const promptConfig = await getActivePromptConfig('show_cue_generation');
+      const systemPrompt = buildSystemPrompt({
+        systemPromptText: promptConfig?.systemPromptText,
+        productContextText: promptConfig?.productContextText,
+        productCatalogueFields: generationSettings.productCatalogueFields,
+        showStyle,
+      });
+      const userContent = JSON.stringify(userPayload);
+      promptBytes = jsonByteLength(systemPrompt) + jsonByteLength(userContent);
+      timings.promptBuildMs = elapsedMs(promptStart);
+      let rawResponse: string | null = null;
+      const llmStart = performance.now();
+      try {
+        const client = getOpenRouterClient();
+        const completion = await client.chat.completions.create({
+          model,
+          temperature: 0.5,
+          max_tokens: 6000,
+          // `json_object` is the widely-supported structured-output mode on
+          // OpenRouter. `json_schema` is OpenAI-only.
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent },
+          ],
+        });
+        rawResponse = completion.choices[0]?.message?.content ?? '';
+        if (!rawResponse) throw new Error('LLM returned an empty response.');
+        rawResponseBytes = jsonByteLength(rawResponse);
+        timings.openRouterMs = elapsedMs(llmStart);
+      } catch (error) {
+        if (!timings.openRouterMs) timings.openRouterMs = elapsedMs(llmStart);
+        const providerDetail = extractProviderError(error);
+        const baseMessage = error instanceof Error ? error.message : String(error);
+        const message = providerDetail
+          ? `${baseMessage} - ${providerDetail} (model: ${model})`
+          : `${baseMessage} (model: ${model})`;
+        // The user must still get a show: rescue with the local fast planner
+        // instead of failing the whole run.
+        console.error('[cue-generation] LLM call failed, falling back to fast planner:', {
+          model,
+          error: message,
+        });
+        rawResponse = null;
+      }
+
+      // === Stage 3: parse + validate the LLM response ======================
+      let parsed: ReturnType<typeof GenerationResponseSchema.parse> | null = null;
+      const parseStart = performance.now();
+      if (rawResponse) {
+        try {
+          parsed = GenerationResponseSchema.parse(JSON.parse(stripJsonFence(rawResponse)));
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? `Could not parse LLM response: ${error.message}`
+              : 'Could not parse LLM response.';
+          console.error('[cue-generation] parse failed, falling back to fast planner:', message);
+          parsed = null;
+        }
+      }
+
+      if (!parsed) {
+        timings.parseValidateMs = elapsedMs(parseStart);
         runFastFallback();
+      } else {
+        // Drop unknown slots / unknown products / duplicate slot indices.
+        const seenSlot = new Set<number>();
+        const reconstructed: ReconstructedCue[] = [];
+        const dropped: Array<{ assignment: Assignment; reason: string }> = [];
+
+        for (const a of parsed.cues) {
+          const slot = slotIndex.get(a.slotIndex);
+          if (!slot) {
+            dropped.push({ assignment: a, reason: 'unknown slotIndex' });
+            continue;
+          }
+          if (seenSlot.has(a.slotIndex)) {
+            dropped.push({ assignment: a, reason: 'duplicate slotIndex' });
+            continue;
+          }
+          const product = productIndex.get(a.productId);
+          if (!product) {
+            dropped.push({ assignment: a, reason: 'unknown productId' });
+            continue;
+          }
+          const emphasis = a.emphasis ?? slot.emphasis;
+          const timing = scheduleProductForCueSlot({
+            product,
+            emphasis,
+            targetTimeSeconds: slot.time,
+          });
+          if (!timing) {
+            dropped.push({
+              assignment: a,
+              reason: 'impact requires a launch before the show starts',
+            });
+            continue;
+          }
+          seenSlot.add(a.slotIndex);
+          reconstructed.push({
+            timeSeconds: timing.launchTimeSeconds,
+            impactTimeSeconds: timing.impactTimeSeconds,
+            liftTimeSeconds: timing.liftTimeSeconds,
+            tube: slot.tube,
+            productId: a.productId,
+            description: a.description ?? product.name,
+            slotIndex: slot.index,
+            intensity: slot.intensity,
+            emphasis,
+          });
+        }
+
+        // === Stage 4: tube-overlap dedupe with real product durations ========
+        reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
+        const acceptedWindows: CueWindow[] = [];
+        for (const cue of reconstructed) {
+          const product = productIndex.get(cue.productId);
+          const productDuration = product
+            ? (fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS)
+            : MIN_PRODUCT_DURATION_SECONDS;
+          const occupiedTubes = product
+            ? occupiedLaunchPositions(product, cue.tube, maxTubes)
+            : null;
+          if (!occupiedTubes) {
+            dropped.push({
+              assignment: {
+                slotIndex: cue.slotIndex,
+                productId: cue.productId,
+                description: cue.description,
+              },
+              reason: 'product uses a launch position outside the site',
+            });
+            continue;
+          }
+          const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
+            timeSeconds: cue.timeSeconds,
+            durationSeconds: productDuration,
+            launchPositionIndex,
+          }));
+          const conflict = windows.some((window) => findTubeOverlap(window, acceptedWindows));
+          if (conflict) {
+            dropped.push({
+              assignment: {
+                slotIndex: cue.slotIndex,
+                productId: cue.productId,
+                description: cue.description,
+              },
+              reason: 'tube overlap',
+            });
+            continue;
+          }
+          accepted.push(cue);
+          acceptedWindows.push(...windows);
+        }
+        acceptedCount = accepted.length;
+        droppedCount = dropped.length;
+        timings.parseValidateMs = elapsedMs(parseStart);
+
+        // A barely surviving response still looks broken. Require the requested
+        // fill target and defining musical peaks, bounded by catalogue capacity.
+        const targetFillRatio = sparseGeneration ? 0.5 : 0.75;
+        const targetMinimumCount = Math.ceil(slots.length * targetFillRatio);
+        const achievableCount = estimateAchievableCueCount({
+          products,
+          songDuration,
+          maxTubes,
+          slotCount: slots.length,
+        });
+        const minimumViableCount = Math.min(targetMinimumCount, achievableCount);
+        const acceptedSlotIndices = new Set(accepted.map((cue) => cue.slotIndex));
+        const missingProtectedSlots = slots.filter(
+          (slot) =>
+            (slot.nearClimax || slot.emphasis === 'peak') && !acceptedSlotIndices.has(slot.index),
+        );
+        if (accepted.length < minimumViableCount || missingProtectedSlots.length > 0) {
+          console.error(
+            '[cue-generation] LLM did not meet viable show requirements after validation, falling back to fast planner.',
+            {
+              acceptedCount: accepted.length,
+              minimumViableCount,
+              missingProtectedSlotCount: missingProtectedSlots.length,
+            },
+          );
+          runFastFallback();
+        }
       }
     }
-  }
 
-  // Guarantee database-safe spacing for every path before the guarded write.
-  accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
-  acceptedCount = accepted.length;
+    // Guarantee database-safe spacing for every path before the guarded write.
+    accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+    acceptedCount = accepted.length;
 
-  if (accepted.length === 0) {
-    const message =
-      generationMode === 'beat'
-        ? 'Beat-sync planner returned no usable cues.'
-        : generationMode === 'fast'
-          ? 'Fast cue planner returned no usable cues.'
-          : 'Cue generation returned no usable cues, even after the fast-planner fallback.';
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
-    await refundGenerationCredits(message);
+    if (accepted.length === 0) {
+      const message =
+        generationMode === 'beat'
+          ? 'Beat-sync planner returned no usable cues.'
+          : generationMode === 'fast'
+            ? 'Fast cue planner returned no usable cues.'
+            : 'Cue generation returned no usable cues, even after the fast-planner fallback.';
+      logTimings('failed', { error: message });
+      return finishFailure(message);
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const message = `Cue planning failed: ${detail}`;
     logTimings('failed', { error: message });
-    return { ok: false, error: message };
+    return finishFailure(message, true);
   }
 
   // === Stage 5: transactionally replace show_timeline_items ================
@@ -670,27 +789,15 @@ export async function generateCuesForShow(params: {
   );
   if (replaceError) {
     const message = `Could not replace generated cues: ${replaceError.message}`;
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
     timings.dbWriteMs = elapsedMs(dbStart);
-    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
-    return { ok: false, error: message };
+    return finishFailure(message, isRetryableDatabaseError(replaceError));
   }
   if (replacedCount !== rows.length) {
     const message = `Cue replacement wrote ${replacedCount ?? 0} of ${rows.length} cues.`;
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
     timings.dbWriteMs = elapsedMs(dbStart);
-    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
-    return { ok: false, error: message };
+    return finishFailure(message, true);
   }
 
   // === Stage 6: refresh derived fields + mark complete ===================
@@ -702,28 +809,40 @@ export async function generateCuesForShow(params: {
   } catch (error) {
     const message = 'Could not finalise the generated show totals.';
     console.error('[cue-generation] derived-field sync failed:', error);
-    await markGenerationStatus(supabase, userId, showId, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
     timings.dbWriteMs = elapsedMs(dbStart);
-    await refundGenerationCredits(message);
     logTimings('failed', { error: message });
-    return { ok: false, error: message };
+    return finishFailure(message, true);
   }
 
-  await markGenerationStatus(supabase, userId, showId, {
-    generation_status: 'completed',
-    generation_error: null,
-    generated_cue_count: accepted.length,
-    generation_completed_at: new Date().toISOString(),
-  });
-  revalidatePath(`/shows/${brief.slug}`);
-  revalidatePath(`/shows/${brief.slug}/preview`);
+  const { data: completed, error: completionError } = await supabase.rpc(
+    'complete_cue_generation_attempt',
+    {
+      p_show_id: showId,
+      p_lease_token: claim.lease_token,
+      p_cue_count: accepted.length,
+      p_runtime_ms: elapsedMs(totalStart),
+    },
+  );
+  if (completionError) {
+    console.error('[cue-generation] completion persistence failed:', completionError);
+    return {
+      ok: false,
+      error: 'Could not persist cue generation completion. The lease will be reconciled.',
+    };
+  }
+  if (!completed) {
+    return classifyUnclaimedCueGeneration({ supabase, showId });
+  }
+  try {
+    revalidatePath(`/shows/${brief.slug}`);
+    revalidatePath(`/shows/${brief.slug}/preview`);
+  } catch (error) {
+    // Completion is already committed. A cache invalidation problem must not
+    // reclassify durable generation as failed.
+    console.error('[cue-generation] path revalidation failed:', error);
+  }
   timings.dbWriteMs = elapsedMs(dbStart);
-  await settleGenerationCredits();
   logTimings('completed');
 
-  return { ok: true, cueCount: accepted.length };
+  return { ok: true, cueCount: accepted.length, showId, userId };
 }

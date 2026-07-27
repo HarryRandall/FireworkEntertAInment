@@ -173,6 +173,10 @@ test('show and music generation reserve, settle, and refund credits', () => {
   const newShowPage = read('app/(app)/shows/new/page.tsx');
   const runner = read('lib/cue-generation/runner.server.ts');
   const musicRoute = read('app/api/music-analysis/route.ts');
+  const retryMigration = read('supabase/migrations/20260727090000_song_analysis_retry_leases.sql');
+  const lifecycleMigration = read(
+    'supabase/migrations/20260727103000_backend_lifecycle_operations.sql',
+  );
   const credits = read('lib/ai-credits.server.ts');
   assert.match(credits, /DEFAULT_INCLUDED_AI_CREDITS = 150/);
   assert.match(credits, /creditActionForGenerationMode/);
@@ -193,11 +197,18 @@ test('show and music generation reserve, settle, and refund credits', () => {
   assert.match(newShowPage, /selectedCueModelLabel/);
   assert.match(newShowPage, /generationPresentation\.fastCreditCost/);
   assert.match(newShowPage, /expectedGenerationMode/);
-  assert.match(runner, /settleAiCreditReservation/);
-  assert.match(runner, /refundAiCreditReservation/);
+  assert.match(runner, /complete_cue_generation_attempt/);
+  assert.match(runner, /fail_cue_generation_attempt/);
+  assert.match(lifecycleMigration, /private\.resolve_known_ai_credit/);
+  assert.match(lifecycleMigration, /'show-generation:' \|\| show_row\.id::text \|\| ':reserve'/);
+  assert.match(lifecycleMigration, /'settled'/);
+  assert.match(lifecycleMigration, /'refunded'/);
   assert.match(musicRoute, /musicAnalysisReservationKey/);
-  assert.match(musicRoute, /settleAiCreditReservation/);
   assert.match(musicRoute, /refundAiCreditReservation/);
+  assert.match(retryMigration, /private\.resolve_song_analysis_credit/);
+  assert.match(retryMigration, /'music-analysis:' \|\| analysis_row\.id::text \|\| ':reserve'/);
+  assert.match(retryMigration, /'settled'/);
+  assert.match(retryMigration, /'refunded'/);
 });
 
 test('show refinements reserve, settle, refund, and disclose credits', () => {

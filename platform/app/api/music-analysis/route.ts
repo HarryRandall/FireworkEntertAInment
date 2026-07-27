@@ -5,15 +5,15 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
-import { markGenerationStatus } from '@/lib/cue-generation/loaders.server';
 import {
   musicAnalysisReservationKey,
   refundAiCreditReservation,
   reserveAiCredits,
-  settleAiCreditReservation,
-  showGenerationReservationKey,
 } from '@/lib/ai-credits.server';
+import {
+  markLinkedShowGenerationFailed,
+  resumeCueGenerationForCompletedAnalysis,
+} from '@/lib/music-analysis-lifecycle.server';
 
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
@@ -101,100 +101,6 @@ async function getUploadedAudioMetadata(params: {
 
   if (!object || !Number.isFinite(sizeBytes) || !contentType) return null;
   return { contentType, sizeBytes };
-}
-
-async function listRunningShowsForAnalysis(params: {
-  supabase: AppSupabaseClient;
-  userId: string;
-  musicAnalysisId: string;
-}) {
-  const { data: shows, error } = await params.supabase
-    .from('shows')
-    .select('id, selected_cue_model, show_style')
-    .eq('user_id', params.userId)
-    .eq('music_analysis_id', params.musicAnalysisId)
-    .eq('generation_status', 'running')
-    .is('generation_completed_at', null);
-
-  if (error) {
-    console.error('[api/music-analysis] linked show lookup failed:', error);
-    return [];
-  }
-
-  return shows ?? [];
-}
-
-async function resumeCueGenerationForCompletedAnalysis(params: {
-  supabase: AppSupabaseClient;
-  userId: string;
-  musicAnalysisId: string;
-}) {
-  const shows = await listRunningShowsForAnalysis(params);
-  const showIds = shows.map((show) => show.id);
-  const { data: reservations, error: reservationsError } = showIds.length
-    ? await params.supabase
-        .from('ai_credit_transactions')
-        .select('reference_id, action_key, created_at')
-        .eq('user_id', params.userId)
-        .eq('reference_type', 'shows')
-        .eq('transaction_type', 'reserve')
-        .in('reference_id', showIds)
-        .order('created_at', { ascending: false })
-    : { data: [], error: null };
-  if (reservationsError) {
-    console.error('[api/music-analysis] generation reservation lookup failed:', reservationsError);
-  }
-  const actionByShowId = new Map<string, string>();
-  for (const reservation of reservations ?? []) {
-    if (reservation.reference_id && !actionByShowId.has(reservation.reference_id)) {
-      actionByShowId.set(reservation.reference_id, reservation.action_key);
-    }
-  }
-
-  for (const show of shows ?? []) {
-    const reservationAction = actionByShowId.get(show.id);
-    const result = await generateCuesForShow({
-      supabase: params.supabase,
-      userId: params.userId,
-      showId: show.id,
-      musicAnalysisId: params.musicAnalysisId,
-      selectedCueModel: show.selected_cue_model,
-      generationMode:
-        show.show_style === 'beat_test'
-          ? 'beat'
-          : reservationAction === 'show_generation_fast'
-            ? 'fast'
-            : show.selected_cue_model
-              ? 'llm'
-              : 'fast',
-    });
-    if (!result.ok) {
-      console.error('[api/music-analysis] resumed cue generation failed:', result.error);
-    }
-  }
-}
-
-async function markLinkedShowGenerationFailed(params: {
-  supabase: AppSupabaseClient;
-  userId: string;
-  musicAnalysisId: string;
-  error: string;
-}) {
-  const shows = await listRunningShowsForAnalysis(params);
-  const message = `Music analysis failed: ${params.error}`;
-
-  for (const show of shows) {
-    await markGenerationStatus(params.supabase, params.userId, show.id, {
-      generation_status: 'failed',
-      generation_error: message,
-      generation_completed_at: new Date().toISOString(),
-    });
-    await refundAiCreditReservation(params.supabase, {
-      userId: params.userId,
-      reservationKey: showGenerationReservationKey(show.id),
-      metadata: { reason: message },
-    });
-  }
 }
 
 export async function POST(request: Request) {
@@ -323,6 +229,7 @@ export async function POST(request: Request) {
       personality: 'balanced',
     });
     if (!result.ok) {
+      if (result.pending) return;
       if (result.cancelled) {
         await refundAiCreditReservation(supabase, {
           userId: user.id,
@@ -345,11 +252,6 @@ export async function POST(request: Request) {
       });
       return;
     }
-    await settleAiCreditReservation(supabase, {
-      userId: user.id,
-      reservationKey,
-      metadata: { runner: 'modal-librosa-2' },
-    });
     await resumeCueGenerationForCompletedAnalysis({
       supabase,
       userId: user.id,

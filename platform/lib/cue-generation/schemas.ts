@@ -31,8 +31,18 @@ export type Assignment = z.infer<typeof AssignmentSchema>;
 
 /** Discriminated result returned by {@link ../runner.server.generateCuesForShow}. */
 export type GenerateCuesResult =
-  | { ok: true; cueCount: number }
-  | { ok: true; pending: true; reason: 'music_analysis_running' }
+  | { ok: true; cueCount: number; showId?: string; userId?: string }
+  | {
+      ok: true;
+      pending: true;
+      reason:
+        | 'music_analysis_running'
+        | 'generation_already_claimed'
+        | 'cue_generation_retry_scheduled'
+        | 'no_generation_ready';
+      showId?: string;
+      userId?: string;
+    }
   | { ok: false; error: string };
 
 /** Subset of `shows` columns the cue generator needs. */
