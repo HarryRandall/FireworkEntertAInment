@@ -2502,6 +2502,17 @@ function coreLayerFallback(outer: FireworkStarLayer): FireworkStarLayer {
   const speedMid = (outer.burst.speed[0] + outer.burst.speed[1]) / 2;
   const speedHalfWidth = Math.max(0.2, Math.abs(outer.burst.speed[1] - outer.burst.speed[0]) / 2);
   const coreSpeedMid = Math.max(0.5, speedMid * 0.48);
+  // Scaling the outer layer's speed/life down for the derived core layer can push either
+  // bound past the schema's own floor (StarSpeedRangeSchema/StarLifeRangeSchema) when the
+  // outer values already sit near their minimum — clamp before StarLayerSchema.parse rejects it.
+  const coreSpeed: [number, number] = [
+    Math.max(0, round2(coreSpeedMid - speedHalfWidth * 0.55)),
+    Math.max(0, round2(coreSpeedMid + speedHalfWidth * 0.55)),
+  ];
+  const coreLife: [number, number] = [
+    Math.max(0.05, round2(outer.burst.life[0] * 0.62)),
+    Math.max(0.05, round2(outer.burst.life[1] * 0.82)),
+  ];
   return normaliseStarLayer(
     StarLayerSchema.parse({
       enabled: outer.enabled,
@@ -2509,11 +2520,8 @@ function coreLayerFallback(outer: FireworkStarLayer): FireworkStarLayer {
       color: outer.color,
       burst: {
         ...outer.burst,
-        speed: [
-          round2(coreSpeedMid - speedHalfWidth * 0.55),
-          round2(coreSpeedMid + speedHalfWidth * 0.55),
-        ],
-        life: [round2(outer.burst.life[0] * 0.62), round2(outer.burst.life[1] * 0.82)],
+        speed: coreSpeed,
+        life: coreLife,
       },
       head: {
         ...outer.head,
