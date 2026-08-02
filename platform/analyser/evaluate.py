@@ -172,20 +172,30 @@ def anchors_check(
     actual: list[float],
     expected: list[float],
     tolerance: float,
+    *,
+    candidates: list[float] | None = None,
 ) -> dict[str, Any]:
-    remaining = [float(value) for value in actual]
-    deltas: list[float | None] = []
+    actual_values = [
+        float(value) for value in (candidates if candidates is not None else actual)
+    ]
+    expected_values = [float(value) for value in expected]
+    deltas: list[float | None] = [None] * len(expected_values)
+    actual_index = 0
+    expected_index = 0
 
-    for expected_value in expected:
-        if not remaining:
-            deltas.append(None)
+    while actual_index < len(actual_values) and expected_index < len(expected_values):
+        actual_value = actual_values[actual_index]
+        expected_value = expected_values[expected_index]
+        if actual_value < expected_value - tolerance:
+            actual_index += 1
             continue
-        closest_index = min(
-            range(len(remaining)),
-            key=lambda index: abs(remaining[index] - expected_value),
-        )
-        closest = remaining.pop(closest_index)
-        deltas.append(round(abs(closest - expected_value), 3))
+        if actual_value > expected_value + tolerance:
+            expected_index += 1
+            continue
+
+        deltas[expected_index] = round(abs(actual_value - expected_value), 3)
+        actual_index += 1
+        expected_index += 1
 
     matched_anchors = sum(
         delta is not None and delta <= tolerance for delta in deltas
@@ -262,12 +272,14 @@ def compare_summary(
             actual["beat_samples"],
             expected["beat_samples"],
             tolerances["beat_anchor_seconds"],
+            candidates=actual.get("_beat_times"),
         ),
         anchors_check(
             "downbeat_samples",
             actual["downbeat_samples"],
             expected["downbeat_samples"],
             tolerances["downbeat_anchor_seconds"],
+            candidates=actual.get("_downbeat_times"),
         ),
         make_check(
             "beats_per_bar",
@@ -503,7 +515,14 @@ def evaluate_fixture(
         )
         summary = summarise_result(validated)
         fixture_report["summary"] = summary
-        fixture_report["checks"].extend(compare_summary(summary, fixture))
+        comparison_summary = {
+            **summary,
+            "_beat_times": validated["beat_times"],
+            "_downbeat_times": validated["downbeat_times"],
+        }
+        fixture_report["checks"].extend(
+            compare_summary(comparison_summary, fixture)
+        )
     except Exception as error:  # The report must survive one broken fixture.
         fixture_report["checks"].append(
             make_check(

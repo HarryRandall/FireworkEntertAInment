@@ -12,6 +12,7 @@ sys.path.insert(0, str(ANALYSER_DIR))
 try:
     from evaluate import (  # noqa: E402
         REPO_ROOT,
+        anchors_check,
         compare_summary,
         file_sha256,
     )
@@ -125,6 +126,30 @@ class EvaluationTests(unittest.TestCase):
             check for check in checks if check["name"] == "climax_times"
         )
         self.assertEqual(climax_check["status"], "fail")
+
+    def test_anchor_matching_preserves_timeline_order(self):
+        check = anchors_check(
+            "ordered_anchors",
+            [0.0, 4.0],
+            [3.0, 6.0],
+            3.0,
+        )
+
+        self.assertEqual(check["status"], "pass")
+        self.assertEqual(check["anchor_deltas_seconds"], [3.0, 2.0])
+
+    def test_beat_anchors_match_the_full_grid_when_sample_indexes_shift(self):
+        expected = [0.0, 2.0, 4.0, 6.0, 8.0]
+        check = anchors_check(
+            "beat_samples",
+            [0.0, 1.0, 3.0, 5.0, 8.0],
+            expected,
+            0.1,
+            candidates=[float(value) for value in range(9)],
+        )
+
+        self.assertEqual(check["status"], "pass")
+        self.assertEqual(check["actual"], [0.0, 1.0, 3.0, 5.0, 8.0])
 
     def test_invalid_timeline_order_fails(self):
         summary = make_summary()
