@@ -885,7 +885,6 @@ export function FireworkReplayCanvas({
   const [gearFocused, setGearFocused] = useState(false);
   const [menuPinned, setMenuPinned] = useState(false);
   const [menuHoverSuppressed, setMenuHoverSuppressed] = useState(false);
-  const menuVisibleRef = useRef(false);
   const menuVisibleBeforePressRef = useRef<boolean | null>(null);
   const gearClusterRef = useRef<HTMLDivElement | null>(null);
   const menuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -968,7 +967,6 @@ export function FireworkReplayCanvas({
   const menuVisible = menuPinned || (!menuHoverSuppressed && (menuHovered || gearFocused));
   const menuClusterVisible =
     controlsVisible || menuHovered || gearFocused || menuPinned || menuHoverSuppressed;
-  menuVisibleRef.current = menuVisible;
 
   function cancelMenuClose() {
     if (menuCloseTimer.current) {
@@ -997,7 +995,7 @@ export function FireworkReplayCanvas({
   }
 
   function handleCameraMenuToggle() {
-    const wasVisible = menuVisibleBeforePressRef.current ?? menuVisibleRef.current;
+    const wasVisible = menuVisibleBeforePressRef.current ?? menuVisible;
     menuVisibleBeforePressRef.current = null;
     if (wasVisible) {
       closeCameraMenu();
@@ -1917,7 +1915,7 @@ export function FireworkReplayCanvas({
             >
               <CanvasIconButton
                 onPointerDown={() => {
-                  menuVisibleBeforePressRef.current = menuVisibleRef.current;
+                  menuVisibleBeforePressRef.current = menuVisible;
                 }}
                 onClick={handleCameraMenuToggle}
                 label={menuVisible ? 'Hide camera controls' : 'Show camera controls'}
