@@ -25,8 +25,11 @@ Hidden background state is surfaced only when an error blocks generation.
 
 ## Deployment
 
-The analyser image installs `platform/analyser/requirements.txt` and runs with
-2 CPU cores, 4 GB memory, a 600-second timeout, and Modal memory snapshots.
+The analyser image installs the exact dependency versions in
+`platform/analyser/requirements.txt`; CI uses the reviewed Python 3.11.15
+runtime. Modal runs with 2 CPU cores, 4 GB memory, a 600-second timeout, and
+memory snapshots. Dependency or Python runtime changes require a reviewed
+real-audio baseline run before deployment.
 
 ```bash
 cd platform/analyser
@@ -109,10 +112,13 @@ ordered in-range beats, downbeats, sections, anchors, buildups, cues, and the
 finale window. Invalid output is terminal HTTP 422 analyser work, not a
 retryable transport failure.
 
-GitHub Actions runs the unit suite first and the real-audio regression second.
-The local `evaluation-report.json` is ignored by Git; CI uploads that complete
-JSON report even when the regression step fails. To preserve an existing local
-report, select another path:
+The main CI workflow runs the analyser unit suite. A separate workflow runs the
+real-audio regression when analyser or fixture files change, on a weekly
+schedule, and when manually dispatched. This keeps unrelated pull requests
+fast while still checking dependency and platform drift. The local
+`evaluation-report.json` is ignored by Git; CI uploads that complete JSON
+report for 14 days even when the regression step fails. To preserve an
+existing local report, select another path:
 
 ```bash
 python evaluate.py --report ../../.tmp_analyser/evaluation-report.json
