@@ -308,3 +308,13 @@ test('hosted analyser validates before persistence and maps failures to non-retr
   assert.match(runner, /throw new AnalyseError\(message, 422\)/);
   assert.doesNotMatch(runner, /JSON\.parse\(bodyText\) as AnalyserResult/);
 });
+
+test('hosted analyser bounds response bytes before parsing JSON', () => {
+  const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
+
+  assert.match(runner, /MAX_ANALYSER_RESPONSE_BYTES = 8 \* 1024 \* 1024/);
+  assert.match(runner, /readResponseTextWithLimit\(response, MAX_ANALYSER_RESPONSE_BYTES\)/);
+  assert.match(runner, /error instanceof ResponseBodyTooLargeError/);
+  assert.match(runner, /const status = response\.ok \? 422 : response\.status/);
+  assert.doesNotMatch(runner, /bodyText = await response\.text\(\)/);
+});

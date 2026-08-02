@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { AnalyserResult } from '@/lib/show-analysis.types';
 
 export const ANALYSER_SCHEMA_VERSION = '1.4.0';
 
@@ -325,45 +324,54 @@ const analyserResultSchema = z
       addIssue(['total_beats'], 'must equal the number of beat_times');
     }
 
-    validateOrderedTimes(analysis.beat_times, true, ['beat_times'], addIssue);
-    validateOrderedTimes(analysis.onset_times, false, ['onset_times'], addIssue);
-    validateOrderedTimes(analysis.downbeat_times, true, ['downbeat_times'], addIssue);
+    validateOrderedTimes(analysis.beat_times, (value) => value, true, ['beat_times'], addIssue);
+    validateOrderedTimes(analysis.onset_times, (value) => value, false, ['onset_times'], addIssue);
     validateOrderedTimes(
-      analysis.energy_timeline.map((point) => point.time),
+      analysis.downbeat_times,
+      (value) => value,
+      true,
+      ['downbeat_times'],
+      addIssue,
+    );
+    validateOrderedTimes(
+      analysis.energy_timeline,
+      (point) => point.time,
       true,
       ['energy_timeline'],
       addIssue,
     );
     validateOrderedTimes(
-      analysis.key_moments.map((moment) => moment.time),
+      analysis.key_moments,
+      (moment) => moment.time,
       false,
       ['key_moments'],
       addIssue,
     );
     validateOrderedTimes(
-      analysis.buildups.map((buildup) => buildup.peak),
+      analysis.buildups,
+      (buildup) => buildup.peak,
       false,
       ['buildups'],
       addIssue,
     );
     validateOrderedTimes(
-      analysis.firework_cues.map((cue) => cue.time),
+      analysis.firework_cues,
+      (cue) => cue.time,
       false,
       ['firework_cues'],
       addIssue,
     );
 
-    const timedValues = [
-      ...analysis.beat_times,
-      ...analysis.onset_times,
-      ...analysis.downbeat_times,
-      ...analysis.energy_timeline.map((point) => point.time),
-      ...analysis.sections.map((section) => section.end),
-      ...analysis.key_moments.map((moment) => moment.time),
-      ...analysis.buildups.map((buildup) => buildup.peak),
-      ...analysis.firework_cues.map((cue) => cue.end ?? cue.time),
-    ];
-    if (timedValues.some((value) => value > maximumTime)) {
+    if (
+      someTimeExceeds(analysis.beat_times, (value) => value, maximumTime) ||
+      someTimeExceeds(analysis.onset_times, (value) => value, maximumTime) ||
+      someTimeExceeds(analysis.downbeat_times, (value) => value, maximumTime) ||
+      someTimeExceeds(analysis.energy_timeline, (point) => point.time, maximumTime) ||
+      someTimeExceeds(analysis.sections, (section) => section.end, maximumTime) ||
+      someTimeExceeds(analysis.key_moments, (moment) => moment.time, maximumTime) ||
+      someTimeExceeds(analysis.buildups, (buildup) => buildup.peak, maximumTime) ||
+      someTimeExceeds(analysis.firework_cues, (cue) => cue.end ?? cue.time, maximumTime)
+    ) {
       addIssue([], 'timed analysis fields must not exceed song duration');
     }
 
@@ -410,14 +418,17 @@ const analyserResultSchema = z
 
 type AddIssue = (path: PropertyKey[], message: string) => void;
 
-function validateOrderedTimes(
-  values: number[],
+function validateOrderedTimes<T>(
+  values: T[],
+  getTime: (value: T) => number,
   strict: boolean,
   path: PropertyKey[],
   addIssue: AddIssue,
 ) {
   for (let index = 1; index < values.length; index += 1) {
-    const invalid = strict ? values[index] <= values[index - 1] : values[index] < values[index - 1];
+    const current = getTime(values[index]);
+    const previous = getTime(values[index - 1]);
+    const invalid = strict ? current <= previous : current < previous;
     if (invalid) {
       addIssue(
         [...path, index],
@@ -426,6 +437,13 @@ function validateOrderedTimes(
       return;
     }
   }
+}
+
+function someTimeExceeds<T>(values: T[], getTime: (value: T) => number, maximumTime: number) {
+  for (const value of values) {
+    if (getTime(value) > maximumTime) return true;
+  }
+  return false;
 }
 
 function everyTimeMatchesGrid(values: number[], grid: number[], tolerance: number) {
@@ -448,7 +466,9 @@ export class AnalyserOutputValidationError extends Error {
   }
 }
 
-export function parseAnalyserResult(value: unknown): AnalyserResult {
+export type AnalyserV14Result = z.infer<typeof analyserResultSchema>;
+
+export function parseAnalyserResult(value: unknown): AnalyserV14Result {
   const parsed = analyserResultSchema.safeParse(value);
   if (!parsed.success) {
     const details = parsed.error.issues
@@ -462,7 +482,7 @@ export function parseAnalyserResult(value: unknown): AnalyserResult {
   return parsed.data;
 }
 
-export function parseAnalyserResponse(bodyText: string): AnalyserResult {
+export function parseAnalyserResponse(bodyText: string): AnalyserV14Result {
   let value: unknown;
   try {
     value = JSON.parse(bodyText);
