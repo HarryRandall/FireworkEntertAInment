@@ -14,7 +14,11 @@ export function CatalogueToolbarSkeleton() {
   return (
     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
       <Skeleton className="h-10 w-full rounded-md" />
-      <Skeleton className="h-10 w-36 justify-self-center rounded-md sm:justify-self-end" />
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+        <Skeleton className="h-10 w-36 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
     </div>
   );
 }
