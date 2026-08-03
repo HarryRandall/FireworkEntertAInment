@@ -14,7 +14,12 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from '@/app/components/ui/DataTable';
-import { formatDuration } from '@/lib/show-domain';
+import {
+  formatDuration,
+  formatManufacturerLabel,
+  MANUFACTURER_FILTER_NONE,
+  matchesManufacturerFilter,
+} from '@/lib/show-domain';
 import { listCatalogueProducts } from '@/lib/admin.server';
 import { ProductRowActions } from './ProductRowActions';
 
@@ -88,6 +93,9 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
   )
     .sort()
     .map((v) => ({ value: v, label: v }));
+  if (products.some((p) => p.manufacturer == null)) {
+    manufacturerOptions.push({ value: MANUFACTURER_FILTER_NONE, label: 'Digitally created' });
+  }
 
   const kindOptions = Array.from(new Set(products.map((p) => p.kind).filter(Boolean)))
     .sort()
@@ -99,7 +107,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
       .join(' ')
       .toLowerCase();
     const matchesQuery = !query || text.includes(query);
-    const matchesManufacturer = !manufacturerFilter || p.manufacturer === manufacturerFilter;
+    const matchesManufacturer = matchesManufacturerFilter(p.manufacturer, manufacturerFilter ?? '');
     const matchesKind = !kindFilter || p.kind === kindFilter;
     const d = p.durationSeconds;
     const matchesMin = minDuration == null || (d != null && d >= minDuration);
@@ -189,7 +197,7 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                   </Badge>
                 </td>
                 <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
-                  {product.manufacturer || '—'}
+                  {formatManufacturerLabel(product.manufacturer)}
                 </td>
                 <td
                   className={tableCellClasses(

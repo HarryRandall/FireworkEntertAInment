@@ -249,7 +249,7 @@ export const listFireworkProducts = cache(
       const { data, error } = await supabase
         .from('catalogue_items')
         .select(
-          `id, name, part_number, description, duration_seconds, catalogue_item_kind,
+          `id, name, part_number, manufacturer, description, duration_seconds, catalogue_item_kind,
        supplier_inventory_items (price_cents, available),
        fireworks (${fireworkSelect}),
        multishots (
@@ -275,6 +275,7 @@ export const listFireworkProducts = cache(
         id: string;
         name: string;
         part_number: string;
+        manufacturer: string | null;
         description: string | null;
         duration_seconds: number | null;
         catalogue_item_kind: string;
@@ -347,6 +348,7 @@ export const listFireworkProducts = cache(
           id: row.id,
           slug: row.part_number,
           name: row.name,
+          manufacturer: row.manufacturer,
           description: row.description ?? base.description,
           minPriceCents: cheapestAvailablePriceCents(row.supplier_inventory_items),
           durationSeconds: row.duration_seconds ?? base.durationSeconds,
