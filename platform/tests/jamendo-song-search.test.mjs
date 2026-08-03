@@ -19,7 +19,7 @@ const replay = read('app/components/app/FireworkReplayViewer.tsx');
 const songContext = read('app/components/app/AudioAnalysisTimeline.tsx');
 const audioReader = read('lib/shows/audio.server.ts');
 const migration = read(
-  'supabase/migrations/20260727121754_add_song_analysis_source_attribution.sql',
+  'supabase/migrations/20260727033941_add_song_analysis_source_attribution.sql',
 );
 const restrictionMigration = read(
   'supabase/migrations/20260727150001_restrict_jamendo_soundtrack_licences.sql',

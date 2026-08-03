@@ -23,7 +23,7 @@ AUTH_MESSAGE_VERSION = "showcrafter.import-render.v1"
 SIGNING_KEY_CONTEXT = b"showcrafter.import-render.signing-key.v1"
 RESULT_SCHEMA_VERSION = "showcrafter.import-render-result.v1"
 METRICS_SCHEMA_VERSION = "showcrafter.engine-render-metrics.v2"
-RENDERER_VERSION = "showcrafter.fireworks-engine.import-renderer.v1+sha256.087d491030064d3e194ba5e0d72d65a3b47356e49ee6a2e05479103ccce32441"
+RENDERER_VERSION = "showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f"
 MAX_CAPABILITY_SECONDS = 300
 MAX_METRIC_FRAMES = 180
 MAX_REVIEW_FRAMES = 48
@@ -422,11 +422,15 @@ def compact_engine_result(
     result: dict[str, Any],
     reconstruction: dict[str, Any],
 ) -> dict[str, Any]:
+    if result.get("schemaVersion") != RESULT_SCHEMA_VERSION:
+        raise RuntimeError("Engine harness returned an invalid result schema")
+    if result.get("rendererVersion") != RENDERER_VERSION:
+        raise RuntimeError(
+            "Engine harness renderer contract does not match the worker contract"
+        )
     metrics = result.get("metrics")
     if (
-        result.get("schemaVersion") != RESULT_SCHEMA_VERSION
-        or result.get("rendererVersion") != RENDERER_VERSION
-        or not isinstance(metrics, dict)
+        not isinstance(metrics, dict)
         or metrics.get("schemaVersion") != METRICS_SCHEMA_VERSION
         or not isinstance(metrics.get("priorityIssues"), list)
         or not isinstance(metrics.get("overallScore"), (int, float))
