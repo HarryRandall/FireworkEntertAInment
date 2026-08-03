@@ -84,3 +84,42 @@ jobs:
 
       - name: Run analyser unit tests
         run: python -m unittest discover -s tests -p "*test*.py"
+
+  analyser-contract:
+    name: Python to Zod to planner contract
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: platform
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+
+      - name: Install platform dependencies
+        run: npm ci
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.15"
+          cache: pip
+          cache-dependency-path: platform/analyser/requirements.txt
+
+      - name: Install analyser dependencies
+        run: python -m pip install -r analyser/requirements.txt
+
+      - name: Run Python to Zod to planner contract
+        env:
+          SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT: "1"
+        run: >-
+          python -m unittest
+          analyser.tests.test_schema_validation.SchemaValidationTests.test_actual_python_json_passes_zod_and_builds_cue_slots

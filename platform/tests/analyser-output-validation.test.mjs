@@ -6,9 +6,13 @@ import {
   AnalyserOutputValidationError,
   parseAnalyserResponse,
   parseAnalyserResult,
+  parseStoredAnalyserResult,
 } from '../lib/show-analysis-validation.ts';
 
 const root = process.cwd();
+const sharedSchemaMutations = JSON.parse(
+  readFileSync(join(root, 'analyser/tests/fixtures/schema-mutations.json'), 'utf8'),
+);
 
 const styleVector = {
   boldness: 0.6,
@@ -151,6 +155,50 @@ test('runtime boundary accepts and preserves a valid schema 1.4.0 payload', () =
   assert.deepEqual(parsed, payload);
   assert.deepEqual(parsed.downbeat_times, [0, 2]);
   assert.equal(parsed.derived?.finale_window?.start, 8);
+});
+
+test('runtime boundary accepts beatless analysis with an explicit zero tempo', () => {
+  const payload = makeValidAnalysis();
+  payload.tempo_bpm = 0;
+  payload.total_beats = 0;
+  payload.beat_times = [];
+  payload.downbeat_times = [];
+
+  assert.equal(parseAnalyserResult(payload).tempo_bpm, 0);
+});
+
+test('shared Python and TypeScript mutation fixtures fail the live schema', () => {
+  for (const mutation of sharedSchemaMutations) {
+    const payload = makeValidAnalysis();
+    let target = payload;
+    for (const segment of mutation.path.slice(0, -1)) {
+      target = target[segment];
+    }
+    target[mutation.path.at(-1)] = mutation.value;
+    assert.throws(() => parseAnalyserResult(payload), AnalyserOutputValidationError, mutation.name);
+  }
+});
+
+test('stored schema 1.3.0 analysis is safely upgraded with bar-grid defaults', () => {
+  const payload = makeValidAnalysis();
+  payload.schema_version = '1.3.0';
+  delete payload.downbeat_times;
+  delete payload.beats_per_bar;
+  delete payload.derived;
+
+  const parsed = parseStoredAnalyserResult(payload);
+
+  assert.equal(parsed.schema_version, '1.4.0');
+  assert.deepEqual(parsed.downbeat_times, []);
+  assert.equal(parsed.beats_per_bar, 4);
+  assert.deepEqual(parsed.derived.section_rank_by_energy, [0]);
+});
+
+test('stored future analyser schema remains fail-closed', () => {
+  const payload = makeValidAnalysis();
+  payload.schema_version = '1.5.0';
+
+  assert.throws(() => parseStoredAnalyserResult(payload), AnalyserOutputValidationError);
 });
 
 const invalidSamples = [
@@ -317,4 +365,19 @@ test('hosted analyser bounds response bytes before parsing JSON', () => {
   assert.match(runner, /error instanceof ResponseBodyTooLargeError/);
   assert.match(runner, /const status = response\.ok \? 422 : response\.status/);
   assert.doesNotMatch(runner, /bodyText = await response\.text\(\)/);
+});
+
+test('hosted analyser request expires before its database lease', () => {
+  const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
+
+  assert.match(runner, /ANALYSER_REQUEST_TIMEOUT_MS = 11 \* 60 \* 1000/);
+  assert.match(runner, /signal: AbortSignal\.timeout\(ANALYSER_REQUEST_TIMEOUT_MS\)/);
+});
+
+test('cue generation revalidates stored analyser JSON before use', () => {
+  const loader = readFileSync(join(root, 'lib/cue-generation/loaders.server.ts'), 'utf8');
+
+  assert.match(loader, /parseStoredAnalyserResult\(data\.analysis_json\)/);
+  assert.match(loader, /status: 'invalid'/);
+  assert.doesNotMatch(loader, /data\.analysis_json as unknown as AnalyserResult/);
 });

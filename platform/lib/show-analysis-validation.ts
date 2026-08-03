@@ -298,7 +298,8 @@ const analyserResultSchema = z
     file: nonEmptyString,
     analysis_meta: analysisMetaSchema,
     duration_seconds: positiveNumber,
-    tempo_bpm: positiveNumber,
+    // Beatless or non-rhythmic audio has no defensible tempo estimate.
+    tempo_bpm: nonNegativeNumber,
     total_beats: nonNegativeInteger,
     beat_times: z.array(nonNegativeNumber).max(200_000),
     onset_times: z.array(nonNegativeNumber).max(200_000),
@@ -480,6 +481,52 @@ export function parseAnalyserResult(value: unknown): AnalyserV14Result {
     );
   }
   return parsed.data;
+}
+
+export function parseStoredAnalyserResult(value: unknown): AnalyserV14Result {
+  if (
+    typeof value !== 'object' ||
+    value == null ||
+    !('schema_version' in value) ||
+    value.schema_version !== '1.3.0'
+  ) {
+    return parseAnalyserResult(value);
+  }
+
+  const legacy = value as Record<string, unknown>;
+  const legacySections = Array.isArray(legacy.sections) ? legacy.sections : [];
+  const sectionEnergy = legacySections.map((section, index) => {
+    const candidate =
+      typeof section === 'object' && section != null && 'avg_energy' in section
+        ? section.avg_energy
+        : Number.NaN;
+    return { index, energy: typeof candidate === 'number' ? candidate : Number.NaN };
+  });
+  const rankedSections = [...sectionEnergy]
+    .sort((left, right) => right.energy - left.energy)
+    .map(({ index }) => index);
+  const quietest = [...sectionEnergy].sort((left, right) => left.energy - right.energy)[0];
+
+  return parseAnalyserResult({
+    ...legacy,
+    schema_version: ANALYSER_SCHEMA_VERSION,
+    downbeat_times: [],
+    beats_per_bar: 4,
+    derived: {
+      finale_window: null,
+      quietest_section_index: quietest?.index ?? null,
+      highest_energy_section_index: rankedSections[0] ?? null,
+      repeated_chorus_count: legacySections.filter(
+        (section) =>
+          typeof section === 'object' &&
+          section != null &&
+          'label' in section &&
+          section.label === 'chorus',
+      ).length,
+      section_rank_by_energy: rankedSections,
+      anchor_windows: [],
+    },
+  });
 }
 
 export function parseAnalyserResponse(bodyText: string): AnalyserV14Result {

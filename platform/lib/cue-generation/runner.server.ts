@@ -418,6 +418,10 @@ export async function generateCuesForShow(params: {
     if (musicAnalysisId) {
       if (analysisResult.status === 'completed') {
         analysis = analysisResult.analysis;
+      } else if (analysisResult.status === 'invalid') {
+        throw new Error(
+          `Stored music analysis is invalid. Please upload the song again: ${analysisResult.errorMessage}`,
+        );
       } else if (analysisResult.status === 'failed') {
         const detail = analysisResult.errorMessage ? `: ${analysisResult.errorMessage}` : '.';
         throw new Error(`Music analysis failed${detail}`);

@@ -17,6 +17,7 @@ import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
+import { isRetryableAnalyserStatus } from '@/lib/analyser-http-status';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 import { readResponseTextWithLimit, ResponseBodyTooLargeError } from '@/lib/bounded-response';
 import {
@@ -32,6 +33,7 @@ const ANALYSIS_LEASE_SECONDS = 900;
 const MAX_ANALYSIS_ATTEMPTS = 3;
 const RETRY_DELAYS_SECONDS = [30, 120] as const;
 const MAX_ANALYSER_RESPONSE_BYTES = 8 * 1024 * 1024;
+const ANALYSER_REQUEST_TIMEOUT_MS = 11 * 60 * 1000;
 
 type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -226,6 +228,7 @@ async function runHostedAnalyser(params: {
         audio_url: signed.signedUrl,
         personality: params.personality,
       }),
+      signal: AbortSignal.timeout(ANALYSER_REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -238,12 +241,7 @@ async function runHostedAnalyser(params: {
   } catch (error) {
     if (error instanceof ResponseBodyTooLargeError) {
       const status = response.ok ? 422 : response.status;
-      const retryable =
-        !response.ok &&
-        (response.status === 408 ||
-          response.status === 425 ||
-          response.status === 429 ||
-          response.status >= 500);
+      const retryable = !response.ok && isRetryableAnalyserStatus(response.status);
       throw new AnalyseError(
         `Song analyser response exceeded ${MAX_ANALYSER_RESPONSE_BYTES} bytes.`,
         status,
@@ -254,11 +252,7 @@ async function runHostedAnalyser(params: {
     throw new AnalyseError(`Could not read the song analyser response: ${message}`, 502, true);
   }
   if (!response.ok) {
-    const retryable =
-      response.status === 408 ||
-      response.status === 425 ||
-      response.status === 429 ||
-      response.status >= 500;
+    const retryable = isRetryableAnalyserStatus(response.status);
     throw new AnalyseError(
       truncate(bodyText || `Analyser returned HTTP ${response.status}.`),
       response.status,
