@@ -1,3 +1,4 @@
+import http.client
 import sys
 import tempfile
 import unittest
@@ -17,12 +18,13 @@ from audio_download import (  # noqa: E402
 
 
 class FakeResponse:
-    def __init__(self, chunks, *, content_length=None, on_read=None):
+    def __init__(self, chunks, *, content_length=None, on_read=None, read_error=None):
         self.chunks = list(chunks)
         self.headers = {}
         if content_length is not None:
             self.headers["Content-Length"] = str(content_length)
         self.on_read = on_read
+        self.read_error = read_error
 
     def __enter__(self):
         return self
@@ -36,6 +38,10 @@ class FakeResponse:
     def read(self, _size):
         if self.on_read is not None:
             self.on_read()
+        if self.read_error is not None:
+            error = self.read_error
+            self.read_error = None
+            raise error
         return self.chunks.pop(0) if self.chunks else b""
 
 
@@ -100,6 +106,43 @@ class AudioDownloadTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 502)
         self.assertTrue(raised.exception.retryable)
         self.assertEqual(raised.exception.error_code, "audio_response_truncated")
+
+    def test_chunked_incomplete_read_is_classified_as_truncated(self):
+        response = FakeResponse(
+            [],
+            read_error=http.client.IncompleteRead(partial=b"abc", expected=6),
+        )
+        opener = FakeOpener(response)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "audio"
+            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+                with self.assertRaises(AudioDownloadError) as raised:
+                    download_audio(
+                        "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",
+                        path,
+                    )
+
+        self.assertEqual(raised.exception.status_code, 502)
+        self.assertTrue(raised.exception.retryable)
+        self.assertEqual(raised.exception.error_code, "audio_response_truncated")
+
+    def test_http_protocol_errors_are_classified_as_retryable_download_failures(self):
+        response = FakeResponse([], read_error=http.client.BadStatusLine("invalid status"))
+        opener = FakeOpener(response)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "audio"
+            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+                with self.assertRaises(AudioDownloadError) as raised:
+                    download_audio(
+                        "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",
+                        path,
+                    )
+
+        self.assertEqual(raised.exception.status_code, 502)
+        self.assertTrue(raised.exception.retryable)
+        self.assertEqual(raised.exception.error_code, "audio_download_failed")
 
     def test_http_error_retry_classification_is_explicit(self):
         cases = (

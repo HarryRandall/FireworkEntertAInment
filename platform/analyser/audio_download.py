@@ -1,5 +1,6 @@
 """Bounded, SSRF-resistant audio download helpers for the Modal analyser."""
 
+import http.client
 import os
 import time
 import urllib.error
@@ -201,6 +202,20 @@ def download_audio(
         ) from exc
     except urllib.error.HTTPError as exc:
         raise classify_http_error(exc) from exc
+    except http.client.IncompleteRead as exc:
+        raise AudioDownloadError(
+            "audio response was truncated",
+            status_code=502,
+            error_code="audio_response_truncated",
+            retryable=True,
+        ) from exc
+    except http.client.HTTPException as exc:
+        raise AudioDownloadError(
+            "audio download failed",
+            status_code=502,
+            error_code="audio_download_failed",
+            retryable=True,
+        ) from exc
     except (urllib.error.URLError, ConnectionError, OSError) as exc:
         raise AudioDownloadError(
             "audio download failed",
