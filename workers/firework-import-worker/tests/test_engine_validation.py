@@ -547,6 +547,18 @@ class EngineValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "active firework frames"):
             compact_engine_result(result, reconstruction)
 
+    def test_metrics_contract_reports_renderer_contract_drift(self):
+        reconstruction = provisional_renderer_durations(
+            make_geometry_reconstruction("sphere", "peony", "none")
+        )
+        result = engine_result(reconstruction)
+        result["rendererVersion"] = (
+            "showcrafter.fireworks-engine.import-renderer.v1+sha256." + "0" * 64
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "renderer contract does not match"):
+            compact_engine_result(result, reconstruction)
+
     def test_candidate_row_keeps_exact_engine_evidence_and_review_path(self):
         candidate = make_spec()
         reconstruction = provisional_renderer_durations(

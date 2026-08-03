@@ -168,8 +168,18 @@ curl -X POST "$FIREWORK_IMPORT_URL" \
 
 The response contains a `callId`. Poll the `api` base URL at
 `GET /calls/{callId}` with the same authorisation header. A queued run can be
-claimed by direct Modal dispatch, the one-minute Modal queue sweeper, or the
-local poller, but the SQL lease permits only one executor.
+claimed by direct Modal dispatch, an explicitly invoked Modal queue sweep, or
+the local poller, but the SQL lease permits only one executor. Modal does not
+poll automatically: the reconstruction container starts when the platform
+dispatches a run and scales down when the work finishes.
+
+If an operator needs to recover a queued run after direct dispatch was
+interrupted, invoke `sweep_queued_runs` explicitly from the Modal dashboard or
+run:
+
+```bash
+modal run workers/firework-import-worker/modal_app.py::sweep_queued_runs
+```
 
 Deploy only after the secret and ephemeral endpoint have been verified:
 

@@ -51,7 +51,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 'showcrafter.import-render-result.v1',
     'harnessVersion', 'showcrafter.import-render-harness.v1',
-    'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.087d491030064d3e194ba5e0d72d65a3b47356e49ee6a2e05479103ccce32441',
+    'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f',
     'source', jsonb_build_object('durationSeconds', p_required_duration, 'width', 960, 'height', 540),
     'rendererDurations', (
       select jsonb_agg(
@@ -74,7 +74,7 @@ as $$
       'schemaVersion', 'showcrafter.engine-render-metrics.v2',
       'engine', jsonb_build_object(
         'renderer', 'FireworksEngine',
-        'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.087d491030064d3e194ba5e0d72d65a3b47356e49ee6a2e05479103ccce32441',
+        'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f',
         'camera', 'FireworkReplayCanvas.default',
         'frameCount', 32,
         'frameWidth', 960,
@@ -1431,7 +1431,7 @@ begin
     or (select renderer_contract_version
         from public.import_candidate_render_validations
         where candidate_id = (select candidate_id from cross_selected_candidate))
-      <> 'showcrafter.fireworks-engine.import-renderer.v1+sha256.087d491030064d3e194ba5e0d72d65a3b47356e49ee6a2e05479103ccce32441'
+      <> 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f'
     or (select balance from public.ai_credit_accounts
         where user_id = '10000000-0000-0000-0000-000000000002') <> 145
     or (select reserved from public.ai_credit_accounts

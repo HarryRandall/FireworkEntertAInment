@@ -73,6 +73,16 @@ test('container worker performs deterministic media analysis and multi-pass mode
   assert.doesNotMatch(worker, /gemini/i);
 });
 
+test('Modal firework reconstruction starts on demand without scheduled polling', () => {
+  const modalApp = readFileSync(
+    join(repoRoot, 'workers/firework-import-worker/modal_app.py'),
+    'utf8',
+  );
+  assert.match(modalApp, /reconstruct_run\.spawn\.aio/);
+  assert.match(modalApp, /def sweep_queued_runs/);
+  assert.doesNotMatch(modalApp, /schedule\s*=\s*modal\./);
+});
+
 test('generated import specs preserve native renderer designs and shot observations', () => {
   const imports = readFileSync(join(root, 'lib/import-jobs.ts'), 'utf8');
   const nativeContract = readFileSync(join(root, 'lib/import-reconstruction.ts'), 'utf8');

@@ -110,12 +110,9 @@ def reconstruct_next_run():
     )
 
 
-@app.function(
-    schedule=modal.Period(minutes=1),
-    timeout=120,
-)
+@app.function(timeout=120)
 def sweep_queued_runs():
-    """Submit one lease-aware queue claim every minute as dispatch resilience."""
+    """Submit one lease-aware queue claim for explicit operational recovery."""
 
     call = reconstruct_next_run.spawn()
     return {"callId": call.object_id, "status": "submitted"}
