@@ -167,6 +167,12 @@ test('Jamendo attribution is constrained, stored, and shown in song context', ()
   assert.match(restrictionMigration, /source_provider = 'jamendo'/);
   assert.match(restrictionMigration, /\^\(CC BY\|CC0\)/);
   assert.doesNotMatch(restrictionMigration, /BY-NC|BY-ND|BY-SA/);
+  assert.match(
+    restrictionMigration,
+    /before insert or update of[\s\S]*source_licence_name[\s\S]*source_licence_url/,
+  );
+  assert.match(restrictionMigration, /errcode = '23514'/);
+  assert.doesNotMatch(restrictionMigration, /drop constraint/);
   assert.match(audioReader, /getSoundtrackAttribution/);
   assert.doesNotMatch(replay, /soundtrackAttribution/);
   assert.doesNotMatch(replay, /Soundtrack:\{' '\}/);
