@@ -26,6 +26,7 @@ export function clampMultishotTimeSeconds(value: number): number {
   return Math.max(0, Math.min(MULTISHOT_MAX_DURATION_SECONDS, value));
 }
 
-export function clampMultishotTrackIndex(value: number): number {
+export function clampMultishotTrackIndex(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(MULTISHOT_MAX_TRACK_COUNT - 1, Math.floor(value)));
 }

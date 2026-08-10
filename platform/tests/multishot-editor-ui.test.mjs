@@ -159,6 +159,7 @@ test('multishot timeline keeps clips on explicit expandable tracks', () => {
   const clip = editor.slice(editor.indexOf('function ShotClip('));
 
   assert.match(editor, /const MIN_TIMELINE_TRACK_COUNT = 4;/);
+  assert.match(editor, /clampMultishotTrackIndex\(shot\.timelineTrackIndex\)/);
   assert.match(editor, /timelineTrackIndex: clampMultishotTrackIndex/);
   assert.match(editor, /shot\.timelineTrackIndex/);
   assert.doesNotMatch(editor, /function assignTimelineRows/);

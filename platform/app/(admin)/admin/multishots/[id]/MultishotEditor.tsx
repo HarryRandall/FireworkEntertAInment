@@ -220,8 +220,12 @@ function nextShotSequenceIndex(shots: LocalShot[]): number {
 
 function timelineTrackCount(shots: Array<Pick<LocalShot, 'timelineTrackIndex'>>): number {
   let highestTrackIndex = -1;
-  for (const shot of shots)
-    highestTrackIndex = Math.max(highestTrackIndex, shot.timelineTrackIndex);
+  for (const shot of shots) {
+    highestTrackIndex = Math.max(
+      highestTrackIndex,
+      clampMultishotTrackIndex(shot.timelineTrackIndex),
+    );
+  }
   return Math.max(MIN_TIMELINE_TRACK_COUNT, highestTrackIndex + 1);
 }
 

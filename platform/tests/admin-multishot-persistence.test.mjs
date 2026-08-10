@@ -36,6 +36,8 @@ test('multishot aim and timing helpers enforce the action bounds', () => {
   assert.equal(clampMultishotTimeSeconds(-0.1), 0);
   assert.equal(clampMultishotTimeSeconds(3600.1), 3600);
   assert.equal(clampMultishotTrackIndex(-1), 0);
+  assert.equal(clampMultishotTrackIndex(undefined), 0);
+  assert.equal(clampMultishotTrackIndex(Number.NaN), 0);
   assert.equal(clampMultishotTrackIndex(4.9), 4);
   assert.equal(clampMultishotTrackIndex(2000), 1999);
 });
