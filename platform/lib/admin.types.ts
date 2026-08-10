@@ -325,6 +325,7 @@ export type AdminMultishotFireworkOption = {
 export type AdminMultishotShot = {
   id: string;
   sequenceIndex: number;
+  timelineTrackIndex: number;
   timeOffsetSeconds: number;
   panDegrees: number;
   tiltDegrees: number;

@@ -6,10 +6,12 @@ import {
   clampMultishotPanDegrees,
   clampMultishotTimeSeconds,
   clampMultishotTiltDegrees,
+  clampMultishotTrackIndex,
   MULTISHOT_CALIBER_MAX_LENGTH,
   MULTISHOT_DESCRIPTION_MAX_LENGTH,
   MULTISHOT_MAX_DURATION_SECONDS,
   MULTISHOT_MAX_SHOT_COUNT,
+  MULTISHOT_MAX_TRACK_COUNT,
   MULTISHOT_NAME_MAX_LENGTH,
   MULTISHOT_NOTES_MAX_LENGTH,
   MULTISHOT_PAN_LIMIT_DEGREES,
@@ -26,22 +28,32 @@ test('multishot aim and timing helpers enforce the action bounds', () => {
   assert.equal(MULTISHOT_PAN_LIMIT_DEGREES, 30);
   assert.equal(MULTISHOT_TILT_LIMIT_DEGREES, 50);
   assert.equal(MULTISHOT_MAX_DURATION_SECONDS, 3600);
+  assert.equal(MULTISHOT_MAX_TRACK_COUNT, 2000);
   assert.equal(clampMultishotPanDegrees(-31), -30);
   assert.equal(clampMultishotPanDegrees(31), 30);
   assert.equal(clampMultishotTiltDegrees(-51), -50);
   assert.equal(clampMultishotTiltDegrees(51), 50);
   assert.equal(clampMultishotTimeSeconds(-0.1), 0);
   assert.equal(clampMultishotTimeSeconds(3600.1), 3600);
+  assert.equal(clampMultishotTrackIndex(-1), 0);
+  assert.equal(clampMultishotTrackIndex(4.9), 4);
+  assert.equal(clampMultishotTrackIndex(2000), 1999);
 });
 
 test('multishot database constraints mirror the admin action contract', () => {
   const migration = read(
     'supabase/migrations/20260710013955_align_multishot_constraints_and_catalogue.sql',
   );
+  const tracksMigration = read(
+    'supabase/migrations/20260810003120_add_multishot_timeline_tracks.sql',
+  );
 
   assert.equal(MULTISHOT_NAME_MAX_LENGTH, 180);
   assert.equal(MULTISHOT_DESCRIPTION_MAX_LENGTH, 5000);
   assert.equal(MULTISHOT_MAX_SHOT_COUNT, 2000);
+  assert.match(tracksMigration, /add column timeline_track_index integer not null default 0/);
+  assert.match(tracksMigration, /constraint multishot_fireworks_timeline_track_range/);
+  assert.match(tracksMigration, /check \(timeline_track_index between 0 and 1999\)/);
   assert.equal(MULTISHOT_CALIBER_MAX_LENGTH, 40);
   assert.equal(MULTISHOT_NOTES_MAX_LENGTH, 500);
   assert.match(
@@ -83,6 +95,7 @@ test('multishot database constraints mirror the admin action contract', () => {
     /add constraint catalogue_items_multishot_id_key unique \(multishot_id\)/,
   );
   const databaseTypes = read('lib/database.types.ts');
+  assert.match(databaseTypes, /timeline_track_index: number/);
   assert.match(
     databaseTypes,
     /foreignKeyName: "catalogue_items_multishot_id_fkey"[\s\S]*?isOneToOne: true/,
@@ -177,6 +190,11 @@ test('multishot actions validate and resynchronise conservative derived duration
     2,
   );
   assert.match(shotMutations, /existingShot\.time_offset_seconds/);
+  assert.match(
+    actions,
+    /timelineTrackIndex: z\.coerce[\s\S]*?\.min\(0\)[\s\S]*?\.max\(MULTISHOT_MAX_TRACK_COUNT - 1\)/,
+  );
+  assert.match(shotMutations, /timeline_track_index: parsed\.data\.timelineTrackIndex/);
 });
 
 test('multishot saves are serial, revision-aware, and flushed before leaving', () => {
@@ -194,6 +212,7 @@ test('multishot saves are serial, revision-aware, and flushed before leaving', (
   assert.match(persistence, /saveRevisionsRef\.current\.get\(uid\) !== revision/);
   assert.match(persistence, /persistedShotIdsRef\.current\.set\(uid, result\.id\)/);
   assert.match(persistence, /shotPersistenceSignature\(currentShot\)/);
+  assert.match(persistence, /timelineTrackIndex: shot\.timelineTrackIndex/);
   assert.match(persistence, /const flushPendingSaves = useCallback/);
   assert.match(persistence, /visibilitychange/);
   assert.match(persistence, /pagehide/);
@@ -258,6 +277,7 @@ test('multishot controls share bounds and commit slider interactions immediately
   const slider = read('app/components/ui/SliderField.tsx');
 
   assert.match(editor, /clampMultishotTimeSeconds\(nextPatch\.timeOffsetSeconds\)/);
+  assert.match(editor, /clampMultishotTrackIndex\(nextPatch\.timelineTrackIndex\)/);
   assert.match(editor, /caliber: spec\?\.caliber \?\? null/);
   assert.match(editor, /maxLength=\{MULTISHOT_NAME_MAX_LENGTH\}/);
   assert.match(editor, /maxLength=\{MULTISHOT_DESCRIPTION_MAX_LENGTH\}/);

@@ -5,7 +5,8 @@
  * so each shot only chooses its firework, when it fires, and the direction it is
  * aimed (pan/tilt). The stage at the top is a live 3D preview: clicking a
  * firework's aim marker selects it, while angle controls edit the horizontal
- * pan and depth tilt planes directly. The track below places each shot in time.
+ * pan and depth tilt planes directly. Stable tracks below organise shots
+ * without changing their physical launch position.
  *
  * Appearance is always locked; a multishot never changes how a firework looks.
  */
@@ -21,6 +22,7 @@ import {
   useState,
   useTransition,
   type FocusEvent as ReactFocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MutableRefObject,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -28,8 +30,10 @@ import {
 } from 'react';
 import {
   Check,
+  ChevronDown,
   Copy,
   Film,
+  Layers3,
   Loader2,
   MoveHorizontal,
   MoveVertical,
@@ -81,15 +85,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import type { AdminMultishotDetail } from '@/lib/admin.types';
 import {
   clampMultishotPanDegrees,
   clampMultishotTimeSeconds,
   clampMultishotTiltDegrees,
+  clampMultishotTrackIndex,
   MULTISHOT_DESCRIPTION_MAX_LENGTH,
   MULTISHOT_MAX_DURATION_SECONDS,
   MULTISHOT_MAX_SHOT_COUNT,
+  MULTISHOT_MAX_TRACK_COUNT,
   MULTISHOT_NAME_MAX_LENGTH,
   MULTISHOT_PAN_LIMIT_DEGREES,
   MULTISHOT_TILT_LIMIT_DEGREES,
@@ -108,11 +123,10 @@ const LazyFireworkReplayCanvas = dynamic(
 const SINGLE_MORTAR: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
 const PX_PER_SECOND = 96;
 const MIN_CLIP_PX = 46;
-const TIMELINE_ROW_COUNT = 4;
-const TIMELINE_ROW_HEIGHT_PX = 30;
-const TIMELINE_ROW_GAP_PX = 5;
-const TIMELINE_CLIP_INSET_PX = 2;
-const TIMELINE_COLLISION_GAP_PX = 4;
+const MIN_TIMELINE_TRACK_COUNT = 4;
+const TIMELINE_TRACK_HEIGHT_PX = 48;
+const TIMELINE_TRACK_LABEL_WIDTH_PX = 112;
+const TIMELINE_CLIP_INSET_PX = 5;
 const MIN_TIMELINE_SECONDS = 6;
 const DEFAULT_FIREWORK_DURATION = 2.4;
 const SAVE_DEBOUNCE_MS = 650;
@@ -151,6 +165,7 @@ type LocalShot = {
   uid: string;
   id?: string;
   fireworkId: string;
+  timelineTrackIndex: number;
   timeOffsetSeconds: number;
   panDegrees: number;
   tiltDegrees: number;
@@ -175,6 +190,7 @@ function toLocalShot(shot: AdminMultishotDetail['shots'][number]): LocalShot {
     uid: makeUid(),
     id: shot.id,
     fireworkId: shot.fireworkId ?? '',
+    timelineTrackIndex: clampMultishotTrackIndex(shot.timelineTrackIndex),
     timeOffsetSeconds: shot.timeOffsetSeconds,
     panDegrees: clampMultishotPanDegrees(shot.panDegrees),
     tiltDegrees: clampMultishotTiltDegrees(shot.tiltDegrees),
@@ -188,6 +204,7 @@ function toLocalShot(shot: AdminMultishotDetail['shots'][number]): LocalShot {
 function shotPersistenceSignature(shot: LocalShot): string {
   return JSON.stringify([
     shot.fireworkId,
+    shot.timelineTrackIndex,
     shot.timeOffsetSeconds,
     shot.panDegrees,
     shot.tiltDegrees,
@@ -199,6 +216,13 @@ function shotPersistenceSignature(shot: LocalShot): string {
 
 function nextShotSequenceIndex(shots: LocalShot[]): number {
   return shots.length ? Math.max(...shots.map((shot) => shot.sequenceIndex)) + 1 : 1;
+}
+
+function timelineTrackCount(shots: Array<Pick<LocalShot, 'timelineTrackIndex'>>): number {
+  let highestTrackIndex = -1;
+  for (const shot of shots)
+    highestTrackIndex = Math.max(highestTrackIndex, shot.timelineTrackIndex);
+  return Math.max(MIN_TIMELINE_TRACK_COUNT, highestTrackIndex + 1);
 }
 
 function fireworkDurationOf(spec: FireworkSpecification | undefined): number {
@@ -223,8 +247,17 @@ function clipPaletteOf(spec: FireworkSpecification | undefined): {
   return { primary, secondary };
 }
 
-function clipVisualSeconds(spec: FireworkSpecification | undefined): number {
-  return Math.max(fireworkDurationOf(spec), MIN_CLIP_PX / PX_PER_SECOND);
+function fireworkPaletteOf(spec: FireworkSpecification | undefined): string[] {
+  if (!spec) return [];
+  return Array.from(
+    new Set(
+      [
+        spec.variant?.primaryColor,
+        spec.variant?.secondaryColor,
+        ...(spec.variant?.colorPalette ?? []),
+      ].filter((colour): colour is string => Boolean(colour)),
+    ),
+  ).slice(0, 5);
 }
 
 function formatSecondsLabel(seconds: number): string {
@@ -238,39 +271,6 @@ function formatTimelineTimestamp(seconds: number): string {
   const tenths = totalTenths % 10;
   const wholeSeconds = secondsWithinMinute.toString().padStart(2, '0');
   return `${minutes}:${wholeSeconds}.${tenths}`;
-}
-
-type TimelineShotLayout = {
-  shot: LocalShot;
-  spec: FireworkSpecification | undefined;
-  rowIndex: number;
-};
-
-function assignTimelineRows(
-  shots: LocalShot[],
-  specsById: Map<string, FireworkSpecification>,
-): TimelineShotLayout[] {
-  const rowEnds = Array.from({ length: TIMELINE_ROW_COUNT }, () => 0);
-  const ordered = [...shots].sort((a, b) => {
-    if (a.timeOffsetSeconds !== b.timeOffsetSeconds) {
-      return a.timeOffsetSeconds - b.timeOffsetSeconds;
-    }
-    return a.sequenceIndex - b.sequenceIndex;
-  });
-
-  return ordered.map((shot) => {
-    const spec = specsById.get(shot.fireworkId);
-    const start = shot.timeOffsetSeconds;
-    const visualEnd = start + clipVisualSeconds(spec) + TIMELINE_COLLISION_GAP_PX / PX_PER_SECOND;
-    let rowIndex = rowEnds.findIndex((end) => start >= end);
-
-    if (rowIndex === -1) {
-      rowIndex = rowEnds.reduce((best, end, index) => (end < rowEnds[best] ? index : best), 0);
-    }
-
-    rowEnds[rowIndex] = visualEnd;
-    return { shot, spec, rowIndex };
-  });
 }
 
 // Mirrors the simulation's shell apex so a marker sits exactly where the burst
@@ -328,6 +328,9 @@ export function MultishotEditor({
   const [shots, setShotsState] = useState<LocalShot[]>(() =>
     [...multishot.shots].sort((a, b) => a.sequenceIndex - b.sequenceIndex).map(toLocalShot),
   );
+  const [visibleTrackCount, setVisibleTrackCount] = useState(() =>
+    timelineTrackCount(multishot.shots),
+  );
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
 
   // Playback state.
@@ -367,15 +370,8 @@ export function MultishotEditor({
     return map;
   }, [fireworkSpecs]);
 
-  const fireworkOptions = useMemo(
-    () =>
-      [...fireworkSpecs]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((spec) => ({
-          value: spec.id,
-          label: spec.name,
-          description: spec.baseEffect?.name ?? undefined,
-        })),
+  const sortedFireworkSpecs = useMemo(
+    () => [...fireworkSpecs].sort((a, b) => a.name.localeCompare(b.name)),
     [fireworkSpecs],
   );
 
@@ -449,6 +445,7 @@ export function MultishotEditor({
   }, [shots, specsById]);
 
   const selectedShot = shots.find((shot) => shot.uid === selectedUid) ?? null;
+  const selectedSpec = selectedShot ? specsById.get(selectedShot.fireworkId) : undefined;
   const nextSequenceIndex = nextShotSequenceIndex(shots);
 
   useEffect(() => {
@@ -505,6 +502,7 @@ export function MultishotEditor({
               multishotId: multishot.id,
               fireworkId: shot.fireworkId,
               sequenceIndex: shot.sequenceIndex,
+              timelineTrackIndex: shot.timelineTrackIndex,
               timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(2)),
               panDegrees: Math.round(clampMultishotPanDegrees(shot.panDegrees)),
               tiltDegrees: Math.round(clampMultishotTiltDegrees(shot.tiltDegrees)),
@@ -635,6 +633,11 @@ export function MultishotEditor({
       if (typeof nextPatch.timeOffsetSeconds === 'number') {
         nextPatch.timeOffsetSeconds = clampMultishotTimeSeconds(nextPatch.timeOffsetSeconds);
       }
+      if (typeof nextPatch.timelineTrackIndex === 'number') {
+        const nextTrackIndex = clampMultishotTrackIndex(nextPatch.timelineTrackIndex);
+        nextPatch.timelineTrackIndex = nextTrackIndex;
+        setVisibleTrackCount((current) => Math.max(current, nextTrackIndex + 1));
+      }
       let nextShot: LocalShot | null = null;
       commitShots((currentShots) =>
         currentShots.map((shot) => {
@@ -660,42 +663,50 @@ export function MultishotEditor({
   );
 
   useEffect(() => {
-    const defaultFireworkId = fireworkOptions[0]?.value;
+    const defaultFireworkId = sortedFireworkSpecs[0]?.id;
     if (!defaultFireworkId) return;
     const shotWithoutFirework = shots.find((shot) => !shot.fireworkId);
     if (!shotWithoutFirework) return;
     updateShot(shotWithoutFirework.uid, { fireworkId: defaultFireworkId }, { immediate: true });
-  }, [fireworkOptions, shots, updateShot]);
+  }, [shots, sortedFireworkSpecs, updateShot]);
 
-  const addShot = useCallback(() => {
-    const sequenceIndex = nextShotSequenceIndex(shotsRef.current);
-    if (sequenceIndex > MULTISHOT_MAX_SHOT_COUNT) {
-      toast.error(
-        `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`,
-      );
-      return;
-    }
-    const spec = fireworkSpecs[0];
-    if (!spec) {
-      toast.error('Create a firework first, then add it to this multishot.');
-      return;
-    }
-    const timeOffset = Math.round(contentDuration * 2) / 2;
-    const shot: LocalShot = {
-      uid: makeUid(),
-      fireworkId: spec.id,
-      timeOffsetSeconds: Number.isFinite(timeOffset) ? clampMultishotTimeSeconds(timeOffset) : 0,
-      panDegrees: 0,
-      tiltDegrees: 0,
-      sequenceIndex,
-      caliber: spec.caliber,
-      notes: '',
-      saveState: 'saving',
-    };
-    commitShots((currentShots) => [...currentShots, shot]);
-    setSelectedUid(shot.uid);
-    void persistShot(shot);
-  }, [commitShots, contentDuration, fireworkSpecs, persistShot]);
+  const addShot = useCallback(
+    (timelineTrackIndex = 0) => {
+      const sequenceIndex = nextShotSequenceIndex(shotsRef.current);
+      if (sequenceIndex > MULTISHOT_MAX_SHOT_COUNT) {
+        toast.error(
+          `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`,
+        );
+        return;
+      }
+      const spec = sortedFireworkSpecs[0];
+      if (!spec) {
+        toast.error('Create a firework first, then add it to this multishot.');
+        return;
+      }
+      const timeOffset = Math.round(contentDuration * 2) / 2;
+      const shot: LocalShot = {
+        uid: makeUid(),
+        fireworkId: spec.id,
+        timelineTrackIndex: clampMultishotTrackIndex(timelineTrackIndex),
+        timeOffsetSeconds: Number.isFinite(timeOffset) ? clampMultishotTimeSeconds(timeOffset) : 0,
+        panDegrees: 0,
+        tiltDegrees: 0,
+        sequenceIndex,
+        caliber: spec.caliber,
+        notes: '',
+        saveState: 'saving',
+      };
+      commitShots((currentShots) => [...currentShots, shot]);
+      setSelectedUid(shot.uid);
+      void persistShot(shot);
+    },
+    [commitShots, contentDuration, persistShot, sortedFireworkSpecs],
+  );
+
+  const addTimelineTrack = useCallback(() => {
+    setVisibleTrackCount((current) => Math.min(MULTISHOT_MAX_TRACK_COUNT, current + 1));
+  }, []);
 
   const duplicateShot = useCallback(
     (uid: string) => {
@@ -950,8 +961,10 @@ export function MultishotEditor({
         {selectedShot ? (
           <Inspector
             shot={selectedShot}
-            fireworkOptions={fireworkOptions}
+            fireworkSpecs={sortedFireworkSpecs}
+            selectedSpec={selectedSpec}
             duration={duration}
+            trackCount={visibleTrackCount}
             onChangeFirework={(fireworkId) => {
               const spec = specsById.get(fireworkId);
               updateShot(
@@ -970,6 +983,9 @@ export function MultishotEditor({
             onChangeTilt={(tiltDegrees, options) =>
               updateShot(selectedShot.uid, { tiltDegrees }, { immediate: options?.immediate })
             }
+            onChangeTrack={(timelineTrackIndex) =>
+              updateShot(selectedShot.uid, { timelineTrackIndex }, { immediate: true })
+            }
             onDuplicate={() => duplicateShot(selectedShot.uid)}
             duplicateDisabled={nextSequenceIndex > MULTISHOT_MAX_SHOT_COUNT}
             onDelete={() => void deleteShot(selectedShot.uid)}
@@ -984,6 +1000,7 @@ export function MultishotEditor({
           duration={duration}
           elapsed={elapsed}
           selectedUid={selectedUid}
+          trackCount={visibleTrackCount}
           disabled={!hasFireworks}
           addDisabled={!hasFireworks || nextSequenceIndex > MULTISHOT_MAX_SHOT_COUNT}
           onSelect={(uid) => {
@@ -994,6 +1011,7 @@ export function MultishotEditor({
             updateShot(uid, { timeOffsetSeconds: seconds }, { save: commit, immediate: commit })
           }
           onAdd={addShot}
+          onAddTrack={addTimelineTrack}
         />
       </div>
 
@@ -1354,34 +1372,48 @@ function Timeline({
   duration,
   elapsed,
   selectedUid,
+  trackCount,
   disabled,
   addDisabled,
   onSelect,
   onSeek,
   onMoveShot,
   onAdd,
+  onAddTrack,
 }: {
   shots: LocalShot[];
   specsById: Map<string, FireworkSpecification>;
   duration: number;
   elapsed: number;
   selectedUid: string | null;
+  trackCount: number;
   disabled: boolean;
   addDisabled: boolean;
   onSelect: (uid: string) => void;
   onSeek: (seconds: number) => void;
   onMoveShot: (uid: string, seconds: number, commit: boolean) => void;
-  onAdd: () => void;
+  onAdd: (trackIndex: number) => void;
+  onAddTrack: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const width = Math.max(1, duration) * PX_PER_SECOND;
   const seconds = Array.from({ length: Math.floor(duration) + 1 }, (_, index) => index);
-  const shotLayouts = assignTimelineRows(shots, specsById);
-  const trackHeight =
-    TIMELINE_ROW_COUNT * TIMELINE_ROW_HEIGHT_PX +
-    (TIMELINE_ROW_COUNT - 1) * TIMELINE_ROW_GAP_PX +
-    TIMELINE_CLIP_INSET_PX * 2;
+  const tracks = Array.from({ length: trackCount }, (_, index) => index);
+  const shotsByTrack = useMemo(() => {
+    const grouped = new Map<number, LocalShot[]>();
+    for (const shot of shots) {
+      const trackShots = grouped.get(shot.timelineTrackIndex) ?? [];
+      trackShots.push(shot);
+      grouped.set(shot.timelineTrackIndex, trackShots);
+    }
+    for (const trackShots of grouped.values()) {
+      trackShots.sort((a, b) => a.sequenceIndex - b.sequenceIndex);
+    }
+    return grouped;
+  }, [shots]);
   const scrubElapsed = Math.max(0, Math.min(duration, elapsed));
+  const selectedTrackIndex =
+    shots.find((shot) => shot.uid === selectedUid)?.timelineTrackIndex ?? 0;
 
   function seekFromValue(value: string) {
     const next = Number(value);
@@ -1391,99 +1423,158 @@ function Timeline({
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Film size={16} className="text-[color:var(--color-content-subtle)]" />
-          <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-            Timeline
-          </h2>
-          <span className="text-xs text-[color:var(--color-content-subtle)]">
-            Single mortar. Drag clips to change when each firework fires.
-          </span>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Film size={16} className="text-[color:var(--color-content-subtle)]" />
+            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+              Timeline
+            </h2>
+            <Badge tone="neutral" solid icon={null} className="font-mono tabular-nums">
+              {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+            Drag clips horizontally to change firing time. Tracks only change through the shot
+            inspector.
+          </p>
         </div>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={onAdd}
-          disabled={addDisabled}
-          title={
-            addDisabled && !disabled
-              ? `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`
-              : undefined
-          }
-        >
-          <Plus size={15} />
-          Add shot
-        </Button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onAddTrack}
+            disabled={trackCount >= MULTISHOT_MAX_TRACK_COUNT}
+          >
+            <Layers3 size={15} />
+            Add track
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => onAdd(selectedTrackIndex)}
+            disabled={addDisabled}
+            title={
+              addDisabled && !disabled
+                ? `A multishot can contain up to ${MULTISHOT_MAX_SHOT_COUNT.toLocaleString()} shots.`
+                : `Add a shot to Track ${selectedTrackIndex + 1}`
+            }
+          >
+            <Plus size={15} />
+            Add shot
+          </Button>
+        </div>
       </div>
 
-      <div ref={trackRef} className="relative overflow-x-auto pb-4 [scrollbar-gutter:stable]">
-        <div className="relative" style={{ width }}>
-          {/* Ruler */}
-          <div className="relative h-6 cursor-ew-resize touch-none border-b border-[color:var(--color-border-subtle)] select-none">
-            {seconds.map((second) => (
-              <div
-                key={second}
-                className="absolute top-0 flex h-full flex-col justify-between"
-                style={{ left: second * PX_PER_SECOND }}
-              >
-                <span className="pointer-events-none -translate-x-1 pl-1 font-mono text-[10px] text-[color:var(--color-content-subtle)] tabular-nums">
-                  {formatDuration(second)}
-                </span>
-                <span className="h-1.5 w-px bg-[color:var(--color-border-strong,var(--color-border-subtle))]" />
-              </div>
-            ))}
-            <input
-              type="range"
-              min={0}
-              max={duration}
-              step={0.01}
-              value={scrubElapsed}
-              disabled={disabled}
-              aria-label="Multishot preview time"
-              aria-valuetext={formatTimelineTimestamp(scrubElapsed)}
-              className="absolute inset-0 z-30 m-0 h-full w-full cursor-ew-resize touch-none appearance-none bg-transparent opacity-0 disabled:cursor-not-allowed"
-              onChange={(event) => seekFromValue(event.currentTarget.value)}
-            />
-          </div>
-
-          {/* Track */}
-          <div className="relative bg-transparent" style={{ height: trackHeight }}>
-            <div className="pointer-events-none absolute inset-0" aria-hidden>
-              {seconds.map((second) => (
-                <span
-                  key={second}
-                  className="absolute top-0 bottom-0 w-px bg-[color:var(--color-border-subtle)] opacity-70"
-                  style={{ left: second * PX_PER_SECOND }}
-                />
-              ))}
+      <div
+        ref={trackRef}
+        className="relative max-h-[420px] overflow-auto rounded-md border border-[color:var(--color-border-subtle)] [scrollbar-gutter:stable]"
+      >
+        <div
+          className="relative min-w-full"
+          style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX + width }}
+        >
+          <div className="sticky top-0 z-30 flex h-7 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]">
+            <div
+              className="sticky left-0 z-40 flex shrink-0 items-center border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 text-[10px] font-medium text-[color:var(--color-content-subtle)] uppercase"
+              style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX }}
+            >
+              Tracks
             </div>
-            {shots.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-xs text-[color:var(--color-content-subtle)]">
-                No shots yet. Use Add shot to place your first firework.
-              </div>
-            ) : null}
-            {shotLayouts.map(({ shot, spec, rowIndex }) => (
-              <ShotClip
-                key={shot.uid}
-                shot={shot}
-                spec={spec}
-                rowIndex={rowIndex}
-                duration={duration}
-                selected={shot.uid === selectedUid}
-                onSelect={() => onSelect(shot.uid)}
-                onMove={onMoveShot}
+            <div
+              className="relative shrink-0 cursor-ew-resize touch-none select-none"
+              style={{ width }}
+            >
+              {seconds.map((second) => (
+                <div
+                  key={second}
+                  className="absolute top-0 flex h-full flex-col justify-between"
+                  style={{ left: second * PX_PER_SECOND }}
+                >
+                  <span className="pointer-events-none -translate-x-1 pl-1 font-mono text-[10px] text-[color:var(--color-content-subtle)] tabular-nums">
+                    {formatDuration(second)}
+                  </span>
+                  <span className="h-1.5 w-px bg-[color:var(--color-border-strong,var(--color-border-subtle))]" />
+                </div>
+              ))}
+              <input
+                type="range"
+                min={0}
+                max={duration}
+                step={0.01}
+                value={scrubElapsed}
+                disabled={disabled}
+                aria-label="Multishot preview time"
+                aria-valuetext={formatTimelineTimestamp(scrubElapsed)}
+                className="absolute inset-0 z-30 m-0 h-full w-full cursor-ew-resize touch-none appearance-none bg-transparent opacity-0 disabled:cursor-not-allowed"
+                onChange={(event) => seekFromValue(event.currentTarget.value)}
               />
-            ))}
+            </div>
           </div>
 
-          {/* Playhead */}
-          <div
-            className="pointer-events-none absolute top-0 bottom-0 z-20 w-px bg-[color:var(--color-accent,#22d3ee)]"
-            style={{ left: scrubElapsed * PX_PER_SECOND }}
-          >
-            <span className="absolute -top-0.5 -left-[3px] h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent,#22d3ee)]" />
-          </div>
+          {tracks.map((trackIndex) => {
+            const trackShots = shotsByTrack.get(trackIndex) ?? [];
+            return (
+              <div
+                key={trackIndex}
+                className="flex border-b border-[color:var(--color-border-subtle)] last:border-b-0"
+                style={{
+                  height: TIMELINE_TRACK_HEIGHT_PX,
+                  contentVisibility: 'auto',
+                  containIntrinsicSize: `auto ${TIMELINE_TRACK_HEIGHT_PX}px`,
+                }}
+              >
+                <div
+                  className="sticky left-0 z-20 flex shrink-0 items-center justify-between gap-1 border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-2"
+                  style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX }}
+                >
+                  <span className="min-w-0 truncate font-mono text-[11px] font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+                    Track {trackIndex + 1}
+                  </span>
+                  <button
+                    type="button"
+                    data-preserve-shot-selection
+                    onClick={() => onAdd(trackIndex)}
+                    disabled={addDisabled}
+                    aria-label={`Add shot to Track ${trackIndex + 1}`}
+                    className="focus-visible:ring-ring/50 inline-flex size-10 shrink-0 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Plus size={13} />
+                  </button>
+                </div>
+                <div
+                  className="relative shrink-0"
+                  style={{
+                    width,
+                    backgroundImage:
+                      'linear-gradient(to right, var(--color-border-subtle) 1px, transparent 1px)',
+                    backgroundSize: `${PX_PER_SECOND}px 100%`,
+                  }}
+                >
+                  {trackShots.length === 0 ? (
+                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] text-[color:var(--color-content-muted)]">
+                      Empty track
+                    </span>
+                  ) : null}
+                  {trackShots.map((shot) => (
+                    <ShotClip
+                      key={shot.uid}
+                      shot={shot}
+                      spec={specsById.get(shot.fireworkId)}
+                      duration={duration}
+                      selected={shot.uid === selectedUid}
+                      onSelect={() => onSelect(shot.uid)}
+                      onMove={onMoveShot}
+                    />
+                  ))}
+                  <div
+                    className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-[color:var(--color-accent,#22d3ee)]"
+                    style={{ left: scrubElapsed * PX_PER_SECOND }}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1493,7 +1584,6 @@ function Timeline({
 function ShotClip({
   shot,
   spec,
-  rowIndex,
   duration,
   selected,
   onSelect,
@@ -1501,7 +1591,6 @@ function ShotClip({
 }: {
   shot: LocalShot;
   spec: FireworkSpecification | undefined;
-  rowIndex: number;
   duration: number;
   selected: boolean;
   onSelect: () => void;
@@ -1512,7 +1601,6 @@ function ShotClip({
   const clipDuration = fireworkDurationOf(spec);
   const clipWidth = Math.max(MIN_CLIP_PX, clipDuration * PX_PER_SECOND);
   const { primary, secondary } = clipPaletteOf(spec);
-  const top = TIMELINE_CLIP_INSET_PX + rowIndex * (TIMELINE_ROW_HEIGHT_PX + TIMELINE_ROW_GAP_PX);
 
   function onPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -1544,6 +1632,16 @@ function ShotClip({
     }
   }
 
+  function onKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowLeft' ? -1 : 1;
+    const step = event.shiftKey ? 1 : 0.1;
+    const next = Math.max(0, Math.min(duration, shot.timeOffsetSeconds + direction * step));
+    onMove(shot.uid, Number(next.toFixed(2)), true);
+    onSelect();
+  }
+
   return (
     <button
       type="button"
@@ -1551,21 +1649,22 @@ function ShotClip({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onKeyDown={onKeyDown}
       className={cn(
-        'group absolute flex cursor-grab touch-none flex-col justify-between overflow-hidden rounded-md border px-2 py-1 text-left transition-[border-color,box-shadow,transform] active:cursor-grabbing',
+        'group absolute z-10 flex cursor-grab touch-none flex-col justify-between overflow-hidden rounded-md border px-2 py-1 text-left transition-[border-color,box-shadow,transform] active:cursor-grabbing',
         selected
-          ? 'border-white/80 shadow-[0_0_0_1px_rgba(255,255,255,0.65),0_0_22px_rgba(255,255,255,0.18)]'
+          ? 'z-20 border-white/80 shadow-[0_0_0_1px_rgba(255,255,255,0.65),0_0_22px_rgba(255,255,255,0.18)]'
           : 'border-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] hover:border-white/45 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_0_16px_rgba(255,255,255,0.08)]',
       )}
       style={{
         left,
-        top,
-        height: TIMELINE_ROW_HEIGHT_PX,
+        top: TIMELINE_CLIP_INSET_PX,
+        height: TIMELINE_TRACK_HEIGHT_PX - TIMELINE_CLIP_INSET_PX * 2,
         width: clipWidth,
         background: `linear-gradient(135deg, color-mix(in srgb, ${primary} 72%, #050505), color-mix(in srgb, ${secondary} 58%, #050505))`,
       }}
       aria-pressed={selected}
-      aria-label={`${spec?.name ?? 'Shot'} at ${shot.timeOffsetSeconds.toFixed(1)} seconds`}
+      aria-label={`${spec?.name ?? 'Shot'} on Track ${shot.timelineTrackIndex + 1} at ${shot.timeOffsetSeconds.toFixed(1)} seconds`}
     >
       <span className="min-w-0 truncate text-[10px] leading-none font-semibold text-white drop-shadow">
         {spec?.name ?? 'Unknown firework'}
@@ -1588,32 +1687,202 @@ function ShotClip({
 
 // --- Inspector ---------------------------------------------------------------
 
+function FireworkPicker({
+  value,
+  specs,
+  onChange,
+}: {
+  value: string;
+  specs: FireworkSpecification[];
+  onChange: (fireworkId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selectedSpec = specs.find((spec) => spec.id === value);
+  const selectedPalette = fireworkPaletteOf(selectedSpec);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          data-preserve-shot-selection
+          aria-label="Firework"
+          aria-expanded={open}
+          className="border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-12 w-full items-center gap-2 rounded-md border px-3 py-2 text-left shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3"
+        >
+          <span className="flex shrink-0 -space-x-1" aria-hidden>
+            {(selectedPalette.length ? selectedPalette : ['#64748b']).slice(0, 3).map((colour) => (
+              <span
+                key={colour}
+                className="size-4 rounded-full border border-white/35 shadow-sm"
+                style={{ backgroundColor: colour }}
+              />
+            ))}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">
+              {selectedSpec?.name ?? 'Select a firework'}
+            </span>
+            <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+              {selectedSpec?.baseEffect?.name ?? 'No effect information'}
+            </span>
+          </span>
+          <ChevronDown size={15} className="text-muted-foreground shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        data-preserve-shot-selection
+        align="start"
+        className="w-[min(34rem,calc(100vw-2rem))] p-0"
+      >
+        <Command>
+          <CommandInput placeholder="Search name, effect, calibre or description..." />
+          <CommandList className="max-h-80">
+            <CommandEmpty>No fireworks match that search.</CommandEmpty>
+            <CommandGroup>
+              {specs.map((spec) => {
+                const palette = fireworkPaletteOf(spec);
+                const selected = spec.id === value;
+                const searchValue = [
+                  spec.name,
+                  spec.baseEffect?.name,
+                  spec.caliber,
+                  spec.description,
+                ]
+                  .filter(Boolean)
+                  .join(' ');
+                return (
+                  <CommandItem
+                    key={spec.id}
+                    value={searchValue}
+                    data-checked={selected}
+                    onSelect={() => {
+                      onChange(spec.id);
+                      setOpen(false);
+                    }}
+                    className="items-start gap-3 px-3 py-3"
+                  >
+                    <span className="mt-0.5 flex w-7 shrink-0 flex-wrap gap-0.5" aria-hidden>
+                      {(palette.length ? palette : ['#64748b']).slice(0, 4).map((colour) => (
+                        <span
+                          key={colour}
+                          className="size-3 rounded-full border border-white/30"
+                          style={{ backgroundColor: colour }}
+                        />
+                      ))}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{spec.name}</span>
+                      <span className="text-muted-foreground mt-0.5 line-clamp-2 block text-xs">
+                        {spec.description || spec.baseEffect?.name || 'No description'}
+                      </span>
+                      <span className="text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] tabular-nums">
+                        <span>{spec.baseEffect?.name ?? 'Unknown effect'}</span>
+                        <span>{formatSecondsLabel(fireworkDurationOf(spec))}</span>
+                        <span>{spec.caliber || 'No calibre'}</span>
+                        <span>
+                          {spec.heightMeters == null ? 'No height' : `${spec.heightMeters} m`}
+                        </span>
+                      </span>
+                    </span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function FireworkDetails({ spec }: { spec: FireworkSpecification | undefined }) {
+  if (!spec) return null;
+  const palette = fireworkPaletteOf(spec);
+
+  return (
+    <div className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-3">
+      <p className="line-clamp-3 text-xs leading-5 text-[color:var(--color-content-subtle)]">
+        {spec.description || 'No description has been added for this firework.'}
+      </p>
+      <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+        <div>
+          <dt className="text-[color:var(--color-content-muted)]">Effect</dt>
+          <dd className="truncate font-medium text-[color:var(--color-content-emphasis)]">
+            {spec.baseEffect?.name ?? 'Unknown'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[color:var(--color-content-muted)]">Duration</dt>
+          <dd className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+            {formatSecondsLabel(fireworkDurationOf(spec))}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[color:var(--color-content-muted)]">Calibre</dt>
+          <dd className="truncate font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+            {spec.caliber || 'Not set'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[color:var(--color-content-muted)]">Height</dt>
+          <dd className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+            {spec.heightMeters == null ? 'Not set' : `${spec.heightMeters} m`}
+          </dd>
+        </div>
+      </dl>
+      {palette.length ? (
+        <div className="mt-2.5 flex items-center gap-1.5" aria-label="Firework colour palette">
+          {palette.map((colour) => (
+            <span
+              key={colour}
+              className="size-4 rounded-full border border-white/25 shadow-sm"
+              style={{ backgroundColor: colour }}
+              title={colour}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Inspector({
   shot,
-  fireworkOptions,
+  fireworkSpecs,
+  selectedSpec,
   duration,
+  trackCount,
   onChangeFirework,
   onChangeTime,
   onCommitTime,
   onChangePan,
   onChangeTilt,
+  onChangeTrack,
   onDuplicate,
   duplicateDisabled,
   onDelete,
 }: {
   shot: LocalShot;
-  fireworkOptions: { value: string; label: string; description?: string }[];
+  fireworkSpecs: FireworkSpecification[];
+  selectedSpec: FireworkSpecification | undefined;
   duration: number;
+  trackCount: number;
   onChangeFirework: (fireworkId: string) => void;
   onChangeTime: (seconds: number) => void;
   onCommitTime: (seconds: number) => void;
   onChangePan: (pan: number, options?: { immediate?: boolean }) => void;
   onChangeTilt: (tilt: number, options?: { immediate?: boolean }) => void;
+  onChangeTrack: (trackIndex: number) => void;
   onDuplicate: () => void;
   duplicateDisabled: boolean;
   onDelete: () => void;
 }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const trackOptions = Array.from({ length: trackCount }, (_, trackIndex) => ({
+    value: String(trackIndex),
+    label: `Track ${trackIndex + 1}`,
+  }));
 
   return (
     <aside
@@ -1628,11 +1897,23 @@ function Inspector({
         ) : null}
         <Field>
           <FieldLabel>Firework</FieldLabel>
-          <SelectField
-            ariaLabel="Firework"
+          <FireworkPicker
             value={shot.fireworkId}
+            specs={fireworkSpecs}
             onChange={onChangeFirework}
-            options={fireworkOptions}
+          />
+        </Field>
+
+        <FireworkDetails spec={selectedSpec} />
+
+        <Field>
+          <FieldLabel>Timeline track</FieldLabel>
+          <SelectField
+            ariaLabel="Timeline track"
+            value={String(shot.timelineTrackIndex)}
+            onChange={(value) => onChangeTrack(Number(value))}
+            options={trackOptions}
+            iconLeft={<Layers3 size={14} />}
           />
         </Field>
 
