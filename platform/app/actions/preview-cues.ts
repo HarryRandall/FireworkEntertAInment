@@ -2,8 +2,8 @@
 
 /**
  * Server actions for the show preview cue editor: add and remove
- * cues on a show. Adds reject overlapping cues on the same launch
- * position based on each product's airtime (see `cue-overlap`).
+ * cues on a show. The guarded database mutation serialises each show and
+ * rejects overlaps across every launch position occupied by a product.
  */
 
 import { revalidatePath } from 'next/cache';
@@ -11,11 +11,6 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { syncShowDerivedFieldsForUser } from '@/lib/shows.server';
-import {
-  MIN_PRODUCT_DURATION_SECONDS,
-  findTubeOverlap,
-  getProductDurationSeconds,
-} from '@/lib/cue-overlap.server';
 import {
   invalidateSidebarAiUsageCache,
   refundAiCreditReservation,
@@ -42,16 +37,12 @@ const AddCueSchema = z.object({
   refinementPrompt: z.string().trim().max(1000).optional(),
 });
 
-function formatSeconds(value: number): string {
-  return `${value.toFixed(2)}s`;
-}
-
 const DeleteCueSchema = z.object({
   cueId: z.string().uuid(),
   showSlug: z.string().min(1),
 });
 
-/** Add a new cue to a show after checking it does not overlap an existing cue on the same launch position. */
+/** Add a new cue through the atomic, overlap-safe database mutation. */
 export async function addPreviewCueAction(formData: FormData): Promise<CueActionResult> {
   const parsed = AddCueSchema.safeParse({
     showId: formData.get('showId'),
@@ -87,61 +78,6 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
     return { ok: false, error: 'Could not find that firework.' };
   }
   const cueDescription = productRow.name.trim();
-
-  let newDuration = MIN_PRODUCT_DURATION_SECONDS;
-  const existingWindows: Array<{
-    timeSeconds: number;
-    durationSeconds: number;
-    launchPositionIndex: number;
-    description: string;
-  }> = [];
-
-  // Schedule reads are safety checks, not optional enrichment. A failed read
-  // must block insertion rather than being treated as an empty tube or position.
-  try {
-    newDuration =
-      (await getProductDurationSeconds(supabase, parsed.data.productId)) ??
-      MIN_PRODUCT_DURATION_SECONDS;
-
-    const { data: existingCues, error: existingCuesError } = await supabase
-      .from('show_timeline_items')
-      .select('id, time_seconds, catalogue_item_id, description')
-      .eq('show_id', parsed.data.showId)
-      .eq('launch_position_index', parsed.data.launchPositionIndex);
-    if (existingCuesError) throw existingCuesError;
-
-    for (const cue of existingCues ?? []) {
-      if (cue.time_seconds == null) continue;
-      const otherDuration =
-        (await getProductDurationSeconds(supabase, cue.catalogue_item_id)) ??
-        MIN_PRODUCT_DURATION_SECONDS;
-      existingWindows.push({
-        timeSeconds: Number(cue.time_seconds),
-        durationSeconds: otherDuration,
-        launchPositionIndex: parsed.data.launchPositionIndex,
-        description: cue.description,
-      });
-    }
-  } catch (error) {
-    console.error('[addPreviewCueAction] schedule validation failed:', error);
-    return { ok: false, error: 'Could not validate the cue schedule. Try again.' };
-  }
-
-  const conflict = findTubeOverlap(
-    {
-      timeSeconds: parsed.data.timeSeconds,
-      durationSeconds: newDuration,
-      launchPositionIndex: parsed.data.launchPositionIndex,
-    },
-    existingWindows,
-  );
-  if (conflict) {
-    const otherEnd = conflict.timeSeconds + conflict.durationSeconds;
-    return {
-      ok: false,
-      error: `Tube ${parsed.data.launchPositionIndex + 1} is busy from ${formatSeconds(conflict.timeSeconds)} to ${formatSeconds(otherEnd)} (${conflict.description}). Pick a different time or tube.`,
-    };
-  }
 
   const isAiRefinement = parsed.data.aiCreditAction === 'show_refinement';
   let refinementReservationKey: string | null = null;
