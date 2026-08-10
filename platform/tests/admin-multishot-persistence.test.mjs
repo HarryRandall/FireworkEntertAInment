@@ -52,6 +52,9 @@ test('multishot database constraints mirror the admin action contract', () => {
   const trackDistributionMigration = read(
     'supabase/migrations/20260810024143_distribute_legacy_multishot_tracks.sql',
   );
+  const trackPackingMigration = read(
+    'supabase/migrations/20260810031205_pack_existing_multishot_tracks.sql',
+  );
 
   assert.equal(MULTISHOT_NAME_MAX_LENGTH, 180);
   assert.equal(MULTISHOT_DESCRIPTION_MAX_LENGTH, 5000);
@@ -69,6 +72,14 @@ test('multishot database constraints mirror the admin action contract', () => {
     /pg_catalog\.to_jsonb\(old\) - 'timeline_track_index'/,
   );
   assert.match(trackDistributionMigration, /perform private\.sync_multishot_derived_state/);
+  assert.match(trackPackingMigration, /create temporary table multishot_track_assignments/);
+  assert.match(trackPackingMigration, /46\.0 \/ 96\.0/);
+  assert.match(
+    trackPackingMigration,
+    /shot\.time_offset_seconds >= track_ends\[track_position\]/,
+  );
+  assert.match(trackPackingMigration, /track_ends := array_append\(track_ends, shot_end\)/);
+  assert.match(trackPackingMigration, /selected_track - 1/);
   assert.equal(MULTISHOT_CALIBER_MAX_LENGTH, 40);
   assert.equal(MULTISHOT_NOTES_MAX_LENGTH, 500);
   assert.match(
