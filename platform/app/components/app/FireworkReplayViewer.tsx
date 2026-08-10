@@ -750,7 +750,7 @@ export function FireworkReplayViewer({
             ref={fullscreenContainerRef}
             {...fullscreenContainerProps}
             className={cn(
-              'group/replay',
+              'group/replay overflow-hidden rounded-[inherit]',
               isFullscreen
                 ? 'border-outline-variant/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
                 : 'relative h-[min(72vh,680px)] min-h-[520px]',
