@@ -1240,6 +1240,7 @@ export type Database = {
           pan_degrees: number
           position_override_json: Json | null
           sequence_index: number
+          timeline_track_index: number
           tilt_degrees: number
           time_offset_seconds: number
         }
@@ -1253,6 +1254,7 @@ export type Database = {
           pan_degrees?: number
           position_override_json?: Json | null
           sequence_index: number
+          timeline_track_index?: number
           tilt_degrees?: number
           time_offset_seconds?: number
         }
@@ -1266,6 +1268,7 @@ export type Database = {
           pan_degrees?: number
           position_override_json?: Json | null
           sequence_index?: number
+          timeline_track_index?: number
           tilt_degrees?: number
           time_offset_seconds?: number
         }

@@ -89,6 +89,36 @@ test('multishot inspector only opens for a selected shot', () => {
   assert.doesNotMatch(editor, /repositionUid/);
   assert.match(editor, /onPointerDownCapture=\{handleEditorPointerDownCapture\}/);
   assert.match(inspector, /<aside\s+data-preserve-shot-selection/);
+  assert.match(inspector, /<FireworkPicker/);
+  assert.match(inspector, /<FireworkDetails spec=\{selectedSpec\}/);
+  assert.match(inspector, /<FieldLabel>Timeline track<\/FieldLabel>/);
+  assert.match(inspector, /ariaLabel="Timeline track"/);
+});
+
+test('multishot firework picker exposes searchable descriptive information', () => {
+  const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const picker = editor.slice(
+    editor.indexOf('function FireworkPicker('),
+    editor.indexOf('function FireworkDetails('),
+  );
+  const details = editor.slice(
+    editor.indexOf('function FireworkDetails('),
+    editor.indexOf('function Inspector('),
+  );
+
+  assert.match(
+    picker,
+    /<CommandInput placeholder="Search name, effect, calibre or description\.\.\."/,
+  );
+  assert.match(picker, /spec\.description/);
+  assert.match(picker, /spec\.baseEffect\?\.name/);
+  assert.match(picker, /spec\.caliber/);
+  assert.match(picker, /spec\.heightMeters/);
+  assert.match(details, />Effect</);
+  assert.match(details, />Duration</);
+  assert.match(details, />Calibre</);
+  assert.match(details, />Height</);
+  assert.match(details, /fireworkPaletteOf\(spec\)/);
 });
 
 test('multishot selection stays active on preview, clips, inspector controls, and firework menu items', () => {
@@ -120,7 +150,7 @@ test('multishot selection stays active on preview, clips, inspector controls, an
   assert.match(clip, /<button[\s\S]*data-preserve-shot-selection/);
 });
 
-test('multishot timeline packs compact clips into four overlap rows', () => {
+test('multishot timeline keeps clips on explicit expandable tracks', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
   const timeline = editor.slice(
     editor.indexOf('function Timeline('),
@@ -128,22 +158,30 @@ test('multishot timeline packs compact clips into four overlap rows', () => {
   );
   const clip = editor.slice(editor.indexOf('function ShotClip('));
 
-  assert.match(editor, /const TIMELINE_ROW_COUNT = 4;/);
-  assert.match(editor, /function assignTimelineRows/);
-  assert.match(editor, /const rowEnds = Array\.from\(\{ length: TIMELINE_ROW_COUNT \}/);
-  assert.match(editor, /rowEnds\.findIndex\(\(end\) => start >= end\)/);
-  assert.match(timeline, /const shotLayouts = assignTimelineRows\(shots, specsById\)/);
-  assert.match(timeline, /rowIndex=\{rowIndex\}/);
-  assert.match(timeline, /overflow-x-auto pb-4 \[scrollbar-gutter:stable\]/);
-  assert.match(timeline, /className="relative bg-transparent"/);
+  assert.match(editor, /const MIN_TIMELINE_TRACK_COUNT = 4;/);
+  assert.match(editor, /timelineTrackIndex: clampMultishotTrackIndex/);
+  assert.match(editor, /shot\.timelineTrackIndex/);
+  assert.doesNotMatch(editor, /function assignTimelineRows/);
+  assert.doesNotMatch(timeline, /rowEnds|rowIndex/);
+  assert.match(timeline, /const shotsByTrack = useMemo/);
+  assert.match(timeline, /grouped\.get\(shot\.timelineTrackIndex\)/);
+  assert.match(timeline, /onClick=\{onAddTrack\}/);
+  assert.match(timeline, /onClick=\{\(\) => onAdd\(trackIndex\)\}/);
+  assert.match(timeline, /max-h-\[420px\] overflow-auto/);
+  assert.match(timeline, /sticky top-0/);
+  assert.match(timeline, /sticky left-0/);
   assert.match(timeline, /type="range"/);
   assert.match(timeline, /value=\{scrubElapsed\}/);
   assert.match(timeline, /aria-label="Multishot preview time"/);
   assert.match(timeline, /cursor-ew-resize touch-none/);
-  assert.match(timeline, /className="pointer-events-none absolute inset-0"/);
-  assert.match(timeline, /className="absolute top-0 bottom-0 w-px/);
+  assert.match(timeline, /contentVisibility: 'auto'/);
+  assert.match(timeline, /backgroundImage:/);
+  assert.match(timeline, /backgroundSize: `\$\{PX_PER_SECOND\}px 100%`/);
   assert.doesNotMatch(timeline, /repeating-linear-gradient/);
-  assert.match(clip, /height: TIMELINE_ROW_HEIGHT_PX/);
+  assert.match(clip, /height: TIMELINE_TRACK_HEIGHT_PX - TIMELINE_CLIP_INSET_PX \* 2/);
+  assert.match(clip, /onKeyDown=\{onKeyDown\}/);
+  assert.match(clip, /ArrowLeft/);
+  assert.match(clip, /ArrowRight/);
   assert.match(clip, /formatSecondsLabel\(clipDuration\)/);
   assert.match(clip, /formatTimelineTimestamp\(shot\.timeOffsetSeconds\)/);
   assert.match(clip, /clipPaletteOf\(spec\)/);

@@ -32,6 +32,7 @@ type FireworkLite = {
 type MultishotShotRow = {
   id: string;
   sequence_index: number;
+  timeline_track_index: number;
   time_offset_seconds: number | string | null;
   pan_degrees: number | null;
   tilt_degrees: number | null;
@@ -55,7 +56,7 @@ type MultishotRow = {
 };
 
 const SHOT_SELECT =
-  'id, sequence_index, time_offset_seconds, pan_degrees, tilt_degrees, position_override_json, caliber, notes, firework_id, fireworks (id, slug, name, primary_color, firework_effects (name))';
+  'id, sequence_index, timeline_track_index, time_offset_seconds, pan_degrees, tilt_degrees, position_override_json, caliber, notes, firework_id, fireworks (id, slug, name, primary_color, firework_effects (name))';
 
 function firstFirework(
   value: FireworkLite | FireworkLite[] | null | undefined,
@@ -199,6 +200,7 @@ export async function getMultishotById(multishotId: string): Promise<AdminMultis
       return {
         id: shot.id,
         sequenceIndex: shot.sequence_index,
+        timelineTrackIndex: Math.max(0, Math.floor(shot.timeline_track_index ?? 0)),
         timeOffsetSeconds: numberOrNull(shot.time_offset_seconds) ?? 0,
         panDegrees: shot.pan_degrees ?? 0,
         tiltDegrees: shot.tilt_degrees ?? 0,
