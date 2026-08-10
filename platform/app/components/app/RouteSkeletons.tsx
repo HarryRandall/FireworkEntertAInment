@@ -1168,7 +1168,7 @@ export function ReplayPanelSkeleton() {
   return (
     <div className="space-y-6" aria-label="Loading replay">
       <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xs">
-        <div className="relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden bg-[#020409]">
+        <div className="relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-[inherit] bg-[#020409]">
           <ReplayPanelLoadingStage />
           <Skeleton className="absolute top-6 right-6 z-20 h-9 w-9 rounded-full bg-white/12" />
         </div>

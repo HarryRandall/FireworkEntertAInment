@@ -1868,7 +1868,7 @@ export function FireworkReplayCanvas({
     <>
       <div
         ref={containerRef}
-        className="absolute top-0 bottom-0 h-full bg-black"
+        className="absolute top-0 bottom-0 h-full overflow-hidden rounded-[inherit] bg-black"
         style={{ left: renderSurfaceLeft, width: renderSurfaceWidth }}
       />
       {showFpsOverlay ? (
