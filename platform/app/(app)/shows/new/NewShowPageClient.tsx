@@ -280,6 +280,7 @@ export default function NewShowPageClient({
   const [audioUploadState, setAudioUploadState] = useState<AudioUploadState>('idle');
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
+  const [pendingJamendoTrack, setPendingJamendoTrack] = useState<JamendoSearchTrack | null>(null);
   const [title, setTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioUploadErrorRef = useRef<HTMLDivElement>(null);
@@ -356,16 +357,23 @@ export default function NewShowPageClient({
 
   // A track is attached (still uploading or ready). Drives whether the Length
   // step offers the "match the track" option.
-  const hasSoundtrack = soundtrackMode === 'song' && Boolean(audioFile || uploadedAudio);
+  const hasSoundtrack =
+    soundtrackMode === 'song' && Boolean(audioFile || pendingJamendoTrack || uploadedAudio);
   const attachedTrack = audioFile
     ? { name: audioFile.name, sizeBytes: audioFile.size }
-    : uploadedAudio
+    : pendingJamendoTrack
       ? {
-          name: uploadedAudio.originalName,
-          sizeBytes: uploadedAudio.sizeBytes,
-          source: uploadedAudio.source,
+          name: pendingJamendoTrack.title,
+          sizeBytes: null,
+          source: pendingJamendoTrack,
         }
-      : null;
+      : uploadedAudio
+        ? {
+            name: uploadedAudio.originalName,
+            sizeBytes: uploadedAudio.sizeBytes,
+            source: uploadedAudio.source,
+          }
+        : null;
 
   useEffect(() => setMounted(true), []);
 
@@ -430,10 +438,7 @@ export default function NewShowPageClient({
   // Resolve the audio file's duration locally so we can show "M:SS" in the
   // attached-track pill. The `<audio>` element is throwaway and never plays.
   useEffect(() => {
-    if (!audioFile) {
-      setAudioDuration(null);
-      return;
-    }
+    if (!audioFile) return;
     const url = URL.createObjectURL(audioFile);
     const audio = new Audio(url);
     const onLoaded = () => setAudioDuration(audio.duration || null);
@@ -500,6 +505,7 @@ export default function NewShowPageClient({
       setAudioFile(null);
       setAudioDuration(null);
       setUploadedAudio(null);
+      setPendingJamendoTrack(null);
       setAudioUploadState('idle');
       setAudioUploadError(null);
       uploadPromiseRef.current = null;
@@ -526,6 +532,7 @@ export default function NewShowPageClient({
     setSoundtrackMode('song');
     setLengthChoice(null);
     setAudioFile(file);
+    setPendingJamendoTrack(null);
     setAudioDuration(null);
     setUploadedAudio(null);
     setAudioUploadError(null);
@@ -546,6 +553,7 @@ export default function NewShowPageClient({
     setAudioFile(null);
     setAudioDuration(null);
     setUploadedAudio(null);
+    setPendingJamendoTrack(null);
     setAudioUploadState('idle');
     setAudioUploadError(null);
     uploadPromiseRef.current = null;
@@ -599,6 +607,7 @@ export default function NewShowPageClient({
     }
 
     setUploadedAudio(uploaded);
+    setPendingJamendoTrack(null);
     setAudioDuration(uploaded.durationSeconds ?? track.durationSeconds);
     setAudioUploadState('ready');
     setAudioUploadError(null);
@@ -611,8 +620,9 @@ export default function NewShowPageClient({
     setSoundtrackMode('song');
     setLengthChoice(null);
     setAudioFile(null);
-    setAudioDuration(null);
+    setAudioDuration(track.durationSeconds);
     setUploadedAudio(null);
+    setPendingJamendoTrack(track);
     setAudioUploadState('uploading');
     setAudioUploadError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -621,8 +631,18 @@ export default function NewShowPageClient({
     uploadTokenRef.current = token;
     const importPromise = importJamendoTrackAndStartAnalysis(track, token);
     uploadPromiseRef.current = importPromise;
-    await importPromise;
-    toast.success('Track attached', { description: `${track.title} by ${track.artist}` });
+    void importPromise.catch((error) => {
+      if (uploadTokenRef.current !== token) return;
+      shouldFocusAudioUploadErrorRef.current = true;
+      setStepIndex(1);
+      toast.error('Could not attach track', {
+        description: error instanceof Error ? error.message : 'Choose another song and try again.',
+      });
+    });
+    toast.success('Track selected', {
+      description: `${track.title} by ${track.artist} is being prepared in the background.`,
+    });
+    goToStep(stepIndex + 1);
   };
 
   /**
@@ -1086,7 +1106,7 @@ export default function NewShowPageClient({
                 <div className="mx-auto w-full max-w-4xl space-y-4">
                   <JamendoSongSearch
                     onSelect={attachJamendoTrack}
-                    hasSelection={Boolean(uploadedAudio?.source)}
+                    hasSelection={Boolean(pendingJamendoTrack || uploadedAudio?.source)}
                   />
                   <div className="flex items-center gap-3 py-1">
                     <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />

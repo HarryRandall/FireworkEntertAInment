@@ -26,6 +26,12 @@ export function TemplateLikeButton({
   const [isPending, startTransition] = useTransition();
 
   function toggleLike() {
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const optimisticLiked = !previousLiked;
+    setLiked(optimisticLiked);
+    setLikeCount(Math.max(0, previousCount + (optimisticLiked ? 1 : -1)));
+
     startTransition(async () => {
       try {
         const result = await toggleShowPresetLikeAction({
@@ -33,6 +39,8 @@ export function TemplateLikeButton({
           slug: templateSlug,
         });
         if (!result.ok) {
+          setLiked(previousLiked);
+          setLikeCount(previousCount);
           if (result.requiresAuth) {
             router.push(`/login?next=${encodeURIComponent(`/library/${templateSlug}`)}`);
             return;
@@ -43,6 +51,8 @@ export function TemplateLikeButton({
         setLiked(result.liked);
         setLikeCount(result.likeCount);
       } catch (error) {
+        setLiked(previousLiked);
+        setLikeCount(previousCount);
         console.error('[TemplateLikeButton] toggle failed:', error);
         toast.error('This template could not be saved. Please try again.');
       }
@@ -54,6 +64,7 @@ export function TemplateLikeButton({
       type="button"
       onClick={toggleLike}
       disabled={isPending}
+      aria-busy={isPending}
       aria-pressed={liked}
       aria-label={`${liked ? 'Remove template from saved shows' : 'Save template'}, ${likeCount.toLocaleString('en-AU')} ${likeCount === 1 ? 'save' : 'saves'}`}
       className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-[border-color,transform] focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"

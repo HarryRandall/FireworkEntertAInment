@@ -23,14 +23,20 @@ test('saved-template reads and auth checks fail explicitly', () => {
   assert.match(action, /if \(userError\)[\s\S]*Your account could not be verified/);
 });
 
-test('saved-template control handles thrown actions and exposes canonical state', () => {
+test('saved-template control updates immediately, rolls back failures, and exposes canonical state', () => {
   const button = read('app/components/app/TemplateLikeButton.tsx');
 
   assert.match(button, /try \{[\s\S]*await toggleShowPresetLikeAction/);
   assert.match(button, /catch \(error\)[\s\S]*toast\.error/);
   assert.match(button, /setLiked\(result\.liked\)/);
   assert.match(button, /setLikeCount\(result\.likeCount\)/);
+  assert.match(button, /const optimisticLiked = !previousLiked/);
+  assert.match(button, /setLiked\(optimisticLiked\)/);
+  assert.match(button, /setLikeCount\(Math\.max\(0, previousCount/);
+  assert.match(button, /if \(!result\.ok\) \{[\s\S]*setLiked\(previousLiked\)/);
+  assert.match(button, /catch \(error\) \{[\s\S]*setLiked\(previousLiked\)/);
   assert.match(button, /aria-pressed=\{liked\}/);
+  assert.match(button, /aria-busy=\{isPending\}/);
   assert.match(button, /likeCount === 1 \? 'save' : 'saves'/);
   assert.doesNotMatch(button, /transition-all/);
 });

@@ -129,10 +129,19 @@ test('completed Jamendo analyses already attached to an owned show are reused', 
 
 test('the wizard keeps soundtrack import separate from explicit show generation', () => {
   assert.match(wizard, /<JamendoSongSearch[\s\S]*onSelect=\{attachJamendoTrack\}/);
-  assert.match(wizard, /hasSelection=\{Boolean\(uploadedAudio\?\.source\)\}/);
+  assert.match(
+    wizard,
+    /hasSelection=\{Boolean\(pendingJamendoTrack \|\| uploadedAudio\?\.source\)\}/,
+  );
   assert.match(wizard, /fetch\('\/api\/music-library\/jamendo'/);
   assert.match(wizard, /uploadPromiseRef\.current = importPromise/);
   assert.match(wizard, /await uploadPromiseRef\.current/);
+  assert.match(wizard, /setPendingJamendoTrack\(track\)/);
+  assert.match(
+    wizard,
+    /uploadPromiseRef\.current = importPromise;[\s\S]*goToStep\(stepIndex \+ 1\)/,
+  );
+  assert.doesNotMatch(wizard, /uploadPromiseRef\.current = importPromise;\s*await importPromise/);
   assert.match(wizard, /const result = await createShowAction\(data\)/);
   assert.match(search, /Search uses no AI credits/);
   assert.match(search, /completed analysis is reused when available/);
