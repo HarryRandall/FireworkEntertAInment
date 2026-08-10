@@ -3,6 +3,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
+import { ShowExportButton } from '@/app/components/app/ShowExportButton';
 import { ShowTabs } from './ShowTabs';
 import { getShowDetailSection } from './show-detail-sections';
 import { OPEN_SHOW_REFINEMENT_EVENT } from '@/lib/show-detail-events';
@@ -66,9 +67,7 @@ export function ShowDetailChrome({
               Refine
             </Button>
           )}
-          <Button href={`/api/shows/${showSlug}/export`} prefetch={false} size="sm">
-            Export
-          </Button>
+          <ShowExportButton showSlug={showSlug} />
         </div>
       </div>
 
