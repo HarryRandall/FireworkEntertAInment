@@ -149,6 +149,12 @@ test('application timeline writes use the guarded RPC surface', () => {
   assert.match(previewActions, /deleteShowTimelineItem/);
   assert.match(previewActions, /error\?\.code === '23514'/);
   assert.match(previewActions, /That launch position became busy\./);
+  assert.doesNotMatch(previewActions, /getProductDurationSeconds|findTubeOverlap/);
+  assert.doesNotMatch(previewActions, /existingCues|schedule validation failed/);
+  assert.doesNotMatch(
+    previewActions,
+    /\.select\('id, time_seconds, catalogue_item_id, description'\)/,
+  );
   assert.doesNotMatch(
     previewActions,
     /\.from\('show_timeline_items'\)\s*\.(?:insert|update|delete)\(/,
