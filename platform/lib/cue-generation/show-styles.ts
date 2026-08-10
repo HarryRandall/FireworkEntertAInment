@@ -37,9 +37,9 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
     engine: 'llm',
     promptDirectives: [
       'Style: SIGNATURE (high-energy crowd-pleaser).',
-      '  - Choruses and drops saturate: fire every slot, layer multi-shot cakes under single-shot pops, with the biggest products on db:1 downbeats.',
+      '  - Choruses and drops saturate every safe musical moment: start lane-local multi-shot beds at section boundaries, then stack the remaining free tubes on db:1 accents.',
       '  - Buildups must audibly ramp - increase density and product size beat over beat into the drop; the last beat before the drop is em:2.',
-      '  - Reserve your 2-3 largest-calibre, highest products for fin:1 (finale window) slots and saturate every tube across that window.',
+      '  - Reserve your 2-3 largest-calibre, highest products for fin:1 (finale window) slots and stack every free tube on its structural accents.',
       '  - Match product size to em tiers: em:2 gets the biggest, em:1 medium, em:0 small singles.',
       '  - Favour bold, saturated colours and aggressive effect rotation (crackle, strobe, crossette).',
     ].join('\n'),
@@ -81,7 +81,7 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
     name: 'Beat precision',
     tagline: 'Every chosen burst lands exactly on a beat',
     description:
-      'Short single shots rotate across every safe firing position, launched early so each visible burst hits the analysed beat.',
+      'Beat-matched bursts stack across free firing positions while sustained multi-shot beds make choruses, drops, and the finale feel full.',
     engine: 'beat',
     promptDirectives: null,
   },

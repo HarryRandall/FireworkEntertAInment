@@ -348,11 +348,61 @@ export function buildCueSlots(
     }
   }
 
-  // Re-sort by time and re-index so slotIndex maps to time order after adding
-  // interleaved onset accents.
+  // Re-sort after adding interleaved onset accents, then cap whole timestamp
+  // groups so a three-tube accent can never be truncated into one or two tubes.
   slots.sort((a, b) => a.time - b.time || a.tube - b.tube);
-  slots.forEach((s, i) => (s.index = i));
-  return slots;
+  const cappedSlots = capSlotGroups(slots, MAX_TARGET_SLOTS);
+  cappedSlots.forEach((s, i) => (s.index = i));
+  return cappedSlots;
+}
+
+function capSlotGroups(slots: CueSlot[], maxSlots: number): CueSlot[] {
+  if (slots.length <= maxSlots) return slots;
+
+  const slotsByTime = new Map<number, CueSlot[]>();
+  for (const slot of slots) {
+    const group = slotsByTime.get(slot.time);
+    if (group) {
+      group.push(slot);
+    } else {
+      slotsByTime.set(slot.time, [slot]);
+    }
+  }
+
+  const groups = [...slotsByTime.entries()].map(([time, groupSlots]) => ({
+    time,
+    slots: groupSlots,
+    nearClimax: groupSlots.some((slot) => slot.nearClimax),
+    peak: groupSlots.some((slot) => slot.emphasis === 'peak'),
+    finale: groupSlots.some((slot) => slot.finale),
+    downbeat: groupSlots.some((slot) => slot.isDownbeat),
+    accent: groupSlots.some((slot) => slot.emphasis === 'accent'),
+    intensity: Math.max(...groupSlots.map((slot) => slot.intensity)),
+  }));
+
+  const rankedGroups = [...groups].sort(
+    (a, b) =>
+      Number(b.nearClimax) - Number(a.nearClimax) ||
+      Number(b.peak) - Number(a.peak) ||
+      Number(b.finale) - Number(a.finale) ||
+      Number(b.downbeat) - Number(a.downbeat) ||
+      Number(b.accent) - Number(a.accent) ||
+      b.intensity - a.intensity ||
+      a.time - b.time,
+  );
+
+  const selectedTimes = new Set<number>();
+  let selectedSlotCount = 0;
+  for (const group of rankedGroups) {
+    if (selectedSlotCount + group.slots.length > maxSlots) continue;
+    selectedTimes.add(group.time);
+    selectedSlotCount += group.slots.length;
+  }
+
+  return groups
+    .filter((group) => selectedTimes.has(group.time))
+    .sort((a, b) => a.time - b.time)
+    .flatMap((group) => group.slots);
 }
 
 function clampBeatsPerBar(value: number): number {
