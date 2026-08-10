@@ -208,7 +208,8 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(exportsPage, /Download a Finale 3D CSV/);
   assert.match(exportsPage, /<h1[^>]*>Export files<\/h1>/);
   assert.match(exportsPage, /show\.cueCount > 0/);
-  assert.match(exportsPage, /\/api\/shows\/\$\{show\.slug\}\/export/);
+  assert.match(exportsPage, /<ShowExportButton/);
+  assert.match(exportsPage, /showSlug=\{show\.slug\}/);
   assert.doesNotMatch(exportsPage, /Export history will appear here once files are generated/);
 
   const libraryPage = read('app/(browse)/library/page.tsx');
