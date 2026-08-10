@@ -41,6 +41,14 @@ test('cue deletion requires cue-specific confirmation and locks repeat submissio
   assert.match(viewer, /const deletingCueIdRef = useRef<string \| null>\(null\);/);
   assert.match(viewer, /if \(!target \|\| deletingCueIdRef\.current !== null\) return;/);
   assert.match(viewer, /deletingCueIdRef\.current = target\.cueId;/);
+  assert.match(viewer, /setCueToDelete\(null\);/);
+  assert.match(viewer, /applyOptimisticCue\(\{ type: 'remove', cueId: target\.cueId \}\);/);
+  assert.match(
+    viewer,
+    /applyOptimisticCue\(\{ type: 'remove'[\s\S]*await deletePreviewCueAction\(formData\)/,
+  );
+  assert.match(viewer, /current\.filter\(\(cue\) => cue\.id !== action\.cueId\)/);
+  assert.match(viewer, /toast\.error\(result\.error, \{ id: deletionToastId \}\)/);
   assert.match(viewer, /<AlertDialogTitle>Delete this cue\?<\/AlertDialogTitle>/);
   assert.match(viewer, /<strong>\{cueToDelete\.fireworkName\}<\/strong> at/);
   assert.match(viewer, /\{cueToDelete\.timeLabel\}/);

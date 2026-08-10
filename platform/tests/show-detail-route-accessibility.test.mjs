@@ -39,6 +39,21 @@ test('client navigation moves focus to the updated show heading', () => {
   assert.match(chrome, /headingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(chrome, /tabIndex=\{-1\}/);
   assert.match(tabs, /aria-current=\{active \? 'page' : undefined\}/);
+  assert.match(tabs, /setPendingHref\(href\)/);
+  assert.match(tabs, /aria-busy=\{pending \|\| undefined\}/);
+  assert.match(tabs, /active \|\| pending/);
+});
+
+test('Refine opens locally on Preview without a route round trip', () => {
+  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const viewer = read('app/components/app/FireworkReplayViewer.tsx');
+  const events = read('lib/show-detail-events.ts');
+
+  assert.match(events, /showcrafter:open-show-refinement/);
+  assert.match(chrome, /segment === 'preview'/);
+  assert.match(chrome, /window\.dispatchEvent\(new Event\(OPEN_SHOW_REFINEMENT_EVENT\)\)/);
+  assert.match(viewer, /window\.addEventListener\(OPEN_SHOW_REFINEMENT_EVENT, openRefinement\)/);
+  assert.match(viewer, /setCueDialogTab\('ai'\);[\s\S]*setShowAddForm\(true\)/);
 });
 
 test('preview content follows the shared heading hierarchy', () => {
