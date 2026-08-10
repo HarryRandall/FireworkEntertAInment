@@ -56,3 +56,11 @@ test('soundtrack shows do not begin a silent replay before audio is ready', () =
   assert.match(startPlayback, /Your soundtrack could not be loaded/);
   assert.match(autoplay, /if \(hasSoundtrack\) \{[\s\S]*router\.replace[\s\S]*return;/);
 });
+
+test('Restart resets and resumes both the soundtrack and replay clock', () => {
+  const restart = between(viewer, 'function restart()', 'function seekTo');
+
+  assert.match(restart, /if \(isPlaying\) \{[\s\S]*seekTo\(0, true\);[\s\S]*return;/);
+  assert.match(restart, /seekTo\(0, false\);[\s\S]*startPlayback\(\);/);
+  assert.doesNotMatch(restart, /setIsPlaying\(false\)/);
+});

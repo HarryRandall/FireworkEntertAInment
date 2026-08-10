@@ -530,8 +530,12 @@ export function FireworkReplayViewer({
   }
 
   function restart() {
-    setIsPlaying(false);
+    if (isPlaying) {
+      seekTo(0, true);
+      return;
+    }
     seekTo(0, false);
+    startPlayback();
   }
 
   function seekTo(timeSeconds: number, continuePlaying = isPlaying) {
