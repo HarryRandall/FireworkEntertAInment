@@ -48,7 +48,7 @@ test('direct shells use renderer-matched impacts while multishots anchor their s
   assert.match(timing, /scaleDesignForEmphasis/);
   assert.match(timing, /estimateFireworkLiftTimeSeconds/);
   assert.match(fast, /scheduleProductForCueSlot/);
-  assert.match(beat, /scheduleProductForImpact/);
+  assert.match(beat, /scheduleProductForCueSlot/);
   assert.match(runner, /scheduleProductForCueSlot/);
   assert.match(prompt, /For a direct single shot, t is its visible burst/);
   assert.match(prompt, /For a multishot, t is the start of its sustained sequence/);
@@ -123,22 +123,28 @@ test('fast planner raises safe density and honours style, surprise and recent-us
   assert.match(fast, /preferGentle: softFinale/);
   assert.match(fast, /direction\.softEnding && slot\.finale && !slot\.nearClimax/);
   assert.match(fast, /const tubeOrder =/);
+  assert.match(fast, /launchPositionCountForSlots\(slots\)/);
   assert.match(fast, /signature:[\s\S]*cinematic:[\s\S]*minimalist:/);
 });
 
 test('beat precision honours sparse pacing, palette and requested structural moments', () => {
   const beat = read('lib/cue-generation/beat-sync-planner.ts');
+  const moments = read('lib/cue-generation/beat-sync-moments.ts');
+  const beatPlanning = `${beat}\n${moments}`;
 
-  assert.match(beat, /parseCreativeDirection/);
-  assert.match(beat, /direction\.density === 'sparse'/);
-  assert.match(beat, /direction\.quietMiddle/);
-  assert.match(beat, /direction\.softEnding/);
-  assert.match(beat, /direction\.bigEnding/);
-  assert.match(beat, /direction\.surprise/);
+  assert.match(beatPlanning, /parseCreativeDirection/);
+  assert.match(beatPlanning, /direction\.density === 'sparse'/);
+  assert.match(beatPlanning, /direction\.quietMiddle/);
+  assert.match(beatPlanning, /direction\.softEnding/);
+  assert.match(beatPlanning, /direction\.bigEnding/);
+  assert.match(beatPlanning, /direction\.surprise/);
   assert.match(beat, /requestedColourFamilies/);
   assert.match(beat, /productDuration\(product\) <= shortest \+ 1\.5/);
   assert.match(beat, /spectacle: \[\.\.\.palettePool\]/);
-  assert.match(beat, /return pools\.spectacle/);
+  assert.match(beat, /sustained: \[\.\.\.sustainedShots\]/);
+  assert.match(beat, /shouldStartSustainedLayer/);
+  assert.match(beat, /target\.tubes/);
+  assert.match(beat, /occupied\.push\(\.\.\.accepted\.windows\)/);
 });
 
 test('LLM generation falls back when validation leaves a visibly thin show', () => {
@@ -147,9 +153,11 @@ test('LLM generation falls back when validation leaves a visibly thin show', () 
   assert.match(runner, /const targetFillRatio = sparseGeneration \? 0\.5 : 0\.75/);
   assert.match(runner, /estimateAchievableCueCount/);
   assert.match(runner, /slot\.nearClimax \|\| slot\.emphasis === 'peak'/);
+  assert.match(runner, /simultaneousStrongMoments/);
+  assert.match(runner, /usedTubes\.size < maxTubes/);
   assert.match(
     runner,
-    /accepted\.length < minimumViableCount \|\| missingProtectedSlots\.length > 0/,
+    /accepted\.length < minimumViableCount \|\|[\s\S]*missingProtectedSlots\.length > 0 \|\|[\s\S]*missingMultiTubeChoreography/,
   );
   assert.match(runner, /LLM did not meet viable show requirements after validation/);
 });

@@ -8,6 +8,7 @@
 import type { CueSlot, SlotVibe } from '@/lib/beat-grid.server';
 import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
+import { launchPositionCountForSlots } from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
@@ -74,7 +75,15 @@ export function planCuesFast(params: {
   const singles = productInfos.filter((p) => !p.isMultiShot);
   const multis = productInfos.filter((p) => p.isMultiShot);
   const singlePool = singles.length ? singles : productInfos;
-  const multiPool = multis.length ? multis : productInfos.filter((p) => p.durationSeconds > 4);
+  const laneLocalMultis = multis.filter(
+    ({ product }) =>
+      !product.hasLaunchPositionOverrides && !(product.launchPositionOverrideIndices?.length ?? 0),
+  );
+  const multiPool = laneLocalMultis.length
+    ? laneLocalMultis
+    : multis.length
+      ? multis
+      : productInfos.filter((p) => p.durationSeconds > 4);
 
   const userText = [brief.title, brief.description, ...(brief.mood_tags ?? [])]
     .filter(Boolean)
@@ -116,7 +125,7 @@ export function planCuesFast(params: {
       a.time - b.time ||
       a.tube - b.tube,
   );
-  const maxTubes = Math.max(1, Math.min(3, ...slots.map((slot) => slot.tube + 1))) as 1 | 2 | 3;
+  const maxTubes = launchPositionCountForSlots(slots);
 
   const occupied: OccupiedWindow[] = [];
   const multiImpacts = new Set<number>();
@@ -397,7 +406,14 @@ function shouldUseMultiShot(params: {
   // sequence start, so use a large direct shell here when one is available.
   if (isSurprise) return false;
   if (direction.softEnding && slot.finale && !slot.nearClimax) return false;
-  if (direction.precise && !slot.finale && !slot.nearClimax) return false;
+  if (
+    direction.precise &&
+    !slot.finale &&
+    !slot.nearClimax &&
+    !(slot.isDownbeat && (slot.vibe === 'chorus' || slot.vibe === 'drop'))
+  ) {
+    return false;
+  }
   if (direction.style === 'minimalist' && !slot.finale && !slot.nearClimax) return false;
   return (
     slot.nearClimax ||
