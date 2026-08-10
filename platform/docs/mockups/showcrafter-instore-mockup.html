@@ -1,0 +1,791 @@
+<title>ShowCrafter — in-store kiosk flow</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-muted: #f4f4f6;
+    --bg-subtle: #ededf1;
+    --bg-emphasis: #e1e1e7;
+    --border: #e5e5ea;
+    --border-strong: #d9d9e2;
+    --ink: #24242a;
+    --ink-2: #3d3d45;
+    --ink-3: #62646d;
+    --ink-4: #8b8d97;
+    --primary: #075f40;
+    --primary-fg: #ffffff;
+    --hl: #15bd8b;
+    --hl-soft: #d7f3e9;
+    --hl-ink: #075f40;
+    --danger: #b3261e;
+    --show-gold: #efb93f;
+    --show-green: #2ec487;
+    --show-violet: #8f7be8;
+    --show-sky: #38bdf8;
+    --show-rose: #fb7185;
+    --bezel: #0c0c0e;
+    --bezel-edge: #2a2a2e;
+    --card-shadow: 0 20px 45px -24px rgba(15, 15, 20, 0.35);
+    --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b;
+      --bg-muted: #050507;
+      --bg-subtle: #171719;
+      --bg-emphasis: #242428;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --ink: #fafafa;
+      --ink-2: #e4e4e7;
+      --ink-3: #a1a1aa;
+      --ink-4: #71717a;
+      --primary: #1fd093;
+      --primary-fg: #053024;
+      --hl: #2ee0a3;
+      --hl-soft: #0f3026;
+      --hl-ink: #46e7b0;
+      --danger: #f2a29c;
+      --bezel: #000000;
+      --bezel-edge: #232326;
+      --card-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #09090b;
+    --bg-muted: #050507;
+    --bg-subtle: #171719;
+    --bg-emphasis: #242428;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --ink: #fafafa;
+    --ink-2: #e4e4e7;
+    --ink-3: #a1a1aa;
+    --ink-4: #71717a;
+    --primary: #1fd093;
+    --primary-fg: #053024;
+    --hl: #2ee0a3;
+    --hl-soft: #0f3026;
+    --hl-ink: #46e7b0;
+    --danger: #f2a29c;
+    --bezel: #000000;
+    --bezel-edge: #232326;
+    --card-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    --bg: #ffffff;
+    --bg-muted: #f4f4f6;
+    --bg-subtle: #ededf1;
+    --bg-emphasis: #e1e1e7;
+    --border: #e5e5ea;
+    --border-strong: #d9d9e2;
+    --ink: #24242a;
+    --ink-2: #3d3d45;
+    --ink-3: #62646d;
+    --ink-4: #8b8d97;
+    --primary: #075f40;
+    --primary-fg: #ffffff;
+    --hl: #15bd8b;
+    --hl-soft: #d7f3e9;
+    --hl-ink: #075f40;
+    --danger: #b3261e;
+    --bezel: #0c0c0e;
+    --bezel-edge: #2a2a2e;
+    --card-shadow: 0 20px 45px -24px rgba(15, 15, 20, 0.35);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .page {
+    font-family: var(--sans);
+    color: var(--ink-2);
+    background: var(--bg);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---- header ---- */
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hl-ink);
+  }
+  h1 {
+    font-size: clamp(26px, 3.4vw, 34px);
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.4rem 0 0.6rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    max-width: 62ch;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--ink-3);
+    margin: 0 0 1.5rem;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 2.6rem;
+  }
+  .legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-muted);
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+  .legend-chip .icon { color: var(--hl-ink); }
+
+  /* ---- flow section ---- */
+  .flow {
+    padding-top: 2.6rem;
+    border-top: 1px solid var(--border);
+  }
+  .flow:first-of-type { border-top: none; padding-top: 0; }
+  .flow-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 1.9rem;
+  }
+  .flow-head h2 {
+    font-size: 21px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.3rem 0 0.4rem;
+    letter-spacing: -0.01em;
+  }
+  .flow-head p {
+    max-width: 54ch;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  .qr-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-muted);
+    flex-shrink: 0;
+  }
+  .qr-badge .qr-icon {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: var(--ink);
+    color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qr-badge .qr-icon .icon { width: 17px; height: 17px; }
+  .qr-badge-text { font-size: 12px; color: var(--ink-3); line-height: 1.4; }
+  .qr-badge-text strong { display: block; font-size: 12.5px; color: var(--ink); font-weight: 600; }
+
+  /* ---- phone strip ---- */
+  .strip {
+    display: flex;
+    gap: 30px;
+    overflow-x: auto;
+    padding: 6px 4px 14px;
+    scroll-snap-type: x proximity;
+  }
+  .step {
+    flex: 0 0 auto;
+    width: 252px;
+    scroll-snap-align: start;
+  }
+  .step-cap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--hl-ink);
+    background: var(--hl-soft);
+    border-radius: 6px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+  }
+  .step-title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .step-desc {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-3);
+    margin: 5px 0 14px;
+    min-height: 34px;
+  }
+
+  /* ---- device frame ---- */
+  .phone {
+    width: 252px;
+    height: 528px;
+    background: var(--bezel);
+    border-radius: 34px;
+    padding: 9px;
+    box-shadow: var(--card-shadow), inset 0 0 0 1px var(--bezel-edge);
+  }
+  .screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 26px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .notch {
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 62px; height: 16px;
+    background: var(--bezel);
+    border-radius: 999px;
+    z-index: 5;
+  }
+  .statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 18px 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink);
+    flex-shrink: 0;
+  }
+  .screen-body {
+    flex: 1;
+    min-height: 0;
+    padding: 6px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 12px;
+  }
+
+  /* ---- shared UI atoms inside phones ---- */
+  .browserbar {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    margin: 0 12px 8px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--bg-subtle);
+  }
+  .browserbar .icon { width: 10px; height: 10px; color: var(--ink-4); }
+  .browserbar span { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); }
+
+  .scr-h1 { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin: 2px 0 0; text-wrap: balance; }
+  .scr-sub { font-size: 11.5px; color: var(--ink-3); line-height: 1.45; margin: 0; }
+
+  .field-label { font-size: 10.5px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; display: block; }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    font-family: var(--mono);
+  }
+  .chip.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+
+  .input-shell {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-muted);
+    border-radius: 11px;
+    padding: 9px 11px;
+  }
+  .input-shell .icon { width: 14px; height: 14px; color: var(--ink-4); flex-shrink: 0; }
+  .input-shell span.ph { font-size: 11px; color: var(--ink-4); }
+  .input-shell span.val { font-size: 11.5px; color: var(--ink); font-weight: 500; }
+
+  .song-chip {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    border-radius: 11px;
+    padding: 8px 10px;
+  }
+  .song-wave { width: 26px; height: 26px; border-radius: 7px; background: var(--hl-soft); color: var(--hl-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .song-wave .icon { width: 14px; height: 14px; }
+  .song-meta strong { display: block; font-size: 11.5px; color: var(--ink); font-weight: 600; }
+  .song-meta span { font-size: 10px; color: var(--ink-3); }
+
+  .textarea-shell {
+    border: 1px solid var(--border-strong);
+    background: var(--bg-muted);
+    border-radius: 11px;
+    padding: 9px 11px;
+    font-size: 11px;
+    color: var(--ink-4);
+    line-height: 1.5;
+    min-height: 46px;
+  }
+
+  .lock-pack {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-muted);
+    border-radius: 13px;
+    padding: 10px;
+  }
+  .lock-pack .thumb {
+    width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0;
+    background: radial-gradient(60% 60% at 30% 30%, var(--show-gold), transparent), radial-gradient(60% 60% at 70% 70%, var(--show-green), transparent), var(--ink);
+  }
+  .lock-pack-meta { flex: 1; min-width: 0; }
+  .lock-pack-meta strong { display: block; font-size: 12px; color: var(--ink); font-weight: 600; }
+  .lock-pack-meta .price-row { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+  .price-row .icon { width: 10px; height: 10px; color: var(--hl-ink); }
+  .price-row .price { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  .price-row .locked-tag { font-size: 9.5px; color: var(--hl-ink); background: var(--hl-soft); border-radius: 5px; padding: 1px 5px; margin-left: 2px; }
+
+  .cta {
+    margin-top: auto;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--primary); color: var(--primary-fg);
+    border-radius: 11px;
+    padding: 11px;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  .cta .icon { width: 13px; height: 13px; }
+  .cta.secondary { background: transparent; color: var(--ink); border: 1px solid var(--border-strong); }
+  .cta.ghost { background: var(--bg-muted); color: var(--ink-2); border: 1px solid var(--border); }
+  .micro { text-align: center; font-size: 9.5px; color: var(--ink-4); margin-top: 4px; }
+
+  /* generating screen */
+  .gen-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
+  .eq { display: flex; align-items: flex-end; gap: 4px; height: 30px; }
+  .eq span { width: 5px; border-radius: 3px; background: var(--hl); animation: eqbounce 1.1s ease-in-out infinite; }
+  .eq span:nth-child(1) { height: 30%; animation-delay: 0s; }
+  .eq span:nth-child(2) { height: 70%; animation-delay: 0.12s; }
+  .eq span:nth-child(3) { height: 100%; animation-delay: 0.24s; }
+  .eq span:nth-child(4) { height: 55%; animation-delay: 0.36s; }
+  .eq span:nth-child(5) { height: 80%; animation-delay: 0.48s; }
+  @keyframes eqbounce { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+  @media (prefers-reduced-motion: reduce) { .eq span { animation: none; height: 60% !important; } }
+  .gen-title { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .gen-sub { font-size: 11px; color: var(--ink-3); max-width: 190px; line-height: 1.5; }
+  .gen-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--ink-3); background: var(--bg-muted); border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; }
+  .gen-chip .icon { width: 11px; height: 11px; }
+
+  /* result screen */
+  .cover {
+    position: relative;
+    height: 118px;
+    border-radius: 14px;
+    overflow: hidden;
+    background:
+      radial-gradient(90% 100% at 15% 0%, color-mix(in srgb, var(--show-rose) 55%, transparent), transparent 60%),
+      radial-gradient(90% 100% at 100% 10%, color-mix(in srgb, var(--show-violet) 60%, transparent), transparent 60%),
+      radial-gradient(110% 110% at 50% 120%, color-mix(in srgb, var(--show-sky) 55%, transparent), transparent 60%),
+      radial-gradient(100% 110% at 90% 100%, color-mix(in srgb, var(--show-gold) 50%, transparent), transparent 55%),
+      #0c0c10;
+    flex-shrink: 0;
+  }
+  .cover-top { position: absolute; top: 9px; left: 9px; right: 9px; display: flex; justify-content: space-between; }
+  .dur-pill { font-family: var(--mono); font-size: 10px; color: #fff; background: rgba(0,0,0,0.4); border-radius: 999px; padding: 2px 8px; }
+  .cover-bottom { position: absolute; left: 10px; right: 10px; bottom: 9px; }
+  .cover-bottom strong { color: #fff; font-size: 13.5px; font-weight: 600; display: block; }
+  .play-btn {
+    position: absolute; right: 10px; bottom: 9px;
+    width: 26px; height: 26px; border-radius: 999px;
+    background: #fff; color: #0c0c10;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .play-btn .icon { width: 11px; height: 11px; }
+
+  .pack-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--hl-soft); color: var(--hl-ink);
+    border-radius: 999px; padding: 5px 10px;
+    font-size: 10.5px; font-weight: 600;
+    align-self: flex-start;
+  }
+  .pack-badge .icon { width: 11px; height: 11px; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-tile { background: var(--bg-muted); border-radius: 10px; padding: 7px 8px; }
+  .stat-tile .stat-label { font-size: 9px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat-tile .stat-val { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink); margin-top: 1px; }
+
+  .list-card { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; }
+  .list-summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 11px; border-bottom: 1px solid var(--border); }
+  .list-summary .name { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .list-summary .amt { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink); flex-shrink: 0; }
+  .list-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 11px; font-size: 10px; color: var(--ink-3); background: var(--bg-muted); }
+  .list-toggle .icon { width: 11px; height: 11px; color: var(--ink-4); flex-shrink: 0; }
+  .list-contents { padding: 5px 11px 9px; display: flex; flex-direction: column; gap: 4px; }
+  .list-subrow { font-size: 10.5px; color: var(--ink-2); }
+  .list-subrow .qty { color: var(--ink-4); margin-right: 4px; font-family: var(--mono); }
+
+  .not-happy-link { text-align: center; font-size: 11px; color: var(--ink-3); }
+  .not-happy-link a-fake { color: var(--hl-ink); font-weight: 600; }
+
+  /* sheet screen */
+  .sheet-scrim { flex: 1; background: rgba(9,9,11,0.42); display: flex; align-items: flex-end; margin: -6px -14px -14px; }
+  .sheet { background: var(--bg); border-radius: 20px 20px 0 0; padding: 14px 16px 16px; width: 100%; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -10px 30px -20px rgba(0,0,0,0.4); }
+  .sheet-grabber { width: 34px; height: 4px; border-radius: 999px; background: var(--border-strong); margin: 0 auto 4px; }
+  .sheet-title { font-size: 14px; font-weight: 600; color: var(--ink); text-align: center; margin: 0 0 2px; }
+  .option-card { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--border-strong); border-radius: 12px; padding: 10px; }
+  .option-card .opt-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--hl-soft); color: var(--hl-ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .option-card .opt-ic .icon { width: 15px; height: 15px; }
+  .option-card strong { display: block; font-size: 12px; color: var(--ink); font-weight: 600; }
+  .option-card p { margin: 2px 0 0; font-size: 10.5px; color: var(--ink-3); line-height: 1.4; }
+  .sheet-cancel { text-align: center; font-size: 11px; color: var(--ink-4); padding-top: 2px; }
+
+  /* callout */
+  .callout {
+    margin-top: 2.8rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 14px;
+  }
+  .callout-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    background: var(--bg-muted);
+  }
+  .callout-card .icon-wrap { width: 30px; height: 30px; border-radius: 9px; background: var(--hl-soft); color: var(--hl-ink); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .callout-card .icon-wrap .icon { width: 15px; height: 15px; }
+  .callout-card h3 { font-size: 13.5px; font-weight: 600; color: var(--ink); margin: 0 0 5px; }
+  .callout-card p { font-size: 12.5px; line-height: 1.55; color: var(--ink-3); margin: 0; }
+
+  .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+  @media (max-width: 640px) {
+    .page { padding: 1.75rem 1rem 3rem; }
+    .flow-head { flex-direction: column; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20 15 9"/><path d="M13 4v2M18 4v2M20.5 6.5h-2M15.5 6.5h-2"/><path d="M19 13v2M21 15h-2M17 15h2"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></symbol>
+    <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 6.5c0-1.9-2-3-5-3s-5 1.2-5 3 2 2.7 5 3 5 1.1 5 3-2 3-5 3-5-1.1-5-3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v11H9L4 20V5.5Z"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24"><path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z"/><path d="M3.7 7.6 12 12l8.3-4.4"/><path d="M12 12v9"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5-13-7.5Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.6-5.9M20.5 12a8.5 8.5 0 0 1-14.6 5.9"/><path d="M18.5 3v4.5H14M5.5 21v-4.5H10"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/></symbol>
+    <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><path d="M14.5 14.5h2.5v2.5h-2.5zM19.5 14.5v2.5M14.5 19.5h5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 19.5h15"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z"/><path d="M14 6.5l3.5 3.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+  <p class="eyebrow">ShowCrafter · in-store consumer flow</p>
+  <h1>Two QR entry points, one streamlined kiosk experience</h1>
+  <p class="lede">
+    ShowCrafter stays a web app throughout: each QR code opens the flow straight in the shopper's own mobile
+    browser, no install and no account. No library browsing, no admin surface. The AI always proposes a show
+    built from real shelf stock first; a person only reaches individual-product picking if they choose to.
+  </p>
+  <div class="legend">
+    <span class="legend-chip"><svg class="icon"><use href="#i-wand"/></svg>Marker green = AI-driven action</span>
+    <span class="legend-chip"><svg class="icon"><use href="#i-lock"/></svg>Lock = value fixed by the scan, not editable</span>
+    <span class="legend-chip"><svg class="icon"><use href="#i-package"/></svg>Pack badge = which assortment the show was built from</span>
+  </div>
+
+  <section class="flow">
+    <div class="flow-head">
+      <div>
+        <p class="eyebrow">Entry point 1</p>
+        <h2>Scanned a QR code at the storefront</h2>
+        <p>A general kiosk code at the entrance or till. The shopper hasn't picked a product yet, so the wizard asks for budget, song and any extra flavour, then the AI chooses the assortment.</p>
+      </div>
+      <div class="qr-badge">
+        <span class="qr-icon"><svg class="icon"><use href="#i-qr"/></svg></span>
+        <span class="qr-badge-text"><strong>Storefront kiosk code</strong>No product context yet</span>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="step">
+        <div class="step-cap"><span class="step-num">01</span><span class="step-title">Prompt</span></div>
+        <p class="step-desc">Budget, song and an optional customisation note. Everything the fast planner needs in one screen.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body">
+            <h3 class="scr-h1">Design your show</h3>
+            <p class="scr-sub">We'll build it from today's in-store assortments.</p>
+
+            <div>
+              <span class="field-label">Budget</span>
+              <div class="chip-row">
+                <span class="chip">$75</span>
+                <span class="chip active">$150</span>
+                <span class="chip">$300</span>
+                <span class="chip">Custom</span>
+              </div>
+            </div>
+
+            <div>
+              <span class="field-label">Song</span>
+              <div class="song-chip">
+                <span class="song-wave"><svg class="icon"><use href="#i-music"/></svg></span>
+                <span class="song-meta"><strong>Fireworks</strong><span>Katy Perry · 3:48</span></span>
+              </div>
+            </div>
+
+            <div>
+              <span class="field-label">Anything else? (optional)</span>
+              <div class="textarea-shell">Big finale, blue and gold, kid-friendly&hellip;</div>
+            </div>
+
+            <div class="cta">Generate my show <svg class="icon"><use href="#i-chevron"/></svg></div>
+            <p class="micro">Uses only today's in-store assortments</p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="step">
+        <div class="step-cap"><span class="step-num">02</span><span class="step-title">Generating</span></div>
+        <p class="step-desc">Quiet, brief loading state. No background jargon, just a sense the store's shelf is being checked.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body">
+            <div class="gen-wrap">
+              <div class="eq"><span></span><span></span><span></span><span></span><span></span></div>
+              <p class="gen-title">Building your show</p>
+              <p class="gen-sub">Matching Fireworks by Katy Perry to a pack from today's shelf&hellip;</p>
+              <span class="gen-chip"><svg class="icon"><use href="#i-package"/></svg>Checking 6 assortments in stock</span>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="step">
+        <div class="step-cap"><span class="step-num">03</span><span class="step-title">Result</span></div>
+        <p class="step-desc">The finished show, the pack it drew from, and a live shopping list, all on one screen.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body">
+            <div class="cover">
+              <div class="cover-top"><span></span><span class="dur-pill tabular">3:48</span></div>
+              <div class="cover-bottom"><strong>Fireworks Finale</strong></div>
+              <span class="play-btn"><svg class="icon"><use href="#i-play"/></svg></span>
+            </div>
+            <span class="pack-badge"><svg class="icon"><use href="#i-package"/></svg>Built from: Comet Trail Assortment</span>
+            <div class="stat-row">
+              <div class="stat-tile"><div class="stat-label">Total</div><div class="stat-val tabular">$148.00</div></div>
+              <div class="stat-tile"><div class="stat-label">Pieces</div><div class="stat-val tabular">7</div></div>
+              <div class="stat-tile"><div class="stat-label">Runtime</div><div class="stat-val tabular">3:48</div></div>
+            </div>
+            <div class="list-card">
+              <div class="list-summary"><span class="name">Comet Trail Assortment</span><span class="amt tabular">$148.00</span></div>
+              <div class="list-toggle"><svg class="icon" style="transform: rotate(90deg);"><use href="#i-chevron"/></svg><span>7 products in this pack</span></div>
+              <div class="list-contents">
+                <div class="list-subrow"><span class="qty tabular">2×</span>Comet Trail Multishot</div>
+                <div class="list-subrow"><span class="qty tabular">3×</span>Gold Willow Single Shot</div>
+                <div class="list-subrow"><span class="qty tabular">2×</span>Sky Sparkler Fountain</div>
+              </div>
+            </div>
+            <div class="cta secondary"><svg class="icon"><use href="#i-download"/></svg>Firing script</div>
+            <div class="cta secondary"><svg class="icon"><use href="#i-download"/></svg>Song</div>
+            <p class="not-happy-link">Not quite right? <strong style="color:var(--hl-ink);">Change it</strong></p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="step">
+        <div class="step-cap"><span class="step-num">04</span><span class="step-title">Not happy</span></div>
+        <p class="step-desc">Three ways out: reprompt for a different pack, tweak the song or budget, or let the AI redesign it from individual products.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body" style="padding:0;">
+            <div class="sheet-scrim">
+              <div class="sheet">
+                <div class="sheet-grabber"></div>
+                <p class="sheet-title">Not quite right?</p>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                  <div><strong>Try another assortment</strong><p>Let the AI pick a different in-stock pack for the same budget.</p></div>
+                </div>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-edit"/></svg></span>
+                  <div><strong>Change song or budget</strong><p>Go back and adjust what you told us, then we'll regenerate.</p></div>
+                </div>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-sliders"/></svg></span>
+                  <div><strong>Custom mode</strong><p>The AI redesigns the show again, this time choosing from individual products instead of a prebuilt pack.</p></div>
+                </div>
+                <p class="sheet-cancel">Keep this show</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="flow">
+    <div class="flow-head">
+      <div>
+        <p class="eyebrow">Entry point 2</p>
+        <h2>Scanned a QR code on an assortment box in-aisle</h2>
+        <p>The code is printed on a specific pack, so the product and its price are already known. Budget is set automatically; the wizard only ever asks for the song.</p>
+      </div>
+      <div class="qr-badge">
+        <span class="qr-icon"><svg class="icon"><use href="#i-qr"/></svg></span>
+        <span class="qr-badge-text"><strong>On-product code</strong>Pack + price known</span>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="step">
+        <div class="step-cap"><span class="step-num">01</span><span class="step-title">Prompt</span></div>
+        <p class="step-desc">Budget is locked to the scanned pack's shelf price. One field left to fill: the song.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body">
+            <div class="lock-pack">
+              <span class="thumb"></span>
+              <div class="lock-pack-meta">
+                <strong>Backyard Bash Assortment</strong>
+                <div class="price-row"><svg class="icon"><use href="#i-dollar"/></svg><span class="price tabular">$148.00</span><span class="locked-tag"><svg class="icon" style="width:9px;height:9px;display:inline;vertical-align:-1px;"><use href="#i-lock"/></svg> budget locked</span></div>
+              </div>
+            </div>
+            <h3 class="scr-h1" style="margin-top:2px;">Pick your song</h3>
+            <p class="scr-sub">We'll design the show around this pack and your track.</p>
+            <div class="input-shell">
+              <svg class="icon"><use href="#i-search"/></svg>
+              <span class="ph">Song, artist, or describe a vibe&hellip;</span>
+            </div>
+            <div class="cta">Generate my show <svg class="icon"><use href="#i-chevron"/></svg></div>
+            <p class="micro">Budget fixed to this pack &middot; no other setup needed</p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="step">
+        <div class="step-cap"><span class="step-num">02</span><span class="step-title">Result</span></div>
+        <p class="step-desc">Same result layout as entry point 1, but the pack badge and price both trace back to the scanned product.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body">
+            <div class="cover" style="background:
+              radial-gradient(90% 100% at 15% 0%, color-mix(in srgb, var(--show-green) 55%, transparent), transparent 60%),
+              radial-gradient(90% 100% at 100% 10%, color-mix(in srgb, var(--show-sky) 55%, transparent), transparent 60%),
+              radial-gradient(110% 110% at 50% 120%, color-mix(in srgb, var(--show-gold) 50%, transparent), transparent 60%),
+              #0c0c10;">
+              <div class="cover-top"><span></span><span class="dur-pill tabular">3:12</span></div>
+              <div class="cover-bottom"><strong>Backyard Bash Show</strong></div>
+              <span class="play-btn"><svg class="icon"><use href="#i-play"/></svg></span>
+            </div>
+            <span class="pack-badge"><svg class="icon"><use href="#i-lock"/></svg>From your scanned pack</span>
+            <div class="stat-row">
+              <div class="stat-tile"><div class="stat-label">Total</div><div class="stat-val tabular">$148.00</div></div>
+              <div class="stat-tile"><div class="stat-label">Pieces</div><div class="stat-val tabular">6</div></div>
+              <div class="stat-tile"><div class="stat-label">Runtime</div><div class="stat-val tabular">3:12</div></div>
+            </div>
+            <div class="list-card">
+              <div class="list-summary"><span class="name">Backyard Bash Assortment</span><span class="amt tabular">$148.00</span></div>
+              <div class="list-toggle"><svg class="icon" style="transform: rotate(90deg);"><use href="#i-chevron"/></svg><span>6 products in this pack</span></div>
+              <div class="list-contents">
+                <div class="list-subrow"><span class="qty tabular">1×</span>Backyard Bash Multishot</div>
+                <div class="list-subrow"><span class="qty tabular">4×</span>Rose Fountain</div>
+                <div class="list-subrow"><span class="qty tabular">1×</span>Willow Finale Shell</div>
+              </div>
+            </div>
+            <div class="cta secondary"><svg class="icon"><use href="#i-download"/></svg>Firing script</div>
+            <div class="cta secondary"><svg class="icon"><use href="#i-download"/></svg>Song</div>
+            <p class="not-happy-link">Not quite right? <strong style="color:var(--hl-ink);">Change it</strong></p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="step">
+        <div class="step-cap"><span class="step-num">03</span><span class="step-title">Not happy</span></div>
+        <p class="step-desc">The same exit sheet, minus the budget option since price is fixed to the pack: swap assortment, change the song, or hand off to custom mode.</p>
+        <div class="phone"><div class="screen"><div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+          <div class="browserbar"><svg class="icon"><use href="#i-lock"/></svg><span>showcrafter.app</span></div>
+          <div class="screen-body" style="padding:0;">
+            <div class="sheet-scrim">
+              <div class="sheet">
+                <div class="sheet-grabber"></div>
+                <p class="sheet-title">Not quite right?</p>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-refresh"/></svg></span>
+                  <div><strong>Try a different assortment</strong><p>Swap this pack for another at a similar price point.</p></div>
+                </div>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-edit"/></svg></span>
+                  <div><strong>Change your song</strong><p>Keep this pack's price, just try a different track.</p></div>
+                </div>
+                <div class="option-card">
+                  <span class="opt-ic"><svg class="icon"><use href="#i-sliders"/></svg></span>
+                  <div><strong>Custom mode</strong><p>The AI redesigns the show again, this time choosing from individual products instead of a prebuilt pack.</p></div>
+                </div>
+                <p class="sheet-cancel">Keep this show</p>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="callout">
+    <div class="callout-card">
+      <span class="icon-wrap"><svg class="icon"><use href="#i-package"/></svg></span>
+      <h3>Assortment-first by default</h3>
+      <p>Both entry points generate from pre-built, in-stock packs before ever touching individual products, so a first-time shopper always gets a coherent, in-budget show on the first try.</p>
+    </div>
+    <div class="callout-card">
+      <span class="icon-wrap"><svg class="icon"><use href="#i-refresh"/></svg></span>
+      <h3>One shared recovery pattern</h3>
+      <p>Whichever way someone entered, dissatisfaction resolves through the same sheet: reprompt for another assortment, adjust an input and regenerate, or switch to custom mode, where the AI keeps designing but chooses from individual products instead of a prebuilt pack.</p>
+    </div>
+    <div class="callout-card">
+      <span class="icon-wrap"><svg class="icon"><use href="#i-lock"/></svg></span>
+      <h3>Fewer decisions per scan</h3>
+      <p>The storefront code asks three questions; the on-product code asks one. Budget and pack context come for free from wherever the phone was scanned.</p>
+    </div>
+  </div>
+</div>
