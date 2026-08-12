@@ -5,8 +5,10 @@ Output: a Markdown file of timestamped musical events ready to feed into an LLM.
 """
 
 import argparse
+import subprocess
 import time
 from typing import Annotated, Any, Literal
+import audioread
 import librosa
 import numpy as np
 import json
@@ -15,6 +17,7 @@ import sys
 import scipy.ndimage
 import scipy.sparse.csgraph
 import sklearn.cluster
+import soundfile as sf
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from scipy.signal import find_peaks, savgol_filter
 
@@ -70,6 +73,20 @@ BUILDUP_TARGET_SECONDS = 45.0
 BUILDUP_MIN_SPACING_SEC = 14.0
 MAX_BUILDUPS = 6
 PRE_CHORUS_MAX_DURATION_SEC = 24.0
+MIN_SPECTRAL_BEATS = 8
+MIN_SPECTRAL_DURATION_SEC = 20.0
+TARGET_SAMPLE_RATE = 22050
+MAX_AUDIO_DURATION_SECONDS = 15 * 60
+MAX_DECODED_SAMPLES = TARGET_SAMPLE_RATE * MAX_AUDIO_DURATION_SECONDS
+MAX_BEAT_EVENTS = 10_000
+MAX_ONSET_EVENTS = 50_000
+MAX_ENERGY_POINTS = 2_000
+MAX_SECTIONS = 256
+MAX_KEY_MOMENTS = 512
+MAX_BUILDUP_EVENTS = 512
+MAX_FIREWORK_CUES = 12_000
+MAX_ANCHOR_WINDOWS = 1_024
+FFPROBE_TIMEOUT_SECONDS = 10
 
 STYLE_DIMENSIONS = (
     "boldness",
@@ -147,10 +164,12 @@ PERSONALITY_PRESETS = {
     },
 }
 
-SchemaVersion = Literal["1.3.0", "1.4.0"]
+SchemaVersion = Literal["1.4.0"]
 Score = Annotated[float, Field(ge=0.0, le=1.0)]
 NonNegativeFloat = Annotated[float, Field(ge=0.0)]
+PositiveFloat = Annotated[float, Field(gt=0.0)]
 NonNegativeInt = Annotated[int, Field(ge=0)]
+NonEmptyString = Annotated[str, Field(min_length=1)]
 SectionLabel = Literal[
     "intro",
     "verse",
@@ -170,11 +189,11 @@ DensityLevel = Literal["low", "medium", "high"]
 
 
 class SchemaModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
 
 class KeySignatureModel(SchemaModel):
-    root: str
+    root: NonEmptyString
     mode: Literal["major", "minor"]
     confidence: Score
 
@@ -220,17 +239,17 @@ class BlendWeightsModel(SchemaModel):
 
 
 class PaletteDirectionModel(SchemaModel):
-    primary: str
-    secondary: str
-    accent: str
+    primary: NonEmptyString
+    secondary: NonEmptyString
+    accent: NonEmptyString
 
 
 class MusicProfileModel(SchemaModel):
-    genre_hint: str
+    genre_hint: NonEmptyString
     key_signature: KeySignatureModel
     descriptors: DescriptorModel
     style_vector: StyleVectorModel
-    dominant_traits: list[str]
+    dominant_traits: list[NonEmptyString]
     raw_metrics: RawMetricsModel
 
 
@@ -238,10 +257,10 @@ class ShowPersonalityModel(SchemaModel):
     preset: Literal["balanced", "bold", "cinematic", "elegant", "intimate", "playful"]
     blend_weights: BlendWeightsModel
     dimensions: StyleVectorModel
-    dominant_traits: list[str]
+    dominant_traits: list[NonEmptyString]
     palette_direction: PaletteDirectionModel
     density_level: DensityLevel
-    genre_hint: str
+    genre_hint: NonEmptyString
 
 
 class EnergyPointModel(SchemaModel):
@@ -314,16 +333,16 @@ class FireworkCueModel(SchemaModel):
     time: NonNegativeFloat
     end: NonNegativeFloat | None = None
     effect: CueEffect
-    reason: str
+    reason: NonEmptyString
     energy: Score
     section: SectionLabel
-    palette: str
-    shape: str
-    height: str
-    spread: str
-    density: str
-    style_tags: list[str]
-    genre_hint: str
+    palette: NonEmptyString
+    shape: NonEmptyString
+    height: NonEmptyString
+    spread: NonEmptyString
+    density: NonEmptyString
+    style_tags: list[NonEmptyString]
+    genre_hint: NonEmptyString
 
     @model_validator(mode="after")
     def validate_range(self):
@@ -346,7 +365,7 @@ class AnalysisTimingsModel(SchemaModel):
 
 class AnalysisMetaModel(SchemaModel):
     mode: Literal["fast"]
-    runner_version: str
+    runner_version: NonEmptyString
     timings_ms: AnalysisTimingsModel
 
 
@@ -373,6 +392,8 @@ class AnchorWindowModel(SchemaModel):
     def validate_anchor_payload(self):
         if self.end < self.start:
             raise ValueError("anchor window end must be greater than or equal to start")
+        if self.anchor_time < self.start or self.anchor_time > self.end:
+            raise ValueError("anchor time must be inside the anchor window")
         if self.type == "climax" and self.energy is None:
             raise ValueError("climax anchor windows require energy")
         if self.type == "buildup" and self.energy_rise is None:
@@ -381,35 +402,33 @@ class AnchorWindowModel(SchemaModel):
 
 
 class DerivedFeaturesModel(SchemaModel):
-    finale_window: FinaleWindowModel | None = None
-    quietest_section_index: NonNegativeInt | None = None
-    highest_energy_section_index: NonNegativeInt | None = None
+    finale_window: FinaleWindowModel | None
+    quietest_section_index: NonNegativeInt | None
+    highest_energy_section_index: NonNegativeInt | None
     repeated_chorus_count: NonNegativeInt
     section_rank_by_energy: list[NonNegativeInt]
-    anchor_windows: list[AnchorWindowModel]
+    anchor_windows: Annotated[list[AnchorWindowModel], Field(max_length=MAX_ANCHOR_WINDOWS)]
 
 
 class AnalysisResultModel(SchemaModel):
     schema_version: SchemaVersion
-    file: str
+    file: NonEmptyString
     analysis_meta: AnalysisMetaModel
-    duration_seconds: NonNegativeFloat
+    duration_seconds: Annotated[float, Field(gt=0.0, le=MAX_AUDIO_DURATION_SECONDS)]
     tempo_bpm: NonNegativeFloat
     total_beats: NonNegativeInt
-    beat_times: list[NonNegativeFloat]
-    onset_times: list[NonNegativeFloat]
-    energy_timeline: list[EnergyPointModel]
-    sections: list[SectionModel]
-    key_moments: list[KeyMomentModel]
-    buildups: list[BuildupModel]
+    beat_times: Annotated[list[NonNegativeFloat], Field(max_length=MAX_BEAT_EVENTS)]
+    onset_times: Annotated[list[NonNegativeFloat], Field(max_length=MAX_ONSET_EVENTS)]
+    energy_timeline: Annotated[list[EnergyPointModel], Field(max_length=MAX_ENERGY_POINTS)]
+    sections: Annotated[list[SectionModel], Field(min_length=1, max_length=MAX_SECTIONS)]
+    key_moments: Annotated[list[KeyMomentModel], Field(max_length=MAX_KEY_MOMENTS)]
+    buildups: Annotated[list[BuildupModel], Field(max_length=MAX_BUILDUP_EVENTS)]
     music_profile: MusicProfileModel
     show_personality: ShowPersonalityModel
-    firework_cues: list[FireworkCueModel]
+    firework_cues: Annotated[list[FireworkCueModel], Field(max_length=MAX_FIREWORK_CUES)]
     derived: DerivedFeaturesModel
-    # Bar grid (schema 1.4.0). Optional with defaults so older 1.3.0 payloads
-    # still validate; `analyse_song` always populates them for new runs.
-    downbeat_times: list[NonNegativeFloat] = Field(default_factory=list)
-    beats_per_bar: NonNegativeInt = 4
+    downbeat_times: Annotated[list[NonNegativeFloat], Field(max_length=MAX_BEAT_EVENTS)]
+    beats_per_bar: Literal[2, 3, 4]
 
     @model_validator(mode="after")
     def validate_times_within_duration(self):
@@ -426,6 +445,51 @@ class AnalysisResultModel(SchemaModel):
         ]
         if any(value > duration for value in timed_values):
             raise ValueError("timed analysis fields must not exceed song duration")
+
+        if self.total_beats != len(self.beat_times):
+            raise ValueError("total_beats must equal the number of beat_times")
+
+        def validate_order(values, get_time, *, strict, label):
+            for previous, current in zip(values, values[1:]):
+                previous_time = get_time(previous)
+                current_time = get_time(current)
+                if current_time < previous_time or (strict and current_time == previous_time):
+                    qualifier = "strictly increasing" if strict else "sorted"
+                    raise ValueError(f"{label} times must be {qualifier}")
+
+        validate_order(self.beat_times, lambda value: value, strict=True, label="beat_times")
+        validate_order(self.onset_times, lambda value: value, strict=False, label="onset_times")
+        validate_order(self.downbeat_times, lambda value: value, strict=True, label="downbeat_times")
+        validate_order(self.energy_timeline, lambda point: point.time, strict=True, label="energy_timeline")
+        validate_order(self.key_moments, lambda moment: moment.time, strict=False, label="key_moments")
+        validate_order(self.buildups, lambda buildup: buildup.peak, strict=False, label="buildups")
+        validate_order(self.firework_cues, lambda cue: cue.time, strict=False, label="firework_cues")
+
+        for previous, current in zip(self.sections, self.sections[1:]):
+            if current.start < previous.end:
+                raise ValueError("sections must be ordered and non-overlapping")
+
+        beat_index = 0
+        for downbeat in self.downbeat_times:
+            while beat_index < len(self.beat_times) and self.beat_times[beat_index] < downbeat - 0.06:
+                beat_index += 1
+            if beat_index >= len(self.beat_times) or abs(self.beat_times[beat_index] - downbeat) > 0.06:
+                raise ValueError("every downbeat must align with a beat within 60 ms")
+
+        section_count = len(self.sections)
+        section_indices = (
+            self.derived.quietest_section_index,
+            self.derived.highest_energy_section_index,
+        )
+        if any(index is not None and index >= section_count for index in section_indices):
+            raise ValueError("derived section indices must refer to existing sections")
+        rank = self.derived.section_rank_by_energy
+        if len(rank) != section_count or len(set(rank)) != len(rank) or any(index >= section_count for index in rank):
+            raise ValueError("section_rank_by_energy must contain every section index exactly once")
+        if self.derived.finale_window is not None and self.derived.finale_window.end > duration:
+            raise ValueError("finale window must not exceed song duration")
+        if any(window.end > duration for window in self.derived.anchor_windows):
+            raise ValueError("anchor windows must not exceed song duration")
         return self
 
 
@@ -433,12 +497,12 @@ class SongPayloadModel(SchemaModel):
     duration_seconds: NonNegativeFloat
     tempo_bpm: NonNegativeFloat
     total_beats: NonNegativeInt
-    genre_hint: str
+    genre_hint: NonEmptyString
     key_signature: KeySignatureModel
 
 
 class MusicStylePayloadModel(SchemaModel):
-    dominant_traits: list[str]
+    dominant_traits: list[NonEmptyString]
     style_vector: StyleVectorModel
     descriptors: DescriptorModel
 
@@ -447,7 +511,7 @@ class ShowPersonalityPayloadModel(SchemaModel):
     preset: Literal["balanced", "bold", "cinematic", "elegant", "intimate", "playful"]
     blend_weights: BlendWeightsModel
     dimensions: StyleVectorModel
-    dominant_traits: list[str]
+    dominant_traits: list[NonEmptyString]
     palette_direction: PaletteDirectionModel
     density_level: DensityLevel
 
@@ -475,12 +539,12 @@ class FireworkCueSummaryModel(SchemaModel):
 class CueReferenceModel(SchemaModel):
     full_cues_source: Literal["analysis_json"]
     json_path: Literal["firework_cues"]
-    note: str
+    note: NonEmptyString
 
 
 class LLMPayloadModel(SchemaModel):
     schema_version: SchemaVersion
-    source_file: str
+    source_file: NonEmptyString
     song: SongPayloadModel
     music_style: MusicStylePayloadModel
     show_personality: ShowPersonalityPayloadModel
@@ -508,7 +572,19 @@ def normalise_timings(timings: dict[str, float] | None = None) -> dict[str, floa
 
 def validate_schema(model_cls: type[BaseModel], payload: dict, label: str) -> dict:
     try:
-        return model_cls.model_validate(payload).model_dump(mode="json", exclude_none=True)
+        validated = model_cls.model_validate(payload)
+        dumped = validated.model_dump(mode="json", exclude_none=True)
+        derived = getattr(validated, "derived", None)
+        if derived is not None:
+            # These keys are required-but-nullable in the TypeScript contract.
+            for field in (
+                "finale_window",
+                "quietest_section_index",
+                "highest_energy_section_index",
+            ):
+                if getattr(derived, field) is None:
+                    dumped["derived"][field] = None
+        return dumped
     except ValidationError as exc:
         raise ValueError(f"{label} failed schema {SCHEMA_VERSION} validation:\n{exc}") from exc
 
@@ -1016,6 +1092,67 @@ def refine_event_times(event_frames, onset_env, sr, hop_length, radius=2):
     return refined
 
 
+class AudioInputError(ValueError):
+    def __init__(self, message: str, *, status_code: int, error_code: str):
+        super().__init__(message)
+        self.status_code = status_code
+        self.error_code = error_code
+
+    def as_http_detail(self) -> dict:
+        return {"code": self.error_code, "message": str(self), "retryable": False}
+
+
+def enforce_audio_limits(*, duration_seconds: float, decoded_samples: int | None = None) -> None:
+    too_long = duration_seconds > MAX_AUDIO_DURATION_SECONDS
+    too_many_samples = decoded_samples is not None and decoded_samples > MAX_DECODED_SAMPLES
+    if too_long or too_many_samples:
+        raise AudioInputError(
+            f"Audio must not exceed {MAX_AUDIO_DURATION_SECONDS // 60} minutes.",
+            status_code=413,
+            error_code="audio_too_long",
+        )
+
+
+def preflight_audio_duration(file_path: str) -> float | None:
+    """Reject overlong media before librosa expands it into an in-memory waveform."""
+    try:
+        completed = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                file_path,
+            ],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=FFPROBE_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return None
+    except subprocess.TimeoutExpired as exc:
+        raise AudioInputError(
+            "The audio container could not be inspected safely.",
+            status_code=415,
+            error_code="unsupported_audio",
+        ) from exc
+
+    if completed.returncode != 0:
+        return None
+    try:
+        duration = float(completed.stdout.strip())
+    except ValueError:
+        return None
+    if not np.isfinite(duration) or duration <= 0:
+        return None
+    enforce_audio_limits(duration_seconds=duration)
+    return duration
+
+
 def analyse_song(
     file_path: str,
     personality_preset: str = "balanced",
@@ -1032,10 +1169,40 @@ def analyse_song(
     timings = normalise_timings(initial_timings_ms)
     mode = analysis_mode if analysis_mode == ANALYSER_MODE else ANALYSER_MODE
 
-    # Load audio (mono, 22050Hz is fine for analysis)
+    # Probe first, then cap decoding independently so compressed media cannot
+    # expand into an unbounded in-memory waveform.
     decode_start = time.perf_counter()
-    y, sr = librosa.load(file_path, sr=22050, mono=True)
+    preflight_audio_duration(file_path)
+    try:
+        y, sr = librosa.load(
+            file_path,
+            sr=TARGET_SAMPLE_RATE,
+            mono=True,
+            duration=(MAX_DECODED_SAMPLES + 1) / TARGET_SAMPLE_RATE,
+        )
+    except (
+        ZeroDivisionError,
+        EOFError,
+        audioread.exceptions.DecodeError,
+        audioread.exceptions.NoBackendError,
+        sf.LibsndfileError,
+        librosa.util.exceptions.ParameterError,
+    ) as exc:
+        raise AudioInputError(
+            "The audio file is damaged or uses an unsupported format.",
+            status_code=415,
+            error_code="unsupported_audio",
+        ) from exc
     duration = librosa.get_duration(y=y, sr=sr)
+    if y.size == 0 or not np.isfinite(duration) or duration <= 0:
+        raise AudioInputError(
+            "The decoded audio is empty.",
+            status_code=422,
+            error_code="empty_audio",
+        )
+    if not np.all(np.isfinite(y)):
+        y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
+    enforce_audio_limits(duration_seconds=duration, decoded_samples=int(y.size))
     timings["decode_ms"] += elapsed_ms(decode_start)
     hop_length = 512
 
@@ -1245,6 +1412,10 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
     BINS_PER_OCTAVE = 12 * 3
     N_OCTAVES = 7
 
+    beat_frames = np.asarray(beat_frames, dtype=int)
+    if beat_frames.size < MIN_SPECTRAL_BEATS or duration < MIN_SPECTRAL_DURATION_SEC:
+        return [build_unknown_section(duration, rms_normalised)], None
+
     # 1. CQT for harmonic content (key for structural similarity)
     cqt_mag = np.abs(
         librosa.cqt(
@@ -1262,6 +1433,11 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
     # 3. MFCCs for timbral content, also beat-synced
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
     Msync = librosa.util.sync(mfcc, beat_frames)
+
+    if Csync.shape[1] < MIN_SPECTRAL_BEATS or Msync.shape[1] < MIN_SPECTRAL_BEATS:
+        return [build_unknown_section(duration, rms_normalised)], cqt_mag
+    Csync = np.nan_to_num(Csync, nan=0.0, posinf=0.0, neginf=0.0)
+    Msync = np.nan_to_num(Msync, nan=0.0, posinf=0.0, neginf=0.0)
 
     # 4. Recurrence matrix from CQT (captures long-range harmonic repetitions)
     R = librosa.segment.recurrence_matrix(Csync, width=3, mode='affinity', sym=True)
@@ -1419,6 +1595,25 @@ def laplacian_segment(y, sr, beat_frames, rms_normalised, hop_length, duration):
     label_sections_from_clusters(sections, rms_normalised, sr, hop_length)
 
     return sections, cqt_mag
+
+
+def build_unknown_section(duration, rms_normalised):
+    """Build a safe structural fallback when no reliable beat grid exists."""
+    energy = np.asarray(rms_normalised, dtype=float)
+    finite_energy = energy[np.isfinite(energy)]
+    avg_energy = float(np.mean(finite_energy)) if finite_energy.size else 0.0
+    peak_energy = float(np.percentile(finite_energy, 90)) if finite_energy.size else 0.0
+    end = round(float(duration), 2)
+    return {
+        "start": 0.0,
+        "end": end,
+        "duration": end,
+        "avg_energy": round(clamp01(avg_energy), 3),
+        "peak_energy": round(clamp01(peak_energy), 3),
+        "intensity": classify_intensity(avg_energy, 0.4, 0.7),
+        "cluster_id": -1,
+        "label": "unknown",
+    }
 
 
 def estimate_k(evals, min_k=3, max_k=8):
@@ -1660,8 +1855,11 @@ def detect_buildups(smoothed: np.ndarray, sr: int, hop_length: int) -> list:
 
 
 def get_section_at_time(t: float, sections: list) -> dict | None:
-    for section in sections:
-        if section["start"] <= t <= section["end"]:
+    for index, section in enumerate(sections):
+        is_last = index == len(sections) - 1
+        if section["start"] <= t < section["end"] or (
+            is_last and section["start"] <= t <= section["end"]
+        ):
             return section
     return None
 

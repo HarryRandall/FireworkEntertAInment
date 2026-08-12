@@ -14,6 +14,7 @@ import { scheduleProductForCueSlot } from './impact-timing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey, type ShowStyleKey } from './show-styles';
+import { ProductAvailability, type ExactProductQuantities } from './product-availability';
 
 export type PlannedCue = {
   /** Renderer launch time persisted to `show_timeline_items.time_seconds`. */
@@ -69,8 +70,10 @@ export function planCuesFast(params: {
   slots: CueSlot[];
   products: FireworkSpecification[];
   songDuration: number;
+  exactProductQuantities?: ExactProductQuantities;
 }): FastPlanResult {
-  const { brief, analysis, slots, products, songDuration } = params;
+  const { brief, analysis, slots, products, songDuration, exactProductQuantities } = params;
+  const availability = new ProductAvailability(exactProductQuantities);
   const productInfos = products.map(toProductInfo).filter((p) => p.product.id);
   const singles = productInfos.filter((p) => !p.isMultiShot);
   const multis = productInfos.filter((p) => p.isMultiShot);
@@ -177,6 +180,7 @@ export function planCuesFast(params: {
             slot.vibe === 'drop'),
       });
       for (const product of ranked) {
+        if (!availability.canUse(product.product.id)) continue;
         const timing = scheduleProductForCueSlot({
           product: product.product,
           emphasis,
@@ -226,6 +230,7 @@ export function planCuesFast(params: {
       }),
     );
     cues.push(cue);
+    availability.recordUse(accepted.product.product.id);
     recordProductUse(choiceContext, accepted.product.product.id);
   }
 

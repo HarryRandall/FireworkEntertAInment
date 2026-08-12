@@ -11,6 +11,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import type { Database } from '@/lib/database.types';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
+import {
+  LegacyAnalyserUpgradeError,
+  parseStoredAnalyserResult,
+} from '@/lib/show-analysis-validation';
 import { invalidateShowCacheForUser } from '@/lib/shows.server';
 import type { ShowBriefRow } from './schemas';
 
@@ -22,7 +26,9 @@ export type AnalysisJsonLoadResult =
   | { status: 'running'; analysis: null }
   | { status: 'failed'; analysis: null; errorMessage: string | null }
   | { status: 'missing'; analysis: null }
-  | { status: 'empty'; analysis: null };
+  | { status: 'empty'; analysis: null }
+  | { status: 'requires_reanalysis'; analysis: null; errorMessage: string }
+  | { status: 'invalid'; analysis: null; errorMessage: string };
 
 /** Loads the slim show "brief" used to build the LLM prompt. */
 export async function loadBrief(
@@ -65,7 +71,19 @@ export async function loadAnalysisState(
   }
   if (data.status !== 'completed') return { status: 'running', analysis: null };
   if (!data.analysis_json) return { status: 'empty', analysis: null };
-  return { status: 'completed', analysis: data.analysis_json as unknown as AnalyserResult };
+  try {
+    return { status: 'completed', analysis: parseStoredAnalyserResult(data.analysis_json) };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[cue-generation] stored music analysis validation failed:', {
+      musicAnalysisId,
+      error: errorMessage,
+    });
+    if (error instanceof LegacyAnalyserUpgradeError) {
+      return { status: 'requires_reanalysis', analysis: null, errorMessage };
+    }
+    return { status: 'invalid', analysis: null, errorMessage };
+  }
 }
 
 /**

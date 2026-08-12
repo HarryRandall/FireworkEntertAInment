@@ -9,24 +9,32 @@ creates the show and starts cue generation.
 1. The browser uploads audio directly to the user's prefix in the private
    Supabase `audio` bucket.
 2. `POST /api/music-analysis` verifies ownership, MIME type, and the 50 MB
-   limit, reserves credits, creates a `song_analyses` row, and schedules
-   `runMusicAnalysisForUpload` with Next.js `after()`.
-3. The server mints a short-lived signed Storage URL and calls the Modal
-   endpoint configured by `ANALYSER_URL`, authenticated with
-   `ANALYSER_SHARED_SECRET`.
+   limit, reserves credits, creates a `song_analyses` row, and uses `after()`
+   only to attempt the short durable submission. If that callback is killed,
+   reconciliation claims the untouched row and submits it later.
+3. A 60-second database lease mints a one-hour signed Storage URL and submits a
+   Modal function call. The opaque call ID is persisted before the lease is
+   released. Later reconciliation invocations poll that ID without consuming
+   another attempt.
 4. `platform/analyser/modal_app.py` downloads the signed audio into temporary
-   storage and runs `showcrafter.analyse_song` inside the Modal container.
-5. The server parses the response and completes the leased attempt through a
-   guarded RPC. Analysis output and credit settlement commit together, then
-   any cue generation waiting on this analysis resumes.
+   storage through the HTTPS host allow-list, same-host redirect, 50 MiB, and
+   30-second total download boundaries. Decoding is capped at 15 minutes.
+5. Modal may run the job for 20 minutes. Vercel submit and poll requests have a
+   20-second control deadline and never await the full analysis. A job older
+   than 25 minutes is retried or failed through the normal bounded lifecycle.
+6. A completed poll reads at most 8 MiB and validates the complete schema before
+   completing the leased attempt through a guarded RPC. Analysis output and
+   credit settlement commit together. Waiting cue generation becomes claimable
+   on reconciliation.
 
 The client can continue through the wizard while analysis is queued or running.
 Hidden background state is surfaced only when an error blocks generation.
 
 ## Deployment
 
-The analyser image installs `platform/analyser/requirements.txt` and runs with
-2 CPU cores, 4 GB memory, a 600-second timeout, and Modal memory snapshots.
+The analyser image installs `platform/analyser/requirements.txt`. Durable jobs
+run with 2 CPU cores, 4 GB memory, a 20-minute timeout, and Modal memory
+snapshots. The submit/poll endpoint itself has a 60-second timeout.
 
 ```bash
 cd platform/analyser
@@ -39,18 +47,32 @@ Configure these values in the Next.js deployment:
 - `ANALYSER_SHARED_SECRET`, the bearer token shared with the Modal
   `showcrafter` secret.
 - `SUPABASE_SERVICE_ROLE_KEY`, required by trusted reconciliation.
-- `CRON_SECRET`, required by the protected analyser warm-up and reconciliation
-  routes.
+- `CRON_SECRET`, required by the protected reconciliation, backend health, and
+  analyser warm-up routes.
 
 Supabase, Modal, and Vercel must use matching production values. Never expose
 the shared secret to the browser.
 
-Configure a scheduler to call `GET /api/admin/analyser/reconcile` with
-`Authorization: Bearer <CRON_SECRET>` every minute. The route is intentionally
-not added to `vercel.json`, so projects can use Vercel Cron or another trusted
-scheduler without changing the analyser warm-up policy. The same route now
-reconciles cue generation, dead letters, credit crash windows, and private
-audio retention. See [Backend lifecycle](backend-lifecycle.md).
+Set `ANALYSER_ALLOWED_AUDIO_HOSTS` in the Modal secret to the exact hostname in
+the signed Storage URL. This allowlist is required for standard Supabase hosts
+and custom Storage domains. Comma-separate multiple exact hostnames. Wildcards
+and broad public domains are not accepted.
+
+`platform/vercel.json` registers two independent Vercel Cron jobs every minute:
+
+- `GET /api/admin/analyser/reconcile` submits or polls at most one analysis
+  control operation, then performs bounded retention, credit repair, and health
+  work.
+- `GET /api/admin/cue-generation/reconcile` claims at most one ready cue job.
+
+This frequency requires a Vercel Pro or Enterprise project. The Vercel project
+Root Directory must remain `platform`, and `CRON_SECRET` must be configured in
+the production environment before the production deployment that registers the
+jobs. Vercel sends `Authorization: Bearer <CRON_SECRET>` automatically. After
+deployment, verify that both jobs appear in the Vercel Cron dashboard and have
+successful invocation logs. Repository tests guard the configuration, but
+cannot prove that a particular deployment has registered or enabled it. See
+[Backend lifecycle](backend-lifecycle.md).
 
 ## Persistence and cleanup
 
@@ -60,20 +82,38 @@ an upload uses the guarded cleanup RPC, resolves the active reservation, and
 removes the private audio object. Cleanup refuses an analysis already linked
 to a show.
 
-Each worker claim increments `attempt_count` and receives a 15-minute lease
-token. Network failures and HTTP 408, 425, 429, or 5xx responses retry after 30
-then 120 seconds, with at most three claimed attempts. Configuration,
-authentication, and invalid-output failures are terminal. A stale worker cannot
-write after its lease expires because every completion, retry, and failure RPC
-requires the current token.
+Each new Modal submission increments `attempt_count` and receives a 60-second
+lease. Polling the persisted call ID retains the same attempt. Network failures
+and HTTP 408, 425, 429, or retryable 5xx responses retry after 30 then 120
+seconds, with at most three submissions. Configuration, authentication, and
+invalid-output failures are terminal. A stale invocation cannot write after its
+lease expires because every submit-record, poll-deferral, completion, retry,
+and failure RPC requires the current token.
 
-The reconciliation route reclaims expired leases, fails exhausted attempts,
-makes shows with terminal analyses claimable for cue generation, and repairs
-terminal show credit reservations. These operations are bounded and
-idempotent.
+The independent reconciliation routes reclaim expired leases, fail exhausted
+attempts, make shows with terminal analyses claimable for cue generation, and
+repair terminal show credit reservations. Separating the schedules prevents
+continuously running analysis polls from starving ready cue work. These
+operations are bounded and idempotent.
 
-The repository analyser currently emits schema `1.4.0`. Older stored analyses
-remain readable because the bar-grid fields are optional to consumers.
+The repository analyser currently emits schema `1.4.0`. Runtime validation is
+strict and fail-closed. Stored `1.3.0` analyses gain safe bar-grid and derived
+defaults. Historical `1.2.0` compatibility is verified against a genuine
+payload retained in Git history. That schema has the same validated musical
+fields, but lacks timing metadata as well as the `1.4.0` fields, so it also
+gains zeroed legacy timing metadata. A legacy payload that cannot be safely
+upgraded enters the explicit re-analysis error path instead of reaching cue
+planning. Unsupported future schemas fail explicitly.
+
+The 8 MiB response limit is paired with the 15-minute duration cap and bounded
+arrays: 10,000 beats and downbeats, 50,000 onsets, 2,000 energy points, 256
+sections, 512 key moments and buildups, and 12,000 heuristic firework cues.
+Dense 15-minute contract coverage verifies that a realistic maximum profile
+remains below the transport limit.
+
+Exact product quantities are future-compatible planner input only. The current
+production runner does not pass them because supplier inventory is not a
+show-specific fixed assortment. Quantity enforcement is therefore not active.
 
 ## Verification
 
@@ -84,6 +124,14 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -p "*test*.py"
 ```
 
+CI also emits a Python-validated result and parses it through the TypeScript
+runtime schema. For a real deployed endpoint, configure repository secrets
+`ANALYSER_URL`, `ANALYSER_SHARED_SECRET`, and a short-lived private
+`ANALYSER_TEST_AUDIO_URL`, then manually run the `Analyser live smoke`
+workflow. Browser and real-audio end-to-end checks remain external. The live
+harness is separate so ordinary pull requests never depend on production
+services or persistent signed URLs.
+
 For local timing investigation, without pass or fail thresholds:
 
 ```bash
@@ -93,8 +141,9 @@ python benchmark.py --repeat 2
 ## Manual route
 
 `POST /api/analyse` remains an authenticated legacy wrapper for development and
-repair. The product flow uses upload-scoped `song_analyses` and does not expose
-this route as a user-facing button.
+repair. It now submits or polls the show's upload-scoped `song_analyses` row and
+returns HTTP 202 while work is pending. It does not start request-bound analysis
+or expose a user-facing button.
 
 ## Failure boundaries
 

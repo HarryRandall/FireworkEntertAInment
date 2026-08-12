@@ -71,6 +71,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration, formatTotal } from '@/lib/show-domain';
+import {
+  requestSoundtrackPlayback,
+  resolveReplayRestart,
+  resolveReplayScrubCommit,
+} from '@/lib/replay-transport';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import {
   clearPersistedGenerationCover,
@@ -528,30 +533,29 @@ export function FireworkReplayViewer({
         );
         return;
       }
-      const drift = Math.abs(audio.currentTime - elapsedRef.current);
-      if (drift > 0.25) audio.currentTime = elapsedRef.current;
       // Calling play synchronously from the interaction preserves the browser's
       // media activation. Only start the replay clock after audio really starts.
-      void audio
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((error) => {
-          console.error('[firework-replay] soundtrack playback failed:', error);
-          setIsPlaying(false);
-          toast.error('The soundtrack could not start. Try pressing Play again.');
-        });
+      void requestSoundtrackPlayback({
+        audio,
+        targetTimeSeconds: elapsedRef.current,
+      }).then((result) => {
+        if (result.status === 'started') {
+          setIsPlaying(true);
+          return;
+        }
+        console.error('[firework-replay] soundtrack playback failed:', result.error);
+        setIsPlaying(false);
+        toast.error('The soundtrack could not start. Try pressing Play again.');
+      });
       return;
     }
     setIsPlaying(true);
   }
 
   function restart() {
-    if (isPlaying) {
-      seekTo(0, true);
-      return;
-    }
-    seekTo(0, false);
-    startPlayback();
+    const action = resolveReplayRestart(isPlaying);
+    seekTo(0, action.continuePlaying);
+    if (action.startAfterSeek) startPlayback();
   }
 
   function seekTo(timeSeconds: number, continuePlaying = isPlaying) {
@@ -589,7 +593,14 @@ export function FireworkReplayViewer({
     if (pending == null) return;
     pendingScrubRef.current = null;
     lastScrubCommitRef.current = 0;
-    seekTo(pending, false);
+    // Preserve the transport state. Clearing the RAF anchor while the
+    // soundtrack continued left fireworks frozen after a live scrub.
+    const committed = resolveReplayScrubCommit({
+      pendingTimeSeconds: pending,
+      durationSeconds: duration,
+      isPlaying,
+    });
+    seekTo(committed.timeSeconds, committed.continuePlaying);
   }
 
   function playFrom(timeSeconds: number) {

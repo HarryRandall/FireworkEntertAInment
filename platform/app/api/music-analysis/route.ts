@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { startMusicAnalysisForStoredAudio } from '@/lib/start-music-analysis.server';
 
+export const maxDuration = 60;
+
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_AUDIO_TYPES = new Set([
   'audio/mpeg',

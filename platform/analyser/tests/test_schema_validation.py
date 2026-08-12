@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -14,8 +15,11 @@ sys.path.insert(0, str(ANALYSER_DIR))
 try:
     from showcrafter import (  # noqa: E402
         SCHEMA_VERSION,
+        AudioInputError,
+        analyse_song,
         build_llm_payload,
         estimate_downbeats,
+        enforce_audio_limits,
         filter_buildups,
         label_sections_from_clusters,
         refine_event_times,
@@ -165,6 +169,28 @@ def make_analysis_payload():
 
 
 class SchemaValidationTests(unittest.TestCase):
+    def test_decoded_audio_duration_and_sample_limits_are_bounded(self):
+        enforce_audio_limits(duration_seconds=900.0, decoded_samples=22050 * 900)
+
+        with self.assertRaisesRegex(ValueError, "15 minutes"):
+            enforce_audio_limits(duration_seconds=900.1)
+
+        payload = make_analysis_payload()
+        payload["duration_seconds"] = 900.1
+        payload["sections"][0].update(end=900.1, duration=900.1)
+        with self.assertRaisesRegex(ValueError, "duration_seconds"):
+            validate_analysis_result(payload)
+
+    def test_malformed_audio_is_rejected_as_a_terminal_input_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "damaged.mp3"
+            path.write_bytes(b"not an audio file")
+            with self.assertRaises(AudioInputError) as raised:
+                analyse_song(str(path))
+
+        self.assertEqual(raised.exception.status_code, 415)
+        self.assertEqual(raised.exception.error_code, "unsupported_audio")
+
     def test_valid_analysis_payload_passes_schema_v14(self):
         validated = validate_analysis_result(make_analysis_payload())
 
@@ -182,6 +208,45 @@ class SchemaValidationTests(unittest.TestCase):
         payload["key_moments"][0]["energy"] = 1.1
 
         with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.4.0"):
+            validate_analysis_result(payload)
+
+    def test_inconsistent_beat_grid_fails_loudly(self):
+        payload = make_analysis_payload()
+        payload["total_beats"] = 5
+
+        with self.assertRaisesRegex(ValueError, "total_beats"):
+            validate_analysis_result(payload)
+
+    def test_empty_contract_strings_fail_loudly(self):
+        payload = make_analysis_payload()
+        payload["file"] = ""
+
+        with self.assertRaisesRegex(ValueError, "file"):
+            validate_analysis_result(payload)
+
+        payload = make_analysis_payload()
+        payload["downbeat_times"] = [0.0, 2.4]
+        with self.assertRaisesRegex(ValueError, "downbeat"):
+            validate_analysis_result(payload)
+
+    def test_overlapping_sections_and_invalid_derived_indices_fail_loudly(self):
+        payload = make_analysis_payload()
+        payload["sections"] = [
+            {**payload["sections"][0], "end": 8.0, "duration": 8.0},
+            {
+                **payload["sections"][0],
+                "start": 7.0,
+                "duration": 5.0,
+                "cluster_id": 1,
+            },
+        ]
+        payload["derived"]["section_rank_by_energy"] = [0, 1]
+        with self.assertRaisesRegex(ValueError, "non-overlapping"):
+            validate_analysis_result(payload)
+
+        payload = make_analysis_payload()
+        payload["derived"]["quietest_section_index"] = 3
+        with self.assertRaisesRegex(ValueError, "existing sections"):
             validate_analysis_result(payload)
 
     def test_llm_payload_summarises_baseline_cues(self):

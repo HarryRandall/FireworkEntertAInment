@@ -38,8 +38,9 @@ test('Play calls audio.play directly from the interaction path', () => {
 
   assert.doesNotMatch(playbackEffect, /audio\.play\(\)/);
   assert.match(togglePlayback, /startPlayback\(\);/);
-  assert.match(startPlayback, /void audio[\s\S]*\.play\(\)/);
-  assert.match(startPlayback, /\.then\(\(\) => setIsPlaying\(true\)\)/);
+  assert.match(startPlayback, /void requestSoundtrackPlayback\(\{/);
+  assert.match(startPlayback, /result\.status === 'started'/);
+  assert.match(startPlayback, /setIsPlaying\(true\)/);
   assert.match(startPlayback, /soundtrack playback failed/);
 });
 
@@ -60,7 +61,8 @@ test('soundtrack shows do not begin a silent replay before audio is ready', () =
 test('Restart resets and resumes both the soundtrack and replay clock', () => {
   const restart = between(viewer, 'function restart()', 'function seekTo');
 
-  assert.match(restart, /if \(isPlaying\) \{[\s\S]*seekTo\(0, true\);[\s\S]*return;/);
-  assert.match(restart, /seekTo\(0, false\);[\s\S]*startPlayback\(\);/);
+  assert.match(restart, /resolveReplayRestart\(isPlaying\)/);
+  assert.match(restart, /seekTo\(0, action\.continuePlaying\)/);
+  assert.match(restart, /if \(action\.startAfterSeek\) startPlayback\(\);/);
   assert.doesNotMatch(restart, /setIsPlaying\(false\)/);
 });

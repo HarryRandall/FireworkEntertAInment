@@ -48,6 +48,20 @@ test('Jamendo access is server-only, explicit, cached, and bounded', () => {
   assert.doesNotMatch(search, /useEffect\([\s\S]*searchJamendoTracks/);
 });
 
+test('Jamendo downloads retry transient failures only and remain bounded', async () => {
+  const { isRetryableJamendoStatus } = await import('../lib/jamendo-http-status.ts');
+
+  for (const status of [408, 425, 429, 500, 503]) {
+    assert.equal(isRetryableJamendoStatus(status), true);
+  }
+  for (const status of [400, 401, 403, 404, 410, 413, 422]) {
+    assert.equal(isRetryableJamendoStatus(status), false);
+  }
+  assert.match(server, /const JAMENDO_DOWNLOAD_ATTEMPTS = 2/);
+  assert.match(server, /downloadJamendoTrackAttempt/);
+  assert.match(server, /attempt \* 150/);
+});
+
 test('search and import require an active user and enforce per-user limits', () => {
   assert.match(route, /getCurrentProfile/);
   assert.match(route, /profile\.status !== 'active'/);
@@ -99,7 +113,8 @@ test('provider tracks use the existing analysis credit lifecycle', () => {
   assert.match(starter, /after\(async \(\) =>/);
   assert.match(starter, /runMusicAnalysisForUpload/);
   assert.match(starter, /refundAiCreditReservation/);
-  assert.match(starter, /resumeCueGenerationForCompletedAnalysis/);
+  assert.match(starter, /Completion is polled through the durable reconciliation path/);
+  assert.doesNotMatch(starter, /resumeCueGenerationForCompletedAnalysis/);
 });
 
 test('completed Jamendo analyses already attached to an owned show are reused', () => {

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/admin/analyser/reconcile",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/admin/cue-generation/reconcile",
+      "schedule": "* * * * *"
+    }
+  ]
+}

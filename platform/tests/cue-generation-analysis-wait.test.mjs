@@ -24,22 +24,34 @@ test('cue generation leaves running music analysis pending instead of failing', 
   assert.doesNotMatch(runner, /Music analysis is still finishing/);
 });
 
-test('music analysis completion resumes linked running show generation', () => {
-  const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
-  const lifecycle = readFileSync(join(root, 'lib/music-analysis-lifecycle.server.ts'), 'utf8');
+test('completed music analysis makes linked cue generation claimable on reconciliation', () => {
+  const reconcile = readFileSync(
+    join(root, 'app/api/admin/cue-generation/reconcile/route.ts'),
+    'utf8',
+  );
   const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
+  const migration = readFileSync(
+    join(root, 'supabase/migrations/20260727103000_backend_lifecycle_operations.sql'),
+    'utf8',
+  );
 
-  assert.match(starter, /resumeCueGenerationForCompletedAnalysis/);
-  assert.match(starter, /await resumeCueGenerationForCompletedAnalysis/);
-  assert.match(lifecycle, /listRunningShowsForAnalysis/);
-  assert.match(lifecycle, /generateCuesForShow/);
-  assert.match(lifecycle, /\.eq\('music_analysis_id', params\.musicAnalysisId\)/);
-  assert.match(lifecycle, /\.eq\('generation_status', 'running'\)/);
-  assert.match(lifecycle, /\.is\('generation_completed_at', null\)/);
-  assert.match(lifecycle, /selected_cue_model/);
-  assert.match(lifecycle, /showId: show\.id/);
+  assert.match(reconcile, /generateCuesForShow\(\{ supabase \}\)/);
+  assert.doesNotMatch(reconcile, /runMusicAnalysisForUpload/);
+  assert.match(migration, /analysis\.status in \('completed', 'failed'\)/);
+  assert.match(runner, /loadAnalysisState\(supabase, musicAnalysisId\)/);
+  assert.match(runner, /analysisResult\.status === 'completed'/);
   assert.match(runner, /claim\.credit_action_key === 'show_generation_fast'/);
   assert.match(runner, /claim\.show_style === 'beat_test'/);
+});
+
+test('failed historical analysis upgrade takes the explicit re-analysis path', () => {
+  const loaders = readFileSync(join(root, 'lib/cue-generation/loaders.server.ts'), 'utf8');
+  const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
+
+  assert.match(loaders, /error instanceof LegacyAnalyserUpgradeError/);
+  assert.match(loaders, /status: 'requires_reanalysis'/);
+  assert.match(runner, /analysisResult\.status === 'requires_reanalysis'/);
+  assert.match(runner, /Stored music analysis requires re-analysis/);
 });
 
 test('show creation pins its effective generation mode for the runner', () => {

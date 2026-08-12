@@ -1,0 +1,26 @@
+name: Analyser live smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  live-analyser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: platform/package-lock.json
+      - run: npm ci
+      - name: Analyse a real private-storage fixture
+        env:
+          ANALYSER_URL: ${{ secrets.ANALYSER_URL }}
+          ANALYSER_SHARED_SECRET: ${{ secrets.ANALYSER_SHARED_SECRET }}
+          ANALYSER_TEST_AUDIO_URL: ${{ secrets.ANALYSER_TEST_AUDIO_URL }}
+        run: node scripts/analyser-live-smoke.mjs

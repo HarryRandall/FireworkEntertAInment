@@ -1,0 +1,50 @@
+[
+  {
+    "name": "upbeat-pop",
+    "duration": 48,
+    "tempo": 120,
+    "genre": "pop",
+    "sections": [
+      { "start": 0, "end": 12, "label": "intro", "energy": 0.3, "intensity": "low" },
+      { "start": 12, "end": 28, "label": "verse", "energy": 0.5, "intensity": "medium" },
+      { "start": 28, "end": 48, "label": "chorus", "energy": 0.85, "intensity": "high" }
+    ],
+    "climax": 40,
+    "finaleStart": 36
+  },
+  {
+    "name": "edm-drop",
+    "duration": 48,
+    "tempo": 128,
+    "genre": "edm",
+    "sections": [
+      { "start": 0, "end": 16, "label": "build", "energy": 0.45, "intensity": "medium" },
+      { "start": 16, "end": 36, "label": "drop", "energy": 0.95, "intensity": "high" },
+      { "start": 36, "end": 48, "label": "outro", "energy": 0.65, "intensity": "medium" }
+    ],
+    "climax": 16,
+    "finaleStart": 36
+  },
+  {
+    "name": "slow-cinematic-finale",
+    "duration": 60,
+    "tempo": 72,
+    "genre": "cinematic",
+    "sections": [
+      { "start": 0, "end": 24, "label": "intro", "energy": 0.2, "intensity": "low" },
+      { "start": 24, "end": 48, "label": "build", "energy": 0.55, "intensity": "medium" },
+      { "start": 48, "end": 60, "label": "chorus", "energy": 0.9, "intensity": "high" }
+    ],
+    "climax": 54,
+    "finaleStart": 48
+  },
+  {
+    "name": "irregular-ambient",
+    "duration": 45,
+    "tempo": 0,
+    "genre": "ambient",
+    "sections": [{ "start": 0, "end": 45, "label": "unknown", "energy": 0.35, "intensity": "low" }],
+    "climax": 34,
+    "finaleStart": 32
+  }
+]

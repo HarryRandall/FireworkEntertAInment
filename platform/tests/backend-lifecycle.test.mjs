@@ -12,6 +12,10 @@ const migration = readFileSync(
 );
 const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
 const reconcile = readFileSync(join(root, 'app/api/admin/analyser/reconcile/route.ts'), 'utf8');
+const cueReconcile = readFileSync(
+  join(root, 'app/api/admin/cue-generation/reconcile/route.ts'),
+  'utf8',
+);
 const healthRoute = readFileSync(join(root, 'app/api/admin/backend-lifecycle/route.ts'), 'utf8');
 
 test('cue generation has bounded token-fenced attempts', () => {
@@ -81,11 +85,12 @@ test('audio retention preserves referenced work and removes aged private objects
   assert.match(reconcile, /Private audio object was removed by retention reconciliation/);
 });
 
-test('reconciliation runs at most one long analysis or cue job per invocation', () => {
-  assert.match(reconcile, /analysisDidWork = Boolean\(analysisResult\.analysisId\)/);
-  assert.match(reconcile, /if \(!analysisDidWork\) \{/);
-  assert.match(reconcile, /generateCuesForShow\(\{ supabase \}\)/);
-  assert.match(reconcile, /expire_exhausted_cue_generations/);
+test('analysis and cue reconciliation are independent bounded queues', () => {
+  assert.match(reconcile, /runMusicAnalysisForUpload\(\{ supabase \}\)/);
+  assert.doesNotMatch(reconcile, /generateCuesForShow|expire_exhausted_cue_generations/);
+  assert.match(cueReconcile, /generateCuesForShow\(\{ supabase \}\)/);
+  assert.match(cueReconcile, /expire_exhausted_cue_generations/);
+  assert.doesNotMatch(cueReconcile, /runMusicAnalysisForUpload/);
   assert.match(reconcile, /get_backend_lifecycle_health/);
 });
 

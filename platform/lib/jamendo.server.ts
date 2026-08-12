@@ -10,6 +10,7 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { isRetryableJamendoStatus } from '@/lib/jamendo-http-status';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import type {
@@ -35,6 +36,7 @@ const JAMENDO_CACHE_TABLE = 'jamendo_response_cache';
 const JAMENDO_REQUEST_TIMEOUT_MS = 8_000;
 const JAMENDO_DOWNLOAD_TIMEOUT_MS = 30_000;
 const JAMENDO_MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+const JAMENDO_DOWNLOAD_ATTEMPTS = 2;
 const JAMENDO_MIN_DURATION_SECONDS = 30;
 const JAMENDO_MAX_DURATION_SECONDS = 10 * 60;
 
@@ -632,8 +634,14 @@ async function fetchJamendoDownload(trackId: string): Promise<Response> {
     if (response.status === 403 || response.status === 404 || response.status === 410) {
       throw new JamendoTrackUnavailableError('This Jamendo track is no longer downloadable.');
     }
-    if (!response.ok || !isTrustedJamendoAudioUrl(response.url)) {
+    if (!isTrustedJamendoAudioUrl(response.url)) {
+      throw new JamendoRequestError('Jamendo returned an invalid final audio location.');
+    }
+    if (!response.ok && isRetryableJamendoStatus(response.status)) {
       throw new JamendoRequestError(`Jamendo returned HTTP ${response.status} for the audio file.`);
+    }
+    if (!response.ok) {
+      throw new JamendoTrackUnavailableError('This Jamendo track is no longer downloadable.');
     }
     return response;
   }
@@ -651,7 +659,7 @@ function looksLikeMp3(prefix: Uint8Array): boolean {
   );
 }
 
-export async function downloadJamendoTrack(track: JamendoImportTrack): Promise<{
+async function downloadJamendoTrackAttempt(track: JamendoImportTrack): Promise<{
   bytes: Uint8Array;
   contentType: 'audio/mpeg';
   sizeBytes: number;
@@ -696,4 +704,24 @@ export async function downloadJamendoTrack(track: JamendoImportTrack): Promise<{
     throw new JamendoRequestError('Jamendo did not return a valid MP3 file.');
   }
   return { bytes, contentType: 'audio/mpeg', sizeBytes: totalBytes };
+}
+
+export async function downloadJamendoTrack(track: JamendoImportTrack): Promise<{
+  bytes: Uint8Array;
+  contentType: 'audio/mpeg';
+  sizeBytes: number;
+}> {
+  let lastError: JamendoRequestError | null = null;
+  for (let attempt = 1; attempt <= JAMENDO_DOWNLOAD_ATTEMPTS; attempt += 1) {
+    try {
+      return await downloadJamendoTrackAttempt(track);
+    } catch (error) {
+      if (!(error instanceof JamendoRequestError)) throw error;
+      lastError = error;
+      if (attempt < JAMENDO_DOWNLOAD_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+      }
+    }
+  }
+  throw lastError ?? new JamendoRequestError('The Jamendo track could not be downloaded.');
 }

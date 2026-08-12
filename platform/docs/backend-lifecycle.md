@@ -26,10 +26,12 @@ generation claimable.
 
 ## Song analysis
 
-Song analysis uses a 15-minute lease and at most three claims. Network failures
-and HTTP 408, 425, 429, or 5xx responses retry after 30 then 120 seconds.
-Configuration, authentication, and invalid-output errors fail immediately.
-Analysis output and its credit resolution commit together.
+Song analysis uses 60-second leases around durable Modal submission and polling,
+with at most three submissions. A persisted Modal call ID is polled without
+consuming another attempt. Network failures and HTTP 408, 425, 429, or
+retryable 5xx responses retry after 30 then 120 seconds. Configuration,
+authentication, and invalid-output errors fail immediately. Analysis output
+and its credit resolution commit together.
 
 ## Cue generation
 
@@ -47,20 +49,36 @@ failed and refunds credits.
 
 ## Reconciliation
 
-Call `GET /api/admin/analyser/reconcile` with
-`Authorization: Bearer <CRON_SECRET>` at least once per minute. One invocation
-runs at most one long analysis or cue-generation job. It also:
+`platform/vercel.json` schedules two independent protected routes once per
+minute:
 
-- expires analyses and cue jobs that exhausted three claims;
-- repairs legacy terminal show credit reservations;
-- removes retained or orphaned private audio in bounded batches;
-- records cleanup errors and exhausted work as dead letters;
-- returns a backend health snapshot.
+- `GET /api/admin/analyser/reconcile` runs at most one short analysis
+  submit/poll operation. It also performs bounded analysis expiry, credit
+  repair, private-audio retention, dead-letter inspection, and health reads.
+- `GET /api/admin/cue-generation/reconcile` expires a bounded batch of
+  exhausted cue leases and claims at most one ready cue-generation job.
 
-The endpoint requires `SUPABASE_SERVICE_ROLE_KEY`. It is development-only when
-`CRON_SECRET` is absent and fails closed in other environments. Scheduler
-configuration is deployment-specific and is deliberately not bundled with the
-optional analyser warm-up policy.
+Separating these queues means a running analysis, or any number of running
+analyses, cannot consume the cue queue's reconciliation opportunity. The cue
+claim checks for a completed or failed linked analysis before incrementing the
+show's attempt count, so dependency waiting does not consume a false attempt.
+
+Together the routes:
+
+- expire analyses and cue jobs that exhausted three claims;
+- repair legacy terminal show credit reservations;
+- remove retained or orphaned private audio in bounded batches;
+- record cleanup errors and exhausted work as dead letters;
+- return a backend health snapshot.
+
+Both endpoints require `SUPABASE_SERVICE_ROLE_KEY` and
+`Authorization: Bearer <CRON_SECRET>`. They allow a missing secret only in
+development and fail closed elsewhere. The Vercel project Root Directory must
+be `platform`; once-per-minute Cron requires a Pro or Enterprise plan. Configure
+`CRON_SECRET` in production before deploying, then verify that both jobs are
+registered and producing successful logs in the Vercel Cron dashboard. The
+repository configuration and tests make scheduler removal visible, but local
+source review cannot prove that a production deployment is active.
 
 ## Private audio retention
 

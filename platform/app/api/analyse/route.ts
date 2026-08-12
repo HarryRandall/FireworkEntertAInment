@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const AnalyseRequestSchema = z.object({
   showId: z.string().uuid(),
@@ -43,6 +44,12 @@ export async function POST(request: Request) {
   });
 
   if (!result.ok) {
+    if (result.pending) {
+      return NextResponse.json(
+        { analysisId: result.analysisId, status: 'running' },
+        { status: 202 },
+      );
+    }
     return jsonError(result.error, result.analysisId ? 422 : 400);
   }
 

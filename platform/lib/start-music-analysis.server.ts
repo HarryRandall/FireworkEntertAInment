@@ -3,7 +3,8 @@
  *
  * User uploads and provider imports both arrive here only after their private
  * Storage object and ownership have been established. Credit reservation, the
- * analysis row, and the asynchronous runner therefore follow one lifecycle.
+ * analysis row, and a short Modal submission therefore follow one lifecycle.
+ * Completion is polled through the durable reconciliation path.
  */
 import 'server-only';
 
@@ -13,10 +14,7 @@ import {
   refundAiCreditReservation,
   reserveAiCredits,
 } from '@/lib/ai-credits.server';
-import {
-  markLinkedShowGenerationFailed,
-  resumeCueGenerationForCompletedAnalysis,
-} from '@/lib/music-analysis-lifecycle.server';
+import { markLinkedShowGenerationFailed } from '@/lib/music-analysis-lifecycle.server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
 import type { SoundtrackAttribution } from '@/lib/music-library.types';
 import { createClient } from '@/utils/supabase/server';
@@ -73,7 +71,7 @@ export async function startMusicAnalysisForStoredAudio(params: {
       size_bytes: params.sizeBytes,
       personality: 'balanced',
       status: 'running',
-      runner_version: 'modal-librosa-2',
+      runner_version: 'modal-librosa-3',
       schema_version: '1.4.0',
       source_provider: params.source?.provider ?? null,
       source_track_id: params.source?.trackId ?? null,
@@ -105,33 +103,15 @@ export async function startMusicAnalysisForStoredAudio(params: {
     });
     if (!result.ok) {
       if (result.pending) return;
-      if (result.cancelled) {
-        await refundAiCreditReservation(params.supabase, {
-          userId: params.userId,
-          reservationKey,
-          metadata: { reason: 'Unused music analysis discarded.' },
-        });
-        return;
-      }
+      if (result.cancelled) return;
       console.error('[music-analysis] background analysis failed:', result.error);
-      await refundAiCreditReservation(params.supabase, {
-        userId: params.userId,
-        reservationKey,
-        metadata: { reason: result.error },
-      });
       await markLinkedShowGenerationFailed({
         supabase: params.supabase,
         userId: params.userId,
         musicAnalysisId: data.id,
         error: result.error,
       });
-      return;
     }
-    await resumeCueGenerationForCompletedAnalysis({
-      supabase: params.supabase,
-      userId: params.userId,
-      musicAnalysisId: data.id,
-    });
   });
 
   return { ok: true, musicAnalysisId: data.id };

@@ -42,6 +42,7 @@ import {
 } from './prompt';
 import { planCuesFast } from './fast-planner';
 import { planCuesOnBeats } from './beat-sync-planner';
+import { evaluateCuePlan } from './cue-quality';
 import { scheduleProductForCueSlot } from './impact-timing';
 import {
   launchPositionsForWidth,
@@ -331,6 +332,8 @@ export async function generateCuesForShow(params: {
   let catalogueCount = 0;
   let acceptedCount = 0;
   let droppedCount = 0;
+  // Supplier inventory is not a show assortment and is not passed as exact
+  // quantities. The planner hook remains dormant until a real source exists.
   const logTimings = (
     outcome: 'completed' | 'failed' | 'waiting',
     extra: { error?: string } = {},
@@ -441,6 +444,12 @@ export async function generateCuesForShow(params: {
         return { ok: true, pending: true, reason: 'music_analysis_running' };
       } else if (analysisResult.status === 'missing') {
         throw new Error('Music analysis was not found. Please upload the song again.');
+      } else if (analysisResult.status === 'requires_reanalysis') {
+        throw new Error(
+          'Stored music analysis requires re-analysis. Please upload the song again.',
+        );
+      } else if (analysisResult.status === 'invalid') {
+        throw new Error('Music analysis output failed validation. Please upload the song again.');
       } else {
         throw new Error(
           'Music analysis completed without usable output. Please upload the song again.',
@@ -792,6 +801,28 @@ export async function generateCuesForShow(params: {
     // Guarantee database-safe spacing for every path before the guarded write.
     accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
     acceptedCount = accepted.length;
+
+    const quality = evaluateCuePlan({
+      cues: accepted,
+      slots,
+      products,
+      songDuration,
+    });
+    console.info('[cue-generation] quality', {
+      showId,
+      generationMode,
+      ...quality.signals,
+      unknownProductCount: quality.hardViolations.unknownProductIds.length,
+      outOfBoundsCueCount: quality.hardViolations.outOfBoundsCueCount,
+      inventoryExcessCount: quality.hardViolations.inventoryExcess.length,
+    });
+    if (
+      quality.hardViolations.unknownProductIds.length > 0 ||
+      quality.hardViolations.outOfBoundsCueCount > 0 ||
+      quality.hardViolations.inventoryExcess.length > 0
+    ) {
+      throw new Error('Cue plan failed hard catalogue, timing, or inventory validation.');
+    }
 
     if (accepted.length === 0) {
       const message =

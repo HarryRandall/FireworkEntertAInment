@@ -15,6 +15,7 @@ import { scheduleProductForCueSlot } from './impact-timing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey } from './show-styles';
+import { ProductAvailability, type ExactProductQuantities } from './product-availability';
 
 export type BeatSyncPlanResult = {
   cues: PlannedCue[];
@@ -44,8 +45,17 @@ export function planCuesOnBeats(params: {
   brief?: ShowBriefRow | null;
   /** Launch positions available at the site (1-3). */
   maxTubes?: 1 | 2 | 3;
+  exactProductQuantities?: ExactProductQuantities;
 }): BeatSyncPlanResult {
-  const { slots, products, songDuration, brief = null, maxTubes = 3 } = params;
+  const {
+    slots,
+    products,
+    songDuration,
+    brief = null,
+    maxTubes = 3,
+    exactProductQuantities,
+  } = params;
+  const availability = new ProductAvailability(exactProductQuantities);
   const briefText = [brief?.title, brief?.description, ...(brief?.mood_tags ?? [])]
     .filter(Boolean)
     .join(' ');
@@ -104,6 +114,7 @@ export function planCuesOnBeats(params: {
         | undefined;
 
       for (const product of productOrder) {
+        if (!availability.canUse(product.id)) continue;
         const timing = scheduleProductForCueSlot({
           product,
           emphasis,
@@ -148,6 +159,7 @@ export function planCuesOnBeats(params: {
         intensity: target.intensity,
         emphasis,
       });
+      availability.recordUse(accepted.product.id);
     }
 
     skippedSlots += Math.max(0, targetTubes.length - acceptedForMoment);

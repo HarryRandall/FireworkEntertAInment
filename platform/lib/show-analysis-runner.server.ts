@@ -2,10 +2,9 @@
  * Calls the hosted Modal song analyser (server-only).
  *
  * Pipeline:
- *   1. Mint a short-lived Supabase Storage signed URL for the audio.
- *   2. POST that URL + personality to the Modal endpoint with a bearer secret.
- *   3. Parse the analyser JSON, persist a `song_analyses` / `show_generation_runs`
- *      row, and let the caller render markdown.
+ *   1. Claim a short database lease.
+ *   2. Submit a durable Modal function call, or poll its opaque call ID.
+ *   3. Parse completed output and persist the terminal state atomically.
  *
  * Upload-scoped runs use database leases. Only the worker holding the current
  * lease token can complete, retry, or fail an attempt, so a stale Modal call
@@ -13,18 +12,46 @@
  */
 import 'server-only';
 
-import { randomUUID } from 'crypto';
-import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isRetryableAnalyserStatus } from '@/lib/analyser-http-status';
+import { readResponseTextWithLimit, ResponseBodyTooLargeError } from '@/lib/bounded-response';
 import type { Database, Json } from '@/lib/database.types';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
+import {
+  AnalyserOutputValidationError,
+  parseAnalyserResult,
+  type AnalyserV14Result,
+} from '@/lib/show-analysis-validation';
 
-const ANALYSER_SCHEMA_VERSION = '1.4.0';
-const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
-const SIGNED_URL_TTL_SECONDS = 600;
-const ANALYSIS_LEASE_SECONDS = 900;
+const ANALYSER_RUNNER_VERSION = 'modal-librosa-3';
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+const ANALYSIS_LEASE_SECONDS = 60;
+const ANALYSER_CONTROL_REQUEST_TIMEOUT_MS = 20 * 1000;
+const ANALYSER_JOB_MAX_AGE_MS = 25 * 60 * 1000;
+const ANALYSER_POLL_DELAY_SECONDS = 20;
+const MAX_ANALYSER_RESPONSE_BYTES = 8 * 1024 * 1024;
 const MAX_ANALYSIS_ATTEMPTS = 3;
 const RETRY_DELAYS_SECONDS = [30, 120] as const;
+
+function analysisFailureCategory(error: unknown): string {
+  if (!(error instanceof AnalyseError)) return 'internal';
+  if (error.retryable) return error.status === 504 ? 'timeout' : 'upstream_transient';
+  if (error.status === 422) return 'invalid_input_or_output';
+  if (error.status === 401 || error.status === 403) return 'authentication';
+  if (error.status >= 400 && error.status < 500) return 'terminal_request';
+  return 'internal';
+}
+
+function logAnalysisLifecycle(fields: {
+  analysisId: string;
+  status: 'started' | 'submitted' | 'poll_pending' | 'completed' | 'retry_scheduled' | 'failed';
+  attempt?: number;
+  runtimeMs?: number;
+  category?: string;
+  retryDelaySeconds?: number;
+}) {
+  console.info('[music-analysis] lifecycle', fields);
+}
 
 type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -48,6 +75,8 @@ type MusicAnalysisRow = {
   personality: string;
   attempt_count: number;
   lease_token: string;
+  analyser_job_id: string | null;
+  analyser_job_submitted_at: string | null;
 };
 
 export type RunShowAnalysisResult =
@@ -59,6 +88,7 @@ export type RunShowAnalysisResult =
       userId?: string;
       cancelled?: boolean;
       pending?: boolean;
+      submitted?: boolean;
       retryScheduled?: boolean;
       idle?: boolean;
     };
@@ -181,12 +211,7 @@ function buildAiContextMarkdown(params: {
   return lines.join('\n');
 }
 
-async function runHostedAnalyser(params: {
-  supabase: AppSupabaseClient;
-  audioPath: string;
-  personality: string;
-  analysisId?: string;
-}): Promise<AnalyserResult> {
+function analyserConfiguration(): { url: string; secret: string } {
   const analyserUrl = process.env.ANALYSER_URL;
   const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
   if (!analyserUrl || !analyserSecret) {
@@ -195,6 +220,81 @@ async function runHostedAnalyser(params: {
       500,
     );
   }
+  return { url: analyserUrl, secret: analyserSecret };
+}
+
+function analyserErrorFromBody(bodyText: string, status: number): AnalyseError {
+  let message = bodyText || `Analyser returned HTTP ${status}.`;
+  let retryable = isRetryableAnalyserStatus(status);
+  try {
+    const body = JSON.parse(bodyText) as {
+      detail?: { message?: unknown; retryable?: unknown } | string;
+    };
+    if (typeof body.detail === 'string') message = body.detail;
+    if (typeof body.detail === 'object' && body.detail != null) {
+      if (typeof body.detail.message === 'string') message = body.detail.message;
+      if (typeof body.detail.retryable === 'boolean') retryable = body.detail.retryable;
+    }
+  } catch {
+    // Plain-text upstream failures retain the HTTP-derived classification.
+  }
+  return new AnalyseError(truncate(message), status, retryable);
+}
+
+async function postAnalyserControl(payload: Record<string, unknown>): Promise<{
+  response: Response;
+  bodyText: string;
+}> {
+  const analyser = analyserConfiguration();
+  let response: Response;
+  try {
+    response = await fetch(analyser.url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${analyser.secret}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(ANALYSER_CONTROL_REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const timedOut =
+      error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+    throw new AnalyseError(
+      `Could not reach the song analyser: ${message}`,
+      timedOut ? 504 : 502,
+      true,
+    );
+  }
+
+  let bodyText: string;
+  try {
+    bodyText = await readResponseTextWithLimit(response, MAX_ANALYSER_RESPONSE_BYTES);
+  } catch (error) {
+    if (error instanceof ResponseBodyTooLargeError) {
+      throw new AnalyseError(
+        `The analyser response exceeded ${MAX_ANALYSER_RESPONSE_BYTES} bytes.`,
+        response.ok ? 422 : response.status,
+        !response.ok && isRetryableAnalyserStatus(response.status),
+      );
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AnalyseError(`Could not read the song analyser response: ${message}`, 502, true);
+  }
+  if (!response.ok && response.status !== 202) {
+    throw analyserErrorFromBody(bodyText, response.status);
+  }
+  return { response, bodyText };
+}
+
+async function submitHostedAnalyser(params: {
+  supabase: AppSupabaseClient;
+  audioPath: string;
+  personality: string;
+  analysisId: string;
+}): Promise<string> {
+  analyserConfiguration();
 
   const { data: signed, error: signError } = await params.supabase.storage
     .from('audio')
@@ -206,49 +306,54 @@ async function runHostedAnalyser(params: {
     );
   }
 
-  let response: Response;
-  try {
-    response = await fetch(analyserUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${analyserSecret}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        analysis_id: params.analysisId,
-        audio_url: signed.signedUrl,
-        personality: params.personality,
-      }),
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new AnalyseError(`Could not reach the song analyser: ${message}`, 502, true);
+  const { response, bodyText } = await postAnalyserControl({
+    action: 'submit',
+    analysis_id: params.analysisId,
+    audio_url: signed.signedUrl,
+    personality: params.personality,
+  });
+  if (response.status !== 202) {
+    throw new AnalyseError('The analyser did not acknowledge durable job submission.', 502, true);
   }
+  try {
+    const body = JSON.parse(bodyText) as { status?: unknown; job_id?: unknown };
+    if (
+      body.status !== 'submitted' ||
+      typeof body.job_id !== 'string' ||
+      !body.job_id ||
+      body.job_id.length > 200
+    ) {
+      throw new Error('invalid submission envelope');
+    }
+    return body.job_id;
+  } catch (error) {
+    if (error instanceof AnalyseError) throw error;
+    throw new AnalyseError('The analyser returned an invalid job submission envelope.', 502, true);
+  }
+}
 
-  let bodyText: string;
-  try {
-    bodyText = await response.text();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new AnalyseError(`Could not read the song analyser response: ${message}`, 502, true);
-  }
-  if (!response.ok) {
-    const retryable =
-      response.status === 408 ||
-      response.status === 425 ||
-      response.status === 429 ||
-      response.status >= 500;
-    throw new AnalyseError(
-      truncate(bodyText || `Analyser returned HTTP ${response.status}.`),
-      response.status,
-      retryable,
-    );
+async function pollHostedAnalyser(
+  analyserJobId: string,
+): Promise<{ status: 'running' } | { status: 'completed'; analysis: AnalyserV14Result }> {
+  const { response, bodyText } = await postAnalyserControl({
+    action: 'poll',
+    job_id: analyserJobId,
+  });
+  if (response.status === 202) {
+    return { status: 'running' };
   }
 
   try {
-    return JSON.parse(bodyText) as AnalyserResult;
-  } catch {
-    throw new AnalyseError('The analyser did not return JSON output.', 422);
+    const body = JSON.parse(bodyText) as { status?: unknown; result?: unknown };
+    if (body.status !== 'completed') {
+      throw new AnalyserOutputValidationError('The analyser returned an invalid poll envelope.');
+    }
+    return { status: 'completed', analysis: parseAnalyserResult(body.result) };
+  } catch (error) {
+    if (error instanceof AnalyserOutputValidationError) {
+      throw new AnalyseError(error.message, 422);
+    }
+    throw new AnalyseError('The analyser returned an invalid poll response.', 422);
   }
 }
 
@@ -264,7 +369,7 @@ async function classifyUnclaimedMusicAnalysis(params: {
 
   const { data: row, error: lookupError } = await params.supabase
     .from('song_analyses')
-    .select('id, user_id, status')
+    .select('id, user_id, status, markdown, error_message')
     .eq('id', params.analysisId)
     .maybeSingle();
   if (lookupError) {
@@ -286,6 +391,22 @@ async function classifyUnclaimedMusicAnalysis(params: {
       error: 'Music analysis was discarded.',
     };
   }
+  if (row.status === 'completed' && row.markdown) {
+    return {
+      ok: true,
+      analysisId: row.id,
+      userId: row.user_id,
+      contextMarkdown: row.markdown,
+    };
+  }
+  if (row.status === 'failed') {
+    return {
+      ok: false,
+      analysisId: row.id,
+      userId: row.user_id,
+      error: row.error_message || 'Music analysis failed.',
+    };
+  }
   return {
     ok: false,
     analysisId: row.id,
@@ -293,25 +414,6 @@ async function classifyUnclaimedMusicAnalysis(params: {
     pending: true,
     error: params.error,
   };
-}
-
-async function markShowAnalysisFailed(params: {
-  supabase: AppSupabaseClient;
-  analysisId: string;
-  runtimeMs: number;
-  errorMessage: string;
-}) {
-  const { error } = await params.supabase
-    .from('show_generation_runs')
-    .update({
-      status: 'failed',
-      runtime_ms: params.runtimeMs,
-      error_message: truncate(params.errorMessage, 2000),
-    })
-    .eq('id', params.analysisId);
-  if (error) {
-    console.error('[show-analysis-runner] failed to persist show failure state:', error);
-  }
 }
 
 export async function runMusicAnalysisForUpload(params: {
@@ -363,19 +465,110 @@ export async function runMusicAnalysisForUpload(params: {
 
   const personality = params.personality ?? typedRow.personality ?? 'balanced';
   const startedAt = Date.now();
+  logAnalysisLifecycle({
+    analysisId: typedRow.analysis_id,
+    status: 'started',
+    attempt: typedRow.attempt_count,
+  });
 
   try {
-    const analysis = await runHostedAnalyser({
-      supabase: params.supabase,
-      audioPath: typedRow.audio_path,
-      personality,
-      analysisId: typedRow.analysis_id,
-    });
+    if (!typedRow.analyser_job_id) {
+      const analyserJobId = await submitHostedAnalyser({
+        supabase: params.supabase,
+        audioPath: typedRow.audio_path,
+        personality,
+        analysisId: typedRow.analysis_id,
+      });
+      const { data: recorded, error: recordError } = await params.supabase.rpc(
+        'record_song_analysis_job_submission',
+        {
+          p_analysis_id: typedRow.analysis_id,
+          p_lease_token: typedRow.lease_token,
+          p_analyser_job_id: analyserJobId,
+          p_poll_delay_seconds: ANALYSER_POLL_DELAY_SECONDS,
+        },
+      );
+      if (recordError || !recorded) {
+        console.error('[show-analysis-runner] analyser job persistence failed:', recordError);
+        return {
+          ok: false,
+          analysisId: typedRow.analysis_id,
+          userId: typedRow.user_id,
+          pending: true,
+          error: 'The analyser job was submitted but its lease will need recovery.',
+        };
+      }
+      logAnalysisLifecycle({
+        analysisId: typedRow.analysis_id,
+        status: 'submitted',
+        attempt: typedRow.attempt_count,
+        runtimeMs: Date.now() - startedAt,
+      });
+      return {
+        ok: false,
+        analysisId: typedRow.analysis_id,
+        userId: typedRow.user_id,
+        pending: true,
+        submitted: true,
+        error: 'Music analysis was submitted and is still running.',
+      };
+    }
+
+    const submittedAt = typedRow.analyser_job_submitted_at
+      ? Date.parse(typedRow.analyser_job_submitted_at)
+      : Number.NaN;
+    if (!Number.isFinite(submittedAt) || Date.now() - submittedAt > ANALYSER_JOB_MAX_AGE_MS) {
+      throw new AnalyseError('The analyser job exceeded its 25-minute recovery window.', 504, true);
+    }
+
+    const polled = await pollHostedAnalyser(typedRow.analyser_job_id);
+    if (polled.status === 'running') {
+      const { data: deferred, error: deferError } = await params.supabase.rpc(
+        'defer_song_analysis_job_poll',
+        {
+          p_analysis_id: typedRow.analysis_id,
+          p_lease_token: typedRow.lease_token,
+          p_analyser_job_id: typedRow.analyser_job_id,
+          p_poll_delay_seconds: ANALYSER_POLL_DELAY_SECONDS,
+        },
+      );
+      if (deferError || !deferred) {
+        console.error('[show-analysis-runner] analyser poll deferral failed:', deferError);
+        return {
+          ok: false,
+          analysisId: typedRow.analysis_id,
+          userId: typedRow.user_id,
+          pending: true,
+          error: 'Music analysis is still running. The lease will be recovered.',
+        };
+      }
+      logAnalysisLifecycle({
+        analysisId: typedRow.analysis_id,
+        status: 'poll_pending',
+        attempt: typedRow.attempt_count,
+        runtimeMs: Date.now() - startedAt,
+      });
+      return {
+        ok: false,
+        analysisId: typedRow.analysis_id,
+        userId: typedRow.user_id,
+        pending: true,
+        error: 'Music analysis is still running.',
+      };
+    }
+
+    const analysis = polled.analysis;
     const contextMarkdown = buildAiContextMarkdown({
       personality,
       analysis,
     });
-    const runtimeMs = Date.now() - startedAt;
+    const runtimeMs = Math.max(
+      0,
+      Math.min(
+        2_147_483_647,
+        Math.round(analysis.analysis_meta.timings_ms.total_ms || Date.now() - startedAt),
+      ),
+    );
 
     const { data: completed, error: updateError } = await params.supabase.rpc(
       'complete_song_analysis_attempt',
@@ -407,6 +600,13 @@ export async function runMusicAnalysisForUpload(params: {
         error: 'Music analysis completion lost its lease.',
       });
     }
+
+    logAnalysisLifecycle({
+      analysisId: typedRow.analysis_id,
+      status: 'completed',
+      attempt: typedRow.attempt_count,
+      runtimeMs,
+    });
 
     return {
       ok: true,
@@ -452,6 +652,14 @@ export async function runMusicAnalysisForUpload(params: {
           error: 'Music analysis retry lost its lease.',
         });
       }
+      logAnalysisLifecycle({
+        analysisId: typedRow.analysis_id,
+        status: 'retry_scheduled',
+        attempt: typedRow.attempt_count,
+        runtimeMs,
+        category: analysisFailureCategory(error),
+        retryDelaySeconds: retryDelay,
+      });
       return {
         ok: false,
         analysisId: typedRow.analysis_id,
@@ -492,6 +700,13 @@ export async function runMusicAnalysisForUpload(params: {
         error: 'Music analysis failure lost its lease.',
       });
     }
+    logAnalysisLifecycle({
+      analysisId: typedRow.analysis_id,
+      status: 'failed',
+      attempt: typedRow.attempt_count,
+      runtimeMs,
+      category: analysisFailureCategory(error),
+    });
     return {
       ok: false,
       analysisId: typedRow.analysis_id,
@@ -507,12 +722,9 @@ export async function runShowAnalysisForShow(params: {
   showId: string;
   personality?: 'balanced' | 'bold' | 'cinematic' | 'elegant' | 'intimate' | 'playful';
 }): Promise<RunShowAnalysisResult> {
-  const personality = params.personality ?? 'balanced';
   const { data: show, error: showError } = await params.supabase
     .from('shows')
-    .select(
-      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, audio_path',
-    )
+    .select('music_analysis_id')
     .eq('id', params.showId)
     .eq('user_id', params.userId)
     .maybeSingle();
@@ -522,80 +734,14 @@ export async function runShowAnalysisForShow(params: {
     return { ok: false, error: 'Could not load show for analysis.' };
   }
   if (!show) return { ok: false, error: 'Show not found.' };
-  const typedShow = show as ShowForAnalysis;
-  if (!typedShow.audio_path) {
-    return { ok: false, error: 'This show has no uploaded audio to analyse.' };
+  if (!show.music_analysis_id) {
+    return { ok: false, error: 'This show has no upload-scoped music analysis.' };
   }
 
-  const analysisId = randomUUID();
-  const startedAt = Date.now();
-  const { error: insertError } = await params.supabase.from('show_generation_runs').insert({
-    id: analysisId,
-    show_id: typedShow.id,
-    user_id: params.userId,
-    audio_path: typedShow.audio_path,
-    personality,
-    runner_version: ANALYSER_RUNNER_VERSION,
-    schema_version: ANALYSER_SCHEMA_VERSION,
-    status: 'running',
+  return runMusicAnalysisForUpload({
+    supabase: params.supabase,
+    userId: params.userId,
+    analysisId: show.music_analysis_id,
+    personality: params.personality,
   });
-  if (insertError) {
-    console.error('[show-analysis-runner] analysis row insert failed:', insertError);
-    return { ok: false, error: 'Could not create analysis record.' };
-  }
-
-  try {
-    const analysis = await runHostedAnalyser({
-      supabase: params.supabase,
-      audioPath: typedShow.audio_path,
-      personality,
-      analysisId,
-    });
-    const contextMarkdown = buildAiContextMarkdown({
-      show: typedShow,
-      personality,
-      analysis,
-    });
-    const runtimeMs = Date.now() - startedAt;
-
-    const { data: completed, error: updateError } = await params.supabase
-      .from('show_generation_runs')
-      .update({
-        status: 'completed',
-        schema_version: analysis.schema_version,
-        completed_at: new Date().toISOString(),
-        runtime_ms: runtimeMs,
-        analysis_json: analysis as unknown as Json,
-        llm_payload: null,
-        markdown: contextMarkdown,
-        error_message: null,
-      })
-      .eq('id', analysisId)
-      .eq('user_id', params.userId)
-      .eq('status', 'running')
-      .select('id')
-      .maybeSingle();
-    if (updateError) {
-      throw new AnalyseError(`Could not save analysis output: ${updateError.message}`, 500);
-    }
-    if (!completed) {
-      throw new AnalyseError(
-        'Could not save analysis output: analysis record was not updated.',
-        500,
-      );
-    }
-
-    revalidatePath(`/shows/${typedShow.slug}`);
-    return { ok: true, analysisId, contextMarkdown };
-  } catch (error) {
-    const runtimeMs = Date.now() - startedAt;
-    const message = error instanceof Error ? error.message : String(error);
-    await markShowAnalysisFailed({
-      supabase: params.supabase,
-      analysisId,
-      runtimeMs,
-      errorMessage: message,
-    });
-    return { ok: false, analysisId, error: message };
-  }
 }

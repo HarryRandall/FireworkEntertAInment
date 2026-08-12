@@ -1,9 +1,8 @@
-/** Cron-safe recovery for analysis, cue generation, credits, and private audio. */
+/** Cron-safe recovery for analysis, credits, and private audio. */
 
 import { NextResponse } from 'next/server';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
 import { markLinkedShowGenerationFailed } from '@/lib/music-analysis-lifecycle.server';
 
 export const dynamic = 'force-dynamic';
@@ -36,38 +35,22 @@ export async function GET(request: Request) {
 
   const errors: string[] = [];
   let expiredAnalysisCount = 0;
-  let expiredCueCount = 0;
   let analysisClaimedCount = 0;
   let analysisCompletedCount = 0;
   let analysisRetryScheduledCount = 0;
   let analysisTerminalFailureCount = 0;
-  let cueClaimedCount = 0;
-  let cueCompletedCount = 0;
-  let cueRetryScheduledCount = 0;
-  let cueTerminalFailureCount = 0;
   let purgedAnalysisCount = 0;
   let removedAudioCount = 0;
   let repairedShowCredits = 0;
 
-  const [analysisExpiry, cueExpiry] = await Promise.all([
-    supabase.rpc('expire_exhausted_song_analyses', {
-      p_limit: EXPIRED_BATCH_SIZE,
-      p_max_attempts: 3,
-    }),
-    supabase.rpc('expire_exhausted_cue_generations', {
-      p_limit: EXPIRED_BATCH_SIZE,
-      p_max_attempts: 3,
-    }),
-  ]);
+  const analysisExpiry = await supabase.rpc('expire_exhausted_song_analyses', {
+    p_limit: EXPIRED_BATCH_SIZE,
+    p_max_attempts: 3,
+  });
   if (analysisExpiry.error) {
     errors.push(`Could not expire exhausted analyses: ${analysisExpiry.error.message}`);
   } else {
     expiredAnalysisCount = analysisExpiry.data?.length ?? 0;
-  }
-  if (cueExpiry.error) {
-    errors.push(`Could not expire exhausted cue generation: ${cueExpiry.error.message}`);
-  } else {
-    expiredCueCount = cueExpiry.data?.length ?? 0;
   }
 
   // Delete the unreferenced database rows first. The foreign key lock prevents
@@ -136,11 +119,9 @@ export async function GET(request: Request) {
     }
   }
 
-  let analysisDidWork = false;
   try {
     const analysisResult = await runMusicAnalysisForUpload({ supabase });
-    analysisDidWork = Boolean(analysisResult.analysisId);
-    if (analysisDidWork) analysisClaimedCount = 1;
+    if (analysisResult.analysisId) analysisClaimedCount = 1;
     if (analysisResult.ok) {
       analysisCompletedCount = 1;
     } else if (analysisResult.retryScheduled) {
@@ -162,37 +143,9 @@ export async function GET(request: Request) {
       errors.push(analysisResult.error);
     }
   } catch (error) {
-    // Conservatively avoid starting another long job when the analysis worker
-    // failed outside its normal result contract.
-    analysisDidWork = true;
     errors.push(
       `Analysis reconciliation crashed: ${error instanceof Error ? error.message : String(error)}`,
     );
-  }
-
-  // Run at most one long-lived job per invocation. A completed analysis makes
-  // its waiting show claimable on the next scheduled reconciliation.
-  if (!analysisDidWork) {
-    try {
-      const cueResult = await generateCuesForShow({ supabase });
-      if ('showId' in cueResult && cueResult.showId) cueClaimedCount = 1;
-      if (cueResult.ok && !('pending' in cueResult)) {
-        cueCompletedCount = 1;
-      } else if (
-        cueResult.ok &&
-        'pending' in cueResult &&
-        cueResult.reason === 'cue_generation_retry_scheduled'
-      ) {
-        cueRetryScheduledCount = 1;
-      } else if (!cueResult.ok) {
-        cueTerminalFailureCount = 1;
-        errors.push(cueResult.error);
-      }
-    } catch (error) {
-      errors.push(
-        `Cue reconciliation crashed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
   }
 
   // Repair reservations from terminal shows created before the atomic cue
@@ -274,13 +227,6 @@ export async function GET(request: Request) {
         completedCount: analysisCompletedCount,
         retryScheduledCount: analysisRetryScheduledCount,
         terminalFailureCount: analysisTerminalFailureCount,
-      },
-      cueGeneration: {
-        expiredCount: expiredCueCount,
-        claimedCount: cueClaimedCount,
-        completedCount: cueCompletedCount,
-        retryScheduledCount: cueRetryScheduledCount,
-        terminalFailureCount: cueTerminalFailureCount,
       },
       retention: {
         purgedAnalysisCount,

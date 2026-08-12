@@ -1873,6 +1873,8 @@ export type Database = {
       }
       song_analyses: {
         Row: {
+          analyser_job_id: string | null
+          analyser_job_submitted_at: string | null
           analysis_json: Json | null
           attempt_count: number
           audio_path: string
@@ -1904,6 +1906,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          analyser_job_id?: string | null
+          analyser_job_submitted_at?: string | null
           analysis_json?: Json | null
           attempt_count?: number
           audio_path: string
@@ -1935,6 +1939,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          analyser_job_id?: string | null
+          analyser_job_submitted_at?: string | null
           analysis_json?: Json | null
           attempt_count?: number
           audio_path?: string
@@ -2240,6 +2246,8 @@ export type Database = {
         }
         Returns: {
           analysis_id: string
+          analyser_job_id: string | null
+          analyser_job_submitted_at: string | null
           attempt_count: number
           audio_path: string
           lease_token: string
@@ -2352,6 +2360,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      defer_song_analysis_job_poll: {
+        Args: {
+          p_analyser_job_id: string
+          p_analysis_id: string
+          p_lease_token: string
+          p_poll_delay_seconds: number
+        }
+        Returns: boolean
+      }
       discard_unused_song_analysis: {
         Args: { p_analysis_id: string; p_audio_path: string }
         Returns: Json
@@ -2379,6 +2396,15 @@ export type Database = {
           p_error_message: string
           p_lease_token: string
           p_runtime_ms: number
+        }
+        Returns: boolean
+      }
+      record_song_analysis_job_submission: {
+        Args: {
+          p_analyser_job_id: string
+          p_analysis_id: string
+          p_lease_token: string
+          p_poll_delay_seconds: number
         }
         Returns: boolean
       }

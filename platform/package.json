@@ -15,6 +15,7 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "worker:firework-import": "../workers/firework-import-worker/run-worker.sh",
     "test": "node --test tests/**/*.test.mjs",
+    "test:analyser:live": "node scripts/analyser-live-smoke.mjs",
     "prepare": "cd .. && husky platform/.husky"
   },
   "lint-staged": {

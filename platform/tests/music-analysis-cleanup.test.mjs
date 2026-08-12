@@ -60,7 +60,8 @@ test('the analyser cannot settle or restore a row discarded during an in-flight 
   assert.match(uploadRunner, /p_lease_token: typedRow\.lease_token/);
   assert.match(uploadRunner, /classifyUnclaimedMusicAnalysis/);
   assert.match(runner, /if \(!row\) \{[\s\S]*cancelled: true/);
-  assert.match(starter, /if \(result\.cancelled\) \{[\s\S]*refundAiCreditReservation/);
+  assert.match(starter, /if \(result\.cancelled\) return/);
+  assert.doesNotMatch(starter, /if \(result\.cancelled\) \{[\s\S]*refundAiCreditReservation/);
 });
 
 test('replacing or clearing ready audio and stale POST responses trigger cleanup', () => {
