@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       ai_credit_accounts: {
@@ -162,6 +137,98 @@ export type Database = {
             columns: ["related_transaction_id"]
             isOneToOne: false
             referencedRelation: "ai_credit_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assortment_items: {
+        Row: {
+          assortment_id: string
+          catalogue_item_id: string
+          created_at: string
+          id: string
+          quantity: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          assortment_id: string
+          catalogue_item_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          assortment_id?: string
+          catalogue_item_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assortment_items_assortment_id_fkey"
+            columns: ["assortment_id"]
+            isOneToOne: false
+            referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assortment_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assortments: {
+        Row: {
+          cover_shader: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          cover_shader?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          cover_shader?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assortments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -651,10 +718,7 @@ export type Database = {
       }
       import_candidate_render_validations: {
         Row: {
-          artifact_byte_size: number
           artifact_output_id: string
-          artifact_sha256: string
-          artifact_storage_etag: string
           artifact_storage_path: string
           candidate_id: string
           canonical_evidence: Json
@@ -665,10 +729,7 @@ export type Database = {
           validator_version: string
         }
         Insert: {
-          artifact_byte_size: number
           artifact_output_id: string
-          artifact_sha256: string
-          artifact_storage_etag: string
           artifact_storage_path: string
           candidate_id: string
           canonical_evidence: Json
@@ -679,10 +740,7 @@ export type Database = {
           validator_version: string
         }
         Update: {
-          artifact_byte_size?: number
           artifact_output_id?: string
-          artifact_sha256?: string
-          artifact_storage_etag?: string
           artifact_storage_path?: string
           candidate_id?: string
           canonical_evidence?: Json
@@ -1240,9 +1298,9 @@ export type Database = {
           pan_degrees: number
           position_override_json: Json | null
           sequence_index: number
-          timeline_track_index: number
           tilt_degrees: number
           time_offset_seconds: number
+          timeline_track_index: number
         }
         Insert: {
           caliber?: string | null
@@ -1254,9 +1312,9 @@ export type Database = {
           pan_degrees?: number
           position_override_json?: Json | null
           sequence_index: number
-          timeline_track_index?: number
           tilt_degrees?: number
           time_offset_seconds?: number
+          timeline_track_index?: number
         }
         Update: {
           caliber?: string | null
@@ -1268,9 +1326,9 @@ export type Database = {
           pan_degrees?: number
           position_override_json?: Json | null
           sequence_index?: number
-          timeline_track_index?: number
           tilt_degrees?: number
           time_offset_seconds?: number
+          timeline_track_index?: number
         }
         Relationships: [
           {
@@ -1612,7 +1670,7 @@ export type Database = {
         }
         Insert: {
           budget_cents?: number | null
-          composition_signature?: never
+          composition_signature?: string
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
@@ -1636,7 +1694,7 @@ export type Database = {
         }
         Update: {
           budget_cents?: number | null
-          composition_signature?: never
+          composition_signature?: string
           cover_image_path?: string | null
           cover_shader?: Json | null
           created_at?: string
@@ -1740,6 +1798,7 @@ export type Database = {
       shows: {
         Row: {
           artist: string | null
+          assortment_id: string | null
           audio_path: string | null
           budget_cents: number | null
           cover_image_path: string | null
@@ -1781,6 +1840,7 @@ export type Database = {
         }
         Insert: {
           artist?: string | null
+          assortment_id?: string | null
           audio_path?: string | null
           budget_cents?: number | null
           cover_image_path?: string | null
@@ -1822,6 +1882,7 @@ export type Database = {
         }
         Update: {
           artist?: string | null
+          assortment_id?: string | null
           audio_path?: string | null
           budget_cents?: number | null
           cover_image_path?: string | null
@@ -1862,6 +1923,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shows_assortment_id_fkey"
+            columns: ["assortment_id"]
+            isOneToOne: false
+            referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shows_music_analysis_id_fkey"
             columns: ["music_analysis_id"]
@@ -2175,6 +2243,16 @@ export type Database = {
         }
         Returns: string
       }
+      add_show_timeline_item: {
+        Args: {
+          p_catalogue_item_id: string
+          p_emphasis: string
+          p_launch_position_index: number
+          p_show_id: string
+          p_time_seconds: number
+        }
+        Returns: string
+      }
       ai_credit_usage_payload: { Args: { p_user_id: string }; Returns: Json }
       append_firework_import_run_output: {
         Args: {
@@ -2225,25 +2303,10 @@ export type Database = {
           attempt_count: number
           credit_action_key: string
           lease_token: string
-          music_analysis_id: string | null
-          selected_cue_model: string | null
+          music_analysis_id: string
+          selected_cue_model: string
           show_id: string
           show_style: string
-          user_id: string
-        }[]
-      }
-      claim_song_analysis_attempt: {
-        Args: {
-          p_analysis_id?: string
-          p_lease_seconds?: number
-          p_max_attempts?: number
-        }
-        Returns: {
-          analysis_id: string
-          attempt_count: number
-          audio_path: string
-          lease_token: string
-          personality: string
           user_id: string
         }[]
       }
@@ -2265,14 +2328,20 @@ export type Database = {
           storage_path: string
         }[]
       }
-      complete_firework_import_run: {
+      claim_song_analysis_attempt: {
         Args: {
-          p_candidates: Json
-          p_lease_token: string
-          p_run_id: string
-          p_selected_ordinal: number
+          p_analysis_id?: string
+          p_lease_seconds?: number
+          p_max_attempts?: number
         }
-        Returns: string
+        Returns: {
+          analysis_id: string
+          attempt_count: number
+          audio_path: string
+          lease_token: string
+          personality: string
+          user_id: string
+        }[]
       }
       complete_cue_generation_attempt: {
         Args: {
@@ -2283,9 +2352,30 @@ export type Database = {
         }
         Returns: boolean
       }
+      complete_firework_import_run: {
+        Args: {
+          p_candidates: Json
+          p_lease_token: string
+          p_run_id: string
+          p_selected_ordinal: number
+        }
+        Returns: string
+      }
+      complete_song_analysis_attempt: {
+        Args: {
+          p_analysis_id: string
+          p_analysis_json: Json
+          p_lease_token: string
+          p_markdown: string
+          p_runner_version: string
+          p_runtime_ms: number
+          p_schema_version: string
+        }
+        Returns: boolean
+      }
       create_style_default_and_update_effect: {
         Args: {
-          p_effect_description: string | null
+          p_effect_description: string
           p_effect_id: string
           p_effect_name: string
           p_expected_updated_at: string
@@ -2293,7 +2383,7 @@ export type Database = {
           p_pattern_key: string
           p_sort_order: number
           p_style_defaults_json: Json
-          p_style_description: string | null
+          p_style_description: string
           p_style_kind: string
           p_style_name: string
           p_style_slug: string
@@ -2302,20 +2392,20 @@ export type Database = {
       }
       create_style_default_and_update_firework: {
         Args: {
-          p_caliber: string | null
-          p_color_palette: string[] | null
-          p_duration_seconds: number | null
+          p_caliber: string
+          p_color_palette: string[]
+          p_duration_seconds: number
           p_expected_updated_at: string
-          p_firework_description: string | null
+          p_firework_description: string
           p_firework_effect_id: string
           p_firework_id: string
           p_firework_name: string
-          p_height_meters: number | null
-          p_primary_color: string | null
+          p_height_meters: number
+          p_primary_color: string
           p_render_overrides_json: Json
-          p_secondary_color: string | null
+          p_secondary_color: string
           p_style_defaults_json: Json
-          p_style_description: string | null
+          p_style_description: string
           p_style_kind: string
           p_style_name: string
           p_style_slug: string
@@ -2340,18 +2430,7 @@ export type Database = {
         Returns: boolean
       }
       current_user_is_active: { Args: never; Returns: boolean }
-      complete_song_analysis_attempt: {
-        Args: {
-          p_analysis_id: string
-          p_analysis_json: Json
-          p_lease_token: string
-          p_markdown: string
-          p_runner_version: string
-          p_runtime_ms: number
-          p_schema_version: string
-        }
-        Returns: boolean
-      }
+      delete_show_timeline_item: { Args: { p_cue_id: string }; Returns: string }
       discard_unused_song_analysis: {
         Args: { p_analysis_id: string; p_audio_path: string }
         Returns: Json
@@ -2373,15 +2452,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      fail_song_analysis_attempt: {
-        Args: {
-          p_analysis_id: string
-          p_error_message: string
-          p_lease_token: string
-          p_runtime_ms: number
-        }
-        Returns: boolean
-      }
       fail_cue_generation_attempt: {
         Args: {
           p_dead_letter?: boolean
@@ -2392,10 +2462,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      fail_waiting_show_generation: {
-        Args: { p_error_message: string; p_show_id: string }
-        Returns: boolean
-      }
       fail_firework_import_run: {
         Args: {
           p_error_message: string
@@ -2403,6 +2469,19 @@ export type Database = {
           p_run_id: string
         }
         Returns: undefined
+      }
+      fail_song_analysis_attempt: {
+        Args: {
+          p_analysis_id: string
+          p_error_message: string
+          p_lease_token: string
+          p_runtime_ms: number
+        }
+        Returns: boolean
+      }
+      fail_waiting_show_generation: {
+        Args: { p_error_message: string; p_show_id: string }
+        Returns: boolean
       }
       finalise_firework_video_import: {
         Args: {
@@ -2417,6 +2496,7 @@ export type Database = {
           run_id: string
         }[]
       }
+      get_backend_lifecycle_health: { Args: never; Returns: Json }
       grant_ai_credits: {
         Args: {
           p_amount: number
@@ -2440,13 +2520,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      list_orphan_audio_objects: {
+        Args: { p_grace_hours?: number; p_limit?: number }
+        Returns: {
+          audio_path: string
+        }[]
+      }
       lock_firework_import_lease: {
         Args: { p_lease_token: string; p_run_id: string }
         Returns: string
-      }
-      list_orphan_audio_objects: {
-        Args: { p_grace_hours?: number; p_limit?: number }
-        Returns: { audio_path: string }[]
       }
       purge_expired_song_analyses: {
         Args: { p_limit?: number; p_retention_days?: number }
@@ -2463,11 +2545,21 @@ export type Database = {
           p_metadata?: Json
           p_reason: string
           p_severity: string
-          p_user_id: string | null
+          p_user_id: string
           p_work_key: string
           p_work_type: string
         }
         Returns: undefined
+      }
+      record_firework_import_dispatch_result: {
+        Args: {
+          p_attempt_count: number
+          p_call_id?: string
+          p_error?: string
+          p_outcome: string
+          p_run_id: string
+        }
+        Returns: string
       }
       record_firework_import_media_probe: {
         Args: {
@@ -2478,16 +2570,6 @@ export type Database = {
           p_run_id: string
           p_source_probe: Json
           p_width: number
-        }
-        Returns: string
-      }
-      record_firework_import_dispatch_result: {
-        Args: {
-          p_attempt_count: number
-          p_call_id?: string
-          p_error?: string
-          p_outcome: string
-          p_run_id: string
         }
         Returns: string
       }
@@ -2530,11 +2612,6 @@ export type Database = {
         }
         Returns: Json
       }
-      get_backend_lifecycle_health: { Args: never; Returns: Json }
-      resolve_reconciled_show_generation_credit: {
-        Args: { p_outcome: string; p_reason: string; p_show_id: string }
-        Returns: undefined
-      }
       resolve_backend_dead_letter: {
         Args: {
           p_dead_letter_id: string
@@ -2542,6 +2619,10 @@ export type Database = {
           p_status: string
         }
         Returns: boolean
+      }
+      resolve_reconciled_show_generation_credit: {
+        Args: { p_outcome: string; p_reason: string; p_show_id: string }
+        Returns: undefined
       }
       schedule_cue_generation_retry: {
         Args: {
@@ -2562,10 +2643,6 @@ export type Database = {
           p_runtime_ms: number
         }
         Returns: boolean
-      }
-      set_user_permission_overrides: {
-        Args: { p_overrides: Json; p_user_id: string }
-        Returns: number
       }
       seal_firework_import_candidate: {
         Args: {
@@ -2589,6 +2666,14 @@ export type Database = {
         Args: { p_candidate_id: string; p_job_id: string }
         Returns: string
       }
+      set_user_permission_overrides: {
+        Args: { p_overrides: Json; p_user_id: string }
+        Returns: number
+      }
+      set_user_status: {
+        Args: { p_status: string; p_user_id: string }
+        Returns: string
+      }
       settle_ai_credit_reservation: {
         Args: {
           p_idempotency_key: string
@@ -2597,6 +2682,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      show_preset_composition_signature: {
+        Args: { p_preview_cues: Json }
+        Returns: string
       }
       start_firework_import_run: {
         Args: {
@@ -2805,9 +2894,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

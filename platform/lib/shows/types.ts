@@ -43,6 +43,7 @@ export type ShowProjection = Pick<
   | 'cover_shader'
   | 'updated_at'
   | 'cover_image_path'
+  | 'assortment_id'
 >;
 
 /** Subset of `show_timeline_items` columns used by both authoring and replay views. */
@@ -131,7 +132,7 @@ export const SHOWS_TTL_SECONDS = 60;
 export const FIREWORK_SPECS_TTL_SECONDS = 60 * 10;
 
 export const SHOW_SELECT =
-  'id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, music_analysis_id, generation_status, generation_error, generated_cue_count, generation_started_at, generation_completed_at, launch_positions_json, cover_shader, updated_at, cover_image_path';
+  'id, slug, title, song, artist, status, duration_seconds, budget_cents, total_cents, effects_count, sync_percent, safety_meters, time_of_day, location, description, mood_tags, audio_path, music_analysis_id, generation_status, generation_error, generated_cue_count, generation_started_at, generation_completed_at, launch_positions_json, cover_shader, updated_at, cover_image_path, assortment_id';
 export const SHOW_CUE_SELECT =
   'id, show_id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index, emphasis';
 export const FIREWORK_VARIANT_SELECT =

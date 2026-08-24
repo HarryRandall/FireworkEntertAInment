@@ -61,4 +61,5 @@ export type ShowBriefRow = {
   site_width_feet: number | null;
   selected_cue_model: string | null;
   firework_types: string[] | null;
+  assortment_id: string | null;
 };
