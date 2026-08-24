@@ -19,6 +19,7 @@ import {
 } from 'react';
 import {
   ArrowLeft,
+  Building2,
   ChevronRight,
   CircleUser,
   CreditCard,
@@ -106,6 +107,12 @@ type AdminNavLink = {
 
 const ADMIN_LINKS: AdminNavLink[] = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard, permission: 'admin.view' },
+  {
+    href: '/retailer-admin',
+    label: 'Retailer admin',
+    icon: Building2,
+    permission: 'admin.view',
+  },
   { href: '/admin/users', label: 'Users', icon: Users, permission: 'admin.manage_users' },
   { href: '/admin/roles', label: 'Roles', icon: ShieldCheck, permission: 'admin.manage_users' },
   {

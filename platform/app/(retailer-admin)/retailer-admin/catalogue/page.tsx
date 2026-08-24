@@ -1,0 +1,164 @@
+/** Retailer-admin catalogue: read-only view of the real catalogue (see FIR-166) — full add/edit stays in /admin/catalogue, which retailers don't get. */
+
+import { Suspense } from 'react';
+import { CircleDashed, CircleDot, Layers3, Package, type LucideIcon } from 'lucide-react';
+import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
+import { Badge, SectionHeader } from '@/app/components/ui';
+import { FilterBar } from '@/app/components/ui/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
+import {
+  DataTableShell,
+  tableCellClasses,
+  tableClasses,
+  tableHeadClasses,
+  tableHeaderCellClasses,
+  tableRowClasses,
+} from '@/app/components/ui/DataTable';
+import { formatDuration, formatManufacturerLabel } from '@/lib/show-domain';
+import { listRetailerCatalogueProducts } from '../_lib/catalogue.server';
+
+const KIND_LABELS: Record<string, string> = {
+  firework: 'Firework',
+  multishot: 'Multishot',
+  bundle: 'Bundle',
+  other: 'Other',
+};
+
+const KIND_ICONS: Record<string, LucideIcon> = {
+  firework: CircleDashed,
+  multishot: Layers3,
+  bundle: Package,
+  other: CircleDot,
+};
+
+function kindIcon(kind: string): LucideIcon {
+  return KIND_ICONS[kind] ?? CircleDot;
+}
+
+type PageProps = {
+  searchParams: Promise<{ q?: string; page?: string }>;
+};
+
+export default async function RetailerAdminCataloguePage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  return (
+    <div className="mx-auto flex min-h-0 w-full max-w-[1200px] flex-1 flex-col gap-6">
+      <SectionHeader
+        title="Catalogue"
+        description="The products this store stocks. Editing catalogue data is done by platform admins in the main admin area."
+      />
+
+      <Suspense
+        fallback={
+          <>
+            <FilterSkeleton searchPlaceholder="Search part #, name, manufacturer..." />
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <TableSkeleton
+                rows={TABLE_PAGE_SIZE}
+                headers={['Part', 'Item', 'Kind', 'Manufacturer', 'Duration']}
+                tableClassName="min-w-[820px]"
+                rowSize="relaxed"
+              />
+            </div>
+          </>
+        }
+      >
+        <RetailerCatalogueData params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function RetailerCatalogueData({
+  params,
+}: {
+  params: Awaited<PageProps['searchParams']>;
+}) {
+  const query = (params.q ?? '').trim().toLowerCase();
+  const requestedPage = Number(params.page ?? '1');
+
+  const products = await listRetailerCatalogueProducts();
+  const filtered = products.filter((p) => {
+    const text = [p.partNumber, p.name, p.manufacturer, p.fireworkType, p.kind]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return !query || text.includes(query);
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+  const currentPage = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, requestedPage), totalPages)
+    : 1;
+  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
+
+  return (
+    <>
+      <FilterBar searchPlaceholder="Search part #, name, manufacturer…" />
+
+      <DataTableShell
+        viewport
+        footer={
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            searchParams={params}
+            visibleItems={paginated.length}
+            totalItems={filtered.length}
+            itemLabel="catalogue product"
+          />
+        }
+      >
+        <table className={tableClasses('min-w-[820px]')}>
+          <thead className={tableHeadClasses()}>
+            <tr>
+              <th className={tableHeaderCellClasses()}>Part</th>
+              <th className={tableHeaderCellClasses()}>Item</th>
+              <th className={tableHeaderCellClasses()}>Kind</th>
+              <th className={tableHeaderCellClasses()}>Manufacturer</th>
+              <th className={tableHeaderCellClasses()}>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((product) => (
+              <tr key={product.id} className={tableRowClasses()}>
+                <td
+                  className={tableCellClasses(
+                    'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                  )}
+                >
+                  {product.partNumber}
+                </td>
+                <td className={tableCellClasses()}>
+                  <div className="max-w-md truncate font-medium text-[color:var(--color-content-emphasis)]">
+                    {product.name}
+                  </div>
+                  {product.fireworkType ? (
+                    <div className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+                      {product.fireworkType}
+                    </div>
+                  ) : null}
+                </td>
+                <td className={tableCellClasses()}>
+                  <Badge solid tone="neutral" icon={kindIcon(product.kind)}>
+                    {KIND_LABELS[product.kind] ?? product.kind}
+                  </Badge>
+                </td>
+                <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
+                  {formatManufacturerLabel(product.manufacturer)}
+                </td>
+                <td
+                  className={tableCellClasses(
+                    'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                  )}
+                >
+                  {formatDuration(product.durationSeconds)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </DataTableShell>
+    </>
+  );
+}

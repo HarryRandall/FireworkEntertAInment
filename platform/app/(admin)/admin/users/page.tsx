@@ -30,6 +30,7 @@ const rowLinkClasses = 'block px-4 py-3';
 function roleTone(role: RoleKey) {
   if (role === 'admin') return 'violet' as const;
   if (role === 'supplier') return 'sky' as const;
+  if (role === 'retailer') return 'accent' as const;
   return 'neutral' as const;
 }
 
@@ -54,6 +55,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             options: [
               { value: 'admin', label: 'Admin' },
               { value: 'supplier', label: 'Supplier' },
+              { value: 'retailer', label: 'Retailer' },
               { value: 'user', label: 'User' },
             ],
           },

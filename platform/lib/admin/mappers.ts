@@ -45,7 +45,7 @@ export type ShowTemplateSummaryRow = Omit<
   preview_cues?: Json;
 };
 
-const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user'];
+const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user', 'retailer'];
 
 function isRoleKey(value: string): value is RoleKey {
   return ROLE_KEYS.includes(value as RoleKey);

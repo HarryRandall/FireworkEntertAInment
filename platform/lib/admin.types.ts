@@ -12,8 +12,8 @@ import type { ShowCover } from '@/lib/cover';
  * into Supabase row types directly.
  */
 
-/** The three top-level personas the platform recognises. */
-export type RoleKey = 'admin' | 'supplier' | 'user';
+/** The top-level personas the platform recognises. */
+export type RoleKey = 'admin' | 'supplier' | 'user' | 'retailer';
 
 export type PermissionKey =
   | 'shows.create'
@@ -25,8 +25,11 @@ export type PermissionKey =
   | 'admin.manage_catalogue'
   | 'admin.manage_imports'
   | 'admin.manage_prompts'
+  | 'admin.manage_assortments'
   | 'supplier.view'
-  | 'supplier.manage_stock';
+  | 'supplier.manage_stock'
+  | 'retailer.view'
+  | 'retailer.manage_assortments';
 
 export type ProfileStatus = 'active' | 'suspended';
 export type ThemePreference = 'dark' | 'light' | 'system';
