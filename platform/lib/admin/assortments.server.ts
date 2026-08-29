@@ -34,6 +34,11 @@ export type AdminAssortmentDetail = {
   priceCents: number;
   isActive: boolean;
   updatedAt: string;
+  publicLink: {
+    publicToken: string;
+    fundingUserId: string;
+    isEnabled: boolean;
+  } | null;
   items: AdminAssortmentItemRow[];
 };
 
@@ -74,6 +79,7 @@ export async function getAssortmentById(id: string): Promise<AdminAssortmentDeta
     .from('assortments')
     .select(
       `id, slug, name, description, price_cents, is_active, updated_at,
+       assortment_public_links (public_token, funding_user_id, is_enabled),
        assortment_items (
          id, quantity, sort_order,
          catalogue_items (
@@ -89,6 +95,10 @@ export async function getAssortmentById(id: string): Promise<AdminAssortmentDeta
     return null;
   }
   if (!data) return null;
+
+  const rawPublicLink = Array.isArray(data.assortment_public_links)
+    ? data.assortment_public_links[0]
+    : data.assortment_public_links;
 
   const items = (data.assortment_items ?? [])
     .filter(
@@ -114,6 +124,13 @@ export async function getAssortmentById(id: string): Promise<AdminAssortmentDeta
     priceCents: data.price_cents,
     isActive: data.is_active,
     updatedAt: data.updated_at,
+    publicLink: rawPublicLink
+      ? {
+          publicToken: rawPublicLink.public_token,
+          fundingUserId: rawPublicLink.funding_user_id,
+          isEnabled: rawPublicLink.is_enabled,
+        }
+      : null,
     items,
   };
 }

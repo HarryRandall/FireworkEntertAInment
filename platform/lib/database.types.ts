@@ -186,6 +186,112 @@ export type Database = {
           },
         ]
       }
+      assortment_public_links: {
+        Row: {
+          assortment_id: string
+          created_at: string
+          funding_user_id: string
+          is_enabled: boolean
+          public_token: string
+          updated_at: string
+        }
+        Insert: {
+          assortment_id: string
+          created_at?: string
+          funding_user_id: string
+          is_enabled?: boolean
+          public_token?: string
+          updated_at?: string
+        }
+        Update: {
+          assortment_id?: string
+          created_at?: string
+          funding_user_id?: string
+          is_enabled?: boolean
+          public_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assortment_public_links_assortment_id_fkey"
+            columns: ["assortment_id"]
+            isOneToOne: true
+            referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assortment_public_links_funding_user_id_fkey"
+            columns: ["funding_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assortment_song_selections: {
+        Row: {
+          access_token_hash: string
+          assortment_id: string | null
+          audio_path: string
+          content_type: string
+          created_at: string
+          expires_at: string
+          funding_user_id: string
+          id: string
+          music_analysis_id: string | null
+          original_filename: string | null
+          size_bytes: number
+        }
+        Insert: {
+          access_token_hash: string
+          assortment_id?: string | null
+          audio_path: string
+          content_type: string
+          created_at?: string
+          expires_at?: string
+          funding_user_id: string
+          id?: string
+          music_analysis_id?: string | null
+          original_filename?: string | null
+          size_bytes: number
+        }
+        Update: {
+          access_token_hash?: string
+          assortment_id?: string | null
+          audio_path?: string
+          content_type?: string
+          created_at?: string
+          expires_at?: string
+          funding_user_id?: string
+          id?: string
+          music_analysis_id?: string | null
+          original_filename?: string | null
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assortment_song_selections_assortment_id_fkey"
+            columns: ["assortment_id"]
+            isOneToOne: false
+            referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assortment_song_selections_funding_user_id_fkey"
+            columns: ["funding_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assortment_song_selections_music_analysis_id_fkey"
+            columns: ["music_analysis_id"]
+            isOneToOne: true
+            referencedRelation: "song_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assortments: {
         Row: {
           cover_shader: string | null
@@ -1795,14 +1901,52 @@ export type Database = {
           },
         ]
       }
+      show_assortment_items: {
+        Row: {
+          catalogue_item_id: string
+          created_at: string
+          quantity: number
+          show_id: string
+        }
+        Insert: {
+          catalogue_item_id: string
+          created_at?: string
+          quantity: number
+          show_id: string
+        }
+        Update: {
+          catalogue_item_id?: string
+          created_at?: string
+          quantity?: number
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_assortment_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_assortment_items_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shows: {
         Row: {
           artist: string | null
           assortment_id: string | null
+          assortment_song_selection_id: string | null
           audio_path: string | null
           budget_cents: number | null
           cover_image_path: string | null
           cover_shader: Json | null
+          creation_source: string
           created_at: string
           description: string | null
           duration_seconds: number | null
@@ -1824,6 +1968,7 @@ export type Database = {
           location: string | null
           mood_tags: string[]
           music_analysis_id: string | null
+          public_access_token_hash: string | null
           safety_meters: number | null
           selected_cue_model: string | null
           show_style: string
@@ -1841,10 +1986,12 @@ export type Database = {
         Insert: {
           artist?: string | null
           assortment_id?: string | null
+          assortment_song_selection_id?: string | null
           audio_path?: string | null
           budget_cents?: number | null
           cover_image_path?: string | null
           cover_shader?: Json | null
+          creation_source?: string
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1866,6 +2013,7 @@ export type Database = {
           location?: string | null
           mood_tags?: string[]
           music_analysis_id?: string | null
+          public_access_token_hash?: string | null
           safety_meters?: number | null
           selected_cue_model?: string | null
           show_style?: string
@@ -1883,10 +2031,12 @@ export type Database = {
         Update: {
           artist?: string | null
           assortment_id?: string | null
+          assortment_song_selection_id?: string | null
           audio_path?: string | null
           budget_cents?: number | null
           cover_image_path?: string | null
           cover_shader?: Json | null
+          creation_source?: string
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
@@ -1908,6 +2058,7 @@ export type Database = {
           location?: string | null
           mood_tags?: string[]
           music_analysis_id?: string | null
+          public_access_token_hash?: string | null
           safety_meters?: number | null
           selected_cue_model?: string | null
           show_style?: string
@@ -1928,6 +2079,13 @@ export type Database = {
             columns: ["assortment_id"]
             isOneToOne: false
             referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shows_assortment_song_selection_id_fkey"
+            columns: ["assortment_song_selection_id"]
+            isOneToOne: false
+            referencedRelation: "assortment_song_selections"
             referencedColumns: ["id"]
           },
           {
@@ -2373,6 +2531,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_assortment_qr_show: {
+        Args: {
+          p_assortment_token: string
+          p_cover_shader: Json
+          p_credit_action_key: string
+          p_generation_mode: string
+          p_public_access_token_hash: string
+          p_selected_cue_model: string | null
+          p_selection_id: string
+          p_source_show_id?: string | null
+          p_title: string
+        }
+        Returns: Json
+      }
       create_style_default_and_update_effect: {
         Args: {
           p_effect_description: string
@@ -2436,6 +2608,10 @@ export type Database = {
         Returns: Json
       }
       ensure_ai_credit_account: { Args: { p_user_id: string }; Returns: Json }
+      ensure_assortment_public_link: {
+        Args: { p_assortment_id: string }
+        Returns: Json
+      }
       expire_exhausted_cue_generations: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
@@ -2529,6 +2705,14 @@ export type Database = {
       lock_firework_import_lease: {
         Args: { p_lease_token: string; p_run_id: string }
         Returns: string
+      }
+      prepare_assortment_song_analysis: {
+        Args: {
+          p_analysis_id: string
+          p_assortment_token: string
+          p_selection_id: string
+        }
+        Returns: Json
       }
       purge_expired_song_analyses: {
         Args: { p_limit?: number; p_retention_days?: number }

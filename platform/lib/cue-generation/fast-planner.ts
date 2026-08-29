@@ -6,6 +6,11 @@
  * and a compact interpretation of the user's creative brief.
  */
 import type { CueSlot, SlotVibe } from '@/lib/beat-grid.server';
+import {
+  productQuantityCapacity,
+  requireExactProductQuantityLedger,
+  type ProductQuantityLedger,
+} from '@/lib/assortments/constraints';
 import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { launchPositionCountForSlots } from './beat-sync-moments';
@@ -69,8 +74,9 @@ export function planCuesFast(params: {
   slots: CueSlot[];
   products: FireworkSpecification[];
   songDuration: number;
+  availabilityByProductId?: ProductQuantityLedger | null;
 }): FastPlanResult {
-  const { brief, analysis, slots, products, songDuration } = params;
+  const { brief, analysis, slots, products, songDuration, availabilityByProductId = null } = params;
   const productInfos = products.map(toProductInfo).filter((p) => p.product.id);
   const singles = productInfos.filter((p) => !p.isMultiShot);
   const multis = productInfos.filter((p) => p.isMultiShot);
@@ -114,7 +120,19 @@ export function planCuesFast(params: {
   const surpriseImpact = direction.surprise
     ? findPreFinaleSurpriseImpact(slots, analysis, songDuration)
     : null;
-  const selectedSlots = selectSlots(slots, direction, songDuration, surpriseImpact);
+  const requiredCueCount = productQuantityCapacity(availabilityByProductId) ?? 0;
+  if (requiredCueCount > MAX_FAST_CUES) {
+    throw new Error(
+      `The physical assortment requires ${requiredCueCount} cues, above the fast planner limit of ${MAX_FAST_CUES}.`,
+    );
+  }
+  const selectedSlots = selectSlots(
+    slots,
+    direction,
+    songDuration,
+    surpriseImpact,
+    requiredCueCount,
+  );
   // Reserve the defining musical moments first. Their lift-adjusted launches
   // can precede ordinary slots, so chronological greedy planning could
   // otherwise consume the tube window they need.
@@ -150,7 +168,17 @@ export function planCuesFast(params: {
       isSurprise,
       hasMultiShots: multiPool.length > 0,
     });
-    const pools = wantsMulti ? [multiPool, singlePool] : [singlePool];
+    const remainingExactProducts = availabilityByProductId
+      ? productInfos.filter((product) => {
+          const required = availabilityByProductId.get(product.product.id) ?? 0;
+          return (choiceContext.usage.get(product.product.id) ?? 0) < required;
+        })
+      : null;
+    const pools = remainingExactProducts
+      ? [remainingExactProducts]
+      : wantsMulti
+        ? [multiPool, singlePool]
+        : [singlePool];
     let accepted:
       | {
           product: ProductInfo;
@@ -177,6 +205,13 @@ export function planCuesFast(params: {
             slot.vibe === 'drop'),
       });
       for (const product of ranked) {
+        const quantityLimit = availabilityByProductId?.get(product.product.id);
+        if (
+          availabilityByProductId &&
+          (!quantityLimit || (choiceContext.usage.get(product.product.id) ?? 0) >= quantityLimit)
+        ) {
+          continue;
+        }
         const timing = scheduleProductForCueSlot({
           product: product.product,
           emphasis,
@@ -231,8 +266,13 @@ export function planCuesFast(params: {
 
   // Different lift velocities can make a later musical impact launch earlier.
   // Persistence order must follow the actual launch timeline.
-  cues.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
-  return { cues, skippedSlots };
+  const exactCues = requireExactProductQuantityLedger(
+    cues,
+    availabilityByProductId,
+    'Fast planner',
+  );
+  exactCues.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
+  return { cues: exactCues, skippedSlots };
 }
 
 function selectSlots(
@@ -240,6 +280,7 @@ function selectSlots(
   direction: CreativeDirection,
   songDuration: number,
   surpriseImpact: number | null,
+  requiredCueCount: number,
 ): CueSlot[] {
   const selected = new Set<number>();
   const hardExcluded = new Set<number>();
@@ -262,10 +303,11 @@ function selectSlots(
     }
   }
 
-  const minimum =
+  const styleMinimum =
     direction.style === 'minimalist' || direction.density === 'sparse'
       ? MIN_MINIMALIST_CUES
       : MIN_STANDARD_CUES;
+  const minimum = Math.max(styleMinimum, requiredCueCount);
   if (selected.size < Math.min(minimum, slots.length)) {
     const remaining = slots
       .filter((slot) => !selected.has(slot.index) && !hardExcluded.has(slot.index))

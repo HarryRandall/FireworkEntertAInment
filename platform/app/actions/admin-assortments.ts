@@ -32,7 +32,8 @@ const CreateAssortmentSchema = z.object({
 export async function createAssortment(
   input: z.infer<typeof CreateAssortmentSchema>,
 ): Promise<CreateResult> {
-  if (!(await requirePermission('admin.manage_assortments'))) {
+  const profile = await requirePermission('admin.manage_assortments');
+  if (!profile) {
     return { ok: false, error: 'Not permitted.' };
   }
   const parsed = CreateAssortmentSchema.safeParse(input);
@@ -44,7 +45,13 @@ export async function createAssortment(
 
   const { data, error } = await supabase
     .from('assortments')
-    .insert({ slug, name: parsed.data.name, price_cents: 0, is_active: false })
+    .insert({
+      slug,
+      name: parsed.data.name,
+      price_cents: 0,
+      is_active: false,
+      created_by: profile.id,
+    })
     .select('id')
     .maybeSingle();
 
@@ -52,6 +59,31 @@ export async function createAssortment(
   if (!data) return { ok: false, error: 'Could not create assortment.' };
   revalidatePath('/admin/assortments');
   return { ok: true, id: data.id };
+}
+
+type EnsurePublicLinkResult = { ok: true; publicToken: string } | { ok: false; error: string };
+
+export async function ensureAssortmentPublicLink(
+  assortmentId: string,
+): Promise<EnsurePublicLinkResult> {
+  if (!(await requirePermission('admin.manage_assortments'))) {
+    return { ok: false, error: 'Not permitted.' };
+  }
+  const parsed = z.string().uuid().safeParse(assortmentId);
+  if (!parsed.success) return { ok: false, error: 'Invalid assortment.' };
+
+  const supabase = createClient(await cookies());
+  const { data, error } = await supabase.rpc('ensure_assortment_public_link', {
+    p_assortment_id: parsed.data,
+  });
+  const result = data as { publicToken?: unknown } | null;
+  if (error || typeof result?.publicToken !== 'string') {
+    console.error('[admin/assortments] public link creation failed:', error);
+    return { ok: false, error: 'The reusable QR link could not be created.' };
+  }
+
+  await refreshAssortmentDetail(parsed.data);
+  return { ok: true, publicToken: result.publicToken };
 }
 
 const UpdateAssortmentSchema = z.object({

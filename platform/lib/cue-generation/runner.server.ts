@@ -18,6 +18,12 @@ import 'server-only';
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
+import {
+  exactProductQuantityMismatches,
+  productQuantityCapacity,
+  requireExactProductQuantityLedger,
+  type ProductQuantityLedger,
+} from '@/lib/assortments/constraints';
 import { buildCueSlots, type CueSlot } from '@/lib/beat-grid.server';
 import {
   MIN_PRODUCT_DURATION_SECONDS,
@@ -37,6 +43,7 @@ import {
   loadAnalysisState,
   loadAssortmentCatalogueItemIds,
   loadBrief,
+  loadShowAssortmentLedger,
   type AnalysisJsonLoadResult,
 } from './loaders.server';
 import {
@@ -240,8 +247,9 @@ function estimateAchievableCueCount(params: {
   songDuration: number;
   maxTubes: 1 | 2 | 3;
   slotCount: number;
+  quantityCapacity?: number | null;
 }): number {
-  const { products, songDuration, maxTubes, slotCount } = params;
+  const { products, songDuration, maxTubes, slotCount, quantityCapacity = null } = params;
   let cheapestTubeSeconds = Infinity;
   for (const product of products) {
     const duration = Math.max(
@@ -257,7 +265,11 @@ function estimateAchievableCueCount(params: {
   if (!Number.isFinite(cheapestTubeSeconds)) return 0;
   // Leave headroom for fixed beat placement and lift-adjusted early windows.
   const durationCapacity = Math.floor(((songDuration * maxTubes) / cheapestTubeSeconds) * 0.85);
-  return Math.min(slotCount, Math.max(1, durationCapacity));
+  return Math.min(
+    slotCount,
+    Math.max(1, durationCapacity),
+    quantityCapacity == null ? Number.POSITIVE_INFINITY : quantityCapacity,
+  );
 }
 
 /**
@@ -413,6 +425,8 @@ export async function generateCuesForShow(params: {
   let analysis: AnalyserResult | null = null;
   let analysisResult: AnalysisJsonLoadResult = { status: 'absent', analysis: null };
   let products: Awaited<ReturnType<typeof listFireworkProducts>> = [];
+  let assortmentLedger: ProductQuantityLedger | null = null;
+  let liveAssortmentItemIds: Set<string> | null = null;
   let catalogue: ReturnType<typeof projectCatalogue> = [];
   let slots: CueSlot[];
 
@@ -425,6 +439,11 @@ export async function generateCuesForShow(params: {
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
+    if (brief.creation_source === 'assortment_qr') {
+      assortmentLedger = await loadShowAssortmentLedger(supabase, showId);
+    } else if (brief.assortment_id) {
+      liveAssortmentItemIds = await loadAssortmentCatalogueItemIds(supabase, brief.assortment_id);
+    }
     model = normalisePersistedCueModel(
       brief.selected_cue_model ?? selectedCueModel,
       DEFAULT_CUE_MODEL,
@@ -459,13 +478,21 @@ export async function generateCuesForShow(params: {
     if (products.length === 0) {
       throw new Error('Product catalogue contains no firework products.');
     }
-    // A generated show must resolve to a purchasable shopping list. Items with
-    // no available supplier price (e.g. style-default demo fireworks) would
-    // produce a $0 show the user cannot actually buy, so they never enter the
-    // planning pool.
-    products = products.filter((product) => product.minPriceCents != null);
-    if (products.length === 0) {
-      throw new Error('No purchasable fireworks are available from supplier inventory.');
+    if (assortmentLedger) {
+      products = products.filter((product) => assortmentLedger?.has(product.id));
+      if (products.length !== assortmentLedger.size) {
+        throw new Error(
+          'One or more products in the physical assortment cannot be rendered safely.',
+        );
+      }
+    } else {
+      // Normal app generation still requires a purchasable supplier item. A QR
+      // assortment is already a fixed physical pack, so its immutable snapshot
+      // is the availability authority instead of live supplier inventory.
+      products = products.filter((product) => product.minPriceCents != null);
+      if (products.length === 0) {
+        throw new Error('No purchasable fireworks are available from supplier inventory.');
+      }
     }
     // Multishot child positions are absolute. Products that address a launch
     // position outside this site's width cannot be scheduled safely.
@@ -473,25 +500,21 @@ export async function generateCuesForShow(params: {
     if (products.length === 0) {
       throw new Error('No catalogue products fit the launch positions available at this site.');
     }
+    if (assortmentLedger && products.length !== assortmentLedger.size) {
+      throw new Error(
+        'The physical assortment cannot be scheduled safely at the available launch positions.',
+      );
+    }
     // Honour the user's firework-type constraint when it leaves a workable
     // catalogue; otherwise keep the full list and let the prompt express the
     // preference instead.
     const allowedTypes = parseFireworkTypes(brief.firework_types);
-    if (allowedTypes) {
+    if (allowedTypes && !assortmentLedger) {
       const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
       if (filtered.length >= 3) products = filtered;
     }
-    // A kiosk show generated from a scanned assortment must only draw from
-    // that bundle's members — the shopper's price and shopping list are a
-    // promise tied to the physical pack they scanned, not the full
-    // catalogue. Unlike the firework-type preference above, this is not
-    // optional: fail closed rather than silently widening the pool.
-    if (brief.assortment_id) {
-      const assortmentItemIds = await loadAssortmentCatalogueItemIds(
-        supabase,
-        brief.assortment_id,
-      );
-      products = products.filter((product) => assortmentItemIds.has(product.id));
+    if (liveAssortmentItemIds) {
+      products = products.filter((product) => liveAssortmentItemIds?.has(product.id));
       if (products.length === 0) {
         throw new Error('This assortment has no purchasable products available right now.');
       }
@@ -536,6 +559,7 @@ export async function generateCuesForShow(params: {
         slots,
         products,
         songDuration,
+        availabilityByProductId: assortmentLedger,
       });
       accepted = plan.cues;
       acceptedCount = accepted.length;
@@ -548,7 +572,15 @@ export async function generateCuesForShow(params: {
       // Every accepted direct shell bursts on its analysed beat. Unsafe or
       // physically impossible hits are skipped instead of being shifted late.
       const planStart = performance.now();
-      const plan = planCuesOnBeats({ analysis, slots, products, songDuration, brief, maxTubes });
+      const plan = planCuesOnBeats({
+        analysis,
+        slots,
+        products,
+        songDuration,
+        brief,
+        maxTubes,
+        availabilityByProductId: assortmentLedger,
+      });
       accepted = plan.cues;
       acceptedCount = accepted.length;
       droppedCount = plan.skippedSlots;
@@ -580,10 +612,17 @@ export async function generateCuesForShow(params: {
           fireworkTypes: parseFireworkTypes(brief.firework_types),
         },
         analysisSummary: buildAnalysisSummary(analysis, songDuration),
-        catalogue,
+        catalogue: assortmentLedger
+          ? catalogue.map((product) => ({
+              ...product,
+              availableQuantity: assortmentLedger?.get(product.id) ?? 0,
+            }))
+          : catalogue,
         slots: projectSlotsForLLM(slots),
         targets: {
           slotCount: slots.length,
+          exactCueCount: productQuantityCapacity(assortmentLedger),
+          requiredProductQuantities: assortmentLedger ? Object.fromEntries(assortmentLedger) : null,
           minFillRatio: sparseGeneration ? 0.5 : 0.75,
           maxFillRatio: sparseGeneration ? 0.68 : 0.95,
           chorusFillRatio: sparseGeneration ? 0.72 : 1,
@@ -659,6 +698,7 @@ export async function generateCuesForShow(params: {
       } else {
         // Drop unknown slots / unknown products / duplicate slot indices.
         const seenSlot = new Set<number>();
+        const productUsage = new Map<string, number>();
         const reconstructed: ReconstructedCue[] = [];
         const dropped: Array<{ assignment: Assignment; reason: string }> = [];
 
@@ -677,6 +717,14 @@ export async function generateCuesForShow(params: {
             dropped.push({ assignment: a, reason: 'unknown productId' });
             continue;
           }
+          const quantityLimit = assortmentLedger?.get(a.productId);
+          if (
+            assortmentLedger &&
+            (!quantityLimit || (productUsage.get(a.productId) ?? 0) >= quantityLimit)
+          ) {
+            dropped.push({ assignment: a, reason: 'assortment quantity exhausted' });
+            continue;
+          }
           const emphasis = a.emphasis ?? slot.emphasis;
           const timing = scheduleProductForCueSlot({
             product,
@@ -691,6 +739,7 @@ export async function generateCuesForShow(params: {
             continue;
           }
           seenSlot.add(a.slotIndex);
+          productUsage.set(a.productId, (productUsage.get(a.productId) ?? 0) + 1);
           reconstructed.push({
             timeSeconds: timing.launchTimeSeconds,
             impactTimeSeconds: timing.impactTimeSeconds,
@@ -759,6 +808,7 @@ export async function generateCuesForShow(params: {
           songDuration,
           maxTubes,
           slotCount: slots.length,
+          quantityCapacity: productQuantityCapacity(assortmentLedger),
         });
         const minimumViableCount = Math.min(targetMinimumCount, achievableCount);
         const acceptedSlotIndices = new Set(accepted.map((cue) => cue.slotIndex));
@@ -789,7 +839,9 @@ export async function generateCuesForShow(params: {
           maxTubes > 1 &&
           strongMomentSlots.size > 0 &&
           (usedTubes.size < maxTubes || simultaneousStrongMoments === 0);
+        const quantityMismatches = exactProductQuantityMismatches(accepted, assortmentLedger);
         if (
+          quantityMismatches.length > 0 ||
           accepted.length < minimumViableCount ||
           missingProtectedSlots.length > 0 ||
           missingMultiTubeChoreography
@@ -802,6 +854,7 @@ export async function generateCuesForShow(params: {
               missingProtectedSlotCount: missingProtectedSlots.length,
               simultaneousStrongMoments,
               usedTubeCount: usedTubes.size,
+              quantityMismatches,
             },
           );
           runFastFallback();
@@ -809,8 +862,15 @@ export async function generateCuesForShow(params: {
       }
     }
 
-    // Guarantee database-safe spacing for every path before the guarded write.
+    // Safety can remove a cue after a planner returns, so exact physical-pack
+    // validation happens after the final shared overlap pass. Under-use,
+    // over-use and unknown products all fail the run rather than being hidden.
     accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+    accepted = requireExactProductQuantityLedger(
+      accepted,
+      assortmentLedger,
+      'Final cue validation',
+    );
     acceptedCount = accepted.length;
 
     if (accepted.length === 0) {
@@ -865,10 +925,18 @@ export async function generateCuesForShow(params: {
 
   // === Stage 6: refresh derived fields + mark complete ===================
   try {
-    await syncShowDerivedFieldsForUser(userId, {
-      showId,
-      showSlug: brief.slug,
-    });
+    await syncShowDerivedFieldsForUser(
+      userId,
+      {
+        showId,
+        showSlug: brief.slug,
+        fixedTotalCents:
+          brief.creation_source === 'assortment_qr' || brief.assortment_id
+            ? brief.budget_cents
+            : undefined,
+      },
+      supabase,
+    );
   } catch (error) {
     const message = 'Could not finalise the generated show totals.';
     console.error('[cue-generation] derived-field sync failed:', error);
