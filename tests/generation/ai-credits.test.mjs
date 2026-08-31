@@ -156,12 +156,12 @@ test('AI credit reads fail closed instead of fabricating balances or history', (
 });
 
 test('settings links keep usage after billing', () => {
-  const appShell = read('components/shell/AppShell.tsx');
-  const profileIndex = appShell.indexOf("href: '/settings/profile'");
-  const notificationsIndex = appShell.indexOf("href: '/settings/notifications'");
-  const billingIndex = appShell.indexOf("href: '/settings/billing'");
-  const usageIndex = appShell.indexOf("href: '/settings/usage'");
-  const securityIndex = appShell.indexOf("href: '/settings/security'");
+  const navigation = read('components/shell/app-shell-navigation.ts');
+  const profileIndex = navigation.indexOf("href: '/settings/profile'");
+  const notificationsIndex = navigation.indexOf("href: '/settings/notifications'");
+  const billingIndex = navigation.indexOf("href: '/settings/billing'");
+  const usageIndex = navigation.indexOf("href: '/settings/usage'");
+  const securityIndex = navigation.indexOf("href: '/settings/security'");
   assert.ok(profileIndex < notificationsIndex);
   assert.ok(notificationsIndex < billingIndex);
   assert.ok(billingIndex < usageIndex);

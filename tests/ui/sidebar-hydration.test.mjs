@@ -52,25 +52,26 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
     join(root, 'components/shell/workspace-summary-cache.client.ts'),
     'utf8',
   );
-
-  assert.match(appSource, /getAppBreadcrumbs/);
-  assert.match(appSource, /formatPathSegment/);
-  assert.match(
-    appSource,
-    /normalisedPath === '\/home'\) return \[\{ label: 'Home', icon: Home \}\]/,
+  const navigationSource = readFileSync(
+    join(root, 'components/shell/app-shell-navigation.ts'),
+    'utf8',
   );
-  assert.match(appSource, /icon\?: LucideIcon/);
-  assert.match(appSource, /icon: staticLink\?\.icon/);
-  assert.doesNotMatch(appSource, /label: 'Workspace'/);
+
+  assert.match(navigationSource, /getAppBreadcrumbs/);
+  assert.match(navigationSource, /formatPathSegment/);
+  assert.match(navigationSource, /path === '\/home'\) return \[\{ label: 'Home', icon: Home \}\]/);
+  assert.match(navigationSource, /icon\?: LucideIcon/);
+  assert.match(navigationSource, /icon: staticLink\?\.icon/);
+  assert.doesNotMatch(navigationSource, /label: 'Workspace'/);
   assert.doesNotMatch(appSource, /<SidebarGroupLabel>Workspace<\/SidebarGroupLabel>/);
   assert.match(appSource, /SidebarPrimaryAction/);
-  assert.match(appSource, /label: 'My shows'/);
-  assert.match(appSource, /label: 'Explore'/);
-  assert.match(appSource, /label: 'Catalogue'/);
-  assert.match(appSource, /label: 'Exports'/);
-  assert.match(appSource, /label: 'Safety'/);
-  assert.match(appSource, /label: 'Admin'/);
-  assert.doesNotMatch(appSource, /label: 'Library'/);
+  assert.match(navigationSource, /label: 'My shows'/);
+  assert.match(navigationSource, /label: 'Explore'/);
+  assert.match(navigationSource, /label: 'Catalogue'/);
+  assert.match(navigationSource, /label: 'Exports'/);
+  assert.match(navigationSource, /label: 'Safety'/);
+  assert.match(navigationSource, /label: 'Admin'/);
+  assert.doesNotMatch(navigationSource, /label: 'Library'/);
   assert.match(appSource, /\/api\/me\/summary/);
   assert.match(cacheSource, /CACHE_KEY_PREFIX = 'sc:workspace-summary:v3'/);
   assert.match(cacheSource, /cacheKey\(profileId\)/);
