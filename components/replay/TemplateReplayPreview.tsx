@@ -30,6 +30,9 @@ type TemplateReplayPreviewProps = {
   template: ShowTemplate;
   specifications: FireworkSpecification[];
   mode?: 'card' | 'detail';
+  detailAppearance?: 'default' | 'borderless';
+  /** Optional soundtrack for detail previews. Playback is driven by this media clock. */
+  audioUrl?: string | null;
   isCardHovered?: boolean;
   /** Card mode only: override whether the replay playhead is currently advancing. */
   isCardPlaybackActive?: boolean;
@@ -97,6 +100,8 @@ export function TemplateReplayPreview({
   template,
   specifications,
   mode = 'card',
+  detailAppearance = 'default',
+  audioUrl = null,
   isCardHovered = false,
   isCardPlaybackActive,
   keepCardCanvasMounted = false,
@@ -131,7 +136,12 @@ export function TemplateReplayPreview({
     [cardPreviewWindowStart, isDetail, template.previewCues],
   );
 
-  const duration = isDetail ? Math.max(template.durationSeconds ?? 30, 30) : CARD_PREVIEW_SECONDS;
+  const suppliedDuration = template.durationSeconds;
+  const duration = isDetail
+    ? suppliedDuration != null && suppliedDuration > 0
+      ? suppliedDuration
+      : 30
+    : CARD_PREVIEW_SECONDS;
 
   const posterTime = useMemo(
     () => posterTimeFor(template.slug, visibleCues),
@@ -155,6 +165,7 @@ export function TemplateReplayPreview({
   const lastUIElapsedRef = useRef(elapsed);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const hoverStartTimeRef = useRef(hoverStartTime);
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
@@ -264,6 +275,13 @@ export function TemplateReplayPreview({
   useEffect(() => {
     if (!isDetail || cues.length === 0 || detailAutoplayRef.current) return;
     detailAutoplayRef.current = true;
+    // Soundtrack playback needs a user gesture. Keep the scene and music at
+    // zero together rather than silently autoplaying only the fireworks.
+    if (audioUrl) {
+      setPlayhead(0);
+      setIsPlaying(false);
+      return;
+    }
     if (
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -274,7 +292,12 @@ export function TemplateReplayPreview({
     }
     setPlayhead(0);
     setIsPlaying(true);
-  }, [isDetail, cues.length, setPlayhead]);
+  }, [audioUrl, isDetail, cues.length, setPlayhead]);
+
+  useEffect(() => {
+    if (isPlaying) return;
+    audioRef.current?.pause();
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!active || cues.length === 0) return;
@@ -284,9 +307,20 @@ export function TemplateReplayPreview({
 
     function tick(now: number) {
       if (startedAt.current == null) return;
-      const next = playheadStart.current + ((now - startedAt.current) / 1000) * playbackRate;
+      const audio = audioRef.current;
+      const audioTime =
+        audio && !audio.paused && !audio.ended && Number.isFinite(audio.currentTime)
+          ? audio.currentTime
+          : null;
+      const next =
+        audioTime ?? playheadStart.current + ((now - startedAt.current) / 1000) * playbackRate;
+      if (audioTime != null) {
+        startedAt.current = now;
+        playheadStart.current = next;
+      }
       if (next >= duration) {
         if (isDetail) {
+          audio?.pause();
           elapsedRef.current = duration;
           setDisplayElapsed(duration);
           setElapsed(duration);
@@ -334,14 +368,34 @@ export function TemplateReplayPreview({
     pendingScrubRef.current = null;
     lastScrubCommitRef.current = 0;
     setPlayhead(pending);
+    if (audioRef.current) audioRef.current.currentTime = pending;
   }
 
   function togglePlayback() {
-    if (elapsedRef.current >= duration) setPlayhead(0);
-    setIsPlaying((playing) => !playing);
+    if (isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+    if (elapsedRef.current >= duration) {
+      setPlayhead(0);
+      if (audioRef.current) audioRef.current.currentTime = 0;
+    }
+    const audio = audioRef.current;
+    if (!audio) {
+      setIsPlaying(true);
+      return;
+    }
+    audio.currentTime = elapsedRef.current;
+    void audio
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(() => setIsPlaying(false));
   }
 
   function restart() {
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
     setIsPlaying(false);
     setPlayhead(0);
   }
@@ -358,7 +412,9 @@ export function TemplateReplayPreview({
       {...fullscreenContainerProps}
       className={cn(
         isDetail
-          ? 'group/replay border-border overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-card-hover)]'
+          ? detailAppearance === 'borderless'
+            ? 'group/replay isolate overflow-hidden rounded-3xl bg-black shadow-[var(--shadow-card-hover)]'
+            : 'group/replay border-border overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-card-hover)]'
           : (cardClassName ?? 'relative h-44 overflow-hidden'),
         isDetail &&
           (isFullscreen
@@ -367,7 +423,11 @@ export function TemplateReplayPreview({
       )}
       style={isDetail || lazyHoverMount ? undefined : { backgroundImage: 'var(--preview-card-bg)' }}
     >
-      <div className={isDetail ? 'relative h-full w-full' : 'relative h-full'}>
+      <div
+        className={
+          isDetail ? 'relative h-full w-full overflow-hidden rounded-[inherit]' : 'relative h-full'
+        }
+      >
         {shouldMountCanvas ? (
           <MemoizedFireworkReplayCanvas
             cues={cues}
@@ -389,6 +449,19 @@ export function TemplateReplayPreview({
       </div>
       {isDetail ? (
         <>
+          {audioUrl ? (
+            <audio
+              ref={audioRef}
+              preload="auto"
+              src={audioUrl}
+              onPause={() => setIsPlaying(false)}
+              onError={() => setIsPlaying(false)}
+              onEnded={() => {
+                setPlayhead(duration);
+                setIsPlaying(false);
+              }}
+            />
+          ) : null}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           {isReplayReady ? (
             <div className="absolute inset-x-0 bottom-6 z-20">

@@ -35,6 +35,10 @@ const files = {
   kioskLayout: new URL('../../app/(kiosk)/layout.tsx', import.meta.url),
   kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
+  templateReplayPreview: new URL(
+    '../../components/replay/TemplateReplayPreview.tsx',
+    import.meta.url,
+  ),
   kioskShowActions: new URL(
     '../../app/(kiosk)/a/[token]/show/[showToken]/KioskShowActions.tsx',
     import.meta.url,
@@ -162,6 +166,41 @@ test('the public generation splash has a definite viewport height', async () => 
   assert.match(actions, /<div className="h-\[calc\(100dvh-4rem\)\]">/);
   assert.match(actions, /<GeneratingShowAnimation[\s\S]*className="h-full"/);
   assert.doesNotMatch(actions, /className="min-h-\[calc\(100dvh-4rem\)\]"/);
+});
+
+test('the completed public show uses analysed timing and one soundtrack-synchronised player', async () => {
+  const [showPage, replayPreview] = await Promise.all([
+    source('kioskShowPage'),
+    source('templateReplayPreview'),
+  ]);
+
+  assert.match(showPage, /\.from\('song_analyses'\)[\s\S]*\.select\('analysis_json'\)/);
+  assert.match(showPage, /parseStoredAnalyserResult\(storedAnalysis\.data\.analysis_json\)/);
+  assert.match(showPage, /durationSeconds: playbackDuration/);
+  assert.match(showPage, /audioUrl=\{signedAudio\.data\?\.signedUrl\}/);
+  assert.match(showPage, /detailAppearance="borderless"/);
+  assert.doesNotMatch(showPage, /<audio[\s\S]*controls/);
+  assert.doesNotMatch(showPage, /Generated from the scanned assortment/);
+  assert.match(replayPreview, /audioUrl\?: string \| null/);
+  assert.match(replayPreview, /audio\.currentTime/);
+  assert.match(replayPreview, /audioTime \?\? playheadStart\.current/);
+  assert.match(replayPreview, /void audio[\s\S]*\.play\(\)/);
+  assert.match(replayPreview, /onPause=\{\(\) => setIsPlaying\(false\)\}/);
+  assert.match(
+    replayPreview,
+    /suppliedDuration != null && suppliedDuration > 0[\s\S]*\? suppliedDuration[\s\S]*: 30/,
+  );
+});
+
+test('the completed public replay clips its WebGL stage without a stray outline', async () => {
+  const replayPreview = await source('templateReplayPreview');
+
+  assert.match(
+    replayPreview,
+    /detailAppearance === 'borderless'[\s\S]*isolate overflow-hidden rounded-3xl/,
+  );
+  assert.match(replayPreview, /overflow-hidden rounded-\[inherit\]/);
+  assert.match(replayPreview, /group\/replay border-border overflow-hidden rounded-2xl border/);
 });
 
 test('public song analysis can outlive a cold analyser start', async () => {
