@@ -269,9 +269,13 @@ test('auth forms expose precise field errors and recover from thrown requests', 
   const forgotPassword = read('app/(marketing)/forgot-password/page.tsx');
   const resetPassword = read('app/(marketing)/reset-password/ResetPasswordForm.tsx');
   const authShell = read('app/(auth)/components/AuthShell.tsx');
+  const authShellStyles = read('app/(auth)/components/AuthShell.module.css');
 
   assert.match(authShell, /<SkipLink \/>/);
   assert.match(authShell, /<main[\s\S]*id="main-content"[\s\S]*tabIndex=\{-1\}/);
+  assert.match(authShell, /import styles from '\.\/AuthShell\.module\.css'/);
+  assert.match(authShellStyles, /:global\(\[data-theme='dark'\]\) \.artPanel/);
+  assert.match(authShellStyles, /:global\(\[data-theme='dark'\]\) \.artwork svg/);
 
   for (const source of [login, signup, forgotPassword, resetPassword]) {
     assert.match(source, /field: .+ \| null/);

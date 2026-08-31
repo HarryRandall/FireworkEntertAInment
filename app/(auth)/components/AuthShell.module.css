@@ -1,0 +1,28 @@
+.artPanel {
+  background-image: linear-gradient(to bottom right, #eef2fb, #ffffff 45%, #edf6f0);
+}
+
+:global([data-theme='dark']) .artPanel,
+:global(.dark) .artPanel {
+  background-image: linear-gradient(to bottom right, #0c1119, #070709 45%, #0a100d);
+}
+
+.artwork {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+}
+
+.artwork svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* The source artwork uses dark line art on a transparent background. */
+:global([data-theme='dark']) .artwork svg,
+:global(.dark) .artwork svg {
+  filter: invert(1) hue-rotate(180deg);
+}
