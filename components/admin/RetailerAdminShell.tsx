@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * RetailerAdminShell - chrome for the retailer-facing admin persona, separate
- * from `AdminShell`. Not a distinct login identity: gated on the same
- * 'admin.manage_assortments' permission as /admin/assortments (FIR-178), so
- * this is a focused alternate view for whoever already holds it, not a new
- * role. Assortments links straight to the real, already-built admin editor
- * rather than duplicating it — same reasoning covers Catalogue, which isn't
- * listed here at all: the assortment editor's own item picker already
- * covers "what can I bundle" (see FIR-166).
+ * RetailerAdminShell - chrome for the retailer persona. A retailer is a
+ * plain `user`-role account granted the `admin.manage_assortments`
+ * permission override — never `admin.view`, so it can never reach
+ * `/admin/*` (that stays exclusive to developer/owner `admin` accounts).
+ * Assortments here reuses the real FIR-178 editor components directly
+ * (AssortmentEditor, NewAssortmentButton's logic) rather than duplicating
+ * them, just hosted under /retailer-admin so a retailer never needs
+ * admin.view to use it. See FIR-166.
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -76,7 +76,7 @@ const RETAILER_LINKS: RetailerNavLink[] = [
     permission: 'admin.manage_assortments',
   },
   {
-    href: '/admin/assortments',
+    href: '/retailer-admin/assortments',
     label: 'Assortments',
     icon: Layers,
     permission: 'admin.manage_assortments',
