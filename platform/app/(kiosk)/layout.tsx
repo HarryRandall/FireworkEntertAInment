@@ -1,6 +1,14 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { BrandLockup } from '@/app/components/ui/BrandMark';
 import { SkipLink } from '@/app/components/ui/SkipLink';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function KioskLayout({ children }: { children: ReactNode }) {
   return (

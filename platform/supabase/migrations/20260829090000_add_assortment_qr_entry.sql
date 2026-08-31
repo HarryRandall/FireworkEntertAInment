@@ -27,6 +27,9 @@ create trigger assortment_public_links_set_updated_at
   before update on public.assortment_public_links
   for each row execute function public.set_updated_at();
 
+create index assortment_public_links_funding_user_idx
+  on public.assortment_public_links (funding_user_id);
+
 -- New admin-created assortments receive their link in the same transaction.
 -- Legacy or seeded rows can be linked explicitly through the guarded ensure
 -- function below because they have no trustworthy funding owner to infer.
@@ -77,6 +80,8 @@ comment on table public.assortment_song_selections is
 
 create index assortment_song_selections_assortment_created_idx
   on public.assortment_song_selections (assortment_id, created_at desc);
+create index assortment_song_selections_funding_user_idx
+  on public.assortment_song_selections (funding_user_id);
 
 alter table public.shows
   add column assortment_song_selection_id uuid
@@ -99,6 +104,9 @@ alter table public.shows
 create unique index shows_public_access_token_hash_idx
   on public.shows (public_access_token_hash)
   where public_access_token_hash is not null;
+create index shows_assortment_song_selection_idx
+  on public.shows (assortment_song_selection_id)
+  where assortment_song_selection_id is not null;
 -- This immutable ledger decouples an in-flight or completed show from later
 -- edits to the reusable assortment definition.
 create table public.show_assortment_items (
@@ -111,6 +119,9 @@ create table public.show_assortment_items (
 
 comment on table public.show_assortment_items is
   'Immutable SKU quantity snapshot captured atomically when an assortment QR show is created.';
+
+create index show_assortment_items_catalogue_item_idx
+  on public.show_assortment_items (catalogue_item_id);
 
 alter table public.assortment_public_links enable row level security;
 alter table public.assortment_song_selections enable row level security;

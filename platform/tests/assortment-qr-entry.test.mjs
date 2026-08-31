@@ -20,6 +20,7 @@ const files = {
   fast: new URL('../lib/cue-generation/fast-planner.ts', import.meta.url),
   beat: new URL('../lib/cue-generation/beat-sync-planner.ts', import.meta.url),
   kioskPage: new URL('../app/(kiosk)/a/[token]/page.tsx', import.meta.url),
+  kioskLayout: new URL('../app/(kiosk)/layout.tsx', import.meta.url),
   kioskClient: new URL('../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
   kioskShowPage: new URL('../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
   showsRoute: new URL('../app/api/assortments/[token]/shows/route.ts', import.meta.url),
@@ -89,12 +90,26 @@ test('FIR-178 admin CRUD remains canonical and receives only QR controls', async
 });
 
 test('the kiosk flow is public, fixed and does not create a consumer identity', async () => {
-  const [page, client] = await Promise.all([source('kioskPage'), source('kioskClient')]);
+  const [page, client, layout] = await Promise.all([
+    source('kioskPage'),
+    source('kioskClient'),
+    source('kioskLayout'),
+  ]);
   assert.doesNotMatch(page, /getUser|getCurrentProfile|redirect\('\/login/);
   assert.doesNotMatch(client, /signInAnonymously|signInWith/);
   assert.doesNotMatch(client, /catalogue browser|custom mode|Entry Point 1/i);
   assert.match(client, /Locked/);
   assert.match(client, /\/api\/assortments\/\$\{token\}\/music/);
+  assert.match(layout, /index: false/);
+  assert.match(layout, /follow: false/);
+});
+
+test('new assortment foreign keys and RLS lookups are indexed', async () => {
+  const migration = await source('migration');
+  assert.match(migration, /assortment_public_links \(funding_user_id\)/);
+  assert.match(migration, /assortment_song_selections \(funding_user_id\)/);
+  assert.match(migration, /shows \(assortment_song_selection_id\)/);
+  assert.match(migration, /show_assortment_items \(catalogue_item_id\)/);
 });
 
 test('the retailer funding user pays for analysis and generation', async () => {
