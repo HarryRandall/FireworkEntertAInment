@@ -338,16 +338,21 @@ export async function createAssortmentShowRecord(params: {
   sourceShowId?: string | null;
 }) {
   const supabase = requireServiceClient();
+  // create_assortment_qr_show's migration isn't applied to this database yet
+  // (see FIR-166), so the generated arg types don't reflect its real, nullable
+  // signature — assert past them the same way 955d5ee does for other RPCs
+  // whose generated non-null arg types don't match what the function body
+  // actually accepts.
   const { data, error } = await supabase.rpc('create_assortment_qr_show', {
     p_assortment_token: params.assortmentToken,
     p_selection_id: params.selectionId,
     p_public_access_token_hash: params.accessTokenHash,
     p_title: params.title,
     p_generation_mode: params.generationMode,
-    p_selected_cue_model: params.selectedCueModel,
+    p_selected_cue_model: params.selectedCueModel as string,
     p_credit_action_key: params.creditActionKey,
     p_cover_shader: params.coverShader,
-    p_source_show_id: params.sourceShowId ?? null,
+    p_source_show_id: (params.sourceShowId ?? null) as string | undefined,
   });
   if (error) {
     console.error('[assortment-qr] show creation failed:', error);

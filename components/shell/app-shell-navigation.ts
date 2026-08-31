@@ -9,6 +9,7 @@ import {
   Shield,
   ShieldCheck,
   Star,
+  Store,
   TriangleAlert,
   UserRound,
   type LucideIcon,
@@ -30,6 +31,10 @@ export const APP_LINKS: readonly AppNavLink[] = [
   { href: '/catalogue', label: 'Catalogue', icon: Box },
   { href: '/exports', label: 'Exports', icon: Download },
   { href: '/safety', label: 'Safety', icon: TriangleAlert },
+  // No permission gate: every signed-in account is a retailer in this
+  // product (consumers never get an account at all — they only ever reach
+  // the QR entry route). See FIR-166.
+  { href: '/my-store', label: 'My Store', icon: Store },
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 
