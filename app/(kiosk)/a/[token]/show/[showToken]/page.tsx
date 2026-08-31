@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { Music2, Package, ShieldCheck } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { Card } from '@/components/design-system/Card';
 import { TemplateReplayPreview } from '@/components/replay/TemplateReplayPreview';
 import {
@@ -8,6 +8,7 @@ import {
   resolvePublicAssortmentShow,
 } from '@/lib/assortments/public.server';
 import type { ShowTemplate } from '@/lib/admin.types';
+import { parseStoredAnalyserResult } from '@/lib/show-analysis-validation';
 import { formatBudget } from '@/lib/show-domain';
 import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows.server';
 import { KioskGeneratingShow, RegenerateAssortmentShow } from './KioskShowActions';
@@ -49,13 +50,24 @@ export default async function AssortmentShowPage({
   }
 
   const supabase = getAssortmentServiceClient();
-  const [replayCues, allSpecifications, signedAudio] = await Promise.all([
+  const [replayCues, allSpecifications, signedAudio, storedAnalysis] = await Promise.all([
     listReplayCuesForShowWithClient(supabase, show.id),
     listFireworkProducts(),
     show.audioPath
       ? supabase.storage.from('audio').createSignedUrl(show.audioPath, 30 * 60)
       : Promise.resolve({ data: null, error: null }),
+    supabase.from('song_analyses').select('analysis_json').eq('id', show.musicAnalysisId).single(),
   ]);
+  if (signedAudio.error) {
+    console.error('[assortment-qr] soundtrack signing failed:', signedAudio.error);
+    throw new Error('The show soundtrack could not be loaded.');
+  }
+  if (storedAnalysis.error) {
+    console.error('[assortment-qr] playback analysis lookup failed:', storedAnalysis.error);
+    throw new Error('The show timing could not be loaded.');
+  }
+  const analysis = parseStoredAnalyserResult(storedAnalysis.data.analysis_json);
+  const playbackDuration = show.durationSeconds ?? analysis.duration_seconds;
   const assortmentProductIds = new Set(show.snapshotItems.map((item) => item.catalogueItemId));
   const specifications = allSpecifications.filter((product) =>
     assortmentProductIds.has(product.id),
@@ -67,7 +79,7 @@ export default async function AssortmentShowPage({
     title: show.title,
     theme: 'Assortment QR',
     description: `Generated from ${assortment.name}`,
-    durationSeconds: show.durationSeconds,
+    durationSeconds: playbackDuration,
     budgetCents: show.budgetCents,
     totalCents: show.budgetCents ?? show.totalCents,
     effectsCount: show.effectsCount,
@@ -102,11 +114,7 @@ export default async function AssortmentShowPage({
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-primary flex items-center gap-2 text-sm font-semibold">
-            <ShieldCheck size={17} aria-hidden="true" />
-            Generated from the scanned assortment
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Your show is ready</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Your show is ready</h1>
           <p className="text-on-surface-variant mt-2">{assortment.name}</p>
         </div>
         <p className="font-mono text-2xl font-semibold tabular-nums">
@@ -115,22 +123,14 @@ export default async function AssortmentShowPage({
       </div>
 
       <div className="mt-6">
-        <TemplateReplayPreview template={template} specifications={specifications} mode="detail" />
+        <TemplateReplayPreview
+          template={template}
+          specifications={specifications}
+          mode="detail"
+          detailAppearance="borderless"
+          audioUrl={signedAudio.data?.signedUrl}
+        />
       </div>
-
-      {signedAudio.data?.signedUrl ? (
-        <Card className="mt-4 flex items-center gap-3 p-4">
-          <Music2 className="text-primary shrink-0" size={20} aria-hidden="true" />
-          <audio
-            controls
-            preload="metadata"
-            src={signedAudio.data.signedUrl}
-            className="h-10 w-full"
-          >
-            Your browser does not support audio playback.
-          </audio>
-        </Card>
-      ) : null}
 
       <Card className="mt-6 p-5">
         <div className="flex items-start justify-between gap-4">
