@@ -23,13 +23,13 @@ Vercel.
 
 ```text
 app/                              Next.js routes and server actions
-components/                       Low-level shared UI primitives
+components/                       Shared UI grouped by product domain
 lib/                              Domain, server and renderer code
 public/                           Runtime assets
 services/music-analyser/          Modal music-analysis service
 services/firework-import-worker/  Modal firework-video import service
 supabase/                         Migrations, templates and database tests
-tests/                            Application tests
+tests/                            Application tests grouped by domain
 docs/                             Focused technical documentation
 ```
 

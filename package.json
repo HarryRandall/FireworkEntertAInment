@@ -18,8 +18,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
-    "test:analyser": "python3 -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
-    "test:worker": "python3 -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'",
+    "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
+    "test:worker": "services/firework-import-worker/.venv/bin/python -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'",
     "worker:firework-import": "./services/firework-import-worker/run-worker.sh",
     "test": "node --experimental-strip-types --test 'tests/**/*.test.mjs'"
   },
