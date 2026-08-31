@@ -204,9 +204,13 @@ test('the completed public replay clips its WebGL stage without a stray outline'
 });
 
 test('public song analysis can outlive a cold analyser start', async () => {
-  const musicRoute = await source('musicRoute');
+  const [musicRoute, lifecycle] = await Promise.all([
+    source('musicRoute'),
+    source('musicAnalysisLifecycle'),
+  ]);
   assert.match(musicRoute, /export const maxDuration = 300/);
-  assert.match(musicRoute, /after\(async \(\) => \{[\s\S]*runMusicAnalysisForUpload/);
+  assert.match(musicRoute, /after\(async \(\) => \{[\s\S]*runAssortmentSongAnalysisLifecycle/);
+  assert.match(lifecycle, /runAssortmentSongAnalysisLifecycle[\s\S]*runMusicAnalysisForUpload/);
 });
 
 test('a valid public show capability recovers only its expired generation work', async () => {

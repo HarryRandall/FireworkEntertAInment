@@ -286,7 +286,7 @@ export type Database = {
           {
             foreignKeyName: "assortment_song_selections_music_analysis_id_fkey"
             columns: ["music_analysis_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "song_analyses"
             referencedColumns: ["id"]
           },
@@ -2750,6 +2750,26 @@ export type Database = {
           p_analysis_id: string
           p_assortment_token: string
           p_selection_id: string
+        }
+        Returns: Json
+      }
+      prepare_assortment_jamendo_selection: {
+        Args: {
+          p_access_token_hash: string
+          p_assortment_token: string
+          p_audio_path: string
+          p_content_type: string
+          p_new_analysis_id: string
+          p_original_filename: string
+          p_reusable_analysis_id?: string | null
+          p_selection_id: string
+          p_size_bytes: number
+          p_source_artist: string
+          p_source_licence_name: string
+          p_source_licence_url: string
+          p_source_title: string
+          p_source_track_id: string
+          p_source_url: string
         }
         Returns: Json
       }

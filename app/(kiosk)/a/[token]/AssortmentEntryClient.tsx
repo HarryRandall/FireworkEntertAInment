@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LockKeyhole, Music2, Package, Sparkles } from 'lucide-react';
+import { JamendoSongSearch } from '@/app/(app)/shows/new/_components/JamendoSongSearch';
 import { Button } from '@/components/design-system/Button';
 import { Card } from '@/components/design-system/Card';
+import type { JamendoSearchTrack } from '@/lib/music-library.types';
 import { formatBudget } from '@/lib/show-domain';
 import { createClient } from '@/utils/supabase/client';
 import type { PublicAssortmentItem } from '@/lib/assortments/public.server';
@@ -25,6 +27,7 @@ type JsonResponse = {
   selectionToken?: string;
   path?: string;
   uploadToken?: string;
+  unavailable?: boolean;
 };
 
 function inferAudioType(file: File): string {
@@ -39,25 +42,31 @@ function inferAudioType(file: File): string {
 
 async function readJson(response: Response): Promise<JsonResponse> {
   const data = (await response.json().catch(() => null)) as JsonResponse | null;
-  if (!response.ok || !data?.ok) throw new Error(data?.error || 'Something went wrong.');
+  if (!response.ok || !data?.ok) {
+    throw Object.assign(new Error(data?.error || 'Something went wrong.'), {
+      unavailable: data?.unavailable === true,
+    });
+  }
   return data;
 }
 
 export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClientProps) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [song, setSong] = useState<File | null>(null);
+  const [jamendoTrack, setJamendoTrack] = useState<JamendoSearchTrack | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState('');
   const [pending, startTransition] = useTransition();
   const pieceCount = assortment.items.reduce((total, item) => total + item.quantity, 0);
 
   function generate() {
-    if (!song) {
+    if (!song && !jamendoTrack) {
       setError('Choose an MP3, WAV, AAC, or M4A song first.');
       return;
     }
-    const contentType = inferAudioType(song);
-    if (!contentType) {
+    const contentType = song ? inferAudioType(song) : '';
+    if (song && !contentType) {
       setError('Choose an MP3, WAV, AAC, or M4A song.');
       return;
     }
@@ -65,52 +74,81 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
 
     startTransition(async () => {
       try {
-        setStage('Preparing your song');
-        const prepared = await readJson(
-          await fetch(`/api/assortments/${token}/music`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              operation: 'prepare-upload',
-              originalFilename: song.name,
-              contentType,
-              sizeBytes: song.size,
+        let selectionToken: string;
+        if (jamendoTrack) {
+          setStage('Importing your selected song');
+          const imported = await readJson(
+            await fetch(`/api/assortments/${token}/music/jamendo`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ trackId: jamendoTrack.trackId }),
             }),
-          }),
-        );
-        if (!prepared.path || !prepared.uploadToken || !prepared.selectionToken) {
-          throw new Error('The song upload could not be prepared.');
+          );
+          if (!imported.selectionToken) {
+            throw new Error('The selected song could not be prepared.');
+          }
+          selectionToken = imported.selectionToken;
+        } else if (song) {
+          setStage('Preparing your song');
+          const prepared = await readJson(
+            await fetch(`/api/assortments/${token}/music`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                operation: 'prepare-upload',
+                originalFilename: song.name,
+                contentType,
+                sizeBytes: song.size,
+              }),
+            }),
+          );
+          if (!prepared.path || !prepared.uploadToken || !prepared.selectionToken) {
+            throw new Error('The song upload could not be prepared.');
+          }
+
+          setStage('Uploading your song');
+          const supabase = createClient();
+          const { error: uploadError } = await supabase.storage
+            .from('audio')
+            .uploadToSignedUrl(prepared.path, prepared.uploadToken, song, { contentType });
+          if (uploadError) throw new Error('The song could not be uploaded.');
+
+          setStage('Starting music analysis');
+          await readJson(
+            await fetch(`/api/assortments/${token}/music`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                operation: 'analyse',
+                selectionToken: prepared.selectionToken,
+              }),
+            }),
+          );
+          selectionToken = prepared.selectionToken;
+        } else {
+          throw new Error('Choose a song first.');
         }
 
-        setStage('Uploading your song');
-        const supabase = createClient();
-        const { error: uploadError } = await supabase.storage
-          .from('audio')
-          .uploadToSignedUrl(prepared.path, prepared.uploadToken, song, { contentType });
-        if (uploadError) throw new Error('The song could not be uploaded.');
-
         setStage('Starting your show');
-        await readJson(
-          await fetch(`/api/assortments/${token}/music`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              operation: 'analyse',
-              selectionToken: prepared.selectionToken,
-            }),
-          }),
-        );
         const created = await readJson(
           await fetch(`/api/assortments/${token}/shows`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ selectionToken: prepared.selectionToken }),
+            body: JSON.stringify({ selectionToken }),
           }),
         );
         if (!created.path) throw new Error('The generated show link was missing.');
         router.push(created.path);
       } catch (caught) {
         setStage('');
+        if (
+          typeof caught === 'object' &&
+          caught !== null &&
+          'unavailable' in caught &&
+          caught.unavailable === true
+        ) {
+          setJamendoTrack(null);
+        }
         setError(caught instanceof Error ? caught.message : 'The show could not be created.');
       }
     });
@@ -175,17 +213,52 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
           <p className="text-on-surface-variant mt-1 text-sm leading-6">
             Your show will use only the products and quantities in this assortment.
           </p>
+          <div className="mt-4">
+            <JamendoSongSearch
+              apiEndpoint={`/api/assortments/${token}/music/jamendo`}
+              disabled={pending}
+              hasSelection={jamendoTrack !== null}
+              onSelect={async (track) => {
+                setJamendoTrack(track);
+                setSong(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                setError(null);
+              }}
+            />
+          </div>
+          {jamendoTrack ? (
+            <div className="border-primary/35 bg-primary/5 mt-3 flex items-center gap-3 rounded-xl border px-4 py-3">
+              <Music2 className="text-primary shrink-0" size={19} aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">{jamendoTrack.title}</span>
+                <span className="text-on-surface-variant block truncate text-xs">
+                  {jamendoTrack.artist}
+                </span>
+              </span>
+            </div>
+          ) : null}
+          <div className="my-4 flex items-center gap-3" aria-hidden="true">
+            <span className="bg-border h-px flex-1" />
+            <span className="text-on-surface-variant text-xs font-medium tracking-wide uppercase">
+              or
+            </span>
+            <span className="bg-border h-px flex-1" />
+          </div>
           <label
             htmlFor="assortment-song"
-            className="border-border bg-surface-container-low hover:bg-surface-container mt-4 flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors"
+            className="border-border bg-surface-container-low hover:bg-surface-container flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors"
           >
             <Music2 size={19} aria-hidden="true" />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-              {song?.name || 'Select an audio file'}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">
+                {song?.name || 'Upload your own audio'}
+              </span>
+              <span className="text-on-surface-variant block text-xs">MP3 / WAV / AAC / M4A</span>
             </span>
             <span className="text-on-surface-variant text-xs">Up to 50 MB</span>
           </label>
           <input
+            ref={fileInputRef}
             id="assortment-song"
             type="file"
             accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/aac,audio/mp4,audio/x-m4a,.mp3,.wav,.aac,.m4a"
@@ -193,6 +266,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
             disabled={pending}
             onChange={(event) => {
               setSong(event.target.files?.[0] ?? null);
+              setJamendoTrack(null);
               setError(null);
             }}
           />
@@ -205,7 +279,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
             type="button"
             onClick={generate}
             loading={pending}
-            disabled={!song}
+            disabled={!song && !jamendoTrack}
             className="mt-5 min-h-12 w-full text-base"
           >
             <Sparkles size={18} aria-hidden="true" />
