@@ -6,6 +6,7 @@
  */
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
+import styles from './landing.module.css';
 
 /* ---------- Eyebrow (small uppercase label above section titles) ---------- */
 export function Eyebrow({ children }: { children: ReactNode }) {
@@ -19,7 +20,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 /* ---------- Marker highlight behind a word ('look here') ---------- */
 export function Mark({ children }: { children: ReactNode }) {
   return (
-    <span className="lp-mark">
+    <span className={styles.mark}>
       <span>{children}</span>
     </span>
   );
@@ -44,7 +45,7 @@ export function Sparkle({
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      className={float ? 'lp-spark-float' : undefined}
+      className={float ? styles.sparkFloat : undefined}
       fill={fill ? color : 'none'}
       stroke={color}
       strokeWidth={fill ? 0 : 1.6}
@@ -79,7 +80,7 @@ export function Star4({
       height={size}
       viewBox="0 0 24 24"
       className={
-        [float ? 'lp-spark-float' : null, className].filter(Boolean).join(' ') || undefined
+        [float ? styles.sparkFloat : null, className].filter(Boolean).join(' ') || undefined
       }
       fill="none"
       stroke={color}

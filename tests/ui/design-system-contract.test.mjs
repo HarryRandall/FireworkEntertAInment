@@ -53,11 +53,13 @@ function lightToken(css, name) {
 test('repository guidance stays concise and has one source of truth', () => {
   const agents = readRepo('AGENTS.md');
   const readme = readRepo('README.md');
+  const nextConfig = readProject('next.config.ts');
 
   assert.equal(existsSync(join(repoRoot, 'CLAUDE.md')), false);
   assert.ok(agents.split('\n').length <= 120);
   assert.match(agents, /node_modules\/next\/dist\/docs/);
   assert.match(agents, /Keep TypeScript strict/);
+  assert.match(nextConfig, /agentRules: false/);
   assert.match(readme, /\[Contributing\]\(CONTRIBUTING\.md\)/);
 
   for (const path of ['.agents', '.claude', '.codex', '.cursor']) {

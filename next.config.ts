@@ -2,6 +2,9 @@ import type { NextConfig } from 'next';
 import path from 'path';
 
 const nextConfig: NextConfig = {
+  // AGENTS.md already points to the bundled version-matched documentation.
+  // Prevent `next dev` from appending a second managed instruction block.
+  agentRules: false,
   allowedDevOrigins: ['127.0.0.1'],
   // Parallel renderer QA uses an isolated cache so it cannot disturb a
   // developer's existing Next process in this fast-moving worktree.

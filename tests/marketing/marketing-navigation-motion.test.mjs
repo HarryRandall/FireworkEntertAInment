@@ -27,21 +27,18 @@ test('the mobile navigation is an accessible disclosure', () => {
 
 test('marketing navigation motion uses transform and opacity with a reduced-motion fallback', () => {
   const navigation = read('components/marketing/NavBar.tsx');
-  const css = read('app/globals.css');
-  const mobileMenuStart = css.indexOf('.lp-mobile-menu {');
-  const mobileMenuEnd = css.indexOf('/* New-show wizard', mobileMenuStart);
+  const css = read('components/marketing/navigation.module.css');
+  const mobileMenuStart = css.indexOf('.mobileMenu {');
+  const mobileMenuEnd = css.indexOf(".mobileMenu[data-state='open']", mobileMenuStart);
   const mobileMenuStyles = css.slice(mobileMenuStart, mobileMenuEnd);
-  const reducedMotionStart = css.indexOf('@media (prefers-reduced-motion: reduce)');
-  const reducedMotionEnd = css.indexOf('/*\n ---break---', reducedMotionStart);
-  const reducedMotionStyles = css.slice(reducedMotionStart, reducedMotionEnd);
 
   assert.notEqual(mobileMenuStart, -1);
   assert.match(mobileMenuStyles, /opacity 0\.18s ease/);
   assert.match(mobileMenuStyles, /transform 0\.18s cubic-bezier/);
   assert.doesNotMatch(mobileMenuStyles, /^\s*height\s*:/m);
   assert.doesNotMatch(mobileMenuStyles, /visibility/);
-  assert.match(reducedMotionStyles, /\.lp-mobile-menu[\s\S]*transition: none !important/);
-  assert.match(css, /\.lp-menu:focus-within \.lp-menu-panel/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*transition: none/);
+  assert.match(css, /\.menu:focus-within \.menuPanel/);
   assert.doesNotMatch(navigation, /AnimatePresence|<motion\.|height: 'auto'/);
 });
 

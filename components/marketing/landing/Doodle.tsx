@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
+import styles from './landing.module.css';
 
 type DoodleName = 'fire' | 'burst' | 'play' | 'retry' | 'fountain' | 'willow';
 type DoodleColourKey =
@@ -109,7 +110,7 @@ function inlineDoodleSvg(name: DoodleName) {
 
   return tokenised.trim().replace(/<svg\b([^>]*)>/, (_match, attrs: string) => {
     const fill = /\sfill=/.test(attrs) ? '' : ' fill="var(--lp-doodle-ink)"';
-    return `<svg${attrs}${fill} class="lp-doodle-svg" aria-hidden="true" focusable="false">`;
+    return `<svg${attrs}${fill} class="${styles.doodleSvg}" aria-hidden="true" focusable="false">`;
   });
 }
 
@@ -157,9 +158,10 @@ export function Doodle({
   return (
     <span
       className={cn(
-        'lp-doodle relative inline-block',
-        `lp-doodle-${name}`,
-        bob && 'lp-doodle-bob',
+        styles.doodle,
+        (name === 'fire' || name === 'play') && styles.doodleInvertsWhite,
+        bob && styles.doodleBob,
+        'relative inline-block',
         className,
       )}
       aria-hidden="true"

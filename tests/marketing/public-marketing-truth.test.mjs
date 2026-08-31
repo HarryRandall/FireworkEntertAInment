@@ -128,7 +128,7 @@ test('homepage renderer waits for viewport proximity and canvas readiness', () =
 
 test('homepage headline wraps without a global overflow mask', () => {
   const hero = read('components/marketing/Hero.tsx');
-  const globalStyles = read('app/globals.css');
+  const landingStyles = read('components/marketing/landing/landing.module.css');
   const rootLayout = read('app/layout.tsx');
 
   assert.match(hero, /<section className="relative isolate/);
@@ -138,11 +138,11 @@ test('homepage headline wraps without a global overflow mask', () => {
   assert.match(hero, /sm:text-\[clamp\(46px,7vw,90px\)\]/);
   assert.match(hero, /right-\[14%\] hidden sm:block/);
 
-  assert.match(globalStyles, /-webkit-box-decoration-break: clone/);
-  assert.match(globalStyles, /box-decoration-break: clone/);
+  assert.match(landingStyles, /-webkit-box-decoration-break: clone/);
+  assert.match(landingStyles, /box-decoration-break: clone/);
   assert.match(
-    globalStyles,
-    /@media \(min-width: 40rem\) \{[\s\S]*?\.lp-mark \{[\s\S]*?white-space: nowrap/,
+    landingStyles,
+    /@media \(min-width: 40rem\) \{[\s\S]*?\.mark \{[\s\S]*?white-space: nowrap/,
   );
   assert.doesNotMatch(rootLayout, /overflow-x-hidden/);
 });

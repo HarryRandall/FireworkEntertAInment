@@ -24,6 +24,7 @@ import { BrandLockup } from '@/components/design-system/BrandMark';
 import { Container } from '@/components/design-system/Container';
 import { Button } from '@/components/design-system/Button';
 import { createClient } from '@/utils/supabase/client';
+import styles from './navigation.module.css';
 
 type MenuItem = { t: string; d: string; href: string; Icon: LucideIcon };
 
@@ -91,15 +92,15 @@ const FLAT_LINKS: { href: string; label: string }[] = [
 
 function NavMenu({ label, href, items }: { label: string; href: string; items: MenuItem[] }) {
   return (
-    <div className="lp-menu">
-      <Link href={href} className="lp-nav-pill">
+    <div className={styles.menu}>
+      <Link href={href} className={styles.pill}>
         {label} <ChevronDown aria-hidden="true" size={13} strokeWidth={2.2} />
       </Link>
-      <ul className="lp-menu-panel m-0 list-none">
+      <ul className={`${styles.menuPanel} m-0 list-none`}>
         {items.map((it) => (
           <li key={`${label}-${it.t}`}>
-            <Link href={it.href} className="lp-menu-item">
-              <span className="lp-menu-item__ic">
+            <Link href={it.href} className={styles.menuItem}>
+              <span className={styles.menuItemIcon}>
                 <it.Icon aria-hidden="true" size={16} strokeWidth={1.9} />
               </span>
               <span>
@@ -170,25 +171,25 @@ export function MarketingNavBar() {
         <div className="hidden items-center gap-0.5 lg:flex">
           <NavMenu label="How it works" href="/how-it-works" items={HOW_ITEMS} />
           <NavMenu label="Features" href="/features" items={FEATURE_ITEMS} />
-          <Link href="/pricing" className="lp-nav-pill">
+          <Link href="/pricing" className={styles.pill}>
             Pricing
           </Link>
-          <Link href="/catalogue" className="lp-nav-pill">
+          <Link href="/catalogue" className={styles.pill}>
             Catalogue
           </Link>
         </div>
 
         <div className="hidden items-center gap-2.5 lg:flex">
           {authenticated ? (
-            <Button href="/home" size="sm" className="lp-nav-auth-button">
+            <Button href="/home" size="sm" className={styles.authButton}>
               Home
             </Button>
           ) : (
             <>
-              <Link href="/login" className="lp-nav-auth-link">
+              <Link href="/login" className={styles.authLink}>
                 Log in
               </Link>
-              <Button href="/signup" size="sm" className="lp-nav-auth-button">
+              <Button href="/signup" size="sm" className={styles.authButton}>
                 Sign up free
               </Button>
             </>
@@ -215,7 +216,7 @@ export function MarketingNavBar() {
         data-state={open ? 'open' : 'closed'}
         aria-hidden={!open}
         inert={!open}
-        className="lp-mobile-menu border-outline-variant/60 bg-background border-t lg:hidden"
+        className={`${styles.mobileMenu} border-outline-variant/60 bg-background border-t lg:hidden`}
       >
         <Container className="flex flex-col gap-1 py-4">
           {FLAT_LINKS.map((link) => (
