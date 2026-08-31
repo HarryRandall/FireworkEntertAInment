@@ -16,10 +16,11 @@ test('proxy gates private app prefixes to /login?next=', () => {
   assert.equal(existsSync(join(root, 'proxy.ts')), true);
 
   const proxy = read('proxy.ts');
-  assert.match(proxy, /PROTECTED_PREFIXES/);
-  assert.doesNotMatch(proxy, /APP_SURFACE_PREFIXES/);
+  const routes = read('lib/auth/proxy-routes.ts');
+  assert.match(routes, /PROTECTED_PREFIXES/);
+  assert.doesNotMatch(routes, /APP_SURFACE_PREFIXES/);
 
-  const protectedMatch = proxy.match(/PROTECTED_PREFIXES = (\[[\s\S]*?\]);/);
+  const protectedMatch = routes.match(/PROTECTED_PREFIXES = (\[[\s\S]*?\]) as const;/);
   assert.ok(protectedMatch, 'PROTECTED_PREFIXES array is declared');
   const protectedArray = protectedMatch[1];
   for (const prefix of [
@@ -58,18 +59,20 @@ test('developer-only routes are not shipped with the app', () => {
 
 test('proxy clears stale Supabase auth cookies instead of looping refresh errors', () => {
   const proxy = read('proxy.ts');
+  const cookies = read('lib/auth/proxy-cookies.ts');
+  const errors = read('lib/auth/proxy-errors.ts');
 
-  assert.match(proxy, /STALE_AUTH_ERROR_CODES/);
-  assert.match(proxy, /refresh_token_not_found/);
-  assert.match(proxy, /refresh_token_already_used/);
+  assert.match(errors, /STALE_AUTH_ERROR_CODES/);
+  assert.match(errors, /refresh_token_not_found/);
+  assert.match(errors, /refresh_token_already_used/);
   assert.match(proxy, /clearSupabaseAuthCookies/);
   assert.match(proxy, /getSupabaseRelatedAuthCookieNames/);
   assert.match(proxy, /initialAuthCookieNames/);
-  assert.match(proxy, /response\.cookies\.set\(name, '', EXPIRED_COOKIE_OPTIONS\)/);
+  assert.match(cookies, /response\.cookies\.set\(name, '', EXPIRED_COOKIE_OPTIONS\)/);
   assert.match(proxy, /isStaleSupabaseAuthError\(error\)/);
-  assert.match(proxy, /refresh token is not valid/);
+  assert.match(errors, /refresh token is not valid/);
   assert.match(proxy, /skipAutoInitialize: true/);
-  assert.match(proxy, /syncRequestCookieHeader\(request, requestHeaders\)/);
+  assert.match(cookies, /syncRequestCookieHeader\(request, requestHeaders\)/);
 });
 
 test('proxy does not call Supabase Auth for plain guest requests', () => {

@@ -319,6 +319,7 @@ test('protected page and harness keep credentials server-side and use exact repl
   const auth = read('lib/import-render-auth.server.ts');
   const nextConfig = read('next.config.ts');
   const proxy = read('proxy.ts');
+  const contentSecurityPolicy = read('lib/security/import-render-csp.ts');
   const themeProvider = read('components/theme/ThemeProvider.tsx');
   const documentation = read('docs/firework-import-engine-validation.md');
   const engine = read('lib/fireworks/FireworksEngine.ts');
@@ -332,8 +333,9 @@ test('protected page and harness keep credentials server-side and use exact repl
   assert.match(nextConfig, /private, no-store/);
   assert.match(nextConfig, /Referrer-Policy.*no-referrer/);
   assert.match(nextConfig, /X-Frame-Options.*DENY/);
-  assert.match(proxy, /frame-ancestors 'none'/);
-  assert.match(proxy, /script-src 'self' 'nonce-\$\{nonce\}' 'strict-dynamic'/);
+  assert.match(proxy, /importRenderContentSecurityPolicy\(nonce\)/);
+  assert.match(contentSecurityPolicy, /frame-ancestors 'none'/);
+  assert.match(contentSecurityPolicy, /script-src 'self' 'nonce-\$\{nonce\}' 'strict-dynamic'/);
   assert.match(themeProvider, /pathname === '\/internal\/import-render'/);
   assert.match(harness, /__SHOWCRAFTER_IMPORT_RENDER__/);
   assert.match(harness, /data-testid="import-render-source-video"/);
