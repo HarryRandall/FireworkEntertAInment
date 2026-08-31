@@ -12,6 +12,10 @@ const files = {
     '../../supabase/migrations/20260831032143_fix_assortment_qr_show_provenance.sql',
     import.meta.url,
   ),
+  snapshotRepair: new URL(
+    '../../supabase/migrations/20260831032648_fix_assortment_qr_show_snapshot.sql',
+    import.meta.url,
+  ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
   adminEditor: new URL(
     '../../app/(admin)/admin/assortments/[id]/AssortmentEditor.tsx',
@@ -61,6 +65,16 @@ test('deployed QR show provenance is repaired without duplicating the original s
   assert.match(repair, /add column if not exists assortment_id uuid/);
   assert.match(repair, /references public\.assortments\(id\) on delete set null/);
   assert.match(repair, /create index if not exists shows_assortment_id_idx/);
+});
+
+test('QR show snapshots use an unambiguous generated show identifier', async () => {
+  const repair = await source('snapshotRepair');
+  assert.match(repair, /new_show_id uuid := gen_random_uuid\(\)/);
+  assert.match(
+    repair,
+    /insert into public\.show_assortment_items \(show_id, catalogue_item_id, quantity\)\s+select new_show_id,/,
+  );
+  assert.doesNotMatch(repair, /\bshow_id uuid := gen_random_uuid\(\)/);
 });
 
 test('the protected reusable capability cannot be anonymously enumerated', async () => {
