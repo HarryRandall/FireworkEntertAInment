@@ -4,6 +4,8 @@
  * the server action, and the cue pipeline all use one source of truth.
  */
 
+import type { LaunchPosition } from '../fireworks/launch-positions';
+
 /* === Firework types ===================================================== */
 
 export const FIREWORK_TYPE_KEYS = ['aerial_shells', 'cakes', 'fountains'] as const;
@@ -66,16 +68,41 @@ export function productMatchesTypes(
 
 export const MIN_SITE_WIDTH_FEET = 5;
 export const MAX_SITE_WIDTH_FEET = 2000;
+export const DEFAULT_SITE_WIDTH_FEET = 80;
+
+function resolvedSiteWidthFeet(widthFeet: number | null | undefined): number {
+  if (widthFeet == null || !Number.isFinite(widthFeet)) return DEFAULT_SITE_WIDTH_FEET;
+  return Math.min(MAX_SITE_WIDTH_FEET, Math.max(MIN_SITE_WIDTH_FEET, widthFeet));
+}
 
 /**
  * Number of launch positions a site supports. Mirrors the stakeholder rule
  * of thumb: a narrow backyard cannot hold three firing positions.
  */
 export function launchPositionsForWidth(widthFeet: number | null | undefined): 1 | 2 | 3 {
-  if (widthFeet == null || !Number.isFinite(widthFeet)) return 3;
-  if (widthFeet >= 60) return 3;
-  if (widthFeet >= 30) return 2;
+  const resolvedWidthFeet = resolvedSiteWidthFeet(widthFeet);
+  if (resolvedWidthFeet >= 60) return 3;
+  if (resolvedWidthFeet >= 30) return 2;
   return 1;
+}
+
+/**
+ * Centre the active mortars across the measured site. Scene x-coordinates use
+ * the supplied feet directly so wider sites spread out without inheriting the
+ * renderer's fixed legacy spacing.
+ */
+export function buildLaunchPositionsForWidth(
+  widthFeet: number | null | undefined,
+): LaunchPosition[] {
+  const resolvedWidthFeet = resolvedSiteWidthFeet(widthFeet);
+  const positionCount = launchPositionsForWidth(resolvedWidthFeet);
+  if (positionCount === 1) return [{ x: 0, y: 0, z: 0 }];
+
+  const halfWidth = Number((resolvedWidthFeet / 2).toFixed(3));
+  const left = { x: -halfWidth, y: 0, z: 0 };
+  const right = { x: halfWidth, y: 0, z: 0 };
+  if (positionCount === 2) return [left, right];
+  return [left, { x: 0, y: 0, z: 0 }, right];
 }
 
 type LaunchPositionAwareProduct = {

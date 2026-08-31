@@ -16,6 +16,7 @@ import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { launchPositionCountForSlots } from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
+import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey, type ShowStyleKey } from './show-styles';
@@ -330,7 +331,7 @@ function acceptFirstPlacement(
       if (!occupiedTubes) continue;
       const windows = occupiedTubes.map((occupiedTube) => ({
         start: timing.launchTimeSeconds,
-        end: timing.launchTimeSeconds + product.durationSeconds,
+        end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
         tube: occupiedTube,
       }));
       if (windows.some((window) => overlapsOccupiedWindow(window, occupied))) continue;

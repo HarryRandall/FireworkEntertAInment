@@ -231,7 +231,7 @@ test('fast, beat, LLM, fallback and final validation all require exact use', asy
   assert.match(fast, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
   assert.match(beat, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
   assert.match(runner, /requiredProductQuantities: assortmentLedger/);
-  assert.match(runner, /quantityMismatches\.length > 0[\s\S]*runFastFallback\(\)/);
+  assert.match(runner, /quantityMismatches\.length > 0[\s\S]*runBeatFallback\(\)/);
   assert.match(runner, /requireExactProductQuantityLedger\([\s\S]*'Final cue validation'/);
 });
 

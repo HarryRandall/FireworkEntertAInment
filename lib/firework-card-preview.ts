@@ -5,6 +5,16 @@ export type FireworkCardPreviewKind = 'effect' | 'firework' | 'multishot' | 'cat
 
 export const FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS = 0.05;
 
+/** Keep the renderer warm-up lead-in inside card previews, never full show replay. */
+export function fireworkCardPreviewShotTimeSeconds(
+  kind: 'direct' | 'multishot',
+  shotTimeOffsetSeconds: number,
+): number {
+  return kind === 'direct'
+    ? FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS
+    : Math.max(0.01, shotTimeOffsetSeconds);
+}
+
 export type FireworkCardPreviewPersistence = {
   kind: Exclude<FireworkCardPreviewKind, 'catalogue'>;
   sourceId: string;
