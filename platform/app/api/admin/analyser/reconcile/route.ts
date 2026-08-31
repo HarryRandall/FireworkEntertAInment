@@ -92,13 +92,17 @@ export async function GET(request: Request) {
   }
 
   const retainedOwnerByPath = new Map(
-    (retainedAnalyses.data ?? []).map((analysis) => [analysis.audio_path, analysis.user_id]),
+    (retainedAnalyses.data ?? []).flatMap((analysis) =>
+      analysis.audio_path ? [[analysis.audio_path, analysis.user_id] as const] : [],
+    ),
   );
   const audioPaths = [
-    ...new Set([
-      ...(retainedAnalyses.data ?? []).map((analysis) => analysis.audio_path),
-      ...(orphanObjects.data ?? []).map((object) => object.audio_path),
-    ]),
+    ...new Set(
+      [
+        ...(retainedAnalyses.data ?? []).map((analysis) => analysis.audio_path),
+        ...(orphanObjects.data ?? []).map((object) => object.audio_path),
+      ].filter((audioPath): audioPath is string => Boolean(audioPath)),
+    ),
   ];
   if (audioPaths.length) {
     const { error: removeError } = await supabase.storage.from('audio').remove(audioPaths);

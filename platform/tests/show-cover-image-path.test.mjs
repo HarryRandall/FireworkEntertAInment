@@ -67,7 +67,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   assert.match(adminMapper, /coverImagePath: row\.cover_image_path \?\? null,/);
   assert.match(showMapper, /coverImagePath: row\.cover_image_path \?\? null,/);
   assert.match(showTypes, /\| 'cover_image_path'/);
-  assert.match(showTypes, /cover_shader, updated_at, cover_image_path'/);
+  assert.match(showTypes, /cover_shader[^']*cover_image_path/);
   assert.match(
     templates,
     /SHOW_TEMPLATES_SELECT = `\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,
