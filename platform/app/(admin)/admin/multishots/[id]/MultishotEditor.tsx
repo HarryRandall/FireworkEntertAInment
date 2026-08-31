@@ -1468,7 +1468,7 @@ function Timeline({
 
       <div
         ref={trackRef}
-        className="relative max-h-[420px] overflow-auto rounded-md border border-[color:var(--color-border-subtle)] [scrollbar-gutter:stable]"
+        className="relative max-h-[420px] [scrollbar-gutter:stable] overflow-auto rounded-md border border-[color:var(--color-border-subtle)]"
       >
         <div
           className="relative min-w-full"
