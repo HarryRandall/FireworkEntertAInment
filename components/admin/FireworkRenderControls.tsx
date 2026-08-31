@@ -18,6 +18,11 @@ import {
   PanelSection,
   SubSection,
 } from '@/components/admin/firework-render-controls/ControlSections';
+import {
+  CalibratedSliderField,
+  SwitchField,
+} from '@/components/admin/firework-render-controls/ControlFields';
+import { withCalibrationDefault } from '@/components/admin/firework-render-controls/calibrated-slider';
 import { Field, FieldLabel } from '@/components/design-system/Field';
 import { InfoTooltip } from '@/components/design-system/InfoTooltip';
 import { SelectField } from '@/components/design-system/SelectField';
@@ -1534,11 +1539,6 @@ const LAUNCH_SMOKE_SIZE_MAX = 220;
 const LAUNCH_SMOKE_SPREAD_MAX = 140;
 const LAUNCH_SMOKE_DRIFT_MAX = 4;
 const LAUNCH_SMOKE_HEIGHT_MAX = 900;
-const CALIBRATED_APPEARANCE_MIN = 0;
-const CALIBRATED_APPEARANCE_DEFAULT = 50;
-const CALIBRATED_APPEARANCE_MAX = 100;
-const CALIBRATED_APPEARANCE_STEP = 1;
-
 const HEAD_GLOW_STRENGTH_RANGE = {
   min: MIN_HEAD_GLOW_STRENGTH,
   defaultValue: DEFAULT_HEAD_GLOW_STRENGTH,
@@ -1739,121 +1739,6 @@ function rgbObjectToHex(value: unknown): string | null {
   return `#${[toByte(r), toByte(g), toByte(b)]
     .map((channel) => channel.toString(16).padStart(2, '0'))
     .join('')}`;
-}
-
-type CalibratedRange = {
-  min: number;
-  defaultValue: number;
-  max: number;
-};
-
-function withCalibrationDefault(range: CalibratedRange, value: unknown): CalibratedRange {
-  const raw = Number(value);
-  if (!Number.isFinite(raw)) return range;
-  return {
-    ...range,
-    defaultValue: Math.min(range.max, Math.max(range.min, raw)),
-  };
-}
-
-function rawToCalibrated(value: number, range: CalibratedRange): number {
-  const bounded = Math.min(range.max, Math.max(range.min, value));
-  if (bounded <= range.defaultValue) {
-    const lowerSpan = range.defaultValue - range.min;
-    return lowerSpan <= 0
-      ? CALIBRATED_APPEARANCE_DEFAULT
-      : round2(((bounded - range.min) / lowerSpan) * CALIBRATED_APPEARANCE_DEFAULT);
-  }
-
-  const upperSpan = range.max - range.defaultValue;
-  return upperSpan <= 0
-    ? CALIBRATED_APPEARANCE_DEFAULT
-    : round2(
-        CALIBRATED_APPEARANCE_DEFAULT +
-          ((bounded - range.defaultValue) / upperSpan) * CALIBRATED_APPEARANCE_DEFAULT,
-      );
-}
-
-function calibratedToRaw(value: number, range: CalibratedRange): number {
-  const bounded = Math.min(CALIBRATED_APPEARANCE_MAX, Math.max(CALIBRATED_APPEARANCE_MIN, value));
-
-  if (bounded <= CALIBRATED_APPEARANCE_DEFAULT) {
-    return round2(
-      range.min + (bounded / CALIBRATED_APPEARANCE_DEFAULT) * (range.defaultValue - range.min),
-    );
-  }
-
-  return round2(
-    range.defaultValue +
-      ((bounded - CALIBRATED_APPEARANCE_DEFAULT) / CALIBRATED_APPEARANCE_DEFAULT) *
-        (range.max - range.defaultValue),
-  );
-}
-
-function CalibratedSliderField({
-  label,
-  value,
-  range,
-  disabled,
-  hint,
-  fullWidth,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  range: CalibratedRange;
-  disabled?: boolean;
-  hint: ReactNode;
-  fullWidth?: boolean;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <SliderField
-      label={label}
-      min={CALIBRATED_APPEARANCE_MIN}
-      max={CALIBRATED_APPEARANCE_MAX}
-      step={CALIBRATED_APPEARANCE_STEP}
-      value={rawToCalibrated(value, range)}
-      formatValue={formatPercent}
-      disabled={disabled}
-      fullWidth={fullWidth}
-      hint={hint}
-      onChange={(next) => onChange(calibratedToRaw(next, range))}
-    />
-  );
-}
-
-function SwitchField({
-  label,
-  hint,
-  checked,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  hint: ReactNode;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  const id = useId();
-  return (
-    <Field>
-      <div className="flex min-h-9 items-start justify-between gap-3">
-        <div className="flex items-center gap-1.5">
-          <FieldLabel htmlFor={id}>{label}</FieldLabel>
-          <InfoTooltip text={hint} />
-        </div>
-        <Switch
-          id={id}
-          aria-label={label}
-          checked={checked}
-          disabled={disabled}
-          onCheckedChange={onChange}
-        />
-      </div>
-    </Field>
-  );
 }
 
 function liftVelocityPresetMode(value: number): LiftVelocityMode {
