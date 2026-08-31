@@ -15,7 +15,10 @@ import {
 } from '@/lib/music-analysis-lifecycle.server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
 
-export const maxDuration = 60;
+// A cold Modal analyser can spend more than a minute restoring its snapshot.
+// `after` shares this route's execution limit, so leave enough time to persist
+// the completed analysis instead of abandoning it while its lease is running.
+export const maxDuration = 300;
 
 const PrepareUploadSchema = z.object({
   operation: z.literal('prepare-upload'),
