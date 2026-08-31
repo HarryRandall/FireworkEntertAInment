@@ -13,7 +13,12 @@ import {
 } from '@/lib/assortments/constraints';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { CueSlot } from '@/lib/beat-grid.server';
-import { buildBeatMoments, type BeatMoment } from './beat-sync-moments';
+import {
+  buildBeatMoments,
+  findFinalMusicalHit,
+  type BeatMoment,
+  type FinalMusicalHit,
+} from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { parsePromptConstraints, productEffectFamilies } from './prompt-constraints';
 import type { PlannedCue } from './fast-planner';
@@ -69,6 +74,7 @@ export function planCuesOnBeats(params: {
     .join(' ');
   const direction = parseCreativeDirection(briefText, asShowStyleKey(brief?.show_style));
   const targets = buildBeatMoments({ slots, songDuration, direction });
+  const finalMusicalHit = availabilityByProductId ? findFinalMusicalHit(slots) : null;
   const productPools = pickProductPools(products, brief);
   if (!slots.length || (!productPools.cadence.length && !availabilityByProductId)) {
     return {
@@ -94,8 +100,8 @@ export function planCuesOnBeats(params: {
   // Lift compensation can put their launches earlier than the beats around them.
   const planningTargets = [...targets].sort(
     (a, b) =>
-      beatProtectionPriority(b, direction) - beatProtectionPriority(a, direction) ||
-      a.time - b.time,
+      beatProtectionPriority(b, direction, finalMusicalHit) -
+        beatProtectionPriority(a, direction, finalMusicalHit) || a.time - b.time,
   );
 
   for (let i = 0; i < planningTargets.length; i += 1) {
@@ -106,11 +112,22 @@ export function planCuesOnBeats(params: {
       break;
     }
     const target = planningTargets[i];
+    const isFinalMusicalHit =
+      finalMusicalHit != null && Math.abs(target.time - finalMusicalHit.time) <= 0.001;
     const impactTimeSeconds = Number(target.time.toFixed(3));
     const emphasis = emphasisForTarget(target, direction);
-    const targetTubes = tubesForTarget(target, direction, maxTubes);
-    const wantsSustained = shouldStartSustainedLayer(target, direction, sustainedSections);
-    const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained);
+    const targetTubes = isFinalMusicalHit
+      ? finalHitTubes(target, finalMusicalHit, maxTubes)
+      : tubesForTarget(target, direction, maxTubes);
+    const wantsSustained =
+      !isFinalMusicalHit && shouldStartSustainedLayer(target, direction, sustainedSections);
+    const remainingExactQuantity = availabilityByProductId
+      ? Math.max(0, requiredCueCount - cues.length)
+      : null;
+    const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained).slice(
+      0,
+      remainingExactQuantity ?? targetTubes.length,
+    );
     const occupiedStart = occupied.length;
     const cueStart = cues.length;
     const productRotorStart = productRotor;
@@ -133,6 +150,7 @@ export function planCuesOnBeats(params: {
             preferredProductOrder,
             productUsage,
             availabilityByProductId,
+            isFinalMusicalHit,
           )
         : preferredProductOrder;
       let accepted:
@@ -198,7 +216,7 @@ export function planCuesOnBeats(params: {
 
     if (
       !shouldKeepPlannedMoment({
-        requestedTubeCount: targetTubes.length,
+        requestedTubeCount: tubeOrder.length,
         acceptedTubeCount: acceptedForMoment,
         vibe: target.vibe,
         nearClimax: target.nearClimax,
@@ -234,18 +252,28 @@ function orderRemainingExactProducts(
   preferred: FireworkSpecification[],
   usage: ReadonlyMap<string, number>,
   ledger: ProductQuantityLedger,
+  preferDirect: boolean,
 ): FireworkSpecification[] {
   const preferredIndex = new Map(preferred.map((product, index) => [product.id, index]));
   return products
     .filter((product) => (usage.get(product.id) ?? 0) < (ledger.get(product.id) ?? 0))
     .sort((left, right) => {
+      const directRank = (product: FireworkSpecification) =>
+        preferDirect && (product.shotCount ?? 1) > 1 ? 1 : 0;
+      const directDifference = directRank(left) - directRank(right);
+      if (directDifference !== 0) return directDifference;
       const leftRank = preferredIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER;
       const rightRank = preferredIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER;
       return leftRank - rightRank || left.id.localeCompare(right.id);
     });
 }
 
-function beatProtectionPriority(target: BeatMoment, direction: CreativeDirection): number {
+function beatProtectionPriority(
+  target: BeatMoment,
+  direction: CreativeDirection,
+  finalMusicalHit: FinalMusicalHit | null,
+): number {
+  if (finalMusicalHit && Math.abs(target.time - finalMusicalHit.time) <= 0.001) return 6;
   if (target.isSurprise) return 5;
   if (target.nearClimax) return 4;
   if (direction.softEnding && target.finale) return 0;
@@ -254,6 +282,17 @@ function beatProtectionPriority(target: BeatMoment, direction: CreativeDirection
   if (target.finale && target.isDownbeat) return 2;
   if (target.isSectionStart && (target.vibe === 'chorus' || target.vibe === 'drop')) return 2;
   return 0;
+}
+
+function finalHitTubes(
+  target: BeatMoment,
+  finalMusicalHit: FinalMusicalHit,
+  maxTubes: 1 | 2 | 3,
+): Array<0 | 1 | 2> {
+  const preferred = target.tubes.find((tube) => tube === finalMusicalHit.tube && tube < maxTubes);
+  const fallback = target.tubes.find((tube) => tube < maxTubes);
+  const tube = preferred ?? fallback;
+  return tube == null ? [] : [tube];
 }
 
 /**

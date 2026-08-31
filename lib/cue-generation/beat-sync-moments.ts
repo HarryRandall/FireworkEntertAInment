@@ -18,6 +18,31 @@ export type BeatMoment = {
   isSurprise: boolean;
 };
 
+export type FinalMusicalHit = {
+  time: number;
+  slotIndex: number;
+  tube: 0 | 1 | 2;
+};
+
+/**
+ * Return one canonical slot for the last musical impact. Prefer the centre
+ * launch position when the beat grid exposes several simultaneous slots.
+ */
+export function findFinalMusicalHit(slots: CueSlot[]): FinalMusicalHit | null {
+  if (!slots.length) return null;
+  const finalTime = Math.max(...slots.map((slot) => slot.time));
+  const finalSlot = slots
+    .filter((slot) => Math.abs(slot.time - finalTime) <= 0.001)
+    .sort(
+      (left, right) =>
+        Math.abs(left.tube - 1) - Math.abs(right.tube - 1) ||
+        left.tube - right.tube ||
+        left.index - right.index,
+    )[0];
+  if (!finalSlot) return null;
+  return { time: finalTime, slotIndex: finalSlot.index, tube: finalSlot.tube };
+}
+
 export function launchPositionCountForSlots(slots: CueSlot[]): 1 | 2 | 3 {
   return Math.min(3, Math.max(1, ...slots.map((slot) => slot.tube + 1))) as 1 | 2 | 3;
 }
@@ -40,6 +65,7 @@ export function buildBeatMoments(params: {
   const moments = Array.from(grouped.values())
     .map((group) => toMoment(group))
     .sort((a, b) => a.time - b.time);
+  const finalMusicalHit = findFinalMusicalHit(slots);
 
   if (direction.surprise) {
     const finaleStart =
@@ -53,6 +79,9 @@ export function buildBeatMoments(params: {
   }
 
   const selected = moments.filter((moment) => {
+    if (finalMusicalHit && Math.abs(moment.time - finalMusicalHit.time) <= 0.001) {
+      return true;
+    }
     const quietMiddle =
       direction.quietMiddle &&
       Math.abs(moment.time - songDuration * 0.5) <= Math.min(4, songDuration * 0.04);
