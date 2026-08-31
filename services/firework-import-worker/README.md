@@ -69,6 +69,3 @@ Set `FIREWORK_IMPORT_URL` in the web deployment to the displayed API URL with
 ```bash
 python -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'
 ```
-
-See [firework import validation](../../docs/firework-import-engine-validation.md)
-for the reconstruction, renderer evidence, lease and publication contracts.

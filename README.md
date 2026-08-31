@@ -30,7 +30,6 @@ services/music-analyser/          Modal music-analysis service
 services/firework-import-worker/  Modal firework-video import service
 supabase/                         Migrations, templates and database tests
 tests/                            Application tests grouped by domain
-docs/                             Focused technical documentation
 ```
 
 ## Local development
@@ -71,20 +70,12 @@ npm run test:worker
 
 Install each service's Python requirements before running its tests.
 
-## Documentation
+## Project policies
 
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
-- [Backend lifecycle](docs/backend-lifecycle.md)
-- [Music analyser](docs/analyser-runner.md)
-- [Database safety](docs/database-safety.md)
-- [Explore presets](docs/explore-presets.md)
-- [Editor integrity](docs/editor-integrity.md)
-- [Firework renderer](docs/fireworks-engine-v2.md)
-- [Import validation](docs/firework-import-engine-validation.md)
 
 ## Deployment
 
 Vercel deploys the Next.js application from the repository root. The music
-analyser and firework import worker are deployed independently to Modal. See the
-linked technical documentation for their deployment contracts.
+analyser and firework import worker are deployed independently to Modal.

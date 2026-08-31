@@ -32,9 +32,10 @@ const files = {
   kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
   showsRoute: new URL('../../app/api/assortments/[token]/shows/route.ts', import.meta.url),
+  musicRoute: new URL('../../app/api/assortments/[token]/music/route.ts', import.meta.url),
+  requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
   qrRoute: new URL('../../app/api/admin/assortments/[id]/qr/route.ts', import.meta.url),
   packageJson: new URL('../../package.json', import.meta.url),
-  runbook: new URL('../../docs/assortment-qr-entry.md', import.meta.url),
   environment: new URL('../../.env.example', import.meta.url),
 };
 
@@ -251,13 +252,18 @@ test('QR preview and download use the stable protected link', async () => {
   assert.match(route, /image\/svg\+xml/);
 });
 
-test('the QR runbook documents its production rate-limit prerequisite', async () => {
-  const [runbook, environment] = await Promise.all([source('runbook'), source('environment')]);
+test('public QR routes fail closed without durable production rate limiting', async () => {
+  const [environment, musicRoute, showsRoute, requestSecurity] = await Promise.all([
+    source('environment'),
+    source('musicRoute'),
+    source('showsRoute'),
+    source('requestSecurity'),
+  ]);
 
-  assert.match(runbook, /UPSTASH_REDIS_REST_URL/);
-  assert.match(runbook, /UPSTASH_REDIS_REST_TOKEN/);
-  assert.match(runbook, /return HTTP 503/);
   assert.match(environment, /public assortment QR flows/);
   assert.match(environment, /Public QR endpoints fail/);
   assert.match(environment, /closed without this durable cache/);
+  assert.match(requestSecurity, /process\.env\.NODE_ENV !== 'production' \|\| result\.durable/);
+  assert.match(musicRoute, /if \(!limit\.productionReady\)[\s\S]*503/);
+  assert.match(showsRoute, /if \(!limit\.productionReady\)[\s\S]*503/);
 });

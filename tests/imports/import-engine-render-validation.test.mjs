@@ -321,7 +321,7 @@ test('protected page and harness keep credentials server-side and use exact repl
   const proxy = read('proxy.ts');
   const contentSecurityPolicy = read('lib/security/import-render-csp.ts');
   const themeProvider = read('components/theme/ThemeProvider.tsx');
-  const documentation = read('docs/firework-import-engine-validation.md');
+  const worker = read('services/firework-import-worker/worker.py');
   const engine = read('lib/fireworks/FireworksEngine.ts');
 
   assert.match(page, /isAuthorisedImportRenderRequest/);
@@ -368,6 +368,6 @@ test('protected page and harness keep credentials server-side and use exact repl
   assert.match(engine, /settleCurrentBoundary\(\): void/);
   assert.match(replay, /composer\.render\(0\)/);
   assert.match(replay, /captureCanvas\.toDataURL\('image\/png'\)/);
-  assert.match(documentation, /append_firework_import_run_output/);
-  assert.match(documentation, /renderedVideoPath/);
+  assert.match(worker, /append_firework_import_run_output/);
+  assert.match(worker, /renderedVideoPath/);
 });
