@@ -37,7 +37,8 @@ import { makeOptimisticEditorVersion, useEditorHistory } from '@/components/admi
 import { usePreviewFullscreen } from '@/components/admin/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/components/admin/AdminShell';
 import { ReplayStageBackdrop } from '@/components/replay/ReplayStageBackdrop';
-import { FireworkRenderControls, PanelSection } from '@/components/admin/FireworkRenderControls';
+import { FireworkRenderControls } from '@/components/admin/FireworkRenderControls';
+import { PanelSection } from '@/components/admin/firework-render-controls/ControlSections';
 import { Button } from '@/components/design-system/Button';
 import { Field, FieldLabel } from '@/components/design-system/Field';
 import { InfoTooltip } from '@/components/design-system/InfoTooltip';
