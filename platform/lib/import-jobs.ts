@@ -253,6 +253,83 @@ function trailEffectFromLaunch(
   return undefined;
 }
 
+/** `finiteNumber` across each candidate in order, clamped, or `undefined` if none are finite. */
+function clampedOptionalFrom(values: unknown[], min: number, max: number): number | undefined {
+  for (const value of values) {
+    const n = finiteNumber(value);
+    if (n != null) return clamp(n, min, max);
+  }
+  return undefined;
+}
+
+function clampedOptional(value: unknown, min: number, max: number): number | undefined {
+  return clampedOptionalFrom([value], min, max);
+}
+
+type ResolvedShellColors = {
+  innerColor: string | null;
+  primaryColor: string;
+  secondaryColor: string | null;
+  glitterColor: string;
+  tailColor: string | undefined;
+  inferredPistilColor: string | null;
+};
+
+function resolveShellColors(
+  shell: Record<string, unknown>,
+  launch: Record<string, unknown>,
+  palette: string[],
+): ResolvedShellColors {
+  const innerColor = hexColor(shell.innerColor) ?? hexColor(shell.pistilColor);
+  const primaryColor =
+    hexColor(shell.outerColor) ??
+    (innerColor && hexColor(shell.color) === innerColor ? null : hexColor(shell.color)) ??
+    firstNonWhiteColor(palette) ??
+    firstHexColor(palette) ??
+    FIREWORK_COLORS.Gold;
+  const secondaryColor =
+    hexColor(shell.secondColor) ??
+    palette.find((color) => color !== primaryColor && color !== innerColor) ??
+    null;
+  const glitterColor =
+    hexColor(shell.glitterColor) ?? hexColor(launch.tracerColor) ?? secondaryColor ?? primaryColor;
+  const tailColor =
+    hexColor(shell.tailColor) ??
+    hexColor(launch.tailColor) ??
+    hexColor(launch.tracerColor) ??
+    undefined;
+  const inferredPistilColor =
+    innerColor ??
+    (palette.some(isWhiteColor) && palette.some((color) => !isWhiteColor(color))
+      ? (palette.find(isWhiteColor) ?? null)
+      : null);
+  return { innerColor, primaryColor, secondaryColor, glitterColor, tailColor, inferredPistilColor };
+}
+
+function defaultStarLifeMs(shellType: ShellType): number {
+  if (shellType === 'willow' || shellType === 'fallingLeaves') return 3000;
+  if (shellType === 'comet') return 2600;
+  if (shellType === 'strobe') return 1900;
+  return 1500;
+}
+
+function resolveLaunchProfile(
+  launch: Record<string, unknown>,
+  effectSpec: Record<string, unknown>,
+  tailColor: string | undefined,
+): FireworkSpec['launch'] {
+  return {
+    liftTimeSeconds: clampedOptional(launch.liftTimeSeconds, 0.2, 4),
+    heightMeters: clampedOptionalFrom([launch.heightMeters, effectSpec.heightMeters], 0, 220),
+    tracerColor: hexColor(launch.tracerColor) ?? undefined,
+    tailColor,
+    sparkFrequency: clampedOptional(launch.sparkFrequency, 0, 1000),
+    sparkLifeMs: clampedOptional(launch.sparkLifeMs, 50, 4000),
+    sparkSpeed: clampedOptional(launch.sparkSpeed, 0, 5),
+    randomWobble: clampedOptional(launch.randomWobble, 0, 2),
+  };
+}
+
 function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): FireworkSpec {
   const shell = isRecord(effectSpec.shell) ? effectSpec.shell : {};
   const renderProfile = isRecord(effectSpec.renderProfile) ? effectSpec.renderProfile : {};
@@ -266,42 +343,15 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
     shell.pistilColor,
   );
   const shellType = coerceShellType(shell.family, effectSpec.type);
-  const innerColor = hexColor(shell.innerColor) ?? hexColor(shell.pistilColor);
-  const outerColor =
-    hexColor(shell.outerColor) ??
-    (innerColor && hexColor(shell.color) === innerColor ? null : hexColor(shell.color)) ??
-    firstNonWhiteColor(palette) ??
-    firstHexColor(palette) ??
-    FIREWORK_COLORS.Gold;
-  const primaryColor = outerColor;
-  const secondaryColor =
-    hexColor(shell.secondColor) ??
-    palette.find((color) => color !== primaryColor && color !== innerColor) ??
-    null;
-  const glitterColor =
-    hexColor(shell.glitterColor) ?? hexColor(launch.tracerColor) ?? secondaryColor ?? primaryColor;
-  const tailColor =
-    hexColor(shell.tailColor) ??
-    hexColor(launch.tailColor) ??
-    hexColor(launch.tracerColor) ??
-    undefined;
+  const { innerColor, primaryColor, secondaryColor, glitterColor, tailColor, inferredPistilColor } =
+    resolveShellColors(shell, launch, palette);
   const size = finiteNumber(shell.size) ?? finiteNumber(shell.spreadSize) ?? 3;
   const starLifeMs =
     finiteNumber(shell.starLifeMs) ??
     finiteNumber(renderProfile.starLifeMs) ??
-    (shellType === 'willow' || shellType === 'fallingLeaves'
-      ? 3000
-      : shellType === 'comet'
-        ? 2600
-        : shellType === 'strobe'
-          ? 1900
-          : 1500);
-  const inferredPistilColor =
-    innerColor ??
-    (palette.some(isWhiteColor) && palette.some((color) => !isWhiteColor(color))
-      ? palette.find(isWhiteColor)
-      : null);
+    defaultStarLifeMs(shellType);
   const shots = shotsFromEffectSpec(effectSpec, palette);
+  const liftTimeSeconds = clampedOptional(launch.liftTimeSeconds, 0.2, 4);
 
   return {
     shellType,
@@ -318,10 +368,7 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
     innerColor: innerColor ?? undefined,
     outerColor: primaryColor,
     secondColor: secondaryColor ?? undefined,
-    transitionTimeMs:
-      finiteNumber(shell.transitionTimeMs) == null
-        ? undefined
-        : clamp(finiteNumber(shell.transitionTimeMs) ?? 0, 50, 8000),
+    transitionTimeMs: clampedOptional(shell.transitionTimeMs, 50, 8000),
     glitter: coerceGlitter(
       shell.glitter,
       shellType === 'willow' ? 'willow' : shellType === 'comet' ? 'streamer' : 'light',
@@ -329,42 +376,8 @@ function fireworkSpecFromEffectSpec(effectSpec: Record<string, unknown>): Firewo
     glitterColor,
     tailColor,
     trailEffect: trailEffectFromLaunch(launch, shell),
-    liftTimeSeconds:
-      finiteNumber(launch.liftTimeSeconds) == null
-        ? undefined
-        : clamp(finiteNumber(launch.liftTimeSeconds) ?? 0, 0.2, 4),
-    launch: {
-      liftTimeSeconds:
-        finiteNumber(launch.liftTimeSeconds) == null
-          ? undefined
-          : clamp(finiteNumber(launch.liftTimeSeconds) ?? 0, 0.2, 4),
-      heightMeters:
-        finiteNumber(launch.heightMeters) == null && finiteNumber(effectSpec.heightMeters) == null
-          ? undefined
-          : clamp(
-              finiteNumber(launch.heightMeters) ?? finiteNumber(effectSpec.heightMeters) ?? 0,
-              0,
-              220,
-            ),
-      tracerColor: hexColor(launch.tracerColor) ?? undefined,
-      tailColor,
-      sparkFrequency:
-        finiteNumber(launch.sparkFrequency) == null
-          ? undefined
-          : clamp(finiteNumber(launch.sparkFrequency) ?? 0, 0, 1000),
-      sparkLifeMs:
-        finiteNumber(launch.sparkLifeMs) == null
-          ? undefined
-          : clamp(finiteNumber(launch.sparkLifeMs) ?? 0, 50, 4000),
-      sparkSpeed:
-        finiteNumber(launch.sparkSpeed) == null
-          ? undefined
-          : clamp(finiteNumber(launch.sparkSpeed) ?? 0, 0, 5),
-      randomWobble:
-        finiteNumber(launch.randomWobble) == null
-          ? undefined
-          : clamp(finiteNumber(launch.randomWobble) ?? 0, 0, 2),
-    },
+    liftTimeSeconds,
+    launch: resolveLaunchProfile(launch, effectSpec, tailColor),
     shots,
     pistil: Boolean(shell.pistil || inferredPistilColor),
     pistilColor: inferredPistilColor ?? undefined,

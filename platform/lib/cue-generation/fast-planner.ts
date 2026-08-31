@@ -179,70 +179,19 @@ export function planCuesFast(params: {
       : wantsMulti
         ? [multiPool, singlePool]
         : [singlePool];
-    let accepted:
-      | {
-          product: ProductInfo;
-          timing: NonNullable<ReturnType<typeof scheduleProductForCueSlot>>;
-          tube: 0 | 1 | 2;
-          windows: OccupiedWindow[];
-        }
-      | undefined;
-
-    for (const pool of pools) {
-      if (!pool.length) continue;
-      const softFinale = direction.softEnding && slot.finale && !slot.nearClimax;
-      const preferSpectacle = !softFinale && (isSurprise || slot.nearClimax || slot.finale);
-      const ranked = rankProducts(pool, slot, hints, choiceContext, {
-        preferSpectacle,
-        preferGentle: softFinale,
-        preferFastCadence:
-          !preferSpectacle &&
-          (direction.precise ||
-            direction.density === 'dense' ||
-            slot.vibe === 'pre-chorus' ||
-            slot.vibe === 'buildup' ||
-            slot.vibe === 'chorus' ||
-            slot.vibe === 'drop'),
-      });
-      for (const product of ranked) {
-        const quantityLimit = availabilityByProductId?.get(product.product.id);
-        if (
-          availabilityByProductId &&
-          (!quantityLimit || (choiceContext.usage.get(product.product.id) ?? 0) >= quantityLimit)
-        ) {
-          continue;
-        }
-        const timing = scheduleProductForCueSlot({
-          product: product.product,
-          emphasis,
-          targetTimeSeconds: slot.time,
-        });
-        if (!timing) continue;
-        if (product.isMultiShot && multiImpacts.has(timing.impactTimeSeconds)) continue;
-        const tubeOrder = [
-          slot.tube,
-          ...Array.from({ length: maxTubes }, (_, tube) => tube as 0 | 1 | 2).filter(
-            (tube) => tube !== slot.tube,
-          ),
-        ];
-        for (const tube of tubeOrder) {
-          const occupiedTubes = occupiedLaunchPositions(product.product, tube, maxTubes);
-          if (!occupiedTubes) continue;
-          const windows = occupiedTubes.map((occupiedTube) => ({
-            start: timing.launchTimeSeconds,
-            end: timing.launchTimeSeconds + product.durationSeconds,
-            tube: occupiedTube,
-          }));
-          if (windows.some((window) => overlapsOccupiedWindow(window, occupied))) continue;
-          accepted = { product, timing, tube, windows };
-          occupied.push(...windows);
-          if (product.isMultiShot) multiImpacts.add(timing.impactTimeSeconds);
-          break;
-        }
-        if (accepted) break;
-      }
-      if (accepted) break;
-    }
+    const accepted = findAcceptedPlacement({
+      pools,
+      slot,
+      emphasis,
+      isSurprise,
+      direction,
+      hints,
+      choiceContext,
+      maxTubes,
+      occupied,
+      multiImpacts,
+      availabilityByProductId,
+    });
 
     if (!accepted) {
       skippedSlots += 1;
@@ -273,6 +222,124 @@ export function planCuesFast(params: {
   );
   exactCues.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
   return { cues: exactCues, skippedSlots };
+}
+
+type AcceptedPlacement = {
+  product: ProductInfo;
+  timing: NonNullable<ReturnType<typeof scheduleProductForCueSlot>>;
+  tube: 0 | 1 | 2;
+  windows: OccupiedWindow[];
+};
+
+/**
+ * Picks a product and free launch tube for one slot, trying pools in priority
+ * order. Mutates `occupied` and `multiImpacts` as
+ * a side effect the moment a placement is accepted, matching the original
+ * inline planning loop this was extracted from.
+ */
+function findAcceptedPlacement(params: {
+  pools: ProductInfo[][];
+  slot: CueSlot;
+  emphasis: CueEmphasis;
+  isSurprise: boolean;
+  direction: CreativeDirection;
+  hints: PaletteHint;
+  choiceContext: ProductChoiceContext;
+  maxTubes: 1 | 2 | 3;
+  occupied: OccupiedWindow[];
+  multiImpacts: Set<number>;
+  availabilityByProductId: ProductQuantityLedger | null;
+}): AcceptedPlacement | undefined {
+  const {
+    pools,
+    slot,
+    emphasis,
+    isSurprise,
+    direction,
+    hints,
+    choiceContext,
+    maxTubes,
+    occupied,
+    multiImpacts,
+    availabilityByProductId,
+  } = params;
+  for (const pool of pools) {
+    if (!pool.length) continue;
+    const softFinale = direction.softEnding && slot.finale && !slot.nearClimax;
+    const preferSpectacle = !softFinale && (isSurprise || slot.nearClimax || slot.finale);
+    const ranked = rankProducts(pool, slot, hints, choiceContext, {
+      preferSpectacle,
+      preferGentle: softFinale,
+      preferFastCadence:
+        !preferSpectacle &&
+        (direction.precise ||
+          direction.density === 'dense' ||
+          slot.vibe === 'pre-chorus' ||
+          slot.vibe === 'buildup' ||
+          slot.vibe === 'chorus' ||
+          slot.vibe === 'drop'),
+    });
+    const placement = acceptFirstPlacement(
+      ranked,
+      slot,
+      emphasis,
+      maxTubes,
+      occupied,
+      multiImpacts,
+      choiceContext,
+      availabilityByProductId,
+    );
+    if (placement) return placement;
+  }
+  return undefined;
+}
+
+function acceptFirstPlacement(
+  ranked: ProductInfo[],
+  slot: CueSlot,
+  emphasis: CueEmphasis,
+  maxTubes: 1 | 2 | 3,
+  occupied: OccupiedWindow[],
+  multiImpacts: Set<number>,
+  choiceContext: ProductChoiceContext,
+  availabilityByProductId: ProductQuantityLedger | null,
+): AcceptedPlacement | undefined {
+  for (const product of ranked) {
+    const quantityLimit = availabilityByProductId?.get(product.product.id);
+    if (
+      availabilityByProductId &&
+      (!quantityLimit || (choiceContext.usage.get(product.product.id) ?? 0) >= quantityLimit)
+    ) {
+      continue;
+    }
+    const timing = scheduleProductForCueSlot({
+      product: product.product,
+      emphasis,
+      targetTimeSeconds: slot.time,
+    });
+    if (!timing) continue;
+    if (product.isMultiShot && multiImpacts.has(timing.impactTimeSeconds)) continue;
+    const tubeOrder = [
+      slot.tube,
+      ...Array.from({ length: maxTubes }, (_, tube) => tube as 0 | 1 | 2).filter(
+        (tube) => tube !== slot.tube,
+      ),
+    ];
+    for (const tube of tubeOrder) {
+      const occupiedTubes = occupiedLaunchPositions(product.product, tube, maxTubes);
+      if (!occupiedTubes) continue;
+      const windows = occupiedTubes.map((occupiedTube) => ({
+        start: timing.launchTimeSeconds,
+        end: timing.launchTimeSeconds + product.durationSeconds,
+        tube: occupiedTube,
+      }));
+      if (windows.some((window) => overlapsOccupiedWindow(window, occupied))) continue;
+      occupied.push(...windows);
+      if (product.isMultiShot) multiImpacts.add(timing.impactTimeSeconds);
+      return { product, timing, tube, windows };
+    }
+  }
+  return undefined;
 }
 
 function selectSlots(
