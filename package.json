@@ -21,11 +21,7 @@
     "test:analyser": "python3 -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
     "test:worker": "python3 -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'",
     "worker:firework-import": "./services/firework-import-worker/run-worker.sh",
-    "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs,json,css,md,yml,yaml}": "prettier --write"
+    "test": "node --experimental-strip-types --test 'tests/**/*.test.mjs'"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.76",
@@ -62,8 +58,6 @@
     "@types/three": "^0.184.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.3.3",
-    "husky": "9.1.7",
-    "lint-staged": "17.0.5",
     "prettier": "3.8.3",
     "prettier-plugin-tailwindcss": "0.8.0",
     "tailwindcss": "^4.2.2",

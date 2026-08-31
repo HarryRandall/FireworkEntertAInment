@@ -54,7 +54,7 @@ test('repository guidance stays concise and has one source of truth', () => {
   const agents = readRepo('AGENTS.md');
   const readme = readRepo('README.md');
 
-  assert.equal(readRepo('CLAUDE.md'), '@AGENTS.md\n');
+  assert.equal(existsSync(join(repoRoot, 'CLAUDE.md')), false);
   assert.ok(agents.split('\n').length <= 120);
   assert.match(agents, /node_modules\/next\/dist\/docs/);
   assert.match(agents, /Keep TypeScript strict/);

@@ -67,4 +67,5 @@ models/trained/
 .coverage
 htmlcov/
 .pytest_cache/
+.ruff_cache/
 services/music-analyser/evaluation-report.json
