@@ -35,6 +35,10 @@ const files = {
   kioskLayout: new URL('../../app/(kiosk)/layout.tsx', import.meta.url),
   kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
+  kioskShowActions: new URL(
+    '../../app/(kiosk)/a/[token]/show/[showToken]/KioskShowActions.tsx',
+    import.meta.url,
+  ),
   showsRoute: new URL('../../app/api/assortments/[token]/shows/route.ts', import.meta.url),
   musicRoute: new URL('../../app/api/assortments/[token]/music/route.ts', import.meta.url),
   requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
@@ -146,6 +150,13 @@ test('the kiosk flow is public, fixed and does not create a consumer identity', 
   assert.match(client, /\/api\/assortments\/\$\{token\}\/music/);
   assert.match(layout, /index: false/);
   assert.match(layout, /follow: false/);
+});
+
+test('the public generation splash has a definite viewport height', async () => {
+  const actions = await source('kioskShowActions');
+  assert.match(actions, /<div className="h-\[calc\(100dvh-4rem\)\]">/);
+  assert.match(actions, /<GeneratingShowAnimation[\s\S]*className="h-full"/);
+  assert.doesNotMatch(actions, /className="min-h-\[calc\(100dvh-4rem\)\]"/);
 });
 
 test('new assortment foreign keys and RLS lookups are indexed', async () => {
