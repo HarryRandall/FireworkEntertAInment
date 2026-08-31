@@ -132,9 +132,13 @@ const LICENCE_NOTE =
 export function JamendoSongSearch({
   onSelect,
   hasSelection = false,
+  apiEndpoint = '/api/music-library/jamendo',
+  disabled = false,
 }: {
   onSelect: (track: JamendoSearchTrack) => Promise<void>;
   hasSelection?: boolean;
+  apiEndpoint?: string;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -242,7 +246,7 @@ export function JamendoSongSearch({
         count: String(count),
       });
       if (nextGenre) params.set('genre', nextGenre);
-      const res = await fetch(`/api/music-library/jamendo?${params.toString()}`, {
+      const res = await fetch(`${apiEndpoint}?${params.toString()}`, {
         cache: 'no-store',
       });
       const value: unknown = await res.json();
@@ -301,7 +305,7 @@ export function JamendoSongSearch({
     setHasMore(false);
     stopPreview();
     try {
-      const res = await fetch(`/api/music-library/jamendo?q=${encodeURIComponent(cleaned)}`, {
+      const res = await fetch(`${apiEndpoint}?q=${encodeURIComponent(cleaned)}`, {
         cache: 'no-store',
       });
       const value: unknown = await res.json();
@@ -329,6 +333,7 @@ export function JamendoSongSearch({
   }
 
   function openDialog() {
+    if (disabled) return;
     setOpen(true);
     if (!hasSearched) void loadBrowse(null, 0, false);
   }
@@ -434,7 +439,7 @@ export function JamendoSongSearch({
     }
   }
 
-  const busy = loading || importingTrackId !== null;
+  const busy = disabled || loading || importingTrackId !== null;
 
   return (
     <section
@@ -459,7 +464,8 @@ export function JamendoSongSearch({
       <button
         type="button"
         onClick={openDialog}
-        className="focus-visible:ring-ring group mt-3 flex w-full items-center gap-3 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)] px-3 py-3 text-left transition-[border-color,background-color,box-shadow] hover:border-[color:var(--primary)]/45 hover:bg-[color:var(--color-bg-default)] hover:shadow-sm focus-visible:ring-3 focus-visible:outline-none"
+        disabled={disabled}
+        className="focus-visible:ring-ring group mt-3 flex w-full items-center gap-3 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)] px-3 py-3 text-left transition-[border-color,background-color,box-shadow] hover:border-[color:var(--primary)]/45 hover:bg-[color:var(--color-bg-default)] hover:shadow-sm focus-visible:ring-3 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--primary)]">
           <Library size={17} aria-hidden="true" />

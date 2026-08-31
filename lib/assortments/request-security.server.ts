@@ -3,13 +3,21 @@ import 'server-only';
 import { createHash } from 'crypto';
 import { consumeFixedWindowRateLimits } from '@/lib/server-cache';
 
-type AssortmentOperation = 'upload' | 'analyse' | 'generate' | 'status';
+type AssortmentOperation =
+  | 'upload'
+  | 'analyse'
+  | 'generate'
+  | 'status'
+  | 'jamendo-read'
+  | 'jamendo-import';
 
 const OPERATION_LIMITS: Record<AssortmentOperation, { limit: number; windowSeconds: number }> = {
   upload: { limit: 8, windowSeconds: 60 * 60 },
   analyse: { limit: 8, windowSeconds: 60 * 60 },
   generate: { limit: 12, windowSeconds: 60 * 60 },
   status: { limit: 180, windowSeconds: 60 * 10 },
+  'jamendo-read': { limit: 30, windowSeconds: 60 },
+  'jamendo-import': { limit: 8, windowSeconds: 60 * 60 },
 };
 
 function requestFingerprint(request: Request): string {

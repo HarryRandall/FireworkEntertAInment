@@ -13,6 +13,27 @@ function deadlineReached(value: string | null): boolean {
   return Number.isFinite(deadline) && deadline <= Date.now();
 }
 
+export async function runAssortmentSongAnalysisLifecycle(params: {
+  supabase: AppSupabaseClient;
+  userId: string;
+  musicAnalysisId: string;
+}) {
+  const result = await runMusicAnalysisForUpload({
+    supabase: params.supabase,
+    userId: params.userId,
+    analysisId: params.musicAnalysisId,
+    personality: 'balanced',
+  });
+  if (result.ok) {
+    await resumeCueGenerationForCompletedAnalysis(params);
+  } else if (!result.pending && !result.cancelled) {
+    await markLinkedShowGenerationFailed({
+      ...params,
+      error: result.error,
+    });
+  }
+}
+
 export async function recoverPublicAssortmentShowGeneration(params: {
   supabase: AppSupabaseClient;
   userId: string;

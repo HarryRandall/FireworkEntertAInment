@@ -9,11 +9,7 @@ import {
   verifyAssortmentAudioUpload,
 } from '@/lib/assortments/public.server';
 import { consumeAssortmentPublicRateLimit } from '@/lib/assortments/request-security.server';
-import {
-  markLinkedShowGenerationFailed,
-  resumeCueGenerationForCompletedAnalysis,
-} from '@/lib/music-analysis-lifecycle.server';
-import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
+import { runAssortmentSongAnalysisLifecycle } from '@/lib/music-analysis-lifecycle.server';
 
 // A cold Modal analyser can spend more than a minute restoring its snapshot.
 // `after` shares this route's execution limit, so leave enough time to persist
@@ -107,26 +103,11 @@ export async function POST(request: Request, context: { params: Promise<{ token:
       selectionId: selection.id,
     });
     after(async () => {
-      const result = await runMusicAnalysisForUpload({
+      await runAssortmentSongAnalysisLifecycle({
         supabase: prepared.supabase,
         userId: prepared.fundingUserId,
-        analysisId: prepared.analysisId,
-        personality: 'balanced',
+        musicAnalysisId: prepared.analysisId,
       });
-      if (result.ok) {
-        await resumeCueGenerationForCompletedAnalysis({
-          supabase: prepared.supabase,
-          userId: prepared.fundingUserId,
-          musicAnalysisId: prepared.analysisId,
-        });
-      } else if (!result.pending && !result.cancelled) {
-        await markLinkedShowGenerationFailed({
-          supabase: prepared.supabase,
-          userId: prepared.fundingUserId,
-          musicAnalysisId: prepared.analysisId,
-          error: result.error,
-        });
-      }
     });
 
     return response({ ok: true, selectionToken: parsed.data.selectionToken });

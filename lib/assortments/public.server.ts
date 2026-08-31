@@ -3,6 +3,8 @@ import 'server-only';
 import { createHash, randomBytes, randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
+import { jamendoImportFilename, type ReusableJamendoAnalysis } from '@/lib/jamendo-import.server';
+import type { JamendoImportTrack } from '@/lib/jamendo.server';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 
 const PUBLIC_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
@@ -213,6 +215,115 @@ export async function createAssortmentUpload(params: {
     selectionToken,
     path: audioPath,
     uploadToken: signedUpload.token,
+  };
+}
+
+type PrepareJamendoSelectionResult = {
+  ok?: boolean;
+  analysisId?: string;
+  fundingUserId?: string;
+  reusedAnalysis?: boolean;
+};
+
+export async function createAssortmentJamendoSelection(params: {
+  assortment: PublicAssortment;
+  track: JamendoImportTrack;
+  audio: { bytes: Uint8Array; contentType: 'audio/mpeg'; sizeBytes: number } | null;
+  reusableAnalysis: ReusableJamendoAnalysis | null;
+}) {
+  if ((params.audio === null) === (params.reusableAnalysis === null)) {
+    throw new Error('The selected song could not be prepared.');
+  }
+
+  const supabase = requireServiceClient();
+  const selectionId = randomUUID();
+  const selectionToken = createCapabilityToken();
+  const analysisId = randomUUID();
+  const originalFilename = jamendoImportFilename(params.track.title, params.track.artist);
+  const audioPath = params.reusableAnalysis
+    ? params.reusableAnalysis.audio_path
+    : `${params.assortment.fundingUserId}/assortment-qr/jamendo/${selectionId}-${originalFilename}`;
+  let uploaded = false;
+
+  if (params.audio) {
+    const { error: uploadError } = await supabase.storage
+      .from('audio')
+      .upload(audioPath, Buffer.from(params.audio.bytes), {
+        contentType: params.audio.contentType,
+        upsert: false,
+        metadata: {
+          sourceProvider: params.track.provider,
+          sourceTrackId: params.track.trackId,
+        },
+      });
+    if (uploadError) {
+      console.error('[assortment-qr/jamendo] private audio upload failed:', uploadError);
+      throw new Error('The selected song could not be saved.');
+    }
+    uploaded = true;
+  }
+
+  const contentType = params.reusableAnalysis?.content_type ?? params.audio?.contentType;
+  const sizeBytes = params.reusableAnalysis?.size_bytes ?? params.audio?.sizeBytes;
+  if (!contentType || !sizeBytes) {
+    if (uploaded) await supabase.storage.from('audio').remove([audioPath]);
+    throw new Error('The selected song could not be prepared.');
+  }
+
+  const { data, error } = await supabase.rpc('prepare_assortment_jamendo_selection', {
+    p_assortment_token: params.assortment.token,
+    p_selection_id: selectionId,
+    p_access_token_hash: hashCapabilityToken(selectionToken),
+    p_audio_path: audioPath,
+    p_original_filename: originalFilename,
+    p_content_type: contentType,
+    p_size_bytes: sizeBytes,
+    p_new_analysis_id: analysisId,
+    p_source_track_id: params.track.trackId,
+    p_source_title: params.track.title,
+    p_source_artist: params.track.artist,
+    p_source_url: params.track.sourceUrl,
+    p_source_licence_name: params.track.licenceName,
+    p_source_licence_url: params.track.licenceUrl,
+    p_reusable_analysis_id: params.reusableAnalysis?.id ?? null,
+  });
+  if (error) {
+    if (uploaded) {
+      const { error: cleanupError } = await supabase.storage.from('audio').remove([audioPath]);
+      if (cleanupError) {
+        console.error('[assortment-qr/jamendo] failed import cleanup failed:', cleanupError);
+      }
+    }
+    console.error('[assortment-qr/jamendo] selection preparation failed:', error);
+    if (error.message.includes('enough AI credits')) {
+      throw new Error('This retailer has temporarily reached its generation limit.');
+    }
+    if (error.message.includes('Assortment unavailable')) {
+      throw new Error('Assortment unavailable.');
+    }
+    if (error.message.includes('Reusable analysis unavailable')) {
+      throw new Error('The selected song is no longer available.');
+    }
+    throw new Error('The selected song could not be prepared.');
+  }
+
+  const result = data as PrepareJamendoSelectionResult | null;
+  if (
+    !result?.ok ||
+    !result.analysisId ||
+    !result.fundingUserId ||
+    result.fundingUserId !== params.assortment.fundingUserId
+  ) {
+    if (uploaded) await supabase.storage.from('audio').remove([audioPath]);
+    throw new Error('The selected song could not be prepared.');
+  }
+
+  return {
+    supabase,
+    selectionToken,
+    analysisId: result.analysisId,
+    fundingUserId: result.fundingUserId,
+    reusedAnalysis: result.reusedAnalysis === true,
   };
 }
 

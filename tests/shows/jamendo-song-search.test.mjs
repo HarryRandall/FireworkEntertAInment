@@ -10,6 +10,7 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 
 const envExample = read('.env.example');
 const server = read('lib/jamendo.server.ts');
+const importHelpers = read('lib/jamendo-import.server.ts');
 const route = read('app/api/music-library/jamendo/route.ts');
 const starter = read('lib/start-music-analysis.server.ts');
 const wizard = read('app/(app)/shows/new/NewShowPageClient.tsx');
@@ -103,14 +104,14 @@ test('provider tracks use the existing analysis credit lifecycle', () => {
 });
 
 test('completed Jamendo analyses already attached to an owned show are reused', () => {
-  assert.match(route, /async function findReusableJamendoAnalysis/);
-  assert.match(route, /\.eq\('user_id', params\.userId\)/);
-  assert.match(route, /\.eq\('source_provider', 'jamendo'\)/);
-  assert.match(route, /\.eq\('source_track_id', params\.trackId\)/);
-  assert.match(route, /\.eq\('status', 'completed'\)/);
-  assert.match(route, /\.not\('analysis_json', 'is', null\)/);
-  assert.match(route, /\.from\('shows'\)[\s\S]*\.in\(\s*'music_analysis_id'/);
-  assert.match(route, /await storedAudioExists/);
+  assert.match(importHelpers, /async function findReusableJamendoAnalysis/);
+  assert.match(importHelpers, /\.eq\('user_id', params\.userId\)/);
+  assert.match(importHelpers, /\.eq\('source_provider', 'jamendo'\)/);
+  assert.match(importHelpers, /\.eq\('source_track_id', params\.trackId\)/);
+  assert.match(importHelpers, /\.eq\('status', 'completed'\)/);
+  assert.match(importHelpers, /\.not\('analysis_json', 'is', null\)/);
+  assert.match(importHelpers, /\.from\('shows'\)[\s\S]*\.in\(\s*'music_analysis_id'/);
+  assert.match(importHelpers, /await storedAudioExists/);
 
   const post = route.slice(route.indexOf('export async function POST'));
   const reuseLookup = post.indexOf('await findReusableJamendoAnalysis');
