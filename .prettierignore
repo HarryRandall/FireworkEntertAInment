@@ -1,0 +1,16 @@
+node_modules
+.venv
+services/music-analyser/.venv
+services/firework-import-worker/.venv
+.next
+out
+build
+dist
+coverage
+package-lock.json
+next-env.d.ts
+lib/database.types.ts
+public
+supabase/.temp
+*.min.js
+*.min.css

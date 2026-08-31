@@ -11,7 +11,6 @@ __pycache__/
 .env.local
 .env.*.local
 supabase/.temp/
-platform/supabase/.temp/
 
 # IDE
 .vscode/
@@ -27,6 +26,8 @@ platform/supabase/.temp/
 # Local agent memory
 memory/
 .codex/
+.claude/settings.local.json
+.cursor/
 
 # OS
 .DS_Store
@@ -66,4 +67,4 @@ models/trained/
 .coverage
 htmlcov/
 .pytest_cache/
-platform/analyser/evaluation-report.json
+services/music-analyser/evaluation-report.json
