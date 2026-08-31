@@ -1,0 +1,30 @@
+/** Shopping-list tab listing the products needed to run the show. */
+
+import { notFound, redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { ShoppingListTable } from '@/components/shows/ShoppingListTable';
+import { ShoppingListSkeleton } from '@/components/shell/RouteSkeletons';
+import { getShowBySlug, listShoppingItemsForShow } from '@/lib/shows.server';
+import type { Show } from '@/lib/show-domain';
+
+type PageProps = { params: Promise<{ id: string }> };
+
+export default async function ShowShoppingListPage({ params }: PageProps) {
+  const { id } = await params;
+  const show = await getShowBySlug(id);
+  if (!show) notFound();
+  if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
+
+  return (
+    <div className="w-full max-w-5xl">
+      <Suspense fallback={<ShoppingListSkeleton />}>
+        <ShowShoppingList show={show} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function ShowShoppingList({ show }: { show: Show }) {
+  const items = await listShoppingItemsForShow(show.id);
+  return <ShoppingListTable items={items} />;
+}

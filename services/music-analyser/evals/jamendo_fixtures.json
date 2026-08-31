@@ -1,0 +1,94 @@
+{
+  "manifest_version": 1,
+  "provider": "jamendo",
+  "fixtures": [
+    {
+      "track_id": "1930820",
+      "title": "Upbeat Summer Modern Dance Pop",
+      "artist": "Sevennotes",
+      "album": "Upbeat Summer Modern Dance Pop",
+      "duration_seconds": 122,
+      "licence_code": "CC BY",
+      "licence_version": "3.0",
+      "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1930820",
+      "attribution": "Upbeat Summer Modern Dance Pop by Sevennotes",
+      "tags": {
+        "genres": ["house", "electronic"],
+        "instruments": ["synthesizer"],
+        "moods": ["fashion", "upbeat", "vocal", "voice"]
+      },
+      "audio_path": "services/music-analyser/evals/audio/jamendo_1930820.mp3",
+      "sha256": "f969b200b969da58290262c011e343afa06fcb4b8c6888bb79be25293c16cfc1",
+      "size_bytes": 3171840,
+      "content_type": "audio/mpeg",
+      "evaluation_status": "baseline"
+    },
+    {
+      "track_id": "1891977",
+      "title": "My Love",
+      "artist": "MODUS",
+      "album": "My Love",
+      "duration_seconds": 233,
+      "licence_code": "CC BY",
+      "licence_version": "3.0",
+      "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1891977",
+      "attribution": "My Love by MODUS",
+      "tags": {
+        "genres": ["pop"],
+        "instruments": ["synthesizer"],
+        "moods": ["love", "nostalgic", "acoustic", "voice"]
+      },
+      "audio_path": "services/music-analyser/evals/audio/jamendo_1891977.mp3",
+      "sha256": "5ee115b1b647196165cdc550d93f991e42c6d5244720c026fc582d60229b0748",
+      "size_bytes": 5651456,
+      "content_type": "audio/mpeg",
+      "evaluation_status": "baseline"
+    },
+    {
+      "track_id": "1930003",
+      "title": "Contrapunctus No 2",
+      "artist": "CHASMA",
+      "album": "Contrapunctus",
+      "duration_seconds": 201,
+      "licence_code": "CC BY",
+      "licence_version": "3.0",
+      "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/1930003",
+      "attribution": "Contrapunctus No 2 by CHASMA",
+      "tags": {
+        "genres": ["baroque", "avantgarde"],
+        "instruments": ["clavichord"],
+        "moods": ["calm"]
+      },
+      "audio_path": "services/music-analyser/evals/audio/jamendo_1930003.mp3",
+      "sha256": "a1ed6665ed4c9b760c3252ee9f2baf9f01a495ae78304ff9f9cda02db74325c8",
+      "size_bytes": 4878840,
+      "content_type": "audio/mpeg",
+      "evaluation_status": "baseline"
+    },
+    {
+      "track_id": "360552",
+      "title": "Antonio Vivaldi: Four Seasons - Excerpt 1",
+      "artist": "Marco Tezza",
+      "album": "Classical Music - Vivaldi: Quattro Stagioni",
+      "duration_seconds": 205,
+      "licence_code": "CC BY",
+      "licence_version": "3.0",
+      "licence_url": "https://creativecommons.org/licenses/by/3.0/",
+      "source_url": "https://www.jamendo.com/track/360552",
+      "attribution": "Antonio Vivaldi: Four Seasons - Excerpt 1 by Marco Tezza",
+      "tags": {
+        "genres": ["classical", "baroque"],
+        "instruments": ["strings", "violin"],
+        "moods": []
+      },
+      "audio_path": "services/music-analyser/evals/audio/jamendo_360552.mp3",
+      "sha256": "13fafeba552a4dd1b851bcc5c9ff41f7dbff0a009954b34c6e29ae6520ceac68",
+      "size_bytes": 4882848,
+      "content_type": "audio/mpeg",
+      "evaluation_status": "baseline"
+    }
+  ]
+}

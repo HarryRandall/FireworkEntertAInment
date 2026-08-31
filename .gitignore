@@ -4,29 +4,23 @@ venv/
 env/
 .venv/
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
 
 # Environment variables
-.env
-.env.local
-.env.*.local
+.env*
+!.env.example
 supabase/.temp/
-platform/supabase/.temp/
 
-# IDE
+# Editors and local tools
 .vscode/
 .idea/
-# Local IDE MCP config may contain access tokens
-.cursor/mcp.json
-.cursor/settings.json
-.mcp.json
+.cursor/
+.codex/
+.claude/
 *.swp
 *.swo
 *~
-
-# Local agent memory
-memory/
-.codex/
 
 # OS
 .DS_Store
@@ -35,7 +29,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
-*.egg-info/
 
 # Next.js
 .next/
@@ -43,27 +36,15 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
-# Logs
+# Logs and scratch files
 *.log
 logs/
-
-# Local scratch directories
 .tmp*/
 .tmp_*/
-
-# Data & models (large files)
-*.h5
-*.pkl
-*.pt
-*.onnx
-data/raw/
-models/trained/
-
-# Jupyter
-.ipynb_checkpoints/
 
 # Coverage & testing
 .coverage
 htmlcov/
 .pytest_cache/
-platform/analyser/evaluation-report.json
+.ruff_cache/
+services/music-analyser/evaluation-report.json
