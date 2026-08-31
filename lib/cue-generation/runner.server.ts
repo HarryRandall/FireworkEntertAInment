@@ -25,20 +25,21 @@ import {
   type ProductQuantityLedger,
 } from '@/lib/assortments/constraints';
 import { buildCueSlots, type CueSlot } from '@/lib/beat-grid.server';
-import {
-  MIN_PRODUCT_DURATION_SECONDS,
-  findTubeOverlap,
-  type CueWindow,
-} from '@/lib/cue-overlap.server';
+import { findTubeOverlap, type CueWindow } from '@/lib/cue-overlap.server';
 import { DEFAULT_CUE_MODEL, getOpenRouterClient } from '@/lib/openrouter.server';
 import type { GenerationMode } from '@/lib/prompt-configs';
 import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
-import { fireworkOccupancyDurationSeconds } from '@/lib/show-domain';
 import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import { parseCreativeDirection } from './creative-direction';
+import {
+  parsePromptConstraints,
+  productMatchesPromptConstraints,
+  validatePromptConstraints,
+  type PromptConstraints,
+} from './prompt-constraints';
 import {
   loadAnalysisState,
   loadAssortmentCatalogueItemIds,
@@ -55,6 +56,8 @@ import {
 import { planCuesFast } from './fast-planner';
 import { planCuesOnBeats } from './beat-sync-planner';
 import { scheduleProductForCueSlot } from './impact-timing';
+import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
+import { evaluateFinalChoreography } from './quality';
 import {
   launchPositionsForWidth,
   occupiedLaunchPositions,
@@ -75,6 +78,7 @@ type AppSupabase = SupabaseClient<Database>;
 const CUE_GENERATION_LEASE_SECONDS = 900;
 const MAX_CUE_GENERATION_ATTEMPTS = 3;
 const CUE_RETRY_DELAYS_SECONDS = [30, 120] as const;
+const LLM_CUE_TIMEOUT_MS = 25_000;
 
 type CueGenerationClaim = {
   show_id: string;
@@ -87,9 +91,16 @@ type CueGenerationClaim = {
   lease_token: string;
 };
 
-function isRetryableDatabaseError(error: { code?: string | null }): boolean {
-  const code = error.code ?? '';
+function isRetryableDatabaseError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const candidate = error as { code?: unknown; message?: unknown; name?: unknown };
+  const code = typeof candidate.code === 'string' ? candidate.code : '';
+  const name = typeof candidate.name === 'string' ? candidate.name : '';
+  const message = typeof candidate.message === 'string' ? candidate.message : '';
   return (
+    name === 'AbortError' ||
+    name === 'TimeoutError' ||
+    /\b(?:abort|network|timeout|timed out|fetch failed)\b/i.test(message) ||
     code.startsWith('08') ||
     code.startsWith('53') ||
     code === '40001' ||
@@ -164,12 +175,10 @@ function toStoredTimeSeconds(value: number): number {
  * Final guarantee that the persisted set satisfies the database timeline-safety
  * trigger, applied to every planner path (beat, fast, and LLM).
  *
- * The planners avoid overlaps with their own duration model, but the database
- * stores `time_seconds` as `numeric(8,2)` and reserves each tube for the
- * catalogue item's *greatest* stored or child duration. Re-checking with
- * database-identical rounding and conservative durations means a straggler is
- * dropped here rather than failing the whole guarded RPC with
- * "Timeline item overlaps an occupied launch position".
+ * The planners avoid overlapping ignitions, but the database stores
+ * `time_seconds` as `numeric(8,2)`. Re-checking with database-identical
+ * rounding and the shared ignition interval prevents rounding from turning a
+ * valid plan into a rejected write.
  */
 function enforceTimelineTubeSafety(
   cues: ReconstructedCue[],
@@ -185,16 +194,12 @@ function enforceTimelineTubeSafety(
     if (!product) continue;
     const occupiedTubes = occupiedLaunchPositions(product, cue.tube, maxTubes);
     if (!occupiedTubes) continue;
-    // Compare on the rounded value the trigger will actually see, and reserve
-    // the tube for the same conservative duration the database enforces.
+    // Compare on the rounded value the trigger will actually see and reserve
+    // the shared ignition interval.
     const storedTime = toStoredTimeSeconds(cue.timeSeconds);
-    const durationSeconds = Math.max(
-      fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS,
-      MIN_PRODUCT_DURATION_SECONDS,
-    );
     const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
       timeSeconds: storedTime,
-      durationSeconds,
+      durationSeconds: GENERATED_LAUNCH_INTERVAL_SECONDS,
       launchPositionIndex,
     }));
     if (windows.some((window) => findTubeOverlap(window, acceptedWindows))) continue;
@@ -252,14 +257,13 @@ function estimateAchievableCueCount(params: {
   const { products, songDuration, maxTubes, slotCount, quantityCapacity = null } = params;
   let cheapestTubeSeconds = Infinity;
   for (const product of products) {
-    const duration = Math.max(
-      fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS,
-      0.5,
-    );
     for (let tube = 0; tube < maxTubes; tube += 1) {
       const occupiedTubes = occupiedLaunchPositions(product, tube as 0 | 1 | 2, maxTubes);
       if (!occupiedTubes) continue;
-      cheapestTubeSeconds = Math.min(cheapestTubeSeconds, duration * occupiedTubes.length);
+      cheapestTubeSeconds = Math.min(
+        cheapestTubeSeconds,
+        GENERATED_LAUNCH_INTERVAL_SECONDS * occupiedTubes.length,
+      );
     }
   }
   if (!Number.isFinite(cheapestTubeSeconds)) return 0;
@@ -429,6 +433,7 @@ export async function generateCuesForShow(params: {
   let liveAssortmentItemIds: Set<string> | null = null;
   let catalogue: ReturnType<typeof projectCatalogue> = [];
   let slots: CueSlot[];
+  let promptConstraints: PromptConstraints = parsePromptConstraints('');
 
   const loadStart = performance.now();
   try {
@@ -439,6 +444,7 @@ export async function generateCuesForShow(params: {
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
     ]);
     if (!brief) throw new Error('Show not found.');
+    promptConstraints = parsePromptConstraints(brief.description ?? '');
     if (brief.creation_source === 'assortment_qr') {
       assortmentLedger = await loadShowAssortmentLedger(supabase, showId);
     } else if (brief.assortment_id) {
@@ -509,13 +515,39 @@ export async function generateCuesForShow(params: {
         'The physical assortment cannot be scheduled safely at the available launch positions.',
       );
     }
-    // Honour the user's firework-type constraint when it leaves a workable
-    // catalogue; otherwise keep the full list and let the prompt express the
-    // preference instead.
+    // Firework-type choices are explicit user constraints, not preferences.
+    // Never silently restore excluded product families when the result is
+    // small: a sparse truthful catalogue is better than a contradictory show.
     const allowedTypes = parseFireworkTypes(brief.firework_types);
-    if (allowedTypes && !assortmentLedger) {
+    if (allowedTypes) {
       const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
-      if (filtered.length >= 3) products = filtered;
+      if (filtered.length === 0) {
+        throw new Error('No available fireworks match the requested firework types.');
+      }
+      products = filtered;
+    }
+    const promptMatchedProducts = products.filter((product) =>
+      productMatchesPromptConstraints(product, promptConstraints),
+    );
+    if (promptMatchedProducts.length === 0) {
+      throw new Error('No available fireworks satisfy the required prompt constraints.');
+    }
+    products = promptMatchedProducts;
+    if (assortmentLedger && products.length !== assortmentLedger.size) {
+      throw new Error('The physical assortment cannot satisfy the requested show constraints.');
+    }
+    const unavailablePromptRequirements = validatePromptConstraints({
+      productIds: products.map((product) => product.id),
+      products,
+      constraints: promptConstraints,
+    }).filter(
+      (violation) => violation.kind === 'missing_colour' || violation.kind === 'missing_effect',
+    );
+    if (unavailablePromptRequirements.length > 0) {
+      const missing = unavailablePromptRequirements.map((violation) => violation.value).join(', ');
+      throw new Error(
+        `The available catalogue cannot satisfy the requested ${missing} constraint.`,
+      );
     }
     // Apply an assortment boundary for every assortment-backed show. Public
     // QR shows use their immutable physical-pack snapshot, while normal app
@@ -569,6 +601,28 @@ export async function generateCuesForShow(params: {
         slots,
         products,
         songDuration,
+        availabilityByProductId: assortmentLedger,
+      });
+      accepted = plan.cues;
+      acceptedCount = accepted.length;
+      droppedCount = plan.skippedSlots;
+      timings.fastPlanMs = elapsedMs(planStart);
+    };
+
+    /**
+     * Quality rescue for an unavailable or weak model response. The strict
+     * beat planner owns musical timing and grouped multi-position moments, so
+     * falling back does not mean abandoning the user's beat-sync request.
+     */
+    const runBeatFallback = () => {
+      const planStart = performance.now();
+      const plan = planCuesOnBeats({
+        analysis,
+        slots,
+        products,
+        songDuration,
+        brief,
+        maxTubes,
         availabilityByProductId: assortmentLedger,
       });
       accepted = plan.cues;
@@ -654,18 +708,26 @@ export async function generateCuesForShow(params: {
       const llmStart = performance.now();
       try {
         const client = getOpenRouterClient();
-        const completion = await client.chat.completions.create({
-          model,
-          temperature: 0.5,
-          max_tokens: 6000,
-          // `json_object` is the widely-supported structured-output mode on
-          // OpenRouter. `json_schema` is OpenAI-only.
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userContent },
-          ],
-        });
+        const completion = await client.chat.completions.create(
+          {
+            model,
+            temperature: 0.35,
+            max_tokens: 3600,
+            // `json_object` is the widely-supported structured-output mode on
+            // OpenRouter. `json_schema` is OpenAI-only.
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userContent },
+            ],
+          },
+          {
+            // One bounded creative attempt. Provider retries multiply latency
+            // without improving the deterministic rescue path.
+            timeout: LLM_CUE_TIMEOUT_MS,
+            maxRetries: 0,
+          },
+        );
         rawResponse = completion.choices[0]?.message?.content ?? '';
         if (!rawResponse) throw new Error('LLM returned an empty response.');
         rawResponseBytes = jsonByteLength(rawResponse);
@@ -704,7 +766,7 @@ export async function generateCuesForShow(params: {
 
       if (!parsed) {
         timings.parseValidateMs = elapsedMs(parseStart);
-        runFastFallback();
+        runBeatFallback();
       } else {
         // Drop unknown slots / unknown products / duplicate slot indices.
         const seenSlot = new Set<number>();
@@ -768,9 +830,6 @@ export async function generateCuesForShow(params: {
         const acceptedWindows: CueWindow[] = [];
         for (const cue of reconstructed) {
           const product = productIndex.get(cue.productId);
-          const productDuration = product
-            ? (fireworkOccupancyDurationSeconds(product) ?? MIN_PRODUCT_DURATION_SECONDS)
-            : MIN_PRODUCT_DURATION_SECONDS;
           const occupiedTubes = product
             ? occupiedLaunchPositions(product, cue.tube, maxTubes)
             : null;
@@ -787,7 +846,7 @@ export async function generateCuesForShow(params: {
           }
           const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
             timeSeconds: cue.timeSeconds,
-            durationSeconds: productDuration,
+            durationSeconds: GENERATED_LAUNCH_INTERVAL_SECONDS,
             launchPositionIndex,
           }));
           const conflict = windows.some((window) => findTubeOverlap(window, acceptedWindows));
@@ -850,14 +909,20 @@ export async function generateCuesForShow(params: {
           strongMomentSlots.size > 0 &&
           (usedTubes.size < maxTubes || simultaneousStrongMoments === 0);
         const quantityMismatches = exactProductQuantityMismatches(accepted, assortmentLedger);
+        const promptViolations = validatePromptConstraints({
+          productIds: accepted.map((cue) => cue.productId),
+          products,
+          constraints: promptConstraints,
+        });
         if (
           quantityMismatches.length > 0 ||
+          promptViolations.length > 0 ||
           accepted.length < minimumViableCount ||
           missingProtectedSlots.length > 0 ||
           missingMultiTubeChoreography
         ) {
           console.error(
-            '[cue-generation] LLM did not meet viable show requirements after validation, falling back to fast planner.',
+            '[cue-generation] LLM did not meet viable show requirements after validation, falling back to beat planner.',
             {
               acceptedCount: accepted.length,
               minimumViableCount,
@@ -865,9 +930,10 @@ export async function generateCuesForShow(params: {
               simultaneousStrongMoments,
               usedTubeCount: usedTubes.size,
               quantityMismatches,
+              promptViolations,
             },
           );
-          runFastFallback();
+          runBeatFallback();
         }
       }
     }
@@ -889,9 +955,60 @@ export async function generateCuesForShow(params: {
           ? 'Beat-sync planner returned no usable cues.'
           : generationMode === 'fast'
             ? 'Fast cue planner returned no usable cues.'
-            : 'Cue generation returned no usable cues, even after the fast-planner fallback.';
+            : 'Cue generation returned no usable cues, even after the beat-planner fallback.';
       logTimings('failed', { error: message });
       return finishFailure(message);
+    }
+
+    let quality = evaluateFinalChoreography({
+      cues: accepted,
+      slots,
+      promptViolations: validatePromptConstraints({
+        productIds: accepted.map((cue) => cue.productId),
+        products,
+        constraints: promptConstraints,
+      }),
+      maxTubes,
+      sparse: sparseGeneration,
+    });
+    if (quality.issues.length > 0 && generationMode !== 'beat' && !assortmentLedger) {
+      console.warn('[cue-generation] final choreography needed deterministic repair', {
+        issues: quality.issues,
+        maximumGapSeconds: quality.maximumGapSeconds,
+        sectionCoverageRatio: quality.sectionCoverageRatio,
+        coordinatedStrongMomentRatio: quality.coordinatedStrongMomentRatio,
+      });
+      runBeatFallback();
+      accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+      acceptedCount = accepted.length;
+      quality = evaluateFinalChoreography({
+        cues: accepted,
+        slots,
+        promptViolations: validatePromptConstraints({
+          productIds: accepted.map((cue) => cue.productId),
+          products,
+          constraints: promptConstraints,
+        }),
+        maxTubes,
+        sparse: sparseGeneration,
+      });
+    }
+
+    const hardQualityIssues = quality.issues.filter((issue) => issue.hard);
+    if (hardQualityIssues.length > 0) {
+      throw new Error(
+        `The final choreography could not satisfy: ${hardQualityIssues
+          .map((issue) => issue.detail)
+          .join('; ')}.`,
+      );
+    }
+    if (quality.issues.length > 0) {
+      console.warn('[cue-generation] final choreography soft quality warnings', {
+        issues: quality.issues,
+        maximumGapSeconds: quality.maximumGapSeconds,
+        sectionCoverageRatio: quality.sectionCoverageRatio,
+        coordinatedStrongMomentRatio: quality.coordinatedStrongMomentRatio,
+      });
     }
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -912,19 +1029,26 @@ export async function generateCuesForShow(params: {
     emphasis: cue.emphasis,
   }));
 
-  const { data: replacedCount, error: replaceError } = await supabase.rpc(
-    'replace_show_timeline_items',
-    {
+  let replacedCount: number | null = null;
+  try {
+    const { data, error: replaceError } = await supabase.rpc('replace_show_timeline_items', {
       p_show_id: showId,
       p_user_id: userId,
       p_items: rows as Json,
-    },
-  );
-  if (replaceError) {
-    const message = `Could not replace generated cues: ${replaceError.message}`;
+    });
+    if (replaceError) {
+      const message = `Could not replace generated cues: ${replaceError.message}`;
+      timings.dbWriteMs = elapsedMs(dbStart);
+      logTimings('failed', { error: message });
+      return finishFailure(message, isRetryableDatabaseError(replaceError));
+    }
+    replacedCount = data;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const message = `Could not replace generated cues: ${detail}`;
     timings.dbWriteMs = elapsedMs(dbStart);
     logTimings('failed', { error: message });
-    return finishFailure(message, isRetryableDatabaseError(replaceError));
+    return finishFailure(message, isRetryableDatabaseError(error));
   }
   if (replacedCount !== rows.length) {
     const message = `Cue replacement wrote ${replacedCount ?? 0} of ${rows.length} cues.`;

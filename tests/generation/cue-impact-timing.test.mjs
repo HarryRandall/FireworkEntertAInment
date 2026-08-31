@@ -5,6 +5,10 @@ import { test } from 'node:test';
 import { parseCreativeDirection } from '../../lib/cue-generation/creative-direction.ts';
 import { scheduleImpactWithLift } from '../../lib/cue-generation/impact-clock.ts';
 import {
+  DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
+  showReplayShotTimeSeconds,
+} from '../../lib/replay-shot-timing.ts';
+import {
   occupiedLaunchPositions,
   productFitsLaunchPositions,
 } from '../../lib/cue-generation/show-options.ts';
@@ -25,6 +29,21 @@ test('impact clock launches early so the burst lands on the musical target', () 
     liftTimeSeconds: 2.137,
   });
   assert.equal(timing.launchTimeSeconds + timing.liftTimeSeconds, timing.impactTimeSeconds);
+});
+
+test('show replay preserves an exact generated direct-firework impact', () => {
+  const targetImpactSeconds = 12.345;
+  const liftTimeSeconds = 2.137;
+  const generated = scheduleImpactWithLift(targetImpactSeconds, liftTimeSeconds);
+  assert.ok(generated);
+
+  const replayLaunchSeconds = showReplayShotTimeSeconds(
+    generated.launchTimeSeconds,
+    DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
+  );
+
+  assert.equal(replayLaunchSeconds, generated.launchTimeSeconds);
+  assert.equal(replayLaunchSeconds + liftTimeSeconds, targetImpactSeconds);
 });
 
 test('ground effects launch on impact and impossible opening aerial hits are skipped', () => {
@@ -55,6 +74,18 @@ test('direct shells use renderer-matched impacts while multishots anchor their s
   assert.doesNotMatch(prompt, /fires it exactly on that beat/);
 });
 
+test('the card-preview lead-in cannot leak into full show replay timing', () => {
+  const queries = read('lib/shows/queries.server.ts');
+  const preview = read('lib/firework-card-preview.server.ts');
+
+  assert.doesNotMatch(queries, /FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS/);
+  assert.match(queries, /kind: 'direct',[\s\S]*?DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
+  assert.match(
+    preview,
+    /fireworkCardPreviewShotTimeSeconds\(shot\.kind, shot\.timeOffsetSeconds\)/,
+  );
+});
+
 test('database-backed LLM prompt uses the same impact-time contract', () => {
   const migration = read('supabase/migrations/20260711050142_improve_show_cue_impact_prompt.sql');
 
@@ -71,7 +102,9 @@ test('multishot child positions participate in site and overlap safety', () => {
   const queries = read('lib/shows/queries.server.ts');
   const options = read('lib/cue-generation/show-options.ts');
   const fast = read('lib/cue-generation/fast-planner.ts');
+  const beat = read('lib/cue-generation/beat-sync-planner.ts');
   const runner = read('lib/cue-generation/runner.server.ts');
+  const spacing = read('lib/cue-generation/launch-spacing.ts');
   const showTypes = read('lib/shows/types.ts');
 
   assert.match(domain, /launchPositionOverrideIndices\?: number\[\];/);
@@ -89,7 +122,10 @@ test('multishot child positions participate in site and overlap safety', () => {
     /occupancyDurationSeconds: conservativeProductDuration\(\s*row\.duration_seconds,\s*base\.durationSeconds,\s*\)/,
   );
   assert.match(fast, /fireworkOccupancyDurationSeconds\(product\)/);
-  assert.match(runner, /fireworkOccupancyDurationSeconds\(product\)/);
+  assert.match(spacing, /GENERATED_LAUNCH_INTERVAL_SECONDS = 0\.5/);
+  assert.match(fast, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);
+  assert.match(beat, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);
+  assert.match(runner, /durationSeconds: GENERATED_LAUNCH_INTERVAL_SECONDS/);
 });
 
 test('multishot position reservation includes parent and child tubes', () => {

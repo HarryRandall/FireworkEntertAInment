@@ -77,5 +77,19 @@ test('cue generation emits server timing logs for the critical stages', () => {
   assert.match(runner, /fastPlanMs:/);
   assert.match(runner, /llmMs:/);
   assert.match(runner, /totalMs:/);
-  assert.match(runner, /max_tokens: 6000/);
+  assert.match(runner, /const LLM_CUE_TIMEOUT_MS = 25_000/);
+  assert.match(runner, /max_tokens: 3600/);
+  assert.match(runner, /timeout: LLM_CUE_TIMEOUT_MS/);
+  assert.match(runner, /maxRetries: 0/);
+});
+
+test('timeline persistence retries thrown network and timeout failures', () => {
+  assert.match(runner, /name === 'AbortError'/);
+  assert.match(runner, /name === 'TimeoutError'/);
+  assert.match(runner, /abort\|network\|timeout\|timed out\|fetch failed/);
+  assert.match(
+    runner,
+    /try \{[\s\S]*?supabase\.rpc\('replace_show_timeline_items'[\s\S]*?catch \(error\)/,
+  );
+  assert.match(runner, /finishFailure\(message, isRetryableDatabaseError\(error\)\)/);
 });
