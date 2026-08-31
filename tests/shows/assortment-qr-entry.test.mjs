@@ -8,6 +8,10 @@ const files = {
     '../../supabase/migrations/20260829090000_add_assortment_qr_entry.sql',
     import.meta.url,
   ),
+  provenanceRepair: new URL(
+    '../../supabase/migrations/20260831032143_fix_assortment_qr_show_provenance.sql',
+    import.meta.url,
+  ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
   adminEditor: new URL(
     '../../app/(admin)/admin/assortments/[id]/AssortmentEditor.tsx',
@@ -50,6 +54,13 @@ test('FIR-168 migration extends rather than recreates FIR-178 contracts', async 
   assert.doesNotMatch(migration, /insert into public\.permissions/);
   assert.doesNotMatch(migration, /save_assortment_definition/);
   assert.match(migration, /create table public\.assortment_public_links/);
+});
+
+test('deployed QR show provenance is repaired without duplicating the original schema', async () => {
+  const repair = await source('provenanceRepair');
+  assert.match(repair, /add column if not exists assortment_id uuid/);
+  assert.match(repair, /references public\.assortments\(id\) on delete set null/);
+  assert.match(repair, /create index if not exists shows_assortment_id_idx/);
 });
 
 test('the protected reusable capability cannot be anonymously enumerated', async () => {
