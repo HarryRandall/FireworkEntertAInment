@@ -15,6 +15,7 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
   'lib/fireworks/World.ts',
   'lib/fireworks/design.ts',
   'lib/fireworks/effect-catalogue.ts',
+  'lib/fireworks/launch-positions.ts',
   'lib/fireworks/random.ts',
   'lib/fireworks/render-tuning.ts',
   'lib/fireworks/shaders.ts',
@@ -31,7 +32,7 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
  * Sealed evidence is invalid as soon as the deployed renderer bytes drift.
  */
 export const FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION =
-  'showcrafter.fireworks-engine.import-renderer.v1+sha256.5d15f52fdb8f8fe190be106ee4fb4b2116685694c85a22c65b59317df17fb8bb' as const;
+  'showcrafter.fireworks-engine.import-renderer.v1+sha256.ee7dee06a901d53e4f2b1d1b277d76b88a21d5fa798b20ec69ada9e936bf290e' as const;
 
 export const FIREWORKS_ENGINE_FIXED_STEP_SECONDS = 1 / 60;
 

@@ -15,8 +15,12 @@ import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { CueSlot } from '@/lib/beat-grid.server';
 import { buildBeatMoments, type BeatMoment } from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
+import { parsePromptConstraints, productEffectFamilies } from './prompt-constraints';
 import type { PlannedCue } from './fast-planner';
 import { scheduleProductForCueSlot } from './impact-timing';
+import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
+import { shouldKeepPlannedMoment } from './moment-groups';
+import { recurringMotifIds } from './motifs';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey } from './show-styles';
@@ -39,6 +43,7 @@ type BeatProductPools = {
   cadence: FireworkSpecification[];
   spectacle: FireworkSpecification[];
   sustained: FireworkSpecification[];
+  required: FireworkSpecification[];
 };
 
 export function planCuesOnBeats(params: {
@@ -106,6 +111,10 @@ export function planCuesOnBeats(params: {
     const targetTubes = tubesForTarget(target, direction, maxTubes);
     const wantsSustained = shouldStartSustainedLayer(target, direction, sustainedSections);
     const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained);
+    const occupiedStart = occupied.length;
+    const cueStart = cues.length;
+    const productRotorStart = productRotor;
+    const alreadyHadSustainedLayer = sustainedSections.has(target.sectionKey);
     let acceptedForMoment = 0;
 
     for (let tubeIndex = 0; tubeIndex < tubeOrder.length; tubeIndex += 1) {
@@ -152,11 +161,9 @@ export function planCuesOnBeats(params: {
         if (!occupiedTubes) continue;
         const windows = occupiedTubes.map((occupiedTube) => ({
           start: timing.launchTimeSeconds,
-          // Match the conservative database reservation so the final guarded
-          // write cannot turn a visually valid plan into a failed show.
-          end:
-            timing.launchTimeSeconds +
-            Math.max(fireworkOccupancyDurationSeconds(product) ?? 0.5, 0.5),
+          // Independent products can be fired while an earlier effect remains
+          // visible. Reserve the ignition interval, not the visual tail.
+          end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
           tube: occupiedTube,
         }));
         if (windows.some((window) => overlaps(window, occupied))) continue;
@@ -187,6 +194,27 @@ export function planCuesOnBeats(params: {
         intensity: target.intensity,
         emphasis,
       });
+    }
+
+    if (
+      !shouldKeepPlannedMoment({
+        requestedTubeCount: targetTubes.length,
+        acceptedTubeCount: acceptedForMoment,
+        vibe: target.vibe,
+        nearClimax: target.nearClimax,
+        finale: target.finale,
+      })
+    ) {
+      for (const cue of cues.slice(cueStart)) {
+        const remainingUses = (productUsage.get(cue.productId) ?? 1) - 1;
+        if (remainingUses > 0) productUsage.set(cue.productId, remainingUses);
+        else productUsage.delete(cue.productId);
+      }
+      occupied.length = occupiedStart;
+      cues.length = cueStart;
+      productRotor = productRotorStart;
+      if (!alreadyHadSustainedLayer) sustainedSections.delete(target.sectionKey);
+      acceptedForMoment = 0;
     }
 
     skippedSlots += Math.max(0, targetTubes.length - acceptedForMoment);
@@ -251,8 +279,13 @@ function pickProductPools(
       !(product.launchPositionOverrideIndices?.length ?? 0),
   );
   const aerialShots = singleShots.filter((product) => !isGroundEffect(product));
-  const candidates = aerialShots.length ? aerialShots : singleShots;
+  const candidates = aerialShots.length
+    ? aerialShots
+    : singleShots.length
+      ? singleShots
+      : sustainedShots;
   const requestedColours = requestedColourFamilies(briefText);
+  const promptConstraints = parsePromptConstraints(brief?.description ?? '');
   const paletteMatches = new Set<FireworkSpecification>();
 
   for (const colour of requestedColours) {
@@ -273,7 +306,7 @@ function pickProductPools(
       a.id.localeCompare(b.id)
     );
   });
-  if (!sorted.length) return { cadence: [], spectacle: [], sustained: [] };
+  if (!sorted.length) return { cadence: [], spectacle: [], sustained: [], required: [] };
 
   const shortest = productDuration(sorted[0]);
   const shortPool = sorted.filter((product) => productDuration(product) <= shortest + 1.5);
@@ -281,6 +314,20 @@ function pickProductPools(
   for (const product of sorted) {
     if (shortPool.length >= minimumVariety) break;
     if (!shortPool.includes(product)) shortPool.push(product);
+  }
+  // A recurring section motif still needs to express every requested palette
+  // and effect family. Seed one representative of each into the cadence rotor
+  // instead of hoping a later score happens to select it.
+  const required: FireworkSpecification[] = [];
+  for (const colour of promptConstraints.requiredColours) {
+    const representative = sorted.find((product) => productColourFamilies(product).has(colour));
+    if (representative && !required.includes(representative)) required.push(representative);
+    if (representative && !shortPool.includes(representative)) shortPool.push(representative);
+  }
+  for (const effect of promptConstraints.requestedEffects) {
+    const representative = sorted.find((product) => productEffectFamilies(product).has(effect));
+    if (representative && !required.includes(representative)) required.push(representative);
+    if (representative && !shortPool.includes(representative)) shortPool.push(representative);
   }
   return {
     cadence: shortPool,
@@ -297,6 +344,7 @@ function pickProductPools(
         sustainedScore(b, requestedColours, words) - sustainedScore(a, requestedColours, words) ||
         a.id.localeCompare(b.id),
     ),
+    required,
   };
 }
 
@@ -306,12 +354,26 @@ function orderProductsForTarget(
   target: BeatMoment,
   preferSustained: boolean,
 ): FireworkSpecification[] {
+  const motifIds = new Set(
+    recurringMotifIds(
+      pools.cadence.map((product) => product.id),
+      target.vibe,
+      Math.max(3, pools.required.length),
+    ),
+  );
+  const recurringCadence = Array.from(
+    new Map(
+      [...pools.required, ...pools.cadence.filter((product) => motifIds.has(product.id))].map(
+        (product) => [product.id, product],
+      ),
+    ).values(),
+  );
   const direct =
     target.isSurprise || target.nearClimax || target.emphasis === 'peak'
       ? pools.spectacle
       : Array.from(
-          { length: pools.cadence.length },
-          (_, offset) => pools.cadence[(rotor + offset) % pools.cadence.length],
+          { length: recurringCadence.length },
+          (_, offset) => recurringCadence[(rotor + offset) % recurringCadence.length],
         );
   if (preferSustained && pools.sustained.length) {
     const sustainedOffset = target.sourceIndex % pools.sustained.length;

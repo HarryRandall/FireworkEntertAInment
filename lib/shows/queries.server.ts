@@ -12,7 +12,6 @@ import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
-import { FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS } from '@/lib/firework-card-preview';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
 import {
@@ -23,6 +22,10 @@ import {
   type ReconstructionShotMetadata,
 } from '@/lib/reconstruction-shot';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
+import {
+  DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
+  showReplayShotTimeSeconds,
+} from '@/lib/replay-shot-timing';
 import { isSupabaseTransientNetworkError } from '@/utils/supabase/errors';
 import type {
   FireworkSpecification,
@@ -392,6 +395,7 @@ type CatalogueFireworkRow = {
 };
 
 export type CatalogueItemShotSpec = {
+  kind: 'direct' | 'multishot';
   sourceCueId: string;
   timeOffsetSeconds: number;
   panDegrees: number | null;
@@ -456,8 +460,9 @@ export async function fetchShotsByCatalogueItem(
       const reconstructionShot = parseDirectReconstructionShot(directFirework.variant_json);
       shotsByCatalogueItem.set(item.id, [
         {
+          kind: 'direct',
           sourceCueId: `${directFirework.id}-card-preview`,
-          timeOffsetSeconds: FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS,
+          timeOffsetSeconds: DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
           panDegrees: reconstructionShot?.panDegrees ?? null,
           tiltDegrees: reconstructionShot?.tiltDegrees ?? null,
           positionOverride: reconstructionShot?.positionOverride ?? null,
@@ -477,6 +482,7 @@ export async function fetchShotsByCatalogueItem(
       const firework = firstVariant(shot.fireworks);
       if (!firework) continue;
       shots.push({
+        kind: 'multishot',
         sourceCueId: shot.id,
         timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
         panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
@@ -515,7 +521,7 @@ function expandReplayCues(
         // Stable id: keep the cue id when there's only one shot, otherwise
         // suffix with `-shot-<index>` so the renderer can dedupe correctly.
         id: shots.length === 1 ? baseCue.id : `${baseCue.id}-shot-${i}`,
-        timeSeconds: startSeconds + shots[i].timeOffsetSeconds,
+        timeSeconds: showReplayShotTimeSeconds(startSeconds, shots[i].timeOffsetSeconds),
         // Each multishot shot can fire from its own tube; fall back to the
         // parent cue's tube when the shot doesn't override it.
         launchPositionIndex: shots[i].launchPositionIndex ?? baseCue.launchPositionIndex,

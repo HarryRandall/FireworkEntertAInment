@@ -32,16 +32,18 @@ export function KioskGeneratingShow({ token, showToken, showTitle }: Props) {
   }, [router, showToken, token]);
 
   return (
-    <GeneratingShowAnimation
-      showTitle={showTitle}
-      status="running"
-      phase="generating"
-      hasAudio
-      pollIntervalMs={60_000}
-      persistKey={`assortment-${showToken}`}
-      randomiseCoverOnLoad
-      className="min-h-[calc(100dvh-4rem)]"
-    />
+    <div className="h-[calc(100dvh-4rem)]">
+      <GeneratingShowAnimation
+        showTitle={showTitle}
+        status="running"
+        phase="generating"
+        hasAudio
+        pollIntervalMs={60_000}
+        persistKey={`assortment-${showToken}`}
+        randomiseCoverOnLoad
+        className="h-full"
+      />
+    </div>
   );
 }
 

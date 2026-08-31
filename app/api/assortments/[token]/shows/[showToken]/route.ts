@@ -1,9 +1,14 @@
+import { after } from 'next/server';
 import { NextResponse } from 'next/server';
 import {
+  getAssortmentServiceClient,
   getPublicAssortmentByToken,
   resolvePublicAssortmentShow,
 } from '@/lib/assortments/public.server';
 import { consumeAssortmentPublicRateLimit } from '@/lib/assortments/request-security.server';
+import { recoverPublicAssortmentShowGeneration } from '@/lib/music-analysis-lifecycle.server';
+
+export const maxDuration = 300;
 
 const NO_STORE_HEADERS = { 'Cache-Control': 'private, no-store, max-age=0' } as const;
 
@@ -49,6 +54,22 @@ export async function GET(
       { ok: false, error: 'Show unavailable.' },
       { status: 404, headers: NO_STORE_HEADERS },
     );
+  }
+
+  if (show.generationStatus === 'running') {
+    const supabase = getAssortmentServiceClient();
+    after(async () => {
+      try {
+        await recoverPublicAssortmentShowGeneration({
+          supabase,
+          userId: show.fundingUserId,
+          showId: show.id,
+          musicAnalysisId: show.musicAnalysisId,
+        });
+      } catch (error) {
+        console.error('[assortment-qr] public show recovery crashed:', error);
+      }
+    });
   }
 
   return NextResponse.json(

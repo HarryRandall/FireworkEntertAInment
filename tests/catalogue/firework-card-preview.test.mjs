@@ -65,6 +65,16 @@ test('card preview payload hydration reuses normalised specifications and fails 
   );
 });
 
+test('the 0.05 second renderer lead-in is exclusive to direct card previews', () => {
+  const { FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS, fireworkCardPreviewShotTimeSeconds } =
+    loadPurePreviewModule();
+
+  assert.equal(FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS, 0.05);
+  assert.equal(fireworkCardPreviewShotTimeSeconds('direct', 0), 0.05);
+  assert.equal(fireworkCardPreviewShotTimeSeconds('multishot', 0), 0.01);
+  assert.equal(fireworkCardPreviewShotTimeSeconds('multishot', 1.25), 1.25);
+});
+
 test('reconstruction launch metadata is parsed once for show and card replay', () => {
   const shot = parseReconstructionShotVariant({
     reconstructionShot: {
@@ -151,7 +161,12 @@ test('preview loaders compile real designs and bound normalised sequence payload
   assert.match(preview, /\{\s*failOnError: true,?\s*\}/);
   assert.match(shows, /export async function fetchShotsByCatalogueItem/);
   assert.match(shows, /options\.failOnError \|\| isSupabaseTransientNetworkError/);
-  assert.match(shows, /timeOffsetSeconds: FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS/);
+  assert.match(shows, /kind: 'direct'/);
+  assert.match(shows, /timeOffsetSeconds: DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
+  assert.match(
+    preview,
+    /fireworkCardPreviewShotTimeSeconds\(shot\.kind, shot\.timeOffsetSeconds\)/,
+  );
   assert.match(shows, /parseReconstructionShotVariant/);
 });
 

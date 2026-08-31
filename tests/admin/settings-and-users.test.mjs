@@ -9,6 +9,7 @@ const root = process.cwd();
 
 test('settings exposes modern account sections', () => {
   const shell = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
+  const navigation = readFileSync(join(root, 'components/shell/app-shell-navigation.ts'), 'utf8');
   const profile = readFileSync(join(root, 'app/(app)/settings/profile/page.tsx'), 'utf8');
   const personalDetails = readFileSync(
     join(root, 'app/(app)/settings/profile/PersonalDetailsForm.tsx'),
@@ -19,7 +20,7 @@ test('settings exposes modern account sections', () => {
     'utf8',
   );
   for (const label of ['Personal details', 'Notifications', 'Billing', 'Security']) {
-    assert.match(shell, new RegExp(`label: '${label}'`));
+    assert.match(navigation, new RegExp(`label: '${label}'`));
   }
   assert.match(shell, /SETTINGS_LINKS/);
   assert.match(shell, /ShellBreadcrumbs/);

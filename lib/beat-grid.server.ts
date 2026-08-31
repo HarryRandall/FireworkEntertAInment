@@ -51,6 +51,7 @@ const TARGET_SLOTS = 160;
 const MAX_TARGET_SLOTS = 220;
 const MIN_INTENSITY = 0.1;
 const WINDOW_COUNT = 12;
+const COVERAGE_SLOT_SHARE = 0.75;
 
 function vibeFor(label: string): SlotVibe {
   const l = label.toLowerCase();
@@ -216,6 +217,7 @@ function scoreBeatAt(
 
 /** Tube count for one beat, capped by the site's launch-position width. */
 function tubesForBeat(beat: Scored, maxTubes: 1 | 2 | 3): number {
+  if (beat.emphasis === 'peak') return maxTubes;
   return Math.min(tubeCountForBeat(beat), maxTubes);
 }
 
@@ -230,7 +232,11 @@ function selectSampledBeats(
   songDuration: number,
 ): Scored[] {
   const isMustKeep = (b: Scored) =>
-    b.vibe === 'chorus' || b.vibe === 'drop' || b.nearClimax || (hasDownbeats && b.isDownbeat);
+    b.emphasis === 'peak' ||
+    b.vibe === 'chorus' ||
+    b.vibe === 'drop' ||
+    b.nearClimax ||
+    (hasDownbeats && b.isDownbeat);
   const isFillEligible = (b: Scored) => {
     if (isMustKeep(b)) return false;
     if (!hasDownbeats) return true; // 1.3.0: original windowed fill everywhere.
@@ -416,9 +422,13 @@ export function buildCueSlots(
   };
   const barCursor = { value: 0 };
   const scored: Scored[] = beats.map((t, i) => scoreBeatAt(t, i, scoringContext, barCursor));
+  const finalAnalysedBeat = analysis ? scored[scored.length - 1] : undefined;
+  if (finalAnalysedBeat) finalAnalysedBeat.emphasis = 'peak';
 
-  // 3. Drop silent stretches.
-  const live = scored.filter((b) => b.intensity > MIN_INTENSITY);
+  // 3. Drop silent stretches. Preserve the final analysed beat even when its
+  //    section energy is below the normal live threshold so the show can land
+  //    visibly on the song's final musical hit.
+  const live = scored.filter((b) => b.intensity > MIN_INTENSITY || b === finalAnalysedBeat);
   if (live.length === 0) return [];
 
   // 4. Select slots. Must-keep beats: choruses/drops (every beat), climaxes,
@@ -473,12 +483,44 @@ export function buildCueSlots(
   // Re-sort after adding interleaved onset accents, then cap whole timestamp
   // groups so a three-tube accent can never be truncated into one or two tubes.
   slots.sort((a, b) => a.time - b.time || a.tube - b.tube);
-  const cappedSlots = capSlotGroups(slots, MAX_TARGET_SLOTS);
+  const finalAnalysedBeatTime = finalAnalysedBeat
+    ? Number(finalAnalysedBeat.time.toFixed(3))
+    : null;
+  const cappedSlots = capSlotGroups(slots, MAX_TARGET_SLOTS, sections, finalAnalysedBeatTime);
   cappedSlots.forEach((s, i) => (s.index = i));
   return cappedSlots;
 }
 
-function capSlotGroups(slots: CueSlot[], maxSlots: number): CueSlot[] {
+type SlotGroup = {
+  time: number;
+  slots: CueSlot[];
+  sectionIndex: number;
+  nearClimax: boolean;
+  peak: boolean;
+  finale: boolean;
+  downbeat: boolean;
+  accent: boolean;
+  intensity: number;
+};
+
+function compareSlotGroupPriority(a: SlotGroup, b: SlotGroup): number {
+  return (
+    Number(b.nearClimax) - Number(a.nearClimax) ||
+    Number(b.peak) - Number(a.peak) ||
+    Number(b.finale) - Number(a.finale) ||
+    Number(b.downbeat) - Number(a.downbeat) ||
+    Number(b.accent) - Number(a.accent) ||
+    b.intensity - a.intensity ||
+    a.time - b.time
+  );
+}
+
+function capSlotGroups(
+  slots: CueSlot[],
+  maxSlots: number,
+  sections: AnalyserSection[],
+  finalAnalysedBeatTime: number | null,
+): CueSlot[] {
   if (slots.length <= maxSlots) return slots;
 
   const slotsByTime = new Map<number, CueSlot[]>();
@@ -491,34 +533,110 @@ function capSlotGroups(slots: CueSlot[], maxSlots: number): CueSlot[] {
     }
   }
 
-  const groups = [...slotsByTime.entries()].map(([time, groupSlots]) => ({
-    time,
-    slots: groupSlots,
-    nearClimax: groupSlots.some((slot) => slot.nearClimax),
-    peak: groupSlots.some((slot) => slot.emphasis === 'peak'),
-    finale: groupSlots.some((slot) => slot.finale),
-    downbeat: groupSlots.some((slot) => slot.isDownbeat),
-    accent: groupSlots.some((slot) => slot.emphasis === 'accent'),
-    intensity: Math.max(...groupSlots.map((slot) => slot.intensity)),
-  }));
+  const groups: SlotGroup[] = [...slotsByTime.entries()].map(([time, groupSlots]) => {
+    const sectionIndex = sections.findIndex(
+      (section) => time >= section.start && time < section.end,
+    );
+    return {
+      time,
+      slots: groupSlots,
+      sectionIndex,
+      nearClimax: groupSlots.some((slot) => slot.nearClimax),
+      peak: groupSlots.some((slot) => slot.emphasis === 'peak'),
+      finale: groupSlots.some((slot) => slot.finale),
+      downbeat: groupSlots.some((slot) => slot.isDownbeat),
+      accent: groupSlots.some((slot) => slot.emphasis === 'accent'),
+      intensity: Math.max(...groupSlots.map((slot) => slot.intensity)),
+    };
+  });
 
-  const rankedGroups = [...groups].sort(
-    (a, b) =>
-      Number(b.nearClimax) - Number(a.nearClimax) ||
-      Number(b.peak) - Number(a.peak) ||
-      Number(b.finale) - Number(a.finale) ||
-      Number(b.downbeat) - Number(a.downbeat) ||
-      Number(b.accent) - Number(a.accent) ||
-      b.intensity - a.intensity ||
-      a.time - b.time,
-  );
+  const rankedGroups = [...groups].sort(compareSlotGroupPriority);
 
   const selectedTimes = new Set<number>();
   let selectedSlotCount = 0;
-  for (const group of rankedGroups) {
-    if (selectedSlotCount + group.slots.length > maxSlots) continue;
+  const selectGroup = (group: SlotGroup, budget = maxSlots): boolean => {
+    if (selectedTimes.has(group.time)) return true;
+    if (selectedSlotCount + group.slots.length > budget) return false;
     selectedTimes.add(group.time);
     selectedSlotCount += group.slots.length;
+    return true;
+  };
+
+  // Anchor the timeline at both ends. The final analysed beat is selected
+  // explicitly because it represents the last musical hit rather than merely
+  // another high-priority event inside a broad finale window.
+  const firstGroup = groups[0];
+  if (firstGroup) selectGroup(firstGroup);
+  const finalAnalysedGroup =
+    finalAnalysedBeatTime == null
+      ? undefined
+      : groups.find((group) => group.time === finalAnalysedBeatTime);
+  const lastGroup = groups[groups.length - 1];
+  if (finalAnalysedGroup) selectGroup(finalAnalysedGroup);
+  else if (lastGroup) selectGroup(lastGroup);
+
+  // Reserve two representative events per analysed section before global
+  // ranking. Select one from every section in each pass so a long or repeated
+  // section label cannot consume another section's coverage.
+  for (const fraction of [1 / 3, 2 / 3]) {
+    for (const [sectionIndex, section] of sections.entries()) {
+      const target = section.start + (section.end - section.start) * fraction;
+      const candidates = groups
+        .filter((group) => group.sectionIndex === sectionIndex && !selectedTimes.has(group.time))
+        .sort(
+          (a, b) =>
+            Math.abs(a.time - target) - Math.abs(b.time - target) || compareSlotGroupPriority(a, b),
+        );
+      const candidate = candidates[0];
+      if (candidate) selectGroup(candidate);
+    }
+  }
+
+  // Build a temporal backbone by repeatedly splitting the widest remaining
+  // gap. Reserving most, rather than all, of the cap for coverage leaves room
+  // for climaxes, downbeats and finale accents during the priority fill.
+  const coverageBudget = Math.max(selectedSlotCount, Math.floor(maxSlots * COVERAGE_SLOT_SHARE));
+  while (selectedSlotCount < coverageBudget) {
+    const selectedGroups = groups.filter((group) => selectedTimes.has(group.time));
+    let widestGap = -1;
+    let coverageCandidate: SlotGroup | undefined;
+
+    for (let i = 1; i < selectedGroups.length; i++) {
+      const left = selectedGroups[i - 1];
+      const right = selectedGroups[i];
+      if (!left || !right) continue;
+      const gap = right.time - left.time;
+      if (gap < widestGap) continue;
+
+      const midpoint = left.time + gap / 2;
+      const candidates = groups
+        .filter(
+          (group) =>
+            group.time > left.time &&
+            group.time < right.time &&
+            !selectedTimes.has(group.time) &&
+            selectedSlotCount + group.slots.length <= coverageBudget,
+        )
+        .sort(
+          (a, b) =>
+            Math.abs(a.time - midpoint) - Math.abs(b.time - midpoint) ||
+            compareSlotGroupPriority(a, b),
+        );
+      const candidate = candidates[0];
+      if (!candidate) continue;
+      if (gap > widestGap || !coverageCandidate) {
+        widestGap = gap;
+        coverageCandidate = candidate;
+      }
+    }
+
+    if (!coverageCandidate || !selectGroup(coverageCandidate, coverageBudget)) break;
+  }
+
+  // Spend the remaining cap on the strongest musical events. Groups remain
+  // atomic even when the final few slots cannot accommodate another group.
+  for (const group of rankedGroups) {
+    selectGroup(group);
   }
 
   return groups

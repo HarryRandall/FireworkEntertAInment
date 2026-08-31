@@ -16,6 +16,10 @@ const files = {
     '../../supabase/migrations/20260831032648_fix_assortment_qr_show_snapshot.sql',
     import.meta.url,
   ),
+  creditReservationRepair: new URL(
+    '../../supabase/migrations/20260831090001_fix_assortment_qr_credit_reservation.sql',
+    import.meta.url,
+  ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
   adminEditor: new URL(
     '../../app/(admin)/admin/assortments/[id]/AssortmentEditor.tsx',
@@ -31,6 +35,15 @@ const files = {
   kioskLayout: new URL('../../app/(kiosk)/layout.tsx', import.meta.url),
   kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
+  kioskShowActions: new URL(
+    '../../app/(kiosk)/a/[token]/show/[showToken]/KioskShowActions.tsx',
+    import.meta.url,
+  ),
+  kioskShowStatusRoute: new URL(
+    '../../app/api/assortments/[token]/shows/[showToken]/route.ts',
+    import.meta.url,
+  ),
+  musicAnalysisLifecycle: new URL('../../lib/music-analysis-lifecycle.server.ts', import.meta.url),
   showsRoute: new URL('../../app/api/assortments/[token]/shows/route.ts', import.meta.url),
   musicRoute: new URL('../../app/api/assortments/[token]/music/route.ts', import.meta.url),
   requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
@@ -76,6 +89,18 @@ test('QR show snapshots use an unambiguous generated show identifier', async () 
     /insert into public\.show_assortment_items \(show_id, catalogue_item_id, quantity\)\s+select new_show_id,/,
   );
   assert.doesNotMatch(repair, /\bshow_id uuid := gen_random_uuid\(\)/);
+});
+
+test('QR credit reservations use private helpers without requiring an authenticated user', async () => {
+  const repair = await source('creditReservationRepair');
+  assert.match(repair, /perform private\.ensure_ai_credit_account\(p_user_id\)/);
+  assert.match(repair, /usage_row := private\.ai_credit_usage_payload\(p_user_id\)/);
+  assert.doesNotMatch(repair, /perform public\.ensure_ai_credit_account\(p_user_id\)/);
+  assert.doesNotMatch(repair, /usage_row := public\.ai_credit_usage_payload\(p_user_id\)/);
+  assert.match(
+    repair,
+    /revoke execute on function private\.reserve_assortment_ai_credit\([\s\S]*from public, anon, authenticated, service_role/,
+  );
 });
 
 test('the protected reusable capability cannot be anonymously enumerated', async () => {
@@ -130,6 +155,40 @@ test('the kiosk flow is public, fixed and does not create a consumer identity', 
   assert.match(client, /\/api\/assortments\/\$\{token\}\/music/);
   assert.match(layout, /index: false/);
   assert.match(layout, /follow: false/);
+});
+
+test('the public generation splash has a definite viewport height', async () => {
+  const actions = await source('kioskShowActions');
+  assert.match(actions, /<div className="h-\[calc\(100dvh-4rem\)\]">/);
+  assert.match(actions, /<GeneratingShowAnimation[\s\S]*className="h-full"/);
+  assert.doesNotMatch(actions, /className="min-h-\[calc\(100dvh-4rem\)\]"/);
+});
+
+test('public song analysis can outlive a cold analyser start', async () => {
+  const musicRoute = await source('musicRoute');
+  assert.match(musicRoute, /export const maxDuration = 300/);
+  assert.match(musicRoute, /after\(async \(\) => \{[\s\S]*runMusicAnalysisForUpload/);
+});
+
+test('a valid public show capability recovers only its expired generation work', async () => {
+  const [statusRoute, lifecycle, publicServer] = await Promise.all([
+    source('kioskShowStatusRoute'),
+    source('musicAnalysisLifecycle'),
+    source('publicServer'),
+  ]);
+  assert.match(statusRoute, /export const maxDuration = 300/);
+  assert.match(
+    statusRoute,
+    /resolvePublicAssortmentShow\([\s\S]*if \(show\.generationStatus === 'running'\)[\s\S]*after\(async \(\) =>/,
+  );
+  assert.match(statusRoute, /recoverPublicAssortmentShowGeneration/);
+  assert.doesNotMatch(statusRoute, /getUser|getCurrentProfile|signIn/);
+  assert.match(publicServer, /id, user_id, assortment_id[\s\S]*music_analysis_id/);
+  assert.match(lifecycle, /\.eq\('id', params\.musicAnalysisId\)/);
+  assert.match(lifecycle, /\.eq\('user_id', params\.userId\)/);
+  assert.match(lifecycle, /deadlineReached\(analysis\.lease_expires_at\)/);
+  assert.match(lifecycle, /analysisId: params\.musicAnalysisId/);
+  assert.match(lifecycle, /showId: params\.showId/);
 });
 
 test('new assortment foreign keys and RLS lookups are indexed', async () => {
@@ -215,7 +274,7 @@ test('fast, beat, LLM, fallback and final validation all require exact use', asy
   assert.match(fast, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
   assert.match(beat, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
   assert.match(runner, /requiredProductQuantities: assortmentLedger/);
-  assert.match(runner, /quantityMismatches\.length > 0[\s\S]*runFastFallback\(\)/);
+  assert.match(runner, /quantityMismatches\.length > 0[\s\S]*runBeatFallback\(\)/);
   assert.match(runner, /requireExactProductQuantityLedger\([\s\S]*'Final cue validation'/);
 });
 

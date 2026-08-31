@@ -3405,30 +3405,8 @@ export function estimateDesignDurationSeconds(design: FireworkDesign, panDegrees
   return estimateFireworkDesignTiming(design, panDegrees).endSeconds;
 }
 
-export type LaunchPosition = { x: number; y: number; z: number };
-
-export const DEFAULT_LAUNCH_POSITIONS: LaunchPosition[] = [
-  { x: -200, y: 0, z: 0 },
-  { x: 0, y: 0, z: 0 },
-  { x: 200, y: 0, z: 0 },
-];
-
-export function parseLaunchPositions(input: unknown): LaunchPosition[] {
-  if (!Array.isArray(input)) return DEFAULT_LAUNCH_POSITIONS;
-  const positions = input
-    .slice(0, 3)
-    .map((entry): LaunchPosition | null => {
-      if (typeof entry !== 'object' || entry === null) return null;
-      const r = entry as Record<string, unknown>;
-      const x = Number(r.x);
-      const y = Number(r.y);
-      const z = Number(r.z);
-      if (![x, y, z].every(Number.isFinite)) return null;
-      return { x, y, z };
-    })
-    .filter((p): p is LaunchPosition => p !== null);
-  while (positions.length < 3) {
-    positions.push(DEFAULT_LAUNCH_POSITIONS[positions.length]);
-  }
-  return positions.slice(0, 3);
-}
+export {
+  DEFAULT_LAUNCH_POSITIONS,
+  parseLaunchPositions,
+  type LaunchPosition,
+} from './launch-positions';

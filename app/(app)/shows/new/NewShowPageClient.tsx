@@ -47,6 +47,7 @@ import { Input, Textarea } from '@/components/design-system/Input';
 import { toast } from '@/components/design-system/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
 import {
+  DEFAULT_SITE_WIDTH_FEET,
   FIREWORK_TYPES,
   FIREWORK_TYPE_KEYS,
   launchPositionsForWidth,
@@ -300,7 +301,7 @@ export default function NewShowPageClient({
   const [fireworkTypes, setFireworkTypes] = useState<Set<FireworkTypeKey>>(() => new Set());
 
   // === Step 5: site width ==================================================
-  const [widthFeet, setWidthFeet] = useState<number>(80);
+  const [widthFeet, setWidthFeet] = useState<number>(DEFAULT_SITE_WIDTH_FEET);
   const [measuredWidth, setMeasuredWidth] = useState('');
 
   // === Flow nav ============================================================

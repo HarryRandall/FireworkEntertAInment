@@ -8,6 +8,7 @@ import { getMultishotById } from '@/lib/admin/multishots.server';
 import { getAdminStyleDefaultPreviewSourceById } from '@/lib/admin/style-defaults.server';
 import {
   FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS,
+  fireworkCardPreviewShotTimeSeconds,
   type AdminFireworkCardPreviewPayload,
   type FireworkCardPreviewCue,
   type FireworkCardPreviewKind,
@@ -483,7 +484,7 @@ export async function loadCatalogueFireworkCardPreview(
     const cues: ReplayCue[] = shots.map((shot, index) => ({
       id: shot.sourceCueId,
       position: index + 1,
-      timeSeconds: Math.max(0.01, shot.timeOffsetSeconds),
+      timeSeconds: fireworkCardPreviewShotTimeSeconds(shot.kind, shot.timeOffsetSeconds),
       description: shot.firework.name,
       productId: catalogueItemId,
       launchPositionIndex: shot.launchPositionIndex ?? 0,

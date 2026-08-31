@@ -15,6 +15,7 @@ import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { DEFAULT_SHOW_STYLE, SHOW_STYLES, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';
 import {
+  buildLaunchPositionsForWidth,
   FIREWORK_TYPE_KEYS,
   MAX_SITE_WIDTH_FEET,
   MIN_SITE_WIDTH_FEET,
@@ -286,6 +287,7 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
       mood_tags: parsed.data.moodTags,
       show_style: parsed.data.showStyle,
       site_width_feet: parsed.data.siteWidthFeet ?? null,
+      launch_positions_json: buildLaunchPositionsForWidth(parsed.data.siteWidthFeet),
       selected_cue_model: selectedCueModel,
       firework_types: parsed.data.fireworkTypes?.length ? parsed.data.fireworkTypes : null,
       audio_path: audioPath,

@@ -803,6 +803,7 @@ test('detonation only spawns designed stars and trails', () => {
 
 test('outer and core star layers own their heads, burst physics, and trails', () => {
   const controls = read('components/admin/FireworkRenderControls.tsx');
+  const controlFields = read('components/admin/firework-render-controls/ControlFields.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const starAppearance = controls.slice(
@@ -883,8 +884,8 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
   assert.match(controls, /label="Burn time"/);
   assert.match(controls, /label="Burn spread"/);
   assert.match(controls, /label="Closing colour"/);
-  assert.match(controls, /function SwitchField[\s\S]*<InfoTooltip text=\{hint\} \/>/);
-  assert.doesNotMatch(controls, /<FieldHint>\{hint\}<\/FieldHint>/);
+  assert.match(controlFields, /export function SwitchField[\s\S]*<InfoTooltip text=\{hint\} \/>/);
+  assert.doesNotMatch(controlFields, /<FieldHint>\{hint\}<\/FieldHint>/);
   assert.match(
     controls,
     /\{colourEnabled \? \([\s\S]*label="Closing colour"[\s\S]*label="Colour close time"/,
@@ -984,6 +985,9 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
 
 test('unified burst trails are validated, migrated, and exposed through shared controls', () => {
   const controls = read('components/admin/FireworkRenderControls.tsx');
+  const controlFields = read('components/admin/firework-render-controls/ControlFields.tsx');
+  const calibratedSlider = read('components/admin/firework-render-controls/calibrated-slider.ts');
+  const controlSections = read('components/admin/firework-render-controls/ControlSections.tsx');
   const burstTrailControls = controls.slice(
     controls.indexOf('function renderBurstTrailControls'),
     controls.indexOf('function renderStarLayerControls'),
@@ -1021,7 +1025,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   // spacing curve, angle spread, rotation, and per-particle life controls.
   assert.match(controls, /const TRAIL_PRESET_OPTIONS/);
   assert.match(controls, /value=\{burstTrail\.preset\}/);
-  assert.match(controls, /function SubSection/);
+  assert.match(controlSections, /export function SubSection/);
   assert.match(controls, /title="Particles"/);
   assert.match(controls, /title="Placement"/);
   assert.match(controls, /label="Amount"/);
@@ -1173,11 +1177,11 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(controls, /label="Background blur"/);
   assert.match(controls, /label="Background fade"/);
   assert.match(controls, /label="Core fade"/);
-  assert.match(controls, /function CalibratedSliderField/);
-  assert.match(controls, /function rawToCalibrated/);
-  assert.match(controls, /function calibratedToRaw/);
-  assert.match(controls, /function withCalibrationDefault/);
-  assert.match(controls, /const CALIBRATED_APPEARANCE_DEFAULT = 50/);
+  assert.match(controlFields, /export function CalibratedSliderField/);
+  assert.match(calibratedSlider, /export function rawToCalibrated/);
+  assert.match(calibratedSlider, /export function calibratedToRaw/);
+  assert.match(calibratedSlider, /export function withCalibrationDefault/);
+  assert.match(calibratedSlider, /const CALIBRATED_APPEARANCE_DEFAULT = 50/);
   assert.match(controls, /calibrationDefaults\?: JsonRecord/);
   assert.match(controls, /const calibrationSource = calibrationDefaults \?\? defaults/);
   assert.match(controls, /range=\{backgroundGlowSizeRange\}/);
