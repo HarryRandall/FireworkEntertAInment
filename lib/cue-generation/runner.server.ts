@@ -971,7 +971,11 @@ export async function generateCuesForShow(params: {
       maxTubes,
       sparse: sparseGeneration,
     });
-    if (quality.issues.length > 0 && generationMode !== 'beat' && !assortmentLedger) {
+    const needsDeterministicRepair =
+      quality.issues.length > 0 &&
+      generationMode !== 'beat' &&
+      (!assortmentLedger || quality.issues.some((issue) => issue.hard));
+    if (needsDeterministicRepair) {
       console.warn('[cue-generation] final choreography needed deterministic repair', {
         issues: quality.issues,
         maximumGapSeconds: quality.maximumGapSeconds,
@@ -980,6 +984,11 @@ export async function generateCuesForShow(params: {
       });
       runBeatFallback();
       accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+      accepted = requireExactProductQuantityLedger(
+        accepted,
+        assortmentLedger,
+        'Final cue validation after deterministic repair',
+      );
       acceptedCount = accepted.length;
       quality = evaluateFinalChoreography({
         cues: accepted,

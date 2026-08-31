@@ -13,7 +13,7 @@ import {
 } from '@/lib/assortments/constraints';
 import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
-import { launchPositionCountForSlots } from './beat-sync-moments';
+import { findFinalMusicalHit, launchPositionCountForSlots } from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
@@ -127,20 +127,24 @@ export function planCuesFast(params: {
       `The physical assortment requires ${requiredCueCount} cues, above the fast planner limit of ${MAX_FAST_CUES}.`,
     );
   }
+  const finalHitSlotIndex = availabilityByProductId
+    ? (findFinalMusicalHit(slots)?.slotIndex ?? null)
+    : null;
   const selectedSlots = selectSlots(
     slots,
     direction,
     songDuration,
     surpriseImpact,
     requiredCueCount,
+    finalHitSlotIndex,
   );
   // Reserve the defining musical moments first. Their lift-adjusted launches
   // can precede ordinary slots, so chronological greedy planning could
   // otherwise consume the tube window they need.
   const planningSlots = [...selectedSlots].sort(
     (a, b) =>
-      slotProtectionPriority(b, direction, surpriseImpact) -
-        slotProtectionPriority(a, direction, surpriseImpact) ||
+      slotProtectionPriority(b, direction, surpriseImpact, finalHitSlotIndex) -
+        slotProtectionPriority(a, direction, surpriseImpact, finalHitSlotIndex) ||
       a.time - b.time ||
       a.tube - b.tube,
   );
@@ -157,6 +161,7 @@ export function planCuesFast(params: {
 
   for (const slot of planningSlots) {
     if (cues.length >= MAX_FAST_CUES) break;
+    const isFinalHit = slot.index === finalHitSlotIndex;
     const isSurprise = surpriseImpact != null && Math.abs(slot.time - surpriseImpact) <= 0.001;
     const emphasis: CueEmphasis = isSurprise
       ? 'peak'
@@ -175,8 +180,13 @@ export function planCuesFast(params: {
           return (choiceContext.usage.get(product.product.id) ?? 0) < required;
         })
       : null;
+    const remainingDirectProducts = remainingExactProducts?.filter(
+      (product) => !product.isMultiShot,
+    );
     const pools = remainingExactProducts
-      ? [remainingExactProducts]
+      ? isFinalHit && remainingDirectProducts?.length
+        ? [remainingDirectProducts, remainingExactProducts]
+        : [remainingExactProducts]
       : wantsMulti
         ? [multiPool, singlePool]
         : [singlePool];
@@ -349,22 +359,24 @@ function selectSlots(
   songDuration: number,
   surpriseImpact: number | null,
   requiredCueCount: number,
+  finalHitSlotIndex: number | null,
 ): CueSlot[] {
   const selected = new Set<number>();
   const hardExcluded = new Set<number>();
   for (const slot of slots) {
     const isSurprise = surpriseImpact != null && Math.abs(slot.time - surpriseImpact) <= 0.001;
+    const isFinalHit = slot.index === finalHitSlotIndex;
     const quietMiddle =
       direction.quietMiddle &&
       Math.abs(slot.time - songDuration * 0.5) <= Math.min(4, songDuration * 0.04);
-    if (quietMiddle && !slot.nearClimax && !isSurprise) {
+    if (quietMiddle && !slot.nearClimax && !isSurprise && !isFinalHit) {
       hardExcluded.add(slot.index);
       continue;
     }
 
     const fill = fillRatioFor(slot, direction);
     const mustKeep =
-      slotProtectionPriority(slot, direction, surpriseImpact) > 0 ||
+      slotProtectionPriority(slot, direction, surpriseImpact, finalHitSlotIndex) > 0 ||
       ((slot.vibe === 'chorus' || slot.vibe === 'drop') && slot.isDownbeat);
     if (mustKeep || deterministicUnit(slot.index, slot.time, 17) <= fill) {
       selected.add(slot.index);
@@ -393,11 +405,14 @@ function selectSlots(
   }
 
   const protectedSlots = selectedSlots
-    .filter((slot) => slotProtectionPriority(slot, direction, surpriseImpact) > 0)
+    .filter(
+      (slot) => slotProtectionPriority(slot, direction, surpriseImpact, finalHitSlotIndex) > 0,
+    )
     .sort(
       (a, b) =>
-        slotProtectionPriority(b, direction, surpriseImpact) -
-          slotProtectionPriority(a, direction, surpriseImpact) || a.time - b.time,
+        slotProtectionPriority(b, direction, surpriseImpact, finalHitSlotIndex) -
+          slotProtectionPriority(a, direction, surpriseImpact, finalHitSlotIndex) ||
+        a.time - b.time,
     );
   const capped = new Set(protectedSlots.slice(0, MAX_FAST_CUES).map((slot) => slot.index));
   const remaining = selectedSlots
@@ -416,7 +431,9 @@ function slotProtectionPriority(
   slot: CueSlot,
   direction: CreativeDirection,
   surpriseImpact: number | null,
+  finalHitSlotIndex: number | null,
 ): number {
+  if (slot.index === finalHitSlotIndex) return 6;
   if (surpriseImpact != null && Math.abs(slot.time - surpriseImpact) <= 0.001) return 5;
   if (slot.nearClimax) return 4;
   if (direction.softEnding && slot.finale) return 0;

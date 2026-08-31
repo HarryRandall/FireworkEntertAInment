@@ -13,7 +13,12 @@ import {
 } from '@/lib/assortments/constraints';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { CueSlot } from '@/lib/beat-grid.server';
-import { buildBeatMoments, type BeatMoment } from './beat-sync-moments';
+import {
+  buildBeatMoments,
+  findFinalMusicalHit,
+  type BeatMoment,
+  type FinalMusicalHit,
+} from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { parsePromptConstraints, productEffectFamilies } from './prompt-constraints';
 import type { PlannedCue } from './fast-planner';
@@ -46,6 +51,10 @@ type BeatProductPools = {
   required: FireworkSpecification[];
 };
 
+type PlanningTarget = BeatMoment & {
+  exactFinalRole: 'reserved' | 'remainder' | null;
+};
+
 export function planCuesOnBeats(params: {
   analysis: AnalyserResult | null;
   slots: CueSlot[];
@@ -69,6 +78,7 @@ export function planCuesOnBeats(params: {
     .join(' ');
   const direction = parseCreativeDirection(briefText, asShowStyleKey(brief?.show_style));
   const targets = buildBeatMoments({ slots, songDuration, direction });
+  const finalMusicalHit = availabilityByProductId ? findFinalMusicalHit(slots) : null;
   const productPools = pickProductPools(products, brief);
   if (!slots.length || (!productPools.cadence.length && !availabilityByProductId)) {
     return {
@@ -92,7 +102,7 @@ export function planCuesOnBeats(params: {
   const sustainedSections = new Set<string>();
   // Reserve requested surprises and structural peaks before ordinary beats.
   // Lift compensation can put their launches earlier than the beats around them.
-  const planningTargets = [...targets].sort(
+  const planningTargets = splitFinalTarget(targets, finalMusicalHit).sort(
     (a, b) =>
       beatProtectionPriority(b, direction) - beatProtectionPriority(a, direction) ||
       a.time - b.time,
@@ -106,11 +116,22 @@ export function planCuesOnBeats(params: {
       break;
     }
     const target = planningTargets[i];
+    const isFinalMusicalHit = target.exactFinalRole === 'reserved';
+    const isExactFinalTarget = target.exactFinalRole != null;
     const impactTimeSeconds = Number(target.time.toFixed(3));
     const emphasis = emphasisForTarget(target, direction);
-    const targetTubes = tubesForTarget(target, direction, maxTubes);
-    const wantsSustained = shouldStartSustainedLayer(target, direction, sustainedSections);
-    const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained);
+    const targetTubes = isExactFinalTarget
+      ? target.tubes.filter((tube) => tube < maxTubes)
+      : tubesForTarget(target, direction, maxTubes);
+    const wantsSustained =
+      !isExactFinalTarget && shouldStartSustainedLayer(target, direction, sustainedSections);
+    const remainingExactQuantity = availabilityByProductId
+      ? Math.max(0, requiredCueCount - cues.length)
+      : null;
+    const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained).slice(
+      0,
+      remainingExactQuantity ?? targetTubes.length,
+    );
     const occupiedStart = occupied.length;
     const cueStart = cues.length;
     const productRotorStart = productRotor;
@@ -133,6 +154,7 @@ export function planCuesOnBeats(params: {
             preferredProductOrder,
             productUsage,
             availabilityByProductId,
+            isFinalMusicalHit,
           )
         : preferredProductOrder;
       let accepted:
@@ -198,7 +220,7 @@ export function planCuesOnBeats(params: {
 
     if (
       !shouldKeepPlannedMoment({
-        requestedTubeCount: targetTubes.length,
+        requestedTubeCount: tubeOrder.length,
         acceptedTubeCount: acceptedForMoment,
         vibe: target.vibe,
         nearClimax: target.nearClimax,
@@ -234,18 +256,24 @@ function orderRemainingExactProducts(
   preferred: FireworkSpecification[],
   usage: ReadonlyMap<string, number>,
   ledger: ProductQuantityLedger,
+  preferDirect: boolean,
 ): FireworkSpecification[] {
   const preferredIndex = new Map(preferred.map((product, index) => [product.id, index]));
   return products
     .filter((product) => (usage.get(product.id) ?? 0) < (ledger.get(product.id) ?? 0))
     .sort((left, right) => {
+      const directRank = (product: FireworkSpecification) =>
+        preferDirect && (product.shotCount ?? 1) > 1 ? 1 : 0;
+      const directDifference = directRank(left) - directRank(right);
+      if (directDifference !== 0) return directDifference;
       const leftRank = preferredIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER;
       const rightRank = preferredIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER;
       return leftRank - rightRank || left.id.localeCompare(right.id);
     });
 }
 
-function beatProtectionPriority(target: BeatMoment, direction: CreativeDirection): number {
+function beatProtectionPriority(target: PlanningTarget, direction: CreativeDirection): number {
+  if (target.exactFinalRole === 'reserved') return 6;
   if (target.isSurprise) return 5;
   if (target.nearClimax) return 4;
   if (direction.softEnding && target.finale) return 0;
@@ -254,6 +282,48 @@ function beatProtectionPriority(target: BeatMoment, direction: CreativeDirection
   if (target.finale && target.isDownbeat) return 2;
   if (target.isSectionStart && (target.vibe === 'chorus' || target.vibe === 'drop')) return 2;
   return 0;
+}
+
+function splitFinalTarget(
+  targets: BeatMoment[],
+  finalMusicalHit: FinalMusicalHit | null,
+): PlanningTarget[] {
+  return targets.flatMap((target): PlanningTarget[] => {
+    if (!finalMusicalHit || Math.abs(target.time - finalMusicalHit.time) > 0.001) {
+      return [{ ...target, exactFinalRole: null }];
+    }
+
+    const reservedTube = target.tubes.includes(finalMusicalHit.tube)
+      ? finalMusicalHit.tube
+      : target.tubes[0];
+    if (reservedTube == null) return [{ ...target, exactFinalRole: null }];
+
+    const reservedSlotIndices = target.slotIndices.map((slotIndex, tube) =>
+      tube === reservedTube ? slotIndex : null,
+    ) as BeatMoment['slotIndices'];
+    const reserved: PlanningTarget = {
+      ...target,
+      tubes: [reservedTube],
+      slotIndices: reservedSlotIndices,
+      exactFinalRole: 'reserved',
+    };
+    const remainingTubes = target.tubes.filter((tube) => tube !== reservedTube);
+    if (!remainingTubes.length) return [reserved];
+
+    const remainderSlotIndices = target.slotIndices.map((slotIndex, tube) =>
+      tube === reservedTube ? null : slotIndex,
+    ) as BeatMoment['slotIndices'];
+    const remainder: PlanningTarget = {
+      ...target,
+      sourceIndex:
+        Math.min(...remainderSlotIndices.filter((index): index is number => index != null)) ||
+        target.sourceIndex,
+      tubes: remainingTubes,
+      slotIndices: remainderSlotIndices,
+      exactFinalRole: 'remainder',
+    };
+    return [reserved, remainder];
+  });
 }
 
 /**
