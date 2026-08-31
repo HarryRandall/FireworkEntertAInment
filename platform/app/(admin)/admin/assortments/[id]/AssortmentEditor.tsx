@@ -1,0 +1,289 @@
+'use client';
+
+/** Assortment editor: name/description/price/active fields, plus a member catalogue-item picker with quantity. Deliberately no version history / JSON panel / render preview rail — those belong to the firework/effect editors, not this. */
+
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, Trash2 } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button';
+import { Card } from '@/app/components/ui/Card';
+import { Field, FieldLabel } from '@/app/components/ui/Field';
+import { Input } from '@/app/components/ui/Input';
+import { NumberInput } from '@/app/components/ui/NumberInput';
+import { Toggle } from '@/app/components/ui/Toggle';
+import { toast } from '@/app/components/ui/toast';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { formatBudget } from '@/lib/show-domain';
+import type {
+  AdminAssortmentDetail,
+  AdminCatalogueItemOption,
+} from '@/lib/admin/assortments.server';
+import {
+  deleteAssortmentItem,
+  searchCatalogueItems,
+  updateAssortment,
+  upsertAssortmentItem,
+} from '@/app/actions/admin-assortments';
+
+export function AssortmentEditor({ assortment }: { assortment: AdminAssortmentDetail }) {
+  const router = useRouter();
+  const [name, setName] = useState(assortment.name);
+  const [description, setDescription] = useState(assortment.description ?? '');
+  const [priceDollars, setPriceDollars] = useState(assortment.priceCents / 100);
+  const [isActive, setIsActive] = useState(assortment.isActive);
+  const [saving, startSaving] = useTransition();
+
+  function save() {
+    startSaving(async () => {
+      const result = await updateAssortment({
+        id: assortment.id,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        priceCents: Math.round(priceDollars * 100),
+        isActive,
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success('Assortment saved');
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+      <Card className="space-y-4 p-5">
+        <Field>
+          <FieldLabel htmlFor="assortment-name">Name</FieldLabel>
+          <Input id="assortment-name" value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="assortment-description">Description</FieldLabel>
+          <textarea
+            id="assortment-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            className="border-border bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-3 focus-visible:outline-none"
+          />
+        </Field>
+        <div className="flex flex-wrap items-end gap-6">
+          <Field className="w-40">
+            <FieldLabel htmlFor="assortment-price">Price (USD)</FieldLabel>
+            <NumberInput
+              value={priceDollars}
+              onChange={setPriceDollars}
+              min={0}
+              step={0.25}
+              ariaLabel="Price in dollars"
+            />
+          </Field>
+          <Toggle
+            checked={isActive}
+            onChange={setIsActive}
+            label="Active"
+            description="Visible to kiosk shoppers once on"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={save} loading={saving}>
+            Save
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="space-y-4 p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-foreground text-sm font-semibold">
+            Products in this pack ({assortment.items.length})
+          </h2>
+          <p className="font-mono text-xs tabular-nums">{formatBudget(assortment.priceCents)}</p>
+        </div>
+
+        <div className="divide-y">
+          {assortment.items.map((item) => (
+            <AssortmentItemRow key={item.id} assortmentId={assortment.id} item={item} />
+          ))}
+          {assortment.items.length === 0 ? (
+            <p className="text-muted-foreground py-4 text-sm">No products added yet.</p>
+          ) : null}
+        </div>
+
+        <AddCatalogueItemPicker
+          assortmentId={assortment.id}
+          existingCatalogueItemIds={assortment.items.map((item) => item.catalogueItemId)}
+          nextSortOrder={assortment.items.length}
+        />
+      </Card>
+    </div>
+  );
+}
+
+function AssortmentItemRow({
+  assortmentId,
+  item,
+}: {
+  assortmentId: string;
+  item: AdminAssortmentDetail['items'][number];
+}) {
+  const router = useRouter();
+  const [quantity, setQuantity] = useState(item.quantity);
+  const [pending, startTransition] = useTransition();
+
+  function updateQuantity(next: number) {
+    setQuantity(next);
+    startTransition(async () => {
+      const result = await upsertAssortmentItem({
+        assortmentId,
+        catalogueItemId: item.catalogueItemId,
+        quantity: next,
+        sortOrder: item.sortOrder,
+      });
+      if (!result.ok) toast.error(result.error);
+      else router.refresh();
+    });
+  }
+
+  function remove() {
+    startTransition(async () => {
+      const result = await deleteAssortmentItem({ assortmentId, assortmentItemId: item.id });
+      if (!result.ok) toast.error(result.error);
+      else router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-foreground truncate text-sm font-medium">{item.name}</p>
+        <p className="text-muted-foreground truncate font-mono text-xs">
+          {item.partNumber}
+          {item.cheapestPriceCents != null ? ` · ${formatBudget(item.cheapestPriceCents)}` : ''}
+        </p>
+      </div>
+      <NumberInput
+        value={quantity}
+        onChange={updateQuantity}
+        min={1}
+        max={999}
+        ariaLabel={`Quantity of ${item.name}`}
+        className="w-28"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={pending}
+        onClick={remove}
+        aria-label={`Remove ${item.name}`}
+      >
+        <Trash2 size={14} aria-hidden="true" />
+      </Button>
+    </div>
+  );
+}
+
+function AddCatalogueItemPicker({
+  assortmentId,
+  existingCatalogueItemIds,
+  nextSortOrder,
+}: {
+  assortmentId: string;
+  existingCatalogueItemIds: string[];
+  nextSortOrder: number;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [options, setOptions] = useState<AdminCatalogueItemOption[]>([]);
+  const [adding, startAdding] = useTransition();
+  const requestTokenRef = useRef(0);
+
+  useEffect(() => {
+    if (!open) return;
+    const token = requestTokenRef.current + 1;
+    requestTokenRef.current = token;
+    const timeout = setTimeout(() => {
+      void searchCatalogueItems(query).then((results) => {
+        if (requestTokenRef.current === token) setOptions(results);
+      });
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [open, query]);
+
+  function addItem(catalogueItemId: string) {
+    startAdding(async () => {
+      const result = await upsertAssortmentItem({
+        assortmentId,
+        catalogueItemId,
+        quantity: 1,
+        sortOrder: nextSortOrder,
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setOpen(false);
+      setQuery('');
+      router.refresh();
+    });
+  }
+
+  const existing = new Set(existingCatalogueItemIds);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="secondary" className="w-full justify-between">
+          Add a product
+          <ChevronDown size={15} aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(28rem,calc(100vw-2rem))] p-0">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search name or part number…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList className="max-h-72">
+            <CommandEmpty>No catalogue items match that search.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.id}
+                  value={option.id}
+                  disabled={existing.has(option.id) || adding}
+                  onSelect={() => addItem(option.id)}
+                  className="items-start gap-3 px-3 py-2.5"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{option.name}</span>
+                    <span className="text-muted-foreground mt-0.5 block truncate font-mono text-xs">
+                      {option.partNumber}
+                      {option.cheapestPriceCents != null
+                        ? ` · ${formatBudget(option.cheapestPriceCents)}`
+                        : ' · no supplier price'}
+                    </span>
+                  </span>
+                  {existing.has(option.id) ? (
+                    <span className="text-muted-foreground text-xs">Added</span>
+                  ) : null}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

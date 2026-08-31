@@ -33,7 +33,12 @@ import { fireworkOccupancyDurationSeconds } from '@/lib/show-domain';
 import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import { parseCreativeDirection } from './creative-direction';
-import { loadAnalysisState, loadBrief, type AnalysisJsonLoadResult } from './loaders.server';
+import {
+  loadAnalysisState,
+  loadAssortmentCatalogueItemIds,
+  loadBrief,
+  type AnalysisJsonLoadResult,
+} from './loaders.server';
 import {
   buildAnalysisSummary,
   buildSystemPrompt,
@@ -475,6 +480,21 @@ export async function generateCuesForShow(params: {
     if (allowedTypes) {
       const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
       if (filtered.length >= 3) products = filtered;
+    }
+    // A kiosk show generated from a scanned assortment must only draw from
+    // that bundle's members — the shopper's price and shopping list are a
+    // promise tied to the physical pack they scanned, not the full
+    // catalogue. Unlike the firework-type preference above, this is not
+    // optional: fail closed rather than silently widening the pool.
+    if (brief.assortment_id) {
+      const assortmentItemIds = await loadAssortmentCatalogueItemIds(
+        supabase,
+        brief.assortment_id,
+      );
+      products = products.filter((product) => assortmentItemIds.has(product.id));
+      if (products.length === 0) {
+        throw new Error('This assortment has no purchasable products available right now.');
+      }
     }
     catalogueCount = products.length;
     timings.loadInputsMs = elapsedMs(loadStart);

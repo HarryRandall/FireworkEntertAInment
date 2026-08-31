@@ -42,6 +42,8 @@ export type Show = {
   coverShader: ShowCover | null;
   /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
   coverImagePath: string | null;
+  /** In-store assortment this show was generated from, if any (kiosk Entry Point 2 flow). */
+  assortmentId: string | null;
   updatedAt: string;
 };
 
