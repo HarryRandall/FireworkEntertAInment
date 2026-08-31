@@ -39,6 +39,11 @@ const files = {
     '../../app/(kiosk)/a/[token]/show/[showToken]/KioskShowActions.tsx',
     import.meta.url,
   ),
+  kioskShowStatusRoute: new URL(
+    '../../app/api/assortments/[token]/shows/[showToken]/route.ts',
+    import.meta.url,
+  ),
+  musicAnalysisLifecycle: new URL('../../lib/music-analysis-lifecycle.server.ts', import.meta.url),
   showsRoute: new URL('../../app/api/assortments/[token]/shows/route.ts', import.meta.url),
   musicRoute: new URL('../../app/api/assortments/[token]/music/route.ts', import.meta.url),
   requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
@@ -163,6 +168,27 @@ test('public song analysis can outlive a cold analyser start', async () => {
   const musicRoute = await source('musicRoute');
   assert.match(musicRoute, /export const maxDuration = 300/);
   assert.match(musicRoute, /after\(async \(\) => \{[\s\S]*runMusicAnalysisForUpload/);
+});
+
+test('a valid public show capability recovers only its expired generation work', async () => {
+  const [statusRoute, lifecycle, publicServer] = await Promise.all([
+    source('kioskShowStatusRoute'),
+    source('musicAnalysisLifecycle'),
+    source('publicServer'),
+  ]);
+  assert.match(statusRoute, /export const maxDuration = 300/);
+  assert.match(
+    statusRoute,
+    /resolvePublicAssortmentShow\([\s\S]*if \(show\.generationStatus === 'running'\)[\s\S]*after\(async \(\) =>/,
+  );
+  assert.match(statusRoute, /recoverPublicAssortmentShowGeneration/);
+  assert.doesNotMatch(statusRoute, /getUser|getCurrentProfile|signIn/);
+  assert.match(publicServer, /id, user_id, assortment_id[\s\S]*music_analysis_id/);
+  assert.match(lifecycle, /\.eq\('id', params\.musicAnalysisId\)/);
+  assert.match(lifecycle, /\.eq\('user_id', params\.userId\)/);
+  assert.match(lifecycle, /deadlineReached\(analysis\.lease_expires_at\)/);
+  assert.match(lifecycle, /analysisId: params\.musicAnalysisId/);
+  assert.match(lifecycle, /showId: params\.showId/);
 });
 
 test('new assortment foreign keys and RLS lookups are indexed', async () => {

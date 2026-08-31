@@ -52,8 +52,10 @@ export type AssortmentSongSelection = {
 
 export type PublicAssortmentShow = {
   id: string;
+  fundingUserId: string;
   assortmentId: string;
   selectionId: string;
+  musicAnalysisId: string;
   title: string;
   durationSeconds: number | null;
   budgetCents: number | null;
@@ -375,9 +377,9 @@ export async function resolvePublicAssortmentShow(params: {
   const { data, error } = await supabase
     .from('shows')
     .select(
-      `id, assortment_id, assortment_song_selection_id, title, duration_seconds,
-       budget_cents, total_cents, effects_count, audio_path, generation_status,
-       generation_error, generated_cue_count,
+      `id, user_id, assortment_id, assortment_song_selection_id, music_analysis_id,
+       title, duration_seconds, budget_cents, total_cents, effects_count,
+       audio_path, generation_status, generation_error, generated_cue_count,
        show_assortment_items (
          quantity,
          catalogue_items (id, name, part_number, manufacturer)
@@ -391,7 +393,14 @@ export async function resolvePublicAssortmentShow(params: {
     console.error('[assortment-qr] public show lookup failed:', error);
     throw new Error('The generated show could not be loaded.');
   }
-  if (!data?.assortment_id || !data.assortment_song_selection_id) return null;
+  if (
+    !data?.user_id ||
+    !data.assortment_id ||
+    !data.assortment_song_selection_id ||
+    !data.music_analysis_id
+  ) {
+    return null;
+  }
   const snapshotItems = (data.show_assortment_items ?? []).flatMap((item) => {
     const catalogueItem = Array.isArray(item.catalogue_items)
       ? item.catalogue_items[0]
@@ -412,8 +421,10 @@ export async function resolvePublicAssortmentShow(params: {
   }
   return {
     id: data.id,
+    fundingUserId: data.user_id,
     assortmentId: data.assortment_id,
     selectionId: data.assortment_song_selection_id,
+    musicAnalysisId: data.music_analysis_id,
     title: data.title,
     durationSeconds: data.duration_seconds,
     budgetCents: data.budget_cents,
