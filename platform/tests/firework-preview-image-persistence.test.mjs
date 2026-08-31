@@ -252,7 +252,7 @@ test('admin POST validates WebP capture metadata and the catalogue route stays r
   const publicRoute = read('app/api/catalogue/[id]/preview/route.ts');
 
   assert.equal(adminRoute.match(/requirePermission\('admin\.manage_catalogue'\)/g)?.length, 2);
-  assert.equal(packageJson.dependencies.sharp, '^0.34.5');
+  assert.equal(packageJson.dependencies.sharp, '^0.35.4');
   assert.match(adminRoute, /import sharp from 'sharp'/);
   assert.match(adminRoute, /const MAX_POSTER_BYTES = 2 \* 1024 \* 1024/);
   assert.match(adminRoute, /const MAX_POSTER_INPUT_PIXELS = POSTER_WIDTH \* POSTER_HEIGHT/);

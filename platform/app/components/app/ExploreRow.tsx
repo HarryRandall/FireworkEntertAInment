@@ -78,7 +78,7 @@ export function ExploreRow({
           ref={scrollerRef}
           data-explore-scroll-viewport
           className={cn(
-            '-mt-4 -mb-6 flex gap-4 overflow-x-auto pt-4 pb-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            '-mt-4 -mb-6 flex [scrollbar-width:none] gap-4 overflow-x-auto pt-4 pb-7 [&::-webkit-scrollbar]:hidden',
             prefersReducedMotion ? 'scroll-auto' : 'scroll-smooth',
           )}
         >

@@ -337,7 +337,7 @@ export function HomeCollectionsSection() {
         ) : null}
         <div
           ref={scrollerRef}
-          className="flex snap-x snap-mandatory scroll-px-4 gap-5 overflow-x-auto px-4 pt-1 pb-4 [scrollbar-width:none] sm:scroll-px-6 sm:gap-6 sm:px-6 lg:grid lg:grid-cols-5 lg:gap-[clamp(1.25rem,2.4vw,2.75rem)] lg:overflow-visible lg:px-0 lg:pb-2 [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-5 overflow-x-auto px-4 pt-1 pb-4 sm:scroll-px-6 sm:gap-6 sm:px-6 lg:grid lg:grid-cols-5 lg:gap-[clamp(1.25rem,2.4vw,2.75rem)] lg:overflow-visible lg:px-0 lg:pb-2 [&::-webkit-scrollbar]:hidden"
         >
           {COLLECTION_CARDS.map((card) => (
             <Link

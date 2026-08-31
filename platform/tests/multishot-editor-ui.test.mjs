@@ -167,7 +167,7 @@ test('multishot timeline keeps clips on explicit expandable tracks', () => {
   assert.match(timeline, /grouped\.get\(shot\.timelineTrackIndex\)/);
   assert.match(timeline, /onClick=\{onAddTrack\}/);
   assert.match(timeline, /onClick=\{\(\) => onAdd\(trackIndex\)\}/);
-  assert.match(timeline, /max-h-\[420px\] overflow-auto/);
+  assert.match(timeline, /max-h-\[420px\][^\"]*overflow-auto/);
   assert.match(timeline, /sticky top-0/);
   assert.match(timeline, /sticky left-0/);
   assert.match(timeline, /type="range"/);
