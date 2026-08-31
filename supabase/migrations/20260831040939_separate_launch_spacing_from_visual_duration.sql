@@ -19,7 +19,9 @@ $$;
 revoke execute on function private.show_launch_interval_seconds()
   from public, anon, authenticated, service_role;
 
-create or replace function private.assert_show_timeline_non_overlapping()
+create or replace function private.assert_show_timeline_non_overlapping(
+  p_show_ids uuid[] default null::uuid[]
+)
 returns void
 language plpgsql
 volatile
@@ -29,6 +31,12 @@ as $$
 declare
   conflict record;
 begin
+  -- Preserve the deployed scoped-preflight contract. An explicit empty set
+  -- means the caller has proved that no current show needs revalidation.
+  if p_show_ids is not null and coalesce(array_length(p_show_ids, 1), 0) = 0 then
+    return;
+  end if;
+
   select
     first_item.show_id,
     first_item.id as first_cue_id,
@@ -52,7 +60,8 @@ begin
       second_item.launch_position_index
     ) as positions
   ) second_occupancy
-  where first_occupancy.positions && second_occupancy.positions
+  where (p_show_ids is null or first_item.show_id = any(p_show_ids))
+    and first_occupancy.positions && second_occupancy.positions
     and first_item.time_seconds
           < second_item.time_seconds + private.show_launch_interval_seconds()
     and second_item.time_seconds
@@ -72,10 +81,10 @@ begin
 end;
 $$;
 
-revoke execute on function private.assert_show_timeline_non_overlapping()
+revoke execute on function private.assert_show_timeline_non_overlapping(uuid[])
   from public, anon, authenticated, service_role;
 
-select private.assert_show_timeline_non_overlapping();
+select private.assert_show_timeline_non_overlapping(null::uuid[]);
 
 create or replace function private.reject_overlapping_show_timeline_item()
 returns trigger
