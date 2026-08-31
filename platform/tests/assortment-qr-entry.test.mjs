@@ -26,6 +26,8 @@ const files = {
   showsRoute: new URL('../app/api/assortments/[token]/shows/route.ts', import.meta.url),
   qrRoute: new URL('../app/api/admin/assortments/[id]/qr/route.ts', import.meta.url),
   packageJson: new URL('../package.json', import.meta.url),
+  runbook: new URL('../docs/assortment-qr-entry.md', import.meta.url),
+  environment: new URL('../.env.example', import.meta.url),
 };
 
 async function source(key) {
@@ -222,4 +224,15 @@ test('QR preview and download use the stable protected link', async () => {
   assert.match(route, /renderAssortmentQrSvg/);
   assert.match(route, /Content-Disposition/);
   assert.match(route, /image\/svg\+xml/);
+});
+
+test('the QR runbook documents its production rate-limit prerequisite', async () => {
+  const [runbook, environment] = await Promise.all([source('runbook'), source('environment')]);
+
+  assert.match(runbook, /UPSTASH_REDIS_REST_URL/);
+  assert.match(runbook, /UPSTASH_REDIS_REST_TOKEN/);
+  assert.match(runbook, /return HTTP 503/);
+  assert.match(environment, /public assortment QR flows/);
+  assert.match(environment, /Public QR endpoints fail/);
+  assert.match(environment, /closed without this durable cache/);
 });

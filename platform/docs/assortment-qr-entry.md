@@ -28,3 +28,14 @@ Deactivated, revoked or invalid links fail closed. Hard deletion remains a
 FIR-178 follow-up policy; replay and audit rely on `creation_source`, the song
 selection and the immutable product snapshot if `shows.assortment_id` is later
 set to null by FIR-178's foreign key.
+
+## Production prerequisites
+
+- Apply `20260829090000_add_assortment_qr_entry.sql` before serving the public
+  routes.
+- Configure `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Public QR
+  song, generation and status endpoints deliberately return HTTP 503 in
+  production when the shared rate limiter is unavailable.
+- Give each link's funding user enough AI credit for music analysis and show
+  generation. Reservation failures remain visible failures and do not create a
+  partially funded show.
