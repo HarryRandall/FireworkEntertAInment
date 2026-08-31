@@ -159,6 +159,12 @@ test('the public generation splash has a definite viewport height', async () => 
   assert.doesNotMatch(actions, /className="min-h-\[calc\(100dvh-4rem\)\]"/);
 });
 
+test('public song analysis can outlive a cold analyser start', async () => {
+  const musicRoute = await source('musicRoute');
+  assert.match(musicRoute, /export const maxDuration = 300/);
+  assert.match(musicRoute, /after\(async \(\) => \{[\s\S]*runMusicAnalysisForUpload/);
+});
+
 test('new assortment foreign keys and RLS lookups are indexed', async () => {
   const migration = await source('migration');
   assert.match(migration, /assortment_public_links \(funding_user_id\)/);
