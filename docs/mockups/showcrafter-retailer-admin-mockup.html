@@ -1,0 +1,1040 @@
+<title>ShowCrafter — retailer admin</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-muted: #f4f4f6;
+    --bg-subtle: #ededf1;
+    --bg-emphasis: #e1e1e7;
+    --border: #e5e5ea;
+    --border-strong: #d9d9e2;
+    --ink: #24242a;
+    --ink-2: #3d3d45;
+    --ink-3: #62646d;
+    --ink-4: #8b8d97;
+    --primary: #075f40;
+    --primary-fg: #ffffff;
+    --hl: #15bd8b;
+    --hl-soft: #d7f3e9;
+    --hl-ink: #075f40;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --show-gold: #efb93f;
+    --show-violet: #8f7be8;
+    --show-sky: #38bdf8;
+    --sidebar-bg: #f4f4f6;
+    --sidebar-active-bg: #e1e1e7;
+    --sidebar-fg: #62646d;
+    --sidebar-active-fg: #24242a;
+    --win-shadow: 0 24px 60px -28px rgba(15, 15, 20, 0.32);
+    --sans: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono:
+      'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b;
+      --bg-muted: #050507;
+      --bg-subtle: #171719;
+      --bg-emphasis: #242428;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --ink: #fafafa;
+      --ink-2: #e4e4e7;
+      --ink-3: #a1a1aa;
+      --ink-4: #71717a;
+      --primary: #1fd093;
+      --primary-fg: #053024;
+      --hl: #2ee0a3;
+      --hl-soft: #0f3026;
+      --hl-ink: #46e7b0;
+      --warn: #fbbf24;
+      --warn-soft: #2a1a05;
+      --sidebar-bg: #09090b;
+      --sidebar-active-bg: #171719;
+      --sidebar-fg: #a1a1aa;
+      --sidebar-active-fg: #fafafa;
+      --win-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #09090b;
+    --bg-muted: #050507;
+    --bg-subtle: #171719;
+    --bg-emphasis: #242428;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --ink: #fafafa;
+    --ink-2: #e4e4e7;
+    --ink-3: #a1a1aa;
+    --ink-4: #71717a;
+    --primary: #1fd093;
+    --primary-fg: #053024;
+    --hl: #2ee0a3;
+    --hl-soft: #0f3026;
+    --hl-ink: #46e7b0;
+    --warn: #fbbf24;
+    --warn-soft: #2a1a05;
+    --sidebar-bg: #09090b;
+    --sidebar-active-bg: #171719;
+    --sidebar-fg: #a1a1aa;
+    --sidebar-active-fg: #fafafa;
+    --win-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    --bg: #ffffff;
+    --bg-muted: #f4f4f6;
+    --bg-subtle: #ededf1;
+    --bg-emphasis: #e1e1e7;
+    --border: #e5e5ea;
+    --border-strong: #d9d9e2;
+    --ink: #24242a;
+    --ink-2: #3d3d45;
+    --ink-3: #62646d;
+    --ink-4: #8b8d97;
+    --primary: #075f40;
+    --primary-fg: #ffffff;
+    --hl: #15bd8b;
+    --hl-soft: #d7f3e9;
+    --hl-ink: #075f40;
+    --warn: #d97706;
+    --warn-soft: #fffbeb;
+    --sidebar-bg: #f4f4f6;
+    --sidebar-active-bg: #e1e1e7;
+    --sidebar-fg: #62646d;
+    --sidebar-active-fg: #24242a;
+    --win-shadow: 0 24px 60px -28px rgba(15, 15, 20, 0.32);
+    color-scheme: light;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+  }
+  .page {
+    font-family: var(--sans);
+    color: var(--ink-2);
+    background: var(--bg);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hl-ink);
+  }
+  h1 {
+    font-size: clamp(26px, 3.4vw, 34px);
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.4rem 0 0.6rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    max-width: 66ch;
+    font-size: 15.5px;
+    line-height: 1.65;
+    color: var(--ink-3);
+    margin: 0 0 2.2rem;
+  }
+  .lede strong {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+
+  .icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+  }
+
+  /* ---- browser window ---- */
+  .winwrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+  }
+  .win {
+    width: 100%;
+    max-width: 960px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+      var(--win-shadow),
+      inset 0 0 0 1px var(--border);
+    background: var(--bg);
+  }
+  .win-chrome {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--bg-muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .win-dots {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .win-dots span {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--border-strong);
+  }
+  .win-addr {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--bg-subtle);
+    border-radius: 7px;
+    padding: 5px 12px;
+  }
+  .win-addr .icon {
+    width: 11px;
+    height: 11px;
+    color: var(--ink-4);
+  }
+  .win-addr span {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+
+  .win-body {
+    display: flex;
+    min-height: 480px;
+  }
+
+  /* sidebar */
+  .adm-sidebar {
+    width: 196px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .adm-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 8px 16px;
+  }
+  .adm-brand .mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: var(--ink);
+    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .adm-brand-text strong {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .adm-brand-text span {
+    font-size: 10.5px;
+    color: var(--ink-4);
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 9px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--sidebar-fg);
+  }
+  .nav-item .icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+  .nav-item.active {
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-fg);
+    font-weight: 600;
+  }
+  .nav-item .chev {
+    margin-left: auto;
+    width: 12px;
+    height: 12px;
+    color: var(--ink-4);
+  }
+
+  /* main */
+  .adm-main {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .adm-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .adm-topbar h2 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+  }
+  .adm-topbar .sub {
+    font-size: 11.5px;
+    color: var(--ink-4);
+    margin-top: 2px;
+  }
+  .credit-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--hl-soft);
+    color: var(--hl-ink);
+    border-radius: 999px;
+    padding: 6px 12px 6px 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .credit-chip .icon {
+    width: 13px;
+    height: 13px;
+  }
+  .credit-chip .amt {
+    font-family: var(--mono);
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .stat-card {
+    background: var(--bg-muted);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .stat-card .lbl {
+    font-size: 10.5px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .stat-card .val {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-top: 3px;
+  }
+  .stat-card .hint {
+    font-size: 10.5px;
+    color: var(--ink-4);
+    margin-top: 3px;
+  }
+
+  .split-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 14px;
+  }
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .panel h3 {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 12px;
+  }
+
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 110px;
+  }
+  .chart .bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    background: var(--bg-emphasis);
+  }
+  .chart .bar.now {
+    background: var(--hl);
+  }
+
+  .activity-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .activity-row .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--hl);
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .activity-row .txt {
+    font-size: 11.5px;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .activity-row .txt .amt {
+    font-family: var(--mono);
+    color: var(--ink-3);
+  }
+  .activity-row .time {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--ink-4);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* ---- feature card grid ---- */
+  .feat-eyebrow {
+    margin: 0 0 0.4rem;
+  }
+  .feat-heading {
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.2rem 0 1.6rem;
+    letter-spacing: -0.01em;
+  }
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feat-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .feat-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .feat-head .ic {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    background: var(--hl-soft);
+    color: var(--hl-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .feat-head .ic .icon {
+    width: 13px;
+    height: 13px;
+  }
+  .feat-head strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .feat-desc {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  .feat-mock {
+    background: var(--bg-muted);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 108px;
+    justify-content: center;
+  }
+
+  .mini-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 9px;
+    font-size: 10.5px;
+  }
+  .mini-row .n {
+    color: var(--ink-2);
+  }
+  .mini-row .p {
+    font-family: var(--mono);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .mini-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--hl-ink);
+    background: var(--hl-soft);
+    border-radius: 7px;
+    padding: 5px 9px;
+  }
+  .mini-btn .icon {
+    width: 11px;
+    height: 11px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-dot.live {
+    background: var(--hl);
+  }
+  .status-dot.draft {
+    background: var(--ink-4);
+  }
+
+  .tab-pill-row {
+    display: flex;
+    gap: 5px;
+  }
+  .tab-pill {
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    color: var(--ink-3);
+    border: 1px solid var(--border-strong);
+  }
+  .tab-pill.active {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+  }
+  .cv-canvas {
+    flex: 1;
+    border-radius: 8px;
+    background:
+      radial-gradient(
+        80% 90% at 30% 20%,
+        color-mix(in srgb, var(--show-violet) 45%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        80% 90% at 80% 80%,
+        color-mix(in srgb, var(--show-sky) 40%, transparent),
+        transparent 60%
+      ),
+      #0c0c10;
+    min-height: 46px;
+  }
+  .mini-slider {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9.5px;
+    color: var(--ink-4);
+  }
+  .mini-slider .track {
+    flex: 1;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    position: relative;
+  }
+  .mini-slider .fill {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: var(--hl);
+  }
+
+  .mini-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 42px;
+  }
+  .mini-chart .b {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: var(--bg-emphasis);
+  }
+  .mini-chart .b.now {
+    background: var(--hl);
+  }
+  .mini-stat-row {
+    display: flex;
+    gap: 10px;
+  }
+  .mini-stat {
+    flex: 1;
+  }
+  .mini-stat .lbl {
+    font-size: 9px;
+    color: var(--ink-4);
+    text-transform: uppercase;
+  }
+  .mini-stat .val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .model-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 10.5px;
+  }
+  .model-opt.sel {
+    border-color: var(--hl);
+    background: var(--hl-soft);
+  }
+  .model-opt .name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .model-opt .cost {
+    font-family: var(--mono);
+    color: var(--ink-3);
+    font-size: 9.5px;
+  }
+  .model-opt.sel .cost {
+    color: var(--hl-ink);
+  }
+
+  .credit-balance {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .tier-row {
+    display: flex;
+    gap: 6px;
+  }
+  .tier-chip {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 5px 0;
+    border-radius: 7px;
+    border: 1px solid var(--border-strong);
+    color: var(--ink-3);
+  }
+  .tier-chip.pop {
+    border-color: var(--hl);
+    color: var(--hl-ink);
+    font-weight: 600;
+  }
+
+  @media (max-width: 760px) {
+    .stat-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .split-grid {
+      grid-template-columns: 1fr;
+    }
+    .feat-grid {
+      grid-template-columns: 1fr;
+    }
+    .adm-sidebar {
+      display: none;
+    }
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="M4 11.5 12 4l8 7.5" />
+      <path d="M6 10v10h12V10" />
+    </symbol>
+    <symbol id="i-package" viewBox="0 0 24 24">
+      <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z" />
+      <path d="M3.7 7.6 12 12l8.3-4.4" />
+      <path d="M12 12v9" />
+    </symbol>
+    <symbol id="i-wand" viewBox="0 0 24 24">
+      <path d="M4 20 15 9" />
+      <path d="M13 4v2M18 4v2M20.5 6.5h-2M15.5 6.5h-2" />
+      <path d="M19 13v2M21 15h-2M17 15h2" />
+    </symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24">
+      <path d="M12 3.5 3.5 8 12 12.5 20.5 8Z" />
+      <path d="M3.5 12 12 16.5 20.5 12" />
+      <path d="M3.5 16 12 20.5 20.5 16" />
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24">
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3" />
+    </symbol>
+    <symbol id="i-card" viewBox="0 0 24 24">
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M6.5 14.5h4" />
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 16V4M7.5 8.5 12 4l4.5 4.5" />
+      <path d="M4.5 16v3.5h15V16" />
+    </symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2.2" />
+      <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+    </symbol>
+  </defs>
+</svg>
+
+<div class="page">
+  <p class="eyebrow">ShowCrafter · retailer admin</p>
+  <h1>Where a retailer runs their in-store AI experience</h1>
+  <p class="lede">
+    The shopper's side stays free. A retailer's admin is where the cost and the content both live:
+    <strong>build the catalogue</strong>, <strong>author firework effects</strong>,
+    <strong>package assortments</strong>, <strong>watch usage</strong>,
+    <strong>pick a cue-generation model</strong>, and
+    <strong>keep the credit balance topped up</strong>
+    that every in-store show draws from.
+  </p>
+
+  <div class="winwrap">
+    <div class="win">
+      <div class="win-chrome">
+        <span class="win-dots"><span></span><span></span><span></span></span>
+        <span class="win-addr"
+          ><svg class="icon"><use href="#i-lock" /></svg
+          ><span>app.showcrafter.com/retailer/comet-fireworks</span></span
+        >
+      </div>
+      <div class="win-body">
+        <div class="adm-sidebar">
+          <div class="adm-brand">
+            <span class="mark">CF</span>
+            <span class="adm-brand-text"
+              ><strong>Comet Fireworks Co.</strong><span>Riverside Plaza</span></span
+            >
+          </div>
+          <span class="nav-item active"
+            ><svg class="icon"><use href="#i-home" /></svg>Overview</span
+          >
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-package" /></svg>Catalogue</span
+          >
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-wand" /></svg>Effects<svg class="icon chev">
+              <use href="#i-chevron" /></svg
+          ></span>
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-layers" /></svg>Assortments</span
+          >
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-chart" /></svg>Usage</span
+          >
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-cpu" /></svg>AI model</span
+          >
+          <span class="nav-item"
+            ><svg class="icon"><use href="#i-card" /></svg>Credits</span
+          >
+        </div>
+
+        <div class="adm-main">
+          <div class="adm-topbar">
+            <div>
+              <h2>Overview</h2>
+              <p class="sub">Riverside Plaza &middot; last updated a minute ago</p>
+            </div>
+            <span class="credit-chip"
+              ><svg class="icon"><use href="#i-card" /></svg
+              ><span class="amt tabular">2,480</span> credits</span
+            >
+          </div>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="lbl">Credits remaining</div>
+              <div class="val tabular">2,480</div>
+              <div class="hint">~12 days at this rate</div>
+            </div>
+            <div class="stat-card">
+              <div class="lbl">Shows today</div>
+              <div class="val tabular">34</div>
+              <div class="hint">+6 vs yesterday</div>
+            </div>
+            <div class="stat-card">
+              <div class="lbl">Active assortments</div>
+              <div class="val tabular">5</div>
+              <div class="hint">live in-store</div>
+            </div>
+            <div class="stat-card">
+              <div class="lbl">Avg. credits / show</div>
+              <div class="val tabular">6.2</div>
+              <div class="hint">fast planner</div>
+            </div>
+          </div>
+
+          <div class="split-grid">
+            <div class="panel">
+              <h3>Shows generated &middot; last 14 days</h3>
+              <div class="chart">
+                <div class="bar" style="height: 52%"></div>
+                <div class="bar" style="height: 64%"></div>
+                <div class="bar" style="height: 44%"></div>
+                <div class="bar" style="height: 76%"></div>
+                <div class="bar" style="height: 60%"></div>
+                <div class="bar" style="height: 70%"></div>
+                <div class="bar" style="height: 50%"></div>
+                <div class="bar" style="height: 82%"></div>
+                <div class="bar" style="height: 58%"></div>
+                <div class="bar" style="height: 66%"></div>
+                <div class="bar" style="height: 74%"></div>
+                <div class="bar" style="height: 62%"></div>
+                <div class="bar" style="height: 80%"></div>
+                <div class="bar now" style="height: 100%"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <h3>Recent activity</h3>
+              <div class="activity-row">
+                <span class="dot"></span
+                ><span class="txt"
+                  >Show generated &middot; Comet Trail Assortment
+                  <span class="amt tabular">· 6cr</span></span
+                ><span class="time">5m</span>
+              </div>
+              <div class="activity-row">
+                <span class="dot"></span
+                ><span class="txt">Assortment updated &middot; Backyard Bash</span
+                ><span class="time">1h</span>
+              </div>
+              <div class="activity-row">
+                <span class="dot"></span
+                ><span class="txt">Credits topped up <span class="amt tabular">+1,000</span></span
+                ><span class="time">Yesterday</span>
+              </div>
+              <div class="activity-row">
+                <span class="dot"></span
+                ><span class="txt">Product added &middot; Gold Willow Single Shot</span
+                ><span class="time">2d</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="eyebrow feat-eyebrow">The six things a retailer manages</p>
+  <h2 class="feat-heading">Everything else lives one click off Overview</h2>
+
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-package" /></svg></span
+        ><strong>Catalogue</strong>
+      </div>
+      <p class="feat-desc">
+        Add the individual products this store stocks: name, type, price, and the effect it renders.
+      </p>
+      <div class="feat-mock">
+        <div class="mini-row">
+          <span class="n">Gold Willow Single Shot</span><span class="p tabular">$18.00</span>
+        </div>
+        <div class="mini-row">
+          <span class="n">Comet Trail Multishot</span><span class="p tabular">$34.00</span>
+        </div>
+        <span class="mini-btn"
+          ><svg class="icon"><use href="#i-plus" /></svg>Add product</span
+        >
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-wand" /></svg></span
+        ><strong>Effects</strong>
+      </div>
+      <p class="feat-desc">
+        Author a burst by hand, or upload a video of the real thing and reconstruct it from footage.
+      </p>
+      <div class="feat-mock">
+        <div class="tab-pill-row">
+          <span class="tab-pill active">Manual editor</span
+          ><span class="tab-pill">Reconstruct from video</span>
+        </div>
+        <div class="cv-canvas"></div>
+        <div class="mini-slider">
+          Burst radius<span class="track"><span class="fill" style="width: 64%"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-layers" /></svg></span
+        ><strong>Assortments</strong>
+      </div>
+      <p class="feat-desc">
+        Package catalogue products into a priced bundle, then flip it live for today's shoppers.
+      </p>
+      <div class="feat-mock">
+        <div class="mini-row">
+          <span class="n"
+            ><span class="status-dot live" style="display: inline-block; margin-right: 5px"></span
+            >Comet Trail Assortment</span
+          ><span class="p tabular">$148.00</span>
+        </div>
+        <div class="mini-row">
+          <span class="n"
+            ><span class="status-dot draft" style="display: inline-block; margin-right: 5px"></span
+            >Sparkler Starter</span
+          ><span class="p tabular">$62.00</span>
+        </div>
+        <span class="mini-btn"
+          ><svg class="icon"><use href="#i-plus" /></svg>Create assortment</span
+        >
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-chart" /></svg></span
+        ><strong>Usage</strong>
+      </div>
+      <p class="feat-desc">
+        See what shoppers are actually generating: volume, spend, and which packs pull their weight.
+      </p>
+      <div class="feat-mock">
+        <div class="mini-chart">
+          <div class="b" style="height: 45%"></div>
+          <div class="b" style="height: 60%"></div>
+          <div class="b" style="height: 38%"></div>
+          <div class="b" style="height: 70%"></div>
+          <div class="b" style="height: 55%"></div>
+          <div class="b" style="height: 65%"></div>
+          <div class="b now" style="height: 90%"></div>
+        </div>
+        <div class="mini-stat-row">
+          <div class="mini-stat">
+            <div class="lbl">This week</div>
+            <div class="val tabular">212</div>
+          </div>
+          <div class="mini-stat">
+            <div class="lbl">Credits spent</div>
+            <div class="val tabular">1,384</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-cpu" /></svg></span
+        ><strong>AI model</strong>
+      </div>
+      <p class="feat-desc">
+        Trade cost against quality: the fast planner or an LLM-assisted pass, billed per show either
+        way.
+      </p>
+      <div class="feat-mock">
+        <div class="model-opt sel">
+          <span class="name">Fast planner</span><span class="cost tabular">~4cr / show</span>
+        </div>
+        <div class="model-opt">
+          <span class="name">Premium (LLM-assisted)</span
+          ><span class="cost tabular">~9cr / show</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-head">
+        <span class="ic"
+          ><svg class="icon"><use href="#i-card" /></svg></span
+        ><strong>Credits</strong>
+      </div>
+      <p class="feat-desc">
+        Shoppers never pay. This is where the store tops up the balance every show draws down.
+      </p>
+      <div class="feat-mock">
+        <div class="credit-balance tabular">2,480 credits</div>
+        <div class="tier-row">
+          <span class="tier-chip">500</span>
+          <span class="tier-chip pop">2,000</span>
+          <span class="tier-chip">10,000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1626,6 +1626,81 @@ export type Database = {
         }
         Relationships: []
       }
+      show_assortment_items: {
+        Row: {
+          catalogue_item_id: string
+          created_at: string
+          quantity: number
+          show_id: string
+        }
+        Insert: {
+          catalogue_item_id: string
+          created_at?: string
+          quantity: number
+          show_id: string
+        }
+        Update: {
+          catalogue_item_id?: string
+          created_at?: string
+          quantity?: number
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_assortment_items_catalogue_item_id_fkey"
+            columns: ["catalogue_item_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_assortment_items_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_assortment_selections: {
+        Row: {
+          assortment_id: string
+          created_at: string
+          id: string
+          quantity: number
+          show_id: string
+        }
+        Insert: {
+          assortment_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          show_id: string
+        }
+        Update: {
+          assortment_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          show_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_assortment_selections_assortment_id_fkey"
+            columns: ["assortment_id"]
+            isOneToOne: false
+            referencedRelation: "assortments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_assortment_selections_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       show_generation_runs: {
         Row: {
           analysis_json: Json | null
@@ -1901,42 +1976,6 @@ export type Database = {
           },
         ]
       }
-      show_assortment_items: {
-        Row: {
-          catalogue_item_id: string
-          created_at: string
-          quantity: number
-          show_id: string
-        }
-        Insert: {
-          catalogue_item_id: string
-          created_at?: string
-          quantity: number
-          show_id: string
-        }
-        Update: {
-          catalogue_item_id?: string
-          created_at?: string
-          quantity?: number
-          show_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "show_assortment_items_catalogue_item_id_fkey"
-            columns: ["catalogue_item_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "show_assortment_items_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       shows: {
         Row: {
           artist: string | null
@@ -1946,8 +1985,8 @@ export type Database = {
           budget_cents: number | null
           cover_image_path: string | null
           cover_shader: Json | null
-          creation_source: string
           created_at: string
+          creation_source: string
           description: string | null
           duration_seconds: number | null
           effects_count: number
@@ -1991,8 +2030,8 @@ export type Database = {
           budget_cents?: number | null
           cover_image_path?: string | null
           cover_shader?: Json | null
-          creation_source?: string
           created_at?: string
+          creation_source?: string
           description?: string | null
           duration_seconds?: number | null
           effects_count?: number
@@ -2036,8 +2075,8 @@ export type Database = {
           budget_cents?: number | null
           cover_image_path?: string | null
           cover_shader?: Json | null
-          creation_source?: string
           created_at?: string
+          creation_source?: string
           description?: string | null
           duration_seconds?: number | null
           effects_count?: number
@@ -2538,9 +2577,9 @@ export type Database = {
           p_credit_action_key: string
           p_generation_mode: string
           p_public_access_token_hash: string
-          p_selected_cue_model: string | null
+          p_selected_cue_model: string
           p_selection_id: string
-          p_source_show_id?: string | null
+          p_source_show_id?: string
           p_title: string
         }
         Returns: Json
