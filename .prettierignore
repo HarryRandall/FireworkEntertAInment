@@ -1,4 +1,5 @@
 node_modules
+.worktrees
 .venv
 services/music-analyser/.venv
 services/firework-import-worker/.venv
