@@ -18,27 +18,16 @@ import {
 } from 'react';
 import {
   ArrowLeft,
-  Bell,
-  Box,
   ChevronRight,
   CircleUser,
   CreditCard,
-  Download,
-  Gauge,
-  Home,
   Laptop,
   LogOut,
   MessageSquareDot,
   Moon,
-  Music4,
   PlusCircle,
   Settings,
-  Shield,
-  ShieldCheck,
-  Star,
   Sun,
-  TriangleAlert,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react';
 import { updateProfileAction } from '@/app/actions/platform-admin';
@@ -86,6 +75,18 @@ import {
 } from '@/components/shell/shell-utils';
 import { signOutCurrentSession } from '@/components/shell/sign-out.client';
 import {
+  APP_LINKS,
+  SETTINGS_LINKS,
+  getAppBreadcrumbs,
+  getPendingRouteKind,
+  isActivePath,
+  isHomePath,
+  normaliseAppPath,
+  type AppNavLink,
+  type PendingRouteKind,
+  type ShellBreadcrumb,
+} from '@/components/shell/app-shell-navigation';
+import {
   clearCachedAiUsage,
   isWorkspaceSummaryFresh,
   readCachedWorkspaceSummary,
@@ -94,58 +95,9 @@ import {
   type SidebarAiUsage,
 } from '@/components/shell/workspace-summary-cache.client';
 import { cn } from '@/lib/utils';
-import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
+import type { CurrentProfile, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 import type { ShowSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
-
-type AppNavLink = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  permission?: PermissionKey;
-  badge?: string;
-};
-
-const APP_LINKS: AppNavLink[] = [
-  { href: '/home', label: 'Home', icon: Home },
-  { href: '/shows', label: 'My shows', icon: Music4 },
-  { href: '/library', label: 'Explore', icon: Star },
-  { href: '/catalogue', label: 'Catalogue', icon: Box },
-  { href: '/exports', label: 'Exports', icon: Download },
-  { href: '/safety', label: 'Safety', icon: TriangleAlert },
-  { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
-];
-
-const SETTINGS_LINKS: AppNavLink[] = [
-  { href: '/settings/profile', label: 'Personal details', icon: UserRound },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
-  { href: '/settings/billing', label: 'Billing', icon: CreditCard },
-  { href: '/settings/usage', label: 'Usage', icon: Gauge },
-  { href: '/settings/security', label: 'Security', icon: ShieldCheck },
-];
-
-const SETTINGS_BREADCRUMB_LABELS: Record<string, string> = {
-  '/settings': 'Settings',
-  '/settings/profile': 'Profile',
-  '/settings/usage': 'Usage',
-  '/settings/notifications': 'Notifications',
-  '/settings/billing': 'Billing',
-  '/settings/security': 'Security',
-};
-
-const SHOW_SUBPAGE_LABELS: Record<string, string> = {
-  preview: 'Preview',
-  timeline: 'Timeline',
-  'shopping-list': 'Shopping list',
-  'show-guide': 'Show guide',
-  generating: 'Generating',
-};
-
-type ShellBreadcrumb = {
-  label: string;
-  href?: string;
-  icon?: LucideIcon;
-};
 
 type AppShellProps = {
   children: ReactNode;
@@ -185,15 +137,6 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
 const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-function isActivePath(pathname: string | null, href: string) {
-  if (href === '/shows') {
-    return (
-      pathname === '/shows' || Boolean(pathname?.startsWith('/shows/') && pathname !== '/shows/new')
-    );
-  }
-  return pathname === href || Boolean(pathname?.startsWith(`${href}/`));
-}
 
 function SidebarBrand({ onNavigate }: { onNavigate: (href: string) => void }) {
   const { isMobile, setOpenMobile } = useSidebar();
@@ -620,91 +563,6 @@ function AppSidebarFooter({
       <ProfileMenuButton profile={profile} onSignOut={onSignOut} />
     </SidebarFooter>
   );
-}
-
-function formatPathSegment(segment: string) {
-  return decodeURIComponent(segment)
-    .replace(/[-_]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function getSettingsBreadcrumbs(pathname: string): ShellBreadcrumb[] {
-  const current = SETTINGS_BREADCRUMB_LABELS[pathname] ?? 'Settings';
-  return [
-    {
-      label: 'Settings',
-      href: current === 'Settings' ? undefined : '/settings/profile',
-      icon: UserRound,
-    },
-    ...(current === 'Settings' ? [] : [{ label: current }]),
-  ];
-}
-
-function getShowBreadcrumbs(segments: string[]): ShellBreadcrumb[] {
-  if (segments[1] === 'new') {
-    return [{ label: 'My shows', href: '/shows', icon: Music4 }, { label: 'New show' }];
-  }
-
-  if (!segments[1]) {
-    return [{ label: 'My shows', icon: Music4 }];
-  }
-
-  const showHref = `/shows/${segments[1]}`;
-  return [
-    { label: 'My shows', href: '/shows', icon: Music4 },
-    {
-      label: formatPathSegment(segments[1]),
-      href: segments[2] ? showHref : undefined,
-    },
-    ...(segments[2]
-      ? [
-          {
-            label: SHOW_SUBPAGE_LABELS[segments[2]] ?? formatPathSegment(segments[2]),
-          },
-        ]
-      : []),
-  ];
-}
-
-function getAppBreadcrumbs(pathname: string | null): ShellBreadcrumb[] {
-  const normalisedPath = (pathname ?? '/home').replace(/\/+$/, '') || '/home';
-  if (normalisedPath === '/home') return [{ label: 'Home', icon: Home }];
-  if (normalisedPath.startsWith('/settings')) return getSettingsBreadcrumbs(normalisedPath);
-
-  const segments = normalisedPath.split('/').filter(Boolean);
-  if (segments[0] === 'shows') return getShowBreadcrumbs(segments);
-  if (segments[0] === 'library') {
-    return [
-      { label: 'Explore', href: segments[1] ? '/library' : undefined, icon: Star },
-      ...(segments[1] ? [{ label: formatPathSegment(segments[1]) }] : []),
-    ];
-  }
-
-  const staticLink = APP_LINKS.find((link) => link.href === `/${segments[0]}`);
-  return [
-    {
-      label: staticLink?.label ?? (segments[0] ? formatPathSegment(segments[0]) : 'Home'),
-      icon: staticLink?.icon,
-    },
-  ];
-}
-
-function normaliseAppPath(pathname: string | null | undefined) {
-  const pathOnly = (pathname ?? '/home').split(/[?#]/)[0];
-  return pathOnly.replace(/\/+$/, '') || '/home';
-}
-
-function isHomePath(pathname: string | null) {
-  return normaliseAppPath(pathname) === '/home';
-}
-
-type PendingRouteKind = 'home' | 'library';
-
-function getPendingRouteKind(pathname: string | null | undefined): PendingRouteKind | null {
-  const path = normaliseAppPath(pathname);
-  if (path === '/home') return 'home';
-  if (path === '/library') return 'library';
-  return null;
 }
 
 function PendingHomeSkeleton() {

@@ -38,7 +38,7 @@ test('standalone and marketing pages keep one main content landmark', () => {
 
 test('safety guidance states product limits and points to official sources', () => {
   const safety = read('app/(app)/safety/page.tsx');
-  const shell = read('components/shell/AppShell.tsx');
+  const navigation = read('components/shell/app-shell-navigation.ts');
   const rootLayout = read('app/layout.tsx');
 
   assert.match(safety, /Safety and legal checks happen outside ShowCrafter/);
@@ -47,7 +47,7 @@ test('safety guidance states product limits and points to official sources', () 
   assert.match(safety, /www\.rshq\.qld\.gov\.au/);
   assert.match(safety, /Do not use this page as an operational firing guide/);
   assert.doesNotMatch(safety, /30 km\/h|Wait at least fifteen minutes|sealed water bucket/);
-  assert.match(shell, /href: '\/safety', label: 'Safety', icon: TriangleAlert \}/);
-  assert.doesNotMatch(shell, /href: '\/safety'[^\n]*permission:/);
+  assert.match(navigation, /href: '\/safety', label: 'Safety', icon: TriangleAlert \}/);
+  assert.doesNotMatch(navigation, /href: '\/safety'[^\n]*permission:/);
   assert.doesNotMatch(rootLayout, /local store|let AI choreograph/);
 });

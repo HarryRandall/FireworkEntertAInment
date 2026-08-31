@@ -73,15 +73,16 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
 
 test('app shell exposes only shipped V1 navigation routes', () => {
   const shell = read('components/shell/AppShell.tsx');
+  const navigation = read('components/shell/app-shell-navigation.ts');
 
-  assert.match(shell, /href: '\/home', label: 'Home'/);
-  assert.match(shell, /href: '\/shows', label: 'My shows'/);
-  assert.match(shell, /href: '\/library', label: 'Explore'/);
-  assert.doesNotMatch(shell, /badge: 'New'/);
-  assert.match(shell, /href: '\/catalogue', label: 'Catalogue'/);
-  assert.match(shell, /href: '\/exports', label: 'Exports'/);
-  assert.match(shell, /href: '\/safety', label: 'Safety'/);
-  assert.match(shell, /href: '\/admin', label: 'Admin'/);
+  assert.match(navigation, /href: '\/home', label: 'Home'/);
+  assert.match(navigation, /href: '\/shows', label: 'My shows'/);
+  assert.match(navigation, /href: '\/library', label: 'Explore'/);
+  assert.doesNotMatch(navigation, /badge: 'New'/);
+  assert.match(navigation, /href: '\/catalogue', label: 'Catalogue'/);
+  assert.match(navigation, /href: '\/exports', label: 'Exports'/);
+  assert.match(navigation, /href: '\/safety', label: 'Safety'/);
+  assert.match(navigation, /href: '\/admin', label: 'Admin'/);
   assert.match(shell, /href="\/shows\/new"/);
   assert.match(shell, /SidebarRecentShows/);
   assert.doesNotMatch(shell, /SidebarFeaturedTemplate/);
