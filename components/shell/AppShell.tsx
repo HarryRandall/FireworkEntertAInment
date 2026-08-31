@@ -109,7 +109,7 @@ const APP_LINKS: AppNavLink[] = [
   // No permission gate: every signed-in account is a retailer in this
   // product (consumers never get an account at all — they only ever reach
   // the QR entry route). See FIR-166.
-  { href: '/retailer-admin', label: 'Retailer admin', icon: Store },
+  { href: '/retailer-admin', label: 'My Store', icon: Store },
   { href: '/admin', label: 'Admin', icon: Shield, permission: 'admin.view' },
 ];
 

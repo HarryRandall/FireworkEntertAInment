@@ -167,7 +167,7 @@ function ProfileMenuButton({
   onSignOut: () => Promise<void>;
 }) {
   const displayName = profile.fullName || profile.email || 'Admin';
-  const secondaryLine = profile.fullName && profile.email ? profile.email : 'Retailer admin';
+  const secondaryLine = profile.fullName && profile.email ? profile.email : 'My Store';
 
   return (
     <SidebarMenu>
@@ -276,7 +276,7 @@ export function RetailerAdminShell({
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Retailer admin</SidebarGroupLabel>
+            <SidebarGroupLabel>My Store</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {RETAILER_LINKS.filter((link) => profile.permissions.includes(link.permission)).map(
