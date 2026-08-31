@@ -984,6 +984,7 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
 
 test('unified burst trails are validated, migrated, and exposed through shared controls', () => {
   const controls = read('components/admin/FireworkRenderControls.tsx');
+  const controlSections = read('components/admin/firework-render-controls/ControlSections.tsx');
   const burstTrailControls = controls.slice(
     controls.indexOf('function renderBurstTrailControls'),
     controls.indexOf('function renderStarLayerControls'),
@@ -1021,7 +1022,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   // spacing curve, angle spread, rotation, and per-particle life controls.
   assert.match(controls, /const TRAIL_PRESET_OPTIONS/);
   assert.match(controls, /value=\{burstTrail\.preset\}/);
-  assert.match(controls, /function SubSection/);
+  assert.match(controlSections, /export function SubSection/);
   assert.match(controls, /title="Particles"/);
   assert.match(controls, /title="Placement"/);
   assert.match(controls, /label="Amount"/);
