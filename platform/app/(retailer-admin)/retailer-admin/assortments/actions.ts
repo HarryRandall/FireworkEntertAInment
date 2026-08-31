@@ -27,7 +27,6 @@ type SaveAssortmentRpcClient = {
       p_name: string;
       p_description: string | null;
       p_price_cents: number;
-      p_is_active: boolean;
       p_items: { catalogueItemId: string; quantity: number; sortOrder: number }[];
     },
   ): PromiseLike<{ data: string | null; error: { message: string } | null }>;
@@ -38,12 +37,14 @@ const AssortmentItemSchema = z.object({
   quantity: z.number().int().min(1).max(999),
 });
 
+// Retailer assortments have no draft state — discoverability is physical
+// (the QR code lives on the product), so every assortment is active from
+// creation. See migration 20260824080000_retire_retailer_assortment_draft_state.
 const SaveAssortmentSchema = z.object({
   assortmentId: z.string().uuid().nullable(),
   name: z.string().trim().min(1).max(200),
   description: z.string().trim().max(2000).optional(),
   priceCents: z.number().int().min(0).max(100_000_00),
-  isActive: z.boolean(),
   items: z.array(AssortmentItemSchema).min(1).max(50),
 });
 
@@ -66,7 +67,6 @@ export async function saveRetailerAssortmentAction(
     p_name: parsed.data.name,
     p_description: parsed.data.description?.length ? parsed.data.description : null,
     p_price_cents: parsed.data.priceCents,
-    p_is_active: parsed.data.isActive,
     p_items: parsed.data.items.map((item, index) => ({
       catalogueItemId: item.catalogueItemId,
       quantity: item.quantity,

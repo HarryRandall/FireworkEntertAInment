@@ -46,7 +46,6 @@ export function AssortmentFormDialog({
   const [name, setName] = useState(initial?.name ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [price, setPrice] = useState(initial ? centsToDollarsInput(initial.priceCents) : '0.00');
-  const [isActive, setIsActive] = useState(initial?.isActive ?? false);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Map<string, SelectedItem>>(
     () => new Map(initial?.items.map((item) => [item.catalogueItemId, { quantity: item.quantity }])),
@@ -58,7 +57,6 @@ export function AssortmentFormDialog({
     setName(initial?.name ?? '');
     setDescription(initial?.description ?? '');
     setPrice(initial ? centsToDollarsInput(initial.priceCents) : '0.00');
-    setIsActive(initial?.isActive ?? false);
     setSelected(
       new Map(initial?.items.map((item) => [item.catalogueItemId, { quantity: item.quantity }])),
     );
@@ -112,7 +110,6 @@ export function AssortmentFormDialog({
       name,
       description: description || undefined,
       priceCents,
-      isActive,
       items: [...selected.entries()].map(([catalogueItemId, { quantity }]) => ({
         catalogueItemId,
         quantity,
@@ -251,18 +248,6 @@ export function AssortmentFormDialog({
               )}
             </div>
           </Field>
-
-          <div className="flex items-center justify-between gap-3 pt-1">
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(event) => setIsActive(event.target.checked)}
-                className="accent-primary size-4"
-              />
-              Publish live immediately
-            </label>
-          </div>
 
           <DialogFooter>
             <Button type="submit" loading={isPending} disabled={isPending}>

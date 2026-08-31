@@ -93,8 +93,7 @@ export function TestShowSimulator({ assortments }: { assortments: RetailerAssort
                 </span>
               </div>
               <p className="text-muted-foreground mt-1 text-xs">
-                {assortment.items.length} product{assortment.items.length === 1 ? '' : 's'} ·{' '}
-                {assortment.isActive ? 'Live' : 'Draft'}
+                {assortment.items.length} product{assortment.items.length === 1 ? '' : 's'}
               </p>
             </Card>
           );
