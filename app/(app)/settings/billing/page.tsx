@@ -1,7 +1,7 @@
 /** Billing settings page grounded in the plans and payment paths available today. */
 
 import { CheckCircle2, CircleSlash2, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
+import { Badge } from '@/components/design-system/Badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,

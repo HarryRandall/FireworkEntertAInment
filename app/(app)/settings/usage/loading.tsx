@@ -1,7 +1,7 @@
 /** Stable route chrome for the `/settings/usage` loading state. */
 
 import { Gauge, ReceiptText, Sparkles } from 'lucide-react';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/components/design-system/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,

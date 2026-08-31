@@ -3,8 +3,8 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { Button } from '@/components/design-system/Button';
+import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
 
 type Props = { token: string; showToken: string; showTitle: string };
 

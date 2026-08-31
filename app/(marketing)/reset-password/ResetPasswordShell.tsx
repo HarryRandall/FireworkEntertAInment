@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { BrandLockup } from '@/app/components/ui/BrandMark';
+import { BrandLockup } from '@/components/design-system/BrandMark';
 
 export function ResetPasswordShell({ children }: { children: ReactNode }) {
   return (

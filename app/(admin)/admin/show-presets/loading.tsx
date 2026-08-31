@@ -1,7 +1,7 @@
 /** Loading skeleton for the admin curated show preset list. */
 
-import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { TABLE_PAGE_SIZE } from '@/app/components/ui/TablePagination';
+import { FilterSkeleton, TableSkeleton } from '@/components/shell/RouteSkeletons';
+import { TABLE_PAGE_SIZE } from '@/components/design-system/TablePagination';
 
 export default function AdminShowPresetsLoading() {
   return (

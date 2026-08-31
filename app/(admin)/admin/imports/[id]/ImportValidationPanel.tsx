@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
-import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/components/design-system/Badge';
+import { Card } from '@/components/design-system/Card';
 import type { ImportReviewCheck } from '@/lib/import-review';
 
 const checkPresentation = {

@@ -1,6 +1,6 @@
 /** Loading skeleton for the show-guide tab. */
 
-import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { ListSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function ShowGuideLoading() {
   return (

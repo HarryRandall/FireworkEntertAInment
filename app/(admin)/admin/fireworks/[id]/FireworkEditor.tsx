@@ -35,40 +35,31 @@ import {
   restoreFireworkEditorVersion,
   updateFirework,
 } from '@/app/actions/admin-fireworks';
-import {
-  EditorHistoryPanel,
-  JsonReadOnlyPanel,
-} from '@/app/components/admin/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/app/components/admin/EditorSectionPanels';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/components/admin/EditorInspectorPanels';
+import { EditorStyleDefaultControls } from '@/components/admin/EditorSectionPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,
   estimatePreviewTicks,
-} from '@/app/components/admin/editor-preview-timing';
+} from '@/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
-} from '@/app/components/admin/FireworkEditorShell';
-import {
-  makeOptimisticEditorVersion,
-  useEditorHistory,
-} from '@/app/components/admin/useEditorHistory';
-import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
-import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
-import {
-  FireworkRenderControls,
-  type JsonRecord,
-} from '@/app/components/admin/FireworkRenderControls';
-import { FireworkTimelineControls } from '@/app/components/admin/FireworkTimelineControls';
-import { Button } from '@/app/components/ui/Button';
-import { ColorPicker } from '@/app/components/ui/ColorPicker';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField, type SelectOption } from '@/app/components/ui/SelectField';
-import { SliderField } from '@/app/components/ui/SliderField';
+} from '@/components/admin/FireworkEditorShell';
+import { makeOptimisticEditorVersion, useEditorHistory } from '@/components/admin/useEditorHistory';
+import { usePreviewFullscreen } from '@/components/admin/previewFullscreen';
+import { useAdminBreadcrumbOverride } from '@/components/admin/AdminShell';
+import { ReplayStageBackdrop } from '@/components/replay/ReplayStageBackdrop';
+import { FireworkRenderControls, type JsonRecord } from '@/components/admin/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/components/admin/FireworkTimelineControls';
+import { Button } from '@/components/design-system/Button';
+import { ColorPicker } from '@/components/design-system/ColorPicker';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { Input, Textarea } from '@/components/design-system/Input';
+import { SelectField, type SelectOption } from '@/components/design-system/SelectField';
+import { SliderField } from '@/components/design-system/SliderField';
 import { Switch } from '@/components/ui/switch';
-import { toast } from '@/app/components/ui/toast';
+import { toast } from '@/components/design-system/toast';
 import type {
   AdminEditorVersion,
   AdminFireworkDetail,
@@ -106,7 +97,7 @@ type LocalStyleDefaultOptions = Partial<
 >;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayStageBackdrop /> },
 );
 

@@ -1,9 +1,9 @@
 /** Marketing site layout (public, unauthenticated) shared by every `(marketing)` page. */
 
 import type { ReactNode } from 'react';
-import { MarketingNavBar } from '@/app/components/marketing/NavBar';
-import { MarketingFooter } from '@/app/components/marketing/Footer';
-import { SkipLink } from '@/app/components/ui/SkipLink';
+import { MarketingNavBar } from '@/components/marketing/NavBar';
+import { MarketingFooter } from '@/components/marketing/Footer';
+import { SkipLink } from '@/components/design-system/SkipLink';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (

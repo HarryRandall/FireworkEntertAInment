@@ -5,10 +5,10 @@
 import { useActionState, useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { deleteAccountAction, type DeleteAccountState } from '@/app/actions/account';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert } from '@/app/components/ui/Feedback';
+import { Button } from '@/components/design-system/Button';
+import { Input } from '@/components/design-system/Input';
+import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
+import { InlineAlert } from '@/components/design-system/Feedback';
 import {
   Dialog,
   DialogContent,

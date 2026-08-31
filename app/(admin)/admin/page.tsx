@@ -2,7 +2,7 @@
 
 import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { AdminOverviewContentSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminOverviewContentSkeleton } from '@/components/shell/RouteSkeletons';
 import { AnalyserWarmthControl } from './AnalyserWarmthControl';
 import { AdminOverviewTabs } from './AdminOverviewTabs';
 import { AdminOverviewToolbar } from './AdminOverviewToolbar';

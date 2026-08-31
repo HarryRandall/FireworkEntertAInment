@@ -2,8 +2,8 @@
 
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { ShoppingListTable } from '@/app/components/app/ShoppingListTable';
-import { ShoppingListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { ShoppingListTable } from '@/components/shows/ShoppingListTable';
+import { ShoppingListSkeleton } from '@/components/shell/RouteSkeletons';
 import { getShowBySlug, listShoppingItemsForShow } from '@/lib/shows.server';
 import type { Show } from '@/lib/show-domain';
 

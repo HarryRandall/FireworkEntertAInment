@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { Gauge, Loader2 } from 'lucide-react';
 import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { toast } from '@/app/components/ui/toast';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+import { toast } from '@/components/design-system/toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

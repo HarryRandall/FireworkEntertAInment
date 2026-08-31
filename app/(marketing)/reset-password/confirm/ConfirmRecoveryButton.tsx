@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { Button } from '@/app/components/ui/Button';
+import { Button } from '@/components/design-system/Button';
 
 export function ConfirmRecoveryButton() {
   const { pending } = useFormStatus();

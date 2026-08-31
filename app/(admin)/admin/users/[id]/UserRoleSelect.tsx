@@ -5,7 +5,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setUserRoleAction } from '@/app/actions/admin-users';
-import { toast } from '@/app/components/ui/toast';
+import { toast } from '@/components/design-system/toast';
 import {
   Select,
   SelectContent,

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { BrandLockup } from '@/app/components/ui/BrandMark';
-import { SkipLink } from '@/app/components/ui/SkipLink';
+import { BrandLockup } from '@/components/design-system/BrandMark';
+import { SkipLink } from '@/components/design-system/SkipLink';
 
 export const metadata: Metadata = {
   robots: {

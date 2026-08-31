@@ -19,8 +19,8 @@
  */
 import { createRoot } from 'react-dom/client';
 import { toJpeg } from 'html-to-image';
-import { CssCover } from '@/app/components/app/CssCover';
-import { ShaderCover } from '@/app/components/app/ShaderCover';
+import { CssCover } from '@/components/covers/CssCover';
+import { ShaderCover } from '@/components/covers/ShaderCover';
 import { cssCoverBackdropColor, type CssCover as CssCoverConfig } from '@/lib/css-cover';
 import { isCssCover, type ShowCover } from '@/lib/cover';
 

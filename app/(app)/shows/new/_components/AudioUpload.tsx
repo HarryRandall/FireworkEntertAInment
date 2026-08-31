@@ -18,7 +18,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
+import { Button } from '@/components/design-system/Button';
 import { cn } from '@/lib/utils';
 import type { AudioUploadState } from '../types';
 import { formatDuration } from '@/lib/show-domain';

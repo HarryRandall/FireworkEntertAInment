@@ -2,11 +2,11 @@
 
 import type { Metadata } from 'next';
 import { Building2, CircleAlert, Paperclip } from 'lucide-react';
-import { Container } from '@/app/components/ui/Container';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
-import { Eyebrow } from '@/app/components/ui/Badge';
-import { PageHeader } from '@/app/components/marketing/PageHeader';
+import { Container } from '@/components/design-system/Container';
+import { Card } from '@/components/design-system/Card';
+import { Button } from '@/components/design-system/Button';
+import { Eyebrow } from '@/components/design-system/Badge';
+import { PageHeader } from '@/components/marketing/PageHeader';
 
 export const metadata: Metadata = {
   title: 'Contact · ShowCrafter',

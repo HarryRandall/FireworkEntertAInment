@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin user list. */
 
-import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminTableRouteSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function AdminUsersLoading() {
   return (

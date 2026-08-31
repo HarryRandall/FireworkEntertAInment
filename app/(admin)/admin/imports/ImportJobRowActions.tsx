@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { Archive, ArrowRight, Loader2 } from 'lucide-react';
 import { deleteImportJobAction } from '@/app/actions/platform-admin';
-import { Button } from '@/app/components/ui/Button';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { toast } from '@/components/design-system/toast';
 import {
   AlertDialog,
   AlertDialogAction,

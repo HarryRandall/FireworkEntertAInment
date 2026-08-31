@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { RowActionsMenu } from '@/app/components/ui';
+import { RowActionsMenu } from '@/components/design-system';
 import { ProductFormDialog } from './ProductFormDialog';
 import type { ProductInputType } from '@/app/actions/admin-catalogue';
 

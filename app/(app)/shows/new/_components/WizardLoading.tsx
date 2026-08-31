@@ -7,7 +7,7 @@
  * the swap does not shift layout.
  */
 
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/components/design-system/Feedback';
 
 export function WizardLoading() {
   return (

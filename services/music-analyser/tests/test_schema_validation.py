@@ -349,7 +349,7 @@ class SchemaValidationTests(unittest.TestCase):
             sf.write(path, audio, sr)
             result = analyse_song(str(path))
 
-        helper = REPO_ROOT / "tests" / "analyser-pipeline-helper.mjs"
+        helper = REPO_ROOT / "tests" / "helpers" / "analyser-pipeline-helper.mjs"
         completed = subprocess.run(
             [node_binary, "--experimental-strip-types", str(helper)],
             cwd=REPO_ROOT,

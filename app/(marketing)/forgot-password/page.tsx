@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Mail, CheckCircle } from 'lucide-react';
 import { requestPasswordRecoveryAction } from '@/app/actions/password-recovery';
-import { BrandLockup } from '@/app/components/ui/BrandMark';
-import { Input } from '@/app/components/ui/Input';
-import { Button } from '@/app/components/ui/Button';
-import { FormError } from '@/app/components/ui/FormError';
+import { BrandLockup } from '@/components/design-system/BrandMark';
+import { Input } from '@/components/design-system/Input';
+import { Button } from '@/components/design-system/Button';
+import { FormError } from '@/components/design-system/FormError';
 
 type ForgotPasswordError = {
   message: string;

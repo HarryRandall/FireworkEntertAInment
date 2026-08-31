@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { Badge } from '@/app/components/ui/Badge';
-import { FilterBar } from '@/app/components/ui/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
+import { TableSkeleton } from '@/components/shell/RouteSkeletons';
+import { Badge } from '@/components/design-system/Badge';
+import { FilterBar } from '@/components/design-system/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
 import {
   DataTableShell,
   tableCellClasses,
@@ -13,7 +13,7 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/app/components/ui/DataTable';
+} from '@/components/design-system/DataTable';
 import { formatBudget } from '@/lib/show-domain';
 import { listAssortments } from '@/lib/admin/assortments.server';
 import { NewAssortmentButton } from './NewAssortmentButton';

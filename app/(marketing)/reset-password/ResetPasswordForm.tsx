@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition, type FormEvent } from 'react';
 import { Lock } from 'lucide-react';
 import { updateRecoveredPasswordAction } from '@/app/actions/password-recovery';
-import { Button } from '@/app/components/ui/Button';
-import { FormError } from '@/app/components/ui/FormError';
-import { Input } from '@/app/components/ui/Input';
+import { Button } from '@/components/design-system/Button';
+import { FormError } from '@/components/design-system/FormError';
+import { Input } from '@/components/design-system/Input';
 
 type ResetPasswordError = {
   message: string;

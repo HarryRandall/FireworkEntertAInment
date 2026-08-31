@@ -6,13 +6,13 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Copy, Download, QrCode, Trash2 } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Input } from '@/app/components/ui/Input';
-import { NumberInput } from '@/app/components/ui/NumberInput';
-import { Toggle } from '@/app/components/ui/Toggle';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { Input } from '@/components/design-system/Input';
+import { NumberInput } from '@/components/design-system/NumberInput';
+import { Toggle } from '@/components/design-system/Toggle';
+import { toast } from '@/components/design-system/toast';
 import {
   Command,
   CommandEmpty,

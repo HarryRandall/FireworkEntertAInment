@@ -7,9 +7,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   PreviewFullscreenBackdrop,
   usePreviewFullscreen,
-} from '@/app/components/admin/previewFullscreen';
-import { ReplayLoadingBar } from '@/app/components/app/ReplayLoadingBar';
-import { ReplayTransportControls } from '@/app/components/app/ReplayTransportControls';
+} from '@/components/admin/previewFullscreen';
+import { ReplayLoadingBar } from '@/components/replay/ReplayLoadingBar';
+import { ReplayTransportControls } from '@/components/replay/ReplayTransportControls';
 import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
 import {
   reconstructionToReplayCues,
@@ -37,7 +37,7 @@ function ReplayCanvasSkeleton() {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,

@@ -6,10 +6,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { grantUserAiCreditsAction } from '@/app/actions/admin-users';
-import { Button } from '@/app/components/ui/Button';
-import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
-import { Input } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
+import { Input } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import {
   Dialog,
   DialogClose,

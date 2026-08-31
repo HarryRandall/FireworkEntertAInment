@@ -5,7 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Copy, LogIn, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
-import { RowActionsMenu, toast } from '@/app/components/ui';
+import { RowActionsMenu, toast } from '@/components/design-system';
 import {
   AlertDialog,
   AlertDialogAction,

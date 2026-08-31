@@ -2,9 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { Gauge, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
-import { TablePagination } from '@/app/components/ui/TablePagination';
+import { Badge } from '@/components/design-system/Badge';
+import { Button } from '@/components/design-system/Button';
+import { TablePagination } from '@/components/design-system/TablePagination';
 import {
   Card,
   CardAction,

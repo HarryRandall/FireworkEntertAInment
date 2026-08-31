@@ -1,7 +1,7 @@
 /** Honest documentation placeholder while public product guidance is being prepared. */
 
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/app/components/marketing/ComingSoon';
+import { ComingSoon } from '@/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Documentation · ShowCrafter',

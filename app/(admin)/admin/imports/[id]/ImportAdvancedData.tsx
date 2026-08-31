@@ -1,4 +1,4 @@
-import { Card } from '@/app/components/ui/Card';
+import { Card } from '@/components/design-system/Card';
 import type { ImportOutputLike, ImportReviewAttempt } from '@/lib/import-review';
 
 export function ImportAdvancedData({

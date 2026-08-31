@@ -29,7 +29,7 @@ Use Node 24 from `.nvmrc`. Python services use Python 3.11 and their own
 ## Structure
 
 - `app/`: routes, layouts, API handlers and server actions.
-- `app/components/`: application-specific UI.
+- `components/`: shared UI grouped by product domain.
 - `components/ui/`: lower-level Radix and shadcn primitives. Inspect headers
   before editing because only explicitly generated files are non-editable.
 - `lib/`: domain, server, renderer and integration code.

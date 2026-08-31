@@ -3,8 +3,8 @@
 /** Client-owned permission exception list for immediate add/update feedback. */
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
 import {
   AddPermissionOverrideDialog,
   type PermissionOverrideOption,

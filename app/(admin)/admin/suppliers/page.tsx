@@ -1,15 +1,15 @@
 /** Admin supplier list page with create / edit dialogs. */
 
 import { Suspense } from 'react';
-import { TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { FilterBar } from '@/app/components/ui/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
+import { TableSkeleton } from '@/components/shell/RouteSkeletons';
+import { FilterBar } from '@/components/design-system/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
 import {
   DataTableShell,
   tableClasses,
   tableHeadClasses,
   tableHeaderCellClasses,
-} from '@/app/components/ui/DataTable';
+} from '@/components/design-system/DataTable';
 import { listSuppliers } from '@/lib/admin.server';
 import { SupplierFormDialog } from './SupplierFormDialog';
 import { SuppliersTableBody } from './SuppliersTableBody';

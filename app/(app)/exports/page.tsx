@@ -2,8 +2,8 @@
 
 import { Suspense } from 'react';
 import { Download } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
 import {
   DataTableShell,
   tableCellClasses,
@@ -11,11 +11,11 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/app/components/ui/DataTable';
-import { Skeleton } from '@/app/components/ui/Feedback';
-import { SectionHeader } from '@/app/components/ui/SectionHeader';
-import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
-import { ShowExportButton } from '@/app/components/app/ShowExportButton';
+} from '@/components/design-system/DataTable';
+import { Skeleton } from '@/components/design-system/Feedback';
+import { SectionHeader } from '@/components/design-system/SectionHeader';
+import { ListSkeleton } from '@/components/shell/RouteSkeletons';
+import { ShowExportButton } from '@/components/shows/ShowExportButton';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import { formatDuration } from '@/lib/show-domain';
 

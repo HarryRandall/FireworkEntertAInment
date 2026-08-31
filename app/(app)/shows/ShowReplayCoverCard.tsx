@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { memo, useRef } from 'react';
 import { BadgeDollarSign, Clock3, ListMusic, Play } from 'lucide-react';
-import { CoverPoster } from '@/app/components/app/CoverPoster';
-import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
+import { CoverPoster } from '@/components/covers/CoverPoster';
+import { ReplayCanvasSkeleton } from '@/components/replay/ReplayCanvasSkeleton';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';

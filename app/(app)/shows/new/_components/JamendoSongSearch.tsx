@@ -21,9 +21,9 @@ import {
   Shuffle,
   X,
 } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
+import { Button } from '@/components/design-system/Button';
+import { Input } from '@/components/design-system/Input';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
 import {
   Dialog,
   DialogContent,

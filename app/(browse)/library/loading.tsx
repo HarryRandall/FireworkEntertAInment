@@ -1,6 +1,6 @@
 /** Loading fallback for `/library`; keeps the stable header chrome visible. */
 
-import { LibraryCardsSkeleton } from '@/app/components/app/RouteSkeletons';
+import { LibraryCardsSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function LibraryLoading() {
   return (

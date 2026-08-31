@@ -6,12 +6,12 @@ import { Clock3, Sparkles } from 'lucide-react';
 import {
   FireworkBrowseCard,
   FireworkBrowseGridSkeleton,
-} from '@/app/components/app/FireworkBrowseCard';
-import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
-import { FilterSkeleton } from '@/app/components/app/RouteSkeletons';
-import { EmptyNotice } from '@/app/components/ui/Feedback';
-import { FilterBar } from '@/app/components/ui/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
+} from '@/components/catalogue/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/components/catalogue/FireworkBrowsePreviewContext';
+import { FilterSkeleton } from '@/components/shell/RouteSkeletons';
+import { EmptyNotice } from '@/components/design-system/Feedback';
+import { FilterBar } from '@/components/design-system/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
 import { listAdminFireworks, listEffectOptions } from '@/lib/admin.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';

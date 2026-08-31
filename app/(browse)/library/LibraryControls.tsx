@@ -4,7 +4,7 @@
 
 import { Check, ChevronDown, ListFilter } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/app/components/ui/Button';
+import { Button } from '@/components/design-system/Button';
 import {
   Command,
   CommandEmpty,

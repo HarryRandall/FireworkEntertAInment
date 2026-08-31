@@ -3,11 +3,11 @@
 import type { Metadata } from 'next';
 import { ArrowRight, FileText, ListChecks, Music4, SlidersHorizontal, Wand2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Container } from '@/app/components/ui/Container';
-import { Card } from '@/app/components/ui/Card';
-import { Eyebrow } from '@/app/components/ui/Badge';
-import { PageHeader } from '@/app/components/marketing/PageHeader';
-import { CTABand } from '@/app/components/marketing/CTABand';
+import { Container } from '@/components/design-system/Container';
+import { Card } from '@/components/design-system/Card';
+import { Eyebrow } from '@/components/design-system/Badge';
+import { PageHeader } from '@/components/marketing/PageHeader';
+import { CTABand } from '@/components/marketing/CTABand';
 
 export const metadata: Metadata = {
   title: 'How it works · ShowCrafter',

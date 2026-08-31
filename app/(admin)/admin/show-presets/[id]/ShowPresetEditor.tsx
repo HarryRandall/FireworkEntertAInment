@@ -32,20 +32,20 @@ import {
   setShowPresetPublished,
   updateShowPresetDetails,
 } from '@/app/actions/admin-show-presets';
-import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
-import { EditorPreviewTransport } from '@/app/components/admin/FireworkEditorShell';
+import { useAdminBreadcrumbOverride } from '@/components/admin/AdminShell';
+import { EditorPreviewTransport } from '@/components/admin/FireworkEditorShell';
 import {
   PreviewFullscreenBackdrop,
   usePreviewFullscreen,
-} from '@/app/components/admin/previewFullscreen';
-import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
-import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert } from '@/app/components/ui/Feedback';
-import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
-import { toast } from '@/app/components/ui/toast';
+} from '@/components/admin/previewFullscreen';
+import { ReplayCanvasSkeleton } from '@/components/replay/ReplayCanvasSkeleton';
+import { Badge } from '@/components/design-system/Badge';
+import { Button } from '@/components/design-system/Button';
+import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
+import { InlineAlert } from '@/components/design-system/Feedback';
+import { Input, Textarea } from '@/components/design-system/Input';
+import { SelectField } from '@/components/design-system/SelectField';
+import { toast } from '@/components/design-system/toast';
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
 

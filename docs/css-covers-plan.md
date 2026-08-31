@@ -40,11 +40,11 @@ to a stored raster stays optional (see migration).
 
 ## What was built (this pass)
 
-| File                                     | Role                                                                                                                                                                                   |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/css-cover.ts`                       | Pure, serialisable `CssCover` type + generators, mirrors `lib/shader-cover.ts`. Carries an `engine: 'css'` discriminator so both cover kinds can share the `cover_shader` JSON column. |
-| `app/components/app/CssCover.tsx`        | Renders a `CssCover` as layered CSS/SVG plus the Canvas2D `bloom` kind. `animate` toggles live vs frozen.                                                                              |
-| `app/components/app/CssCover.module.css` | Keyframes and layer classes. Colours/timing come in via CSS custom properties and inline duration/delay.                                                                               |
+| File                                    | Role                                                                                                                                                                                   |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/css-cover.ts`                      | Pure, serialisable `CssCover` type + generators, mirrors `lib/shader-cover.ts`. Carries an `engine: 'css'` discriminator so both cover kinds can share the `cover_shader` JSON column. |
+| `components/covers/CssCover.tsx`        | Renders a `CssCover` as layered CSS/SVG plus the Canvas2D `bloom` kind. `animate` toggles live vs frozen.                                                                              |
+| `components/covers/CssCover.module.css` | Keyframes and layer classes. Colours/timing come in via CSS custom properties and inline duration/delay.                                                                               |
 
 `lib/css-cover.ts` intentionally reuses the shape and helpers of
 `lib/shader-cover.ts` (palette building, colour normalisation, gradient
@@ -122,7 +122,7 @@ Staged so nothing in the live flow changes until we choose to flip it.
 2. **Done - cover dispatcher** - `lib/cover.ts` exposes `ShowCover`
    (`ShaderCover | CssCover`), `parseCover` (dispatches on the `engine` field:
    absent -> WebGL, `css` -> CSS), `randomCover` (always CSS), `coverGradient`,
-   and `isCssCover`. `app/components/app/Cover.tsx` renders the right engine.
+   and `isCssCover`. `components/covers/Cover.tsx` renders the right engine.
    `lib/shows/mappers.ts`, `lib/admin/mappers.ts`, and
    `lib/admin/cover-posters.server.ts` parse through it; domain types
    (`show-domain`, `show-summary`, `admin.types`) carry `ShowCover`. The

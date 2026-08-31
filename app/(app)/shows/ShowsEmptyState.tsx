@@ -1,6 +1,6 @@
 /** Empty state for the My shows page when the user has no saved shows yet. */
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
+import { Button } from '@/components/design-system/Button';
 
 export function ShowsEmptyState() {
   return (

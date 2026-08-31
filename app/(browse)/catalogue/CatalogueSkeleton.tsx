@@ -1,7 +1,7 @@
 /** Shared catalogue skeletons used by the page's Suspense fallback and `loading.tsx`. */
 
-import { FireworkBrowseGridSkeleton } from '@/app/components/app/FireworkBrowseCard';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { FireworkBrowseGridSkeleton } from '@/components/catalogue/FireworkBrowseCard';
+import { Skeleton } from '@/components/design-system/Feedback';
 
 export const CATALOGUE_PAGE_SIZE = 15;
 

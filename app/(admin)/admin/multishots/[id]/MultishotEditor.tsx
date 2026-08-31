@@ -48,25 +48,25 @@ import {
   PreviewFullscreenBackdrop,
   type PreviewFullscreenContainerProps,
   usePreviewFullscreen,
-} from '@/app/components/admin/previewFullscreen';
+} from '@/components/admin/previewFullscreen';
 import {
   deleteMultishotShot,
   updateMultishot,
   upsertMultishotShot,
 } from '@/app/actions/admin-multishots';
-import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
-import { EditorPreviewTransport } from '@/app/components/admin/FireworkEditorShell';
-import { ReplayCanvasSkeleton } from '@/app/components/app/ReplayCanvasSkeleton';
-import type { AimMarker } from '@/app/components/app/FireworkReplayCanvas';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InlineAlert } from '@/app/components/ui/Feedback';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
-import { SliderField } from '@/app/components/ui/SliderField';
-import { toast } from '@/app/components/ui/toast';
+import { useAdminBreadcrumbOverride } from '@/components/admin/AdminShell';
+import { EditorPreviewTransport } from '@/components/admin/FireworkEditorShell';
+import { ReplayCanvasSkeleton } from '@/components/replay/ReplayCanvasSkeleton';
+import type { AimMarker } from '@/components/replay/FireworkReplayCanvas';
+import { Badge } from '@/components/design-system/Badge';
+import { Button } from '@/components/design-system/Button';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { InlineAlert } from '@/components/design-system/Feedback';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+import { Input, Textarea } from '@/components/design-system/Input';
+import { SelectField } from '@/components/design-system/SelectField';
+import { SliderField } from '@/components/design-system/SliderField';
+import { toast } from '@/components/design-system/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,7 +115,7 @@ import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
 

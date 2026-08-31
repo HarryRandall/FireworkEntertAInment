@@ -14,9 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { Input } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import { updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
 
 type Values = ProductInputType & { id?: string };

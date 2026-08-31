@@ -2,10 +2,10 @@
 
 import { Suspense } from 'react';
 import { CircleDashed, CircleDot, Layers3, Package, type LucideIcon } from 'lucide-react';
-import { FilterSkeleton, TableSkeleton } from '@/app/components/app/RouteSkeletons';
-import { Badge } from '@/app/components/ui/Badge';
-import { FilterBar } from '@/app/components/ui/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/app/components/ui/TablePagination';
+import { FilterSkeleton, TableSkeleton } from '@/components/shell/RouteSkeletons';
+import { Badge } from '@/components/design-system/Badge';
+import { FilterBar } from '@/components/design-system/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
 import {
   DataTableShell,
   tableCellClasses,
@@ -13,7 +13,7 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/app/components/ui/DataTable';
+} from '@/components/design-system/DataTable';
 import {
   formatDuration,
   formatManufacturerLabel,

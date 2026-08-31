@@ -4,12 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { Loader2 } from 'lucide-react';
 import { deleteImportJobAction, updateImportJobAction } from '@/app/actions/platform-admin';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Input, Select } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Badge } from '@/components/design-system/Badge';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { Input, Select } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import {
   AlertDialog,
   AlertDialogAction,

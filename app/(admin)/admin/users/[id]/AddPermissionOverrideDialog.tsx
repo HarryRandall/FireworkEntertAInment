@@ -6,10 +6,10 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, Plus, Search, X } from 'lucide-react';
 import { setUserPermissionOverridesAction } from '@/app/actions/admin-users';
-import { Button } from '@/app/components/ui/Button';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { Input } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+import { Input } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import {
   Dialog,
   DialogContent,

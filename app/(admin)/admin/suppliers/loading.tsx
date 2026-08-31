@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin supplier list. */
 
-import { AdminTableRouteSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminTableRouteSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function AdminSuppliersLoading() {
   return (

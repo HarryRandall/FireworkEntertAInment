@@ -1,7 +1,7 @@
 /** Reset-password page; exposes the form only after a verified recovery exchange. */
 
 import Link from 'next/link';
-import { FormError } from '@/app/components/ui/FormError';
+import { FormError } from '@/components/design-system/FormError';
 import { getPasswordRecoverySession } from '@/lib/password-recovery.server';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { ResetPasswordShell } from './ResetPasswordShell';

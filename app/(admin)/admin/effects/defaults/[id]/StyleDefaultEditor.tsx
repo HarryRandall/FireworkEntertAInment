@@ -21,38 +21,29 @@ import {
   restoreStyleDefaultEditorVersion,
   updateStyleDefault,
 } from '@/app/actions/admin-style-defaults';
-import {
-  EditorHistoryPanel,
-  JsonReadOnlyPanel,
-} from '@/app/components/admin/EditorInspectorPanels';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/components/admin/EditorInspectorPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,
   estimateLaunchPreviewDurationSeconds,
   estimateLaunchPreviewTicks,
   estimatePreviewTicks,
-} from '@/app/components/admin/editor-preview-timing';
+} from '@/components/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
-} from '@/app/components/admin/FireworkEditorShell';
-import {
-  makeOptimisticEditorVersion,
-  useEditorHistory,
-} from '@/app/components/admin/useEditorHistory';
-import { usePreviewFullscreen } from '@/app/components/admin/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/app/components/admin/AdminShell';
-import { ReplayStageBackdrop } from '@/app/components/app/ReplayStageBackdrop';
-import {
-  FireworkRenderControls,
-  PanelSection,
-} from '@/app/components/admin/FireworkRenderControls';
-import { Button } from '@/app/components/ui/Button';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { Input, Textarea } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
-import { toast } from '@/app/components/ui/toast';
+} from '@/components/admin/FireworkEditorShell';
+import { makeOptimisticEditorVersion, useEditorHistory } from '@/components/admin/useEditorHistory';
+import { usePreviewFullscreen } from '@/components/admin/previewFullscreen';
+import { useAdminBreadcrumbOverride } from '@/components/admin/AdminShell';
+import { ReplayStageBackdrop } from '@/components/replay/ReplayStageBackdrop';
+import { FireworkRenderControls, PanelSection } from '@/components/admin/FireworkRenderControls';
+import { Button } from '@/components/design-system/Button';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+import { Input, Textarea } from '@/components/design-system/Input';
+import { SelectField } from '@/components/design-system/SelectField';
+import { toast } from '@/components/design-system/toast';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
@@ -74,7 +65,7 @@ type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; er
 type TrailPreviewStarMode = 'none' | 'default' | 'custom';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/app/components/app/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayStageBackdrop />,

@@ -7,7 +7,7 @@
  * route splash, so the backdrop and bar carry over without any visible reload.
  */
 
-import { GeneratingShowAnimation } from '@/app/components/app/GeneratingShowAnimation';
+import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
 
 export function LaunchOverlay({
   slug,

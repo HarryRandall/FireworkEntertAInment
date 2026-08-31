@@ -1,7 +1,7 @@
 /** Honest release placeholder while ShowCrafter has no verified public changelog. */
 
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/app/components/marketing/ComingSoon';
+import { ComingSoon } from '@/components/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Changelog · ShowCrafter',

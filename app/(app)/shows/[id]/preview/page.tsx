@@ -2,8 +2,8 @@
 
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { FireworkReplayViewer } from '@/app/components/app/FireworkReplayViewer';
-import { ReplayPanelSkeleton } from '@/app/components/app/RouteSkeletons';
+import { FireworkReplayViewer } from '@/components/replay/FireworkReplayViewer';
+import { ReplayPanelSkeleton } from '@/components/shell/RouteSkeletons';
 import { getCurrentProfile } from '@/lib/admin/current-user.server';
 import {
   getAudioSignedUrl,

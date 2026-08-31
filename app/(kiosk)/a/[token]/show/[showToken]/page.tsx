@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Music2, Package, ShieldCheck } from 'lucide-react';
-import { Card } from '@/app/components/ui/Card';
-import { TemplateReplayPreview } from '@/app/components/app/TemplateReplayPreview';
+import { Card } from '@/components/design-system/Card';
+import { TemplateReplayPreview } from '@/components/replay/TemplateReplayPreview';
 import {
   getAssortmentServiceClient,
   getPublicAssortmentByToken,

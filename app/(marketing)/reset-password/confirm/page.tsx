@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { confirmPasswordRecoveryAction } from '@/app/actions/password-recovery';
-import { FormError } from '@/app/components/ui/FormError';
+import { FormError } from '@/components/design-system/FormError';
 import { PASSWORD_RECOVERY_TOKEN_COOKIE } from '@/lib/password-recovery.server';
 import { ResetPasswordShell } from '../ResetPasswordShell';
 import { ConfirmRecoveryButton } from './ConfirmRecoveryButton';

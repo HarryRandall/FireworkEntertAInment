@@ -10,7 +10,7 @@
  * wrong page shape.
  */
 
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/components/design-system/Feedback';
 
 export default function AdminLoading() {
   return (

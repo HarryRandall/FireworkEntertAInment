@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, type FormEvent } from 'react';
 import { Mail, Lock, User, CheckCircle, ArrowLeft } from 'lucide-react';
-import { Input } from '@/app/components/ui/Input';
-import { Button } from '@/app/components/ui/Button';
+import { Input } from '@/components/design-system/Input';
+import { Button } from '@/components/design-system/Button';
 import { createClient } from '@/utils/supabase/client';
 import { AuthShell } from '../components/AuthShell';
-import { FormError } from '@/app/components/ui/FormError';
+import { FormError } from '@/components/design-system/FormError';
 import {
   buildAuthCallbackUrl,
   buildAuthPageHref,

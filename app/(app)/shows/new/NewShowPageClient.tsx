@@ -15,7 +15,7 @@
  * so nothing has to be typed beyond the description.
  *
  * Critical invariants enforced by the wizard tests in
- * `tests/new-show-wizard.test.mjs`:
+ * `tests/shows/new-show-wizard.test.mjs`:
  *   - The form's `onSubmit` only advances the flow; it must never call
  *     `createShowAction`.
  *   - The create-show server action is invoked once, and only inside
@@ -40,11 +40,11 @@ import {
   Waves,
   Zap,
 } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { CueModelSelect } from '@/app/components/app/CueModelSelect';
-import { Skeleton } from '@/app/components/ui/Feedback';
-import { Input, Textarea } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { CueModelSelect } from '@/components/shows/CueModelSelect';
+import { Skeleton } from '@/components/design-system/Feedback';
+import { Input, Textarea } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import { createClient as createSupabaseBrowserClient } from '@/utils/supabase/client';
 import {
   FIREWORK_TYPES,

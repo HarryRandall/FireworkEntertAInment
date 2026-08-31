@@ -3,8 +3,8 @@
 /** Error boundary for admin routes. */
 
 import { RotateCcw } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { InlineAlert } from '@/app/components/ui/Feedback';
+import { Button } from '@/components/design-system/Button';
+import { InlineAlert } from '@/components/design-system/Feedback';
 
 export default function AdminError({
   reset,

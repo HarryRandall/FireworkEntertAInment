@@ -1,7 +1,7 @@
 /** Song context tab exposing the analyser output used for show planning. */
 
 import { notFound, redirect } from 'next/navigation';
-import { AudioAnalysisTimeline } from '@/app/components/app/AudioAnalysisTimeline';
+import { AudioAnalysisTimeline } from '@/components/shows/AudioAnalysisTimeline';
 import { getLatestAnalysisForShow } from '@/lib/show-analyses.server';
 import { getSoundtrackAttribution } from '@/lib/shows/audio.server';
 import { getShowBySlug } from '@/lib/shows.server';

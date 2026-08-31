@@ -15,11 +15,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/app/components/ui/Button';
-import { Field, FieldLabel } from '@/app/components/ui/Field';
-import { Input } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { Field, FieldLabel } from '@/components/design-system/Field';
+import { Input } from '@/components/design-system/Input';
+import { SelectField } from '@/components/design-system/SelectField';
+import { toast } from '@/components/design-system/toast';
 import {
   createSupplier,
   updateSupplier,

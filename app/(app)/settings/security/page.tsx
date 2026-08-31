@@ -1,6 +1,6 @@
 /** Security settings page combining password change and recent security activity. */
 
-import { InlineAlert } from '@/app/components/ui/Feedback';
+import { InlineAlert } from '@/components/design-system/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 import { PasswordChangeForm } from './PasswordChangeForm';

@@ -1,4 +1,4 @@
-import { Card } from '@/app/components/ui/Card';
+import { Card } from '@/components/design-system/Card';
 import type { ImportReconstructionPlan } from '@/lib/import-reconstruction';
 
 export function ImportReconstructionSummary({

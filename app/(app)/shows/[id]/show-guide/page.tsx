@@ -2,8 +2,8 @@
 
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { ShowGuideList } from '@/app/components/app/ShowGuideList';
-import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { ShowGuideList } from '@/components/shows/ShowGuideList';
+import { ListSkeleton } from '@/components/shell/RouteSkeletons';
 import { getShowBySlug, listCuesForShow } from '@/lib/shows.server';
 import type { Show } from '@/lib/show-domain';
 

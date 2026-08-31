@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LockKeyhole, Music2, Package, Sparkles } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
 import { formatBudget } from '@/lib/show-domain';
 import { createClient } from '@/utils/supabase/client';
 import type { PublicAssortmentItem } from '@/lib/assortments/public.server';

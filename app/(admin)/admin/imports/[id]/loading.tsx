@@ -1,8 +1,8 @@
 /** Route-local loading state for the reconstruction workbench. */
 
 import { ArrowLeft } from 'lucide-react';
-import { Card } from '@/app/components/ui/Card';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Card } from '@/components/design-system/Card';
+import { Skeleton } from '@/components/design-system/Feedback';
 
 export default function AdminImportDetailLoading() {
   return (

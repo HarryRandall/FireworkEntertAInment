@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { DeleteAccountSection } from './DeleteAccountSection';
 import { PersonalDetailsForm } from './PersonalDetailsForm';
 import { SignOutButton } from '../SignOutButton';
-import { InlineAlert } from '@/app/components/ui/Feedback';
+import { InlineAlert } from '@/components/design-system/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCurrentProfile } from '@/lib/admin.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';

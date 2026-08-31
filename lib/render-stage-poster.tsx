@@ -14,7 +14,7 @@
  * Browser-only: relies on DOM, WebGL and react-dom/client.
  */
 import { createRoot } from 'react-dom/client';
-import { FireworkReplayCanvas } from '@/app/components/app/FireworkReplayCanvas';
+import { FireworkReplayCanvas } from '@/components/replay/FireworkReplayCanvas';
 
 // 4:5 portrait to match the browse cards, at 2x for crisp retina output.
 const CAPTURE_WIDTH = 768;

@@ -1,8 +1,8 @@
 /** Show-local not-found state that keeps the authenticated workspace chrome visible. */
 
 import { FileQuestion, List, Plus } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
 
 export default function ShowNotFound() {
   return (

@@ -4,8 +4,8 @@ import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gauge, Sparkles } from 'lucide-react';
 import { updateShowGenerationModeAction } from '@/app/actions/admin-prompts';
-import { InfoTooltip } from '@/app/components/ui/InfoTooltip';
-import { toast } from '@/app/components/ui/toast';
+import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+import { toast } from '@/components/design-system/toast';
 import type { GenerationMode, GenerationSetting } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
 

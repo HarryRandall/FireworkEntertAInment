@@ -1,8 +1,8 @@
 /** Stable route chrome for the `/settings/billing` loading state. */
 
 import { CheckCircle2, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Badge } from '@/components/design-system/Badge';
+import { Skeleton } from '@/components/design-system/Feedback';
 import {
   Card,
   CardAction,

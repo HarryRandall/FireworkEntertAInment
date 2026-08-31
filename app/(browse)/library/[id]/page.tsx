@@ -6,13 +6,13 @@ import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import type * as React from 'react';
 import { cloneShowTemplateAction } from '@/app/actions/show-templates';
-import { TemplateReplaySkeleton } from '@/app/components/app/RouteSkeletons';
-import { TemplateCurrentFireworkCard } from '@/app/components/app/TemplateCurrentFireworkCard';
-import { TemplateLikeButton } from '@/app/components/app/TemplateLikeButton';
-import { TemplateReplayPreview } from '@/app/components/app/TemplateReplayPreview';
-import { Badge } from '@/app/components/ui/Badge';
-import { Card } from '@/app/components/ui/Card';
-import { InlineAlert, Skeleton } from '@/app/components/ui/Feedback';
+import { TemplateReplaySkeleton } from '@/components/shell/RouteSkeletons';
+import { TemplateCurrentFireworkCard } from '@/components/explore/TemplateCurrentFireworkCard';
+import { TemplateLikeButton } from '@/components/explore/TemplateLikeButton';
+import { TemplateReplayPreview } from '@/components/replay/TemplateReplayPreview';
+import { Badge } from '@/components/design-system/Badge';
+import { Card } from '@/components/design-system/Card';
+import { InlineAlert, Skeleton } from '@/components/design-system/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
 import {
   getCurrentProfile,

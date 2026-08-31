@@ -3,8 +3,8 @@
 /** Optimistic supplier table body so deletions disappear before the server refresh completes. */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Badge } from '@/app/components/ui/Badge';
-import { tableCellClasses, tableRowClasses } from '@/app/components/ui/DataTable';
+import { Badge } from '@/components/design-system/Badge';
+import { tableCellClasses, tableRowClasses } from '@/components/design-system/DataTable';
 import type { SupplierSummary } from '@/lib/admin.types';
 import { SupplierRowActions } from './SupplierRowActions';
 

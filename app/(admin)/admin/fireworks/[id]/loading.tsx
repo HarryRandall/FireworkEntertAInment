@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin firework editor. */
 
-import { AdminFireworkEditorSkeleton } from '@/app/components/app/RouteSkeletons';
+import { AdminFireworkEditorSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function AdminFireworkEditorLoading() {
   return (

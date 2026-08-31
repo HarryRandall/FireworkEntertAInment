@@ -1,7 +1,7 @@
 /** Loading skeleton for the admin fireworks list. */
 
-import { FireworkBrowseGridSkeleton } from '@/app/components/app/FireworkBrowseCard';
-import { FilterSkeleton } from '@/app/components/app/RouteSkeletons';
+import { FireworkBrowseGridSkeleton } from '@/components/catalogue/FireworkBrowseCard';
+import { FilterSkeleton } from '@/components/shell/RouteSkeletons';
 
 export default function AdminFireworksLoading() {
   return (

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   FireworkReplayCaptureController,
   FireworkReplayCapturedFrame,
-} from '@/app/components/app/FireworkReplayCanvas';
+} from '@/components/replay/FireworkReplayCanvas';
 import {
   analyseImportRenderPixels,
   buildImportTemporalForegroundFrames,
@@ -24,7 +24,7 @@ import type { ReplayCue } from '@/lib/show-domain';
 
 const FireworkReplayCanvas = dynamic(
   () =>
-    import('@/app/components/app/FireworkReplayCanvas').then(
+    import('@/components/replay/FireworkReplayCanvas').then(
       (module) => module.FireworkReplayCanvas,
     ),
   { ssr: false },

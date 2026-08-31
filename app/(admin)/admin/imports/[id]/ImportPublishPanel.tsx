@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { approveImportJobAction } from '@/app/actions/platform-admin';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
-import { Field, FieldHint, FieldLabel } from '@/app/components/ui/Field';
-import { Input } from '@/app/components/ui/Input';
-import { toast } from '@/app/components/ui/toast';
+import { Button } from '@/components/design-system/Button';
+import { Card } from '@/components/design-system/Card';
+import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
+import { Input } from '@/components/design-system/Input';
+import { toast } from '@/components/design-system/toast';
 import {
   AlertDialog,
   AlertDialogAction,

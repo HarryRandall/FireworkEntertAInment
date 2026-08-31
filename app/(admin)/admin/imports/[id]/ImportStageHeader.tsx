@@ -1,5 +1,5 @@
 import { Check, Circle } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
+import { Badge } from '@/components/design-system/Badge';
 import {
   IMPORT_REVIEW_STEPS,
   importStageIndex,

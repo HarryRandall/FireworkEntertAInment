@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { AppShell } from '@/app/components/app/AppShell';
+import { AppShell } from '@/components/shell/AppShell';
 import { getCurrentProfile } from '@/lib/admin.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';

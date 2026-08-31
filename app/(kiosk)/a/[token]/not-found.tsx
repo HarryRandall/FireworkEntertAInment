@@ -1,5 +1,5 @@
 import { PackageX } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button';
+import { Button } from '@/components/design-system/Button';
 
 export default function AssortmentUnavailable() {
   return (

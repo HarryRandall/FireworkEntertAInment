@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Gauge } from 'lucide-react';
-import { Badge } from '@/app/components/ui/Badge';
-import { Card } from '@/app/components/ui/Card';
+import { Badge } from '@/components/design-system/Badge';
+import { Card } from '@/components/design-system/Card';
 import type {
   ImportEngineMetricField,
   ImportEngineMetricSummary,

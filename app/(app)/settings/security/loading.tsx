@@ -1,6 +1,6 @@
 /** Loading skeleton for the `/settings/security` route. */
 
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/components/design-system/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const SECURITY_EVENTS = ['Last sign-in', 'Email confirmed', 'Account created'] as const;

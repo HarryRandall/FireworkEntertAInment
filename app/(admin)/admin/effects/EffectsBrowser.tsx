@@ -6,13 +6,13 @@ import { useMemo, useState } from 'react';
 import { ListFilter, Plus, Search } from 'lucide-react';
 import { createCustomStarEffect } from '@/app/actions/admin-effects';
 import { createStyleDefaultFromKind } from '@/app/actions/admin-style-defaults';
-import { FireworkBrowseCard } from '@/app/components/app/FireworkBrowseCard';
-import { FireworkBrowsePreviewProvider } from '@/app/components/app/FireworkBrowsePreviewContext';
-import { Badge } from '@/app/components/ui/Badge';
-import { Button } from '@/app/components/ui/Button';
-import { EmptyNotice } from '@/app/components/ui/Feedback';
-import { Input } from '@/app/components/ui/Input';
-import { SelectField } from '@/app/components/ui/SelectField';
+import { FireworkBrowseCard } from '@/components/catalogue/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/components/catalogue/FireworkBrowsePreviewContext';
+import { Badge } from '@/components/design-system/Badge';
+import { Button } from '@/components/design-system/Button';
+import { EmptyNotice } from '@/components/design-system/Feedback';
+import { Input } from '@/components/design-system/Input';
+import { SelectField } from '@/components/design-system/SelectField';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,

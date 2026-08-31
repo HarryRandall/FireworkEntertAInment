@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin curated show editor. */
 
-import { Skeleton } from '@/app/components/ui/Feedback';
+import { Skeleton } from '@/components/design-system/Feedback';
 
 export default function AdminShowPresetEditorLoading() {
   return (

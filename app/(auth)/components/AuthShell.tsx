@@ -1,8 +1,8 @@
 /** Shared split-screen shell for the auth pages (login and signup). */
 
 import Link from 'next/link';
-import { SkipLink } from '@/app/components/ui/SkipLink';
-import { BrandLockup } from '@/app/components/ui/BrandMark';
+import { SkipLink } from '@/components/design-system/SkipLink';
+import { BrandLockup } from '@/components/design-system/BrandMark';
 import { authIllustrationMarkup } from './authIllustration';
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
