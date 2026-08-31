@@ -48,6 +48,10 @@ test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
 test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs', () => {
   const appSource = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
   const adminSource = readFileSync(join(root, 'components/admin/AdminShell.tsx'), 'utf8');
+  const cacheSource = readFileSync(
+    join(root, 'components/shell/workspace-summary-cache.client.ts'),
+    'utf8',
+  );
 
   assert.match(appSource, /getAppBreadcrumbs/);
   assert.match(appSource, /formatPathSegment/);
@@ -68,11 +72,11 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
   assert.match(appSource, /label: 'Admin'/);
   assert.doesNotMatch(appSource, /label: 'Library'/);
   assert.match(appSource, /\/api\/me\/summary/);
-  assert.match(appSource, /WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v3'/);
-  assert.match(appSource, /workspaceSummaryCacheKey\(profileId\)/);
+  assert.match(cacheSource, /CACHE_KEY_PREFIX = 'sc:workspace-summary:v3'/);
+  assert.match(cacheSource, /cacheKey\(profileId\)/);
   assert.match(appSource, /readCachedWorkspaceSummary\(profileId\)/);
   assert.match(appSource, /writeCachedWorkspaceSummary\(profileId, nextSummary\)/);
-  assert.doesNotMatch(appSource, /sc:workspace-summary:v[12]/);
+  assert.doesNotMatch(cacheSource, /sc:workspace-summary:v[12]/);
   assert.match(appSource, /aria-label="Breadcrumb"/);
   assert.match(appSource, /<ShellTopBar pathname=\{effectivePath\} \/>/);
 
