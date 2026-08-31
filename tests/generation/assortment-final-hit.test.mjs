@@ -126,12 +126,30 @@ function sevenItemPack() {
 
 function sevenItemSlots() {
   return [
-    ...slotsAt(70, 0, { nearClimax: true, emphasis: 'peak' }),
-    ...slotsAt(76, 3, { finale: true }),
-    ...slotsAt(82, 6, { finale: true }),
-    ...slotsAt(88, 9, { finale: true }),
-    ...slotsAt(94, 12, { finale: true }),
-    ...slotsAt(100, 15, { finale: true }),
+    ...slotsAt(27.52, 0, {
+      sectionLabel: 'Chorus 1',
+      nearClimax: true,
+      emphasis: 'peak',
+    }),
+    ...slotsAt(28.52, 3, {
+      sectionLabel: 'Chorus 1',
+      nearClimax: true,
+      emphasis: 'peak',
+    }),
+    ...slotsAt(50, 6, {
+      sectionLabel: 'Verse',
+      vibe: 'verse',
+      intensity: 0.5,
+      emphasis: 'normal',
+      isDownbeat: false,
+    }),
+    ...slotsAt(65, 9, {
+      sectionLabel: 'Build',
+      vibe: 'buildup',
+      emphasis: 'accent',
+    }),
+    ...slotsAt(76.14, 12, { finale: true, sectionLabel: 'Chorus 2' }),
+    ...slotsAt(77.14, 15, { finale: true, sectionLabel: 'Chorus 2' }),
     ...slotsAt(116.68, 18, { finale: true }),
   ];
 }
@@ -188,6 +206,20 @@ test('beat planner reserves the direct firework for the final beat of an exact p
   });
 
   assertExactFinale(result, products);
+  const cakeImpacts = result.cues
+    .filter((cue) => cue.productId.startsWith('cake-'))
+    .map((cue) => cue.impactTimeSeconds);
+  const groupedCakeImpacts = Map.groupBy(cakeImpacts, (time) => time);
+  assert.equal(groupedCakeImpacts.size, 3);
+  assert.deepEqual(
+    [...groupedCakeImpacts.values()].map((group) => group.length),
+    [2, 2, 2],
+  );
+  const orderedImpacts = [...groupedCakeImpacts.keys()].sort((left, right) => left - right);
+  assert.equal(
+    orderedImpacts.every((time, index) => index === 0 || time - orderedImpacts[index - 1] >= 10),
+    true,
+  );
 });
 
 test('beat planner keeps exact quantities when the remaining pack cannot fill a group', () => {
@@ -236,6 +268,52 @@ test('beat planner retains all available positions after reserving the final hit
   assert.deepEqual(result.cues.map((cue) => cue.tube).sort(), [0, 1, 2]);
   assert.equal(
     result.cues.every((cue) => cue.impactTimeSeconds === 20),
+    true,
+  );
+});
+
+test('beat planner revisits deferred sections before exact-inventory final overflow', () => {
+  const products = sevenItemPack();
+  const availabilityByProductId = new Map(products.map((item) => [item.id, 1]));
+  const slots = [
+    ...slotsAt(10, 0, {
+      sectionLabel: 'Section A',
+      nearClimax: true,
+      emphasis: 'peak',
+    }),
+    ...slotsAt(11, 3, {
+      sectionLabel: 'Section A',
+      nearClimax: true,
+      emphasis: 'peak',
+    }),
+    slotsAt(30, 6, {
+      sectionLabel: 'Section B',
+      vibe: 'verse',
+      emphasis: 'normal',
+    })[0],
+    ...slotsAt(50, 9, { finale: true }),
+  ];
+  const result = planCuesOnBeats({
+    analysis: null,
+    slots,
+    products,
+    songDuration: 52,
+    brief,
+    maxTubes: 3,
+    availabilityByProductId,
+  });
+
+  assert.equal(result.cues.length, 7);
+  assert.deepEqual(
+    [...new Set(result.cues.map((cue) => cue.productId))].sort(),
+    products.map((item) => item.id).sort(),
+  );
+  assert.equal(
+    result.cues.some((cue) => cue.productId === 'direct-shell' && cue.impactTimeSeconds === 50),
+    true,
+  );
+  assert.equal(
+    result.cues.some((cue) => cue.productId.startsWith('cake-') && cue.impactTimeSeconds === 11),
     true,
   );
 });
