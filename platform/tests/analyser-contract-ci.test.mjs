@@ -9,11 +9,11 @@ test('cross-language analyser contract has a hermetic fail-closed CI job', () =>
   const contractJob = workflow.slice(workflow.indexOf('  analyser-contract:'));
 
   assert.match(contractJob, /working-directory: platform/);
-  assert.match(contractJob, /uses: actions\/setup-node@v4/);
+  assert.match(contractJob, /uses: actions\/setup-node@v7/);
   assert.match(contractJob, /node-version: 22/);
   assert.match(contractJob, /cache-dependency-path: platform\/package-lock\.json/);
   assert.match(contractJob, /run: npm ci/);
-  assert.match(contractJob, /uses: actions\/setup-python@v5/);
+  assert.match(contractJob, /uses: actions\/setup-python@v7/);
   assert.match(contractJob, /python-version: "3\.11\.15"/);
   assert.match(contractJob, /python -m pip install -r analyser\/requirements\.txt/);
   assert.match(contractJob, /SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT: "1"/);
