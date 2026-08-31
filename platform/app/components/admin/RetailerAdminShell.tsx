@@ -3,8 +3,9 @@
 /**
  * RetailerAdminShell - chrome for the retailer-facing admin persona, separate
  * from `AdminShell`. A retailer only gets read-only Catalogue (no Effects —
- * that stays admin-only) plus Assortments, Usage, and Credits, which are the
- * only functions retailers actually need (see FIR-166).
+ * that stays admin-only) plus Assortments and Credits, which are the only
+ * functions retailers actually need (see FIR-166). Usage tracking lives on
+ * Overview rather than its own page — no real backend justifies a second one.
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -15,7 +16,6 @@ import {
   Database,
   LayoutDashboard,
   Layers,
-  LineChart,
   LogOut,
   PlayCircle,
   Settings,
@@ -84,12 +84,6 @@ const RETAILER_LINKS: RetailerNavLink[] = [
     label: 'Assortments',
     icon: Layers,
     permission: 'retailer.manage_assortments',
-  },
-  {
-    href: '/retailer-admin/usage',
-    label: 'Usage',
-    icon: LineChart,
-    permission: 'retailer.view',
   },
   {
     href: '/retailer-admin/test-show',

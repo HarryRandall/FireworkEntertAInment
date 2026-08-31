@@ -16,6 +16,7 @@ type AssortmentRow = {
   name: string;
   description: string | null;
   price_cents: number;
+  created_at: string;
   updated_at: string;
   assortment_items: {
     id: string;
@@ -41,6 +42,7 @@ export type RetailerAssortment = {
   name: string;
   description: string | null;
   priceCents: number;
+  createdAt: string;
   updatedAt: string;
   items: RetailerAssortmentItem[];
 };
@@ -53,7 +55,7 @@ export async function listRetailerAssortments(): Promise<RetailerAssortment[]> {
   const { data, error } = await supabase
     .from('assortments')
     .select(
-      'id, slug, name, description, price_cents, updated_at, assortment_items(id, catalogue_item_id, quantity, sort_order, catalogue_items(name, part_number))',
+      'id, slug, name, description, price_cents, created_at, updated_at, assortment_items(id, catalogue_item_id, quantity, sort_order, catalogue_items(name, part_number))',
     )
     .eq('created_by', profile.id)
     .order('updated_at', { ascending: false });
@@ -68,6 +70,7 @@ export async function listRetailerAssortments(): Promise<RetailerAssortment[]> {
     name: row.name,
     description: row.description,
     priceCents: row.price_cents,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     items: [...row.assortment_items]
       .sort((a, b) => a.sort_order - b.sort_order)
