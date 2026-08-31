@@ -31,6 +31,7 @@ import {
   MessageSquareDot,
   MessageSquareText,
   Moon,
+  Package,
   Rocket,
   Settings,
   ShieldCheck,
@@ -137,6 +138,12 @@ const ADMIN_LINKS: AdminNavLink[] = [
     label: 'Multishots',
     icon: Layers,
     permission: 'admin.manage_catalogue',
+  },
+  {
+    href: '/admin/assortments',
+    label: 'Assortments',
+    icon: Package,
+    permission: 'admin.manage_assortments',
   },
   {
     href: '/admin/show-presets',

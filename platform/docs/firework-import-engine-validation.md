@@ -156,8 +156,11 @@ the actual executor rather than the container initially spawned by the web
 request. If dispatch exhausts its safe retries while the run is still queued, a
 service-role-only RPC atomically fails the job and run and refunds the reserved
 credits. The RPC locks the job before the run, matching worker claim order. If
-the scheduled sweeper or local poller has already claimed the run, dispatch
+an explicit queue sweep or local poller has already claimed the run, dispatch
 failure records `worker_claimed` and cannot fail or refund that in-flight work.
+The deployed Modal app does not poll automatically. Operators can invoke its
+queue sweep explicitly to recover a stranded queued run, while local
+development can still use the polling worker.
 
 ## Deployment constraints
 

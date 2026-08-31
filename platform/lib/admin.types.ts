@@ -23,6 +23,7 @@ export type PermissionKey =
   | 'admin.impersonate_users'
   | 'admin.manage_suppliers'
   | 'admin.manage_catalogue'
+  | 'admin.manage_assortments'
   | 'admin.manage_imports'
   | 'admin.manage_prompts'
   | 'supplier.view'
@@ -325,6 +326,7 @@ export type AdminMultishotFireworkOption = {
 export type AdminMultishotShot = {
   id: string;
   sequenceIndex: number;
+  timelineTrackIndex: number;
   timeOffsetSeconds: number;
   panDegrees: number;
   tiltDegrees: number;

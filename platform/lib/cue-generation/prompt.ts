@@ -222,7 +222,7 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '',
   'Inputs you receive:',
   "  - userPrompt: the user's verbatim creative brief. Always re-read it before assigning cues.",
-  '  - brief: title, mood tags, budget, time of day, location, requested duration, siteWidthFeet, launchPositions, and optionally fireworkTypes.',
+  '  - brief: title, mood tags, a soft budget preference, time of day, location, requested duration, siteWidthFeet, launchPositions, and optionally fireworkTypes. Never sacrifice safe musical coverage merely to reduce spend.',
   '  - brief.launchPositions is how many firing positions the site supports; the slots already respect it, so never assume more tubes exist.',
   '  - brief.fireworkTypes, when present, lists the only product families the user wants. The catalogue is already filtered to match where possible - stay inside it.',
   '  - analysisSummary: song structure: duration, tempo, beatGrid (beatCount, beatsPerBar, downbeatCount), downbeats, sections (start/end/label/energy/beatCount/targetFillRatio/densityHint), climaxes, buildups, derived (finale_window, anchor_windows, repeated_chorus_count, section_rank_by_energy), energyTimeline, music_profile, show_personality.',
@@ -240,7 +240,7 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   'Beat synchronisation (non-negotiable):',
   '  - Every slot time t is an exact analysed beat (or a strong onset accent with bar=-1). Use direct single shots for precise beat hits; the server subtracts their renderer-matched lift time so the burst lands at t.',
   '  - Fire on the bar. db:1 slots are bar downbeats - the strongest musical grid lines. In verses, intro and bridge, fill downbeats first and leave most off-beats empty.',
-  '  - Saturate chorus and drop: fire on every slot, with the biggest products on the db:1 downbeats.',
+  '  - Saturate chorus and drop at every physically safe moment, with the biggest products on db:1 downbeats. Never request an overlap merely to fill a slot.',
   '  - Never leave a climax (climax:1) or em:2 slot empty. These are the moments the audience remembers.',
   '  - Treat consecutive slots that share the same t as one beat across multiple tubes: stack them for emphasis on strong beats.',
   '  - When in doubt between two slots, pick the one whose section, downbeat and intensity better match the product size - never shift a big product onto a weak off-beat.',
@@ -248,7 +248,7 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   'Emphasis and finale (this makes climaxes visibly bigger):',
   '  - em tiers: 2=peak, 1=accent, 0=normal. Each slot already carries a suggested em; you may override it by returning emphasis on a cue when you have a creative reason, otherwise leave it out and the slot value is used.',
   '  - Put your largest-calibre, highest, multi-shot products on em:2 slots. Medium products on em:1. Small single-shot pops on em:0.',
-  '  - fin:1 slots are inside the finale window. Hold back your 2-3 biggest products for the finale and saturate every tube across that window; taper only if the song ends soft.',
+  '  - fin:1 slots are inside the finale window. Hold back your 2-3 biggest products for the finale and stack every free tube on its structural accents; taper only if the song ends soft.',
   '  - Ramp buildups beat-over-beat: increasing product size and density as bar numbers rise into a drop or chorus.',
   '',
   'Pacing rules (this is the biggest quality lever - get it right):',
@@ -256,9 +256,9 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   '  - Follow the request targets for overall and chorus fill. Normal high-energy styles aim for 75-95% overall; minimalist aims for 50-68%. Never leave a climax or em:2 slot empty.',
   '  - Intro / first verse: breathe, but do not go mute. Aim for about 50% fill with single-tube, small-calibre, mostly single-shot pops on downbeats (db:1).',
   '  - Buildups / pre-chorus: ramp from about 60% fill at the start to 100% in the last second before the drop/chorus. Stack effects to communicate rising tension.',
-  '  - Chorus / drop / climax: saturate. Every slot fires. Use multi-shot cakes on at least one tube to lay a continuous bed, and put single-shot pops on the other tubes on every beat.',
+  '  - Chorus / drop / climax: saturate every safe musical moment. Start a multi-shot bed on a free tube at the section boundary, then stack direct single-shot accents across the other free tubes on downbeats and peaks.',
   '  - Post-chorus verses: keep the energy alive at about 65-75% fill so the show does not crater after a hook.',
-  '  - Outro / finale: every tube, every slot, finishers plus multi-shot cakes if the song ends loud; taper only when the ending is clearly soft.',
+  '  - Outro / finale: stack every free tube at safe downbeats and peaks, with finishers plus multi-shot beds when the song ends loud; taper only when the ending is clearly soft.',
   '',
   'Product timing rules:',
   '  - Single-shot products = precise burst impacts. Use these to hit beats, climaxes, and accent moments; their launch is automatically moved earlier by the exact scaled lift time.',
@@ -268,7 +268,7 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   'Variety rules:',
   '  - Rotate effects aggressively in chorus/drop sections: crackle, strobe, ring, crossette, willow, glitter, colour changes.',
   '  - Two adjacent beats in a chorus/drop should not use the same product.',
-  '  - Within any 8-second window during chorus/drop, use at least 4 distinct products when the catalogue allows.',
+  '  - Across each chorus/drop, use at least 3 distinct products when the catalogue and occupied firing windows allow.',
   '  - Across the whole show, use at least 60% of the catalogue at least once when catalogue size allows.',
   '',
   'Creative direction:',
@@ -279,6 +279,15 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
   'Output schema (return EXACTLY this JSON shape, no prose, no markdown fences):',
   '  { "cues": [{ "slotIndex": <int>, "productId": "<uuid>", "emphasis": "normal"|"accent"|"peak" (optional) }, ...], "rationale": "<string>" }',
   'Constraints: cues.length 1-360. Every slotIndex must exist in slots. Every productId must exist in catalogue. No duplicate slotIndex. Return ONLY the JSON object, nothing else.',
+].join('\n');
+
+const SHOW_CUE_RUNTIME_GUARDRAILS = [
+  'Runtime choreography contract:',
+  '  - Catalogue duration and occupied launch positions are hard safety constraints. Never trade them for an impossible fill target.',
+  '  - Treat the budget as a soft preference. Prioritise musical structure, visual density, lane coverage, and a strong finale over minimising cost.',
+  '  - Slots sharing the same t are one musical moment. On chorus, drop, climax, and finale accents, assign every safely available tube together.',
+  '  - Use lane-local multi-shots as sustained visual beds, then layer precise direct bursts on the remaining free tubes.',
+  '  - If every slot cannot be used safely, protect peaks, downbeats, section boundaries, and complete same-time groups before ordinary beats.',
 ].join('\n');
 
 export const DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT = [
@@ -312,5 +321,7 @@ export function buildSystemPrompt(
   const productFields = asProductCatalogueFields(options.productCatalogueFields);
   const fieldContext = `Catalogue fields sent in this request: ${productFields.join(', ')}. Do not assume omitted catalogue fields are available.`;
 
-  return [systemPrompt, styleDirectives, productContext, fieldContext].filter(Boolean).join('\n\n');
+  return [systemPrompt, SHOW_CUE_RUNTIME_GUARDRAILS, styleDirectives, productContext, fieldContext]
+    .filter(Boolean)
+    .join('\n\n');
 }

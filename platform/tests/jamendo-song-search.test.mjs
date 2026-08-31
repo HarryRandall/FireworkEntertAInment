@@ -19,7 +19,7 @@ const replay = read('app/components/app/FireworkReplayViewer.tsx');
 const songContext = read('app/components/app/AudioAnalysisTimeline.tsx');
 const audioReader = read('lib/shows/audio.server.ts');
 const migration = read(
-  'supabase/migrations/20260727121754_add_song_analysis_source_attribution.sql',
+  'supabase/migrations/20260727033941_add_song_analysis_source_attribution.sql',
 );
 const restrictionMigration = read(
   'supabase/migrations/20260727150001_restrict_jamendo_soundtrack_licences.sql',
@@ -129,10 +129,19 @@ test('completed Jamendo analyses already attached to an owned show are reused', 
 
 test('the wizard keeps soundtrack import separate from explicit show generation', () => {
   assert.match(wizard, /<JamendoSongSearch[\s\S]*onSelect=\{attachJamendoTrack\}/);
-  assert.match(wizard, /hasSelection=\{Boolean\(uploadedAudio\?\.source\)\}/);
+  assert.match(
+    wizard,
+    /hasSelection=\{Boolean\(pendingJamendoTrack \|\| uploadedAudio\?\.source\)\}/,
+  );
   assert.match(wizard, /fetch\('\/api\/music-library\/jamendo'/);
   assert.match(wizard, /uploadPromiseRef\.current = importPromise/);
   assert.match(wizard, /await uploadPromiseRef\.current/);
+  assert.match(wizard, /setPendingJamendoTrack\(track\)/);
+  assert.match(
+    wizard,
+    /uploadPromiseRef\.current = importPromise;[\s\S]*goToStep\(stepIndex \+ 1\)/,
+  );
+  assert.doesNotMatch(wizard, /uploadPromiseRef\.current = importPromise;\s*await importPromise/);
   assert.match(wizard, /const result = await createShowAction\(data\)/);
   assert.match(search, /Search uses no AI credits/);
   assert.match(search, /completed analysis is reused when available/);
@@ -167,6 +176,12 @@ test('Jamendo attribution is constrained, stored, and shown in song context', ()
   assert.match(restrictionMigration, /source_provider = 'jamendo'/);
   assert.match(restrictionMigration, /\^\(CC BY\|CC0\)/);
   assert.doesNotMatch(restrictionMigration, /BY-NC|BY-ND|BY-SA/);
+  assert.match(
+    restrictionMigration,
+    /before insert or update of[\s\S]*source_licence_name[\s\S]*source_licence_url/,
+  );
+  assert.match(restrictionMigration, /errcode = '23514'/);
+  assert.doesNotMatch(restrictionMigration, /drop constraint/);
   assert.match(audioReader, /getSoundtrackAttribution/);
   assert.doesNotMatch(replay, /soundtrackAttribution/);
   assert.doesNotMatch(replay, /Soundtrack:\{' '\}/);

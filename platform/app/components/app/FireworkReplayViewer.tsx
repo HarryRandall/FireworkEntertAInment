@@ -77,6 +77,7 @@ import {
   clearPersistedGenerationStart,
 } from '@/lib/generation-progress-storage';
 import { cn } from '@/lib/utils';
+import { OPEN_SHOW_REFINEMENT_EVENT } from '@/lib/show-detail-events';
 
 const REFINEMENT_CREDIT_COST = 2;
 
@@ -106,6 +107,8 @@ type CueDeletionTarget = {
   fireworkName: string;
   timeLabel: string;
 };
+
+type OptimisticCueAction = { type: 'add'; cue: ReplayCue } | { type: 'remove'; cueId: string };
 
 const LAUNCH_POSITION_OPTIONS = [
   { value: '0', label: 'Mortar 1 (left)' },
@@ -211,10 +214,14 @@ export function FireworkReplayViewer({
   const handleAudioUrlLoaded = useCallback((data: string | null) => {
     setStreamedAudioUrl(data);
   }, []);
-  const [optimisticCues, addOptimisticCue] = useOptimistic(
+  const [optimisticCues, applyOptimisticCue] = useOptimistic(
     cues,
-    (current: ReplayCue[], pending: ReplayCue) =>
-      [...current, pending].sort((a, b) => a.timeSeconds - b.timeSeconds),
+    (current: ReplayCue[], action: OptimisticCueAction) => {
+      if (action.type === 'remove') {
+        return current.filter((cue) => cue.id !== action.cueId);
+      }
+      return [...current, action.cue].sort((a, b) => a.timeSeconds - b.timeSeconds);
+    },
   );
   const inferredDuration =
     optimisticCues.length > 0 ? Math.max(...optimisticCues.map((cue) => cue.timeSeconds)) + 5 : 30;
@@ -313,6 +320,15 @@ export function FireworkReplayViewer({
     setShowAddForm(true);
     router.replace(`/shows/${showSlug}/preview`, { scroll: false });
   }, [router, searchParams, showSlug]);
+
+  useEffect(() => {
+    const openRefinement = () => {
+      setCueDialogTab('ai');
+      setShowAddForm(true);
+    };
+    window.addEventListener(OPEN_SHOW_REFINEMENT_EVENT, openRefinement);
+    return () => window.removeEventListener(OPEN_SHOW_REFINEMENT_EVENT, openRefinement);
+  }, []);
 
   useEffect(() => {
     if (playbackControlsTimer.current) clearTimeout(playbackControlsTimer.current);
@@ -530,8 +546,12 @@ export function FireworkReplayViewer({
   }
 
   function restart() {
-    setIsPlaying(false);
+    if (isPlaying) {
+      seekTo(0, true);
+      return;
+    }
     seekTo(0, false);
+    startPlayback();
   }
 
   function seekTo(timeSeconds: number, continuePlaying = isPlaying) {
@@ -620,14 +640,17 @@ export function FireworkReplayViewer({
 
     startTransition(async () => {
       if (product) {
-        addOptimisticCue({
-          id: `optimistic-${Date.now()}`,
-          position: optimisticCues.length,
-          timeSeconds,
-          description,
-          productId,
-          launchPositionIndex,
-          firework: product,
+        applyOptimisticCue({
+          type: 'add',
+          cue: {
+            id: `optimistic-${Date.now()}`,
+            position: optimisticCues.length,
+            timeSeconds,
+            description,
+            productId,
+            launchPositionIndex,
+            firework: product,
+          },
         });
       }
       const result = await addPreviewCueAction(formData);
@@ -669,14 +692,17 @@ export function FireworkReplayViewer({
     );
 
     startTransition(async () => {
-      addOptimisticCue({
-        id: `optimistic-${Date.now()}`,
-        position: optimisticCues.length,
-        timeSeconds,
-        description,
-        productId: product.id,
-        launchPositionIndex,
-        firework: product,
+      applyOptimisticCue({
+        type: 'add',
+        cue: {
+          id: `optimistic-${Date.now()}`,
+          position: optimisticCues.length,
+          timeSeconds,
+          description,
+          productId: product.id,
+          launchPositionIndex,
+          firework: product,
+        },
       });
       const result = await addPreviewCueAction(formData);
       if (!result.ok && isTubeBusyError(result)) {
@@ -706,13 +732,21 @@ export function FireworkReplayViewer({
 
     deletingCueIdRef.current = target.cueId;
     setDeletingCueId(target.cueId);
+    setCueToDelete(null);
     const formData = new FormData();
     formData.set('cueId', target.cueId);
     formData.set('showSlug', showSlug);
+    const deletionToastId = toast.loading(`Deleting ${target.fireworkName}...`);
     startTransition(async () => {
       try {
-        setActionResult(await deletePreviewCueAction(formData));
-        setCueToDelete(null);
+        applyOptimisticCue({ type: 'remove', cueId: target.cueId });
+        const result = await deletePreviewCueAction(formData);
+        setActionResult(result);
+        if (result.ok) {
+          toast.success(`${target.fireworkName} deleted`, { id: deletionToastId });
+        } else {
+          toast.error(result.error, { id: deletionToastId });
+        }
       } finally {
         deletingCueIdRef.current = null;
         setDeletingCueId(null);
@@ -750,7 +784,7 @@ export function FireworkReplayViewer({
             ref={fullscreenContainerRef}
             {...fullscreenContainerProps}
             className={cn(
-              'group/replay',
+              'group/replay overflow-hidden rounded-[inherit]',
               isFullscreen
                 ? 'border-outline-variant/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
                 : 'relative h-[min(72vh,680px)] min-h-[520px]',

@@ -3,8 +3,10 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { Button } from '@/app/components/ui/Button';
+import { ShowExportButton } from '@/app/components/app/ShowExportButton';
 import { ShowTabs } from './ShowTabs';
 import { getShowDetailSection } from './show-detail-sections';
+import { OPEN_SHOW_REFINEMENT_EVENT } from '@/lib/show-detail-events';
 
 type ShowDetailChromeProps = {
   children: ReactNode;
@@ -46,17 +48,26 @@ export function ShowDetailChrome({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShowTabs id={showSlug} />
         <div className="flex items-center gap-2">
-          <Button
-            href={`/shows/${showSlug}/preview?cueDialog=ai`}
-            prefetch={false}
-            variant="secondary"
-            size="sm"
-          >
-            Refine
-          </Button>
-          <Button href={`/api/shows/${showSlug}/export`} prefetch={false} size="sm">
-            Export
-          </Button>
+          {segment === 'preview' ? (
+            <Button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event(OPEN_SHOW_REFINEMENT_EVENT))}
+              variant="secondary"
+              size="sm"
+            >
+              Refine
+            </Button>
+          ) : (
+            <Button
+              href={`/shows/${showSlug}/preview?cueDialog=ai`}
+              prefetch={false}
+              variant="secondary"
+              size="sm"
+            >
+              Refine
+            </Button>
+          )}
+          <ShowExportButton showSlug={showSlug} />
         </div>
       </div>
 

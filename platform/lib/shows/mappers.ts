@@ -52,6 +52,7 @@ export function mapShow(row: ShowProjection): Show {
     launchPositions: parseLaunchPositions(row.launch_positions_json),
     coverShader: parseCover(row.cover_shader),
     coverImagePath: row.cover_image_path ?? null,
+    assortmentId: row.assortment_id ?? null,
     updatedAt: row.updated_at,
   };
 }

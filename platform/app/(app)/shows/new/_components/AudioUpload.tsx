@@ -36,7 +36,7 @@ export function AudioUpload({
 }: {
   track: {
     name: string;
-    sizeBytes: number;
+    sizeBytes: number | null;
     source?: SoundtrackAttribution;
   } | null;
   duration: number | null;
@@ -152,7 +152,9 @@ export function AudioUpload({
             {duration ? (
               <span className="font-mono tabular-nums">{formatDuration(duration)}</span>
             ) : null}
-            <span className="font-mono tabular-nums">{formatBytes(track.sizeBytes)}</span>
+            {track.sizeBytes != null ? (
+              <span className="font-mono tabular-nums">{formatBytes(track.sizeBytes)}</span>
+            ) : null}
             {source ? (
               <a
                 href={source.sourceUrl}

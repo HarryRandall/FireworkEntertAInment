@@ -15,6 +15,7 @@ import {
 import { Skeleton } from '@/app/components/ui/Feedback';
 import { SectionHeader } from '@/app/components/ui/SectionHeader';
 import { ListSkeleton } from '@/app/components/app/RouteSkeletons';
+import { ShowExportButton } from '@/app/components/app/ShowExportButton';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import { formatDuration } from '@/lib/show-domain';
 
@@ -74,15 +75,11 @@ async function ExportsContent() {
       <ExportsIntroCard
         cta={
           recentShows[0] ? (
-            <Button
-              href={`/api/shows/${recentShows[0].slug}/export`}
-              prefetch={false}
-              download
+            <ShowExportButton
+              showSlug={recentShows[0].slug}
+              label="Download latest CSV"
               variant="secondary"
-              size="sm"
-            >
-              Download latest CSV
-            </Button>
+            />
           ) : (
             <Button href="/shows/new" variant="secondary" size="sm">
               Create a show
@@ -128,17 +125,13 @@ async function ExportsContent() {
                       {show.cueCount.toLocaleString('en-AU')}
                     </td>
                     <td className={tableCellClasses('text-right')}>
-                      <Button
-                        href={`/api/shows/${show.slug}/export`}
-                        prefetch={false}
-                        download
+                      <ShowExportButton
+                        showSlug={show.slug}
+                        label="Download CSV"
                         variant="secondary"
-                        size="sm"
                         className="text-xs"
-                      >
-                        <Download size={13} aria-hidden="true" />
-                        Download CSV
-                      </Button>
+                        showIcon
+                      />
                     </td>
                   </tr>
                 ))}

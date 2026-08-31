@@ -8,20 +8,42 @@ import { EmptyNotice } from '@/app/components/ui/Feedback';
 import { TablePagination } from '@/app/components/ui/TablePagination';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { listFireworkProducts } from '@/lib/shows.server';
-import { formatDuration } from '@/lib/show-domain';
+import {
+  formatDuration,
+  formatManufacturerLabel,
+  matchesManufacturerFilter,
+} from '@/lib/show-domain';
 import { CATALOGUE_PAGE_SIZE, CatalogueSkeleton } from './CatalogueSkeleton';
 import { CatalogueToolbar } from './CatalogueToolbar';
 
 type PageProps = {
-  searchParams?: Promise<{ kind?: string; page?: string; q?: string }>;
+  searchParams?: Promise<{
+    kind?: string;
+    manufacturer?: string;
+    duration_min?: string;
+    duration_max?: string;
+    page?: string;
+    q?: string;
+  }>;
 };
 
 type CatalogueProduct = Awaited<ReturnType<typeof listFireworkProducts>>[number];
 
-function matchesProduct(product: CatalogueProduct, query: string, kind: string) {
+function matchesProduct(
+  product: CatalogueProduct,
+  query: string,
+  kind: string,
+  manufacturer: string,
+  durationMin: number | null,
+  durationMax: number | null,
+) {
   const shotCount = product.shotCount ?? 1;
   if (kind === 'single' && shotCount > 1) return false;
   if (kind === 'multishot' && shotCount <= 1) return false;
+  if (!matchesManufacturerFilter(product.manufacturer, manufacturer)) return false;
+  const duration = product.durationSeconds;
+  if (durationMin != null && (duration == null || duration < durationMin)) return false;
+  if (durationMax != null && (duration == null || duration > durationMax)) return false;
 
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -45,6 +67,9 @@ export default async function CataloguePage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q ?? '';
   const kind = params.kind ?? '';
+  const manufacturer = params.manufacturer ?? '';
+  const durationMin = params.duration_min ?? '';
+  const durationMax = params.duration_max ?? '';
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
@@ -54,10 +79,23 @@ export default async function CataloguePage({ searchParams }: PageProps) {
           Browse the products and effects available for ShowCrafter timelines.
         </p>
       </header>
-      <CatalogueToolbar kind={kind} query={query} />
+      <CatalogueToolbar
+        kind={kind}
+        manufacturer={manufacturer}
+        durationMin={durationMin}
+        durationMax={durationMax}
+        query={query}
+      />
 
       <Suspense fallback={<CatalogueSkeleton />}>
-        <CatalogueList kind={kind} page={params.page} query={query} />
+        <CatalogueList
+          kind={kind}
+          manufacturer={manufacturer}
+          durationMin={durationMin}
+          durationMax={durationMax}
+          page={params.page}
+          query={query}
+        />
       </Suspense>
     </div>
   );
@@ -65,15 +103,23 @@ export default async function CataloguePage({ searchParams }: PageProps) {
 
 async function CatalogueList({
   kind,
+  manufacturer,
+  durationMin,
+  durationMax,
   page,
   query,
 }: {
   kind: string;
+  manufacturer: string;
+  durationMin: string;
+  durationMax: string;
   page?: string;
   query: string;
 }) {
+  const parsedDurationMin = durationMin ? Number(durationMin) : null;
+  const parsedDurationMax = durationMax ? Number(durationMax) : null;
   const products = (await listFireworkProducts({ lightweight: true })).filter((product) =>
-    matchesProduct(product, query, kind),
+    matchesProduct(product, query, kind, manufacturer, parsedDurationMin, parsedDurationMax),
   );
 
   if (products.length === 0) {
@@ -105,7 +151,7 @@ async function CatalogueList({
                   {product.name}
                 </h2>
                 <p className="text-muted-foreground mt-1 truncate font-mono text-xs tabular-nums">
-                  {product.slug}
+                  {formatManufacturerLabel(product.manufacturer)}
                 </p>
                 <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
                   <span className="inline-flex items-center gap-1.5">
@@ -131,7 +177,13 @@ async function CatalogueList({
       <TablePagination
         currentPage={currentPage}
         totalPages={totalPages}
-        searchParams={{ kind: kind || undefined, q: query || undefined }}
+        searchParams={{
+          kind: kind || undefined,
+          manufacturer: manufacturer || undefined,
+          duration_min: durationMin || undefined,
+          duration_max: durationMax || undefined,
+          q: query || undefined,
+        }}
         visibleItems={visibleProducts.length}
         totalItems={products.length}
         itemLabel="product"

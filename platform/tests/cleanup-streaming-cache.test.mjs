@@ -205,15 +205,19 @@ test('shopping list reads are pure and derived show totals sync only after mutat
   assert.match(templateActions, /syncShowDerivedFieldsForUser/);
 });
 
-test('manual cue schedule validation fails closed when safety reads fail', () => {
+test('manual cue additions defer schedule safety to the guarded database mutation', () => {
   const previewActions = read('app/actions/preview-cues.ts');
   const overlap = read('lib/cue-overlap.server.ts');
 
-  assert.match(previewActions, /existingCuesError/);
-  assert.doesNotMatch(previewActions, /lastCueError/);
   assert.match(previewActions, /addShowTimelineItem/);
-  assert.match(previewActions, /schedule validation failed/);
-  assert.match(previewActions, /Could not validate the cue schedule\. Try again\./);
+  assert.match(previewActions, /error\?\.code === '23514'/);
+  assert.doesNotMatch(previewActions, /getProductDurationSeconds/);
+  assert.doesNotMatch(previewActions, /findTubeOverlap/);
+  assert.doesNotMatch(previewActions, /existingCues|schedule validation failed/);
+  assert.doesNotMatch(
+    previewActions,
+    /\.select\('id, time_seconds, catalogue_item_id, description'\)/,
+  );
   assert.match(overlap, /if \(itemError\)/);
   assert.match(overlap, /if \(shotsError\)/);
   assert.match(overlap, /throw new Error\('Could not read the catalogue item duration\.'/);

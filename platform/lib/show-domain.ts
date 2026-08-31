@@ -42,6 +42,8 @@ export type Show = {
   coverShader: ShowCover | null;
   /** Storage path of the pre-rendered cover PNG in the covers bucket; null until rendered. */
   coverImagePath: string | null;
+  /** In-store assortment this show was generated from, if any (kiosk Entry Point 2 flow). */
+  assortmentId: string | null;
   updatedAt: string;
 };
 
@@ -75,6 +77,8 @@ export type FireworkSpecification = {
   heightMeters: number | null;
   caliber: string | null;
   shotCount: number | null;
+  /** Set only for catalogue-backed products; synthetic preview specs leave this unset. */
+  manufacturer?: string | null;
   /** Current renderer still in the public firework-previews bucket, when captured. */
   previewImagePath?: string | null;
   /** Visual-source revision used to key preview payload and poster caches. */
@@ -123,6 +127,22 @@ export type ShoppingListItem = {
   partNumber: string;
   manufacturer: string | null;
 };
+
+/** Filter-param value representing "no manufacturer set" (used in URL search params). */
+export const MANUFACTURER_FILTER_NONE = 'none';
+
+export function formatManufacturerLabel(manufacturer: string | null | undefined): string {
+  return manufacturer ?? 'Digitally created';
+}
+
+export function matchesManufacturerFilter(
+  manufacturer: string | null | undefined,
+  filterValue: string,
+): boolean {
+  if (!filterValue) return true;
+  if (filterValue === MANUFACTURER_FILTER_NONE) return manufacturer == null;
+  return manufacturer === filterValue;
+}
 
 /**
  * Format a duration in seconds as `m:ss` for display.

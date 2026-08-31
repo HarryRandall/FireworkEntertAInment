@@ -38,7 +38,7 @@ export async function loadBrief(
   const { data, error } = await supabase
     .from('shows')
     .select(
-      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, selected_cue_model, firework_types',
+      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, selected_cue_model, firework_types, assortment_id',
     )
     .eq('id', showId)
     .eq('user_id', userId)
@@ -48,6 +48,22 @@ export async function loadBrief(
     return null;
   }
   return (data as ShowBriefRow) ?? null;
+}
+
+/** Loads the member catalogue_item ids of an assortment, for constraining the planner's pool to a scanned in-store bundle. */
+export async function loadAssortmentCatalogueItemIds(
+  supabase: AppSupabase,
+  assortmentId: string,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('assortment_items')
+    .select('catalogue_item_id')
+    .eq('assortment_id', assortmentId);
+  if (error) {
+    console.error('[cue-generation] loadAssortmentCatalogueItemIds failed:', error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((row) => row.catalogue_item_id));
 }
 
 /** Loads the current analyser state without imposing a wall-clock cutoff. */

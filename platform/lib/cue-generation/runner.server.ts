@@ -33,7 +33,12 @@ import { fireworkOccupancyDurationSeconds } from '@/lib/show-domain';
 import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { extractProviderError, stripJsonFence } from './llm';
 import { parseCreativeDirection } from './creative-direction';
-import { loadAnalysisState, loadBrief, type AnalysisJsonLoadResult } from './loaders.server';
+import {
+  loadAnalysisState,
+  loadAssortmentCatalogueItemIds,
+  loadBrief,
+  type AnalysisJsonLoadResult,
+} from './loaders.server';
 import {
   buildAnalysisSummary,
   buildSystemPrompt,
@@ -165,7 +170,7 @@ function enforceTimelineTubeSafety(
   maxTubes: 1 | 2 | 3,
 ): ReconstructedCue[] {
   const productById = new Map(products.map((product) => [product.id, product]));
-  const ordered = [...cues].sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
+  const ordered = [...cues].sort(compareCuePlanningPriority);
   const kept: ReconstructedCue[] = [];
   const acceptedWindows: CueWindow[] = [];
   for (const cue of ordered) {
@@ -189,7 +194,7 @@ function enforceTimelineTubeSafety(
     kept.push({ ...cue, timeSeconds: storedTime });
     acceptedWindows.push(...windows);
   }
-  return kept;
+  return kept.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
 }
 
 /** Generated cue with the slot context preserved for downstream validation. */
@@ -206,6 +211,20 @@ type ReconstructedCue = {
   intensity: number;
   emphasis: CueEmphasis;
 };
+
+function compareCuePlanningPriority(a: ReconstructedCue, b: ReconstructedCue): number {
+  return (
+    cueProtectionPriority(b) - cueProtectionPriority(a) ||
+    a.impactTimeSeconds - b.impactTimeSeconds ||
+    a.tube - b.tube
+  );
+}
+
+function cueProtectionPriority(cue: ReconstructedCue): number {
+  if (cue.emphasis === 'peak') return 3;
+  if (cue.emphasis === 'accent') return 2;
+  return 1 + Math.min(0.9, Math.max(0, cue.intensity)) * 0.5;
+}
 
 function elapsedMs(start: number): number {
   return Math.round(performance.now() - start);
@@ -466,6 +485,18 @@ export async function generateCuesForShow(params: {
       const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
       if (filtered.length >= 3) products = filtered;
     }
+    // A kiosk show generated from a scanned assortment must only draw from
+    // that bundle's members — the shopper's price and shopping list are a
+    // promise tied to the physical pack they scanned, not the full
+    // catalogue. Unlike the firework-type preference above, this is not
+    // optional: fail closed rather than silently widening the pool.
+    if (brief.assortment_id) {
+      const assortmentItemIds = await loadAssortmentCatalogueItemIds(supabase, brief.assortment_id);
+      products = products.filter((product) => assortmentItemIds.has(product.id));
+      if (products.length === 0) {
+        throw new Error('This assortment has no purchasable products available right now.');
+      }
+    }
     catalogueCount = products.length;
     timings.loadInputsMs = elapsedMs(loadStart);
 
@@ -518,7 +549,7 @@ export async function generateCuesForShow(params: {
       // Every accepted direct shell bursts on its analysed beat. Unsafe or
       // physically impossible hits are skipped instead of being shifted late.
       const planStart = performance.now();
-      const plan = planCuesOnBeats({ analysis, products, songDuration, brief, maxTubes });
+      const plan = planCuesOnBeats({ analysis, slots, products, songDuration, brief, maxTubes });
       accepted = plan.cues;
       acceptedCount = accepted.length;
       droppedCount = plan.skippedSlots;
@@ -675,7 +706,7 @@ export async function generateCuesForShow(params: {
         }
 
         // === Stage 4: tube-overlap dedupe with real product durations ========
-        reconstructed.sort((a, b) => a.timeSeconds - b.timeSeconds);
+        reconstructed.sort(compareCuePlanningPriority);
         const acceptedWindows: CueWindow[] = [];
         for (const cue of reconstructed) {
           const product = productIndex.get(cue.productId);
@@ -736,13 +767,42 @@ export async function generateCuesForShow(params: {
           (slot) =>
             (slot.nearClimax || slot.emphasis === 'peak') && !acceptedSlotIndices.has(slot.index),
         );
-        if (accepted.length < minimumViableCount || missingProtectedSlots.length > 0) {
+        const strongMomentSlots = new Map<number, number[]>();
+        for (const slot of slots) {
+          const strongMoment =
+            slot.nearClimax ||
+            slot.emphasis === 'peak' ||
+            slot.vibe === 'chorus' ||
+            slot.vibe === 'drop' ||
+            (slot.finale && slot.isDownbeat);
+          if (!strongMoment) continue;
+          const group = strongMomentSlots.get(slot.time);
+          if (group) group.push(slot.index);
+          else strongMomentSlots.set(slot.time, [slot.index]);
+        }
+        const simultaneousStrongMoments = Array.from(strongMomentSlots.values()).filter(
+          (indices) =>
+            indices.length > 1 &&
+            indices.filter((index) => acceptedSlotIndices.has(index)).length > 1,
+        ).length;
+        const usedTubes = new Set(accepted.map((cue) => cue.tube));
+        const missingMultiTubeChoreography =
+          maxTubes > 1 &&
+          strongMomentSlots.size > 0 &&
+          (usedTubes.size < maxTubes || simultaneousStrongMoments === 0);
+        if (
+          accepted.length < minimumViableCount ||
+          missingProtectedSlots.length > 0 ||
+          missingMultiTubeChoreography
+        ) {
           console.error(
             '[cue-generation] LLM did not meet viable show requirements after validation, falling back to fast planner.',
             {
               acceptedCount: accepted.length,
               minimumViableCount,
               missingProtectedSlotCount: missingProtectedSlots.length,
+              simultaneousStrongMoments,
+              usedTubeCount: usedTubes.size,
             },
           );
           runFastFallback();

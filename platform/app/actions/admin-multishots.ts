@@ -18,6 +18,7 @@ import {
   MULTISHOT_DESCRIPTION_MAX_LENGTH,
   MULTISHOT_MAX_DURATION_SECONDS,
   MULTISHOT_MAX_SHOT_COUNT,
+  MULTISHOT_MAX_TRACK_COUNT,
   MULTISHOT_NAME_MAX_LENGTH,
   MULTISHOT_NOTES_MAX_LENGTH,
   MULTISHOT_PAN_LIMIT_DEGREES,
@@ -71,6 +72,11 @@ const ShotSchema = z.object({
   multishotId: z.string().uuid(),
   fireworkId: z.string().uuid(),
   sequenceIndex: z.coerce.number().int().min(1).max(MULTISHOT_MAX_SHOT_COUNT),
+  timelineTrackIndex: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(MULTISHOT_MAX_TRACK_COUNT - 1),
   timeOffsetSeconds: z.coerce.number().min(0).max(MULTISHOT_MAX_DURATION_SECONDS),
   panDegrees: z.coerce
     .number()
@@ -315,6 +321,7 @@ export async function upsertMultishotShot(
     multishot_id: parsed.data.multishotId,
     firework_id: parsed.data.fireworkId,
     sequence_index: parsed.data.sequenceIndex,
+    timeline_track_index: parsed.data.timelineTrackIndex,
     time_offset_seconds: parsed.data.timeOffsetSeconds,
     pan_degrees: parsed.data.panDegrees,
     tilt_degrees: parsed.data.tiltDegrees,
