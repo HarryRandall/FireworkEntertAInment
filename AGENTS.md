@@ -36,7 +36,6 @@ Use Node 24 from `.nvmrc`. Python services use Python 3.11 and their own
 - `services/`: independently deployed Python services.
 - `supabase/`: migrations, templates, catalogue tooling and database tests.
 - `tests/`: Node test suites for application and cross-service contracts.
-- `docs/`: focused architecture and operational documentation.
 
 ## TypeScript and React
 

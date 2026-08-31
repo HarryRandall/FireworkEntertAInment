@@ -270,10 +270,6 @@ test('selected retained engine evidence uses a bounded private URL and accurate 
     join(root, 'app/(admin)/admin/imports/[id]/ImportEngineValidationPanel.tsx'),
     'utf8',
   );
-  const documentation = readFileSync(
-    join(root, 'docs/firework-import-engine-validation.md'),
-    'utf8',
-  );
 
   assert.match(historyServer, /RETAINED_EVIDENCE_URL_TTL_SECONDS = 15 \* 60/);
   assert.match(historyServer, /isRunOwnedImportEngineReviewVideoPath/);
@@ -294,6 +290,4 @@ test('selected retained engine evidence uses a bounded private URL and accurate 
   assert.match(validationPanel, /SHA-256/);
   assert.match(validationPanel, /Storage ETag/);
   assert.match(detailPage, /artifact=\{review\.engineArtifact\}/);
-  assert.match(documentation, /For every candidate that meets the engine thresholds/);
-  assert.doesNotMatch(documentation, /For the final winner only/);
 });

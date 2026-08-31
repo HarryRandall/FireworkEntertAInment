@@ -43,8 +43,8 @@ services/firework-import-worker/.venv/bin/python -m pip install -r services/fire
 - Add comments only for non-obvious rationale or contracts.
 - Add or update tests for behavioural changes.
 
-Detailed agent guidance lives in [AGENTS.md](AGENTS.md). Architecture and
-operational notes belong in `docs/`, not in the root README.
+Detailed agent guidance lives in [AGENTS.md](AGENTS.md). Keep the root README
+brief and put service-specific setup beside the service it describes.
 
 ## Database changes
 
