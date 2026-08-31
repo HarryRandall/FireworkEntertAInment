@@ -70,6 +70,25 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   assert.equal(existsSync(join(root, 'vercel.json')), false);
 });
 
+test('Modal audio downloads are bounded and cannot redirect across hosts', () => {
+  const modalApp = readFileSync(join(root, 'analyser/modal_app.py'), 'utf8');
+  const audioDownload = readFileSync(join(root, 'analyser/audio_download.py'), 'utf8');
+
+  assert.match(audioDownload, /MAX_AUDIO_BYTES = 50 \* 1024 \* 1024/);
+  assert.match(audioDownload, /DOWNLOAD_TOTAL_TIMEOUT_SECONDS = 30/);
+  assert.match(audioDownload, /deadline = monotonic\(\) \+ DOWNLOAD_TOTAL_TIMEOUT_SECONDS/);
+  assert.match(audioDownload, /parsed\.scheme != "https"/);
+  assert.match(audioDownload, /class SameHostRedirectHandler/);
+  assert.match(audioDownload, /audio_url redirected to a different host/);
+  assert.match(audioDownload, /downloaded > MAX_AUDIO_BYTES/);
+  assert.match(audioDownload, /downloaded != content_length/);
+  assert.match(audioDownload, /error_code="audio_response_truncated"/);
+  assert.match(modalApp, /add_local_python_source\("showcrafter", "audio_download"\)/);
+  assert.match(modalApp, /except AudioInputError as exc/);
+  assert.match(modalApp, /detail=exc\.as_http_detail\(\)/);
+  assert.doesNotMatch(modalApp, /urlretrieve\(/);
+});
+
 test('show creation attaches analysed music and starts cue generation', () => {
   const action = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
 

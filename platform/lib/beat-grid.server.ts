@@ -358,6 +358,7 @@ export function buildCueSlots(
   maxTubes: 1 | 2 | 3 = 3,
 ): CueSlot[] {
   if (!songDuration || songDuration <= 0) return [];
+  if (analysis && (!Number.isFinite(analysis.tempo_bpm) || analysis.tempo_bpm <= 0)) return [];
 
   const sections = analysis?.sections ?? [];
   const buildups = analysis?.buildups ?? [];
@@ -374,8 +375,9 @@ export function buildCueSlots(
     .filter((t) => Number.isFinite(t) && t >= 0 && t < songDuration)
     .sort((a, b) => a - b);
   let beats = cleanedBeats.filter((t, i) => i === 0 || t !== cleanedBeats[i - 1]);
+  if (analysis && beats.length < 2) return [];
   const lastBeat = beats.length ? beats[beats.length - 1] : 0;
-  const needsSynth = beats.length < 20 || lastBeat < songDuration * 0.75;
+  const needsSynth = analysis == null && (beats.length < 20 || lastBeat < songDuration * 0.75);
   if (needsSynth) {
     const interval = 60 / tempoBpm;
     beats = [];

@@ -456,6 +456,10 @@ export async function generateCuesForShow(params: {
     if (musicAnalysisId) {
       if (analysisResult.status === 'completed') {
         analysis = analysisResult.analysis;
+      } else if (analysisResult.status === 'invalid') {
+        throw new Error(
+          `Stored music analysis is invalid. Please upload the song again: ${analysisResult.errorMessage}`,
+        );
       } else if (analysisResult.status === 'failed') {
         const detail = analysisResult.errorMessage ? `: ${analysisResult.errorMessage}` : '.';
         throw new Error(`Music analysis failed${detail}`);
@@ -513,8 +517,14 @@ export async function generateCuesForShow(params: {
       const filtered = products.filter((product) => productMatchesTypes(product, allowedTypes));
       if (filtered.length >= 3) products = filtered;
     }
-    if (liveAssortmentItemIds) {
-      products = products.filter((product) => liveAssortmentItemIds?.has(product.id));
+    // Apply an assortment boundary for every assortment-backed show. Public
+    // QR shows use their immutable physical-pack snapshot, while normal app
+    // shows use the current assortment membership loaded above.
+    const requiredAssortmentItemIds = assortmentLedger
+      ? new Set(assortmentLedger.keys())
+      : liveAssortmentItemIds;
+    if (requiredAssortmentItemIds) {
+      products = products.filter((product) => requiredAssortmentItemIds.has(product.id));
       if (products.length === 0) {
         throw new Error('This assortment has no purchasable products available right now.');
       }

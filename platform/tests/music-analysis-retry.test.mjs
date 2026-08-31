@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
+import { isRetryableAnalyserStatus } from '../lib/analyser-http-status.ts';
+
 const root = process.cwd();
 const migration = readFileSync(
   join(root, 'supabase/migrations/20260727090000_song_analysis_retry_leases.sql'),
@@ -75,16 +77,22 @@ test('analysis state and credit resolution commit through narrow RPCs', () => {
 test('runner retries only transient failures and leaves pending work reserved', () => {
   assert.match(runner, /const MAX_ANALYSIS_ATTEMPTS = 3/);
   assert.match(runner, /const RETRY_DELAYS_SECONDS = \[30, 120\]/);
-  assert.match(runner, /response\.status === 408/);
-  assert.match(runner, /response\.status === 425/);
-  assert.match(runner, /response\.status === 429/);
-  assert.match(runner, /response\.status >= 500/);
+  assert.match(runner, /isRetryableAnalyserStatus\(response\.status\)/);
   assert.match(runner, /claim_song_analysis_attempt/);
   assert.match(runner, /schedule_song_analysis_retry/);
   assert.match(runner, /complete_song_analysis_attempt/);
   assert.match(runner, /fail_song_analysis_attempt/);
   assert.match(runner, /p_lease_token: typedRow\.lease_token/);
   assert.match(starter, /if \(result\.pending\) return/);
+});
+
+test('oversized, damaged and insufficient-rhythm audio errors are terminal', () => {
+  assert.equal(isRetryableAnalyserStatus(413), false);
+  assert.equal(isRetryableAnalyserStatus(415), false);
+  assert.equal(isRetryableAnalyserStatus(422), false);
+  assert.equal(isRetryableAnalyserStatus(408), true);
+  assert.equal(isRetryableAnalyserStatus(429), true);
+  assert.equal(isRetryableAnalyserStatus(502), true);
 });
 
 test('protected reconciliation repairs stale analyses, cues, retention, and credits', () => {

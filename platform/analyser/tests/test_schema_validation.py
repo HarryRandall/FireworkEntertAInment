@@ -1,23 +1,43 @@
+import json
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 try:
+    import librosa
     import numpy as np
+    import soundfile as sf
 except ModuleNotFoundError as exc:
     raise unittest.SkipTest("Install platform/analyser/requirements.txt to run analyser tests") from exc
 
 
 ANALYSER_DIR = Path(__file__).resolve().parents[1]
+SCHEMA_MUTATIONS = json.loads(
+    (Path(__file__).parent / "fixtures" / "schema-mutations.json").read_text(encoding="utf-8")
+)
 sys.path.insert(0, str(ANALYSER_DIR))
 
 try:
     from showcrafter import (  # noqa: E402
         SCHEMA_VERSION,
+        AudioInputError,
+        MAX_AUDIO_DURATION_SECONDS,
+        MAX_DECODED_SAMPLES,
+        analyse_song,
         build_llm_payload,
+        build_firework_cue_summary,
         estimate_downbeats,
+        enforce_audio_limits,
         filter_buildups,
+        get_section_at_time,
         label_sections_from_clusters,
+        laplacian_segment,
+        preflight_audio_duration,
         refine_event_times,
         select_climax_indices,
         validate_analysis_result,
@@ -176,6 +196,8 @@ class SchemaValidationTests(unittest.TestCase):
         self.assertEqual(validated["beats_per_bar"], 2)
         self.assertEqual(validated["downbeat_times"], [0.0, 2.0])
         self.assertEqual(validated["derived"]["repeated_chorus_count"], 1)
+        self.assertIn("finale_window", validated["derived"])
+        self.assertIsNone(validated["derived"]["finale_window"])
 
     def test_out_of_range_energy_fails_loudly(self):
         payload = make_analysis_payload()
@@ -183,6 +205,222 @@ class SchemaValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "analysis result failed schema 1.4.0"):
             validate_analysis_result(payload)
+
+    def test_python_contract_rejects_the_same_cross_field_mutations_as_zod(self):
+        for mutation in SCHEMA_MUTATIONS:
+            with self.subTest(mutation=mutation["name"]):
+                payload = make_analysis_payload()
+                target = payload
+                for segment in mutation["path"][:-1]:
+                    target = target[segment]
+                target[mutation["path"][-1]] = mutation["value"]
+                with self.assertRaises(ValueError):
+                    validate_analysis_result(payload)
+
+    def test_python_contract_rejects_overlapping_sections(self):
+        payload = make_analysis_payload()
+        payload["sections"] = [
+            {**payload["sections"][0], "end": 8.0, "duration": 8.0},
+            {
+                **payload["sections"][0],
+                "start": 7.0,
+                "end": 12.0,
+                "duration": 5.0,
+                "cluster_id": 1,
+                "label": "outro",
+            },
+        ]
+        payload["derived"]["section_rank_by_energy"] = [0, 1]
+
+        with self.assertRaisesRegex(ValueError, "non-overlapping"):
+            validate_analysis_result(payload)
+
+    def test_python_producer_contract_rejects_legacy_or_incomplete_bar_grid(self):
+        legacy = make_analysis_payload()
+        legacy["schema_version"] = "1.3.0"
+        with self.assertRaises(ValueError):
+            validate_analysis_result(legacy)
+
+        for field in ("downbeat_times", "beats_per_bar"):
+            with self.subTest(field=field):
+                payload = make_analysis_payload()
+                del payload[field]
+                with self.assertRaises(ValueError):
+                    validate_analysis_result(payload)
+
+    def test_beatless_audio_is_a_terminal_input_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "silence.wav"
+            sf.write(path, np.zeros(22050 * 2, dtype=np.float32), 22050)
+
+            with self.assertRaisesRegex(AudioInputError, "reliable rhythmic grid") as raised:
+                analyse_song(str(path))
+
+        self.assertEqual(raised.exception.status_code, 422)
+        self.assertEqual(raised.exception.error_code, "insufficient_musical_content")
+
+    def test_pure_tone_is_a_terminal_input_error(self):
+        sr = 22050
+        samples = np.arange(sr * 2, dtype=np.float32) / sr
+        tone = (0.2 * np.sin(2 * np.pi * 440 * samples)).astype(np.float32)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tone.wav"
+            sf.write(path, tone, sr)
+
+            with self.assertRaises(AudioInputError) as raised:
+                analyse_song(str(path))
+
+        self.assertEqual(raised.exception.status_code, 422)
+        self.assertEqual(raised.exception.error_code, "insufficient_musical_content")
+
+    def test_damaged_or_unsupported_audio_is_terminal(self):
+        samples = {
+            "empty.wav": b"",
+            "garbage.mp3": b"not an audio file\x00\x01\x02",
+            "truncated.wav": b"RIFF\x24\x00\x00\x00WAVEfmt ",
+            "truncated.aac": b"\xff\xf1\x50\x80\x00\x1f\xfc" + b"\x00" * 20,
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            for filename, content in samples.items():
+                with self.subTest(filename=filename):
+                    path = Path(tmp) / filename
+                    path.write_bytes(content)
+                    with self.assertRaises(AudioInputError) as raised:
+                        analyse_song(str(path))
+                    self.assertEqual(raised.exception.status_code, 415)
+                    self.assertEqual(raised.exception.error_code, "unsupported_audio")
+
+    def test_ffprobe_rejects_overlong_audio_before_decode(self):
+        completed = subprocess.CompletedProcess(
+            args=["ffprobe"],
+            returncode=0,
+            stdout=str(MAX_AUDIO_DURATION_SECONDS + 0.01),
+            stderr="",
+        )
+        with patch("showcrafter.subprocess.run", return_value=completed):
+            with self.assertRaises(AudioInputError) as raised:
+                preflight_audio_duration("overlong.mp3")
+
+        self.assertEqual(raised.exception.status_code, 413)
+        self.assertEqual(raised.exception.error_code, "audio_too_long")
+
+    def test_decoded_sample_limit_is_enforced_independently(self):
+        with self.assertRaises(AudioInputError) as raised:
+            enforce_audio_limits(
+                duration_seconds=MAX_AUDIO_DURATION_SECONDS,
+                decoded_samples=MAX_DECODED_SAMPLES + 1,
+            )
+
+        self.assertEqual(raised.exception.status_code, 413)
+        self.assertEqual(raised.exception.error_code, "audio_too_long")
+
+    def test_actual_python_json_passes_zod_and_builds_cue_slots(self):
+        if os.environ.get("SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT") != "1":
+            self.skipTest("Run by the dedicated analyser-contract CI job")
+
+        node_binary = os.environ.get("SHOWCRAFTER_NODE_BINARY") or shutil.which("node")
+        if not node_binary:
+            self.fail("The analyser contract requires Node.js 22 or newer")
+        version = subprocess.run(
+            [node_binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        self.assertEqual(version.returncode, 0, version.stderr)
+        major_version = int(version.stdout.strip().lstrip("v").split(".", maxsplit=1)[0])
+        self.assertGreaterEqual(major_version, 22)
+
+        sr = 22050
+        sample_times = np.arange(sr * 10, dtype=np.float32) / sr
+        amplitude = 0.02 + 0.06 * (sample_times / 10.0)
+        tonal_bed = amplitude * np.sin(2 * np.pi * 220 * sample_times)
+        clicks = librosa.clicks(
+            times=np.arange(0.5, 10.0, 0.5),
+            sr=sr,
+            length=sr * 10,
+            click_duration=0.1,
+        )
+        audio = (tonal_bed + clicks).astype(np.float32)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "clicks.wav"
+            sf.write(path, audio, sr)
+            result = analyse_song(str(path))
+
+        helper = ANALYSER_DIR.parent / "tests" / "analyser-pipeline-helper.mjs"
+        completed = subprocess.run(
+            [node_binary, "--experimental-strip-types", str(helper)],
+            cwd=ANALYSER_DIR.parent,
+            input=json.dumps(result),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        summary = json.loads(completed.stdout)
+        self.assertEqual(summary["schemaVersion"], "1.4.0")
+        self.assertTrue(summary["finaleWindowPresent"])
+        self.assertIsNone(summary["finaleWindow"])
+        self.assertTrue(summary["plannerReturnedSlots"])
+        self.assertGreater(summary["slotCount"], 0)
+
+    def test_decoder_uses_audio_content_instead_of_the_filename_extension(self):
+        sr = 22050
+        audio = librosa.clicks(
+            times=np.arange(0.5, 10.0, 0.5),
+            sr=sr,
+            length=sr * 10,
+            click_duration=0.1,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "clicks.mp3"
+            sf.write(path, audio, sr, format="WAV")
+
+            result = analyse_song(str(path))
+
+        self.assertEqual(len(result["sections"]), 1)
+        self.assertEqual(result["sections"][0]["label"], "unknown")
+        self.assertGreater(result["tempo_bpm"], 0)
+
+    def test_short_audio_threshold_enters_spectral_path_at_twenty_seconds(self):
+        sr, hop_length = 22050, 512
+        y = np.zeros(sr * 20, dtype=np.float32)
+        rms = np.zeros(int(sr * 20 / hop_length) + 1, dtype=float)
+        beat_frames = np.arange(0, 400, 40, dtype=int)
+
+        sections, cqt = laplacian_segment(
+            y,
+            sr,
+            beat_frames,
+            rms,
+            hop_length,
+            19.99,
+        )
+        self.assertEqual(sections[0]["label"], "unknown")
+        self.assertIsNone(cqt)
+
+        with patch("showcrafter.librosa.cqt", side_effect=RuntimeError("spectral path entered")):
+            with self.assertRaisesRegex(RuntimeError, "spectral path entered"):
+                laplacian_segment(y, sr, beat_frames, rms, hop_length, 20.0)
+
+    def test_adjacent_sections_use_half_open_membership(self):
+        sections = [
+            {"index": 0, "label": "verse", "start": 0.0, "end": 5.0},
+            {"index": 1, "label": "chorus", "start": 5.0, "end": 10.0},
+        ]
+        cues = [
+            {"time": 4.999, "effect": "single"},
+            {"time": 5.0, "effect": "accent"},
+            {"time": 10.0, "effect": "barrage"},
+        ]
+
+        self.assertIs(get_section_at_time(5.0, sections), sections[1])
+        self.assertIs(get_section_at_time(10.0, sections), sections[1])
+        summary = build_firework_cue_summary(cues, sections)
+        self.assertEqual(summary["counts_by_section"][0]["total_count"], 1)
+        self.assertEqual(summary["counts_by_section"][1]["total_count"], 2)
 
     def test_llm_payload_summarises_baseline_cues(self):
         validated = validate_analysis_result(make_analysis_payload())

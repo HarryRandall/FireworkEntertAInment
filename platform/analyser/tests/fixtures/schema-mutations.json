@@ -1,0 +1,57 @@
+[
+  {
+    "name": "reported beat count mismatch",
+    "path": ["total_beats"],
+    "value": 5
+  },
+  {
+    "name": "unsorted beats",
+    "path": ["beat_times"],
+    "value": [0.0, 2.0, 1.0, 3.0]
+  },
+  {
+    "name": "unsupported beats per bar",
+    "path": ["beats_per_bar"],
+    "value": 5
+  },
+  {
+    "name": "anchor outside its window",
+    "path": ["derived", "anchor_windows", 0, "anchor_time"],
+    "value": 11.0
+  },
+  {
+    "name": "empty source file",
+    "path": ["file"],
+    "value": ""
+  },
+  {
+    "name": "empty runner version",
+    "path": ["analysis_meta", "runner_version"],
+    "value": ""
+  },
+  {
+    "name": "empty key root",
+    "path": ["music_profile", "key_signature", "root"],
+    "value": ""
+  },
+  {
+    "name": "empty dominant trait",
+    "path": ["music_profile", "dominant_traits", 0],
+    "value": ""
+  },
+  {
+    "name": "empty palette direction",
+    "path": ["show_personality", "palette_direction", "primary"],
+    "value": ""
+  },
+  {
+    "name": "empty cue reason",
+    "path": ["firework_cues", 0, "reason"],
+    "value": ""
+  },
+  {
+    "name": "empty cue style tag",
+    "path": ["firework_cues", 0, "style_tags", 0],
+    "value": ""
+  }
+]

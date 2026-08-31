@@ -25,8 +25,11 @@ Hidden background state is surfaced only when an error blocks generation.
 
 ## Deployment
 
-The analyser image installs `platform/analyser/requirements.txt` and runs with
-2 CPU cores, 4 GB memory, a 600-second timeout, and Modal memory snapshots.
+The analyser image installs the exact dependency versions in
+`platform/analyser/requirements.txt`; CI uses the reviewed Python 3.11.15
+runtime. Modal runs with 2 CPU cores, 4 GB memory, a 600-second timeout, and
+memory snapshots. Dependency or Python runtime changes require a reviewed
+real-audio baseline run before deployment.
 
 ```bash
 cd platform/analyser
@@ -82,6 +85,43 @@ Run the analyser unit tests from `platform/analyser`:
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -p "*test*.py"
+```
+
+Run the schema 1.4.0 real-audio regression separately:
+
+```bash
+python evaluate.py
+```
+
+The regression analyses four versioned Jamendo MP3s: two pop tracks and two
+classical recordings. Their attribution, source URLs, CC BY 3.0 licence, file
+sizes, and SHA-256 values are recorded in
+`platform/analyser/evals/jamendo_fixtures.json`. The reviewed musical baseline
+is `platform/analyser/evals/baseline_v1.json`.
+
+The evaluator verifies each immutable audio file before analysis, validates the
+schema 1.4.0 result, and checks duration, tempo, beat and downbeat grids,
+sections, climaxes, buildups, and the finale window. Timing and count checks use
+bounded cross-platform tolerances, while schema versions, timeline ordering,
+file hashes, and licence provenance are exact.
+
+Hosted Modal responses are also validated at the Next.js boundary before any
+completion write. The validator requires schema 1.4.0, rejects missing or
+unexpected fields and non-finite values, checks score ranges, and enforces
+ordered in-range beats, downbeats, sections, anchors, buildups, cues, and the
+finale window. Invalid output is terminal HTTP 422 analyser work, not a
+retryable transport failure.
+
+The main CI workflow runs the analyser unit suite. A separate workflow runs the
+real-audio regression when analyser or fixture files change, on a weekly
+schedule, and when manually dispatched. This keeps unrelated pull requests
+fast while still checking dependency and platform drift. The local
+`evaluation-report.json` is ignored by Git; CI uploads that complete JSON
+report for 14 days even when the regression step fails. To preserve an
+existing local report, select another path:
+
+```bash
+python evaluate.py --report ../../.tmp_analyser/evaluation-report.json
 ```
 
 For local timing investigation, without pass or fail thresholds:
