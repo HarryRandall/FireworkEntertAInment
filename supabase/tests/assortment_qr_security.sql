@@ -83,6 +83,17 @@ begin
   then
     raise exception 'Timeline persistence no longer enforces exact snapshot quantities.';
   end if;
+
+  select pg_get_functiondef(
+    'private.reserve_assortment_ai_credit(uuid,text,text,uuid,text,jsonb)'::regprocedure
+  ) into function_source;
+  if function_source not like '%private.ensure_ai_credit_account(p_user_id)%'
+    or function_source not like '%private.ai_credit_usage_payload(p_user_id)%'
+    or function_source like '%public.ensure_ai_credit_account(p_user_id)%'
+    or function_source like '%public.ai_credit_usage_payload(p_user_id)%'
+  then
+    raise exception 'QR credit reservations no longer use the private credit helpers.';
+  end if;
 end;
 $$;
 
