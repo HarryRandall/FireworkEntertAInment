@@ -85,6 +85,14 @@ import {
   SIDEBAR_BRAND_BUTTON_CLASS,
 } from '@/components/shell/shell-utils';
 import { signOutCurrentSession } from '@/components/shell/sign-out.client';
+import {
+  clearCachedAiUsage,
+  isWorkspaceSummaryFresh,
+  readCachedWorkspaceSummary,
+  writeCachedWorkspaceSummary,
+  type CachedWorkspaceSummary,
+  type SidebarAiUsage,
+} from '@/components/shell/workspace-summary-cache.client';
 import { cn } from '@/lib/utils';
 import type { CurrentProfile, PermissionKey, ThemePreference } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
@@ -159,21 +167,6 @@ type ThemeMenuOption = {
   icon: LucideIcon;
 };
 
-type SidebarAiUsage = {
-  balance: number;
-  available: number;
-  reserved: number;
-  includedCredits: number;
-  hourlyLimit: number;
-  weeklyLimit: number;
-  hourlyUsed: number;
-  weeklyUsed: number;
-  hourlyRemaining: number;
-  weeklyRemaining: number;
-  totalGranted: number;
-  totalSpent: number;
-};
-
 const SIDEBAR_HEADER_TRIGGER_CLASS =
   'h-10 w-10 shrink-0 self-center cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:left-1/2 group-data-[collapsible=icon]:right-auto group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:-translate-x-1/2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover/brand:pointer-events-auto group-data-[collapsible=icon]:group-hover/brand:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
@@ -189,60 +182,9 @@ const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
   { value: 'system', label: 'System', icon: Laptop },
 ];
 
-type CachedWorkspaceSummary = WorkspaceSummary & {
-  aiUsage?: SidebarAiUsage | null;
-  cachedAt?: number;
-};
-
-const WORKSPACE_SUMMARY_CACHE_KEY_PREFIX = 'sc:workspace-summary:v3';
-const WORKSPACE_SUMMARY_CACHE_TTL_MS = 60_000;
-
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
 const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-function workspaceSummaryCacheKey(profileId: string): string {
-  return `${WORKSPACE_SUMMARY_CACHE_KEY_PREFIX}:${profileId}`;
-}
-
-function readCachedWorkspaceSummary(profileId: string | null): CachedWorkspaceSummary | null {
-  if (typeof window === 'undefined' || !profileId) return null;
-  try {
-    const raw = window.sessionStorage.getItem(workspaceSummaryCacheKey(profileId));
-    return raw ? (JSON.parse(raw) as CachedWorkspaceSummary) : null;
-  } catch {
-    return null;
-  }
-}
-
-function isWorkspaceSummaryFresh(summary: CachedWorkspaceSummary | null): boolean {
-  return Boolean(
-    summary?.cachedAt && Date.now() - summary.cachedAt < WORKSPACE_SUMMARY_CACHE_TTL_MS,
-  );
-}
-
-function writeCachedWorkspaceSummary(
-  profileId: string | null,
-  summary: CachedWorkspaceSummary | null,
-) {
-  if (typeof window === 'undefined' || !profileId) return;
-  try {
-    const cacheKey = workspaceSummaryCacheKey(profileId);
-    if (summary) {
-      window.sessionStorage.setItem(cacheKey, JSON.stringify(summary));
-    } else {
-      window.sessionStorage.removeItem(cacheKey);
-    }
-  } catch {
-    // Ignore storage failures; the sidebar just falls back to fetching.
-  }
-}
-
-function clearCachedAiUsage(profileId: string | null) {
-  const cached = readCachedWorkspaceSummary(profileId);
-  if (!cached) return;
-  writeCachedWorkspaceSummary(profileId, { ...cached, aiUsage: null, cachedAt: 0 });
-}
 
 function isActivePath(pathname: string | null, href: string) {
   if (href === '/shows') {
