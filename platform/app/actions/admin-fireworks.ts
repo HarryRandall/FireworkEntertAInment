@@ -543,22 +543,26 @@ export async function createStyleDefaultAndUpdateFirework(
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.firework.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
+  // The generated types mark these plpgsql arguments non-null because the
+  // function declares no defaults, but the function body writes them straight
+  // into nullable fireworks columns and accepts SQL NULL. Keep passing null for
+  // cleared optional fields and assert past the stricter arg types.
   const { data, error } = await supabase.rpc('create_style_default_and_update_firework', {
     p_firework_id: parsed.data.firework.id,
     p_expected_updated_at: parsed.data.firework.expectedUpdatedAt,
     p_firework_name: parsed.data.firework.name,
-    p_firework_description: parsed.data.firework.description || null,
+    p_firework_description: (parsed.data.firework.description || null) as string,
     p_firework_effect_id: parsed.data.firework.fireworkEffectId,
-    p_caliber: parsed.data.firework.caliber || null,
-    p_duration_seconds: parsed.data.firework.durationSeconds ?? null,
-    p_height_meters: parsed.data.firework.heightMeters ?? null,
-    p_primary_color: parsed.data.firework.primaryColor || null,
-    p_secondary_color: parsed.data.firework.secondaryColor || null,
+    p_caliber: (parsed.data.firework.caliber || null) as string,
+    p_duration_seconds: (parsed.data.firework.durationSeconds ?? null) as number,
+    p_height_meters: (parsed.data.firework.heightMeters ?? null) as number,
+    p_primary_color: (parsed.data.firework.primaryColor || null) as string,
+    p_secondary_color: (parsed.data.firework.secondaryColor || null) as string,
     p_color_palette: parsed.data.firework.colorPalette ?? [],
     p_render_overrides_json: overrides.value,
     p_style_slug: styleDefaultSlug(parsed.data.styleDefault.name, parsed.data.styleDefault.kind),
     p_style_name: parsed.data.styleDefault.name,
-    p_style_description: parsed.data.styleDefault.description || null,
+    p_style_description: (parsed.data.styleDefault.description || null) as string,
     p_style_kind: parsed.data.styleDefault.kind,
     p_style_defaults_json: defaults.value,
   });

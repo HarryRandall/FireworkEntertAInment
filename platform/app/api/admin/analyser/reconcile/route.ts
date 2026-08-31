@@ -92,13 +92,17 @@ export async function GET(request: Request) {
   }
 
   const retainedOwnerByPath = new Map(
-    (retainedAnalyses.data ?? []).map((analysis) => [analysis.audio_path, analysis.user_id]),
+    (retainedAnalyses.data ?? []).flatMap((analysis) =>
+      analysis.audio_path ? [[analysis.audio_path, analysis.user_id] as const] : [],
+    ),
   );
   const audioPaths = [
-    ...new Set([
-      ...(retainedAnalyses.data ?? []).map((analysis) => analysis.audio_path),
-      ...(orphanObjects.data ?? []).map((object) => object.audio_path),
-    ]),
+    ...new Set(
+      [
+        ...(retainedAnalyses.data ?? []).map((analysis) => analysis.audio_path),
+        ...(orphanObjects.data ?? []).map((object) => object.audio_path),
+      ].filter((audioPath): audioPath is string => Boolean(audioPath)),
+    ),
   ];
   if (audioPaths.length) {
     const { error: removeError } = await supabase.storage.from('audio').remove(audioPaths);
@@ -108,7 +112,9 @@ export async function GET(request: Request) {
         const { error: deadLetterError } = await supabase.rpc('record_backend_dead_letter', {
           p_work_type: 'audio_cleanup',
           p_work_key: audioPath,
-          p_user_id: retainedOwnerByPath.get(audioPath) ?? null,
+          // Orphan objects have no retained analysis owner; the column is
+          // nullable but the generated arg type is not, so assert past it.
+          p_user_id: (retainedOwnerByPath.get(audioPath) ?? null) as string,
           p_severity: 'error',
           p_reason: removeError.message,
           p_attempt_count: 1,
