@@ -5,6 +5,7 @@ import { Container } from '@/components/design-system/Container';
 import { Reveal } from './Reveal';
 import { Doodle } from './landing/Doodle';
 import { Eyebrow } from './landing/decor';
+import styles from './landing/landing.module.css';
 
 const PLANNING_FLOW = [
   {
@@ -56,7 +57,9 @@ export function Testimonials() {
             const Icon = item.icon;
             return (
               <Reveal key={item.title} delay={index * 0.08}>
-                <article className="lp-hover-lift bg-card border-outline-variant/60 h-full rounded-2xl border px-[22px] pt-[22px] pb-6 shadow-[var(--shadow-card)]">
+                <article
+                  className={`${styles.hoverLift} bg-card border-outline-variant/60 h-full rounded-2xl border px-[22px] pt-[22px] pb-6 shadow-[var(--shadow-card)]`}
+                >
                   <div className="bg-primary/15 text-primary inline-flex h-10 w-10 items-center justify-center rounded-full">
                     <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
                   </div>

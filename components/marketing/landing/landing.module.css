@@ -1,0 +1,194 @@
+.mark {
+  position: relative;
+  padding-inline: 0.08em;
+  border-radius: 0.32em;
+  background: color-mix(in srgb, var(--hl) 34%, transparent);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.mark > span {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 40rem) {
+  .mark {
+    padding-inline: 0;
+    white-space: nowrap;
+    border-radius: 0;
+    background: transparent;
+    -webkit-box-decoration-break: slice;
+    box-decoration-break: slice;
+  }
+
+  .mark::before {
+    position: absolute;
+    inset: 0.08em -0.1em 0.04em;
+    z-index: 0;
+    border-radius: 46% 54% 52% 48% / 64% 56% 64% 50%;
+    background: var(--hl);
+    content: '';
+    opacity: 0.34;
+    transform: rotate(-1.4deg);
+  }
+}
+
+.doodle {
+  max-width: 100%;
+  --lp-doodle-ink: #272626;
+  --lp-doodle-ink-soft: #4c4b4c;
+  --lp-doodle-ink-muted: #afabaa;
+  --lp-doodle-ink-highlight: #edeeee;
+  --lp-doodle-paper: #fefdfc;
+  --lp-doodle-white: #ffffff;
+  --lp-doodle-blue: #3061b7;
+  --lp-doodle-blue-bright: #38a8eb;
+  --lp-doodle-green: #7cbd7a;
+  --lp-doodle-teal: #12ae7c;
+  --lp-doodle-red: #c74f4a;
+  --lp-doodle-rose: #e5559d;
+  --lp-doodle-gold: #e9bb89;
+  --lp-doodle-violet: #8f5fd3;
+  --lp-doodle-violet-soft: #baaddf;
+}
+
+:global([data-theme='dark']) .doodle,
+:global(.dark) .doodle {
+  --lp-doodle-ink: #ececec;
+  --lp-doodle-ink-soft: #ececec;
+  --lp-doodle-ink-highlight: #ececec;
+  --lp-doodle-paper: #050507;
+}
+
+:global([data-theme='dark']) .doodleInvertsWhite,
+:global(.dark) .doodleInvertsWhite {
+  --lp-doodle-white: var(--lp-doodle-paper);
+}
+
+.doodleSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.doodleBob {
+  animation: doodle-bob 6s ease-in-out infinite;
+}
+
+@keyframes doodle-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-9px) rotate(-1deg);
+  }
+}
+
+.sparkFloat {
+  animation: sparkle-twinkle 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.82) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12) rotate(18deg);
+  }
+}
+
+.skyPanel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 20px;
+  background: radial-gradient(130% 120% at 50% 8%, #16161c 0%, #0a0a0d 56%, #050507 100%);
+  box-shadow:
+    0 40px 80px -36px rgb(10 10 16 / 55%),
+    0 2px 6px rgb(10 10 16 / 20%);
+}
+
+.skyCanvas {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.skyCanvasLoading {
+  opacity: 0;
+}
+
+.skyCanvasReady {
+  opacity: 1;
+}
+
+.glassTile {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+  background: rgb(20 20 26 / 62%);
+  color: #fff;
+  backdrop-filter: blur(14px);
+}
+
+.starfield {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 22%, rgb(255 255 255 / 45%), transparent 50%),
+    radial-gradient(1px 1px at 70% 60%, rgb(255 255 255 / 33%), transparent 50%),
+    radial-gradient(1px 1px at 40% 80%, rgb(255 255 255 / 40%), transparent 50%),
+    radial-gradient(1px 1px at 85% 25%, rgb(255 255 255 / 33%), transparent 50%),
+    radial-gradient(1px 1px at 30% 50%, rgb(255 255 255 / 27%), transparent 50%);
+  opacity: 0.7;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: var(--hl);
+  animation: live-pulse 1.8s ease-out infinite;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--hl) 70%, transparent);
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--hl) 60%, transparent);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.hoverLift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hoverLift:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-4px);
+}

@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Pause, Play } from 'lucide-react';
 import { EnergyWaveform, PaletteDots } from './decor';
 import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
+import styles from './landing.module.css';
 
 const FireworkReplayCanvas = dynamic(
   () => import('@/components/replay/FireworkReplayCanvas').then((m) => m.FireworkReplayCanvas),
@@ -181,14 +182,14 @@ export function ShowPreviewPanel({
 
   const showCanvas = shouldMountCanvas && !reducedMotion;
   return (
-    <div ref={containerRef} className="lp-sky-panel" style={{ height }}>
-      <div className="lp-starfield" />
+    <div ref={containerRef} className={styles.skyPanel} style={{ height }}>
+      <div className={styles.starfield} />
 
       {showCanvas ? (
         <div
           className={[
-            'lp-sky-canvas',
-            isCanvasReady ? 'lp-sky-canvas--ready' : 'lp-sky-canvas--loading',
+            styles.skyCanvas,
+            isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
           ].join(' ')}
         >
           <FireworkReplayCanvas
@@ -204,11 +205,11 @@ export function ShowPreviewPanel({
         </div>
       ) : null}
 
-      <div className="lp-glass-tile absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5">
+      <div className={`${styles.glassTile} absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}>
         <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
           <span
             aria-hidden="true"
-            className={active ? 'lp-live-dot' : 'h-[7px] w-[7px] rounded-full bg-white/35'}
+            className={active ? styles.liveDot : 'h-[7px] w-[7px] rounded-full bg-white/35'}
           />{' '}
           3D PREVIEW
         </div>
@@ -224,13 +225,17 @@ export function ShowPreviewPanel({
         </div>
       </div>
 
-      <div className="lp-glass-tile absolute top-4 right-4 z-10 px-3 py-2.5 text-[11px] leading-relaxed text-white/80 tabular-nums">
+      <div
+        className={`${styles.glassTile} absolute top-4 right-4 z-10 px-3 py-2.5 text-[11px] leading-relaxed text-white/80 tabular-nums`}
+      >
         BPM 128
         <br />
         KEY F&#9839;m
       </div>
 
-      <div className="lp-glass-tile absolute right-4 bottom-4 left-4 z-10 flex items-center gap-3.5 px-3.5 py-3">
+      <div
+        className={`${styles.glassTile} absolute right-4 bottom-4 left-4 z-10 flex items-center gap-3.5 px-3.5 py-3`}
+      >
         <button
           type="button"
           onClick={() => {

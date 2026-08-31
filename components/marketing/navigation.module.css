@@ -1,0 +1,159 @@
+.pill {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--color-content-subtle);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.pill:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-content-emphasis);
+}
+
+.pill svg {
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.authLink {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 14px;
+  color: var(--color-content-subtle);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.authLink:hover {
+  background: var(--color-bg-subtle);
+  color: var(--color-content-emphasis);
+}
+
+.authButton {
+  min-height: 38px;
+  padding-inline: 18px;
+  border-radius: 14px;
+}
+
+.menu {
+  position: relative;
+}
+
+.menu:hover .pill svg,
+.menu:focus-within .pill svg {
+  transform: rotate(180deg);
+}
+
+.menuPanel {
+  position: absolute;
+  z-index: 80;
+  top: 100%;
+  left: 50%;
+  min-width: 320px;
+  margin-top: 12px;
+  padding: 8px;
+  visibility: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 16px;
+  background: var(--card);
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  transition:
+    opacity 0.17s ease,
+    transform 0.17s ease;
+  box-shadow: var(--shadow-card-hover);
+}
+
+.menuPanel::before {
+  position: absolute;
+  top: -14px;
+  right: 0;
+  left: 0;
+  height: 14px;
+  content: '';
+}
+
+.menu:hover .menuPanel,
+.menu:focus-within .menuPanel {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.menuItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background-color 0.14s;
+}
+
+.menuItem:hover {
+  background: var(--color-bg-muted);
+}
+
+.menuItemIcon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--hl-soft);
+  color: var(--hl-ink);
+}
+
+.mobileMenu {
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  max-height: calc(100dvh - 66px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobileMenu[data-state='open'] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobileMenu,
+  .mobileMenu[data-state='open'] {
+    transition: none;
+    transform: none;
+  }
+}
