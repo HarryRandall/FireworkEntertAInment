@@ -16,6 +16,10 @@ const files = {
     '../../supabase/migrations/20260831032648_fix_assortment_qr_show_snapshot.sql',
     import.meta.url,
   ),
+  creditReservationRepair: new URL(
+    '../../supabase/migrations/20260831090001_fix_assortment_qr_credit_reservation.sql',
+    import.meta.url,
+  ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
   adminEditor: new URL(
     '../../app/(admin)/admin/assortments/[id]/AssortmentEditor.tsx',
@@ -76,6 +80,18 @@ test('QR show snapshots use an unambiguous generated show identifier', async () 
     /insert into public\.show_assortment_items \(show_id, catalogue_item_id, quantity\)\s+select new_show_id,/,
   );
   assert.doesNotMatch(repair, /\bshow_id uuid := gen_random_uuid\(\)/);
+});
+
+test('QR credit reservations use private helpers without requiring an authenticated user', async () => {
+  const repair = await source('creditReservationRepair');
+  assert.match(repair, /perform private\.ensure_ai_credit_account\(p_user_id\)/);
+  assert.match(repair, /usage_row := private\.ai_credit_usage_payload\(p_user_id\)/);
+  assert.doesNotMatch(repair, /perform public\.ensure_ai_credit_account\(p_user_id\)/);
+  assert.doesNotMatch(repair, /usage_row := public\.ai_credit_usage_payload\(p_user_id\)/);
+  assert.match(
+    repair,
+    /revoke execute on function private\.reserve_assortment_ai_credit\([\s\S]*from public, anon, authenticated, service_role/,
+  );
 });
 
 test('the protected reusable capability cannot be anonymously enumerated', async () => {
