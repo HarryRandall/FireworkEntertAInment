@@ -8,7 +8,7 @@ import { test } from 'node:test';
 const root = process.cwd();
 
 function read(path) {
-  return readFileSync(join(root, path), 'utf8').replaceAll('\r\n', '\n');
+  return readFileSync(join(root, path), 'utf8');
 }
 
 test('failed cue requests remain retryable and only successful responses are cached', () => {

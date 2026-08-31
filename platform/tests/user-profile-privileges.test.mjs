@@ -110,7 +110,7 @@ test('the only direct application update matches the profile column grant', () =
     .filter((path) =>
       /\.from\((['"])users\1\)[\s\S]{0,600}?\.update\(/.test(readFileSync(path, 'utf8')),
     )
-    .map((path) => relative(root, path).replaceAll('\\', '/'));
+    .map((path) => relative(root, path));
 
   assert.deepEqual(directUserUpdates, ['app/actions/platform-admin.ts']);
 

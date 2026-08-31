@@ -60,7 +60,7 @@ import {
   getFireworkImportDispatchConfiguration,
 } from '@/lib/firework-import-trigger.server';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
-import type { Json, TablesUpdate } from '@/lib/database.types';
+import type { Json } from '@/lib/database.types';
 import { createServiceRoleSupabase } from '@/utils/supabase/service-role';
 
 // ===========================================================================
@@ -391,7 +391,7 @@ export async function updateProfileAction(
   const userId = await getCurrentUserId();
   if (!userId) return { ok: false, error: 'Not signed in' };
 
-  const patch: Pick<TablesUpdate<'users'>, 'full_name' | 'phone' | 'theme_preference'> = {};
+  const patch: Record<string, string | null> = {};
   if ('fullName' in parsed.data) {
     patch.full_name = parsed.data.fullName ? parsed.data.fullName : null;
   }
