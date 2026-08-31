@@ -73,6 +73,13 @@ test('container worker performs deterministic media analysis and multi-pass mode
   assert.doesNotMatch(worker, /gemini/i);
 });
 
+test('worker CI installs FFmpeg before running media tests', () => {
+  const workflow = readFileSync(join(repoRoot, '.github/workflows/ci.yml'), 'utf8');
+  const workerJob = workflow.split('\n  worker:')[1];
+  assert.ok(workerJob);
+  assert.match(workerJob, /sudo apt-get install --yes ffmpeg/);
+});
+
 test('Modal firework reconstruction starts on demand without scheduled polling', () => {
   const modalApp = readFileSync(
     join(repoRoot, 'services/firework-import-worker/modal_app.py'),
