@@ -53,6 +53,7 @@ type BeatProductPools = {
 
 type PlanningTarget = BeatMoment & {
   exactFinalRole: 'reserved' | 'remainder' | null;
+  allowRepeatedSustained: boolean;
 };
 
 export function planCuesOnBeats(params: {
@@ -102,11 +103,22 @@ export function planCuesOnBeats(params: {
   const sustainedSections = new Set<string>();
   // Reserve requested surprises and structural peaks before ordinary beats.
   // Lift compensation can put their launches earlier than the beats around them.
-  const planningTargets = splitFinalTarget(targets, finalMusicalHit).sort(
+  const rankedTargets = splitFinalTarget(targets, finalMusicalHit).sort(
     (a, b) =>
       beatProtectionPriority(b, direction) - beatProtectionPriority(a, direction) ||
       a.time - b.time,
   );
+  const finalRemainders = rankedTargets.filter((target) => target.exactFinalRole === 'remainder');
+  const primaryTargets = rankedTargets.filter((target) => target.exactFinalRole !== 'remainder');
+  // Exact packs first spread multishots across distinct sections. A bounded
+  // overflow pass revisits the ordinary targets before using spare finale
+  // tubes, so deferral cannot make a schedulable pack under-use its inventory.
+  const overflowTargets = finalMusicalHit
+    ? primaryTargets
+        .filter((target) => target.exactFinalRole == null)
+        .map((target) => ({ ...target, allowRepeatedSustained: true }))
+    : [];
+  const planningTargets = [...primaryTargets, ...overflowTargets, ...finalRemainders];
 
   for (let i = 0; i < planningTargets.length; i += 1) {
     if (cues.length >= MAX_BEAT_CUES) {
@@ -128,10 +140,34 @@ export function planCuesOnBeats(params: {
     const remainingExactQuantity = availabilityByProductId
       ? Math.max(0, requiredCueCount - cues.length)
       : null;
-    const tubeOrder = orderTubesForMoment(targetTubes, wantsSustained).slice(
-      0,
-      remainingExactQuantity ?? targetTubes.length,
-    );
+    const exactRemainingProducts = availabilityByProductId
+      ? products.filter(
+          (product) =>
+            (productUsage.get(product.id) ?? 0) < (availabilityByProductId.get(product.id) ?? 0),
+        )
+      : [];
+    const onlyMultishotsRemain =
+      exactRemainingProducts.length > 0 &&
+      exactRemainingProducts.every((product) => (product.shotCount ?? 1) > 1);
+    const orderedTubes = orderTubesForMoment(targetTubes, wantsSustained);
+    const exactMomentLimit =
+      availabilityByProductId && target.exactFinalRole == null && onlyMultishotsRemain
+        ? Math.min(2, remainingExactQuantity ?? 2)
+        : (remainingExactQuantity ?? targetTubes.length);
+    const tubeOrder = limitExactTubeOrder(orderedTubes, exactMomentLimit);
+    const deferRepeatedSustainedSection =
+      availabilityByProductId != null &&
+      target.exactFinalRole == null &&
+      !target.allowRepeatedSustained &&
+      sustainedSections.has(target.sectionKey) &&
+      planningTargets
+        .slice(i + 1)
+        .some(
+          (candidate) =>
+            candidate.exactFinalRole == null &&
+            candidate.sectionKey !== target.sectionKey &&
+            !sustainedSections.has(candidate.sectionKey),
+        );
     const occupiedStart = occupied.length;
     const cueStart = cues.length;
     const productRotorStart = productRotor;
@@ -166,6 +202,7 @@ export function planCuesOnBeats(params: {
         | undefined;
 
       for (const product of productOrder) {
+        if (deferRepeatedSustainedSection && (product.shotCount ?? 1) > 1) continue;
         const quantityLimit = availabilityByProductId?.get(product.id);
         if (
           availabilityByProductId &&
@@ -239,7 +276,9 @@ export function planCuesOnBeats(params: {
       acceptedForMoment = 0;
     }
 
-    skippedSlots += Math.max(0, targetTubes.length - acceptedForMoment);
+    if (!target.allowRepeatedSustained) {
+      skippedSlots += Math.max(0, targetTubes.length - acceptedForMoment);
+    }
   }
 
   const exactCues = requireExactProductQuantityLedger(
@@ -274,6 +313,7 @@ function orderRemainingExactProducts(
 
 function beatProtectionPriority(target: PlanningTarget, direction: CreativeDirection): number {
   if (target.exactFinalRole === 'reserved') return 6;
+  if (target.exactFinalRole === 'remainder') return -1;
   if (target.isSurprise) return 5;
   if (target.nearClimax) return 4;
   if (direction.softEnding && target.finale) return 0;
@@ -290,13 +330,15 @@ function splitFinalTarget(
 ): PlanningTarget[] {
   return targets.flatMap((target): PlanningTarget[] => {
     if (!finalMusicalHit || Math.abs(target.time - finalMusicalHit.time) > 0.001) {
-      return [{ ...target, exactFinalRole: null }];
+      return [{ ...target, exactFinalRole: null, allowRepeatedSustained: false }];
     }
 
     const reservedTube = target.tubes.includes(finalMusicalHit.tube)
       ? finalMusicalHit.tube
       : target.tubes[0];
-    if (reservedTube == null) return [{ ...target, exactFinalRole: null }];
+    if (reservedTube == null) {
+      return [{ ...target, exactFinalRole: null, allowRepeatedSustained: false }];
+    }
 
     const reservedSlotIndices = target.slotIndices.map((slotIndex, tube) =>
       tube === reservedTube ? slotIndex : null,
@@ -306,6 +348,7 @@ function splitFinalTarget(
       tubes: [reservedTube],
       slotIndices: reservedSlotIndices,
       exactFinalRole: 'reserved',
+      allowRepeatedSustained: false,
     };
     const remainingTubes = target.tubes.filter((tube) => tube !== reservedTube);
     if (!remainingTubes.length) return [reserved];
@@ -321,6 +364,7 @@ function splitFinalTarget(
       tubes: remainingTubes,
       slotIndices: remainderSlotIndices,
       exactFinalRole: 'remainder',
+      allowRepeatedSustained: false,
     };
     return [reserved, remainder];
   });
@@ -492,6 +536,13 @@ function tubesForTarget(
 function orderTubesForMoment(tubes: Array<0 | 1 | 2>, wantsSustained: boolean): Array<0 | 1 | 2> {
   if (!wantsSustained || !tubes.includes(1)) return tubes;
   return [1, ...tubes.filter((tube) => tube !== 1)];
+}
+
+function limitExactTubeOrder(orderedTubes: Array<0 | 1 | 2>, limit: number): Array<0 | 1 | 2> {
+  if (limit === 2 && orderedTubes.includes(0) && orderedTubes.includes(2)) {
+    return [0, 2];
+  }
+  return orderedTubes.slice(0, limit);
 }
 
 function describeBeatCue(target: BeatMoment, product: FireworkSpecification): string {
