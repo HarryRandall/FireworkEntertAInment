@@ -296,42 +296,6 @@ body {
   mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
 }
 
-/* Prompt hero surface - soft firework-colour gradient backdrop with no card
-   box. Built from the per-show palette tokens so it stays on-brand and reads
-   as a pastel wash in light mode and a richer bloom in dark mode. */
-.prompt-hero-surface {
-  position: relative;
-  isolation: isolate;
-  border-radius: 24px;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      110% 130% at 12% 0%,
-      color-mix(in srgb, var(--show-rose) 24%, transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      110% 130% at 100% 18%,
-      color-mix(in srgb, var(--show-violet) 28%, transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      140% 140% at 50% 125%,
-      color-mix(in srgb, var(--show-sky) 24%, transparent),
-      transparent 60%
-    ),
-    radial-gradient(
-      120% 140% at 88% 100%,
-      color-mix(in srgb, var(--show-gold) 22%, transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      120% 140% at 0% 100%,
-      color-mix(in srgb, var(--show-green) 20%, transparent),
-      transparent 58%
-    );
-}
-
 .prompt-hero-glow {
   position: absolute;
   inset: 0 -10% -25% -10%;
@@ -415,31 +379,6 @@ body {
 
 .new-show-wizard-screen[data-launching='true'] {
   overflow: hidden;
-}
-
-/* Lightweight route progress (kept, restyled minimal) */
-@keyframes route-progress {
-  0% {
-    opacity: 0;
-    transform: translateX(-45%) scaleX(0.25);
-  }
-  15% {
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-    transform: translateX(35%) scaleX(0.55);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(115%) scaleX(0.35);
-  }
-}
-
-.route-progress-bar {
-  width: 70%;
-  transform-origin: left center;
-  animation: route-progress 1.15s ease-in-out infinite;
 }
 
 @keyframes sheet-overlay-in {
@@ -843,41 +782,4 @@ body {
 [data-sonner-toast][data-type='info'].cn-toast {
   border-color: color-mix(in srgb, var(--color-accent) 35%, transparent) !important;
   box-shadow: 0 10px 32px -18px rgba(0, 0, 0, 0.45);
-}
-
-/* ---------- Auth split-screen illustration ----------
- * Theme is applied via the `data-theme` attribute (next-themes), so the
- * Tailwind `dark:` variant (.dark only) does not fire here. Drive the panel
- * tint and the SVG treatment from the attribute instead. The artwork is dark
- * line-art on a white ground: in dark mode we invert its lightness (keeping
- * hues via hue-rotate) and screen-blend it onto a dark panel. */
-.auth-art-panel {
-  background-image: linear-gradient(to bottom right, #eef2fb, #ffffff 45%, #edf6f0);
-}
-
-[data-theme='dark'] .auth-art-panel,
-.dark .auth-art-panel {
-  background-image: linear-gradient(to bottom right, #0c1119, #070709 45%, #0a100d);
-}
-
-.auth-art-svg {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem;
-}
-
-.auth-art-svg svg {
-  width: 100%;
-  height: 100%;
-}
-
-/* The artwork has a transparent background, so the panel colour shows through.
-   In dark mode the line-art is too dark to read, so invert its lightness while
-   preserving hues. */
-[data-theme='dark'] .auth-art-svg svg,
-.dark .auth-art-svg svg {
-  filter: invert(1) hue-rotate(180deg);
 }
