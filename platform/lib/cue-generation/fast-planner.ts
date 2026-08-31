@@ -243,7 +243,14 @@ function findAcceptedPlacement(params: {
           slot.vibe === 'chorus' ||
           slot.vibe === 'drop'),
     });
-    const placement = acceptFirstPlacement(ranked, slot, emphasis, maxTubes, occupied, multiImpacts);
+    const placement = acceptFirstPlacement(
+      ranked,
+      slot,
+      emphasis,
+      maxTubes,
+      occupied,
+      multiImpacts,
+    );
     if (placement) return placement;
   }
   return undefined;

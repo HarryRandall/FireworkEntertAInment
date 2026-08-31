@@ -17,14 +17,23 @@ import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
+import { isRetryableAnalyserStatus } from '@/lib/analyser-http-status';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
+import { readResponseTextWithLimit, ResponseBodyTooLargeError } from '@/lib/bounded-response';
+import {
+  ANALYSER_SCHEMA_VERSION,
+  AnalyserOutputValidationError,
+  parseAnalyserResponse,
+  type AnalyserV14Result,
+} from '@/lib/show-analysis-validation';
 
-const ANALYSER_SCHEMA_VERSION = '1.4.0';
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
 const SIGNED_URL_TTL_SECONDS = 600;
 const ANALYSIS_LEASE_SECONDS = 900;
 const MAX_ANALYSIS_ATTEMPTS = 3;
 const RETRY_DELAYS_SECONDS = [30, 120] as const;
+const MAX_ANALYSER_RESPONSE_BYTES = 8 * 1024 * 1024;
+const ANALYSER_REQUEST_TIMEOUT_MS = 11 * 60 * 1000;
 
 type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -186,7 +195,7 @@ async function runHostedAnalyser(params: {
   audioPath: string;
   personality: string;
   analysisId?: string;
-}): Promise<AnalyserResult> {
+}): Promise<AnalyserV14Result> {
   const analyserUrl = process.env.ANALYSER_URL;
   const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
   if (!analyserUrl || !analyserSecret) {
@@ -219,6 +228,7 @@ async function runHostedAnalyser(params: {
         audio_url: signed.signedUrl,
         personality: params.personality,
       }),
+      signal: AbortSignal.timeout(ANALYSER_REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -227,17 +237,22 @@ async function runHostedAnalyser(params: {
 
   let bodyText: string;
   try {
-    bodyText = await response.text();
+    bodyText = await readResponseTextWithLimit(response, MAX_ANALYSER_RESPONSE_BYTES);
   } catch (error) {
+    if (error instanceof ResponseBodyTooLargeError) {
+      const status = response.ok ? 422 : response.status;
+      const retryable = !response.ok && isRetryableAnalyserStatus(response.status);
+      throw new AnalyseError(
+        `Song analyser response exceeded ${MAX_ANALYSER_RESPONSE_BYTES} bytes.`,
+        status,
+        retryable,
+      );
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new AnalyseError(`Could not read the song analyser response: ${message}`, 502, true);
   }
   if (!response.ok) {
-    const retryable =
-      response.status === 408 ||
-      response.status === 425 ||
-      response.status === 429 ||
-      response.status >= 500;
+    const retryable = isRetryableAnalyserStatus(response.status);
     throw new AnalyseError(
       truncate(bodyText || `Analyser returned HTTP ${response.status}.`),
       response.status,
@@ -246,9 +261,13 @@ async function runHostedAnalyser(params: {
   }
 
   try {
-    return JSON.parse(bodyText) as AnalyserResult;
-  } catch {
-    throw new AnalyseError('The analyser did not return JSON output.', 422);
+    return parseAnalyserResponse(bodyText);
+  } catch (error) {
+    const message =
+      error instanceof AnalyserOutputValidationError
+        ? error.message
+        : 'The analyser returned invalid output.';
+    throw new AnalyseError(message, 422);
   }
 }
 

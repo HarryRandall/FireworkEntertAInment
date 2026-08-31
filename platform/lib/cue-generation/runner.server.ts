@@ -437,6 +437,10 @@ export async function generateCuesForShow(params: {
     if (musicAnalysisId) {
       if (analysisResult.status === 'completed') {
         analysis = analysisResult.analysis;
+      } else if (analysisResult.status === 'invalid') {
+        throw new Error(
+          `Stored music analysis is invalid. Please upload the song again: ${analysisResult.errorMessage}`,
+        );
       } else if (analysisResult.status === 'failed') {
         const detail = analysisResult.errorMessage ? `: ${analysisResult.errorMessage}` : '.';
         throw new Error(`Music analysis failed${detail}`);
@@ -487,10 +491,7 @@ export async function generateCuesForShow(params: {
     // catalogue. Unlike the firework-type preference above, this is not
     // optional: fail closed rather than silently widening the pool.
     if (brief.assortment_id) {
-      const assortmentItemIds = await loadAssortmentCatalogueItemIds(
-        supabase,
-        brief.assortment_id,
-      );
+      const assortmentItemIds = await loadAssortmentCatalogueItemIds(supabase, brief.assortment_id);
       products = products.filter((product) => assortmentItemIds.has(product.id));
       if (products.length === 0) {
         throw new Error('This assortment has no purchasable products available right now.');

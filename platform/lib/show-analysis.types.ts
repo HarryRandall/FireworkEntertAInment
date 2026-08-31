@@ -41,6 +41,7 @@ export type AnalyserBuildup = {
 
 export type AnalyserFireworkCue = {
   time: number;
+  end?: number;
   effect: string;
   reason?: string;
   energy?: number;
@@ -82,10 +83,23 @@ export type AnalyserMusicProfile = {
   dominant_traits?: string[];
   style_vector?: Record<string, number>;
   descriptors?: Record<string, number>;
+  raw_metrics?: {
+    tempo_bpm: number;
+    onset_density_per_sec: number;
+    key_moments_per_min: number;
+    buildups_per_min: number;
+    beat_stability: number;
+    section_contrast: number;
+    bass_ratio: number;
+  };
 };
 
 export type AnalyserShowPersonality = {
   preset?: string;
+  blend_weights?: {
+    user: number;
+    music: number;
+  };
   dominant_traits?: string[];
   dimensions?: Record<string, number>;
   palette_direction?: {
@@ -94,6 +108,7 @@ export type AnalyserShowPersonality = {
     accent?: string;
   };
   density_level?: 'low' | 'medium' | 'high' | string;
+  genre_hint?: string;
 };
 
 export type AnalyserFinaleWindow = {

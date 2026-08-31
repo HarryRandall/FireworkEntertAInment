@@ -11,24 +11,28 @@ Deploy from this directory:
     modal deploy modal_app.py
 
 The printed URL becomes the Next.js `ANALYSER_URL` env var.
+Set `ANALYSER_ALLOWED_AUDIO_HOSTS` in the Modal secret when Supabase Storage
+uses a custom domain. Standard `*.supabase.co` storage hosts are allowed by
+default.
 """
 
 import os
 import tempfile
 import time
-import urllib.request
 from pathlib import Path
 from typing import Annotated
 
 import modal
 from fastapi import Header, HTTPException
 
+from audio_download import AudioDownloadError, download_audio
+
 image = (
     modal.Image.debian_slim()
     .apt_install("ffmpeg", "libsndfile1")
     .pip_install_from_requirements("requirements.txt")
     .pip_install("fastapi[standard]")
-    .add_local_python_source("showcrafter")
+    .add_local_python_source("showcrafter", "audio_download")
 )
 
 app = modal.App("showcrafter-analyser")
@@ -108,14 +112,22 @@ class SongAnalyser:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "audio"
             download_start = time.perf_counter()
-            urllib.request.urlretrieve(audio_url, path)
+            try:
+                download_audio(audio_url, path)
+            except AudioDownloadError as exc:
+                raise HTTPException(status_code=exc.status_code, detail=exc.as_http_detail()) from exc
             download_ms = round((time.perf_counter() - download_start) * 1000.0, 3)
-            result = self.analyse_song(
-                str(path),
-                personality,
-                runner_version="modal-librosa-2",
-                initial_timings_ms={"download_ms": download_ms},
-            )
+            from showcrafter import AudioInputError
+
+            try:
+                result = self.analyse_song(
+                    str(path),
+                    personality,
+                    runner_version="modal-librosa-2",
+                    initial_timings_ms={"download_ms": download_ms},
+                )
+            except AudioInputError as exc:
+                raise HTTPException(status_code=exc.status_code, detail=exc.as_http_detail()) from exc
             if analysis_id:
                 timings = result["analysis_meta"]["timings_ms"]
                 print(
