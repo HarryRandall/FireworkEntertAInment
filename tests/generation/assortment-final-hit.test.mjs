@@ -41,12 +41,14 @@ const [
   { buildBeatMoments },
   { planCuesOnBeats },
   { planCuesFast },
+  { evaluateFinalChoreography },
   { DEFAULT_DESIGN },
   { DEFAULT_FIREWORK_SPEC },
 ] = await Promise.all([
   import('../../lib/cue-generation/beat-sync-moments.ts'),
   import('../../lib/cue-generation/beat-sync-planner.ts'),
   import('../../lib/cue-generation/fast-planner.ts'),
+  import('../../lib/cue-generation/quality.ts'),
   import('../../lib/fireworks/design.ts'),
   import('../../lib/fireworks/spec.ts'),
 ]);
@@ -144,6 +146,17 @@ function assertExactFinale(result, products) {
   assert.equal(finalCues.length, 1);
   assert.equal(finalCues[0].productId, 'direct-shell');
   assert.equal(finalCues[0].tube, 1);
+  const quality = evaluateFinalChoreography({
+    cues: result.cues,
+    slots: sevenItemSlots(),
+    promptViolations: [],
+    maxTubes: 3,
+    sparse: false,
+  });
+  assert.equal(
+    quality.issues.some((issue) => issue.kind === 'missing_final_hit'),
+    false,
+  );
 }
 
 test('fast planner reserves the direct firework for the final beat of an exact pack', () => {
@@ -178,8 +191,8 @@ test('beat planner reserves the direct firework for the final beat of an exact p
 });
 
 test('beat planner keeps exact quantities when the remaining pack cannot fill a group', () => {
-  const products = [product('direct-a'), product('direct-b')];
-  const availabilityByProductId = new Map(products.map((item) => [item.id, 1]));
+  const products = [product('direct')];
+  const availabilityByProductId = new Map([['direct', 2]]);
   const slots = [
     ...slotsAt(10, 0, { nearClimax: true, emphasis: 'peak' }),
     ...slotsAt(20, 3, { finale: true }),
@@ -195,9 +208,34 @@ test('beat planner keeps exact quantities when the remaining pack cannot fill a 
   });
 
   assert.equal(result.cues.length, 2);
-  assert.equal(new Set(result.cues.map((cue) => cue.productId)).size, 2);
+  assert.equal(
+    result.cues.every((cue) => cue.productId === 'direct'),
+    true,
+  );
   assert.equal(
     result.cues.some((cue) => cue.impactTimeSeconds === 20),
+    true,
+  );
+});
+
+test('beat planner retains all available positions after reserving the final hit', () => {
+  const products = [product('direct-a'), product('direct-b'), product('direct-c')];
+  const availabilityByProductId = new Map(products.map((item) => [item.id, 1]));
+  const slots = slotsAt(20, 0, { finale: true });
+  const result = planCuesOnBeats({
+    analysis: null,
+    slots,
+    products,
+    songDuration: 22,
+    brief,
+    maxTubes: 3,
+    availabilityByProductId,
+  });
+
+  assert.equal(result.cues.length, 3);
+  assert.deepEqual(result.cues.map((cue) => cue.tube).sort(), [0, 1, 2]);
+  assert.equal(
+    result.cues.every((cue) => cue.impactTimeSeconds === 20),
     true,
   );
 });
@@ -233,4 +271,5 @@ test('hard assortment quality failures can invoke deterministic repair', () => {
 
   assert.match(runner, /quality\.issues\.some\(\(issue\) => issue\.hard\)/);
   assert.match(runner, /if \(needsDeterministicRepair\) \{/);
+  assert.match(runner, /Final cue validation after deterministic repair/);
 });

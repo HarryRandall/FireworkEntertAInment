@@ -984,6 +984,11 @@ export async function generateCuesForShow(params: {
       });
       runBeatFallback();
       accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
+      accepted = requireExactProductQuantityLedger(
+        accepted,
+        assortmentLedger,
+        'Final cue validation after deterministic repair',
+      );
       acceptedCount = accepted.length;
       quality = evaluateFinalChoreography({
         cues: accepted,
