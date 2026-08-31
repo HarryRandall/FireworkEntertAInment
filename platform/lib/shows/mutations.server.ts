@@ -9,6 +9,9 @@
  */
 import 'server-only';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
+
 import { invalidateShowCacheForUser } from './cache-keys';
 import { computeShoppingListForShow } from './shopping.server';
 import { getServerClient } from './supabase';
@@ -20,15 +23,20 @@ import { getServerClient } from './supabase';
  */
 export async function syncShowDerivedFieldsForUser(
   userId: string,
-  params: { showId: string; showSlug?: string | null },
+  params: {
+    showId: string;
+    showSlug?: string | null;
+    fixedTotalCents?: number | null;
+  },
+  suppliedClient?: SupabaseClient<Database>,
 ): Promise<void> {
-  const supabase = await getServerClient();
+  const supabase = suppliedClient ?? (await getServerClient());
   const computed = await computeShoppingListForShow(supabase, params.showId);
-  if (!computed) {
-    throw new Error('Could not compute show totals.');
-  }
+  if (!computed) throw new Error('Could not compute show totals.');
 
-  const totalCents = computed.items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
+  const totalCents =
+    params.fixedTotalCents ??
+    computed.items.reduce((sum, item) => sum + item.qty * item.priceCents, 0);
   const { data: updatedShow, error } = await supabase
     .from('shows')
     .update({

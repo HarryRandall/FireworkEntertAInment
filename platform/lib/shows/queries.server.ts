@@ -549,6 +549,16 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
   if (cached) return cached;
 
   const supabase = await getServerClient();
+  const expanded = await listReplayCuesForShowWithClient(supabase, showId);
+  await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
+  return expanded;
+}
+
+/** Trusted-client replay loader for non-dashboard server surfaces such as QR results. */
+export async function listReplayCuesForShowWithClient(
+  supabase: SupabaseClient<Database>,
+  showId: string,
+): Promise<ReplayCue[]> {
   const { data, error } = await supabase
     .from('show_timeline_items')
     .select(SHOW_CUE_SELECT)
@@ -567,10 +577,7 @@ export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]
     ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
   ];
   const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
-  const expanded = expandReplayCues(rows, shotsByCatalogueItem);
-
-  await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
-  return expanded;
+  return expandReplayCues(rows, shotsByCatalogueItem);
 }
 
 /**

@@ -6,6 +6,11 @@
  * grouped slots create simultaneous accents across every safely free tube.
  */
 import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
+import {
+  productQuantityCapacity,
+  requireExactProductQuantityLedger,
+  type ProductQuantityLedger,
+} from '@/lib/assortments/constraints';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { CueSlot } from '@/lib/beat-grid.server';
 import { buildBeatMoments, type BeatMoment } from './beat-sync-moments';
@@ -44,16 +49,27 @@ export function planCuesOnBeats(params: {
   brief?: ShowBriefRow | null;
   /** Launch positions available at the site (1-3). */
   maxTubes?: 1 | 2 | 3;
+  availabilityByProductId?: ProductQuantityLedger | null;
 }): BeatSyncPlanResult {
-  const { slots, products, songDuration, brief = null, maxTubes = 3 } = params;
+  const {
+    slots,
+    products,
+    songDuration,
+    brief = null,
+    maxTubes = 3,
+    availabilityByProductId = null,
+  } = params;
   const briefText = [brief?.title, brief?.description, ...(brief?.mood_tags ?? [])]
     .filter(Boolean)
     .join(' ');
   const direction = parseCreativeDirection(briefText, asShowStyleKey(brief?.show_style));
   const targets = buildBeatMoments({ slots, songDuration, direction });
   const productPools = pickProductPools(products, brief);
-  if (!slots.length || !productPools.cadence.length) {
-    return { cues: [], skippedSlots: slots.length };
+  if (!slots.length || (!productPools.cadence.length && !availabilityByProductId)) {
+    return {
+      cues: requireExactProductQuantityLedger([], availabilityByProductId, 'Beat planner'),
+      skippedSlots: slots.length,
+    };
   }
 
   const occupied: OccupiedWindow[] = [];
@@ -61,6 +77,13 @@ export function planCuesOnBeats(params: {
   let skippedSlots =
     slots.length - targets.reduce((total, target) => total + target.tubes.length, 0);
   let productRotor = 0;
+  const productUsage = new Map<string, number>();
+  const requiredCueCount = productQuantityCapacity(availabilityByProductId) ?? 0;
+  if (requiredCueCount > MAX_BEAT_CUES) {
+    throw new Error(
+      `The physical assortment requires ${requiredCueCount} cues, above the beat planner limit of ${MAX_BEAT_CUES}.`,
+    );
+  }
   const sustainedSections = new Set<string>();
   // Reserve requested surprises and structural peaks before ordinary beats.
   // Lift compensation can put their launches earlier than the beats around them.
@@ -89,12 +112,20 @@ export function planCuesOnBeats(params: {
       if (cues.length >= MAX_BEAT_CUES) break;
       const tube = tubeOrder[tubeIndex];
       const preferSustained = wantsSustained && tubeIndex === 0;
-      const productOrder = orderProductsForTarget(
+      const preferredProductOrder = orderProductsForTarget(
         productPools,
         productRotor,
         target,
         preferSustained,
       );
+      const productOrder = availabilityByProductId
+        ? orderRemainingExactProducts(
+            products,
+            preferredProductOrder,
+            productUsage,
+            availabilityByProductId,
+          )
+        : preferredProductOrder;
       let accepted:
         | {
             product: FireworkSpecification;
@@ -104,6 +135,13 @@ export function planCuesOnBeats(params: {
         | undefined;
 
       for (const product of productOrder) {
+        const quantityLimit = availabilityByProductId?.get(product.id);
+        if (
+          availabilityByProductId &&
+          (!quantityLimit || (productUsage.get(product.id) ?? 0) >= quantityLimit)
+        ) {
+          continue;
+        }
         const timing = scheduleProductForCueSlot({
           product,
           emphasis,
@@ -133,6 +171,7 @@ export function planCuesOnBeats(params: {
       if (!accepted) continue;
 
       occupied.push(...accepted.windows);
+      productUsage.set(accepted.product.id, (productUsage.get(accepted.product.id) ?? 0) + 1);
       acceptedForMoment += 1;
       if ((accepted.product.shotCount ?? 1) > 1) {
         sustainedSections.add(target.sectionKey);
@@ -153,8 +192,29 @@ export function planCuesOnBeats(params: {
     skippedSlots += Math.max(0, targetTubes.length - acceptedForMoment);
   }
 
-  cues.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
-  return { cues, skippedSlots };
+  const exactCues = requireExactProductQuantityLedger(
+    cues,
+    availabilityByProductId,
+    'Beat planner',
+  );
+  exactCues.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
+  return { cues: exactCues, skippedSlots };
+}
+
+function orderRemainingExactProducts(
+  products: FireworkSpecification[],
+  preferred: FireworkSpecification[],
+  usage: ReadonlyMap<string, number>,
+  ledger: ProductQuantityLedger,
+): FireworkSpecification[] {
+  const preferredIndex = new Map(preferred.map((product, index) => [product.id, index]));
+  return products
+    .filter((product) => (usage.get(product.id) ?? 0) < (ledger.get(product.id) ?? 0))
+    .sort((left, right) => {
+      const leftRank = preferredIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+      const rightRank = preferredIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+      return leftRank - rightRank || left.id.localeCompare(right.id);
+    });
 }
 
 function beatProtectionPriority(target: BeatMoment, direction: CreativeDirection): number {

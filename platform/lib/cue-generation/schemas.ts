@@ -47,6 +47,8 @@ export type GenerateCuesResult =
 
 /** Subset of `shows` columns the cue generator needs. */
 export type ShowBriefRow = {
+  assortment_id: string | null;
+  creation_source: string;
   id: string;
   slug: string;
   title: string;
@@ -61,5 +63,4 @@ export type ShowBriefRow = {
   site_width_feet: number | null;
   selected_cue_model: string | null;
   firework_types: string[] | null;
-  assortment_id: string | null;
 };

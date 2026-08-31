@@ -13,6 +13,7 @@ const guardedSubtrees = new Map([
   ['suppliers', 'admin.manage_suppliers'],
   ['imports', 'admin.manage_imports'],
   ['show-presets', 'admin.manage_catalogue'],
+  ['assortments', 'admin.manage_assortments'],
 ]);
 
 test('admin management subtrees guard their index and nested routes', () => {

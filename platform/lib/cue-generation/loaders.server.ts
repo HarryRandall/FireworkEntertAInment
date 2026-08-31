@@ -17,6 +17,7 @@ import {
 } from '@/lib/show-analysis-validation';
 import { invalidateShowCacheForUser } from '@/lib/shows.server';
 import type { ShowBriefRow } from './schemas';
+import type { ProductQuantityLedger } from '@/lib/assortments/constraints';
 
 type AppSupabase = SupabaseClient<Database>;
 
@@ -38,7 +39,7 @@ export async function loadBrief(
   const { data, error } = await supabase
     .from('shows')
     .select(
-      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, selected_cue_model, firework_types, assortment_id',
+      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, music_analysis_id, show_style, site_width_feet, selected_cue_model, firework_types, assortment_id, creation_source',
     )
     .eq('id', showId)
     .eq('user_id', userId)
@@ -50,7 +51,24 @@ export async function loadBrief(
   return (data as ShowBriefRow) ?? null;
 }
 
-/** Loads the member catalogue_item ids of an assortment, for constraining the planner's pool to a scanned in-store bundle. */
+/** Loads the immutable product ledger captured when a QR show was created. */
+export async function loadShowAssortmentLedger(
+  supabase: AppSupabase,
+  showId: string,
+): Promise<ProductQuantityLedger | null> {
+  const { data, error } = await supabase
+    .from('show_assortment_items')
+    .select('catalogue_item_id, quantity')
+    .eq('show_id', showId);
+  if (error) {
+    console.error('[cue-generation] assortment snapshot lookup failed:', error);
+    throw new Error('The assortment product ledger could not be loaded.');
+  }
+  if (!data?.length) throw new Error('The assortment product ledger is empty.');
+  return new Map(data.map((item) => [item.catalogue_item_id, item.quantity]));
+}
+
+/** FIR-178 membership filter for non-QR assortment-linked shows. */
 export async function loadAssortmentCatalogueItemIds(
   supabase: AppSupabase,
   assortmentId: string,
@@ -61,7 +79,7 @@ export async function loadAssortmentCatalogueItemIds(
     .eq('assortment_id', assortmentId);
   if (error) {
     console.error('[cue-generation] loadAssortmentCatalogueItemIds failed:', error);
-    return new Set();
+    throw new Error('The assortment catalogue membership could not be loaded.');
   }
   return new Set((data ?? []).map((row) => row.catalogue_item_id));
 }
