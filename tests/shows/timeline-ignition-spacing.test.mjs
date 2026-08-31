@@ -31,7 +31,19 @@ test('database timeline safety separates ignition spacing from visual duration',
 test('the revised guards retain locking, occupied-position and privilege boundaries', () => {
   assert.match(migration, /^begin;/m);
   assert.match(migration, /lock table public\.show_timeline_items in share row exclusive mode/);
-  assert.match(migration, /select private\.assert_show_timeline_non_overlapping\(\);/);
+  assert.match(
+    migration,
+    /create or replace function private\.assert_show_timeline_non_overlapping\(\s*p_show_ids uuid\[\] default null::uuid\[\]\s*\)/,
+  );
+  assert.match(migration, /p_show_ids is null or first_item\.show_id = any\(p_show_ids\)/);
+  assert.match(
+    migration,
+    /select private\.assert_show_timeline_non_overlapping\(null::uuid\[\]\);/,
+  );
+  assert.match(
+    migration,
+    /revoke execute on function private\.assert_show_timeline_non_overlapping\(uuid\[\]\)[\s\S]*?from public, anon, authenticated, service_role/,
+  );
   assert.match(
     migration,
     /create or replace function private\.reject_overlapping_show_timeline_item\(\)[\s\S]*?security definer[\s\S]*?set search_path = ''/,
