@@ -227,7 +227,10 @@ test('initial generation snapshots current FIR-178 items and regeneration copies
   );
   assert.match(route, /sourceShowId = priorShow\.id/);
   assert.match(route, /sourceShowId,/);
-  assert.match(implementation, /p_source_show_id: params\.sourceShowId \?\? null/);
+  assert.match(
+    implementation,
+    /p_source_show_id: \(params\.sourceShowId \?\? null\) as string \| undefined/,
+  );
   assert.match(implementation, /show_assortment_items \(/);
   assert.match(showPage, /show\.snapshotItems/);
   assert.match(showPage, /show\.budgetCents/);

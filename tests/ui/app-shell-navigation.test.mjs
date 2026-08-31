@@ -24,6 +24,7 @@ test('app navigation exposes only shipped destinations in the intended order', (
       { href: '/catalogue', label: 'Catalogue' },
       { href: '/exports', label: 'Exports' },
       { href: '/safety', label: 'Safety' },
+      { href: '/my-store', label: 'My Store' },
       { href: '/admin', label: 'Admin' },
     ],
   );
