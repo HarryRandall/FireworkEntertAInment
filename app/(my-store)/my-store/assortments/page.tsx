@@ -1,7 +1,7 @@
 /**
  * Retailer-admin assortments list. Real data via the FIR-178 backend
  * (lib/admin/assortments.server.ts, gated purely on admin.manage_assortments)
- * — same list as /admin/assortments, just hosted under /retailer-admin so a
+ * — same list as /admin/assortments, just hosted under /my-store so a
  * retailer account (which never holds admin.view) can reach it without
  * touching the developer/owner-only /admin area. See FIR-166.
  */
@@ -110,7 +110,7 @@ async function AssortmentsTable({ params }: { params: AssortmentsSearchParams })
             <tr key={assortment.id} className={tableRowClasses('group')}>
               <td className={tableCellClasses('p-0')}>
                 <Link
-                  href={`/retailer-admin/assortments/${assortment.id}`}
+                  href={`/my-store/assortments/${assortment.id}`}
                   className="block px-4 py-3 text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline"
                 >
                   {assortment.name}

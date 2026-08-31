@@ -1,5 +1,5 @@
 /**
- * Static preview data for retailer-admin sections that have no backend yet
+ * Static preview data for my-store sections that have no backend yet
  * (Overview's credit/show stats, Credits — see FIR-166). Assortments are
  * real, shared data from FIR-178's /admin/assortments (see
  * @/lib/admin/assortments.server), and Overview's "active assortments" stat

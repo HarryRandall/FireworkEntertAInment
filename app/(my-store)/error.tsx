@@ -1,6 +1,6 @@
 'use client';
 
-/** Error boundary for retailer-admin routes. */
+/** Error boundary for my-store routes. */
 
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/design-system/Button';

@@ -3,7 +3,7 @@
 /**
  * Retailer-scoped copy of admin/assortments/NewAssortmentButton — same
  * createAssortment action (gated purely on admin.manage_assortments, no
- * admin.view dependency), just redirecting into /retailer-admin instead of
+ * admin.view dependency), just redirecting into /my-store instead of
  * /admin, which a retailer account can't reach. See FIR-166.
  */
 import { useState, useTransition } from 'react';
@@ -40,7 +40,7 @@ export function RetailerNewAssortmentButton() {
       toast.success('Assortment created');
       setOpen(false);
       setName('');
-      router.push(`/retailer-admin/assortments/${result.id}`);
+      router.push(`/my-store/assortments/${result.id}`);
     });
   }
 

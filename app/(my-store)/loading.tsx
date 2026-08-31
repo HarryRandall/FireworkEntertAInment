@@ -1,4 +1,4 @@
-/** Group-level loading fallback for retailer-admin routes; deliberately neutral so it can't flash the wrong page shape mid-navigation. */
+/** Group-level loading fallback for my-store routes; deliberately neutral so it can't flash the wrong page shape mid-navigation. */
 
 import { Skeleton } from '@/components/design-system/Feedback';
 

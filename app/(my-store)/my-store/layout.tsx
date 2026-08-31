@@ -20,12 +20,10 @@ export const dynamic = 'force-dynamic';
 // holds that permission, not a distinct login identity (see FIR-166).
 export default async function RetailerAdminRouteGroupLayout({ children }: { children: ReactNode }) {
   const [profile, impersonation, cookieStore] = await Promise.all([
-    measureServerTask('retailer-admin-layout:requirePermission', () =>
+    measureServerTask('my-store-layout:requirePermission', () =>
       requirePermission('admin.manage_assortments'),
     ),
-    measureServerTask('retailer-admin-layout:getActiveImpersonation', () =>
-      getActiveImpersonation(),
-    ),
+    measureServerTask('my-store-layout:getActiveImpersonation', () => getActiveImpersonation()),
     cookies(),
   ]);
   if (!profile) redirect('/home');

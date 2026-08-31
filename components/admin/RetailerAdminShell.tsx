@@ -7,7 +7,7 @@
  * `/admin/*` (that stays exclusive to developer/owner `admin` accounts).
  * Assortments here reuses the real FIR-178 editor components directly
  * (AssortmentEditor, NewAssortmentButton's logic) rather than duplicating
- * them, just hosted under /retailer-admin so a retailer never needs
+ * them, just hosted under /my-store so a retailer never needs
  * admin.view to use it. See FIR-166.
  */
 import Link from 'next/link';
@@ -70,25 +70,25 @@ type RetailerNavLink = {
 
 const RETAILER_LINKS: RetailerNavLink[] = [
   {
-    href: '/retailer-admin',
+    href: '/my-store',
     label: 'Overview',
     icon: LayoutDashboard,
     permission: 'admin.manage_assortments',
   },
   {
-    href: '/retailer-admin/assortments',
+    href: '/my-store/assortments',
     label: 'Assortments',
     icon: Layers,
     permission: 'admin.manage_assortments',
   },
   {
-    href: '/retailer-admin/test-show',
+    href: '/my-store/test-show',
     label: 'Test a show',
     icon: PlayCircle,
     permission: 'admin.manage_assortments',
   },
   {
-    href: '/retailer-admin/credits',
+    href: '/my-store/credits',
     label: 'Credits',
     icon: CreditCard,
     permission: 'admin.manage_assortments',
@@ -96,9 +96,7 @@ const RETAILER_LINKS: RetailerNavLink[] = [
 ];
 
 function isActivePath(pathname: string | null, href: string) {
-  return (
-    pathname === href || (href !== '/retailer-admin' && Boolean(pathname?.startsWith(`${href}/`)))
-  );
+  return pathname === href || (href !== '/my-store' && Boolean(pathname?.startsWith(`${href}/`)));
 }
 
 function pageTitleFor(pathname: string | null) {
@@ -117,7 +115,7 @@ function RetailerSidebarBrand() {
             tooltip="ShowCrafter"
             className={SIDEBAR_BRAND_BUTTON_CLASS}
           >
-            <Link href="/retailer-admin" prefetch={false}>
+            <Link href="/my-store" prefetch={false}>
               <BrandLockup
                 className="w-full gap-0 text-lg group-data-[collapsible=icon]:justify-center"
                 markClassName="group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:translate-y-0"
@@ -140,6 +138,19 @@ function RetailerNavItem({ link, active }: { link: RetailerNavLink; active: bool
         <Link href={link.href} prefetch={false}>
           <Icon size={16} strokeWidth={2} />
           <span>{link.label}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function BackToHomeItem() {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild tooltip="Back to home">
+        <Link href="/home" prefetch={false}>
+          <ArrowLeft size={16} strokeWidth={2} />
+          <span>Back to home</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -297,21 +308,17 @@ export function RetailerAdminShell({
           {impersonation ? (
             <ImpersonationBanner impersonation={impersonation} collapsed={sidebarCollapsed} />
           ) : null}
-          {profile.permissions.includes('admin.view') ? (
-            <SidebarMenu>
-              <BackToAdminItem />
-            </SidebarMenu>
-          ) : null}
+          <SidebarMenu>
+            <BackToHomeItem />
+            {profile.permissions.includes('admin.view') ? <BackToAdminItem /> : null}
+          </SidebarMenu>
           <ProfileMenuButton profile={profile} onSignOut={handleSignOut} />
         </SidebarFooter>
       </Sidebar>
 
       <SidebarInset>
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
-          <SidebarTrigger
-            className="shrink-0 md:hidden"
-            aria-label="Open retailer admin navigation"
-          />
+          <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open My Store navigation" />
           <span className="text-foreground truncate text-sm font-medium">
             {pageTitleFor(pathname)}
           </span>
