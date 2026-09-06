@@ -24,7 +24,7 @@ import {
   ANALYSER_SCHEMA_VERSION,
   AnalyserOutputValidationError,
   parseAnalyserResponse,
-  type AnalyserV14Result,
+  type SupportedAnalyserResult,
 } from '@/lib/show-analysis-validation';
 
 const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
@@ -195,7 +195,7 @@ async function runHostedAnalyser(params: {
   audioPath: string;
   personality: string;
   analysisId?: string;
-}): Promise<AnalyserV14Result> {
+}): Promise<SupportedAnalyserResult> {
   const analyserUrl = process.env.ANALYSER_URL;
   const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
   if (!analyserUrl || !analyserSecret) {

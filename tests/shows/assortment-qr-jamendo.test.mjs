@@ -152,7 +152,7 @@ test('a selected Jamendo track feeds the existing QR show and recovery pipeline'
 
 test('manual upload remains the explicit QR fallback', async () => {
   const [client, musicRoute] = await Promise.all([source('kioskClient'), source('musicRoute')]);
-  assert.match(client, /Upload your own audio/);
+  assert.match(client, /Use my own song/);
   assert.match(client, /MP3 \/ WAV \/ AAC \/ M4A/);
   assert.match(client, /operation: 'prepare-upload'/);
   assert.match(client, /uploadToSignedUrl/);
@@ -166,7 +166,7 @@ test('the shared picker keeps authenticated defaults and supports the QR endpoin
   assert.match(picker, /apiEndpoint = '\/api\/music-library\/jamendo'/);
   assert.match(picker, /fetch\(`\$\{apiEndpoint\}\?/);
   assert.match(client, /apiEndpoint=\{`\/api\/assortments\/\$\{token\}\/music\/jamendo`\}/);
-  assert.ok(client.indexOf('<JamendoSongSearch') < client.indexOf('Upload your own audio'));
+  assert.ok(client.indexOf('<JamendoSongSearch') < client.indexOf('Use my own song'));
   assert.match(client, /jamendoTrack\.title/);
   assert.match(client, /jamendoTrack\.artist/);
 });
@@ -220,4 +220,21 @@ test('Jamendo selection does not bypass immutable assortment or regeneration con
   assert.doesNotMatch(publicRoute, /assortment_items|show_assortment_items|catalogue_items|SKU/i);
   assert.match(showsRoute, /sourceShowId = priorShow\.id/);
   assert.match(showsRoute, /createAssortmentShowRecord\([\s\S]*sourceShowId/);
+});
+
+test('QR recommendations are opt-in and use the existing read-only picker', async () => {
+  const [picker, client, route] = await Promise.all([
+    source('picker'),
+    source('kioskClient'),
+    source('publicRoute'),
+  ]);
+  assert.match(picker, /recommendations = false/);
+  assert.match(client, /<JamendoSongSearch\s+recommendations/);
+  assert.match(picker, /Recommend music for me/);
+  assert.match(picker, /mode=recommend/);
+  assert.match(picker, /mode === 'recommend' \? recommendationReasons/);
+  assert.match(route, /recommendAssortmentMusic\(assortment\)/);
+  assert.ok(
+    route.indexOf("operation: 'jamendo-read'") < route.indexOf('await recommendAssortmentMusic'),
+  );
 });

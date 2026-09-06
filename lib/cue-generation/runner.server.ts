@@ -55,9 +55,13 @@ import {
 } from './prompt';
 import { planCuesFast } from './fast-planner';
 import { planCuesOnBeats } from './beat-sync-planner';
+import { loadProductTimingProfiles } from './product-timing.server';
+import type { ProductTimingProfiles } from './music-product-matching';
 import { scheduleProductForCueSlot } from './impact-timing';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { evaluateFinalChoreography } from './quality';
+import { evaluateMusicSync } from './music-sync-quality';
+import { selectChoreographyCandidate, type ChoreographyPlanner } from './choreography-repair';
 import {
   launchPositionsForWidth,
   occupiedLaunchPositions,
@@ -429,6 +433,7 @@ export async function generateCuesForShow(params: {
   let analysis: AnalyserResult | null = null;
   let analysisResult: AnalysisJsonLoadResult = { status: 'absent', analysis: null };
   let products: Awaited<ReturnType<typeof listFireworkProducts>> = [];
+  let timingProfiles: ProductTimingProfiles = new Map();
   let assortmentLedger: ProductQuantityLedger | null = null;
   let liveAssortmentItemIds: Set<string> | null = null;
   let catalogue: ReturnType<typeof projectCatalogue> = [];
@@ -562,6 +567,7 @@ export async function generateCuesForShow(params: {
       }
     }
     catalogueCount = products.length;
+    timingProfiles = await loadProductTimingProfiles(supabase, products);
     timings.loadInputsMs = elapsedMs(loadStart);
 
     const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
@@ -584,6 +590,7 @@ export async function generateCuesForShow(params: {
   }
 
   let accepted: ReconstructedCue[] = [];
+  let plannerUsed: ChoreographyPlanner = generationMode;
   try {
     const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
     const creativeDirection = parseCreativeDirection(
@@ -602,11 +609,13 @@ export async function generateCuesForShow(params: {
         products,
         songDuration,
         availabilityByProductId: assortmentLedger,
+        timingProfiles,
       });
       accepted = plan.cues;
       acceptedCount = accepted.length;
       droppedCount = plan.skippedSlots;
       timings.fastPlanMs = elapsedMs(planStart);
+      plannerUsed = 'fast';
     };
 
     /**
@@ -614,7 +623,7 @@ export async function generateCuesForShow(params: {
      * beat planner owns musical timing and grouped multi-position moments, so
      * falling back does not mean abandoning the user's beat-sync request.
      */
-    const runBeatFallback = () => {
+    const buildBeatFallback = () => {
       const planStart = performance.now();
       const plan = planCuesOnBeats({
         analysis,
@@ -624,11 +633,17 @@ export async function generateCuesForShow(params: {
         brief,
         maxTubes,
         availabilityByProductId: assortmentLedger,
+        timingProfiles,
       });
+      timings.fastPlanMs = elapsedMs(planStart);
+      return plan;
+    };
+    const runBeatFallback = () => {
+      const plan = buildBeatFallback();
       accepted = plan.cues;
       acceptedCount = accepted.length;
       droppedCount = plan.skippedSlots;
-      timings.fastPlanMs = elapsedMs(planStart);
+      plannerUsed = 'beat';
     };
 
     if (generationMode === 'beat') {
@@ -644,6 +659,7 @@ export async function generateCuesForShow(params: {
         brief,
         maxTubes,
         availabilityByProductId: assortmentLedger,
+        timingProfiles,
       });
       accepted = plan.cues;
       acceptedCount = accepted.length;
@@ -655,7 +671,11 @@ export async function generateCuesForShow(params: {
     } else {
       // === Stage 2: build prompt + call the LLM ============================
       const promptStart = performance.now();
-      catalogue = projectCatalogue(products, generationSettings.productCatalogueFields);
+      catalogue = projectCatalogue(
+        products,
+        generationSettings.productCatalogueFields,
+        timingProfiles,
+      );
       const productIndex = new Map(products.map((product) => [product.id, product]));
       const slotIndex = new Map(slots.map((s) => [s.index, s]));
 
@@ -938,85 +958,89 @@ export async function generateCuesForShow(params: {
       }
     }
 
-    // Safety can remove a cue after a planner returns, so exact physical-pack
-    // validation happens after the final shared overlap pass. Under-use,
-    // over-use and unknown products all fail the run rather than being hidden.
-    accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
-    accepted = requireExactProductQuantityLedger(
-      accepted,
-      assortmentLedger,
-      'Final cue validation',
-    );
-    acceptedCount = accepted.length;
-
-    if (accepted.length === 0) {
-      const message =
-        generationMode === 'beat'
-          ? 'Beat-sync planner returned no usable cues.'
-          : generationMode === 'fast'
-            ? 'Fast cue planner returned no usable cues.'
-            : 'Cue generation returned no usable cues, even after the beat-planner fallback.';
-      logTimings('failed', { error: message });
-      return finishFailure(message);
-    }
-
-    let quality = evaluateFinalChoreography({
-      cues: accepted,
-      slots,
-      promptViolations: validatePromptConstraints({
-        productIds: accepted.map((cue) => cue.productId),
-        products,
-        constraints: promptConstraints,
-      }),
-      maxTubes,
-      sparse: sparseGeneration,
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const slotIds = new Set(slots.map((slot) => slot.index));
+    const selection = selectChoreographyCandidate({
+      initialCues: accepted,
+      initialPlanner: plannerUsed,
+      createRepair: () => buildBeatFallback().cues,
+      inspect: (candidate) => {
+        if (
+          candidate.some(
+            (cue) =>
+              !productById.has(cue.productId) ||
+              !slotIds.has(cue.slotIndex) ||
+              !Number.isFinite(cue.timeSeconds) ||
+              cue.timeSeconds < 0 ||
+              !Number.isFinite(cue.impactTimeSeconds) ||
+              cue.impactTimeSeconds < 0,
+          )
+        ) {
+          throw new Error('Invalid product, slot or launch time in choreography candidate.');
+        }
+        // Each candidate passes the identical persisted-time safety and ledger
+        // boundary before it is allowed to compete on musical quality.
+        const safe = requireExactProductQuantityLedger(
+          enforceTimelineTubeSafety(candidate, products, maxTubes),
+          assortmentLedger,
+          'Final cue validation',
+        );
+        const musicSync = evaluateMusicSync({ cues: safe, slots, analysis, timingProfiles });
+        const qualityCues = safe.map((cue) => {
+          const profile = timingProfiles.get(cue.productId)?.[cue.emphasis];
+          const directImpact =
+            profile?.completeness === 'complete' && profile.shotCount === 1
+              ? profile.firstImpactOffsetSeconds
+              : null;
+          return directImpact == null
+            ? cue
+            : {
+                ...cue,
+                impactTimeSeconds: cue.timeSeconds + directImpact,
+              };
+        });
+        return {
+          cues: safe,
+          quality: evaluateFinalChoreography({
+            cues: qualityCues,
+            slots,
+            promptViolations: validatePromptConstraints({
+              productIds: safe.map((cue) => cue.productId),
+              products,
+              constraints: promptConstraints,
+            }),
+            maxTubes,
+            sparse: sparseGeneration,
+            musicSync,
+            activityWindows: safe.flatMap((cue) => {
+              const profile = timingProfiles.get(cue.productId)?.[cue.emphasis];
+              return profile?.completeness === 'complete'
+                ? profile.shots.map((shot) => ({
+                    start: cue.timeSeconds + shot.impactOffsetSeconds,
+                    end: cue.timeSeconds + shot.endOffsetSeconds,
+                  }))
+                : [{ start: cue.impactTimeSeconds, end: cue.impactTimeSeconds }];
+            }),
+          }),
+        };
+      },
     });
-    const needsDeterministicRepair =
-      quality.issues.length > 0 &&
-      generationMode !== 'beat' &&
-      (!assortmentLedger || quality.issues.some((issue) => issue.hard));
-    if (needsDeterministicRepair) {
-      console.warn('[cue-generation] final choreography needed deterministic repair', {
-        issues: quality.issues,
-        maximumGapSeconds: quality.maximumGapSeconds,
-        sectionCoverageRatio: quality.sectionCoverageRatio,
-        coordinatedStrongMomentRatio: quality.coordinatedStrongMomentRatio,
-      });
-      runBeatFallback();
-      accepted = enforceTimelineTubeSafety(accepted, products, maxTubes);
-      accepted = requireExactProductQuantityLedger(
-        accepted,
-        assortmentLedger,
-        'Final cue validation after deterministic repair',
-      );
-      acceptedCount = accepted.length;
-      quality = evaluateFinalChoreography({
-        cues: accepted,
-        slots,
-        promptViolations: validatePromptConstraints({
-          productIds: accepted.map((cue) => cue.productId),
-          products,
-          constraints: promptConstraints,
-        }),
-        maxTubes,
-        sparse: sparseGeneration,
-      });
-    }
-
-    const hardQualityIssues = quality.issues.filter((issue) => issue.hard);
-    if (hardQualityIssues.length > 0) {
+    // No audio, prompt text, product names or capability tokens in this report.
+    console.info('[cue-generation] choreography candidate evaluation', selection.report);
+    if (!selection.selected) {
       throw new Error(
-        `The final choreography could not satisfy: ${hardQualityIssues
-          .map((issue) => issue.detail)
-          .join('; ')}.`,
+        'No choreography candidate satisfied the product, timing, safety, exact assortment and required musical conditions.',
       );
     }
-    if (quality.issues.length > 0) {
+    accepted = selection.selected.cues;
+    acceptedCount = accepted.length;
+    plannerUsed = selection.selected.planner;
+    if (selection.selected.quality.issues.length > 0) {
       console.warn('[cue-generation] final choreography soft quality warnings', {
-        issues: quality.issues,
-        maximumGapSeconds: quality.maximumGapSeconds,
-        sectionCoverageRatio: quality.sectionCoverageRatio,
-        coordinatedStrongMomentRatio: quality.coordinatedStrongMomentRatio,
+        issues: selection.report.remainingIssues,
+        comparisonScore: selection.selected.quality.comparisonScore,
+        repairAttempted: selection.report.repairAttempted,
+        repairApplied: selection.report.repairApplied,
       });
     }
   } catch (error) {

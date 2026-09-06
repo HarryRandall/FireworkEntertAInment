@@ -134,16 +134,19 @@ export function JamendoSongSearch({
   hasSelection = false,
   apiEndpoint = '/api/music-library/jamendo',
   disabled = false,
+  recommendations = false,
 }: {
   onSelect: (track: JamendoSearchTrack) => Promise<void>;
   hasSelection?: boolean;
   apiEndpoint?: string;
+  recommendations?: boolean;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'browse' | 'search'>('browse');
+  const [mode, setMode] = useState<'browse' | 'search' | 'recommend'>('browse');
+  const [recommendationReasons, setRecommendationReasons] = useState<Record<string, string[]>>({});
   const [genre, setGenre] = useState<JamendoGenre | null>(null);
 
   const [tracks, setTracks] = useState<JamendoSearchTrack[]>([]);
@@ -321,6 +324,57 @@ export function JamendoSongSearch({
     }
   }
 
+  async function loadRecommendations() {
+    if (disabled) return;
+    setOpen(true);
+    const token = ++requestTokenRef.current;
+    stopPreview();
+    setMode('recommend');
+    setLoading(true);
+    setLoadingMore(false);
+    setHasMore(false);
+    setHasSearched(true);
+    setError(null);
+    setTracks([]);
+    setRecommendationReasons({});
+    try {
+      const res = await fetch(`${apiEndpoint}?mode=recommend`, { cache: 'no-store' });
+      const value: unknown = await res.json();
+      if (!res.ok)
+        throw new Error(
+          responseError(
+            value,
+            'Recommendations are temporarily unavailable. You can still browse or use your own song.',
+          ),
+        );
+      if (requestTokenRef.current !== token) return;
+      const next = tracksFrom(value);
+      const reasons: Record<string, string[]> = {};
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        'reasons' in value &&
+        typeof value.reasons === 'object' &&
+        value.reasons !== null
+      ) {
+        for (const [id, reason] of Object.entries(value.reasons)) {
+          if (next.some((track) => track.trackId === id) && Array.isArray(reason)) {
+            reasons[id] = reason
+              .filter((text): text is string => typeof text === 'string')
+              .slice(0, 2);
+          }
+        }
+      }
+      setTracks(next);
+      setRecommendationReasons(reasons);
+    } catch (err) {
+      if (requestTokenRef.current !== token) return;
+      setError(err instanceof Error ? err.message : 'Recommendations are temporarily unavailable.');
+    } finally {
+      if (requestTokenRef.current === token) setLoading(false);
+    }
+  }
+
   async function surpriseMe() {
     setQuery('');
     const pick = JAMENDO_GENRES[Math.floor(Math.random() * JAMENDO_GENRES.length)];
@@ -335,7 +389,7 @@ export function JamendoSongSearch({
   function openDialog() {
     if (disabled) return;
     setOpen(true);
-    if (!hasSearched) void loadBrowse(null, 0, false);
+    if (!hasSearched || mode === 'recommend') void loadBrowse(null, 0, false);
   }
 
   function togglePreview(track: JamendoSearchTrack) {
@@ -461,6 +515,17 @@ export function JamendoSongSearch({
           : 'Browse a free, licence-cleared library for a track to lead your show.'}
       </p>
 
+      {recommendations ? (
+        <Button
+          type="button"
+          className="mt-3 w-full"
+          disabled={disabled}
+          onClick={() => void loadRecommendations()}
+        >
+          Recommend music for me
+        </Button>
+      ) : null}
+
       <button
         type="button"
         onClick={openDialog}
@@ -548,6 +613,14 @@ export function JamendoSongSearch({
             </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {recommendations ? (
+                <GenreChip
+                  label="For this assortment"
+                  active={mode === 'recommend'}
+                  disabled={busy}
+                  onClick={() => void loadRecommendations()}
+                />
+              ) : null}
               <GenreChip
                 label="All"
                 active={mode === 'browse' && genre === null}
@@ -576,6 +649,12 @@ export function JamendoSongSearch({
           </DialogHeader>
 
           <div className="overflow-y-auto px-4 py-3">
+            {mode === 'recommend' ? (
+              <p className="mb-3 text-xs text-[color:var(--color-content-subtle)]">
+                Suggestions for this assortment. Existing music analysis is reused where available;
+                other suggestions use track length only. Browsing uses no AI credits.
+              </p>
+            ) : null}
             {error ? (
               <p
                 role="alert"
@@ -592,13 +671,19 @@ export function JamendoSongSearch({
                   className="animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-                {mode === 'search' ? 'Searching Jamendo' : 'Loading tracks'}
+                {mode === 'recommend'
+                  ? 'Finding music for this assortment'
+                  : mode === 'search'
+                    ? 'Searching Jamendo'
+                    : 'Loading tracks'}
               </div>
             ) : tracks.length === 0 && hasSearched && !error ? (
               <p className="py-10 text-center text-sm text-[color:var(--color-content-subtle)]">
-                {mode === 'search'
-                  ? 'No tracks matched. Try another search or browse by genre.'
-                  : 'No tracks to show right now. Try a different genre.'}
+                {mode === 'recommend'
+                  ? 'No recommendations available. Browse the library or use your own song.'
+                  : mode === 'search'
+                    ? 'No tracks matched. Try another search or browse by genre.'
+                    : 'No tracks to show right now. Try a different genre.'}
               </p>
             ) : (
               <ul className="flex w-full flex-col gap-2">
@@ -606,6 +691,9 @@ export function JamendoSongSearch({
                   <TrackRow
                     key={track.trackId}
                     track={track}
+                    reasons={
+                      mode === 'recommend' ? recommendationReasons[track.trackId] : undefined
+                    }
                     previewing={previewingTrackId === track.trackId}
                     previewLoading={previewLoadingTrackId === track.trackId}
                     importing={importingTrackId === track.trackId}
@@ -682,6 +770,7 @@ function GenreChip({
 
 function TrackRow({
   track,
+  reasons,
   previewing,
   previewLoading,
   importing,
@@ -695,6 +784,7 @@ function TrackRow({
   onScrubberKey,
 }: {
   track: JamendoSearchTrack;
+  reasons?: string[];
   previewing: boolean;
   previewLoading: boolean;
   importing: boolean;
@@ -717,6 +807,11 @@ function TrackRow({
 
   return (
     <li>
+      {reasons?.length ? (
+        <p className="mb-1 px-1 text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
+          {reasons.join(' ')}
+        </p>
+      ) : null}
       <div
         onClick={() => {
           // Once playing, only the pause button stops it; row clicks never pause.
@@ -773,7 +868,7 @@ function TrackRow({
             </span>
           </button>
 
-          <div className="w-52 shrink-0">
+          <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
             <div className="flex items-center gap-1">
               <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
                 {track.title}

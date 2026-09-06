@@ -10,6 +10,7 @@ import { asProductCatalogueFields, type ProductCatalogueField } from '@/lib/prom
 import type { listFireworkProducts } from '@/lib/shows.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { SHOW_STYLES, type ShowStyleKey } from './show-styles';
+import type { ProductTimingProfiles } from './music-product-matching';
 
 /**
  * Top-level summary of the song analysis we hand the LLM. Falls back to a
@@ -136,6 +137,7 @@ function densityHintFor(
 export function projectCatalogue(
   products: Awaited<ReturnType<typeof listFireworkProducts>>,
   selectedFields?: readonly ProductCatalogueField[] | null,
+  timingProfiles?: ProductTimingProfiles,
 ) {
   const fields = new Set(asProductCatalogueFields(selectedFields));
   const include = (field: ProductCatalogueField) => fields.has(field);
@@ -143,6 +145,7 @@ export function projectCatalogue(
   return products.map((product) => {
     const spec = product.spec ?? null;
     const shotCount = product.shotCount ?? 1;
+    const timing = timingProfiles?.get(product.id)?.normal;
     const description = include('description') ? compactText(product.description, 140) : null;
     const effects = include('effects')
       ? {
@@ -161,6 +164,19 @@ export function projectCatalogue(
       : {};
     return {
       id: product.id,
+      ...(timing
+        ? {
+            timing: {
+              source: timing.source,
+              referenceEmphasis: 'normal',
+              completeness: timing.completeness,
+              firstImpactOffsetSeconds: timing.firstImpactOffsetSeconds,
+              lastImpactOffsetSeconds: timing.lastImpactOffsetSeconds,
+              totalDurationSeconds: timing.totalDurationSeconds,
+              intervals: timing.intervals,
+            },
+          }
+        : {}),
       ...(include('name') ? { name: product.name } : {}),
       ...(description ? { description } : {}),
       ...(include('durationSeconds') && product.durationSeconds != null
@@ -283,6 +299,8 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
 
 const SHOW_CUE_RUNTIME_GUARDRAILS = [
   'Runtime choreography contract:',
+  '  - When supplied, timing is deterministic renderer-estimated metadata at normal emphasis, not measured product physics. Unknown timing stays unknown; never invent child offsets, cadence or lift times.',
+  '  - Prefer regular multi-shot intervals near half a beat, one beat or two beats for chorus/drop/buildup layers. Use sustained or irregular products for phrase texture. Cadence compatibility does not guarantee each child burst is on a beat: multi-shot slot t remains sequence start.',
   '  - Catalogue duration and occupied launch positions are hard safety constraints. Never trade them for an impossible fill target.',
   '  - Treat the budget as a soft preference. Prioritise musical structure, visual density, lane coverage, and a strong finale over minimising cost.',
   '  - Slots sharing the same t are one musical moment. On chorus, drop, climax, and finale accents, assign every safely available tube together.',

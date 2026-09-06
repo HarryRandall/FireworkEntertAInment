@@ -344,10 +344,12 @@ test('soft-ending filtering keeps the final musical hit even when it is not a do
   assert.equal(moments.at(-1)?.time, 20);
 });
 
-test('hard assortment quality failures can invoke deterministic repair', () => {
+test('the runner validates isolated candidates before persisting the selected plan', () => {
   const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
-
-  assert.match(runner, /quality\.issues\.some\(\(issue\) => issue\.hard\)/);
-  assert.match(runner, /if \(needsDeterministicRepair\) \{/);
-  assert.match(runner, /Final cue validation after deterministic repair/);
+  assert.match(runner, /selectChoreographyCandidate/);
+  assert.match(runner, /enforceTimelineTubeSafety\(candidate, products, maxTubes\)/);
+  assert.match(runner, /requireExactProductQuantityLedger/);
+  assert.match(runner, /accepted = selection\.selected\.cues/);
+  assert.match(runner, /if \(!selection\.selected\)/);
+  assert.doesNotMatch(runner, /!assortmentLedger \|\| quality\.issues/);
 });

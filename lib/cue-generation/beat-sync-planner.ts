@@ -23,6 +23,11 @@ import { parseCreativeDirection, type CreativeDirection } from './creative-direc
 import { parsePromptConstraints, productEffectFamilies } from './prompt-constraints';
 import type { PlannedCue } from './fast-planner';
 import { scheduleProductForCueSlot } from './impact-timing';
+import {
+  localBeatIntervalSeconds,
+  musicTimingPreference,
+  type ProductTimingProfiles,
+} from './music-product-matching';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { shouldKeepPlannedMoment } from './moment-groups';
 import { recurringMotifIds } from './motifs';
@@ -65,6 +70,7 @@ export function planCuesOnBeats(params: {
   /** Launch positions available at the site (1-3). */
   maxTubes?: 1 | 2 | 3;
   availabilityByProductId?: ProductQuantityLedger | null;
+  timingProfiles?: ProductTimingProfiles;
 }): BeatSyncPlanResult {
   const {
     slots,
@@ -81,6 +87,12 @@ export function planCuesOnBeats(params: {
   const targets = buildBeatMoments({ slots, songDuration, direction });
   const finalMusicalHit = availabilityByProductId ? findFinalMusicalHit(slots) : null;
   const productPools = pickProductPools(products, brief);
+  const beatIntervals = new Map(
+    targets.map((target) => [
+      target.time,
+      params.timingProfiles ? localBeatIntervalSeconds(params.analysis, target.time) : null,
+    ]),
+  );
   if (!slots.length || (!productPools.cadence.length && !availabilityByProductId)) {
     return {
       cues: requireExactProductQuantityLedger([], availabilityByProductId, 'Beat planner'),
@@ -183,6 +195,11 @@ export function planCuesOnBeats(params: {
         productRotor,
         target,
         preferSustained,
+        (product) =>
+          musicTimingPreference(params.timingProfiles?.get(product.id)?.[emphasis], {
+            ...target,
+            beatIntervalSeconds: beatIntervals.get(target.time) ?? null,
+          }),
       );
       const productOrder = availabilityByProductId
         ? orderRemainingExactProducts(
@@ -191,6 +208,11 @@ export function planCuesOnBeats(params: {
             productUsage,
             availabilityByProductId,
             isFinalMusicalHit,
+            (product) =>
+              musicTimingPreference(params.timingProfiles?.get(product.id)?.[emphasis], {
+                ...target,
+                beatIntervalSeconds: beatIntervals.get(target.time) ?? null,
+              }),
           )
         : preferredProductOrder;
       let accepted:
@@ -296,6 +318,7 @@ function orderRemainingExactProducts(
   usage: ReadonlyMap<string, number>,
   ledger: ProductQuantityLedger,
   preferDirect: boolean,
+  timingPreference: (product: FireworkSpecification) => number,
 ): FireworkSpecification[] {
   const preferredIndex = new Map(preferred.map((product, index) => [product.id, index]));
   return products
@@ -305,6 +328,9 @@ function orderRemainingExactProducts(
         preferDirect && (product.shotCount ?? 1) > 1 ? 1 : 0;
       const directDifference = directRank(left) - directRank(right);
       if (directDifference !== 0) return directDifference;
+      // Rank within the remaining physical pack without changing membership or quantities.
+      const timingDifference = timingPreference(right) - timingPreference(left);
+      if (timingDifference !== 0) return timingDifference;
       const leftRank = preferredIndex.get(left.id) ?? Number.MAX_SAFE_INTEGER;
       const rightRank = preferredIndex.get(right.id) ?? Number.MAX_SAFE_INTEGER;
       return leftRank - rightRank || left.id.localeCompare(right.id);
@@ -467,6 +493,7 @@ function orderProductsForTarget(
   rotor: number,
   target: BeatMoment,
   preferSustained: boolean,
+  timingPreference: (product: FireworkSpecification) => number,
 ): FireworkSpecification[] {
   const motifIds = new Set(
     recurringMotifIds(
@@ -495,6 +522,8 @@ function orderProductsForTarget(
       { length: pools.sustained.length },
       (_, offset) => pools.sustained[(sustainedOffset + offset) % pools.sustained.length],
     );
+    // Preserve role pools and their existing order as the tie-breaker.
+    sustained.sort((left, right) => timingPreference(right) - timingPreference(left));
     return [...sustained, ...direct];
   }
   if (target.isSurprise || target.nearClimax) {

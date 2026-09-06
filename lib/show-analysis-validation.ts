@@ -294,7 +294,8 @@ const derivedFeaturesSchema = z
 
 const analyserResultSchema = z
   .object({
-    schema_version: z.literal(ANALYSER_SCHEMA_VERSION),
+    schema_version: z.enum([ANALYSER_SCHEMA_VERSION, '1.5.0']),
+    bar_grid_confidence: score.optional(),
     file: nonEmptyString,
     analysis_meta: analysisMetaSchema,
     duration_seconds: positiveNumber,
@@ -316,6 +317,20 @@ const analyserResultSchema = z
   })
   .strict()
   .superRefine((analysis, context) => {
+    if (analysis.schema_version === '1.5.0' && analysis.bar_grid_confidence === undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['bar_grid_confidence'],
+        message: 'is required in schema 1.5.0',
+      });
+    }
+    if (analysis.schema_version === '1.4.0' && analysis.bar_grid_confidence !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['bar_grid_confidence'],
+        message: 'is not part of schema 1.4.0',
+      });
+    }
     const maximumTime = analysis.duration_seconds + 0.75;
     const addIssue = (path: PropertyKey[], message: string) => {
       context.addIssue({ code: 'custom', path, message });
@@ -467,9 +482,16 @@ export class AnalyserOutputValidationError extends Error {
   }
 }
 
-export type AnalyserV14Result = z.infer<typeof analyserResultSchema>;
+// Both versions retain the same timing checks; 1.5.0 additionally requires
+// bounded bar-grid confidence. Preserve the actual version in persisted data.
+export type SupportedAnalyserResult = z.infer<typeof analyserResultSchema>;
 
-export function parseAnalyserResult(value: unknown): AnalyserV14Result {
+export function parseAnalyserResult(value: unknown): SupportedAnalyserResult {
+  const isV15 =
+    typeof value === 'object' &&
+    value !== null &&
+    'schema_version' in value &&
+    value.schema_version === '1.5.0';
   const parsed = analyserResultSchema.safeParse(value);
   if (!parsed.success) {
     const details = parsed.error.issues
@@ -477,13 +499,13 @@ export function parseAnalyserResult(value: unknown): AnalyserV14Result {
       .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
       .join('; ');
     throw new AnalyserOutputValidationError(
-      `The analyser returned invalid schema ${ANALYSER_SCHEMA_VERSION} output: ${details}`,
+      `The analyser returned invalid schema ${isV15 ? '1.5.0' : ANALYSER_SCHEMA_VERSION} output: ${details}`,
     );
   }
   return parsed.data;
 }
 
-export function parseStoredAnalyserResult(value: unknown): AnalyserV14Result {
+export function parseStoredAnalyserResult(value: unknown): SupportedAnalyserResult {
   if (
     typeof value !== 'object' ||
     value == null ||
@@ -529,7 +551,7 @@ export function parseStoredAnalyserResult(value: unknown): AnalyserV14Result {
   });
 }
 
-export function parseAnalyserResponse(bodyText: string): AnalyserV14Result {
+export function parseAnalyserResponse(bodyText: string): SupportedAnalyserResult {
   let value: unknown;
   try {
     value = JSON.parse(bodyText);

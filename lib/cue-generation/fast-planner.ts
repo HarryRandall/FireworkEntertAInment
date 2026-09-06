@@ -16,6 +16,11 @@ import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { findFinalMusicalHit, launchPositionCountForSlots } from './beat-sync-moments';
 import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
+import {
+  localBeatIntervalSeconds,
+  musicTimingPreference,
+  type ProductTimingProfiles,
+} from './music-product-matching';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { occupiedLaunchPositions } from './show-options';
@@ -67,6 +72,8 @@ type OccupiedWindow = {
 type ProductChoiceContext = {
   usage: Map<string, number>;
   recentProductIds: string[];
+  timingProfiles?: ProductTimingProfiles;
+  beatIntervals: ReadonlyMap<number, number | null>;
 };
 
 export function planCuesFast(params: {
@@ -76,6 +83,7 @@ export function planCuesFast(params: {
   products: FireworkSpecification[];
   songDuration: number;
   availabilityByProductId?: ProductQuantityLedger | null;
+  timingProfiles?: ProductTimingProfiles;
 }): FastPlanResult {
   const { brief, analysis, slots, products, songDuration, availabilityByProductId = null } = params;
   const productInfos = products.map(toProductInfo).filter((p) => p.product.id);
@@ -156,6 +164,13 @@ export function planCuesFast(params: {
   const choiceContext: ProductChoiceContext = {
     usage: new Map(),
     recentProductIds: [],
+    timingProfiles: params.timingProfiles,
+    beatIntervals: new Map(
+      [...new Set(slots.map((slot) => slot.time))].map((time) => [
+        time,
+        params.timingProfiles ? localBeatIntervalSeconds(analysis, time) : null,
+      ]),
+    ),
   };
   let skippedSlots = 0;
   const cues: PlannedCue[] = [];
@@ -279,7 +294,7 @@ function findAcceptedPlacement(params: {
     if (!pool.length) continue;
     const softFinale = direction.softEnding && slot.finale && !slot.nearClimax;
     const preferSpectacle = !softFinale && (isSurprise || slot.nearClimax || slot.finale);
-    const ranked = rankProducts(pool, slot, hints, choiceContext, {
+    const ranked = rankProducts(pool, { ...slot, emphasis }, hints, choiceContext, {
       preferSpectacle,
       preferGentle: softFinale,
       preferFastCadence:
@@ -693,6 +708,10 @@ function scoreProduct(
   const productJitter = deterministicProductUnit(slot.index, product.product.id) * 0.08;
   return (
     energyFit +
+    musicTimingPreference(context.timingProfiles?.get(product.product.id)?.[slot.emphasis], {
+      ...slot,
+      beatIntervalSeconds: context.beatIntervals.get(slot.time) ?? null,
+    }) +
     paletteMatches * 0.38 +
     effectMatches * 0.22 +
     vibeFit +

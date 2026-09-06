@@ -1,5 +1,6 @@
 import type { CueSlot } from '@/lib/beat-grid.server';
 import type { PromptConstraintViolation } from './prompt-constraints';
+import type { evaluateMusicSync } from './music-sync-quality';
 
 type QualityCue = {
   impactTimeSeconds: number;
@@ -21,6 +22,9 @@ export type ChoreographyScore = {
   maximumGapSeconds: number;
   sectionCoverageRatio: number;
   coordinatedStrongMomentRatio: number;
+  /** Provisional candidate comparison, never a customer-facing pass threshold. */
+  comparisonScore: number;
+  musicSync: ReturnType<typeof evaluateMusicSync> | null;
 };
 
 /**
@@ -34,6 +38,9 @@ export function evaluateFinalChoreography(params: {
   promptViolations: PromptConstraintViolation[];
   maxTubes: 1 | 2 | 3;
   sparse: boolean;
+  musicSync?: ReturnType<typeof evaluateMusicSync>;
+  /** Resolved child effect windows; omitted callers retain anchor-gap behaviour. */
+  activityWindows?: readonly { start: number; end: number }[];
 }): ChoreographyScore {
   const { cues, slots, promptViolations, maxTubes, sparse } = params;
   const issues: ChoreographyIssue[] = [];
@@ -56,6 +63,15 @@ export function evaluateFinalChoreography(params: {
   let maximumGapSeconds = 0;
   for (let index = 1; index < impacts.length; index += 1) {
     maximumGapSeconds = Math.max(maximumGapSeconds, impacts[index] - impacts[index - 1]);
+  }
+  if (params.activityWindows?.length) {
+    const windows = [...params.activityWindows].sort((a, b) => a.start - b.start);
+    let end = windows[0].end;
+    maximumGapSeconds = 0;
+    for (const window of windows.slice(1)) {
+      maximumGapSeconds = Math.max(maximumGapSeconds, window.start - end);
+      end = Math.max(end, window.end);
+    }
   }
   const allowedGap = sparse ? 12 : 8;
   if (maximumGapSeconds > allowedGap) {
@@ -130,6 +146,19 @@ export function evaluateFinalChoreography(params: {
     maximumGapSeconds: Number(maximumGapSeconds.toFixed(3)),
     sectionCoverageRatio: Number(sectionCoverageRatio.toFixed(3)),
     coordinatedStrongMomentRatio: Number(coordinatedStrongMomentRatio.toFixed(3)),
+    // Unknown music evidence adds no points rather than masquerading as perfect
+    // sync. Coverage keeps a partly assessed candidate from gaming this score.
+    comparisonScore: Math.round(
+      30 * sectionCoverageRatio +
+        25 * coordinatedStrongMomentRatio +
+        15 * (maximumGapSeconds <= allowedGap ? 1 : allowedGap / maximumGapSeconds) +
+        30 *
+          ((params.musicSync?.score ?? 0) / 100) *
+          (params.musicSync?.totalCueCount
+            ? params.musicSync.assessedCueCount / params.musicSync.totalCueCount
+            : 0),
+    ),
+    musicSync: params.musicSync ?? null,
   };
 }
 

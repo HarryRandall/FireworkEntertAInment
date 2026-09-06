@@ -215,6 +215,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
           </p>
           <div className="mt-4">
             <JamendoSongSearch
+              recommendations
               apiEndpoint={`/api/assortments/${token}/music/jamendo`}
               disabled={pending}
               hasSelection={jamendoTrack !== null}
@@ -251,7 +252,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
             <Music2 size={19} aria-hidden="true" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">
-                {song?.name || 'Upload your own audio'}
+                {song?.name || 'Use my own song'}
               </span>
               <span className="text-on-surface-variant block text-xs">MP3 / WAV / AAC / M4A</span>
             </span>

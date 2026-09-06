@@ -209,7 +209,7 @@ const invalidSamples = [
   },
   {
     name: 'wrong schema version',
-    mutate: (payload) => ({ ...payload, schema_version: '1.5.0' }),
+    mutate: (payload) => ({ ...payload, schema_version: '1.6.0' }),
     expected: /schema_version/,
   },
   {
@@ -380,4 +380,66 @@ test('cue generation revalidates stored analyser JSON before use', () => {
   assert.match(loader, /parseStoredAnalyserResult\(data\.analysis_json\)/);
   assert.match(loader, /status: 'invalid'/);
   assert.doesNotMatch(loader, /data\.analysis_json as unknown as AnalyserResult/);
+});
+
+test('live and stored 1.5.0 payloads preserve their version and validated confidence', () => {
+  const payload = { ...makeValidAnalysis(), schema_version: '1.5.0', bar_grid_confidence: 0.195 };
+  for (const parse of [
+    parseAnalyserResult,
+    parseStoredAnalyserResult,
+    (value) => parseAnalyserResponse(JSON.stringify(value)),
+  ]) {
+    assert.deepEqual(parse(payload), payload);
+  }
+});
+
+test('1.5.0 confidence is required, finite and bounded; old and unknown versions remain strict', () => {
+  for (const confidence of [undefined, null, -0.01, 1.01, NaN, Infinity, '0.5']) {
+    assert.throws(
+      () =>
+        parseStoredAnalyserResult({
+          ...makeValidAnalysis(),
+          schema_version: '1.5.0',
+          bar_grid_confidence: confidence,
+        }),
+      AnalyserOutputValidationError,
+    );
+  }
+  for (const confidence of [0, 1]) {
+    assert.equal(
+      parseAnalyserResult({
+        ...makeValidAnalysis(),
+        schema_version: '1.5.0',
+        bar_grid_confidence: confidence,
+      }).bar_grid_confidence,
+      confidence,
+    );
+  }
+  assert.throws(
+    () => parseAnalyserResult({ ...makeValidAnalysis(), bar_grid_confidence: 0.5 }),
+    AnalyserOutputValidationError,
+  );
+  assert.throws(
+    () =>
+      parseAnalyserResult({
+        ...makeValidAnalysis(),
+        schema_version: '1.6.0',
+        bar_grid_confidence: 0.5,
+      }),
+    AnalyserOutputValidationError,
+  );
+});
+
+test('1.5.0 inherits time bounds, beat counts, ordering and unknown-field rejection', () => {
+  const valid = { ...makeValidAnalysis(), schema_version: '1.5.0', bar_grid_confidence: 0.5 };
+  for (const mutation of [
+    { total_beats: valid.total_beats + 1 },
+    { beat_times: [1, 0] },
+    { onset_times: [valid.duration_seconds + 10] },
+    { unexpected_field: true },
+  ])
+    assert.throws(
+      () => parseStoredAnalyserResult({ ...valid, ...mutation }),
+      AnalyserOutputValidationError,
+    );
 });
