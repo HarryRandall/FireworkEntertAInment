@@ -1,3 +1,4 @@
+import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Static guard for sidebar layout and scroll behaviour. */
 
 import assert from 'node:assert/strict';
@@ -13,7 +14,7 @@ for (const path of [
   'ui/shell/MyStoreShell.tsx',
 ]) {
   test(`${path} persists sidebar collapse and scrolls inside the content panel`, () => {
-    const source = readFileSync(join(root, path), 'utf8');
+    const source = withWorkspaceSource(readFileSync(join(root, path), 'utf8'));
     assert.match(source, /<SidebarProvider/);
     assert.match(source, /useSidebarPreference/);
     assert.match(source, /open=\{!sidebarCollapsed\}/);

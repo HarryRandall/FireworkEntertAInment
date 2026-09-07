@@ -1,33 +1,25 @@
 'use client';
 
-import { ProfileMenu } from '@/ui/shell/ProfileMenu';
+import { WorkspaceContent, WorkspaceShell, WorkspaceHeader } from './WorkspaceShell';
+
+import { WorkspaceAccountMenu } from './WorkspaceAccountMenu';
+
 import { SidebarBrand } from '@/ui/shell/SidebarBrand';
 
 /** My Store navigation. Server layouts enforce assortment permissions. */
-import { SkipLink } from '@/ui/patterns/SkipLink';
-import { toast } from '@/ui/patterns/toast';
-import { ImpersonationBanner } from '@/ui/shell/ImpersonationBanner';
-import { signOutCurrentSession } from '@/ui/shell/sign-out.client';
-import { useSidebarPreference } from '@/ui/shell/useSidebarPreference';
-import { ThemePreferenceSync } from '@/ui/theme/ThemePreferenceSync';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
 } from '@/ui/primitives/sidebar';
 import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
-import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
   CreditCard,
@@ -37,8 +29,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import type { CSSProperties, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 type RetailerNavLink = {
   href: string;
@@ -136,37 +128,14 @@ export function MyStoreShell({
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
-    useSidebarPreference({
-      initialCollapsed: initialSidebarCollapsed,
-      hasInitialCookie: hasInitialSidebarCollapsedCookie,
-    });
-
-  const handleSignOut = async () => {
-    const result = await signOutCurrentSession();
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
-    router.replace('/login');
-    router.refresh();
-  };
 
   return (
-    <SidebarProvider
-      defaultOpen={!initialSidebarCollapsed}
-      open={!sidebarCollapsed}
-      onOpenChange={(open) => setSidebarCollapsedPreference(!open)}
-      className={cn(
-        'bg-sidebar text-sidebar-foreground h-svh overflow-hidden font-sans',
-        !sidebarTransitionReady && '[&_*]:!transition-none',
-      )}
-      style={{ '--sidebar-width': 'calc(var(--spacing) * 60)' } as CSSProperties}
+    <WorkspaceShell
+      initialSidebarCollapsed={initialSidebarCollapsed}
+      hasInitialSidebarCollapsedCookie={hasInitialSidebarCollapsedCookie}
+      themePreference={profile.themePreference}
     >
-      <ThemePreferenceSync themePreference={profile.themePreference} />
-      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand href="/my-store" />
@@ -191,35 +160,25 @@ export function MyStoreShell({
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter>
-          {impersonation ? (
-            <ImpersonationBanner impersonation={impersonation} collapsed={sidebarCollapsed} />
-          ) : null}
+        <WorkspaceAccountMenu profile={profile} impersonation={impersonation}>
           <SidebarMenu>
             <BackToHomeItem />
             {profile.permissions.includes('admin.view') ? <BackToAdminItem /> : null}
           </SidebarMenu>
-          <ProfileMenu
-            profile={{
-              displayName: profile.fullName || profile.email || 'Account',
-              secondaryLine: profile.fullName && profile.email ? profile.email : '',
-            }}
-            onSignOut={handleSignOut}
-          />
-        </SidebarFooter>
+        </WorkspaceAccountMenu>
       </Sidebar>
 
-      <SidebarInset>
-        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
-          <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open My Store navigation" />
-          <span className="text-foreground truncate text-sm font-medium">
-            {pageTitleFor(pathname)}
-          </span>
-        </header>
-        <main id="main-content" className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+      <WorkspaceContent
+        header={
+          <WorkspaceHeader navigationLabel="Open My Store navigation">
+            <span className="text-foreground truncate text-sm font-medium">
+              {pageTitleFor(pathname)}
+            </span>
+          </WorkspaceHeader>
+        }
+      >
+        {children}
+      </WorkspaceContent>
+    </WorkspaceShell>
   );
 }

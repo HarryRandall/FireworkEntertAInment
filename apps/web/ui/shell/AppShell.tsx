@@ -1,5 +1,7 @@
 'use client';
 
+import { WorkspaceContent, WorkspaceShell } from './WorkspaceShell';
+
 import { ProfileMenu, type ProfileSummary } from '@/ui/shell/ProfileMenu';
 import { SidebarBrand } from '@/ui/shell/SidebarBrand';
 
@@ -8,7 +10,6 @@ import { SidebarBrand } from '@/ui/shell/SidebarBrand';
  * primitive, with ShowCrafter route permissions and persisted collapse state.
  */
 import { Skeleton } from '@/ui/patterns/Feedback';
-import { SkipLink } from '@/ui/patterns/SkipLink';
 import { toast } from '@/ui/patterns/toast';
 import {
   APP_LINKS,
@@ -25,7 +26,6 @@ import {
 import { ImpersonationBanner } from '@/ui/shell/ImpersonationBanner';
 import { isPlainLeftClick } from '@/ui/shell/shell-utils';
 import { signOutCurrentSession } from '@/ui/shell/sign-out.client';
-import { useSidebarPreference } from '@/ui/shell/useSidebarPreference';
 import {
   clearCachedAiUsage,
   isWorkspaceSummaryFresh,
@@ -35,7 +35,6 @@ import {
   type SidebarAiUsage,
 } from '@/ui/shell/workspace-summary-cache.client';
 import { PaletteStrip } from '@/ui/shows/ShowSummaryCards';
-import { ThemePreferenceSync } from '@/ui/theme/ThemePreferenceSync';
 import {
   Sidebar,
   SidebarContent,
@@ -44,12 +43,10 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
@@ -61,7 +58,7 @@ import { cn } from '@/lib/utils';
 import { ArrowLeft, ChevronRight, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 
 type AppShellProps = {
   children: ReactNode;
@@ -495,11 +492,6 @@ export function AppShell({
     pendingPath && pendingPath !== currentPath ? getPendingRouteKind(pendingPath) : null;
   const effectivePath = pendingRouteKind ? pendingPath : pathname;
   const inSettings = effectivePath?.startsWith('/settings') ?? false;
-  const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
-    useSidebarPreference({
-      initialCollapsed: initialSidebarCollapsed,
-      hasInitialCookie: hasInitialSidebarCollapsedCookie,
-    });
 
   const permissions = new Set(profile?.permissions ?? []);
   const workspaceLinks = APP_LINKS.map((link) => {
@@ -593,18 +585,12 @@ export function AppShell({
   };
 
   return (
-    <SidebarProvider
-      defaultOpen={!initialSidebarCollapsed}
-      open={!sidebarCollapsed}
-      onOpenChange={(open) => setSidebarCollapsedPreference(!open)}
-      className={cn(
-        'bg-sidebar text-sidebar-foreground h-svh overflow-hidden font-sans',
-        !sidebarTransitionReady && '[&_*]:!transition-none',
-      )}
-      style={{ '--sidebar-width': 'calc(var(--spacing) * 64)' } as CSSProperties}
+    <WorkspaceShell
+      initialSidebarCollapsed={initialSidebarCollapsed}
+      hasInitialSidebarCollapsedCookie={hasInitialSidebarCollapsedCookie}
+      themePreference={profile?.themePreference}
+      sidebarWidth={64}
     >
-      <ThemePreferenceSync themePreference={profile?.themePreference} />
-      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand href="/home" onNavigate={handleNavigate} />
@@ -679,20 +665,15 @@ export function AppShell({
         />
       </Sidebar>
 
-      <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border md:peer-data-[variant=inset]:shadow-none">
-        <ShellTopBar pathname={effectivePath} />
-        <main
-          // Positioned + tagged so full-pane overlays (the post-generation
-          // handover splash) can portal in and cover the whole content area,
-          // including any route chrome, while the app shell stays visible.
-          data-app-content
-          id="main-content"
-          tabIndex={-1}
-          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pt-6 pb-10 focus:outline-none sm:px-8 sm:pb-12 lg:px-10"
-        >
-          {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+      <WorkspaceContent
+        header={<ShellTopBar pathname={effectivePath} />}
+        insetClassName="md:peer-data-[variant=inset]:shadow-none"
+        // Generation overlays cover this positioned content panel while navigation stays visible.
+        data-app-content
+        className="relative pb-10 sm:pb-12"
+      >
+        {pendingRouteKind ? <PendingRouteSkeleton kind={pendingRouteKind} /> : children}
+      </WorkspaceContent>
+    </WorkspaceShell>
   );
 }

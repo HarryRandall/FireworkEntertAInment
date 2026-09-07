@@ -21,7 +21,7 @@ const files = {
     import.meta.url,
   ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
-  adminEditor: new URL('../../ui/assortments/AssortmentEditor.tsx', import.meta.url),
+  adminEditor: new URL('../../ui/assortments/AssortmentQrPanel.tsx', import.meta.url),
   publicServer: new URL('../../lib/assortments/public.server.ts', import.meta.url),
   constraints: new URL('../../lib/assortments/constraints.ts', import.meta.url),
   loaders: new URL('../../lib/cue-generation/loaders.server.ts', import.meta.url),
@@ -131,7 +131,7 @@ test('invalid, revoked and inactive links fail before public generation', async 
   );
 });
 
-test('FIR-178 admin CRUD remains canonical and receives only QR controls', async () => {
+test('assortment actions remain canonical and shared QR controls remain available', async () => {
   const [actions, editor] = await Promise.all([source('adminActions'), source('adminEditor')]);
   assert.match(actions, /export async function updateAssortment/);
   assert.match(actions, /export async function upsertAssortmentItem/);

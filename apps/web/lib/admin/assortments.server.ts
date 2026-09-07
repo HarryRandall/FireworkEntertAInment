@@ -51,7 +51,7 @@ export type AdminCatalogueItemOption = {
 };
 
 export async function listAssortments(): Promise<AdminAssortmentSummary[]> {
-  if (!(await requirePermission('admin.manage_assortments'))) return [];
+  if (!(await requirePermission('admin.manage_assortments'))) throw new Error('Not permitted.');
   const supabase = createClient(await cookies());
   const { data, error } = await supabase
     .from('assortments')
@@ -59,7 +59,7 @@ export async function listAssortments(): Promise<AdminAssortmentSummary[]> {
     .order('updated_at', { ascending: false });
   if (error) {
     console.error('[admin/assortments] listAssortments failed:', error);
-    return [];
+    throw new Error('Assortments could not be loaded.', { cause: error });
   }
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -73,7 +73,7 @@ export async function listAssortments(): Promise<AdminAssortmentSummary[]> {
 }
 
 export async function getAssortmentById(id: string): Promise<AdminAssortmentDetail | null> {
-  if (!(await requirePermission('admin.manage_assortments'))) return null;
+  if (!(await requirePermission('admin.manage_assortments'))) throw new Error('Not permitted.');
   const supabase = createClient(await cookies());
   const { data, error } = await supabase
     .from('assortments')
@@ -92,7 +92,7 @@ export async function getAssortmentById(id: string): Promise<AdminAssortmentDeta
     .maybeSingle();
   if (error) {
     console.error('[admin/assortments] getAssortmentById failed:', error);
-    return null;
+    throw new Error('The assortment could not be loaded.', { cause: error });
   }
   if (!data) return null;
 
@@ -139,7 +139,7 @@ export async function getAssortmentById(id: string): Promise<AdminAssortmentDeta
 export async function searchCatalogueItemOptions(
   query: string,
 ): Promise<AdminCatalogueItemOption[]> {
-  if (!(await requirePermission('admin.manage_assortments'))) return [];
+  if (!(await requirePermission('admin.manage_assortments'))) throw new Error('Not permitted.');
   const supabase = createClient(await cookies());
   let builder = supabase
     .from('catalogue_items')
@@ -153,7 +153,7 @@ export async function searchCatalogueItemOptions(
   const { data, error } = await builder;
   if (error) {
     console.error('[admin/assortments] searchCatalogueItemOptions failed:', error);
-    return [];
+    throw new Error('Catalogue products could not be loaded.', { cause: error });
   }
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -166,8 +166,8 @@ export async function searchCatalogueItemOptions(
 function cheapestAvailablePrice(
   rows: { price_cents: number | null; available: boolean }[] | null | undefined,
 ): number | null {
-  const prices = (rows ?? [])
-    .filter((row) => row.available && row.price_cents != null)
-    .map((row) => row.price_cents as number);
+  const prices = (rows ?? []).flatMap((row) =>
+    row.available && row.price_cents != null ? [row.price_cents] : [],
+  );
   return prices.length > 0 ? Math.min(...prices) : null;
 }

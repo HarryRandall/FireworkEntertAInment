@@ -1,3 +1,4 @@
+import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Guards for truthful sign-out feedback across app and admin entry points. */
 
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { test } from 'node:test';
 const root = process.cwd();
 
 function read(path) {
-  return readFileSync(join(root, path), 'utf8');
+  return withWorkspaceSource(readFileSync(join(root, path), 'utf8'));
 }
 
 test('the shared sign-out helper treats returned and thrown failures as errors', () => {

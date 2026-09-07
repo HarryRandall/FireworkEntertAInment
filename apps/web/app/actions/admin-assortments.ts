@@ -58,6 +58,7 @@ export async function createAssortment(
   if (error) return { ok: false, error: error.message };
   if (!data) return { ok: false, error: 'Could not create assortment.' };
   revalidatePath('/admin/assortments');
+  revalidatePath('/my-store/assortments');
   return { ok: true, id: data.id };
 }
 

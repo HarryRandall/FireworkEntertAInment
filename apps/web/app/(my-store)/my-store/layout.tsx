@@ -14,10 +14,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-// Gated on 'admin.manage_assortments' — the same permission FIR-178's
-// /admin/assortments requires. There's no separate retailer role or
-// persona: this console is a focused alternate view for whoever already
-// holds that permission, not a distinct login identity (see FIR-166).
+// Both assortment workspaces use the same permission; navigation does not grant access.
 export default async function RetailerAdminRouteGroupLayout({ children }: { children: ReactNode }) {
   const [profile, impersonation, cookieStore] = await Promise.all([
     measureServerTask('my-store-layout:requirePermission', () =>

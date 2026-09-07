@@ -1,3 +1,4 @@
+import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Source guards for repeated-navigation access and conservative safety copy. */
 
 import assert from 'node:assert/strict';
@@ -6,7 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const root = process.cwd();
-const read = (path) => readFileSync(join(root, path), 'utf8');
+const read = (path) => withWorkspaceSource(readFileSync(join(root, path), 'utf8'));
 
 test('public, app and admin chrome expose a working skip link target', () => {
   const skipLink = read('ui/patterns/SkipLink.tsx');

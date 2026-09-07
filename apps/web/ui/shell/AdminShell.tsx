@@ -1,37 +1,30 @@
 'use client';
 
-import { ProfileMenu, type ProfileSummary } from '@/ui/shell/ProfileMenu';
+import { WorkspaceContent, WorkspaceShell, WorkspaceHeader } from './WorkspaceShell';
+
+import { WorkspaceAccountMenu } from './WorkspaceAccountMenu';
+
 import { SidebarBrand } from '@/ui/shell/SidebarBrand';
 
 /**
  * AdminShell - admin route chrome built on the shared shadcn sidebar primitive.
  * Admin destinations stay RBAC-gated upstream by server components and middleware.
  */
-import { SkipLink } from '@/ui/patterns/SkipLink';
-import { toast } from '@/ui/patterns/toast';
-import { ImpersonationBanner } from '@/ui/shell/ImpersonationBanner';
 import { isPlainLeftClick } from '@/ui/shell/shell-utils';
-import { signOutCurrentSession } from '@/ui/shell/sign-out.client';
-import { useSidebarPreference } from '@/ui/shell/useSidebarPreference';
-import { ThemePreferenceSync } from '@/ui/theme/ThemePreferenceSync';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarProvider,
   SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 } from '@/ui/primitives/sidebar';
 import {
@@ -63,15 +56,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 type AdminNavLink = {
   href: string;
@@ -287,32 +273,9 @@ function BackToAppItem({ onNavigate }: { onNavigate: (href: string) => void }) {
   );
 }
 
-function AdminSidebarFooter({
-  profile,
-  impersonation,
-  onSignOut,
-}: {
-  profile: ProfileSummary;
-  impersonation?: ActiveImpersonation | null;
-  onSignOut: () => Promise<void>;
-}) {
-  const { isMobile, state } = useSidebar();
-  const collapsed = state === 'collapsed' && !isMobile;
-
-  return (
-    <SidebarFooter>
-      {impersonation ? (
-        <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
-      ) : null}
-      <ProfileMenu profile={profile} onSignOut={onSignOut} />
-    </SidebarFooter>
-  );
-}
-
 function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/85 border-border flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur sm:px-6">
-      <SidebarTrigger className="shrink-0 md:hidden" aria-label="Open admin navigation" />
+    <WorkspaceHeader navigationLabel="Open admin navigation">
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm"
@@ -344,7 +307,7 @@ function ShellTopBar({ breadcrumbs }: { breadcrumbs: Breadcrumb[] }) {
           );
         })}
       </nav>
-    </header>
+    </WorkspaceHeader>
   );
 }
 
@@ -361,7 +324,6 @@ export function AdminShell({
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -379,11 +341,6 @@ export function AdminShell({
       ? requestedEffectsView
       : null
     : parseAdminEffectsView(requestedEffectsView, requestedLegacyEffectsTab);
-  const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
-    useSidebarPreference({
-      initialCollapsed: initialSidebarCollapsed,
-      hasInitialCookie: hasInitialSidebarCollapsedCookie,
-    });
   const baseBreadcrumbs = getAdminBreadcrumbs(effectivePath).map((breadcrumb) =>
     breadcrumb.href === '/admin/effects' && effectsView
       ? { ...breadcrumb, href: adminEffectsViewHref(effectsView) }
@@ -392,39 +349,17 @@ export function AdminShell({
   const breadcrumbs = breadcrumbOverride
     ? [...baseBreadcrumbs, breadcrumbOverride]
     : baseBreadcrumbs;
-  const displayName = profile.fullName || profile.email || 'Admin';
-  const profileSummary: ProfileSummary = {
-    displayName,
-    secondaryLine: profile.fullName && profile.email ? profile.email : 'Platform admin',
-  };
 
   useEffect(() => {
     setPendingHref(null);
   }, [currentSearch, pathname]);
 
-  const handleSignOut = async () => {
-    const result = await signOutCurrentSession();
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
-    }
-    router.replace('/login');
-    router.refresh();
-  };
-
   return (
-    <SidebarProvider
-      defaultOpen={!initialSidebarCollapsed}
-      open={!sidebarCollapsed}
-      onOpenChange={(open) => setSidebarCollapsedPreference(!open)}
-      className={cn(
-        'bg-sidebar text-sidebar-foreground h-svh overflow-hidden font-sans',
-        !sidebarTransitionReady && '[&_*]:!transition-none',
-      )}
-      style={{ '--sidebar-width': 'calc(var(--spacing) * 60)' } as CSSProperties}
+    <WorkspaceShell
+      initialSidebarCollapsed={initialSidebarCollapsed}
+      hasInitialSidebarCollapsedCookie={hasInitialSidebarCollapsedCookie}
+      themePreference={profile.themePreference}
     >
-      <ThemePreferenceSync themePreference={profile.themePreference} />
-      <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
           <SidebarBrand href="/admin" />
@@ -467,25 +402,14 @@ export function AdminShell({
           </SidebarGroup>
         </SidebarContent>
 
-        <AdminSidebarFooter
-          profile={profileSummary}
-          impersonation={impersonation}
-          onSignOut={handleSignOut}
-        />
+        <WorkspaceAccountMenu profile={profile} impersonation={impersonation} />
       </Sidebar>
 
       <AdminBreadcrumbOverrideContext.Provider value={setBreadcrumbOverride}>
-        <SidebarInset className="bg-background md:peer-data-[variant=inset]:border-border h-svh min-h-0 overflow-hidden md:peer-data-[variant=inset]:h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:max-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:border">
-          <ShellTopBar breadcrumbs={breadcrumbs} />
-          <main
-            id="main-content"
-            tabIndex={-1}
-            className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-6 focus:outline-none sm:px-8 lg:px-10"
-          >
-            {children}
-          </main>
-        </SidebarInset>
+        <WorkspaceContent header={<ShellTopBar breadcrumbs={breadcrumbs} />}>
+          {children}
+        </WorkspaceContent>
       </AdminBreadcrumbOverrideContext.Provider>
-    </SidebarProvider>
+    </WorkspaceShell>
   );
 }

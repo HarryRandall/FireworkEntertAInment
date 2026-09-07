@@ -31,15 +31,19 @@ export function NewAssortmentButton({
 
   function create() {
     startTransition(async () => {
-      const result = await createAssortment({ name: name.trim() });
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
+      try {
+        const result = await createAssortment({ name: name.trim() });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success('Assortment created');
+        setOpen(false);
+        setName('');
+        router.push(`${destination}/${result.id}`);
+      } catch {
+        toast.error('The assortment could not be created. Please try again.');
       }
-      toast.success('Assortment created');
-      setOpen(false);
-      setName('');
-      router.push(`${destination}/${result.id}`);
     });
   }
 
@@ -58,20 +62,31 @@ export function NewAssortmentButton({
             products after creating it, then activate it when it&apos;s ready for shoppers.
           </DialogDescription>
         </DialogHeader>
-        <Field>
-          <FieldLabel htmlFor="new-assortment-name">Name</FieldLabel>
-          <Input
-            id="new-assortment-name"
-            value={name}
-            placeholder="Comet Trail Assortment"
-            onChange={(event) => setName(event.target.value)}
-          />
-        </Field>
-        <DialogFooter>
-          <Button onClick={create} loading={isPending} disabled={name.trim().length === 0}>
-            Create assortment
-          </Button>
-        </DialogFooter>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            create();
+          }}
+          className="space-y-5"
+        >
+          <Field>
+            <FieldLabel htmlFor="new-assortment-name">Name</FieldLabel>
+            <Input
+              id="new-assortment-name"
+              required
+              maxLength={120}
+              disabled={isPending}
+              value={name}
+              placeholder="Comet Trail Assortment"
+              onChange={(event) => setName(event.target.value)}
+            />
+          </Field>
+          <DialogFooter>
+            <Button type="submit" loading={isPending} disabled={name.trim().length === 0}>
+              Create assortment
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

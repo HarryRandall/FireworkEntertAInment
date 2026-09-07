@@ -46,6 +46,11 @@ feature to its domain when a second route needs it. Client components may import
 an explicit server action from `app/actions/`; server-only modules must remain
 outside client bundles. Keep permission and ownership checks at server boundaries.
 
+App, admin and My Store use `WorkspaceShell` and `WorkspaceContent` for the
+sidebar state, theme, skip target and scrolling frame. Each shell supplies its
+navigation and header. Admin and My Store share the assortment list and editor;
+their route modules supply the destination while server layouts enforce access.
+
 Route groups organise layouts without changing URLs. Use `_components` for
 route-local React components; keep `page`, `layout`, `loading`, `error` and route
 handlers at their Next.js locations. The import-render harness retains its

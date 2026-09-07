@@ -1,3 +1,4 @@
+import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Focused guards for public browse routing and reachable shared-shell navigation. */
 
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 function read(path) {
-  return readFileSync(join(root, path), 'utf8');
+  return withWorkspaceSource(readFileSync(join(root, path), 'utf8'));
 }
 
 test('shared shells expose a mobile trigger outside the closed sidebar', () => {
@@ -19,7 +20,8 @@ test('shared shells expose a mobile trigger outside the closed sidebar', () => {
   assert.match(appShell, /aria-label="Open navigation"/);
   assert.match(appShell, /home && 'md:hidden'/);
   assert.doesNotMatch(appShell, /if \(isHomePath\(pathname\)\)[\s\S]*?return null/);
-  assert.match(adminShell, /aria-label="Open admin navigation"/);
+  assert.match(adminShell, /navigationLabel="Open admin navigation"/);
+  assert.match(adminShell, /aria-label=\{navigationLabel\}/);
   assert.match(sidebar, /React\.ComponentProps<'div'>/);
   assert.match(sidebar, /<div\s+data-slot="sidebar-inset"/);
   assert.doesNotMatch(sidebar, /<main\s+data-slot="sidebar-inset"/);

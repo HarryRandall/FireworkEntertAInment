@@ -1,3 +1,4 @@
+import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Static guards for audited admin impersonation. */
 
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { test } from 'node:test';
 const root = process.cwd();
 
 function read(path) {
-  return readFileSync(join(root, path), 'utf8');
+  return withWorkspaceSource(readFileSync(join(root, path), 'utf8'));
 }
 
 test('impersonation migration adds a dedicated permission and audit table', () => {
