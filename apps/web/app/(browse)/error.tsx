@@ -3,8 +3,8 @@
 /** Safe retry boundary for guest and authenticated public browse routes. */
 
 import { RotateCcw } from 'lucide-react';
-import { Button } from '@/components/design-system/Button';
-import { InlineAlert } from '@/components/design-system/Feedback';
+import { Button } from '@/ui/patterns/Button';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 
 export default function BrowseError({
   reset,

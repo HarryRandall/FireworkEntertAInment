@@ -12,9 +12,9 @@ function read(path) {
 }
 
 test('shared shells expose a mobile trigger outside the closed sidebar', () => {
-  const appShell = read('components/shell/AppShell.tsx');
-  const adminShell = read('components/shell/AdminShell.tsx');
-  const sidebar = read('components/ui/sidebar.tsx');
+  const appShell = read('ui/shell/AppShell.tsx');
+  const adminShell = read('ui/shell/AdminShell.tsx');
+  const sidebar = read('ui/primitives/sidebar.tsx');
 
   assert.match(appShell, /aria-label="Open navigation"/);
   assert.match(appShell, /home && 'md:hidden'/);
@@ -29,7 +29,7 @@ test('shared shells expose a mobile trigger outside the closed sidebar', () => {
 
 test('home discovery does not depend on the user already having a show', () => {
   const home = read('app/(app)/home/page.tsx');
-  const collections = read('components/home/HomeDiscoverySections.tsx');
+  const collections = read('ui/home/HomeDiscoverySections.tsx');
 
   assert.match(home, /<HomeFeaturedShows/);
   assert.match(home, /<HomeCollectionsSection \/>/);

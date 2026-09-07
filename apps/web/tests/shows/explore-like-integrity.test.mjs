@@ -24,7 +24,7 @@ test('saved-template reads and auth checks fail explicitly', () => {
 });
 
 test('saved-template control updates immediately, rolls back failures, and exposes canonical state', () => {
-  const button = read('components/explore/TemplateLikeButton.tsx');
+  const button = read('ui/explore/TemplateLikeButton.tsx');
 
   assert.match(button, /try \{[\s\S]*await toggleShowPresetLikeAction/);
   assert.match(button, /catch \(error\)[\s\S]*toast\.error/);

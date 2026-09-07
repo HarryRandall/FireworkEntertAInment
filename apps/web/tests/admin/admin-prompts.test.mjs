@@ -21,7 +21,7 @@ test('admin prompt route and navigation are present', () => {
     join(root, 'app/(admin)/admin/prompts/_components/PromptConfigForm.tsx'),
     'utf8',
   );
-  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
   assert.match(page, /PromptTabs/);
   assert.match(page, /Suspense/);
   assert.match(page, /PromptContentSkeleton/);

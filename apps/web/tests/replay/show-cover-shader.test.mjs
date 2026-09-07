@@ -30,9 +30,9 @@ test('library presets persist and expose JSON shader covers', () => {
   const adminTypes = read('lib/admin.types.ts');
   const templates = read('lib/admin/templates.server.ts');
   const mapper = read('lib/admin/mappers.ts');
-  const exploreCard = read('components/explore/ExploreCard.tsx');
-  const explorePreview = read('components/explore/ExplorePreviewContext.tsx');
-  const exploreRow = read('components/explore/ExploreRow.tsx');
+  const exploreCard = read('ui/explore/ExploreCard.tsx');
+  const explorePreview = read('ui/explore/ExplorePreviewContext.tsx');
+  const exploreRow = read('ui/explore/ExploreRow.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
   const cloneAction = read('app/actions/show-templates.ts');
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
@@ -92,7 +92,7 @@ test('show reads map cover_shader into the domain model', () => {
 test('new shows receive a CSS cover and render it on the splash', () => {
   const action = read('app/(app)/shows/new/actions.ts');
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
-  const animation = read('components/shows/GeneratingShowAnimation.tsx');
+  const animation = read('ui/shows/GeneratingShowAnimation.tsx');
 
   assert.match(action, /import \{ parseCover, randomCover \} from '@\/lib\/cover';/);
   assert.match(action, /parseClientCover\(parsed\.data\.coverShader\) \?\? randomCover\(\)/);
@@ -116,7 +116,7 @@ test('new shows receive a CSS cover and render it on the splash', () => {
 });
 
 test('still covers keep the real shader visible without normal animation', () => {
-  const shaderCover = read('components/covers/ShaderCover.tsx');
+  const shaderCover = read('ui/covers/ShaderCover.tsx');
   const shaderLib = read('lib/shader-cover.ts');
 
   assert.doesNotMatch(shaderCover, /if \(!animate\) \{\s+return poster;\s+\}/);

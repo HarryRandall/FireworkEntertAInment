@@ -23,27 +23,24 @@ import {
   restoreEffectEditorVersion,
   updateEffect,
 } from '@/app/actions/admin-effects';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/components/admin/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/components/admin/EditorSectionPanels';
-import {
-  PREVIEW_LAUNCH_POSITIONS,
-  estimatePreviewTicks,
-} from '@/components/admin/editor-preview-timing';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
+import { EditorStyleDefaultControls } from '@/ui/admin/EditorSectionPanels';
+import { PREVIEW_LAUNCH_POSITIONS, estimatePreviewTicks } from '@/ui/admin/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
-} from '@/components/admin/FireworkEditorShell';
-import { makeOptimisticEditorVersion, useEditorHistory } from '@/components/admin/useEditorHistory';
-import { usePreviewFullscreen } from '@/components/admin/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/components/shell/AdminShell';
-import { ReplayStageBackdrop } from '@/components/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/components/admin/FireworkRenderControls';
-import { FireworkTimelineControls } from '@/components/admin/FireworkTimelineControls';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input, Textarea } from '@/components/design-system/Input';
-import type { SelectOption } from '@/components/design-system/SelectField';
-import { toast } from '@/components/design-system/toast';
+} from '@/ui/admin/FireworkEditorShell';
+import { makeOptimisticEditorVersion, useEditorHistory } from '@/ui/admin/useEditorHistory';
+import { usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
+import { FireworkRenderControls } from '@/ui/admin/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/ui/admin/FireworkTimelineControls';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import type { SelectOption } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
 import type {
   AdminEditorVersion,
   AdminEffectDetail,
@@ -78,7 +75,7 @@ type LocalStyleDefaultOptions = Partial<
 >;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayStageBackdrop />,

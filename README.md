@@ -41,3 +41,16 @@ docs/              Architecture and development guidance
 [Architecture](docs/architecture.md) explains file ownership, shared UI and the
 colour scheme. My Store analytics and credit top-ups currently include labelled
 preview data. [Security](SECURITY.md) describes private vulnerability reporting.
+
+## UI
+
+```text
+apps/web/ui/primitives/   Radix and shadcn controls
+apps/web/ui/patterns/     Forms, tables, feedback and other reusable compositions
+apps/web/ui/shell/        Shared workspace layout and navigation
+apps/web/ui/<domain>/     Features used across routes
+apps/web/ui/theme.css     Semantic colours for light and dark themes
+```
+
+Keep page-specific UI beside its route in `app/**/_components/`. Reuse the shared
+controls and shells; ESLint enforces the direction of imports.

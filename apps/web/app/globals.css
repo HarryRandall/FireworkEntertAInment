@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '../styles/theme.css';
+@import '../ui/theme.css';
 @custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
 
 html {

@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { Archive, ArrowRight, Loader2 } from 'lucide-react';
 import { deleteImportJobAction } from '@/app/actions/platform-admin';
-import { Button } from '@/components/design-system/Button';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { toast } from '@/ui/patterns/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 
 export function ImportJobRowActions({
   id,

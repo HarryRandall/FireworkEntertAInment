@@ -3,8 +3,8 @@
 /** Loading fallback for show detail routes. */
 
 import { usePathname, useSearchParams } from 'next/navigation';
-import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
-import { GENERATING_ROUTE_SPLASH_CLASS } from '@/components/shows/generatingSplashLayout';
+import { GeneratingShowAnimation } from '@/ui/shows/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/ui/shows/generatingSplashLayout';
 import { ShowDetailContentSkeleton } from '@/app/(app)/shows/_components/ShowDetailContentSkeleton';
 
 export default function ShowLoading() {

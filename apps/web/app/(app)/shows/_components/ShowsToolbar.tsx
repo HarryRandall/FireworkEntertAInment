@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { Check, ChevronDown, ListFilter, Search, X } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button } from '@/components/design-system/Button';
+import { Button } from '@/ui/patterns/Button';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from '@/ui/primitives/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import { cn } from '@/lib/utils';
 
 export type ShowsSortKey = 'updated' | 'cost' | 'length' | 'name';

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Package } from 'lucide-react';
-import { Card } from '@/components/design-system/Card';
-import { TemplateReplayPreview } from '@/components/replay/TemplateReplayPreview';
+import { Card } from '@/ui/patterns/Card';
+import { TemplateReplayPreview } from '@/ui/replay/TemplateReplayPreview';
 import {
   getAssortmentServiceClient,
   getPublicAssortmentByToken,

@@ -2,10 +2,10 @@
 
 import type { Metadata } from 'next';
 import { CircleSlash2, Info } from 'lucide-react';
-import { SignOutButton } from '@/components/shell/SignOutButton';
-import { Container } from '@/components/design-system/Container';
-import { Card } from '@/components/design-system/Card';
-import { Button } from '@/components/design-system/Button';
+import { SignOutButton } from '@/ui/shell/SignOutButton';
+import { Container } from '@/ui/patterns/Container';
+import { Card } from '@/ui/patterns/Card';
+import { Button } from '@/ui/patterns/Button';
 
 export const metadata: Metadata = {
   title: 'Account unavailable · ShowCrafter',

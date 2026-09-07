@@ -8,29 +8,29 @@ them; one app does not need a placeholder package hierarchy.
 
 ## Where code belongs
 
-| Location                    | Responsibility                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------- |
-| `app/`                      | Routes, layouts, metadata, loading and error boundaries, API handlers and server actions |
-| `app/**/_components/`       | UI used only by that route or its descendants                                            |
-| `components/ui/`            | Low-level shadcn/Radix primitives; respect generated-file headers                        |
-| `components/design-system/` | ShowCrafter's reusable controls and patterns, built from primitives                      |
-| `components/<domain>/`      | Features shared by multiple routes, such as assortments, music selection and replay      |
-| `components/shell/`         | App, admin and My Store navigation, account controls and workspace chrome                |
-| `lib/`                      | Domain transformations, validation, types and server integrations                        |
-| `styles/theme.css`          | Canonical light/dark colour values and legacy aliases                                    |
-| `hooks/`                    | Hooks shared across domains; feature-only hooks stay beside their feature                |
-| `lib/supabase/`             | Existing Supabase client factories and request/session adapters                          |
-| `services/`                 | Independently deployed Python services with their own requirements                       |
-| `supabase/`                 | Migrations, templates, catalogue tooling and database tests                              |
-| `tests/`                    | Behaviour and contract tests grouped by domain                                           |
-| `docs/`                     | Maintained architecture and development guidance                                         |
+| Location              | Responsibility                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `app/`                | Routes, layouts, metadata, loading and error boundaries, API handlers and server actions |
+| `app/**/_components/` | UI used only by that route or its descendants                                            |
+| `ui/primitives/`      | Low-level shadcn/Radix primitives; respect generated-file headers                        |
+| `ui/patterns/`        | ShowCrafter's reusable controls and patterns, built from primitives                      |
+| `ui/<domain>/`        | Features shared by multiple routes, such as assortments, music selection and replay      |
+| `ui/shell/`           | App, admin and My Store navigation, account controls and workspace chrome                |
+| `lib/`                | Domain transformations, validation, types and server integrations                        |
+| `ui/theme.css`        | Canonical light/dark colour values and legacy aliases                                    |
+| `hooks/`              | Hooks shared across domains; feature-only hooks stay beside their feature                |
+| `lib/supabase/`       | Existing Supabase client factories and request/session adapters                          |
+| `services/`           | Independently deployed Python services with their own requirements                       |
+| `supabase/`           | Migrations, templates, catalogue tooling and database tests                              |
+| `tests/`              | Behaviour and contract tests grouped by domain                                           |
+| `docs/`               | Maintained architecture and development guidance                                         |
 
 Paths in this table are relative to `apps/web`, except `services`, `supabase`
 and `docs`, which are repository folders. App scripts, including the audit and
 ESLint rules, live together in `apps/web/scripts`. Project-specific agent
 workflows live in `.agents/skills`.
 
-Dependencies flow from routes to features to design-system components to UI
+Dependencies flow from routes to features to reusable patterns to UI
 primitives. Shared components must not import a route's implementation. Move a
 feature to its domain when a second route needs it. Client components may import
 an explicit server action from `app/actions/`; server-only modules must remain
@@ -45,7 +45,7 @@ of inferring an admin persona.
 
 ## Reuse and presentation
 
-Search existing callers before creating a control. Use the design-system Button
+Search existing callers before creating a control. Use the shared pattern Button
 for actions with links/loading, Input/Textarea for plain fields, Field for labels,
 SelectField for rich selects, Badge for status, SectionHeader for headings,
 DataTable/FilterBar/TablePagination for lists, and Feedback for empty, loading and
@@ -69,7 +69,7 @@ are content, and may have their own colours.
 | Status                  | `text-status-success`, `text-status-warning`, `text-status-danger`, `text-status-info` |
 
 Maintain colour values and their light/dark counterparts together in
-`styles/theme.css`. Prefer semantic tokens over literal hex values and palette
+`ui/theme.css`. Prefer semantic tokens over literal hex values and palette
 classes in application UI. Legacy colour aliases are compatibility mappings, not
 a second palette. Check light, dark, mobile, focus, disabled/loading and
 reduced-motion states when changing a shared primitive.

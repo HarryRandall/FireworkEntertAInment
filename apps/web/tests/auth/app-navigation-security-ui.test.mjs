@@ -22,7 +22,7 @@ test('show tabs identify the current page and preserve keyboard focus', () => {
 });
 
 test('show guide copy stays planner-neutral and operator-aware', () => {
-  const guide = read('components/shows/ShowGuideList.tsx');
+  const guide = read('ui/shows/ShowGuideList.tsx');
 
   assert.match(guide, /cue-by-cue plan/);
   assert.match(guide, /review with your operator/);

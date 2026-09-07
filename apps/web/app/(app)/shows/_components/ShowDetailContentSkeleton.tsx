@@ -3,7 +3,7 @@ import {
   ReplayPanelSkeleton,
   ShoppingListSkeleton,
   SongContextSkeleton,
-} from '@/components/shell/RouteSkeletons';
+} from '@/ui/shell/RouteSkeletons';
 
 export function ShowDetailContentSkeleton({ segment }: { segment: string | undefined }) {
   switch (segment) {

@@ -5,14 +5,14 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setUserRoleAction } from '@/app/actions/admin-users';
-import { toast } from '@/components/design-system/toast';
+import { toast } from '@/ui/patterns/toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/primitives/select';
 
 type Role = { id: string; key: string; name: string };
 

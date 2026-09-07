@@ -105,7 +105,7 @@ test('customer usage page shows the live wallet, spend limits, and recent usage'
 
 test('app shell renders a compact bottom-left AI credit meter', () => {
   const summaryRoute = read('app/api/me/summary/route.ts');
-  const appShell = read('components/shell/AppShell.tsx');
+  const appShell = read('ui/shell/AppShell.tsx');
   const meterStart = appShell.indexOf('function SidebarAiUsageMeter');
   const meterEnd = appShell.indexOf('function AppSidebarFooter');
   assert.ok(meterStart >= 0 && meterEnd > meterStart);
@@ -156,7 +156,7 @@ test('AI credit reads fail closed instead of fabricating balances or history', (
 });
 
 test('settings links keep usage after billing', () => {
-  const navigation = read('components/shell/app-shell-navigation.ts');
+  const navigation = read('ui/shell/app-shell-navigation.ts');
   const profileIndex = navigation.indexOf("href: '/settings/profile'");
   const notificationsIndex = navigation.indexOf("href: '/settings/notifications'");
   const billingIndex = navigation.indexOf("href: '/settings/billing'");
@@ -217,7 +217,7 @@ test('show and music generation reserve, settle, and refund credits', () => {
 
 test('show refinements reserve, settle, refund, and disclose credits', () => {
   const previewCues = read('app/actions/preview-cues.ts');
-  const replayViewer = read('components/replay/FireworkReplayViewer.tsx');
+  const replayViewer = read('ui/replay/FireworkReplayViewer.tsx');
   const credits = read('lib/ai-credits.server.ts');
   const databaseTypes = read('lib/database.types.ts');
   const refinementMigration = read(
@@ -262,7 +262,7 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
 });
 
 test('user detail exposes credit balances and grant controls', () => {
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
   const grantDialog = read('app/(admin)/admin/users/[id]/_components/GrantAiCreditsDialog.tsx');

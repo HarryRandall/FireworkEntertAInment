@@ -4,10 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useRef, useTransition } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { selectImportCandidateAction } from '@/app/actions/platform-admin';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
-import { toast } from '@/components/design-system/toast';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
+import { toast } from '@/ui/patterns/toast';
 
 export type CandidatePickerOption = {
   id: string;

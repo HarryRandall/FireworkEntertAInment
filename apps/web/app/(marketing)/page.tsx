@@ -1,11 +1,11 @@
 /** Marketing homepage. */
 
-import { Hero } from '@/components/marketing/Hero';
-import { SocialProof } from '@/components/marketing/SocialProof';
-import { Steps } from '@/components/marketing/Steps';
-import { Showcase } from '@/components/marketing/Showcase';
-import { Testimonials } from '@/components/marketing/Testimonials';
-import { CTABand } from '@/components/marketing/CTABand';
+import { Hero } from '@/ui/marketing/Hero';
+import { SocialProof } from '@/ui/marketing/SocialProof';
+import { Steps } from '@/ui/marketing/Steps';
+import { Showcase } from '@/ui/marketing/Showcase';
+import { Testimonials } from '@/ui/marketing/Testimonials';
+import { CTABand } from '@/ui/marketing/CTABand';
 
 export default function MarketingHome() {
   return (

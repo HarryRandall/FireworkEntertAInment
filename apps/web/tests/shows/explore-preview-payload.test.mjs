@@ -97,9 +97,9 @@ test('the template detail serialises only cue-referenced specifications', () => 
 });
 
 test('the shared preview loads after intent, caches by slug and stale-guards cancellation', () => {
-  const context = read('components/explore/ExplorePreviewContext.tsx');
+  const context = read('ui/explore/ExplorePreviewContext.tsx');
   const loader = read('lib/explore-preview.ts');
-  const featured = read('components/home/HomeDiscoverySections.tsx');
+  const featured = read('ui/home/HomeDiscoverySections.tsx');
 
   assert.match(context, /setTimeout\(\(\) => \{[\s\S]*?confirmPreview\(/);
   assert.match(loader, /`\/api\/library\/\$\{encodeURIComponent\(slug\)\}\/preview`/);

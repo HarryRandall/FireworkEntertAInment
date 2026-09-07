@@ -4,7 +4,7 @@
  * or changing a capture-affecting source requires a new version fingerprint.
  */
 export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
-  'components/replay/FireworkReplayCanvas.tsx',
+  'ui/replay/FireworkReplayCanvas.tsx',
   'app/internal/import-render/ImportRenderHarness.tsx',
   'lib/fireworks/Effects.ts',
   'lib/fireworks/FireworksEngine.ts',
@@ -32,7 +32,7 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
  * Sealed evidence is invalid as soon as the deployed renderer bytes drift.
  */
 export const FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION =
-  'showcrafter.fireworks-engine.import-renderer.v1+sha256.ee7dee06a901d53e4f2b1d1b277d76b88a21d5fa798b20ec69ada9e936bf290e' as const;
+  'showcrafter.fireworks-engine.import-renderer.v1+sha256.6a785b7dce1801c47d4374a480ebe6e2333b675203333134fb760d7b954b9308' as const;
 
 export const FIREWORKS_ENGINE_FIXED_STEP_SECONDS = 1 / 60;
 

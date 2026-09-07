@@ -1,5 +1,5 @@
 /** Loading skeleton for the `/home` route. */
 
-import { HomePageSkeleton } from '@/components/home/HomeLoadingSkeleton';
+import { HomePageSkeleton } from '@/ui/home/HomeLoadingSkeleton';
 
 export default HomePageSkeleton;

@@ -4,10 +4,10 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { ImageIcon, Loader2, RefreshCw } from 'lucide-react';
-import { CoverPoster } from '@/components/covers/CoverPoster';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
+import { CoverPoster } from '@/ui/covers/CoverPoster';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
 import { renderCoverToPng } from '@/lib/render-cover-poster';
 import { backfillPresetCoverPoster } from '@/app/actions/admin-cover-posters';
 import type { CoverBackfillPreset } from '@/lib/admin/cover-posters.server';

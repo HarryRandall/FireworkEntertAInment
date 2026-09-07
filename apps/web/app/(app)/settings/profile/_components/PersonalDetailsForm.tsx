@@ -6,11 +6,11 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useTheme } from 'next-themes';
 import { Check, Laptop, LockKeyhole, Mail, Moon, Phone, Sun, User } from 'lucide-react';
 import { updateProfileAction } from '@/app/actions/platform-admin';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
+import { Separator } from '@/ui/primitives/separator';
 import { cn } from '@/lib/utils';
 import type { ThemePreference } from '@/lib/admin.types';
 

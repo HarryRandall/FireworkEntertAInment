@@ -9,15 +9,12 @@ import {
   isWorkspaceSummaryFresh,
   readCachedWorkspaceSummary,
   writeCachedWorkspaceSummary,
-} from '../../components/shell/workspace-summary-cache.client.ts';
+} from '../../ui/shell/workspace-summary-cache.client.ts';
 
 const root = process.cwd();
 const summary = readFileSync(join(root, 'lib/show-summary.server.ts'), 'utf8');
-const shell = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-const cache = readFileSync(
-  join(root, 'components/shell/workspace-summary-cache.client.ts'),
-  'utf8',
-);
+const shell = readFileSync(join(root, 'ui/shell/AppShell.tsx'), 'utf8');
+const cache = readFileSync(join(root, 'ui/shell/workspace-summary-cache.client.ts'), 'utf8');
 
 test('workspace summary skips template reads and limits detailed show rows', () => {
   const start = summary.indexOf('export async function getWorkspaceSummary');

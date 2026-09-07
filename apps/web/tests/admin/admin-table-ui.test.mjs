@@ -29,11 +29,8 @@ const adminPreviewGridPages = [
 ];
 
 test('shared data table uses the reference table chrome', () => {
-  const source = readFileSync(join(root, 'components/design-system/DataTable.tsx'), 'utf8');
-  const stickyViewport = readFileSync(
-    join(root, 'components/design-system/StickyTableViewport.tsx'),
-    'utf8',
-  );
+  const source = readFileSync(join(root, 'ui/patterns/DataTable.tsx'), 'utf8');
+  const stickyViewport = readFileSync(join(root, 'ui/patterns/StickyTableViewport.tsx'), 'utf8');
 
   assert.match(
     source,
@@ -65,7 +62,7 @@ test('shared data table uses the reference table chrome', () => {
 });
 
 test('table pagination follows the reference count and ellipsis behaviour', () => {
-  const source = readFileSync(join(root, 'components/design-system/TablePagination.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/patterns/TablePagination.tsx'), 'utf8');
 
   assert.match(source, /export const TABLE_PAGE_SIZE = 25/);
   assert.match(source, /MoreHorizontal/);
@@ -187,7 +184,7 @@ test('base effects and style defaults both use renderer preview card grids', () 
 });
 
 test('admin table loading footer mirrors the compact pagination controls', () => {
-  const source = readFileSync(join(root, 'components/shell/RouteSkeletons.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8');
   const start = source.indexOf('function AdminTablePaginationSkeleton()');
   const end = source.indexOf('function getTableSkeletonCellClass', start);
   const paginationSkeleton = source.slice(start, end);

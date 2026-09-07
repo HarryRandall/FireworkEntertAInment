@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { Clock, LogIn, MailCheck, UserPlus } from 'lucide-react';
 import { LocalSecurityEventTime } from '@/app/(app)/settings/security/_components/LocalSecurityEventTime';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
 import { createClient } from '@/lib/supabase/server';
 
 export async function RecentSecurityActivity() {

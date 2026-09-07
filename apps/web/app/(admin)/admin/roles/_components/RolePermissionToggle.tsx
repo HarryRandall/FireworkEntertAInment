@@ -6,7 +6,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, LockKeyhole, X } from 'lucide-react';
 import { setRolePermissionAction } from '@/app/actions/admin-roles';
-import { toast } from '@/components/design-system/toast';
+import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';
 
 type Props = {

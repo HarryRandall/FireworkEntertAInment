@@ -2,9 +2,9 @@
 
 import { Suspense } from 'react';
 import { FileVideo2, UploadCloud } from 'lucide-react';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
 import {
   DataTableShell,
   tableCellClasses,
@@ -12,10 +12,10 @@ import {
   tableHeaderCellClasses,
   tableHeadClasses,
   tableRowClasses,
-} from '@/components/design-system/DataTable';
-import { EmptyState, Skeleton } from '@/components/design-system/Feedback';
-import { FilterBar, type FilterConfig } from '@/components/design-system/FilterBar';
-import { TablePagination, TABLE_PAGE_SIZE } from '@/components/design-system/TablePagination';
+} from '@/ui/patterns/DataTable';
+import { EmptyState, Skeleton } from '@/ui/patterns/Feedback';
+import { FilterBar, type FilterConfig } from '@/ui/patterns/FilterBar';
+import { TablePagination, TABLE_PAGE_SIZE } from '@/ui/patterns/TablePagination';
 import { listImportJobs } from '@/lib/admin.server';
 import { importStageLabel, importStatusTone } from '@/lib/import-review';
 import { ImportJobCard } from '@/app/(admin)/admin/imports/_components/ImportJobCard';

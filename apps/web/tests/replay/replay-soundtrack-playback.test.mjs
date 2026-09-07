@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const root = process.cwd();
-const viewer = readFileSync(join(root, 'components/replay/FireworkReplayViewer.tsx'), 'utf8');
+const viewer = readFileSync(join(root, 'ui/replay/FireworkReplayViewer.tsx'), 'utf8');
 const previewPage = readFileSync(join(root, 'app/(app)/shows/[id]/preview/page.tsx'), 'utf8');
 
 function between(source, start, end) {

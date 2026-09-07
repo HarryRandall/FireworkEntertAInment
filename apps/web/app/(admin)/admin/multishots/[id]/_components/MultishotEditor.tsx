@@ -48,25 +48,25 @@ import {
   PreviewFullscreenBackdrop,
   type PreviewFullscreenContainerProps,
   usePreviewFullscreen,
-} from '@/components/admin/previewFullscreen';
+} from '@/ui/admin/previewFullscreen';
 import {
   deleteMultishotShot,
   updateMultishot,
   upsertMultishotShot,
 } from '@/app/actions/admin-multishots';
-import { useAdminBreadcrumbOverride } from '@/components/shell/AdminShell';
-import { EditorPreviewTransport } from '@/components/admin/FireworkEditorShell';
-import { ReplayCanvasSkeleton } from '@/components/replay/ReplayCanvasSkeleton';
-import type { AimMarker } from '@/components/replay/FireworkReplayCanvas';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { InlineAlert } from '@/components/design-system/Feedback';
-import { InfoTooltip } from '@/components/design-system/InfoTooltip';
-import { Input, Textarea } from '@/components/design-system/Input';
-import { SelectField } from '@/components/design-system/SelectField';
-import { SliderField } from '@/components/design-system/SliderField';
-import { toast } from '@/components/design-system/toast';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import { EditorPreviewTransport } from '@/ui/admin/FireworkEditorShell';
+import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
+import type { AimMarker } from '@/ui/replay/FireworkReplayCanvas';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { InlineAlert } from '@/ui/patterns/Feedback';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import { SelectField } from '@/ui/patterns/SelectField';
+import { SliderField } from '@/ui/patterns/SliderField';
+import { toast } from '@/ui/patterns/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -76,7 +76,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -84,7 +84,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 import {
   Command,
   CommandEmpty,
@@ -92,9 +92,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
+} from '@/ui/primitives/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
+import { Slider } from '@/ui/primitives/slider';
 import type { AdminMultishotDetail } from '@/lib/admin.types';
 import {
   clampMultishotPanDegrees,
@@ -115,7 +115,7 @@ import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
 

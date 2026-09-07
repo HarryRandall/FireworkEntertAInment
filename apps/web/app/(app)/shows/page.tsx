@@ -1,7 +1,7 @@
 /** My shows page listing every show outside the dashboard. */
 import { Suspense } from 'react';
-import { Skeleton } from '@/components/design-system/Feedback';
-import { TablePagination } from '@/components/design-system/TablePagination';
+import { Skeleton } from '@/ui/patterns/Feedback';
+import { TablePagination } from '@/ui/patterns/TablePagination';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import type { ShowSummaryCard } from '@/lib/show-summary';
 import { ShowsToolbar, type ShowsSortKey } from '@/app/(app)/shows/_components/ShowsToolbar';

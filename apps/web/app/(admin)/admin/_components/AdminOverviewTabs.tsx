@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Tabs } from '@/components/ui/tabs';
+import { Tabs } from '@/ui/primitives/tabs';
 import {
   ADMIN_OVERVIEW_TAB_PARAM,
   DEFAULT_ADMIN_OVERVIEW_TAB_KEY,

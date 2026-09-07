@@ -20,7 +20,7 @@ test('show creation keeps file focus visible without forcing mobile keyboard foc
 
 test('privileged user row actions lock and report pending work', () => {
   const actions = read('app/(admin)/admin/users/_components/UserRowActions.tsx');
-  const menu = read('components/design-system/RowActionsMenu.tsx');
+  const menu = read('ui/patterns/RowActionsMenu.tsx');
 
   assert.match(actions, /const \[isPending, startTransition\] = useTransition\(\)/);
   assert.match(actions, /<RowActionsMenu\s+busy=\{isPending\}/);
@@ -34,7 +34,7 @@ test('privileged user row actions lock and report pending work', () => {
 
 test('admin users explain empty results and replay controls respect reduced motion', () => {
   const users = read('app/(admin)/admin/users/page.tsx');
-  const replay = read('components/replay/FireworkReplayViewer.tsx');
+  const replay = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(users, /paginated\.length === 0/);
   assert.match(users, /No users match the current filters\./);

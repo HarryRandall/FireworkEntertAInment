@@ -1,8 +1,8 @@
 /** Shared split-screen shell for the auth pages (login and signup). */
 
 import Link from 'next/link';
-import { SkipLink } from '@/components/design-system/SkipLink';
-import { BrandLockup } from '@/components/design-system/BrandMark';
+import { SkipLink } from '@/ui/patterns/SkipLink';
+import { BrandLockup } from '@/ui/patterns/BrandMark';
 import { authIllustrationMarkup } from '@/app/(auth)/_components/authIllustration';
 import styles from '@/app/(auth)/_components/AuthShell.module.css';
 

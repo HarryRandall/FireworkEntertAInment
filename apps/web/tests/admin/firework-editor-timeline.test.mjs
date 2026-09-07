@@ -25,7 +25,7 @@ test('firework and effect editors share the master timeline panel', () => {
 });
 
 test('timeline panel exposes an accessible total and slider for every lifecycle phase', () => {
-  const panel = read('components/admin/FireworkTimelineControls.tsx');
+  const panel = read('ui/admin/FireworkTimelineControls.tsx');
 
   assert.match(panel, /label=\{durationLabel\}/);
   for (const phase of ['ascent', 'burn', 'fade', 'tail']) {

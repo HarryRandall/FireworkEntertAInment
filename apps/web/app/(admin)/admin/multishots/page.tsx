@@ -2,15 +2,12 @@
 
 import { Suspense } from 'react';
 import { Clock3, Layers3 } from 'lucide-react';
-import {
-  FireworkBrowseCard,
-  FireworkBrowseGridSkeleton,
-} from '@/components/catalogue/FireworkBrowseCard';
-import { FireworkBrowsePreviewProvider } from '@/components/catalogue/FireworkBrowsePreviewContext';
-import { FilterSkeleton } from '@/components/shell/RouteSkeletons';
-import { EmptyNotice } from '@/components/design-system/Feedback';
-import { FilterBar } from '@/components/design-system/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
+import { FireworkBrowseCard, FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
+import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
+import { EmptyNotice } from '@/ui/patterns/Feedback';
+import { FilterBar } from '@/ui/patterns/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
 import { listMultishots } from '@/lib/admin.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';

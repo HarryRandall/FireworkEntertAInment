@@ -2,9 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { Gauge, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { TablePagination } from '@/components/design-system/TablePagination';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { TablePagination } from '@/ui/patterns/TablePagination';
 import {
   Card,
   CardAction,
@@ -12,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/ui/primitives/card';
 import {
   Table,
   TableBody,
@@ -20,7 +20,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/ui/primitives/table';
 import {
   getCurrentUserAiCreditSummary,
   signedAiCreditAmount,

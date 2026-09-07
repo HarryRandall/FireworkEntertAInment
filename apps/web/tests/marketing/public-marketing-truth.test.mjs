@@ -13,7 +13,7 @@ function read(path) {
 
 test('the legacy vendor route redirects to the database-backed catalogue', () => {
   const vendors = read('app/(marketing)/vendors/page.tsx');
-  const navigation = read('components/marketing/NavBar.tsx');
+  const navigation = read('ui/marketing/NavBar.tsx');
 
   assert.match(vendors, /import \{ redirect \} from 'next\/navigation'/);
   assert.match(vendors, /redirect\('\/catalogue'\)/);
@@ -60,11 +60,11 @@ test('public pricing reflects the runtime starter grant and marks future plans a
 
 test('homepage proof uses capabilities and documented stakeholders', () => {
   const home = read('app/(marketing)/page.tsx');
-  const hero = read('components/marketing/Hero.tsx');
-  const socialProof = read('components/marketing/SocialProof.tsx');
-  const showcase = read('components/marketing/Showcase.tsx');
-  const steps = read('components/marketing/Steps.tsx');
-  const testimonials = read('components/marketing/Testimonials.tsx');
+  const hero = read('ui/marketing/Hero.tsx');
+  const socialProof = read('ui/marketing/SocialProof.tsx');
+  const showcase = read('ui/marketing/Showcase.tsx');
+  const steps = read('ui/marketing/Steps.tsx');
+  const testimonials = read('ui/marketing/Testimonials.tsx');
 
   assert.match(hero, /Music-aware cue planning/);
   assert.match(hero, /Catalogue-backed products/);
@@ -88,8 +88,8 @@ test('homepage proof uses capabilities and documented stakeholders', () => {
     steps,
     /streaming link|never overshooting|Let AI choreograph|in stock|click-track|safe-distance rules/i,
   );
-  assert.equal(existsSync(join(root, 'components/marketing/VendorBand.tsx')), false);
-  assert.equal(existsSync(join(root, 'components/marketing/landing/Mockups.tsx')), false);
+  assert.equal(existsSync(join(root, 'ui/marketing/VendorBand.tsx')), false);
+  assert.equal(existsSync(join(root, 'ui/marketing/landing/Mockups.tsx')), false);
 
   assert.match(testimonials, /Generate only when you are ready/);
   assert.match(testimonials, /Preview the cue timeline/);
@@ -104,14 +104,14 @@ test('homepage proof uses capabilities and documented stakeholders', () => {
 });
 
 test('ambient marketing illustrations stay out of the accessibility tree', () => {
-  const doodle = read('components/marketing/landing/Doodle.tsx');
+  const doodle = read('ui/marketing/landing/Doodle.tsx');
 
   assert.match(doodle, /<span[\s\S]*?aria-hidden="true"/);
   assert.doesNotMatch(doodle, /role="img"|aria-label=\{meta\.alt\}|DOODLE_META/);
 });
 
 test('homepage renderer waits for viewport proximity and canvas readiness', () => {
-  const preview = read('components/marketing/landing/ShowPreviewPanel.tsx');
+  const preview = read('ui/marketing/landing/ShowPreviewPanel.tsx');
 
   assert.match(preview, /PREVIEW_RENDER_ROOT_MARGIN = '\d+px 0px'/);
   assert.match(preview, /rootMargin: PREVIEW_RENDER_ROOT_MARGIN/);
@@ -129,8 +129,8 @@ test('homepage renderer waits for viewport proximity and canvas readiness', () =
 });
 
 test('homepage headline wraps without a global overflow mask', () => {
-  const hero = read('components/marketing/Hero.tsx');
-  const landingStyles = read('components/marketing/landing/landing.module.css');
+  const hero = read('ui/marketing/Hero.tsx');
+  const landingStyles = read('ui/marketing/landing/landing.module.css');
   const rootLayout = read('app/layout.tsx');
 
   assert.match(hero, /<section className="relative isolate/);
@@ -235,7 +235,7 @@ test('placeholder marketing routes are noindex and do not advertise unavailable 
 });
 
 test('the public footer links only to currently grounded destinations', () => {
-  const footer = read('components/marketing/Footer.tsx');
+  const footer = read('ui/marketing/Footer.tsx');
 
   assert.match(footer, /<nav aria-label="Footer"/);
   assert.match(footer, /<ul>/);
@@ -247,8 +247,8 @@ test('the public footer links only to currently grounded destinations', () => {
 });
 
 test('the public footer links only to published destinations', () => {
-  const footer = read('components/marketing/Footer.tsx');
-  const placeholder = read('components/marketing/ComingSoon.tsx');
+  const footer = read('ui/marketing/Footer.tsx');
+  const placeholder = read('ui/marketing/ComingSoon.tsx');
 
   assert.match(footer, /href: '\/catalogue', label: 'Catalogue'/);
   assert.match(footer, /href: '\/library', label: 'Explore'/);

@@ -1,8 +1,8 @@
 /** Route-local loading state for reconstruction jobs. */
 
 import { FileVideo2, UploadCloud } from 'lucide-react';
-import { Card } from '@/components/design-system/Card';
-import { Skeleton } from '@/components/design-system/Feedback';
+import { Card } from '@/ui/patterns/Card';
+import { Skeleton } from '@/ui/patterns/Feedback';
 
 export default function AdminImportsLoading() {
   return (

@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('solid brand badges pair a tinted primary surface with readable text', () => {
-  const badge = read('components/design-system/Badge.tsx');
+  const badge = read('ui/patterns/Badge.tsx');
 
   assert.doesNotMatch(badge, /bg-accent\s+text-accent-foreground/);
   assert.match(badge, /var\(--primary\)_14%,transparent/);
@@ -20,11 +20,7 @@ test('solid brand badges pair a tinted primary surface with readable text', () =
 });
 
 test('shared brand controls do not use neutral accent foregrounds', () => {
-  for (const path of [
-    'components/design-system/Badge.tsx',
-    'components/design-system/Button.tsx',
-    'components/design-system/styles.ts',
-  ]) {
+  for (const path of ['ui/patterns/Badge.tsx', 'ui/patterns/Button.tsx', 'ui/patterns/styles.ts']) {
     const source = read(path);
     assert.doesNotMatch(source, /bg-primary\s+text-accent-foreground/, path);
   }
@@ -190,7 +186,7 @@ test('multishot timeline keeps clips on explicit expandable tracks', () => {
 test('multishot preview uses shared admin transport fullscreen and loading chrome', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
   const loading = read('app/(admin)/admin/multishots/[id]/loading.tsx');
-  const routeSkeletons = read('components/shell/RouteSkeletons.tsx');
+  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
   const previewStage = editor.slice(
     editor.indexOf('function PreviewStage('),
     editor.indexOf('// --- Timeline'),

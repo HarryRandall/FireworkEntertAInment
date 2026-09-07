@@ -12,23 +12,23 @@ export function importBoundaryViolation(importer, specifier) {
   if (!target || /\.(?:css|svg|png|jpg|webp)$/.test(target)) return null;
 
   if (
-    importer.startsWith('components/ui/') &&
+    importer.startsWith('ui/primitives/') &&
     (target.startsWith('app/') ||
-      (target.startsWith('components/') && !target.startsWith('components/ui/')))
+      (target.startsWith('ui/') && !target.startsWith('ui/primitives/')))
   ) {
     return 'UI primitives must not depend on product components or routes.';
   }
   if (
-    importer.startsWith('components/design-system/') &&
+    importer.startsWith('ui/patterns/') &&
     (target.startsWith('app/') ||
-      (target.startsWith('components/') &&
-        !target.startsWith('components/design-system/') &&
-        !target.startsWith('components/ui/')))
+      (target.startsWith('ui/') &&
+        !target.startsWith('ui/patterns/') &&
+        !target.startsWith('ui/primitives/')))
   ) {
     return 'Design-system patterns may compose UI primitives, not product features or routes.';
   }
   if (!target.startsWith('app/') || target.startsWith('app/actions/')) return null;
-  if (importer.startsWith('components/')) {
+  if (importer.startsWith('ui/')) {
     return 'Move shared route code into its component domain or lib before importing it here.';
   }
   if (importer.startsWith('app/')) {
@@ -68,7 +68,7 @@ const semanticColours = {
     schema: [],
     messages: {
       colour:
-        'Use a semantic theme token for shared UI colours. Keep colour values in styles/theme.css.',
+        'Use a semantic theme token for shared UI colours. Keep colour values in ui/theme.css.',
     },
   },
   create(context) {

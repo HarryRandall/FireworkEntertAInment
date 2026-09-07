@@ -1,4 +1,4 @@
-import { AssortmentDetail } from '@/components/assortments/AssortmentDetail';
+import { AssortmentDetail } from '@/ui/assortments/AssortmentDetail';
 
 export default async function AssortmentDetailPage({
   params,

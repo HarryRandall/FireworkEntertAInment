@@ -40,11 +40,11 @@ import {
   Waves,
   Zap,
 } from 'lucide-react';
-import { Button } from '@/components/design-system/Button';
-import { CueModelSelect } from '@/components/shows/CueModelSelect';
-import { Skeleton } from '@/components/design-system/Feedback';
-import { Input, Textarea } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { CueModelSelect } from '@/ui/shows/CueModelSelect';
+import { Skeleton } from '@/ui/patterns/Feedback';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   DEFAULT_SITE_WIDTH_FEET,
@@ -75,7 +75,7 @@ import {
   getShowGenerationPresentationAction,
 } from '@/app/(app)/shows/new/actions';
 import { AudioUpload } from '@/app/(app)/shows/new/_components/AudioUpload';
-import { JamendoSongSearch } from '@/components/music/JamendoSongSearch';
+import { JamendoSongSearch } from '@/ui/music/JamendoSongSearch';
 import { LaunchOverlay } from '@/app/(app)/shows/new/_components/LaunchOverlay';
 import { ChoiceCard, PositionDots } from '@/app/(app)/shows/new/_components/cards';
 import { StepDots } from '@/app/(app)/shows/new/_components/StepDots';

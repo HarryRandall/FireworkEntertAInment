@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Check, Settings2 } from 'lucide-react';
-import { Button } from '@/components/design-system/Button';
+import { Button } from '@/ui/patterns/Button';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 import { PRODUCT_CATALOGUE_FIELD_KEYS, type ProductCatalogueField } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
 import { usePromptConfigFormState } from '@/app/(admin)/admin/prompts/_components/PromptConfigForm';

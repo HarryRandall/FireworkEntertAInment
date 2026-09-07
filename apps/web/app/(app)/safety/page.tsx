@@ -2,7 +2,7 @@
 
 import type { Metadata } from 'next';
 import { ExternalLink, FileWarning, Landmark, PackageCheck, ShieldAlert } from 'lucide-react';
-import { Card } from '@/components/design-system/Card';
+import { Card } from '@/ui/patterns/Card';
 
 export const metadata: Metadata = {
   title: 'Safety · ShowCrafter',

@@ -1,8 +1,8 @@
 /** Billing settings page grounded in the plans and payment paths available today. */
 
 import { CheckCircle2, CircleSlash2, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/primitives/button';
 import {
   Card,
   CardAction,
@@ -10,7 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/ui/primitives/card';
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/ui/primitives/table';
 
 const PLAN_FEATURES = [
   '150 starter AI credits',

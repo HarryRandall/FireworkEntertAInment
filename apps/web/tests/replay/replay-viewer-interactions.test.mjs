@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const root = process.cwd();
-const viewer = readFileSync(join(root, 'components/replay/FireworkReplayViewer.tsx'), 'utf8');
+const viewer = readFileSync(join(root, 'ui/replay/FireworkReplayViewer.tsx'), 'utf8');
 
 test('cue rows expose a labelled keyboard-operable seek action', () => {
   const cueTable = viewer.slice(

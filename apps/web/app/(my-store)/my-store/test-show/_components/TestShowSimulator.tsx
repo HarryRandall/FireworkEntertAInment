@@ -16,8 +16,8 @@
 
 import { useState, useTransition } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { Button, Card } from '@/components/design-system';
-import { toast } from '@/components/design-system/toast';
+import { Button, Card } from '@/ui/patterns';
+import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';
 import { ensureAssortmentPublicLink } from '@/app/actions/admin-assortments';
 import type { AdminAssortmentSummary } from '@/lib/admin/assortments.server';

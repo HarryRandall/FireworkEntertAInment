@@ -5,9 +5,9 @@
  *  detail layout: header, the replay panel, and the info aside. */
 
 import { CalendarDays, Clock, Heart, Moon, RefreshCw, Sparkles, Wand2, Wallet } from 'lucide-react';
-import { TemplateReplaySkeleton } from '@/components/shell/RouteSkeletons';
-import { Card } from '@/components/design-system/Card';
-import { Skeleton } from '@/components/design-system/Feedback';
+import { TemplateReplaySkeleton } from '@/ui/shell/RouteSkeletons';
+import { Card } from '@/ui/patterns/Card';
+import { Skeleton } from '@/ui/patterns/Feedback';
 
 const DETAIL_ROWS = [
   { label: 'Duration', icon: Clock, valueWidth: 'w-12' },

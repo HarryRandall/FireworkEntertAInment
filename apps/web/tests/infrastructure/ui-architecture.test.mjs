@@ -5,9 +5,9 @@ import architecture, { importBoundaryViolation } from '../../scripts/eslint-rule
 
 test('shared UI cannot reach up into features or route implementations', () => {
   for (const [importer, target] of [
-    ['components/ui/button.tsx', '@/components/design-system/Button'],
-    ['components/design-system/Input.tsx', '../music/JamendoSongSearch'],
-    ['components/music/Picker.tsx', '@/app/(app)/shows/new/_components/MusicStep'],
+    ['ui/primitives/button.tsx', '@/ui/patterns/Button'],
+    ['ui/patterns/Input.tsx', '../music/JamendoSongSearch'],
+    ['ui/music/Picker.tsx', '@/app/(app)/shows/new/_components/MusicStep'],
     ['app/(my-store)/my-store/page.tsx', '@/app/(admin)/admin/_components/Overview'],
     ['app/(app)/home/page.tsx', '../shows/_components/ShowsToolbar'],
   ])
@@ -16,10 +16,10 @@ test('shared UI cannot reach up into features or route implementations', () => {
 
 test('composition, route descendants and explicit server actions remain valid', () => {
   for (const [importer, target] of [
-    ['components/design-system/Button.tsx', '@/components/ui/button'],
-    ['components/ui/button.tsx', '@/lib/utils'],
-    ['components/assortments/Editor.tsx', '@/app/actions/admin-assortments'],
-    ['app/(admin)/admin/assortments/[id]/page.tsx', '@/components/assortments/AssortmentEditor'],
+    ['ui/patterns/Button.tsx', '@/ui/primitives/button'],
+    ['ui/primitives/button.tsx', '@/lib/utils'],
+    ['ui/assortments/Editor.tsx', '@/app/actions/admin-assortments'],
+    ['app/(admin)/admin/assortments/[id]/page.tsx', '@/ui/assortments/AssortmentEditor'],
     ['app/(app)/shows/[id]/page.tsx', '../_components/ShowsToolbar'],
   ])
     assert.equal(importBoundaryViolation(importer, target), null, `${importer} -> ${target}`);
@@ -33,12 +33,12 @@ test('ESLint checks static imports, re-exports and dynamic imports', () => {
     rules: { 'architecture/boundaries': 'error' },
   };
   for (const code of [
-    "import Button from '@/components/design-system/Button';",
-    "export { Button } from '@/components/design-system/Button';",
-    "export * from '@/components/design-system/Button';",
-    "const lazy = import('@/components/design-system/Button');",
+    "import Button from '@/ui/patterns/Button';",
+    "export { Button } from '@/ui/patterns/Button';",
+    "export * from '@/ui/patterns/Button';",
+    "const lazy = import('@/ui/patterns/Button');",
   ]) {
-    const messages = linter.verify(code, config, { filename: 'components/ui/example.js' });
+    const messages = linter.verify(code, config, { filename: 'ui/primitives/example.js' });
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, 'architecture/boundaries');
   }

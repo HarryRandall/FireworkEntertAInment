@@ -6,10 +6,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { grantUserAiCreditsAction } from '@/app/actions/admin-users';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import {
   Dialog,
   DialogClose,
@@ -18,7 +18,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 
 type Props = {
   userId: string;

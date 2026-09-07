@@ -1,8 +1,8 @@
 /** Global 404 page rendered when no route matches. */
 
 import { Home } from 'lucide-react';
-import { Button } from '@/components/design-system/Button';
-import { Container } from '@/components/design-system/Container';
+import { Button } from '@/ui/patterns/Button';
+import { Container } from '@/ui/patterns/Container';
 import { getCurrentUserId } from '@/lib/current-user.server';
 
 export default async function NotFound() {

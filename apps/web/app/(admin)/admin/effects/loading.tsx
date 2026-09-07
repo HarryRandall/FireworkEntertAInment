@@ -4,9 +4,9 @@
 
 import { Plus } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { FireworkBrowseGridSkeleton } from '@/components/catalogue/FireworkBrowseCard';
-import { FilterSkeleton } from '@/components/shell/RouteSkeletons';
-import { Button } from '@/components/design-system/Button';
+import { FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
+import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
+import { Button } from '@/ui/patterns/Button';
 import {
   ADMIN_EFFECTS_BASE_VIEW,
   adminEffectsViewDescription,

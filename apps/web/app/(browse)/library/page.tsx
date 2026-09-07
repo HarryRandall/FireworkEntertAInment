@@ -3,10 +3,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { LibraryCardsSkeleton, LibraryGridSkeleton } from '@/components/shell/RouteSkeletons';
-import { ExploreCard } from '@/components/explore/ExploreCard';
-import { ExploreRow } from '@/components/explore/ExploreRow';
-import { ExplorePreviewProvider } from '@/components/explore/ExplorePreviewContext';
+import { LibraryCardsSkeleton, LibraryGridSkeleton } from '@/ui/shell/RouteSkeletons';
+import { ExploreCard } from '@/ui/explore/ExploreCard';
+import { ExploreRow } from '@/ui/explore/ExploreRow';
+import { ExplorePreviewProvider } from '@/ui/explore/ExplorePreviewContext';
 import { listShowTemplates } from '@/lib/admin.server';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 

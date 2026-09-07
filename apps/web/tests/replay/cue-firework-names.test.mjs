@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('show preview cue table displays the catalogue firework name', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(viewer, /new Map\(specifications\.map\(\(spec\) => \[spec\.id, spec\.name\]\)\)/);
   assert.match(
@@ -27,7 +27,7 @@ test('show preview cue table displays the catalogue firework name', () => {
 });
 
 test('manual and generated cues store catalogue names instead of custom labels', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
   const action = read('app/actions/preview-cues.ts');
   const runner = read('lib/cue-generation/runner.server.ts');
 

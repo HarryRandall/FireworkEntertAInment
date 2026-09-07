@@ -8,9 +8,9 @@ import {
   finalizeVideoImportJobAction,
   type ImportUploadActionState,
 } from '@/app/actions/platform-admin';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { Input, Select } from '@/components/design-system/Input';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { Input, Select } from '@/ui/patterns/Input';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,

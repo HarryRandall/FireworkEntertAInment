@@ -1,7 +1,7 @@
 /** Truthful placeholder until notification delivery channels are implemented. */
 
 import { Bell } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
 
 export function NotificationPreferences() {
   return (

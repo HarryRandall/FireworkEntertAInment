@@ -51,7 +51,7 @@ function lightToken(css, name, seen = new Set()) {
 }
 
 test('global tokens preserve visible focus and real monospace metadata', () => {
-  const css = readProject('app/globals.css') + readProject('styles/theme.css');
+  const css = readProject('app/globals.css') + readProject('ui/theme.css');
   const layout = readProject('app/layout.tsx');
 
   assert.doesNotMatch(css, /:where\(\*\):focus/);
@@ -63,7 +63,7 @@ test('global tokens preserve visible focus and real monospace metadata', () => {
 });
 
 test('brand count badges pair marker green with its semantic ink token', () => {
-  const shell = readProject('components/shell/AppShell.tsx');
+  const shell = readProject('ui/shell/AppShell.tsx');
   const countBadge = shell.slice(
     shell.indexOf('const SIDEBAR_NAV_COUNT_BADGE_CLASS'),
     shell.indexOf('const PROFILE_THEME_OPTIONS'),
@@ -74,7 +74,7 @@ test('brand count badges pair marker green with its semantic ink token', () => {
 });
 
 test('light theme text and focus tokens retain accessible contrast', () => {
-  const css = readProject('app/globals.css') + readProject('styles/theme.css');
+  const css = readProject('app/globals.css') + readProject('ui/theme.css');
   const background = lightToken(css, 'background');
   const mutedSurface = lightToken(css, 'muted');
   const primary = lightToken(css, 'primary');
@@ -97,15 +97,15 @@ test('light theme text and focus tokens retain accessible contrast', () => {
 
 test('the manifest retains packages imported by global styles', () => {
   const pkg = JSON.parse(readProject('package.json'));
-  const css = readProject('app/globals.css') + readProject('styles/theme.css');
+  const css = readProject('app/globals.css') + readProject('ui/theme.css');
 
   assert.match(css, /@import 'shadcn\/tailwind\.css';/);
   assert.equal(typeof pkg.dependencies.shadcn, 'string');
-  assert.equal(existsSync(join(projectRoot, 'components/design-system/tokens.ts')), false);
+  assert.equal(existsSync(join(projectRoot, 'ui/patterns/tokens.ts')), false);
 });
 
 test('semantic status text is legible on its corresponding light surface', () => {
-  const css = readProject('styles/theme.css');
+  const css = readProject('ui/theme.css');
   for (const status of ['success', 'danger', 'warning', 'info']) {
     assert.ok(
       contrast(lightToken(css, `status-${status}`), lightToken(css, `status-${status}-subtle`)) >=
@@ -116,16 +116,16 @@ test('semantic status text is legible on its corresponding light surface', () =>
 });
 
 test('compatibility colours resolve to the primary palette and theme is imported once', () => {
-  const css = readProject('styles/theme.css');
+  const css = readProject('ui/theme.css');
   const global = readProject('app/globals.css');
-  assert.equal((global.match(/@import '\.\.\/styles\/theme\.css';/g) ?? []).length, 1);
+  assert.equal((global.match(/@import '\.\.\/ui\/theme\.css';/g) ?? []).length, 1);
   assert.equal(lightToken(css, 'color-accent'), lightToken(css, 'accent'));
   assert.equal(lightToken(css, 'color-content-default'), lightToken(css, 'foreground'));
   assert.equal(lightToken(css, 'sidebar-primary'), lightToken(css, 'primary'));
 });
 
 test('dark status colours remain legible against their semantic surfaces', () => {
-  const source = readProject('styles/theme.css');
+  const source = readProject('ui/theme.css');
   const css = source.slice(source.lastIndexOf(".dark,\n[data-theme='dark']"));
   for (const status of ['success', 'danger', 'warning', 'info']) {
     assert.ok(

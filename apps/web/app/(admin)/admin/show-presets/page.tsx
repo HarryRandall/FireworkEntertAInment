@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Badge } from '@/components/design-system/Badge';
+import { Badge } from '@/ui/patterns/Badge';
 import {
   DataTableShell,
   tableCellClasses,
@@ -11,10 +11,10 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/components/design-system/DataTable';
-import { FilterBar, type FilterConfig } from '@/components/design-system/FilterBar';
-import { FilterSkeleton, TableSkeleton } from '@/components/shell/RouteSkeletons';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
+} from '@/ui/patterns/DataTable';
+import { FilterBar, type FilterConfig } from '@/ui/patterns/FilterBar';
+import { FilterSkeleton, TableSkeleton } from '@/ui/shell/RouteSkeletons';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
 import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin.server';
 import { listShowPresetsForCoverBackfill } from '@/lib/admin/cover-posters.server';
 import { formatDuration, formatStableDateTime } from '@/lib/show-domain';

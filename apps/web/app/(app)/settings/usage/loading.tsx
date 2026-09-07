@@ -1,8 +1,8 @@
 /** Stable route chrome for the `/settings/usage` loading state. */
 
 import { Gauge, ReceiptText, Sparkles } from 'lucide-react';
-import { Skeleton } from '@/components/design-system/Feedback';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/ui/patterns/Feedback';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/ui/primitives/table';
 
 function LoadingStat({ label }: { label: string }) {
   return (

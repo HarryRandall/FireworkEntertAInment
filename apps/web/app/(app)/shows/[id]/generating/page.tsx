@@ -2,10 +2,10 @@
 
 import { notFound, redirect } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
-import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
-import { GENERATING_ROUTE_SPLASH_CLASS } from '@/components/shows/generatingSplashLayout';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
+import { GeneratingShowAnimation } from '@/ui/shows/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/ui/shows/generatingSplashLayout';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
 import { getShowBySlug } from '@/lib/shows.server';

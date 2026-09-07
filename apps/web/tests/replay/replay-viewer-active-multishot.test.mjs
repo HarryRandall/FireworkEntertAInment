@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const viewer = readFileSync(join(root, 'components/replay/FireworkReplayViewer.tsx'), 'utf8');
+const viewer = readFileSync(join(root, 'ui/replay/FireworkReplayViewer.tsx'), 'utf8');
 
 test('multi-shot builder rows stay active for their whole playback window', () => {
   assert.match(viewer, /endTimeSeconds/);

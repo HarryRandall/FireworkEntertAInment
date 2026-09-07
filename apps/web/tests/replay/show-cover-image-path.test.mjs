@@ -83,7 +83,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
 
 test('cover poster render util keeps loading neutral and falls back to the saved cover', () => {
   const renderUtil = read('lib/render-cover-poster.tsx');
-  const poster = read('components/covers/CoverPoster.tsx');
+  const poster = read('ui/covers/CoverPoster.tsx');
   const urlHelper = read('lib/cover-poster-url.ts');
 
   assert.match(renderUtil, /export async function renderCoverToPng/);
@@ -114,7 +114,7 @@ test('cover poster render util keeps loading neutral and falls back to the saved
 
 test('user-show capture uploads and persists via a server action', () => {
   const action = read('app/actions/show-cover-poster.ts');
-  const animation = read('components/shows/GeneratingShowAnimation.tsx');
+  const animation = read('ui/shows/GeneratingShowAnimation.tsx');
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
 
   assert.match(action, /export async function setShowCoverImagePath/);
@@ -163,7 +163,7 @@ test('generation completion goes directly to preview and uses replay skeleton lo
   const previewPage = read('app/(app)/shows/[id]/preview/page.tsx');
   const previewLoading = read('app/(app)/shows/[id]/preview/loading.tsx');
   const showsLoading = read('app/(app)/shows/loading.tsx');
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(generatingPage, /show\.generationStatus === 'completed'/);
   assert.match(generatingPage, /redirect\(`\/shows\/\$\{show\.slug\}\/preview\?autoplay=1`\)/);
@@ -178,5 +178,5 @@ test('generation completion goes directly to preview and uses replay skeleton lo
   assert.match(viewer, /searchParams\.get\('autoplay'\) !== '1'/);
   assert.match(viewer, /clearPersistedGenerationStart\(showSlug\)/);
   assert.match(viewer, /clearPersistedGenerationCover\(showSlug\)/);
-  assert.equal(existsSync(join(root, 'components/shows/GenerationHandoffSplash.tsx')), false);
+  assert.equal(existsSync(join(root, 'ui/shows/GenerationHandoffSplash.tsx')), false);
 });

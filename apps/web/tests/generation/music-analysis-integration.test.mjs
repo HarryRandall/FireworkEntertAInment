@@ -161,8 +161,8 @@ test('show analyses repair migration relaxes legacy not-null columns', () => {
 test('show song context exposes stored analysis context', () => {
   const page = readFileSync(join(root, 'app/(app)/shows/[id]/timeline/page.tsx'), 'utf8');
   const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
-  const timeline = readFileSync(join(root, 'components/shows/AudioAnalysisTimeline.tsx'), 'utf8');
-  const splashPath = join(root, 'components/shows/GeneratingShowAnimation.tsx');
+  const timeline = readFileSync(join(root, 'ui/shows/AudioAnalysisTimeline.tsx'), 'utf8');
+  const splashPath = join(root, 'ui/shows/GeneratingShowAnimation.tsx');
   const generatorPath = join(root, 'lib/cue-generation.server.ts');
   assert.equal(existsSync(splashPath), true);
   assert.equal(existsSync(generatorPath), true);

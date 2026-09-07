@@ -272,9 +272,9 @@ test('style default admin UI exposes every kind without the black accent badge',
   );
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const sectionPanels = read('components/admin/EditorSectionPanels.tsx');
-  const selectField = read('components/design-system/SelectField.tsx');
-  const controls = read('components/admin/FireworkRenderControls.tsx');
+  const sectionPanels = read('ui/admin/EditorSectionPanels.tsx');
+  const selectField = read('ui/patterns/SelectField.tsx');
+  const controls = read('ui/admin/FireworkRenderControls.tsx');
   const styleDefaults = read('lib/fireworks/style-defaults.ts');
 
   assert.match(effectsBrowser, /FIREWORK_STYLE_DEFAULT_KINDS\.map/);

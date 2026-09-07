@@ -3,8 +3,8 @@
 /** Error boundary for my-store routes. */
 
 import { RotateCcw } from 'lucide-react';
-import { Button } from '@/components/design-system/Button';
-import { InlineAlert } from '@/components/design-system/Feedback';
+import { Button } from '@/ui/patterns/Button';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 
 export default function RetailerAdminError({
   reset,

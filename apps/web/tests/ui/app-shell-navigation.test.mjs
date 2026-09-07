@@ -8,7 +8,7 @@ import {
   getPendingRouteKind,
   isActivePath,
   normaliseAppPath,
-} from '../../components/shell/app-shell-navigation.ts';
+} from '../../ui/shell/app-shell-navigation.ts';
 
 function breadcrumbDetails(pathname) {
   return getAppBreadcrumbs(pathname).map(({ label, href }) => ({ label, href }));

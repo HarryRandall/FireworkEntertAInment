@@ -9,8 +9,8 @@ const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
 test('the live WebGL replay surface owns the card clipping radius', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
-  const canvas = read('components/replay/FireworkReplayCanvas.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
+  const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
 
   assert.match(viewer, /group\/replay overflow-hidden rounded-\[inherit\]/);
   assert.match(
@@ -20,9 +20,9 @@ test('the live WebGL replay surface owns the card clipping radius', () => {
 });
 
 test('replay loading layers preserve the same rounded clipping', () => {
-  const backdrop = read('components/replay/ReplayStageBackdrop.tsx');
-  const loadingStage = read('components/replay/ReplayPanelLoadingStage.tsx');
-  const skeletons = read('components/shell/RouteSkeletons.tsx');
+  const backdrop = read('ui/replay/ReplayStageBackdrop.tsx');
+  const loadingStage = read('ui/replay/ReplayPanelLoadingStage.tsx');
+  const skeletons = read('ui/shell/RouteSkeletons.tsx');
 
   for (const source of [backdrop, loadingStage, skeletons]) assert.match(source, /bg-stage-night/);
   assert.match(backdrop, /overflow-hidden rounded-\[inherit\]/);

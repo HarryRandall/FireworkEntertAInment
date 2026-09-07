@@ -5,7 +5,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Coins, KeyRound, LogIn, Trash2 } from 'lucide-react';
-import { RowActionsMenu, toast } from '@/components/design-system';
+import { RowActionsMenu, toast } from '@/ui/patterns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 import { startImpersonationAction } from '@/app/actions/impersonation';
 import { deleteUserAction, sendUserPasswordResetAction } from '@/app/actions/admin-users';
 import { GrantAiCreditsDialog } from '@/app/(admin)/admin/users/[id]/_components/GrantAiCreditsDialog';

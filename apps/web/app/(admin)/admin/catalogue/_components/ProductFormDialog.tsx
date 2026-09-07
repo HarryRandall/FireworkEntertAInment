@@ -13,10 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/design-system/Button';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+} from '@/ui/primitives/dialog';
+import { Button } from '@/ui/patterns/Button';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import { updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
 
 type Values = ProductInputType & { id?: string };

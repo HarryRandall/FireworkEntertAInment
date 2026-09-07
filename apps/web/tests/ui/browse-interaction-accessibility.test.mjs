@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('signed-in Explore navigation keeps truthful stable loading chrome', () => {
-  const shell = read('components/shell/AppShell.tsx');
+  const shell = read('ui/shell/AppShell.tsx');
 
   assert.doesNotMatch(shell, /badge: 'New'/);
   assert.match(shell, /function PendingLibrarySkeleton\(\)[\s\S]*Explore shows/);
@@ -21,7 +21,7 @@ test('signed-in Explore navigation keeps truthful stable loading chrome', () => 
 });
 
 test('Explore shelf controls stay visible and specific during keyboard navigation', () => {
-  const row = read('components/explore/ExploreRow.tsx');
+  const row = read('ui/explore/ExploreRow.tsx');
 
   assert.match(row, /aria-label={`Scroll \$\{title\} left`}/);
   assert.match(row, /aria-label={`Scroll \$\{title\} right`}/);
@@ -31,7 +31,7 @@ test('Explore shelf controls stay visible and specific during keyboard navigatio
 });
 
 test('Explore cards expose their visible facts and retain posters through preview warm-up', () => {
-  const card = read('components/explore/ExploreCard.tsx');
+  const card = read('ui/explore/ExploreCard.tsx');
 
   assert.match(card, /aria-labelledby={titleId}/);
   assert.match(card, /aria-describedby={`\$\{durationId\} \$\{themeId\} \$\{statsId\}`}/);

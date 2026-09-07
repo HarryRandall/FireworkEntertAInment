@@ -253,7 +253,7 @@ test('zero-height aerial smoke retains only the mortar smoke tail', () => {
 
 test('preview ticks consume the shared design-aware timing helper', () => {
   const source = readFileSync(
-    new URL('../../components/admin/editor-preview-timing.ts', import.meta.url),
+    new URL('../../ui/admin/editor-preview-timing.ts', import.meta.url),
     'utf8',
   );
 

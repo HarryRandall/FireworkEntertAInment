@@ -2,10 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
-import { AppShell } from '@/components/shell/AppShell';
-import { MarketingFooter } from '@/components/marketing/Footer';
-import { MarketingNavBar } from '@/components/marketing/NavBar';
-import { SkipLink } from '@/components/design-system/SkipLink';
+import { AppShell } from '@/ui/shell/AppShell';
+import { MarketingFooter } from '@/ui/marketing/Footer';
+import { MarketingNavBar } from '@/ui/marketing/NavBar';
+import { SkipLink } from '@/ui/patterns/SkipLink';
 import { getCurrentProfile } from '@/lib/admin.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';

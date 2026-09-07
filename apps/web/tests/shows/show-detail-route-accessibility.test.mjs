@@ -46,7 +46,7 @@ test('client navigation moves focus to the updated show heading', () => {
 
 test('Refine opens locally on Preview without a route round trip', () => {
   const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
   const events = read('lib/show-detail-events.ts');
 
   assert.match(events, /showcrafter:open-show-refinement/);
@@ -57,7 +57,7 @@ test('Refine opens locally on Preview without a route round trip', () => {
 });
 
 test('preview content follows the shared heading hierarchy', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(viewer, /<h2[^>]*>No typed fireworks yet<\/h2>/);
   assert.match(viewer, /<h2[^>]*>Cues<\/h2>/);
@@ -76,7 +76,7 @@ test('show loading boundaries preserve real route chrome without redrawing it', 
   assert.match(parentLoading, /aria-busy="true"/);
   assert.match(parentLoading, /role="status" aria-live="polite"/);
   assert.match(detailLoading, /<ShowDetailContentSkeleton segment=\{segment\} \/>/);
-  assert.doesNotMatch(detailLoading, /<h1|<nav|from '@\/app\/components\/ui\/Feedback'/);
+  assert.doesNotMatch(detailLoading, /<h1|<nav|from '@\/app\/ui\/primitives\/Feedback'/);
 });
 
 test('show loading content matches the active section', () => {

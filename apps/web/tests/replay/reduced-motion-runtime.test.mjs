@@ -23,7 +23,7 @@ test('the shared preference hook is reactive and conservative during server rend
 
 test('hover and focus replay providers do not start WebGL previews for reduced motion', () => {
   const showReplay = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
-  const exploreReplay = read('components/explore/ExplorePreviewContext.tsx');
+  const exploreReplay = read('ui/explore/ExplorePreviewContext.tsx');
 
   for (const source of [showReplay, exploreReplay]) {
     assert.match(source, /usePrefersReducedMotion\(\)/);
@@ -36,7 +36,7 @@ test('hover and focus replay providers do not start WebGL previews for reduced m
 });
 
 test('legacy shader covers use their stable gradient instead of mounting WebGL', () => {
-  const shaderCover = read('components/covers/ShaderCover.tsx');
+  const shaderCover = read('ui/covers/ShaderCover.tsx');
 
   assert.match(shaderCover, /const prefersReducedMotion = usePrefersReducedMotion\(\)/);
   assert.match(
@@ -48,7 +48,7 @@ test('legacy shader covers use their stable gradient instead of mounting WebGL',
 });
 
 test('Explore shelves replace smooth programmatic scrolling for reduced motion', () => {
-  const exploreRow = read('components/explore/ExploreRow.tsx');
+  const exploreRow = read('ui/explore/ExploreRow.tsx');
 
   assert.match(exploreRow, /behavior: prefersReducedMotion \? 'auto' : 'smooth'/);
   assert.match(exploreRow, /prefersReducedMotion \? 'scroll-auto' : 'scroll-smooth'/);

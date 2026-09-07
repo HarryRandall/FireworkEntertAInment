@@ -101,8 +101,8 @@ test('app and admin routes have granular loading coverage and streaming boundari
 });
 
 test('replay canvases are lazy loaded without console warning monkey patches', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
-  const template = read('components/replay/TemplateReplayPreview.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
+  const template = read('ui/replay/TemplateReplayPreview.tsx');
   const importPreview = read(
     'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
   );

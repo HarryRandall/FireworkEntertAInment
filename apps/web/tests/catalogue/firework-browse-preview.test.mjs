@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('browse previews share one ready-gated and abort-safe canvas', () => {
-  const source = read('components/catalogue/FireworkBrowsePreviewContext.tsx');
+  const source = read('ui/catalogue/FireworkBrowsePreviewContext.tsx');
 
   assert.match(source, /const HOVER_INTENT_MS = 500/);
   assert.match(source, /const previewCache = new Map<string, CachedPreview>/);
@@ -30,7 +30,7 @@ test('browse previews share one ready-gated and abort-safe canvas', () => {
 });
 
 test('browse previews capture representative renderer frames into a bounded Blob URL cache', () => {
-  const source = read('components/catalogue/FireworkBrowsePreviewContext.tsx');
+  const source = read('ui/catalogue/FireworkBrowsePreviewContext.tsx');
 
   assert.match(source, /const POSTER_WIDTH = 1600/);
   assert.match(source, /const POSTER_HEIGHT = 1000/);
@@ -68,7 +68,7 @@ test('browse previews capture representative renderer frames into a bounded Blob
 });
 
 test('missing persisted and session-only posters backfill sequentially through one canvas', () => {
-  const source = read('components/catalogue/FireworkBrowsePreviewContext.tsx');
+  const source = read('ui/catalogue/FireworkBrowsePreviewContext.tsx');
   const effectsBrowser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
 
   assert.match(source, /const MAX_BACKGROUND_CAPTURE_ATTEMPTS = 2/);
@@ -101,7 +101,7 @@ test('missing persisted and session-only posters backfill sequentially through o
 });
 
 test('renderer captures post exact revision metadata as a WebP', () => {
-  const source = read('components/catalogue/FireworkBrowsePreviewContext.tsx');
+  const source = read('ui/catalogue/FireworkBrowsePreviewContext.tsx');
 
   assert.match(source, /method: 'POST'/);
   assert.match(source, /credentials: 'same-origin'/);
@@ -122,7 +122,7 @@ test('renderer captures post exact revision metadata as a WebP', () => {
 });
 
 test('browse cards provide link and button activation without nesting their body in a control', () => {
-  const source = read('components/catalogue/FireworkBrowseCard.tsx');
+  const source = read('ui/catalogue/FireworkBrowseCard.tsx');
 
   assert.match(source, /aspect-\[16\/10\]/);
   assert.match(

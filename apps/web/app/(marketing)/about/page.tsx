@@ -2,11 +2,11 @@
 
 import type { Metadata } from 'next';
 import { Boxes, ListChecks, MousePointerClick, UsersRound } from 'lucide-react';
-import { Container } from '@/components/design-system/Container';
-import { Card } from '@/components/design-system/Card';
-import { Badge, Eyebrow } from '@/components/design-system/Badge';
-import { PageHeader } from '@/components/marketing/PageHeader';
-import { CTABand } from '@/components/marketing/CTABand';
+import { Container } from '@/ui/patterns/Container';
+import { Card } from '@/ui/patterns/Card';
+import { Badge, Eyebrow } from '@/ui/patterns/Badge';
+import { PageHeader } from '@/ui/marketing/PageHeader';
+import { CTABand } from '@/ui/marketing/CTABand';
 
 export const metadata: Metadata = {
   title: 'About · ShowCrafter',

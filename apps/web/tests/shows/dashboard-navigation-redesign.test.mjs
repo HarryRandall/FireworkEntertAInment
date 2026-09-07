@@ -35,7 +35,7 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.doesNotMatch(dashboard, /PAGE_SIZE/);
   assert.doesNotMatch(dashboard, /Draft/);
 
-  const summaryCards = read('components/shows/ShowSummaryCards.tsx');
+  const summaryCards = read('ui/shows/ShowSummaryCards.tsx');
   assert.doesNotMatch(summaryCards, /Jump back in/);
   assert.doesNotMatch(summaryCards, /JumpBackInHero/);
   assert.match(summaryCards, /min-h-\[10rem\]/);
@@ -45,7 +45,7 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.doesNotMatch(summaryCards, /formatDuration\(template\.lengthSeconds\)/);
   assert.doesNotMatch(summaryCards, /mt-auto space-y-2 pt-5/);
 
-  const homeDiscovery = read('components/home/HomeDiscoverySections.tsx');
+  const homeDiscovery = read('ui/home/HomeDiscoverySections.tsx');
   assert.match(homeDiscovery, /Watch real shows/);
   assert.match(homeDiscovery, /Curated collections/);
   assert.match(homeDiscovery, /FeaturedShowCard/);
@@ -72,8 +72,8 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
 });
 
 test('app shell exposes only shipped V1 navigation routes', () => {
-  const shell = read('components/shell/AppShell.tsx');
-  const navigation = read('components/shell/app-shell-navigation.ts');
+  const shell = read('ui/shell/AppShell.tsx');
+  const navigation = read('ui/shell/app-shell-navigation.ts');
 
   assert.match(navigation, /href: '\/home', label: 'Home'/);
   assert.match(navigation, /href: '\/shows', label: 'My shows'/);
@@ -94,7 +94,7 @@ test('app shell exposes only shipped V1 navigation routes', () => {
 });
 
 test('admin navigation only exposes destinations granted to the current profile', () => {
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
 
   for (const permission of [
     'admin.manage_users',
@@ -234,7 +234,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
   assert.doesNotMatch(libraryDetailPage, /Back to show library/);
 
-  const templatePreview = read('components/replay/TemplateReplayPreview.tsx');
+  const templatePreview = read('ui/replay/TemplateReplayPreview.tsx');
   assert.match(templatePreview, /absolute inset-x-0 bottom-0/);
   assert.match(templatePreview, /bg-black\/45/);
   assert.match(templatePreview, /relative h-44 overflow-hidden/);
@@ -307,7 +307,7 @@ test('shader-heavy app routes use neutral loading skeletons', () => {
   assert.match(libraryPage, /LibraryCardsSkeleton/);
   assert.doesNotMatch(libraryPage, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
-  const routeSkeletons = read('components/shell/RouteSkeletons.tsx');
+  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
   const start = routeSkeletons.indexOf('function ExploreCardSkeleton(');
   const end = routeSkeletons.indexOf('/** Skeleton for the `/admin`', start);
   const librarySkeleton = routeSkeletons.slice(start, end);

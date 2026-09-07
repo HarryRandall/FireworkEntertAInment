@@ -6,8 +6,8 @@ import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, X } from 'lucide-react';
 import { setUserPermissionOverrideAction } from '@/app/actions/admin-users';
-import { InfoTooltip } from '@/components/design-system/InfoTooltip';
-import { toast } from '@/components/design-system/toast';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';
 
 type Mode = 'grant' | 'deny';

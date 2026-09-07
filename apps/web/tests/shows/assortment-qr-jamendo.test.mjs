@@ -17,7 +17,7 @@ const files = {
   requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
   importHelpers: new URL('../../lib/jamendo-import.server.ts', import.meta.url),
   lifecycle: new URL('../../lib/music-analysis-lifecycle.server.ts', import.meta.url),
-  picker: new URL('../../components/music/JamendoSongSearch.tsx', import.meta.url),
+  picker: new URL('../../ui/music/JamendoSongSearch.tsx', import.meta.url),
   kioskClient: new URL(
     '../../app/(kiosk)/a/[token]/_components/AssortmentEntryClient.tsx',
     import.meta.url,

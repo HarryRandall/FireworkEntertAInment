@@ -1,8 +1,8 @@
 /** Stable route chrome for the `/settings/billing` loading state. */
 
 import { CheckCircle2, ReceiptText, Sparkles } from 'lucide-react';
-import { Badge } from '@/components/design-system/Badge';
-import { Skeleton } from '@/components/design-system/Feedback';
+import { Badge } from '@/ui/patterns/Badge';
+import { Skeleton } from '@/ui/patterns/Feedback';
 import {
   Card,
   CardAction,
@@ -10,7 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/ui/primitives/card';
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/ui/primitives/table';
 
 const PLAN_NAMES = ['Free', 'Pro', 'Ultra'] as const;
 

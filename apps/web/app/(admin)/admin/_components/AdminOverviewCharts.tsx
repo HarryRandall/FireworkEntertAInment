@@ -1,13 +1,13 @@
 'use client';
 
 import { CartesianGrid, ComposedChart, Line, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/primitives/card';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart';
+} from '@/ui/primitives/chart';
 import { cn } from '@/lib/utils';
 
 export type AdminOverviewActivityDatum = {

@@ -9,7 +9,7 @@ const root = process.cwd();
 
 test('exports page offers responsive downloads only for shows with generated cues', () => {
   const page = readFileSync(join(root, 'app/(app)/exports/page.tsx'), 'utf8');
-  const button = readFileSync(join(root, 'components/shows/ShowExportButton.tsx'), 'utf8');
+  const button = readFileSync(join(root, 'ui/shows/ShowExportButton.tsx'), 'utf8');
 
   assert.match(page, /show\.cueCount > 0/);
   assert.match(page, /<ShowExportButton/);

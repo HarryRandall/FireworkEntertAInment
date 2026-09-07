@@ -20,7 +20,7 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   );
   const roleAction = readFileSync(join(root, 'app/actions/admin-roles.ts'), 'utf8');
   const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
-  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
   const migration = readFileSync(
     join(root, '../../supabase/migrations/20260531091000_admin_role_permissions_modify.sql'),
     'utf8',

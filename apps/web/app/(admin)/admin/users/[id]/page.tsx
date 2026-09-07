@@ -8,11 +8,11 @@ import {
   AdminUserActivitySkeleton,
   AdminUserPermissionsSkeleton,
   AdminUserRoleSkeleton,
-} from '@/components/shell/RouteSkeletons';
-import { Badge } from '@/components/design-system/Badge';
-import { Card } from '@/components/design-system/Card';
-import { GeneratedAvatar } from '@/components/design-system/GeneratedAvatar';
-import { StatTile } from '@/components/design-system/StatTile';
+} from '@/ui/shell/RouteSkeletons';
+import { Badge } from '@/ui/patterns/Badge';
+import { Card } from '@/ui/patterns/Card';
+import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';
+import { StatTile } from '@/ui/patterns/StatTile';
 import {
   getAdminUserById,
   getCurrentProfile,

@@ -2,11 +2,11 @@
 
 import type { Metadata } from 'next';
 import { Check } from 'lucide-react';
-import { Container } from '@/components/design-system/Container';
-import { Card } from '@/components/design-system/Card';
-import { Button } from '@/components/design-system/Button';
-import { Badge, Eyebrow } from '@/components/design-system/Badge';
-import { PageHeader } from '@/components/marketing/PageHeader';
+import { Container } from '@/ui/patterns/Container';
+import { Card } from '@/ui/patterns/Card';
+import { Button } from '@/ui/patterns/Button';
+import { Badge, Eyebrow } from '@/ui/patterns/Badge';
+import { PageHeader } from '@/ui/marketing/PageHeader';
 
 export const metadata: Metadata = {
   title: 'Pricing · ShowCrafter',

@@ -1,7 +1,7 @@
 /** Admin roles page for editing role-level permission defaults. */
 
 import { redirect } from 'next/navigation';
-import { FilterBar } from '@/components/design-system/FilterBar';
+import { FilterBar } from '@/ui/patterns/FilterBar';
 import { listRolePermissionMatrix } from '@/lib/admin.server';
 import type { Permission } from '@/lib/admin.types';
 import { RolePermissionMatrix } from '@/app/(admin)/admin/roles/_components/RolePermissionMatrix';

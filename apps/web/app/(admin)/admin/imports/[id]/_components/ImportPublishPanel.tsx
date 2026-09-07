@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { approveImportJobAction } from '@/app/actions/platform-admin';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 
 export function ImportPublishPanel({
   jobId,

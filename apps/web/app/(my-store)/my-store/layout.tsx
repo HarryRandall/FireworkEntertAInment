@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { MyStoreShell } from '@/components/shell/MyStoreShell';
+import { MyStoreShell } from '@/ui/shell/MyStoreShell';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 import { requirePermission } from '@/lib/admin.server';
 import { measureServerTask } from '@/lib/perf.server';

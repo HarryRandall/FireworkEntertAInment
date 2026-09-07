@@ -3,11 +3,11 @@
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { Gauge, Loader2 } from 'lucide-react';
 import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
-import { InfoTooltip } from '@/components/design-system/InfoTooltip';
-import { toast } from '@/components/design-system/toast';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { toast } from '@/ui/patterns/toast';
+import { Badge } from '@/ui/primitives/badge';
+import { Button } from '@/ui/primitives/button';
+import { Card } from '@/ui/primitives/card';
 import type { AnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { cn } from '@/lib/utils';
 

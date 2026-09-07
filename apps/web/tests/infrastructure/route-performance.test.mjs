@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('the shared app shell keeps the interactive home tree out of every route bundle', () => {
-  const shell = read('components/shell/AppShell.tsx');
+  const shell = read('ui/shell/AppShell.tsx');
   const homeLoading = read('app/(app)/home/loading.tsx');
 
   assert.doesNotMatch(shell, /HomeLoadingSkeleton|HomePageSkeleton/);

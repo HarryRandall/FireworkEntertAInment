@@ -14,9 +14,9 @@ function read(path) {
 test('Explore likes persist without exposing user identities', () => {
   const migration = read('../../supabase/migrations/20260710011816_add_show_preset_likes.sql');
   const action = read('app/actions/show-preset-likes.ts');
-  const button = read('components/explore/TemplateLikeButton.tsx');
+  const button = read('ui/explore/TemplateLikeButton.tsx');
   const mapper = read('lib/admin/mappers.ts');
-  const card = read('components/explore/ExploreCard.tsx');
+  const card = read('ui/explore/ExploreCard.tsx');
 
   assert.match(migration, /create table if not exists public\.show_preset_likes/);
   assert.match(migration, /primary key \(show_preset_id, user_id\)/);

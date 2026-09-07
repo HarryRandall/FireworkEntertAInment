@@ -8,7 +8,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 test('info tooltip uses the shadcn icon and tooltip behaviour', () => {
-  const source = readFileSync(join(root, 'components/design-system/InfoTooltip.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/patterns/InfoTooltip.tsx'), 'utf8');
 
   assert.match(source, /import \{ Info \} from 'lucide-react'/);
   assert.match(source, /<TooltipTrigger asChild>/);
@@ -25,7 +25,7 @@ test('info tooltip uses the shadcn icon and tooltip behaviour', () => {
 });
 
 test('tooltip primitive uses the default app surface with a matching arrow', () => {
-  const source = readFileSync(join(root, 'components/ui/tooltip.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/primitives/tooltip.tsx'), 'utf8');
 
   assert.match(source, /<TooltipPrimitive\.Arrow/);
   assert.match(source, /bg-background text-foreground/);

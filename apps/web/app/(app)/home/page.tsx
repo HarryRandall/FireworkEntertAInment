@@ -1,11 +1,11 @@
 /** Authenticated home page with the V1 workspace redesign. */
 
 import { Suspense } from 'react';
-import { ExplorePreviewProvider } from '@/components/explore/ExplorePreviewContext';
-import { ExploreRow } from '@/components/explore/ExploreRow';
-import { HomeCollectionsSection, HomeFeaturedShows } from '@/components/home/HomeDiscoverySections';
-import { PromptHero } from '@/components/shows/ShowSummaryCards';
-import { HomeSectionsSkeleton } from '@/components/home/HomeLoadingSkeleton';
+import { ExplorePreviewProvider } from '@/ui/explore/ExplorePreviewContext';
+import { ExploreRow } from '@/ui/explore/ExploreRow';
+import { HomeCollectionsSection, HomeFeaturedShows } from '@/ui/home/HomeDiscoverySections';
+import { PromptHero } from '@/ui/shows/ShowSummaryCards';
+import { HomeSectionsSkeleton } from '@/ui/home/HomeLoadingSkeleton';
 import { listShowTemplates } from '@/lib/admin.server';
 
 export default function HomePage() {

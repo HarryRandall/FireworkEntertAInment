@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { makeOptimisticEditorVersion } from '../../components/admin/useEditorHistory.ts';
+import { makeOptimisticEditorVersion } from '../../ui/admin/useEditorHistory.ts';
 import { canApplySavedEditorSnapshot } from '../../lib/admin/editor-save-state.ts';
 import {
   isMissingEditorVersionTableError,
@@ -217,9 +217,9 @@ test('editor saves are optimistic while history persistence stays observed and l
   const fireworkServer = read('lib/admin/fireworks.server.ts');
   const styleDefaultServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
-  const editorHistoryState = read('components/admin/useEditorHistory.ts');
-  const historyPanel = read('components/admin/EditorInspectorPanels.tsx');
-  const sliderField = read('components/design-system/SliderField.tsx');
+  const editorHistoryState = read('ui/admin/useEditorHistory.ts');
+  const historyPanel = read('ui/admin/EditorInspectorPanels.tsx');
+  const sliderField = read('ui/patterns/SliderField.tsx');
 
   for (const actions of [effectActions, fireworkActions, styleDefaultActions]) {
     assert.match(actions, /history insert failed/);

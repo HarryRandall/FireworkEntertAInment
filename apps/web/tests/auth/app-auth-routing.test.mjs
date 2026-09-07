@@ -140,8 +140,8 @@ test('show detail layout requires a session before rendering tabs or children', 
 });
 
 test('AppShell is authenticated-only and keeps shipped navigation links', () => {
-  const shell = read('components/shell/AppShell.tsx');
-  const navigation = read('components/shell/app-shell-navigation.ts');
+  const shell = read('ui/shell/AppShell.tsx');
+  const navigation = read('ui/shell/app-shell-navigation.ts');
 
   assert.match(navigation, /href: '\/home', label: 'Home'/);
   assert.match(navigation, /href: '\/shows', label: 'My shows'/);

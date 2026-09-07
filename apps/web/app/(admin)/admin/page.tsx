@@ -2,7 +2,7 @@
 
 import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { AdminOverviewContentSkeleton } from '@/components/shell/RouteSkeletons';
+import { AdminOverviewContentSkeleton } from '@/ui/shell/RouteSkeletons';
 import { AnalyserWarmthControl } from '@/app/(admin)/admin/_components/AnalyserWarmthControl';
 import { AdminOverviewTabs } from '@/app/(admin)/admin/_components/AdminOverviewTabs';
 import { AdminOverviewToolbar } from '@/app/(admin)/admin/_components/AdminOverviewToolbar';
@@ -15,8 +15,8 @@ import {
   type AdminOverviewPulseDatum,
   type AdminOverviewStatusDatum,
 } from '@/app/(admin)/admin/_components/AdminOverviewCharts';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/ui/primitives/badge';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/ui/primitives/card';
 import {
   Table,
   TableBody,
@@ -24,8 +24,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/ui/primitives/table';
+import { TabsContent, TabsList, TabsTrigger } from '@/ui/primitives/tabs';
 import {
   getAdminOverviewMetrics,
   getCurrentProfile,

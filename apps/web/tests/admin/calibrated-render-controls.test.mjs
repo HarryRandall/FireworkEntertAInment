@@ -4,7 +4,7 @@ import {
   calibratedToRaw,
   rawToCalibrated,
   withCalibrationDefault,
-} from '../../components/admin/firework-render-controls/calibrated-slider.ts';
+} from '../../ui/admin/firework-render-controls/calibrated-slider.ts';
 
 const range = { min: 0, defaultValue: 10, max: 30 };
 

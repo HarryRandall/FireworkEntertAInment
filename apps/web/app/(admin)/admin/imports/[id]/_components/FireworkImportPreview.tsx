@@ -4,12 +4,9 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  PreviewFullscreenBackdrop,
-  usePreviewFullscreen,
-} from '@/components/admin/previewFullscreen';
-import { ReplayLoadingBar } from '@/components/replay/ReplayLoadingBar';
-import { ReplayTransportControls } from '@/components/replay/ReplayTransportControls';
+import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
+import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';
 import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
 import {
   reconstructionToReplayCues,
@@ -37,7 +34,7 @@ function ReplayCanvasSkeleton() {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,

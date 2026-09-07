@@ -24,7 +24,7 @@ test('home and show preview propagate data failures to the app error boundary', 
 
 test('home and My shows retain one primary heading through loading', () => {
   const home = read('app/(app)/home/page.tsx');
-  const homeLoading = read('components/home/HomeLoadingSkeleton.tsx');
+  const homeLoading = read('ui/home/HomeLoadingSkeleton.tsx');
   const shows = read('app/(app)/shows/page.tsx');
   const showsLoading = read('app/(app)/shows/loading.tsx');
   const showTabs = read('app/(app)/shows/_components/ShowTabs.tsx');

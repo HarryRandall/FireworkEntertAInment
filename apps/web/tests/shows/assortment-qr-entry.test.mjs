@@ -21,7 +21,7 @@ const files = {
     import.meta.url,
   ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
-  adminEditor: new URL('../../components/assortments/AssortmentEditor.tsx', import.meta.url),
+  adminEditor: new URL('../../ui/assortments/AssortmentEditor.tsx', import.meta.url),
   publicServer: new URL('../../lib/assortments/public.server.ts', import.meta.url),
   constraints: new URL('../../lib/assortments/constraints.ts', import.meta.url),
   loaders: new URL('../../lib/cue-generation/loaders.server.ts', import.meta.url),
@@ -35,10 +35,7 @@ const files = {
     import.meta.url,
   ),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
-  templateReplayPreview: new URL(
-    '../../components/replay/TemplateReplayPreview.tsx',
-    import.meta.url,
-  ),
+  templateReplayPreview: new URL('../../ui/replay/TemplateReplayPreview.tsx', import.meta.url),
   kioskShowActions: new URL(
     '../../app/(kiosk)/a/[token]/show/[showToken]/_components/KioskShowActions.tsx',
     import.meta.url,

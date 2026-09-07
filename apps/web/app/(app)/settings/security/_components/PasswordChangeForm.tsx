@@ -5,10 +5,10 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { updatePasswordAction, type PasswordActionState } from '@/app/actions/account';
-import { Button } from '@/components/design-system/Button';
-import { Input } from '@/components/design-system/Input';
-import { InlineAlert } from '@/components/design-system/Feedback';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
+import { Button } from '@/ui/patterns/Button';
+import { Input } from '@/ui/patterns/Input';
+import { InlineAlert } from '@/ui/patterns/Feedback';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
 
 const initialState: PasswordActionState = { status: 'idle' };
 

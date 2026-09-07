@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const source = readFileSync(join(root, 'components/design-system/FilterBar.tsx'), 'utf8');
+const source = readFileSync(join(root, 'ui/patterns/FilterBar.tsx'), 'utf8');
 
 test('filter changes reset pagination and preserve the latest URL state', () => {
   assert.match(source, /searchParamsRef = useRef\(searchParams\.toString\(\)\)/);

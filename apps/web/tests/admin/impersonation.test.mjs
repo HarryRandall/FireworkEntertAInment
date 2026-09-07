@@ -90,7 +90,7 @@ test('security mutations and UI are guarded while impersonating', () => {
   const account = read('app/actions/account.ts');
   const profilePage = read('app/(app)/settings/profile/page.tsx');
   const securityPage = read('app/(app)/settings/security/page.tsx');
-  const signOut = read('components/shell/SignOutButton.tsx');
+  const signOut = read('ui/shell/SignOutButton.tsx');
 
   assert.match(account, /hasImpersonationCookie/);
   assert.match(account, /Password changes are disabled while impersonating a user/);
@@ -132,10 +132,10 @@ test('admin users table exposes row impersonation and quick identity copying', (
 
 test('shells render a persistent stop-impersonating control above the profile card', () => {
   const adminLayout = read('app/(admin)/layout.tsx');
-  const adminShell = read('components/shell/AdminShell.tsx');
+  const adminShell = read('ui/shell/AdminShell.tsx');
   const layout = read('app/(app)/layout.tsx');
-  const shell = read('components/shell/AppShell.tsx');
-  const banner = read('components/shell/ImpersonationBanner.tsx');
+  const shell = read('ui/shell/AppShell.tsx');
+  const banner = read('ui/shell/ImpersonationBanner.tsx');
 
   assert.match(layout, /getActiveImpersonation/);
   assert.match(adminLayout, /getActiveImpersonation/);

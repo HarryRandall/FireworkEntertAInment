@@ -21,7 +21,9 @@ for values that can be derived during render.
 
 Default to Server Components. Keep server integrations and service-role clients
 out of client bundles. Preserve keyboard access, visible focus and reduced motion.
-Use the existing design-system controls and semantic tokens before adding a wrapper.
+Use `ui/primitives` for Radix/shadcn controls, `ui/patterns` for reusable
+compositions and `ui/<domain>` for features. Keep colour values in `ui/theme.css`.
+Inspect existing controls and semantic tokens before adding a wrapper.
 Do not hand-edit files explicitly marked as generated.
 
 Music upload/analysis must not create a show: only the final Generate action does.

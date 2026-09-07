@@ -1,7 +1,7 @@
 /** Loading skeleton for the `/settings/profile` route. */
 
-import { Skeleton } from '@/components/design-system/Feedback';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/ui/patterns/Feedback';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
 
 const THEME_OPTIONS = [
   { label: 'Dark', description: 'Layered black workspace' },

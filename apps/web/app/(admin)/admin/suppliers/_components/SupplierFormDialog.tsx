@@ -14,12 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { SelectField } from '@/components/design-system/SelectField';
-import { toast } from '@/components/design-system/toast';
+} from '@/ui/primitives/dialog';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { SelectField } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
 import {
   createSupplier,
   updateSupplier,

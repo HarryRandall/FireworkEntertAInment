@@ -4,15 +4,15 @@
 
 import { Check, ChevronDown, ListFilter } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/design-system/Button';
+import { Button } from '@/ui/patterns/Button';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from '@/ui/primitives/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 
 type SortKey = 'popular' | 'recent' | 'featured' | 'shortest' | 'budget';
 

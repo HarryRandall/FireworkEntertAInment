@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-const source = readFileSync(join(process.cwd(), 'components/design-system/Button.tsx'), 'utf8');
+const source = readFileSync(join(process.cwd(), 'ui/patterns/Button.tsx'), 'utf8');
 
 test('shared button owns its interactive link behaviour on the client', () => {
   assert.match(source, /^'use client';/);

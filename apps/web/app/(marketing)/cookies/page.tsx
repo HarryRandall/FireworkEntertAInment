@@ -1,7 +1,7 @@
 /** Marketing "Cookies policy" page. */
 
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/marketing/ComingSoon';
+import { ComingSoon } from '@/ui/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Cookies · ShowCrafter',

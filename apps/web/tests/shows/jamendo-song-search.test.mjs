@@ -14,10 +14,10 @@ const importHelpers = read('lib/jamendo-import.server.ts');
 const route = read('app/api/music-library/jamendo/route.ts');
 const starter = read('lib/start-music-analysis.server.ts');
 const wizard = read('app/(app)/shows/new/_components/NewShowPageClient.tsx');
-const search = read('components/music/JamendoSongSearch.tsx');
+const search = read('ui/music/JamendoSongSearch.tsx');
 const audioUpload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
-const replay = read('components/replay/FireworkReplayViewer.tsx');
-const songContext = read('components/shows/AudioAnalysisTimeline.tsx');
+const replay = read('ui/replay/FireworkReplayViewer.tsx');
+const songContext = read('ui/shows/AudioAnalysisTimeline.tsx');
 const audioReader = read('lib/shows/audio.server.ts');
 const migration = read(
   '../../supabase/migrations/20260727033941_add_song_analysis_source_attribution.sql',

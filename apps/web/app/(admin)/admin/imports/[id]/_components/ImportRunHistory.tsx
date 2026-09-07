@@ -1,5 +1,5 @@
-import { Badge } from '@/components/design-system/Badge';
-import { Card } from '@/components/design-system/Card';
+import { Badge } from '@/ui/patterns/Badge';
+import { Card } from '@/ui/patterns/Card';
 import { importStatusTone, type ImportRun } from '@/lib/import-review';
 
 export function ImportRunHistory({ runs }: { runs: ImportRun[] }) {

@@ -16,11 +16,11 @@ test('admin route group owns /admin outside the app shell', () => {
 });
 
 test('admin shell has its own navigation and back-to-app route', () => {
-  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
   assert.match(shell, /Back to app/);
   assert.match(shell, /\/admin\/users/);
   assert.match(shell, /\/admin\/imports/);
-  assert.doesNotMatch(shell, /from\s+['"]@\/app\/components\/app\/AppShell['"]/);
+  assert.doesNotMatch(shell, /from\s+['"]@\/app\/ui\/app\/AppShell['"]/);
   assert.doesNotMatch(shell, /<AppShell\b/);
 });
 
@@ -31,7 +31,7 @@ test('global dashboard no longer renders admin and supplier promo cards', () => 
 });
 
 test('supplier management is admin-only', () => {
-  const shell = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'ui/shell/AppShell.tsx'), 'utf8');
   const proxy = readFileSync(join(root, 'proxy.ts'), 'utf8');
   assert.equal(existsSync(join(root, 'app/(app)/supplier/page.tsx')), false);
   assert.equal(existsSync(join(root, 'app/(admin)/admin/suppliers/page.tsx')), true);

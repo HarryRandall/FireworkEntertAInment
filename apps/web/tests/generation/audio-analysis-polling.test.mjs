@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { join } from 'node:path';
 
 const root = process.cwd();
-const timeline = readFileSync(join(root, 'components/shows/AudioAnalysisTimeline.tsx'), 'utf8');
+const timeline = readFileSync(join(root, 'ui/shows/AudioAnalysisTimeline.tsx'), 'utf8');
 const route = readFileSync(join(root, 'app/api/shows/[id]/analysis/route.ts'), 'utf8');
 
 test('song analysis polls a scoped endpoint without refreshing the route', () => {

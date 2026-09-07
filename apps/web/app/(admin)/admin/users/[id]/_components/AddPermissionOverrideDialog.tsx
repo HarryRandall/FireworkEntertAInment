@@ -6,10 +6,10 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, Plus, Search, X } from 'lucide-react';
 import { setUserPermissionOverridesAction } from '@/app/actions/admin-users';
-import { Button } from '@/components/design-system/Button';
-import { InfoTooltip } from '@/components/design-system/InfoTooltip';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 import { cn } from '@/lib/utils';
 
 type Mode = 'grant' | 'deny';

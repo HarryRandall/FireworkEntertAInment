@@ -5,7 +5,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
-import { RowActionsMenu, toast } from '@/components/design-system';
+import { RowActionsMenu, toast } from '@/ui/patterns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 import { deleteSupplier } from '@/app/actions/admin-suppliers';
 import { SupplierFormDialog } from '@/app/(admin)/admin/suppliers/_components/SupplierFormDialog';
 import type { SupplierInputType } from '@/app/actions/admin-suppliers';

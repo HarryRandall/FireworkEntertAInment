@@ -3,9 +3,9 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LockKeyhole, Music2, Package, Sparkles } from 'lucide-react';
-import { JamendoSongSearch } from '@/components/music/JamendoSongSearch';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
+import { JamendoSongSearch } from '@/ui/music/JamendoSongSearch';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
 import type { JamendoSearchTrack } from '@/lib/music-library.types';
 import { formatBudget } from '@/lib/show-domain';
 import { createClient } from '@/lib/supabase/client';

@@ -6,21 +6,15 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTypescript,
   {
-    ignores: [
-      '.next/**',
-      '.worktrees/**',
-      'node_modules/**',
-      'services/**/.venv/**',
-      'next-env.d.ts',
-    ],
+    ignores: ['.next*/**', 'node_modules/**', 'next-env.d.ts'],
   },
   {
-    files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+    files: ['app/**/*.{ts,tsx}', 'ui/**/*.{ts,tsx}'],
     plugins: { architecture },
     rules: { 'architecture/boundaries': 'error' },
   },
   {
-    files: ['components/design-system/**/*.{ts,tsx}', 'components/shell/**/*.{ts,tsx}'],
+    files: ['ui/patterns/**/*.{ts,tsx}', 'ui/shell/**/*.{ts,tsx}'],
     rules: { 'architecture/semantic-colours': 'error' },
   },
   {

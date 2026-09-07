@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('effects navigation expands in the global sidebar and derives every default kind', () => {
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
   const navigation = read('lib/admin-effects-navigation.ts');
 
   assert.match(navigation, /\.\.\.FIREWORK_STYLE_DEFAULT_KINDS/);
@@ -38,7 +38,7 @@ test('effects navigation expands in the global sidebar and derives every default
 test('effects category selection is URL-backed with a safe legacy fallback', () => {
   const page = read('app/(admin)/admin/effects/page.tsx');
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
   const navigation = read('lib/admin-effects-navigation.ts');
   const styleActions = read('app/actions/admin-style-defaults.ts');
   const effectActions = read('app/actions/admin-effects.ts');

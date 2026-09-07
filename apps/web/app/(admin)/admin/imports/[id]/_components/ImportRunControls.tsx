@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useRef, useTransition, type FormEvent } from 'react';
 import { RefreshCcw, WandSparkles } from 'lucide-react';
 import { queueImportJobAction, requestImportRefinementAction } from '@/app/actions/platform-admin';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { Select, Textarea } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { Select, Textarea } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import { OPENROUTER_MODEL_OPTIONS } from '@/lib/import-jobs';
 
 export function ImportRunControls({

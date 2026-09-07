@@ -17,7 +17,7 @@ const audioUpload = readFileSync(
   'utf8',
 );
 const actions = readFileSync(join(root, 'app/(app)/shows/new/actions.ts'), 'utf8');
-const promptHero = readFileSync(join(root, 'components/shows/ShowSummaryCards.tsx'), 'utf8');
+const promptHero = readFileSync(join(root, 'ui/shows/ShowSummaryCards.tsx'), 'utf8');
 
 test('new show wizard only creates a draft from an explicit Generate click', () => {
   // The form's onSubmit advances the wizard but must never call createShowAction.

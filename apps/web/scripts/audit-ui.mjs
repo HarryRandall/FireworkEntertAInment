@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 
-const sourceRoots = ['app', 'components', 'hooks', 'lib'];
+const sourceRoots = ['app', 'ui', 'hooks', 'lib'];
 
 function walk(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -94,7 +94,7 @@ const pages = files
       error: inheritedFile(file, 'error'),
     };
   });
-const components = files.filter((file) => file.startsWith('components/'));
+const components = files.filter((file) => file.startsWith('ui/'));
 const report = {
   counts: { sourceModules: files.length, componentModules: components.length, pages: pages.length },
   groups: Object.fromEntries(

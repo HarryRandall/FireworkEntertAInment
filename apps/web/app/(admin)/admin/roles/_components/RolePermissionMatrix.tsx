@@ -1,7 +1,7 @@
 /** Custom permission matrix for editing role-level defaults. */
 
 import type { CSSProperties } from 'react';
-import { Badge } from '@/components/design-system/Badge';
+import { Badge } from '@/ui/patterns/Badge';
 import {
   DataTableShell,
   tableCellClasses,
@@ -9,8 +9,8 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/components/design-system/DataTable';
-import { InfoTooltip } from '@/components/design-system/InfoTooltip';
+} from '@/ui/patterns/DataTable';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { isLockedRolePermission } from '@/lib/admin/role-permissions';
 import type { Permission, Role } from '@/lib/admin.types';
 import { cn } from '@/lib/utils';

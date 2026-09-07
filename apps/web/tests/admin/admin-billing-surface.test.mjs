@@ -10,7 +10,7 @@ const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
 test('the standalone admin AI billing route and nav entry are removed', () => {
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
 
   assert.doesNotMatch(shell, /href: '\/admin\/billing'/);
   assert.doesNotMatch(shell, /label: 'AI billing'/);

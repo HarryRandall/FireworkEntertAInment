@@ -8,9 +8,9 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 for (const path of [
-  'components/shell/AppShell.tsx',
-  'components/shell/AdminShell.tsx',
-  'components/shell/MyStoreShell.tsx',
+  'ui/shell/AppShell.tsx',
+  'ui/shell/AdminShell.tsx',
+  'ui/shell/MyStoreShell.tsx',
 ]) {
   test(`${path} persists sidebar collapse and scrolls inside the content panel`, () => {
     const source = readFileSync(join(root, path), 'utf8');
@@ -28,7 +28,7 @@ for (const path of [
 }
 
 test('shared brand control preserves collapse, hover and mobile behaviour', () => {
-  const source = readFileSync(join(root, 'components/shell/SidebarBrand.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/shell/SidebarBrand.tsx'), 'utf8');
   assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
   assert.match(source, /hover:bg-sidebar-accent/);
   assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
@@ -45,7 +45,7 @@ test('shared brand control preserves collapse, hover and mobile behaviour', () =
 });
 
 test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
-  const source = readFileSync(join(root, 'components/shell/shell-utils.ts'), 'utf8');
+  const source = readFileSync(join(root, 'ui/shell/shell-utils.ts'), 'utf8');
   assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
   assert.match(source, /text-on-surface/);
   assert.match(source, /overflow-visible/);
@@ -56,16 +56,13 @@ test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
 });
 
 test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs', () => {
-  const appSource = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-  const adminSource = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
+  const appSource = readFileSync(join(root, 'ui/shell/AppShell.tsx'), 'utf8');
+  const adminSource = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
   const cacheSource = readFileSync(
-    join(root, 'components/shell/workspace-summary-cache.client.ts'),
+    join(root, 'ui/shell/workspace-summary-cache.client.ts'),
     'utf8',
   );
-  const navigationSource = readFileSync(
-    join(root, 'components/shell/app-shell-navigation.ts'),
-    'utf8',
-  );
+  const navigationSource = readFileSync(join(root, 'ui/shell/app-shell-navigation.ts'), 'utf8');
 
   assert.match(navigationSource, /getAppBreadcrumbs/);
   assert.match(navigationSource, /formatPathSegment/);
@@ -96,8 +93,8 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
 });
 
 test('shared profile theme picker stays compact', () => {
-  const source = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-  const profileMenu = readFileSync(join(root, 'components/shell/ProfileMenu.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/shell/AppShell.tsx'), 'utf8');
+  const profileMenu = readFileSync(join(root, 'ui/shell/ProfileMenu.tsx'), 'utf8');
   const themeBlock = profileMenu.slice(profileMenu.indexOf('function ProfileThemeMenu()'));
 
   assert.match(themeBlock, /aria-label="Interface theme"/);
@@ -118,7 +115,7 @@ test('shared profile theme picker stays compact', () => {
 });
 
 test('shared sidebar hook reads storage after hydration and writes the cookie fallback', () => {
-  const source = readFileSync(join(root, 'components/shell/useSidebarPreference.ts'), 'utf8');
+  const source = readFileSync(join(root, 'ui/shell/useSidebarPreference.ts'), 'utf8');
   assert.match(source, /useHydrationLayoutEffect/);
   assert.match(source, /window\.localStorage\.getItem\(sidebarCollapsedStorageKey\)/);
   assert.match(source, /window\.localStorage\.setItem\(sidebarCollapsedStorageKey/);
@@ -127,13 +124,13 @@ test('shared sidebar hook reads storage after hydration and writes the cookie fa
 });
 
 test('sidebar primitive leaves persistence to the ShowCrafter preference hook', () => {
-  const source = readFileSync(join(root, 'components/ui/sidebar.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/primitives/sidebar.tsx'), 'utf8');
   assert.doesNotMatch(source, /sidebar_state/);
   assert.doesNotMatch(source, /document\.cookie/);
 });
 
 test('sidebar primitive clips horizontal overflow while keeping vertical scrolling', () => {
-  const source = readFileSync(join(root, 'components/ui/sidebar.tsx'), 'utf8');
+  const source = readFileSync(join(root, 'ui/primitives/sidebar.tsx'), 'utf8');
   assert.match(source, /overflow-x-hidden overflow-y-auto/);
   assert.match(source, /data-slot="sidebar-inner"/);
   assert.match(source, /size-full min-w-0 flex-col overflow-x-hidden/);

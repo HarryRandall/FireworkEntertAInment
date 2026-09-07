@@ -13,7 +13,7 @@ function read(path) {
 
 test('app discovery and show grids use their intended wide caps', () => {
   const home = read('app/(app)/home/page.tsx');
-  const homeLoading = read('components/home/HomeLoadingSkeleton.tsx');
+  const homeLoading = read('ui/home/HomeLoadingSkeleton.tsx');
   const shows = read('app/(app)/shows/page.tsx');
   const showsLoading = read('app/(app)/shows/loading.tsx');
 
@@ -29,7 +29,7 @@ test('show workspaces expand while focused show content stays readable', () => {
   const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   const shoppingList = read('app/(app)/shows/[id]/shopping-list/page.tsx');
   const guide = read('app/(app)/shows/[id]/show-guide/page.tsx');
-  const skeletons = read('components/shell/RouteSkeletons.tsx');
+  const skeletons = read('ui/shell/RouteSkeletons.tsx');
 
   assert.match(chrome, /max-w-\[1600px\]/);
   assert.match(shoppingList, /max-w-5xl/);

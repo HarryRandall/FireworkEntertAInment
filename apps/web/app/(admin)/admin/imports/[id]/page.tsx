@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { Card } from '@/components/design-system/Card';
-import { InlineAlert } from '@/components/design-system/Feedback';
+import { Card } from '@/ui/patterns/Card';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 import { getImportJobDetail, requirePermission } from '@/lib/admin.server';
 import { DEFAULT_OPENROUTER_MODEL } from '@/lib/import-jobs';
 import {

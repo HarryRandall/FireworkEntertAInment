@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/ui/primitives/select';
 import {
   ADMIN_OVERVIEW_RANGE_OPTIONS,
   ADMIN_OVERVIEW_RANGE_PARAM,

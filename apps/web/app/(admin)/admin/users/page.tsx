@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { TableSkeleton } from '@/components/shell/RouteSkeletons';
-import { Badge } from '@/components/design-system/Badge';
-import { FilterBar } from '@/components/design-system/FilterBar';
-import { GeneratedAvatar } from '@/components/design-system/GeneratedAvatar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/TablePagination';
+import { TableSkeleton } from '@/ui/shell/RouteSkeletons';
+import { Badge } from '@/ui/patterns/Badge';
+import { FilterBar } from '@/ui/patterns/FilterBar';
+import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
 import {
   DataTableShell,
   tableCellClasses,
@@ -14,7 +14,7 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
   tableRowClasses,
-} from '@/components/design-system/DataTable';
+} from '@/ui/patterns/DataTable';
 import { getCurrentProfile, listAdminUsers } from '@/lib/admin.server';
 import type { ProfileStatus, RoleKey } from '@/lib/admin.types';
 import { InlineCopyButton } from '@/app/(admin)/admin/users/_components/InlineCopyButton';

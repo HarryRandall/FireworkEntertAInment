@@ -8,8 +8,8 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 test('settings exposes modern account sections', () => {
-  const shell = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-  const navigation = readFileSync(join(root, 'components/shell/app-shell-navigation.ts'), 'utf8');
+  const shell = readFileSync(join(root, 'ui/shell/AppShell.tsx'), 'utf8');
+  const navigation = readFileSync(join(root, 'ui/shell/app-shell-navigation.ts'), 'utf8');
   const profile = readFileSync(join(root, 'app/(app)/settings/profile/page.tsx'), 'utf8');
   const personalDetails = readFileSync(
     join(root, 'app/(app)/settings/profile/_components/PersonalDetailsForm.tsx'),

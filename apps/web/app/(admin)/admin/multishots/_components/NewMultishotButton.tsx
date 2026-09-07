@@ -12,11 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+} from '@/ui/primitives/dialog';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import { createMultishot } from '@/app/actions/admin-multishots';
 
 export function NewMultishotButton() {

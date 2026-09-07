@@ -274,7 +274,7 @@ test('shot actions scope updates and avoid catalogue-wide invalidation for aim-o
 
 test('multishot controls share bounds and commit slider interactions immediately', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
-  const slider = read('components/design-system/SliderField.tsx');
+  const slider = read('ui/patterns/SliderField.tsx');
 
   assert.match(editor, /clampMultishotTimeSeconds\(nextPatch\.timeOffsetSeconds\)/);
   assert.match(editor, /clampMultishotTrackIndex\(nextPatch\.timelineTrackIndex\)/);

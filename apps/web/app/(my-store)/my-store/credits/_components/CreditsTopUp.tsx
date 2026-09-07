@@ -3,8 +3,8 @@
 /** Local-only top-up preview: selecting a tier does not charge a payment method or change any balance. See FIR-166. */
 
 import { useState } from 'react';
-import { Button, Card } from '@/components/design-system';
-import { toast } from '@/components/design-system/toast';
+import { Button, Card } from '@/ui/patterns';
+import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';
 import type { DummyCreditTier } from '@/app/(my-store)/my-store/_lib/dummy-data';
 

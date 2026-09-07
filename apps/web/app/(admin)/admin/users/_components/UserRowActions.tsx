@@ -5,7 +5,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Copy, LogIn, PauseCircle, PlayCircle, Trash2 } from 'lucide-react';
-import { RowActionsMenu, toast } from '@/components/design-system';
+import { RowActionsMenu, toast } from '@/ui/patterns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 import { deleteUserAction, setUserStatusAction } from '@/app/actions/admin-users';
 import { startImpersonationAction } from '@/app/actions/impersonation';
 

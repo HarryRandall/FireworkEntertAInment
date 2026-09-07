@@ -315,12 +315,12 @@ test('temporal foreground extraction removes static lights but preserves moving 
 test('protected page and harness keep credentials server-side and use exact replay capture', () => {
   const page = read('app/internal/import-render/page.tsx');
   const harness = read('app/internal/import-render/ImportRenderHarness.tsx');
-  const replay = read('components/replay/FireworkReplayCanvas.tsx');
+  const replay = read('ui/replay/FireworkReplayCanvas.tsx');
   const auth = read('lib/import-render-auth.server.ts');
   const nextConfig = read('next.config.ts');
   const proxy = read('proxy.ts');
   const contentSecurityPolicy = read('lib/security/import-render-csp.ts');
-  const themeProvider = read('components/theme/ThemeProvider.tsx');
+  const themeProvider = read('ui/theme/ThemeProvider.tsx');
   const worker = read('../../services/firework-import-worker/worker.py');
   const engine = read('lib/fireworks/FireworksEngine.ts');
 

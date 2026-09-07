@@ -32,20 +32,17 @@ import {
   setShowPresetPublished,
   updateShowPresetDetails,
 } from '@/app/actions/admin-show-presets';
-import { useAdminBreadcrumbOverride } from '@/components/shell/AdminShell';
-import { EditorPreviewTransport } from '@/components/admin/FireworkEditorShell';
-import {
-  PreviewFullscreenBackdrop,
-  usePreviewFullscreen,
-} from '@/components/admin/previewFullscreen';
-import { ReplayCanvasSkeleton } from '@/components/replay/ReplayCanvasSkeleton';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { InlineAlert } from '@/components/design-system/Feedback';
-import { Input, Textarea } from '@/components/design-system/Input';
-import { SelectField } from '@/components/design-system/SelectField';
-import { toast } from '@/components/design-system/toast';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import { EditorPreviewTransport } from '@/ui/admin/FireworkEditorShell';
+import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { InlineAlert } from '@/ui/patterns/Feedback';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import { SelectField } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
 import {
   Dialog,
   DialogContent,
@@ -53,14 +50,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 import type { AdminShowPresetDetail, ShowTemplateCue } from '@/lib/admin.types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
 

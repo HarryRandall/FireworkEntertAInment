@@ -14,8 +14,8 @@ import {
   updatePromptConfigAction,
   type PromptConfigActionState,
 } from '@/app/actions/admin-prompts';
-import { Button } from '@/components/design-system/Button';
-import { InlineAlert } from '@/components/design-system/Feedback';
+import { Button } from '@/ui/patterns/Button';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 
 const INITIAL_STATE: PromptConfigActionState = {
   status: 'idle',

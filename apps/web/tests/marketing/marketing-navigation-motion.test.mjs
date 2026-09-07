@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('the mobile navigation is an accessible disclosure', () => {
-  const navigation = read('components/marketing/NavBar.tsx');
+  const navigation = read('ui/marketing/NavBar.tsx');
 
   assert.match(navigation, /const mobileMenuId = useId\(\)/);
   assert.match(navigation, /aria-controls=\{mobileMenuId\}/);
@@ -26,8 +26,8 @@ test('the mobile navigation is an accessible disclosure', () => {
 });
 
 test('marketing navigation motion uses transform and opacity with a reduced-motion fallback', () => {
-  const navigation = read('components/marketing/NavBar.tsx');
-  const css = read('components/marketing/navigation.module.css');
+  const navigation = read('ui/marketing/NavBar.tsx');
+  const css = read('ui/marketing/navigation.module.css');
   const mobileMenuStart = css.indexOf('.mobileMenu {');
   const mobileMenuEnd = css.indexOf(".mobileMenu[data-state='open']", mobileMenuStart);
   const mobileMenuStyles = css.slice(mobileMenuStart, mobileMenuEnd);
@@ -43,7 +43,7 @@ test('marketing navigation motion uses transform and opacity with a reduced-moti
 });
 
 test('Framer Motion is absent from the marketing navigation and dependency manifests', () => {
-  const navigation = read('components/marketing/NavBar.tsx');
+  const navigation = read('ui/marketing/NavBar.tsx');
   const pkg = JSON.parse(read('package.json'));
   const lockfile = read('../../pnpm-lock.yaml');
 

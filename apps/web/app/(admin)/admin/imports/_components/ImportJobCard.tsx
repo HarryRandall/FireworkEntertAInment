@@ -4,12 +4,12 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { Loader2 } from 'lucide-react';
 import { deleteImportJobAction, updateImportJobAction } from '@/app/actions/platform-admin';
-import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
-import { Card } from '@/components/design-system/Card';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input, Select } from '@/components/design-system/Input';
-import { toast } from '@/components/design-system/toast';
+import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
+import { Card } from '@/ui/patterns/Card';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input, Select } from '@/ui/patterns/Input';
+import { toast } from '@/ui/patterns/toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from '@/ui/primitives/alert-dialog';
 import type { ImportJobSummary } from '@/lib/admin.types';
 
 const KIND_OPTIONS = [{ value: 'firework_video', label: 'Firework video' }];

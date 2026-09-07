@@ -2,10 +2,10 @@
 
 import { Suspense } from 'react';
 import { Clock3, Layers3 } from 'lucide-react';
-import { FireworkBrowseCard } from '@/components/catalogue/FireworkBrowseCard';
-import { FireworkBrowsePreviewProvider } from '@/components/catalogue/FireworkBrowsePreviewContext';
-import { EmptyNotice } from '@/components/design-system/Feedback';
-import { TablePagination } from '@/components/design-system/TablePagination';
+import { FireworkBrowseCard } from '@/ui/catalogue/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
+import { EmptyNotice } from '@/ui/patterns/Feedback';
+import { TablePagination } from '@/ui/patterns/TablePagination';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { listFireworkProducts } from '@/lib/shows.server';
 import {

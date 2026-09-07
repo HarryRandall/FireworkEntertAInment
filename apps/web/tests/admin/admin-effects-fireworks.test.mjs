@@ -36,7 +36,7 @@ test('admin effects and fireworks routes are first-class admin pages', () => {
     assert.equal(existsSync(join(root, path)), true, `${path} exists`);
   }
 
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
   const overview = read('app/(admin)/admin/page.tsx');
   assert.match(shell, /\/admin\/effects/);
   assert.match(shell, /\/admin\/fireworks/);
@@ -299,9 +299,9 @@ test('admin effects UI is wired to base effect fields', () => {
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
   const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const shell = read('components/admin/FireworkEditorShell.tsx');
-  const inspectorPanels = read('components/admin/EditorInspectorPanels.tsx');
-  const routeSkeletons = read('components/shell/RouteSkeletons.tsx');
+  const shell = read('ui/admin/FireworkEditorShell.tsx');
+  const inspectorPanels = read('ui/admin/EditorInspectorPanels.tsx');
+  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
   const design = read('lib/fireworks/design.ts');
 
   assert.match(page, /listAdminEffects/);
@@ -496,14 +496,14 @@ test('admin effects UI is wired to base effect fields', () => {
 });
 
 test('admin replay previews opt into FPS diagnostics', () => {
-  const canvas = read('components/replay/FireworkReplayCanvas.tsx');
+  const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const importPreview = read(
     'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
   );
-  const appReplayViewer = read('components/replay/FireworkReplayViewer.tsx');
-  const templatePreview = read('components/replay/TemplateReplayPreview.tsx');
+  const appReplayViewer = read('ui/replay/FireworkReplayViewer.tsx');
+  const templatePreview = read('ui/replay/TemplateReplayPreview.tsx');
 
   assert.match(canvas, /showFps\?: boolean/);
   assert.match(canvas, /trailWidthGuideDesign\?: FireworkDesign \| null/);
@@ -516,7 +516,7 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(canvas, /FPS_SMOOTHING_FACTOR = 0\.16/);
   assert.match(canvas, /Activity/);
   assert.match(canvas, /X/);
-  assert.match(canvas, /import \{ Button \} from '@\/components\/design-system\/Button'/);
+  assert.match(canvas, /import \{ Button \} from '@\/ui\/patterns\/Button'/);
   assert.match(canvas, /showFpsRef/);
   assert.match(canvas, /showFpsOverlay/);
   assert.match(

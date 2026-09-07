@@ -252,7 +252,7 @@ test('scheduler materialises an unfired cue at any exact replay boundary', () =>
 });
 
 test('soundtrack playback is the replay clock while audio is active', () => {
-  const viewer = read('components/replay/FireworkReplayViewer.tsx');
+  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(viewer, /audio\.currentTime/);
   assert.match(viewer, /audioTime \?\? playheadStart\.current \+ dtFromStart/);

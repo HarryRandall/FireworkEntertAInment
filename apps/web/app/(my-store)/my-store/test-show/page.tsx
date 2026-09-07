@@ -1,7 +1,7 @@
 /** My Store test show: open the real consumer QR entry point for a live assortment in a new tab, exactly what a shopper sees after scanning its physical QR code (see FIR-166). */
 
-import { SectionHeader } from '@/components/design-system';
-import { EmptyState } from '@/components/design-system/Feedback';
+import { SectionHeader } from '@/ui/patterns';
+import { EmptyState } from '@/ui/patterns/Feedback';
 import { listAssortments } from '@/lib/admin/assortments.server';
 import { TestShowSimulator } from '@/app/(my-store)/my-store/test-show/_components/TestShowSimulator';
 

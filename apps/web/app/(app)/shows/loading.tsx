@@ -14,9 +14,9 @@
 import type { ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { ChevronDown, ListFilter, Search } from 'lucide-react';
-import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
-import { GENERATING_ROUTE_SPLASH_CLASS } from '@/components/shows/generatingSplashLayout';
-import { Skeleton } from '@/components/design-system/Feedback';
+import { GeneratingShowAnimation } from '@/ui/shows/GeneratingShowAnimation';
+import { GENERATING_ROUTE_SPLASH_CLASS } from '@/ui/shows/generatingSplashLayout';
+import { Skeleton } from '@/ui/patterns/Feedback';
 import { ShowDetailContentSkeleton } from '@/app/(app)/shows/_components/ShowDetailContentSkeleton';
 import { ShowTabs } from '@/app/(app)/shows/_components/ShowTabs';
 import { getShowDetailSection } from './[id]/show-detail-sections';

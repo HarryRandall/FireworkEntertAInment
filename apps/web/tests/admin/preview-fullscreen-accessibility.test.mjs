@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('fullscreen helper keeps legacy callers while offering a labelled modal contract', () => {
-  const helper = read('components/admin/previewFullscreen.tsx');
+  const helper = read('ui/admin/previewFullscreen.tsx');
 
   assert.match(helper, /PreviewFullscreenOptions = \{/);
   assert.match(helper, /dialogLabel\?: string/);
@@ -28,7 +28,7 @@ test('fullscreen helper keeps legacy callers while offering a labelled modal con
 });
 
 test('fullscreen helper traps and restores focus while isolating background branches', () => {
-  const helper = read('components/admin/previewFullscreen.tsx');
+  const helper = read('ui/admin/previewFullscreen.tsx');
 
   assert.match(helper, /document\.activeElement instanceof HTMLElement/);
   assert.match(helper, /container\.focus\(\{ preventScroll: true \}\)/);
@@ -44,7 +44,7 @@ test('fullscreen helper traps and restores focus while isolating background bran
 });
 
 test('fullscreen helper retains Escape, scroll lock and backdrop exit', () => {
-  const helper = read('components/admin/previewFullscreen.tsx');
+  const helper = read('ui/admin/previewFullscreen.tsx');
 
   assert.match(helper, /event\.key === 'Escape'/);
   assert.match(helper, /document\.body\.style\.overflow = 'hidden'/);
@@ -54,8 +54,8 @@ test('fullscreen helper retains Escape, scroll lock and backdrop exit', () => {
 
 test('clean replay consumers opt into the shared fullscreen dialog contract', () => {
   const consumers = [
-    'components/replay/FireworkReplayViewer.tsx',
-    'components/replay/TemplateReplayPreview.tsx',
+    'ui/replay/FireworkReplayViewer.tsx',
+    'ui/replay/TemplateReplayPreview.tsx',
     'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
     'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
     'app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx',

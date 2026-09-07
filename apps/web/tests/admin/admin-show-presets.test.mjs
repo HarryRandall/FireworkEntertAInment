@@ -24,7 +24,7 @@ test('admin show preset routes and navigation are wired without old header bands
     assert.doesNotMatch(read(path), /AppPageHeader|AdminRouteHeaderSkeleton/);
   }
 
-  const shell = read('components/shell/AdminShell.tsx');
+  const shell = read('ui/shell/AdminShell.tsx');
   const actions = read('app/(admin)/admin/show-presets/_components/ShowPresetActions.tsx');
   assert.match(shell, /href: '\/admin\/show-presets'/);
   assert.match(shell, /label: 'Explore shows'/);
@@ -70,7 +70,7 @@ test('public reads only use published presets while admin helpers include drafts
   const actions = read('app/actions/admin-show-presets.ts');
   const index = read('lib/admin/index.ts');
   const homePage = read('app/(app)/home/page.tsx');
-  const homeDiscovery = read('components/home/HomeDiscoverySections.tsx');
+  const homeDiscovery = read('ui/home/HomeDiscoverySections.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
   const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
 
@@ -141,7 +141,7 @@ test('public reads only use published presets while admin helpers include drafts
 
 test('cue parsing, previews, clone and import paths support catalogue-item cues', () => {
   const mappers = read('lib/admin/mappers.ts');
-  const replayCues = read('components/explore/template-replay-cues.ts');
+  const replayCues = read('ui/explore/template-replay-cues.ts');
   const cloneAction = read('app/actions/show-templates.ts');
   const presetActions = read('app/actions/admin-show-presets.ts');
   const seedMigration = read(

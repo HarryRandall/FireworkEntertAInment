@@ -12,5 +12,6 @@ function read(path) {
 test('local worktree checkouts stay outside repository-wide tooling', () => {
   assert.match(read('../../.gitignore'), /^\.worktrees\/$/m);
   assert.match(read('../../.prettierignore'), /^\.worktrees$/m);
-  assert.match(read('eslint.config.mjs'), /'\.worktrees\/\*\*'/);
+  const workspace = JSON.parse(read('../../package.json'));
+  assert.equal(workspace.scripts.lint, 'pnpm --filter @showcrafter/web lint');
 });

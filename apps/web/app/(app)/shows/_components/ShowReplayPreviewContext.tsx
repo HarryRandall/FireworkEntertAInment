@@ -36,7 +36,7 @@ async function getShowReplayPreviewCues(showId: string): Promise<ReplayCue[]> {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/components/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => null },
 );
 

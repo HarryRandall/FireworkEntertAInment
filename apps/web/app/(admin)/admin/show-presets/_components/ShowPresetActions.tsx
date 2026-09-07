@@ -9,11 +9,11 @@ import {
   importAllGeneratedShowsAsPresets,
   importGeneratedShowAsPreset,
 } from '@/app/actions/admin-show-presets';
-import { Button } from '@/components/design-system/Button';
-import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
-import { SelectField } from '@/components/design-system/SelectField';
-import { toast } from '@/components/design-system/toast';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input } from '@/ui/patterns/Input';
+import { SelectField } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 import type { AdminShowPresetImportShow } from '@/lib/admin.types';
 import type { CoverBackfillPreset } from '@/lib/admin/cover-posters.server';
 import { formatBudget, formatDuration } from '@/lib/show-domain';

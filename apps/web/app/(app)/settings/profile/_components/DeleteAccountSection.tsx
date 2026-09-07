@@ -5,10 +5,10 @@
 import { useActionState, useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { deleteAccountAction, type DeleteAccountState } from '@/app/actions/account';
-import { Button } from '@/components/design-system/Button';
-import { Input } from '@/components/design-system/Input';
-import { Field, FieldHint, FieldLabel } from '@/components/design-system/Field';
-import { InlineAlert } from '@/components/design-system/Feedback';
+import { Button } from '@/ui/patterns/Button';
+import { Input } from '@/ui/patterns/Input';
+import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/ui/primitives/dialog';
 
 const initialState: DeleteAccountState = { status: 'idle' };
 const CONFIRM_PHRASE = 'delete my account';

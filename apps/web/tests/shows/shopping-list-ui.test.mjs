@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-const source = readFileSync(join(process.cwd(), 'components/shows/ShoppingListTable.tsx'), 'utf8');
+const source = readFileSync(join(process.cwd(), 'ui/shows/ShoppingListTable.tsx'), 'utf8');
 
 test('shopping-list sorting exposes state and explicit button behaviour', () => {
   assert.match(source, /type="button"/);

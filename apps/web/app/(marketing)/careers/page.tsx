@@ -1,7 +1,7 @@
 /** Honest careers placeholder while no verified roles or application channel are published. */
 
 import type { Metadata } from 'next';
-import { ComingSoon } from '@/components/marketing/ComingSoon';
+import { ComingSoon } from '@/ui/marketing/ComingSoon';
 
 export const metadata: Metadata = {
   title: 'Careers · ShowCrafter',

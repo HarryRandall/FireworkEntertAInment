@@ -1,4 +1,4 @@
-import { Card } from '@/components/design-system/Card';
+import { Card } from '@/ui/patterns/Card';
 import type { ImportOutputLike, ImportReviewAttempt } from '@/lib/import-review';
 
 export function ImportAdvancedData({
