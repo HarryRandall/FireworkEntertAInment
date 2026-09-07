@@ -35,12 +35,3 @@ test('migration normalises effects and fireworks while preserving colour', () =>
     assert.match(migration, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 });
-
-test('legacy renderer seed is retired in favour of catalogue migrations', () => {
-  const seed = read('../../supabase/seed-firework-designs.sql');
-
-  assert.match(seed, /Deprecated compatibility stub/);
-  assert.match(seed, /lib\/fireworks\/effect-catalogue\.ts/);
-  assert.doesNotMatch(seed, /insert into public\.fireworks/);
-  assert.doesNotMatch(seed, /'fib-[^']+'/);
-});

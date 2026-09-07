@@ -207,7 +207,7 @@ test('renderer effects drive shell and trail colours from the selected design', 
 });
 
 test('QA seed creates pattern, colour, and replay test shows for every user', () => {
-  const seed = read('../../supabase/seed-qa-test-shows.sql');
+  const seed = read('../../supabase/seeds/renderer-qa.sql');
 
   assert.match(seed, /for demo_user in/);
   assert.match(seed, /from auth\.users/);

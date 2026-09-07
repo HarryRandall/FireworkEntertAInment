@@ -30,6 +30,16 @@ and `docs`, which are repository folders. App scripts, including the audit and
 ESLint rules, live together in `apps/web/scripts`. Project-specific agent
 workflows live in `.agents/skills`.
 
+Both Python services are active application dependencies. Music upload and
+generation call `ANALYSER_URL` through `lib/show-analysis-runner.server.ts`;
+video imports call `FIREWORK_IMPORT_URL` through
+`lib/firework-import-trigger.server.ts`. Their Modal entry points, local worker,
+browser smoke check and regression fixtures support those paths.
+
+Keep Supabase migration history, recovery email templates and SQL contract
+tests. Optional renderer QA data lives in `supabase/seeds/renderer-qa.sql`;
+it is a manual development fixture, not a production seed step.
+
 Dependencies flow from routes to features to reusable patterns to UI
 primitives. Shared components must not import a route's implementation. Move a
 feature to its domain when a second route needs it. Client components may import

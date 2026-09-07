@@ -38,7 +38,7 @@ begin
   end if;
 
   if not exists (select 1 from auth.users) then
-    raise exception 'No auth user found. Create/sign in a user before running seed-qa-test-shows.sql.';
+    raise exception 'No auth user found. Create/sign in a user before running seeds/renderer-qa.sql.';
   end if;
 
   for demo_user in
