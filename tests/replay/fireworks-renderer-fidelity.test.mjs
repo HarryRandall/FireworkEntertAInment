@@ -151,8 +151,8 @@ test('firework audio separates launch and burst reports', () => {
 
 test('admin controls hide aerial-only fields for ground emitters', () => {
   const controls = read('components/admin/FireworkRenderControls.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const shell = read('components/admin/FireworkEditorShell.tsx');
 
   for (const editor of [effectEditor, fireworkEditor]) {
@@ -1524,7 +1524,7 @@ test('crackle customisation is schema-driven, editor-wired, and timestep-normali
 });
 
 test('effect editor canonicalises render defaults for shared controls', () => {
-  const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const controls = read('components/admin/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
 
@@ -1683,8 +1683,8 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   const particle = read('lib/fireworks/Particle.ts');
   const shaders = read('lib/fireworks/shaders.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
-  const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const controls = read('components/admin/FireworkRenderControls.tsx');
   const canvas = read('components/replay/FireworkReplayCanvas.tsx');
   const tuning = read('lib/fireworks/render-tuning.ts');

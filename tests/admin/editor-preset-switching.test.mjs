@@ -12,8 +12,8 @@ function read(path) {
 }
 
 test('selecting a named style default clears that kind inline overrides', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
 
   for (const source of [fireworkEditor, effectEditor]) {
     assert.match(
@@ -29,8 +29,8 @@ test('selecting a named style default clears that kind inline overrides', () => 
 });
 
 test('Save new default copies settings and clears transient selection in one click', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
 
   assert.match(fireworkEditor, /async function persistFirework\(/);
   assert.match(fireworkEditor, /function copySelectedStyleDefaultsIntoOverrides/);
@@ -89,8 +89,8 @@ test('Save new default copies settings and clears transient selection in one cli
 
 test('writing a top-level burstTrail clears only the inherited outer layer trail', () => {
   const styleDefaults = read('lib/fireworks/style-defaults.ts');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const controls = read('components/admin/FireworkRenderControls.tsx');
 
   assert.match(
@@ -111,7 +111,7 @@ test('writing a top-level burstTrail clears only the inherited outer layer trail
 });
 
 test('changing the base effect resets style defaults and clears overrides', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
   assert.match(fireworkEditor, /function handleEffectIdChange\(nextEffectId: string\)/);
   assert.match(

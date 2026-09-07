@@ -18,9 +18,9 @@ import { FilterBar, type FilterConfig } from '@/components/design-system/FilterB
 import { TablePagination, TABLE_PAGE_SIZE } from '@/components/design-system/TablePagination';
 import { listImportJobs } from '@/lib/admin.server';
 import { importStageLabel, importStatusTone } from '@/lib/import-review';
-import { ImportJobCard } from './ImportJobCard';
-import { ImportJobRowActions } from './ImportJobRowActions';
-import { VideoImportUploadForm } from './VideoImportUploadForm';
+import { ImportJobCard } from '@/app/(admin)/admin/imports/_components/ImportJobCard';
+import { ImportJobRowActions } from '@/app/(admin)/admin/imports/_components/ImportJobRowActions';
+import { VideoImportUploadForm } from '@/app/(admin)/admin/imports/_components/VideoImportUploadForm';
 
 type SearchParams = { q?: string; status?: string; page?: string; view?: string };
 type PageProps = { searchParams: Promise<SearchParams> };

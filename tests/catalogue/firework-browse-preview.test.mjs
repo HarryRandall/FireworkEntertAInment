@@ -69,7 +69,7 @@ test('browse previews capture representative renderer frames into a bounded Blob
 
 test('missing persisted and session-only posters backfill sequentially through one canvas', () => {
   const source = read('components/catalogue/FireworkBrowsePreviewContext.tsx');
-  const effectsBrowser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
+  const effectsBrowser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
 
   assert.match(source, /const MAX_BACKGROUND_CAPTURE_ATTEMPTS = 2/);
   assert.match(source, /const BACKGROUND_CAPTURE_DELAY_MS = 350/);

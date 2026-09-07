@@ -128,7 +128,7 @@ test('generated import specs preserve native renderer designs and shot observati
 
 test('upload form bypasses Vercel Server Action body cap with direct-to-storage upload', () => {
   const form = readFileSync(
-    join(root, 'app/(admin)/admin/imports/VideoImportUploadForm.tsx'),
+    join(root, 'app/(admin)/admin/imports/_components/VideoImportUploadForm.tsx'),
     'utf8',
   );
   // Regression: Vercel caps Server Action request bodies at 4.5 MB, so the
@@ -167,7 +167,7 @@ test('upload form bypasses Vercel Server Action body cap with direct-to-storage 
 
 test('uploaded video failure recovery retains exactly one safe retry or discard path', () => {
   const form = readFileSync(
-    join(root, 'app/(admin)/admin/imports/VideoImportUploadForm.tsx'),
+    join(root, 'app/(admin)/admin/imports/_components/VideoImportUploadForm.tsx'),
     'utf8',
   );
   const discardStart = form.indexOf('async function discardUploadedVideo');
@@ -210,7 +210,7 @@ test("finalize action validates uploaded object lives under caller's admin folde
 test('import detail page polls for live progress without manual refresh', () => {
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   const watcher = readFileSync(
-    join(root, 'app/(admin)/admin/imports/[id]/ImportProgressWatcher.tsx'),
+    join(root, 'app/(admin)/admin/imports/[id]/_components/ImportProgressWatcher.tsx'),
     'utf8',
   );
   const statusRoute = readFileSync(
@@ -263,11 +263,11 @@ test('selected retained engine evidence uses a bounded private URL and accurate 
   const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   const preview = readFileSync(
-    join(root, 'app/(admin)/admin/imports/[id]/FireworkImportPreview.tsx'),
+    join(root, 'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx'),
     'utf8',
   );
   const validationPanel = readFileSync(
-    join(root, 'app/(admin)/admin/imports/[id]/ImportEngineValidationPanel.tsx'),
+    join(root, 'app/(admin)/admin/imports/[id]/_components/ImportEngineValidationPanel.tsx'),
     'utf8',
   );
 

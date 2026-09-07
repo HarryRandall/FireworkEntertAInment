@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { ShowDetailChrome } from './ShowDetailChrome';
+import { ShowDetailChrome } from '@/app/(app)/shows/[id]/_components/ShowDetailChrome';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getShowBySlug } from '@/lib/shows.server';
 

@@ -12,11 +12,11 @@ test('settings exposes modern account sections', () => {
   const navigation = readFileSync(join(root, 'components/shell/app-shell-navigation.ts'), 'utf8');
   const profile = readFileSync(join(root, 'app/(app)/settings/profile/page.tsx'), 'utf8');
   const personalDetails = readFileSync(
-    join(root, 'app/(app)/settings/profile/PersonalDetailsForm.tsx'),
+    join(root, 'app/(app)/settings/profile/_components/PersonalDetailsForm.tsx'),
     'utf8',
   );
   const notifications = readFileSync(
-    join(root, 'app/(app)/settings/notifications/NotificationPreferences.tsx'),
+    join(root, 'app/(app)/settings/notifications/_components/NotificationPreferences.tsx'),
     'utf8',
   );
   for (const label of ['Personal details', 'Notifications', 'Billing', 'Security']) {

@@ -1,52 +1,41 @@
 'use client';
 
+import { ProfileMenu, type ProfileSummary } from '@/components/shell/ProfileMenu';
+import { SidebarBrand } from '@/components/shell/SidebarBrand';
+
 /**
  * AppShell - authenticated workspace chrome built on the shadcn sidebar
  * primitive, with ShowCrafter route permissions and persisted collapse state.
  */
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useTransition,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
-import {
-  ArrowLeft,
-  ChevronRight,
-  CircleUser,
-  CreditCard,
-  Laptop,
-  LogOut,
-  MessageSquareDot,
-  Moon,
-  PlusCircle,
-  Settings,
-  Sun,
-  type LucideIcon,
-} from 'lucide-react';
-import { updateProfileAction } from '@/app/actions/platform-admin';
-import { BrandLockup } from '@/components/design-system/BrandMark';
-import { ThemePreferenceSync } from '@/components/theme/ThemePreferenceSync';
-import { ImpersonationBanner } from '@/components/shell/ImpersonationBanner';
-import { useSidebarPreference } from '@/components/shell/useSidebarPreference';
-import { GeneratedAvatar } from '@/components/design-system/GeneratedAvatar';
 import { Skeleton } from '@/components/design-system/Feedback';
+import { SkipLink } from '@/components/design-system/SkipLink';
 import { toast } from '@/components/design-system/toast';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  APP_LINKS,
+  getAppBreadcrumbs,
+  getPendingRouteKind,
+  isActivePath,
+  isHomePath,
+  normaliseAppPath,
+  SETTINGS_LINKS,
+  type AppNavLink,
+  type PendingRouteKind,
+  type ShellBreadcrumb,
+} from '@/components/shell/app-shell-navigation';
+import { ImpersonationBanner } from '@/components/shell/ImpersonationBanner';
+import { isPlainLeftClick } from '@/components/shell/shell-utils';
+import { signOutCurrentSession } from '@/components/shell/sign-out.client';
+import { useSidebarPreference } from '@/components/shell/useSidebarPreference';
+import {
+  clearCachedAiUsage,
+  isWorkspaceSummaryFresh,
+  readCachedWorkspaceSummary,
+  writeCachedWorkspaceSummary,
+  type CachedWorkspaceSummary,
+  type SidebarAiUsage,
+} from '@/components/shell/workspace-summary-cache.client';
+import { PaletteStrip } from '@/components/shows/ShowSummaryCards';
+import { ThemePreferenceSync } from '@/components/theme/ThemePreferenceSync';
 import {
   Sidebar,
   SidebarContent,
@@ -65,39 +54,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { PaletteStrip } from '@/components/shows/ShowSummaryCards';
-import { SkipLink } from '@/components/design-system/SkipLink';
-import {
-  isPlainLeftClick,
-  isThemePreference,
-  SIDEBAR_BRAND_BUTTON_CLASS,
-} from '@/components/shell/shell-utils';
-import { signOutCurrentSession } from '@/components/shell/sign-out.client';
-import {
-  APP_LINKS,
-  SETTINGS_LINKS,
-  getAppBreadcrumbs,
-  getPendingRouteKind,
-  isActivePath,
-  isHomePath,
-  normaliseAppPath,
-  type AppNavLink,
-  type PendingRouteKind,
-  type ShellBreadcrumb,
-} from '@/components/shell/app-shell-navigation';
-import {
-  clearCachedAiUsage,
-  isWorkspaceSummaryFresh,
-  readCachedWorkspaceSummary,
-  writeCachedWorkspaceSummary,
-  type CachedWorkspaceSummary,
-  type SidebarAiUsage,
-} from '@/components/shell/workspace-summary-cache.client';
-import { cn } from '@/lib/utils';
-import type { CurrentProfile, ThemePreference } from '@/lib/admin.types';
+import type { CurrentProfile } from '@/lib/admin.types';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';
 import type { ShowSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
+import { cn } from '@/lib/utils';
+import { ArrowLeft, ChevronRight, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useLayoutEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 type AppShellProps = {
   children: ReactNode;
@@ -107,20 +71,6 @@ type AppShellProps = {
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
 };
-
-type ProfileSummary = {
-  displayName: string;
-  secondaryLine: string;
-};
-
-type ThemeMenuOption = {
-  value: ThemePreference;
-  label: string;
-  icon: LucideIcon;
-};
-
-const SIDEBAR_HEADER_TRIGGER_CLASS =
-  'h-10 w-10 shrink-0 self-center cursor-pointer rounded-md bg-transparent text-sidebar-accent-foreground opacity-100 shadow-none transition-[opacity,background-color,color] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-none active:translate-y-0 active:not-aria-[haspopup]:translate-y-0 dark:hover:bg-sidebar-accent [&_svg]:size-5 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:left-1/2 group-data-[collapsible=icon]:right-auto group-data-[collapsible=icon]:z-10 group-data-[collapsible=icon]:-translate-x-1/2 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-accent-foreground group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:group-hover/brand:pointer-events-auto group-data-[collapsible=icon]:group-hover/brand:opacity-100 group-data-[collapsible=icon]:focus-visible:pointer-events-auto group-data-[collapsible=icon]:focus-visible:opacity-100';
 const SIDEBAR_NAV_BADGE_CLASS =
   'right-2 h-5 min-w-7 rounded-full border bg-transparent px-2 text-[11px] shadow-none transition-colors';
 const SIDEBAR_NAV_NEW_BADGE_CLASS =
@@ -128,50 +78,9 @@ const SIDEBAR_NAV_NEW_BADGE_CLASS =
 const SIDEBAR_NAV_COUNT_BADGE_CLASS =
   'border-hl text-hl-ink peer-hover/menu-button:border-hl peer-hover/menu-button:text-hl-ink peer-data-active/menu-button:border-hl peer-data-active/menu-button:text-hl-ink';
 
-const PROFILE_THEME_OPTIONS: ThemeMenuOption[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Laptop },
-];
-
 // Safe pre-paint effect: layout effect on the client, plain effect during SSR
 // so React doesn't warn about useLayoutEffect on the server.
 const useHydrationLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-function SidebarBrand({ onNavigate }: { onNavigate: (href: string) => void }) {
-  const { isMobile, setOpenMobile } = useSidebar();
-
-  return (
-    <div className="group/brand relative flex min-w-0 items-center gap-1 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:justify-center">
-      <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            asChild
-            size="lg"
-            tooltip="ShowCrafter"
-            className={SIDEBAR_BRAND_BUTTON_CLASS}
-          >
-            <Link
-              href="/home"
-              prefetch={false}
-              onClick={(event) => {
-                if (isPlainLeftClick(event)) onNavigate('/home');
-                if (isMobile) setOpenMobile(false);
-              }}
-            >
-              <BrandLockup
-                className="w-full gap-0 text-lg group-data-[collapsible=icon]:justify-center"
-                markClassName="group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:translate-y-0"
-                labelClassName="group-data-[collapsible=icon]:hidden"
-              />
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-      <SidebarTrigger className={SIDEBAR_HEADER_TRIGGER_CLASS} />
-    </div>
-  );
-}
 
 function SidebarNavItem({
   link,
@@ -310,180 +219,6 @@ function SidebarRecentShows({
   );
 }
 
-function ProfileMenuButton({
-  profile,
-  onSignOut,
-}: {
-  profile: ProfileSummary;
-  onSignOut: () => Promise<void>;
-}) {
-  const { isMobile } = useSidebar();
-  const closeFromPointerOutsideRef = useRef(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
-
-  const runSignOut = async () => {
-    if (isSigningOut) return;
-    setIsSigningOut(true);
-    try {
-      await onSignOut();
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
-              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{profile.displayName}</span>
-                {profile.secondaryLine ? (
-                  <span className="text-muted-foreground truncate text-xs">
-                    {profile.secondaryLine}
-                  </span>
-                ) : null}
-              </div>
-              <Settings className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? 'bottom' : 'right'}
-            align="end"
-            sideOffset={4}
-            onPointerDownOutside={() => {
-              closeFromPointerOutsideRef.current = true;
-            }}
-            onCloseAutoFocus={(event) => {
-              if (!closeFromPointerOutsideRef.current) return;
-
-              event.preventDefault();
-              closeFromPointerOutsideRef.current = false;
-            }}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <GeneratedAvatar name={profile.displayName} email={profile.secondaryLine} />
-                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{profile.displayName}</span>
-                  {profile.secondaryLine ? (
-                    <span className="text-muted-foreground truncate text-xs">
-                      {profile.secondaryLine}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/settings/profile" prefetch={false}>
-                  <CircleUser />
-                  Account
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings/billing" prefetch={false}>
-                  <CreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings/notifications" prefetch={false}>
-                  <MessageSquareDot />
-                  Notifications
-                </Link>
-              </DropdownMenuItem>
-              <ProfileThemeMenu />
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={isSigningOut}
-              aria-busy={isSigningOut}
-              onSelect={(event) => {
-                event.preventDefault();
-                void runSignOut();
-              }}
-            >
-              <LogOut />
-              {isSigningOut ? 'Signing out...' : 'Log out'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  );
-}
-
-function ProfileThemeMenu() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [, startTransition] = useTransition();
-
-  useEffect(() => setMounted(true), []);
-
-  const selectedTheme = mounted && isThemePreference(theme) ? theme : undefined;
-
-  function chooseTheme(value: ThemePreference) {
-    if (value === selectedTheme) return;
-
-    setTheme(value);
-    startTransition(async () => {
-      const result = await updateProfileAction({ themePreference: value });
-      if (!result.ok) toast.error(result.error);
-    });
-  }
-
-  return (
-    <div
-      className="group/theme focus-within:text-accent-foreground hover:text-accent-foreground relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm outline-hidden transition-colors select-none focus-within:bg-[color:var(--accent)] hover:bg-[color:var(--accent)]"
-      role="radiogroup"
-      aria-label="Interface theme"
-    >
-      <Sun className="size-4 shrink-0 opacity-90" />
-      <span className="min-w-0 flex-1 truncate">Theme</span>
-      <div className="bg-muted ml-auto flex shrink-0 items-center gap-0.5 rounded-full p-0.5">
-        {PROFILE_THEME_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const active = selectedTheme === option.value;
-
-          return (
-            <Tooltip key={option.value}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={`${option.label} theme`}
-                  onClick={() => chooseTheme(option.value)}
-                  className={cn(
-                    'focus-visible:ring-ring/50 flex h-6 w-6 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2',
-                    active
-                      ? 'bg-background text-foreground shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <Icon size={13} strokeWidth={2.2} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" collisionPadding={12}>
-                {option.label}
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function SidebarAiUsageMeter({
   usage,
   loading,
@@ -560,7 +295,7 @@ function AppSidebarFooter({
         <ImpersonationBanner impersonation={impersonation} collapsed={collapsed} />
       ) : null}
       {!inSettings ? <SidebarAiUsageMeter usage={aiUsage} loading={aiUsageLoading} /> : null}
-      <ProfileMenuButton profile={profile} onSignOut={onSignOut} />
+      <ProfileMenu profile={profile} onSignOut={onSignOut} />
     </SidebarFooter>
   );
 }
@@ -872,7 +607,7 @@ export function AppShell({
       <SkipLink />
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader>
-          <SidebarBrand onNavigate={handleNavigate} />
+          <SidebarBrand href="/home" onNavigate={handleNavigate} />
           {!inSettings ? (
             <SidebarPrimaryAction
               active={isActivePath(effectivePath, '/shows/new')}

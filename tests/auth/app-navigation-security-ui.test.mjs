@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('show tabs identify the current page and preserve keyboard focus', () => {
-  const tabs = read('app/(app)/shows/[id]/ShowTabs.tsx');
+  const tabs = read('app/(app)/shows/[id]/_components/ShowTabs.tsx');
 
   assert.match(tabs, /aria-label="Show sections"/);
   assert.match(tabs, /aria-current=\{active \? 'page' : undefined\}/);
@@ -31,8 +31,8 @@ test('show guide copy stays planner-neutral and operator-aware', () => {
 });
 
 test('security activity fails closed and formats semantic times on the client', () => {
-  const activity = read('app/(app)/settings/security/RecentSecurityActivity.tsx');
-  const localTime = read('app/(app)/settings/security/LocalSecurityEventTime.tsx');
+  const activity = read('app/(app)/settings/security/_components/RecentSecurityActivity.tsx');
+  const localTime = read('app/(app)/settings/security/_components/LocalSecurityEventTime.tsx');
 
   assert.match(activity, /error,[\s\S]*supabase\.auth\.getUser/);
   assert.match(activity, /if \(error\)[\s\S]*throw new Error/);

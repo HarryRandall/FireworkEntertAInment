@@ -11,7 +11,10 @@ import type { ShowTemplate } from '@/lib/admin.types';
 import { parseStoredAnalyserResult } from '@/lib/show-analysis-validation';
 import { formatBudget } from '@/lib/show-domain';
 import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows.server';
-import { KioskGeneratingShow, RegenerateAssortmentShow } from './KioskShowActions';
+import {
+  KioskGeneratingShow,
+  RegenerateAssortmentShow,
+} from '@/app/(kiosk)/a/[token]/show/[showToken]/_components/KioskShowActions';
 
 export const dynamic = 'force-dynamic';
 

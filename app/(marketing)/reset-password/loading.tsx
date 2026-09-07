@@ -1,4 +1,4 @@
-import { ResetPasswordShell } from './ResetPasswordShell';
+import { ResetPasswordShell } from '@/app/(marketing)/reset-password/_components/ResetPasswordShell';
 
 export default function ResetPasswordLoading() {
   return (

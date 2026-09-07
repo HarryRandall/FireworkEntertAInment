@@ -9,11 +9,14 @@ const root = process.cwd();
 const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
 const page = readFileSync(join(root, 'app/(admin)/admin/imports/page.tsx'), 'utf8');
 const loading = readFileSync(join(root, 'app/(admin)/admin/imports/loading.tsx'), 'utf8');
-const card = readFileSync(join(root, 'app/(admin)/admin/imports/ImportJobCard.tsx'), 'utf8');
+const card = readFileSync(
+  join(root, 'app/(admin)/admin/imports/_components/ImportJobCard.tsx'),
+  'utf8',
+);
 const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
 const importsServer = readFileSync(join(root, 'lib/admin/imports.server.ts'), 'utf8');
 const rowActions = readFileSync(
-  join(root, 'app/(admin)/admin/imports/ImportJobRowActions.tsx'),
+  join(root, 'app/(admin)/admin/imports/_components/ImportJobRowActions.tsx'),
   'utf8',
 );
 

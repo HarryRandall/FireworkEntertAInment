@@ -11,7 +11,7 @@ function read(path) {
 
 test('show creation keeps file focus visible without forcing mobile keyboard focus', () => {
   const upload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
-  const wizard = read('app/(app)/shows/new/NewShowPageClient.tsx');
+  const wizard = read('app/(app)/shows/new/_components/NewShowPageClient.tsx');
 
   assert.match(upload, /has-\[input:focus-visible\]:ring-3/);
   assert.match(upload, /has-\[input:focus-visible\]:ring-offset-2/);
@@ -19,7 +19,7 @@ test('show creation keeps file focus visible without forcing mobile keyboard foc
 });
 
 test('privileged user row actions lock and report pending work', () => {
-  const actions = read('app/(admin)/admin/users/UserRowActions.tsx');
+  const actions = read('app/(admin)/admin/users/_components/UserRowActions.tsx');
   const menu = read('components/design-system/RowActionsMenu.tsx');
 
   assert.match(actions, /const \[isPending, startTransition\] = useTransition\(\)/);

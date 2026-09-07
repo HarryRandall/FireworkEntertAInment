@@ -13,7 +13,7 @@ function read(path) {
 
 test('show detail chrome keeps an accessible heading without visible title chrome', () => {
   const layout = read('app/(app)/shows/[id]/layout.tsx');
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
 
   assert.match(layout, /showTitle=\{show\.title\}/);
   assert.match(chrome, /<h1[^>]*className="sr-only"/);
@@ -31,8 +31,8 @@ test('show detail chrome keeps an accessible heading without visible title chrom
 });
 
 test('client navigation moves focus to the updated show heading', () => {
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
-  const tabs = read('app/(app)/shows/[id]/ShowTabs.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
+  const tabs = read('app/(app)/shows/[id]/_components/ShowTabs.tsx');
 
   assert.match(chrome, /const routeKey = `\$\{showSlug\}:\$\{segment \?\? section\.segment\}/);
   assert.match(chrome, /previousRouteKeyRef\.current === routeKey/);
@@ -45,7 +45,7 @@ test('client navigation moves focus to the updated show heading', () => {
 });
 
 test('Refine opens locally on Preview without a route round trip', () => {
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   const viewer = read('components/replay/FireworkReplayViewer.tsx');
   const events = read('lib/show-detail-events.ts');
 
@@ -80,7 +80,7 @@ test('show loading boundaries preserve real route chrome without redrawing it', 
 });
 
 test('show loading content matches the active section', () => {
-  const skeleton = read('app/(app)/shows/[id]/ShowDetailContentSkeleton.tsx');
+  const skeleton = read('app/(app)/shows/[id]/_components/ShowDetailContentSkeleton.tsx');
 
   assert.match(skeleton, /case 'shopping-list':[\s\S]*?<ShoppingListSkeleton \/>/);
   assert.match(skeleton, /case 'show-guide':[\s\S]*?<ListSkeleton rows=\{8\} \/>/);
@@ -89,7 +89,7 @@ test('show loading content matches the active section', () => {
 });
 
 test('generation and not-found routes keep their dedicated headings', () => {
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   const notFound = read('app/(app)/shows/[id]/not-found.tsx');
   const generating = read('app/(app)/shows/[id]/generating/page.tsx');
 

@@ -21,7 +21,7 @@ import {
 } from '@/lib/admin.server';
 import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
 import type { ShowTemplate } from '@/lib/admin.types';
-import { CloneTemplateSubmitButton } from './CloneTemplateSubmitButton';
+import { CloneTemplateSubmitButton } from '@/app/(browse)/library/[id]/_components/CloneTemplateSubmitButton';
 
 type PageProps = {
   params: Promise<{ id: string }>;

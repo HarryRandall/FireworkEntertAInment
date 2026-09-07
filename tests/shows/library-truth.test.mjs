@@ -16,7 +16,7 @@ test('Explore presents published templates as planning starting points', () => {
   const loading = read('app/(browse)/library/loading.tsx');
   const detail = read('app/(browse)/library/[id]/page.tsx');
   const detailLoading = read('app/(browse)/library/[id]/loading.tsx');
-  const cloneSubmit = read('app/(browse)/library/[id]/CloneTemplateSubmitButton.tsx');
+  const cloneSubmit = read('app/(browse)/library/[id]/_components/CloneTemplateSubmitButton.tsx');
 
   for (const source of [page, loading]) {
     assert.match(source, /Preview published show templates/);

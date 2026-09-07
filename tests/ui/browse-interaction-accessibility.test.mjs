@@ -50,7 +50,7 @@ test('Explore cards expose their visible facts and retain posters through previe
 
 test('template cloning reports and locks its pending submission', () => {
   const page = read('app/(browse)/library/[id]/page.tsx');
-  const submit = read('app/(browse)/library/[id]/CloneTemplateSubmitButton.tsx');
+  const submit = read('app/(browse)/library/[id]/_components/CloneTemplateSubmitButton.tsx');
 
   assert.match(page, /<CloneTemplateSubmitButton \/>/);
   assert.match(submit, /useFormStatus\(\)/);

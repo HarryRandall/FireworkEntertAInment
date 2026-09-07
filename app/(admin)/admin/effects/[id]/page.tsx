@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { getAdminEffectById } from '@/lib/admin.server';
-import { EffectEditor } from './EffectEditor';
+import { EffectEditor } from '@/app/(admin)/admin/effects/[id]/_components/EffectEditor';
 
 // Effect save/restore actions write full model_json payloads through RLS checks, so
 // they need the same longer budget as catalogue reads/uploads instead of the platform

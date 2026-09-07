@@ -7,25 +7,18 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 
-for (const path of ['components/shell/AppShell.tsx', 'components/admin/AdminShell.tsx']) {
+for (const path of [
+  'components/shell/AppShell.tsx',
+  'components/shell/AdminShell.tsx',
+  'components/shell/MyStoreShell.tsx',
+]) {
   test(`${path} persists sidebar collapse and scrolls inside the content panel`, () => {
     const source = readFileSync(join(root, path), 'utf8');
     assert.match(source, /<SidebarProvider/);
     assert.match(source, /useSidebarPreference/);
     assert.match(source, /open=\{!sidebarCollapsed\}/);
     assert.match(source, /onOpenChange=\{\(open\) => setSidebarCollapsedPreference\(!open\)\}/);
-    assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
-    assert.match(source, /hover:bg-sidebar-accent/);
-    assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
-    assert.match(source, /group-data-\[collapsible=icon\]:group-hover\/brand:opacity-100/);
-    assert.match(source, /group\/brand relative flex/);
-    assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
-    assert.match(source, /h-10 w-10 shrink-0 self-center/);
-    assert.match(source, /group-data-\[collapsible=icon\]:left-1\/2/);
-    assert.match(source, /group-data-\[collapsible=icon\]:-translate-x-1\/2/);
-    assert.match(source, /className="w-full gap-0 text-lg/);
-    assert.match(source, /<SidebarTrigger className=\{SIDEBAR_HEADER_TRIGGER_CLASS\} \/>/);
-    assert.doesNotMatch(source, /<SidebarTrigger className="-ml-1" \/>/);
+    assert.match(source, /<SidebarBrand/);
     assert.match(source, /overflow-hidden/);
     assert.match(source, /overflow-y-auto/);
     assert.doesNotMatch(source, /<SidebarRail/);
@@ -33,6 +26,23 @@ for (const path of ['components/shell/AppShell.tsx', 'components/admin/AdminShel
     assert.doesNotMatch(source, /window\.localStorage/);
   });
 }
+
+test('shared brand control preserves collapse, hover and mobile behaviour', () => {
+  const source = readFileSync(join(root, 'components/shell/SidebarBrand.tsx'), 'utf8');
+  assert.match(source, /SIDEBAR_HEADER_TRIGGER_CLASS/);
+  assert.match(source, /hover:bg-sidebar-accent/);
+  assert.match(source, /group-data-\[collapsible=icon\]:opacity-0/);
+  assert.match(source, /group-data-\[collapsible=icon\]:group-hover\/brand:opacity-100/);
+  assert.match(source, /group\/brand relative flex/);
+  assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
+  assert.match(source, /h-10 w-10 shrink-0 self-center/);
+  assert.match(source, /group-data-\[collapsible=icon\]:left-1\/2/);
+  assert.match(source, /group-data-\[collapsible=icon\]:-translate-x-1\/2/);
+  assert.match(source, /className="w-full gap-0 text-lg/);
+  assert.match(source, /<SidebarTrigger className=\{SIDEBAR_HEADER_TRIGGER_CLASS\} \/>/);
+  assert.doesNotMatch(source, /<SidebarTrigger className="-ml-1" \/>/);
+  assert.match(source, /setOpenMobile\(false\)/);
+});
 
 test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
   const source = readFileSync(join(root, 'components/shell/shell-utils.ts'), 'utf8');
@@ -47,7 +57,7 @@ test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
 
 test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs', () => {
   const appSource = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-  const adminSource = readFileSync(join(root, 'components/admin/AdminShell.tsx'), 'utf8');
+  const adminSource = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
   const cacheSource = readFileSync(
     join(root, 'components/shell/workspace-summary-cache.client.ts'),
     'utf8',
@@ -85,11 +95,10 @@ test('app shell keeps workspace navigation, summary fetch, and route breadcrumbs
   assert.match(adminSource, /aria-label="Breadcrumb"/);
 });
 
-test('app profile theme picker stays compact and border-only', () => {
+test('shared profile theme picker stays compact', () => {
   const source = readFileSync(join(root, 'components/shell/AppShell.tsx'), 'utf8');
-  const start = source.indexOf('function ProfileThemeMenu()');
-  const end = source.indexOf('function SidebarAiUsageMeter', start);
-  const themeBlock = source.slice(start, end);
+  const profileMenu = readFileSync(join(root, 'components/shell/ProfileMenu.tsx'), 'utf8');
+  const themeBlock = profileMenu.slice(profileMenu.indexOf('function ProfileThemeMenu()'));
 
   assert.match(themeBlock, /aria-label="Interface theme"/);
   assert.match(themeBlock, /hover:bg-\[color:var\(--accent\)\]/);
@@ -104,8 +113,8 @@ test('app profile theme picker stays compact and border-only', () => {
   assert.doesNotMatch(themeBlock, /ring-border\/80/);
   assert.doesNotMatch(themeBlock, /w-\[6\.75rem\]/);
 
-  assert.match(source, /<ProfileMenuButton profile=\{profile\} onSignOut=\{onSignOut\} \/>/);
-  assert.doesNotMatch(source, /!\s*inSettings\s*\? <ProfileMenuButton/);
+  assert.match(source, /<ProfileMenu profile=\{profile\} onSignOut=\{onSignOut\} \/>/);
+  assert.doesNotMatch(source, /!\s*inSettings\s*\? <ProfileMenu/);
 });
 
 test('shared sidebar hook reads storage after hydration and writes the cookie fallback', () => {

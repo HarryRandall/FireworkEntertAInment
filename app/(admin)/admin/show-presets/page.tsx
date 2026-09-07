@@ -18,7 +18,10 @@ import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/Tab
 import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin.server';
 import { listShowPresetsForCoverBackfill } from '@/lib/admin/cover-posters.server';
 import { formatDuration, formatStableDateTime } from '@/lib/show-domain';
-import { DuplicateShowPresetButton, ShowPresetCreateActions } from './ShowPresetActions';
+import {
+  DuplicateShowPresetButton,
+  ShowPresetCreateActions,
+} from '@/app/(admin)/admin/show-presets/_components/ShowPresetActions';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;

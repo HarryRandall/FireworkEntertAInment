@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { getAdminStyleDefaultById } from '@/lib/admin.server';
-import { StyleDefaultEditor } from './StyleDefaultEditor';
+import { StyleDefaultEditor } from '@/app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor';
 
 type PageProps = { params: Promise<{ id: string }> };
 

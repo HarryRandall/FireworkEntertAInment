@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import { getMultishotById } from '@/lib/admin.server';
 import { listFireworkSpecifications } from '@/lib/shows.server';
-import { MultishotEditor } from './MultishotEditor';
+import { MultishotEditor } from '@/app/(admin)/admin/multishots/[id]/_components/MultishotEditor';
 
 type PageProps = {
   params: Promise<{ id: string }>;

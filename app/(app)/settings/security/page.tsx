@@ -3,8 +3,8 @@
 import { InlineAlert } from '@/components/design-system/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
-import { PasswordChangeForm } from './PasswordChangeForm';
-import { RecentSecurityActivity } from './RecentSecurityActivity';
+import { PasswordChangeForm } from '@/app/(app)/settings/security/_components/PasswordChangeForm';
+import { RecentSecurityActivity } from '@/app/(app)/settings/security/_components/RecentSecurityActivity';
 
 export default async function SecuritySettingsPage() {
   const impersonation = await getActiveImpersonation();

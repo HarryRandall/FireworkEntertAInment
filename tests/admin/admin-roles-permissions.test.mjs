@@ -11,16 +11,16 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   const rolesPagePath = join(root, 'app/(admin)/admin/roles/page.tsx');
   const rolesPage = readFileSync(rolesPagePath, 'utf8');
   const roleMatrix = readFileSync(
-    join(root, 'app/(admin)/admin/roles/RolePermissionMatrix.tsx'),
+    join(root, 'app/(admin)/admin/roles/_components/RolePermissionMatrix.tsx'),
     'utf8',
   );
   const roleToggle = readFileSync(
-    join(root, 'app/(admin)/admin/roles/RolePermissionToggle.tsx'),
+    join(root, 'app/(admin)/admin/roles/_components/RolePermissionToggle.tsx'),
     'utf8',
   );
   const roleAction = readFileSync(join(root, 'app/actions/admin-roles.ts'), 'utf8');
   const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
-  const shell = readFileSync(join(root, 'components/admin/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
   const migration = readFileSync(
     join(root, 'supabase/migrations/20260531091000_admin_role_permissions_modify.sql'),
     'utf8',
@@ -66,15 +66,15 @@ test('admin roles page edits role permission defaults with lockout guards', () =
 test('user detail renders permission exceptions instead of every permission row', () => {
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/users/[id]/page.tsx'), 'utf8');
   const addDialog = readFileSync(
-    join(root, 'app/(admin)/admin/users/[id]/AddPermissionOverrideDialog.tsx'),
+    join(root, 'app/(admin)/admin/users/[id]/_components/AddPermissionOverrideDialog.tsx'),
     'utf8',
   );
   const exceptionsPanel = readFileSync(
-    join(root, 'app/(admin)/admin/users/[id]/PermissionExceptionsPanel.tsx'),
+    join(root, 'app/(admin)/admin/users/[id]/_components/PermissionExceptionsPanel.tsx'),
     'utf8',
   );
   const exceptionRow = readFileSync(
-    join(root, 'app/(admin)/admin/users/[id]/PermissionExceptionRow.tsx'),
+    join(root, 'app/(admin)/admin/users/[id]/_components/PermissionExceptionRow.tsx'),
     'utf8',
   );
   const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');

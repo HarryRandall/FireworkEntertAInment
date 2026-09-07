@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('failed cue requests remain retryable and only successful responses are cached', () => {
-  const source = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
+  const source = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
   const start = source.indexOf('const confirmPreview = useCallback');
   const end = source.indexOf('const requestPreview = useCallback', start);
   const confirmPreview = source.slice(start, end);
@@ -30,7 +30,7 @@ test('failed cue requests remain retryable and only successful responses are cac
 });
 
 test('the fixed overlay is measured on demand instead of on every animation frame', () => {
-  const source = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
+  const source = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
   const start = source.indexOf('useEffect(() => {\n    const overlay = overlayRef.current;');
   const end = source.indexOf('\n\n  return (', start);
   const positioningEffect = source.slice(start, end);
@@ -46,8 +46,8 @@ test('the fixed overlay is measured on demand instead of on every animation fram
 });
 
 test('reduced motion and ready-gated poster behaviour remain intact', () => {
-  const provider = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
-  const card = read('app/(app)/shows/ShowReplayCoverCard.tsx');
+  const provider = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
+  const card = read('app/(app)/shows/_components/ShowReplayCoverCard.tsx');
 
   assert.match(provider, /if \(prefersReducedMotion\) return;/);
   assert.match(provider, /mountedPreview && !prefersReducedMotion/);

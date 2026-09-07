@@ -16,7 +16,7 @@ test('admin route group owns /admin outside the app shell', () => {
 });
 
 test('admin shell has its own navigation and back-to-app route', () => {
-  const shell = readFileSync(join(root, 'components/admin/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
   assert.match(shell, /Back to app/);
   assert.match(shell, /\/admin\/users/);
   assert.match(shell, /\/admin\/imports/);

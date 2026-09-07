@@ -13,8 +13,11 @@ import {
   formatManufacturerLabel,
   matchesManufacturerFilter,
 } from '@/lib/show-domain';
-import { CATALOGUE_PAGE_SIZE, CatalogueSkeleton } from './CatalogueSkeleton';
-import { CatalogueToolbar } from './CatalogueToolbar';
+import {
+  CATALOGUE_PAGE_SIZE,
+  CatalogueSkeleton,
+} from '@/app/(browse)/catalogue/_components/CatalogueSkeleton';
+import { CatalogueToolbar } from '@/app/(browse)/catalogue/_components/CatalogueToolbar';
 
 type PageProps = {
   searchParams?: Promise<{

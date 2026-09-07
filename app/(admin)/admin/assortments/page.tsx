@@ -16,7 +16,7 @@ import {
 } from '@/components/design-system/DataTable';
 import { formatBudget } from '@/lib/show-domain';
 import { listAssortments } from '@/lib/admin/assortments.server';
-import { NewAssortmentButton } from './NewAssortmentButton';
+import { NewAssortmentButton } from '@/components/assortments/NewAssortmentButton';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -28,7 +28,10 @@ export default async function AdminAssortmentsPage({ searchParams }: PageProps) 
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
-      <FilterBar searchPlaceholder="Search assortments…" action={<NewAssortmentButton />} />
+      <FilterBar
+        searchPlaceholder="Search assortments…"
+        action={<NewAssortmentButton destination="/admin/assortments" />}
+      />
       <Suspense
         fallback={
           <div className="min-h-0 flex-1 overflow-hidden">

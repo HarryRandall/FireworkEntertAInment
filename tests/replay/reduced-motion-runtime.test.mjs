@@ -22,7 +22,7 @@ test('the shared preference hook is reactive and conservative during server rend
 });
 
 test('hover and focus replay providers do not start WebGL previews for reduced motion', () => {
-  const showReplay = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
+  const showReplay = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
   const exploreReplay = read('components/explore/ExplorePreviewContext.tsx');
 
   for (const source of [showReplay, exploreReplay]) {

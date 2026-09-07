@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const chartPath = new URL(
-  '../../app/(admin)/admin/users/[id]/UserActivityChart.tsx',
+  '../../app/(admin)/admin/users/[id]/_components/UserActivityChart.tsx',
   import.meta.url,
 );
 const plotPath = new URL(
-  '../../app/(admin)/admin/users/[id]/UserActivityChartPlot.tsx',
+  '../../app/(admin)/admin/users/[id]/_components/UserActivityChartPlot.tsx',
   import.meta.url,
 );
 
@@ -18,7 +18,10 @@ test('the admin user activity plot is kept out of the initial route bundle', asy
   ]);
 
   assert.match(chart, /dynamic\(/);
-  assert.match(chart, /import\('\.\/UserActivityChartPlot'\)/);
+  assert.match(
+    chart,
+    /import\('@\/app\/\(admin\)\/admin\/users\/\[id\]\/_components\/UserActivityChartPlot'\)/,
+  );
   assert.match(chart, /ssr: false/);
   assert.doesNotMatch(chart, /from 'recharts'/);
   assert.match(plot, /from 'recharts'/);

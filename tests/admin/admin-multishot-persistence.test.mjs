@@ -198,7 +198,7 @@ test('multishot actions validate and resynchronise conservative derived duration
 });
 
 test('multishot saves are serial, revision-aware, and flushed before leaving', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
   const persistence = editor.slice(
     editor.indexOf('// --- Persistence'),
     editor.indexOf('// --- Preview interaction'),
@@ -222,7 +222,7 @@ test('multishot saves are serial, revision-aware, and flushed before leaving', (
 });
 
 test('optimistic shot deletion waits for inserts and rolls back failed deletes', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
   const deletion = editor.slice(
     editor.indexOf('const deleteShot = useCallback'),
     editor.indexOf('// --- Preview interaction'),
@@ -273,7 +273,7 @@ test('shot actions scope updates and avoid catalogue-wide invalidation for aim-o
 });
 
 test('multishot controls share bounds and commit slider interactions immediately', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/MultishotEditor.tsx');
+  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
   const slider = read('components/design-system/SliderField.tsx');
 
   assert.match(editor, /clampMultishotTimeSeconds\(nextPatch\.timeOffsetSeconds\)/);

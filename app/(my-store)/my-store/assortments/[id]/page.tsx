@@ -8,7 +8,7 @@
 import { notFound } from 'next/navigation';
 import { getTrustedAppOrigin } from '@/lib/app-origin';
 import { getAssortmentById } from '@/lib/admin/assortments.server';
-import { AssortmentEditor } from '@/app/(admin)/admin/assortments/[id]/AssortmentEditor';
+import { AssortmentEditor } from '@/components/assortments/AssortmentEditor';
 
 type PageProps = {
   params: Promise<{ id: string }>;

@@ -11,8 +11,8 @@ import {
   tableHeaderCellClasses,
 } from '@/components/design-system/DataTable';
 import { listSuppliers } from '@/lib/admin.server';
-import { SupplierFormDialog } from './SupplierFormDialog';
-import { SuppliersTableBody } from './SuppliersTableBody';
+import { SupplierFormDialog } from '@/app/(admin)/admin/suppliers/_components/SupplierFormDialog';
+import { SuppliersTableBody } from '@/app/(admin)/admin/suppliers/_components/SuppliersTableBody';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; page?: string }>;

@@ -138,8 +138,8 @@ test('admin actions save copied default settings without live assignments', () =
   const styleActions = read('app/actions/admin-style-defaults.ts');
   const effectActions = read('app/actions/admin-effects.ts');
   const fireworkActions = read('app/actions/admin-fireworks.ts');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
   assert.match(styleActions, /z\.enum\(FIREWORK_STYLE_DEFAULT_KINDS\)/);
   assert.match(styleActions, /styleDefault: AdminStyleDefaultOption/);
@@ -176,7 +176,7 @@ test('style default saves, archives, and restores record live editor history', (
   const actions = read('app/actions/admin-style-defaults.ts');
   const loader = read('lib/admin/style-defaults.server.ts');
   const versions = read('lib/admin/editor-versions.server.ts');
-  const editor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
+  const editor = read('app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx');
 
   assert.match(migration, /add column firework_style_default_id uuid/);
   assert.match(migration, /references public\.firework_style_defaults\(id\) on delete cascade/);
@@ -237,8 +237,8 @@ test('inline style-default creation and parent editor saves are atomic', () => {
   );
   const effectActions = read('app/actions/admin-effects.ts');
   const fireworkActions = read('app/actions/admin-fireworks.ts');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
   for (const target of ['effect', 'firework']) {
     assert.match(
@@ -265,10 +265,12 @@ test('inline style-default creation and parent editor saves are atomic', () => {
 });
 
 test('style default admin UI exposes every kind without the black accent badge', () => {
-  const effectsBrowser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
-  const defaultsEditor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const effectsBrowser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
+  const defaultsEditor = read(
+    'app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx',
+  );
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const sectionPanels = read('components/admin/EditorSectionPanels.tsx');
   const selectField = read('components/design-system/SelectField.tsx');
   const controls = read('components/admin/FireworkRenderControls.tsx');

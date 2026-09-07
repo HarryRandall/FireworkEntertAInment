@@ -26,14 +26,14 @@ import {
   type AiCreditTransactionSummary,
 } from '@/lib/ai-credits.server';
 import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
-import type { PermissionOverrideOption } from './AddPermissionOverrideDialog';
+import type { PermissionOverrideOption } from '@/app/(admin)/admin/users/[id]/_components/AddPermissionOverrideDialog';
 import {
   PermissionExceptionsPanel,
   type PermissionExceptionState,
-} from './PermissionExceptionsPanel';
-import { UserActivityChart } from './UserActivityChart';
-import { UserHeaderActions } from './UserHeaderActions';
-import { UserRoleSelect } from './UserRoleSelect';
+} from '@/app/(admin)/admin/users/[id]/_components/PermissionExceptionsPanel';
+import { UserActivityChart } from '@/app/(admin)/admin/users/[id]/_components/UserActivityChart';
+import { UserHeaderActions } from '@/app/(admin)/admin/users/[id]/_components/UserHeaderActions';
+import { UserRoleSelect } from '@/app/(admin)/admin/users/[id]/_components/UserRoleSelect';
 
 type PageProps = { params: Promise<{ id: string }> };
 

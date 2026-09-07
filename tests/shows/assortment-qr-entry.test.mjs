@@ -21,10 +21,7 @@ const files = {
     import.meta.url,
   ),
   adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
-  adminEditor: new URL(
-    '../../app/(admin)/admin/assortments/[id]/AssortmentEditor.tsx',
-    import.meta.url,
-  ),
+  adminEditor: new URL('../../components/assortments/AssortmentEditor.tsx', import.meta.url),
   publicServer: new URL('../../lib/assortments/public.server.ts', import.meta.url),
   constraints: new URL('../../lib/assortments/constraints.ts', import.meta.url),
   loaders: new URL('../../lib/cue-generation/loaders.server.ts', import.meta.url),
@@ -33,14 +30,17 @@ const files = {
   beat: new URL('../../lib/cue-generation/beat-sync-planner.ts', import.meta.url),
   kioskPage: new URL('../../app/(kiosk)/a/[token]/page.tsx', import.meta.url),
   kioskLayout: new URL('../../app/(kiosk)/layout.tsx', import.meta.url),
-  kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
+  kioskClient: new URL(
+    '../../app/(kiosk)/a/[token]/_components/AssortmentEntryClient.tsx',
+    import.meta.url,
+  ),
   kioskShowPage: new URL('../../app/(kiosk)/a/[token]/show/[showToken]/page.tsx', import.meta.url),
   templateReplayPreview: new URL(
     '../../components/replay/TemplateReplayPreview.tsx',
     import.meta.url,
   ),
   kioskShowActions: new URL(
-    '../../app/(kiosk)/a/[token]/show/[showToken]/KioskShowActions.tsx',
+    '../../app/(kiosk)/a/[token]/show/[showToken]/_components/KioskShowActions.tsx',
     import.meta.url,
   ),
   kioskShowStatusRoute: new URL(

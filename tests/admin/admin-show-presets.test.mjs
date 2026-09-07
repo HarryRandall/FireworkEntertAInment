@@ -17,15 +17,15 @@ test('admin show preset routes and navigation are wired without old header bands
     'app/(admin)/admin/show-presets/loading.tsx',
     'app/(admin)/admin/show-presets/[id]/page.tsx',
     'app/(admin)/admin/show-presets/[id]/loading.tsx',
-    'app/(admin)/admin/show-presets/[id]/ShowPresetEditor.tsx',
-    'app/(admin)/admin/show-presets/ShowPresetActions.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
+    'app/(admin)/admin/show-presets/_components/ShowPresetActions.tsx',
   ]) {
     assert.equal(existsSync(join(root, path)), true, `${path} exists`);
     assert.doesNotMatch(read(path), /AppPageHeader|AdminRouteHeaderSkeleton/);
   }
 
-  const shell = read('components/admin/AdminShell.tsx');
-  const actions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
+  const shell = read('components/shell/AdminShell.tsx');
+  const actions = read('app/(admin)/admin/show-presets/_components/ShowPresetActions.tsx');
   assert.match(shell, /href: '\/admin\/show-presets'/);
   assert.match(shell, /label: 'Explore shows'/);
   // Cover posters are embedded in the curated-shows page, not a separate tab.
@@ -183,11 +183,11 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
 });
 
 test('admin show preset editor exposes replay, timeline, catalogue picker and publish controls', () => {
-  const editor = read('app/(admin)/admin/show-presets/[id]/ShowPresetEditor.tsx');
+  const editor = read('app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx');
   const loading = read('app/(admin)/admin/show-presets/[id]/loading.tsx');
   const detailPage = read('app/(admin)/admin/show-presets/[id]/page.tsx');
   const listPage = read('app/(admin)/admin/show-presets/page.tsx');
-  const createActions = read('app/(admin)/admin/show-presets/ShowPresetActions.tsx');
+  const createActions = read('app/(admin)/admin/show-presets/_components/ShowPresetActions.tsx');
 
   assert.match(detailPage, /getAdminShowPresetById/);
   assert.match(detailPage, /listFireworkProducts/);

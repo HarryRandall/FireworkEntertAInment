@@ -125,7 +125,7 @@ test('browse routes allow guests and retain the app shell for signed-in users', 
 
 test('show detail layout requires a session before rendering tabs or children', () => {
   const layout = read('app/(app)/shows/[id]/layout.tsx');
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   assert.match(layout, /getCurrentUserId/);
   assert.match(layout, /if \(!userId\)/);
   assert.match(

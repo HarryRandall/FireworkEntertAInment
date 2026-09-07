@@ -1,6 +1,9 @@
 /** Loading fallback for `/catalogue`; keeps the stable header chrome visible. */
 
-import { CatalogueSkeleton, CatalogueToolbarSkeleton } from './CatalogueSkeleton';
+import {
+  CatalogueSkeleton,
+  CatalogueToolbarSkeleton,
+} from '@/app/(browse)/catalogue/_components/CatalogueSkeleton';
 
 export default function CatalogueLoading() {
   return (

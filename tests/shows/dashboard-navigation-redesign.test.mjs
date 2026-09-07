@@ -94,7 +94,7 @@ test('app shell exposes only shipped V1 navigation routes', () => {
 });
 
 test('admin navigation only exposes destinations granted to the current profile', () => {
-  const shell = read('components/admin/AdminShell.tsx');
+  const shell = read('components/shell/AdminShell.tsx');
 
   for (const permission of [
     'admin.manage_users',
@@ -134,7 +134,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showsPage, /<table/);
   assert.match(showsPage, /<h1[^>]*>\s*My shows\s*<\/h1>/);
 
-  const showReplayCard = read('app/(app)/shows/ShowReplayCoverCard.tsx');
+  const showReplayCard = read('app/(app)/shows/_components/ShowReplayCoverCard.tsx');
   assert.match(showReplayCard, /CoverPoster/);
   assert.doesNotMatch(showReplayCard, /shaderCoverFromSeed/);
   assert.match(showReplayCard, /onPointerEnter/);
@@ -148,7 +148,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showReplayCard, /isPreviewHovering \? 'opacity-0' : 'opacity-100'/);
   assert.doesNotMatch(showReplayCard, /radial-gradient/);
 
-  const showReplayProvider = read('app/(app)/shows/ShowReplayPreviewContext.tsx');
+  const showReplayProvider = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
   assert.match(showReplayProvider, /FireworkReplayCanvas/);
   assert.match(showReplayProvider, /getShowReplayPreviewCues/);
   assert.match(showReplayProvider, /SHOW_CARD_PREVIEW_WINDOW_SECONDS/);
@@ -171,7 +171,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showsQueries, /timeSeconds: Math\.max\(0, cue\.timeSeconds - previewStart\)/);
   assert.match(showsQueries, /cue\.timeSeconds <= previewWindowSeconds \+ 0\.001/);
 
-  const showsToolbar = read('app/(app)/shows/ShowsToolbar.tsx');
+  const showsToolbar = read('app/(app)/shows/_components/ShowsToolbar.tsx');
   assert.match(showsToolbar, /Search shows or songs/);
   assert.match(showsToolbar, /PopoverTrigger/);
   assert.match(showsToolbar, /CommandItem/);
@@ -192,7 +192,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(safetyPage, /Safety checks before firing/);
 
   const showLayout = read('app/(app)/shows/[id]/layout.tsx');
-  const showChrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const showChrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   assert.match(showLayout, /ShowDetailChrome/);
   assert.match(showChrome, /ShowTabs/);
   assert.match(showChrome, /segment === 'generating'/);
@@ -257,41 +257,6 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(templatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
   assert.match(templatePreview, /mask-image:linear-gradient\(to_top/);
   assert.doesNotMatch(templatePreview, /border-t p-4/);
-
-  const showTemplatePreview = read('components/explore/ShowTemplatePreview.tsx');
-  assert.match(showTemplatePreview, /buildVisualPalette/);
-  assert.match(showTemplatePreview, /--template-accent-start/);
-  assert.match(showTemplatePreview, /linear-gradient\(90deg,var\(--template-accent-start\)/);
-  assert.match(showTemplatePreview, /relative -mt-px grid flex-1/);
-  assert.match(
-    showTemplatePreview,
-    /h-\[5px\] bg-\[linear-gradient\(90deg,var\(--template-accent-start\)/,
-  );
-  assert.match(showTemplatePreview, /CardBorderTrace/);
-  assert.match(showTemplatePreview, /active=\{isHovered\}/);
-  assert.match(showTemplatePreview, /radius=\{10\}/);
-  assert.match(
-    showTemplatePreview,
-    /colors=\{\[palette\.hex\[0\], palette\.hex\[1\], palette\.hex\[2\]\]\}/,
-  );
-  assert.match(showTemplatePreview, /h-32 overflow-hidden/);
-  assert.match(showTemplatePreview, /origin-top -translate-y-6 scale-y-50/);
-  assert.match(showTemplatePreview, /blur-lg/);
-  assert.match(showTemplatePreview, /duration-\[1800ms\]/);
-  assert.match(showTemplatePreview, /group-hover:opacity-40/);
-  assert.doesNotMatch(showTemplatePreview, /group-hover:-translate-y-1/);
-  assert.doesNotMatch(showTemplatePreview, /group-hover:opacity-0 group-focus-visible:opacity-0/);
-  assert.doesNotMatch(showTemplatePreview, /top-0 left-0 z-20 h-\[2px\] w-1\/2/);
-  assert.doesNotMatch(showTemplatePreview, /origin-top scale-y-0/);
-  assert.doesNotMatch(showTemplatePreview, /pathLength=\{1\}/);
-  assert.doesNotMatch(showTemplatePreview, /blur-2xl/);
-  assert.doesNotMatch(showTemplatePreview, /group-hover:opacity-20/);
-  assert.doesNotMatch(showTemplatePreview, /origin-left -translate-y-10 scale-x-0/);
-  assert.doesNotMatch(showTemplatePreview, /origin-right -translate-y-10 scale-x-0/);
-  assert.doesNotMatch(showTemplatePreview, /conic-gradient/);
-  assert.doesNotMatch(showTemplatePreview, /h-1\.5 w-1\.5 rounded-full/);
-  assert.doesNotMatch(showTemplatePreview, /formatBudget\(template\.totalCents\)/);
-  assert.doesNotMatch(showTemplatePreview, /bg-\[linear-gradient\(135deg/);
 
   const globals = read('app/globals.css');
   assert.doesNotMatch(globals, /show-card-border-orbit/);

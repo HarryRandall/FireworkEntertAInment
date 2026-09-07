@@ -10,7 +10,7 @@ const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
 test('the standalone admin AI billing route and nav entry are removed', () => {
-  const shell = read('components/admin/AdminShell.tsx');
+  const shell = read('components/shell/AdminShell.tsx');
 
   assert.doesNotMatch(shell, /href: '\/admin\/billing'/);
   assert.doesNotMatch(shell, /label: 'AI billing'/);
@@ -19,7 +19,7 @@ test('the standalone admin AI billing route and nav entry are removed', () => {
 
 test('credit balances and grant controls survive on the user detail page', () => {
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
-  const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
+  const userHeaderActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
   const actions = read('app/actions/admin-users.ts');
 
   assert.match(userDetail, /AdminUserAiCreditsCard/);

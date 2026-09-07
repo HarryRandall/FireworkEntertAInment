@@ -21,7 +21,7 @@ import {
   matchesManufacturerFilter,
 } from '@/lib/show-domain';
 import { listCatalogueProducts } from '@/lib/admin.server';
-import { ProductRowActions } from './ProductRowActions';
+import { ProductRowActions } from '@/app/(admin)/admin/catalogue/_components/ProductRowActions';
 
 const KIND_LABELS: Record<string, string> = {
   firework: 'Firework',

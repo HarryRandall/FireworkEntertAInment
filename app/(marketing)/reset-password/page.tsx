@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { FormError } from '@/components/design-system/FormError';
 import { getPasswordRecoverySession } from '@/lib/password-recovery.server';
-import { ResetPasswordForm } from './ResetPasswordForm';
-import { ResetPasswordShell } from './ResetPasswordShell';
+import { ResetPasswordForm } from '@/app/(marketing)/reset-password/_components/ResetPasswordForm';
+import { ResetPasswordShell } from '@/app/(marketing)/reset-password/_components/ResetPasswordShell';
 
 export const dynamic = 'force-dynamic';
 

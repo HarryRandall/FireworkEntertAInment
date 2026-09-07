@@ -13,9 +13,12 @@ import { Textarea } from '@/components/design-system/Input';
 import { getAdminPromptControlData } from '@/lib/admin.server';
 import { type GenerationSetting, type PromptConfig } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
-import { GenerationModeControl } from './GenerationModeControl';
-import { PromptConfigForm, PromptSaveButton } from './PromptConfigForm';
-import { ProductCatalogueFieldsControl } from './ProductCatalogueFieldsControl';
+import { GenerationModeControl } from '@/app/(admin)/admin/prompts/_components/GenerationModeControl';
+import {
+  PromptConfigForm,
+  PromptSaveButton,
+} from '@/app/(admin)/admin/prompts/_components/PromptConfigForm';
+import { ProductCatalogueFieldsControl } from '@/app/(admin)/admin/prompts/_components/ProductCatalogueFieldsControl';
 
 type PromptTabKey = 'show_prompt' | 'product_context' | 'video_prompt';
 

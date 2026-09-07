@@ -3,7 +3,7 @@
 import { SectionHeader } from '@/components/design-system';
 import { EmptyState } from '@/components/design-system/Feedback';
 import { listAssortments } from '@/lib/admin/assortments.server';
-import { TestShowSimulator } from './TestShowSimulator';
+import { TestShowSimulator } from '@/app/(my-store)/my-store/test-show/_components/TestShowSimulator';
 
 export default async function RetailerAdminTestShowPage() {
   const assortments = await listAssortments();

@@ -3,7 +3,7 @@
 import { Card, SectionHeader } from '@/components/design-system';
 import { PreviewNotice } from '../_components/PreviewNotice';
 import { DUMMY_CREDIT_BALANCE, DUMMY_CREDIT_TIERS } from '../_lib/dummy-data';
-import { CreditsTopUp } from './CreditsTopUp';
+import { CreditsTopUp } from '@/app/(my-store)/my-store/credits/_components/CreditsTopUp';
 
 export default function RetailerAdminCreditsPage() {
   return (

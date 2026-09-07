@@ -119,7 +119,9 @@ test('password recovery requires a verified recovery token hash, not any session
   const rateLimit = read('lib/password-recovery-rate-limit.server.ts');
   const serverCache = read('lib/server-cache.ts');
   const appOrigin = read('lib/app-origin.ts');
-  const confirmButton = read('app/(marketing)/reset-password/confirm/ConfirmRecoveryButton.tsx');
+  const confirmButton = read(
+    'app/(marketing)/reset-password/confirm/_components/ConfirmRecoveryButton.tsx',
+  );
   const loading = read('app/(marketing)/reset-password/loading.tsx');
 
   assert.match(callback, /isPasswordRecoveryPath\(safeNext\)/);
@@ -267,13 +269,16 @@ test('auth forms expose precise field errors and recover from thrown requests', 
   const login = read('app/(auth)/login/page.tsx');
   const signup = read('app/(auth)/signup/page.tsx');
   const forgotPassword = read('app/(marketing)/forgot-password/page.tsx');
-  const resetPassword = read('app/(marketing)/reset-password/ResetPasswordForm.tsx');
-  const authShell = read('app/(auth)/components/AuthShell.tsx');
-  const authShellStyles = read('app/(auth)/components/AuthShell.module.css');
+  const resetPassword = read('app/(marketing)/reset-password/_components/ResetPasswordForm.tsx');
+  const authShell = read('app/(auth)/_components/AuthShell.tsx');
+  const authShellStyles = read('app/(auth)/_components/AuthShell.module.css');
 
   assert.match(authShell, /<SkipLink \/>/);
   assert.match(authShell, /<main[\s\S]*id="main-content"[\s\S]*tabIndex=\{-1\}/);
-  assert.match(authShell, /import styles from '\.\/AuthShell\.module\.css'/);
+  assert.match(
+    authShell,
+    /import styles from '@\/app\/\(auth\)\/_components\/AuthShell\.module\.css'/,
+  );
   assert.match(authShellStyles, /:global\(\[data-theme='dark'\]\) \.artPanel/);
   assert.match(authShellStyles, /:global\(\[data-theme='dark'\]\) \.artwork svg/);
 
@@ -302,7 +307,7 @@ test('auth forms do not force focus or open a mobile keyboard on arrival', () =>
     'app/(auth)/login/page.tsx',
     'app/(auth)/signup/page.tsx',
     'app/(marketing)/forgot-password/page.tsx',
-    'app/(marketing)/reset-password/ResetPasswordForm.tsx',
+    'app/(marketing)/reset-password/_components/ResetPasswordForm.tsx',
   ]) {
     assert.doesNotMatch(read(path), /\bautoFocus\b/, path);
   }
@@ -347,7 +352,7 @@ test('normal password changes supply the current password to hosted Auth', () =>
 
 test('new and recovered passwords share the eight-character minimum', () => {
   const signup = read('app/(auth)/signup/page.tsx');
-  const resetForm = read('app/(marketing)/reset-password/ResetPasswordForm.tsx');
+  const resetForm = read('app/(marketing)/reset-password/_components/ResetPasswordForm.tsx');
   const recoveryAction = read('app/actions/password-recovery.ts');
 
   assert.match(signup, /password\.length < 8/);

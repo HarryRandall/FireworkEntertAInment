@@ -90,7 +90,7 @@ test('security mutations and UI are guarded while impersonating', () => {
   const account = read('app/actions/account.ts');
   const profilePage = read('app/(app)/settings/profile/page.tsx');
   const securityPage = read('app/(app)/settings/security/page.tsx');
-  const signOut = read('app/(app)/settings/SignOutButton.tsx');
+  const signOut = read('components/shell/SignOutButton.tsx');
 
   assert.match(account, /hasImpersonationCookie/);
   assert.match(account, /Password changes are disabled while impersonating a user/);
@@ -102,7 +102,7 @@ test('security mutations and UI are guarded while impersonating', () => {
 });
 
 test('admin user detail starts impersonation instead of showing a placeholder', () => {
-  const headerActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
+  const headerActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
   const detailPage = read('app/(admin)/admin/users/[id]/page.tsx');
 
   assert.match(headerActions, /startImpersonationAction/);
@@ -115,9 +115,9 @@ test('admin user detail starts impersonation instead of showing a placeholder', 
 });
 
 test('admin users table exposes row impersonation and quick identity copying', () => {
-  const rowActions = read('app/(admin)/admin/users/UserRowActions.tsx');
+  const rowActions = read('app/(admin)/admin/users/_components/UserRowActions.tsx');
   const usersPage = read('app/(admin)/admin/users/page.tsx');
-  const inlineCopy = read('app/(admin)/admin/users/InlineCopyButton.tsx');
+  const inlineCopy = read('app/(admin)/admin/users/_components/InlineCopyButton.tsx');
 
   assert.match(rowActions, /startImpersonationAction/);
   assert.match(rowActions, /label: 'Impersonate'/);
@@ -132,7 +132,7 @@ test('admin users table exposes row impersonation and quick identity copying', (
 
 test('shells render a persistent stop-impersonating control above the profile card', () => {
   const adminLayout = read('app/(admin)/layout.tsx');
-  const adminShell = read('components/admin/AdminShell.tsx');
+  const adminShell = read('components/shell/AdminShell.tsx');
   const layout = read('app/(app)/layout.tsx');
   const shell = read('components/shell/AppShell.tsx');
   const banner = read('components/shell/ImpersonationBanner.tsx');

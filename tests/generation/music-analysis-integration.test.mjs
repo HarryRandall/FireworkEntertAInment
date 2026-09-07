@@ -49,7 +49,7 @@ test('analyser warm-up is opt-in from the admin dashboard', () => {
   const modalApp = readFileSync(join(root, 'services/music-analyser/modal_app.py'), 'utf8');
   const adminPage = readFileSync(join(root, 'app/(admin)/admin/page.tsx'), 'utf8');
   const warmControl = readFileSync(
-    join(root, 'app/(admin)/admin/AnalyserWarmthControl.tsx'),
+    join(root, 'app/(admin)/admin/_components/AnalyserWarmthControl.tsx'),
     'utf8',
   );
   const warmLib = readFileSync(join(root, 'lib/analyser-warmth.server.ts'), 'utf8');

@@ -9,7 +9,7 @@ import { Mail, Lock, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/design-system/Input';
 import { Button } from '@/components/design-system/Button';
 import { createClient } from '@/utils/supabase/client';
-import { AuthShell } from '../components/AuthShell';
+import { AuthShell } from '@/app/(auth)/_components/AuthShell';
 import { FormError } from '@/components/design-system/FormError';
 import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth-redirect';
 

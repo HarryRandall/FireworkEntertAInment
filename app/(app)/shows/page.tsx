@@ -4,10 +4,10 @@ import { Skeleton } from '@/components/design-system/Feedback';
 import { TablePagination } from '@/components/design-system/TablePagination';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import type { ShowSummaryCard } from '@/lib/show-summary';
-import { ShowsToolbar, type ShowsSortKey } from './ShowsToolbar';
-import { ShowsEmptyState } from './ShowsEmptyState';
-import { ShowReplayCoverCard } from './ShowReplayCoverCard';
-import { ShowReplayPreviewProvider } from './ShowReplayPreviewContext';
+import { ShowsToolbar, type ShowsSortKey } from '@/app/(app)/shows/_components/ShowsToolbar';
+import { ShowsEmptyState } from '@/app/(app)/shows/_components/ShowsEmptyState';
+import { ShowReplayCoverCard } from '@/app/(app)/shows/_components/ShowReplayCoverCard';
+import { ShowReplayPreviewProvider } from '@/app/(app)/shows/_components/ShowReplayPreviewContext';
 
 type SortKey = ShowsSortKey;
 const SHOWS_PAGE_SIZE = 24;

@@ -15,7 +15,7 @@ import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/Tab
 import { listAdminFireworks, listEffectOptions } from '@/lib/admin.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
-import { NewFireworkButton } from './NewFireworkButton';
+import { NewFireworkButton } from '@/app/(admin)/admin/fireworks/_components/NewFireworkButton';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; effect?: string; page?: string }>;

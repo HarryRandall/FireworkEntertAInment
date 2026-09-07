@@ -7,7 +7,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const source = readFileSync(
-  join(root, 'app/(admin)/admin/imports/[id]/ImportProgressWatcher.tsx'),
+  join(root, 'app/(admin)/admin/imports/[id]/_components/ImportProgressWatcher.tsx'),
   'utf8',
 );
 

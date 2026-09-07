@@ -1,9 +1,9 @@
-/** Retailer-admin route-group layout; enforces RBAC and renders the `RetailerAdminShell` chrome. */
+/** Retailer-admin route-group layout; enforces RBAC and renders the `MyStoreShell` chrome. */
 
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { RetailerAdminShell } from '@/components/admin/RetailerAdminShell';
+import { MyStoreShell } from '@/components/shell/MyStoreShell';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 import { requirePermission } from '@/lib/admin.server';
 import { measureServerTask } from '@/lib/perf.server';
@@ -32,13 +32,13 @@ export default async function RetailerAdminRouteGroupLayout({ children }: { chil
   );
 
   return (
-    <RetailerAdminShell
+    <MyStoreShell
       profile={profile}
       impersonation={impersonation}
       initialSidebarCollapsed={sidebarPreference ?? false}
       hasInitialSidebarCollapsedCookie={sidebarPreference !== null}
     >
       {children}
-    </RetailerAdminShell>
+    </MyStoreShell>
   );
 }

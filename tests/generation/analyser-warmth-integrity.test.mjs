@@ -41,7 +41,7 @@ test('analyser warmth is public only after a successful ping', () => {
 });
 
 test('admin warmth control exposes failed state and does not toast false success', () => {
-  const control = read('app/(admin)/admin/AnalyserWarmthControl.tsx');
+  const control = read('app/(admin)/admin/_components/AnalyserWarmthControl.tsx');
 
   assert.match(control, /state\.lastWarmupOk === false/);
   assert.match(control, /if \(result\.state\) setState\(result\.state\)/);

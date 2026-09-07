@@ -5,7 +5,10 @@ import { test } from 'node:test';
 
 const root = process.cwd();
 const route = readFileSync(join(root, 'app/api/music-analysis/route.ts'), 'utf8');
-const page = readFileSync(join(root, 'app/(app)/shows/new/NewShowPageClient.tsx'), 'utf8');
+const page = readFileSync(
+  join(root, 'app/(app)/shows/new/_components/NewShowPageClient.tsx'),
+  'utf8',
+);
 const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
 const migration = readFileSync(

@@ -17,8 +17,8 @@ import {
 } from '@/components/design-system/DataTable';
 import { getCurrentProfile, listAdminUsers } from '@/lib/admin.server';
 import type { ProfileStatus, RoleKey } from '@/lib/admin.types';
-import { InlineCopyButton } from './InlineCopyButton';
-import { UserRowActions } from './UserRowActions';
+import { InlineCopyButton } from '@/app/(admin)/admin/users/_components/InlineCopyButton';
+import { UserRowActions } from '@/app/(admin)/admin/users/_components/UserRowActions';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; role?: string; status?: string; page?: string }>;

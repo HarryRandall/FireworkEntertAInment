@@ -7,7 +7,10 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const serverPage = readFileSync(join(root, 'app/(app)/shows/new/page.tsx'), 'utf8');
-const page = readFileSync(join(root, 'app/(app)/shows/new/NewShowPageClient.tsx'), 'utf8');
+const page = readFileSync(
+  join(root, 'app/(app)/shows/new/_components/NewShowPageClient.tsx'),
+  'utf8',
+);
 const choiceCards = readFileSync(join(root, 'app/(app)/shows/new/_components/cards.tsx'), 'utf8');
 const audioUpload = readFileSync(
   join(root, 'app/(app)/shows/new/_components/AudioUpload.tsx'),

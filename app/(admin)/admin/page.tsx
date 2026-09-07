@@ -3,9 +3,9 @@
 import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { AdminOverviewContentSkeleton } from '@/components/shell/RouteSkeletons';
-import { AnalyserWarmthControl } from './AnalyserWarmthControl';
-import { AdminOverviewTabs } from './AdminOverviewTabs';
-import { AdminOverviewToolbar } from './AdminOverviewToolbar';
+import { AnalyserWarmthControl } from '@/app/(admin)/admin/_components/AnalyserWarmthControl';
+import { AdminOverviewTabs } from '@/app/(admin)/admin/_components/AdminOverviewTabs';
+import { AdminOverviewToolbar } from '@/app/(admin)/admin/_components/AdminOverviewToolbar';
 import {
   CatalogueMixChart,
   GenerationPulseCard,
@@ -14,7 +14,7 @@ import {
   type AdminOverviewBarDatum,
   type AdminOverviewPulseDatum,
   type AdminOverviewStatusDatum,
-} from './AdminOverviewCharts';
+} from '@/app/(admin)/admin/_components/AdminOverviewCharts';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {

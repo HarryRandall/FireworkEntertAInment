@@ -208,9 +208,11 @@ test('editor saves are optimistic while history persistence stays observed and l
   const effectActions = read('app/actions/admin-effects.ts');
   const fireworkActions = read('app/actions/admin-fireworks.ts');
   const styleDefaultActions = read('app/actions/admin-style-defaults.ts');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const styleDefaultEditor = read('app/(admin)/admin/effects/defaults/[id]/StyleDefaultEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const styleDefaultEditor = read(
+    'app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx',
+  );
   const effectServer = read('lib/admin/effects.server.ts');
   const fireworkServer = read('lib/admin/fireworks.server.ts');
   const styleDefaultServer = read('lib/admin/style-defaults.server.ts');

@@ -2,7 +2,7 @@
 
 import type { Metadata } from 'next';
 import { CircleSlash2, Info } from 'lucide-react';
-import { SignOutButton } from '@/app/(app)/settings/SignOutButton';
+import { SignOutButton } from '@/components/shell/SignOutButton';
 import { Container } from '@/components/design-system/Container';
 import { Card } from '@/components/design-system/Card';
 import { Button } from '@/components/design-system/Button';

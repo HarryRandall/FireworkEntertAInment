@@ -142,7 +142,10 @@ test('firework admin lists use paginated hover-preview card grids', () => {
 });
 
 test('base effects and style defaults both use renderer preview card grids', () => {
-  const source = readFileSync(join(root, 'app/(admin)/admin/effects/EffectsBrowser.tsx'), 'utf8');
+  const source = readFileSync(
+    join(root, 'app/(admin)/admin/effects/_components/EffectsBrowser.tsx'),
+    'utf8',
+  );
   const loading = readFileSync(join(root, 'app/(admin)/admin/effects/loading.tsx'), 'utf8');
 
   assert.match(

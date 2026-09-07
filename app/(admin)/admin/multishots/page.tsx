@@ -14,7 +14,7 @@ import { TABLE_PAGE_SIZE, TablePagination } from '@/components/design-system/Tab
 import { listMultishots } from '@/lib/admin.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
-import { NewMultishotButton } from './NewMultishotButton';
+import { NewMultishotButton } from '@/app/(admin)/admin/multishots/_components/NewMultishotButton';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; page?: string }>;

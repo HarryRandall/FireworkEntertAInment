@@ -13,8 +13,8 @@ function read(path) {
 
 test('admin overview range selector is URL-backed', () => {
   const page = read('app/(admin)/admin/page.tsx');
-  const tabs = read('app/(admin)/admin/AdminOverviewTabs.tsx');
-  const toolbar = read('app/(admin)/admin/AdminOverviewToolbar.tsx');
+  const tabs = read('app/(admin)/admin/_components/AdminOverviewTabs.tsx');
+  const toolbar = read('app/(admin)/admin/_components/AdminOverviewToolbar.tsx');
   const ranges = read('lib/admin/overview-range.ts');
   const tabOptions = read('lib/admin/overview-tabs.ts');
 
@@ -76,7 +76,7 @@ test('admin overview server metrics use the selected current and previous period
 
 test('admin overview chart buckets follow the selected range window', () => {
   const page = read('app/(admin)/admin/page.tsx');
-  const charts = read('app/(admin)/admin/AdminOverviewCharts.tsx');
+  const charts = read('app/(admin)/admin/_components/AdminOverviewCharts.tsx');
 
   assert.match(page, /buildActivityData\(overview, rangeWindow\)/);
   assert.match(page, /buildPulseData\(activityData\)/);
@@ -95,7 +95,7 @@ test('admin overview chart buckets follow the selected range window', () => {
 
 test('admin overview layout avoids narrow-width overflow', () => {
   const page = read('app/(admin)/admin/page.tsx');
-  const charts = read('app/(admin)/admin/AdminOverviewCharts.tsx');
+  const charts = read('app/(admin)/admin/_components/AdminOverviewCharts.tsx');
   const skeleton = read('components/shell/RouteSkeletons.tsx');
 
   assert.doesNotMatch(page, /title: 'Users'/);

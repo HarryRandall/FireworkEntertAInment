@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { getAdminFireworkById } from '@/lib/admin.server';
-import { FireworkEditor } from './FireworkEditor';
+import { FireworkEditor } from '@/app/(admin)/admin/fireworks/[id]/_components/FireworkEditor';
 
 type PageProps = {
   params: Promise<{ id: string }>;

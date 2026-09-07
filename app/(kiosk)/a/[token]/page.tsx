@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getPublicAssortmentByToken } from '@/lib/assortments/public.server';
-import { AssortmentEntryClient } from './AssortmentEntryClient';
+import { AssortmentEntryClient } from '@/app/(kiosk)/a/[token]/_components/AssortmentEntryClient';
 
 export const dynamic = 'force-dynamic';
 

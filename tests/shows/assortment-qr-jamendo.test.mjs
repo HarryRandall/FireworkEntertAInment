@@ -17,8 +17,11 @@ const files = {
   requestSecurity: new URL('../../lib/assortments/request-security.server.ts', import.meta.url),
   importHelpers: new URL('../../lib/jamendo-import.server.ts', import.meta.url),
   lifecycle: new URL('../../lib/music-analysis-lifecycle.server.ts', import.meta.url),
-  picker: new URL('../../app/(app)/shows/new/_components/JamendoSongSearch.tsx', import.meta.url),
-  kioskClient: new URL('../../app/(kiosk)/a/[token]/AssortmentEntryClient.tsx', import.meta.url),
+  picker: new URL('../../components/music/JamendoSongSearch.tsx', import.meta.url),
+  kioskClient: new URL(
+    '../../app/(kiosk)/a/[token]/_components/AssortmentEntryClient.tsx',
+    import.meta.url,
+  ),
   migration: new URL(
     '../../supabase/migrations/20260831123000_add_assortment_qr_jamendo_selection.sql',
     import.meta.url,

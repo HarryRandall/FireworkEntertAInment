@@ -26,7 +26,7 @@ test('app discovery and show grids use their intended wide caps', () => {
 });
 
 test('show workspaces expand while focused show content stays readable', () => {
-  const chrome = read('app/(app)/shows/[id]/ShowDetailChrome.tsx');
+  const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   const shoppingList = read('app/(app)/shows/[id]/shopping-list/page.tsx');
   const guide = read('app/(app)/shows/[id]/show-guide/page.tsx');
   const skeletons = read('components/shell/RouteSkeletons.tsx');
@@ -41,7 +41,7 @@ test('admin routes cap data workspaces without constraining full-bleed editors',
   const fluidRoutes = [
     'app/(admin)/admin/page.tsx',
     'app/(admin)/admin/catalogue/page.tsx',
-    'app/(admin)/admin/effects/EffectsBrowser.tsx',
+    'app/(admin)/admin/effects/_components/EffectsBrowser.tsx',
     'app/(admin)/admin/fireworks/page.tsx',
     'app/(admin)/admin/multishots/page.tsx',
     'app/(admin)/admin/roles/page.tsx',
@@ -68,7 +68,7 @@ test('admin routes cap data workspaces without constraining full-bleed editors',
 });
 
 test('cover poster grid stays responsive inside the curated-shows dialog', () => {
-  const grid = read('app/(admin)/admin/show-presets/CoverPosterBackfill.tsx');
+  const grid = read('app/(admin)/admin/show-presets/_components/CoverPosterBackfill.tsx');
 
   assert.match(grid, /grid-cols-2/);
   assert.match(grid, /sm:grid-cols-3/);

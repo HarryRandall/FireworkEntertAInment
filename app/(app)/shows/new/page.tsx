@@ -1,6 +1,6 @@
 /** Server entry for the show-creation wizard. */
 
-import NewShowPageClient from './NewShowPageClient';
+import NewShowPageClient from '@/app/(app)/shows/new/_components/NewShowPageClient';
 import { getShowGenerationPresentationAction } from './actions';
 import type { ShowGenerationPresentation } from './types';
 

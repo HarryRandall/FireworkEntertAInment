@@ -13,7 +13,7 @@ function read(path) {
 
 test('shared shells expose a mobile trigger outside the closed sidebar', () => {
   const appShell = read('components/shell/AppShell.tsx');
-  const adminShell = read('components/admin/AdminShell.tsx');
+  const adminShell = read('components/shell/AdminShell.tsx');
   const sidebar = read('components/ui/sidebar.tsx');
 
   assert.match(appShell, /aria-label="Open navigation"/);
@@ -58,7 +58,7 @@ test('public browse routes retain page-level chrome while their data loads', () 
   const libraryLoading = read('app/(browse)/library/loading.tsx');
   const catalogue = read('app/(browse)/catalogue/page.tsx');
   const catalogueLoading = read('app/(browse)/catalogue/loading.tsx');
-  const catalogueSkeleton = read('app/(browse)/catalogue/CatalogueSkeleton.tsx');
+  const catalogueSkeleton = read('app/(browse)/catalogue/_components/CatalogueSkeleton.tsx');
 
   assert.match(library, /<h1[^>]*>Explore shows<\/h1>/);
   assert.match(library, /fallback=\{/);

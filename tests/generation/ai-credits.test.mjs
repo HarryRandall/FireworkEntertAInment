@@ -170,7 +170,7 @@ test('settings links keep usage after billing', () => {
 
 test('show and music generation reserve, settle, and refund credits', () => {
   const newShowAction = read('app/(app)/shows/new/actions.ts');
-  const newShowPage = read('app/(app)/shows/new/NewShowPageClient.tsx');
+  const newShowPage = read('app/(app)/shows/new/_components/NewShowPageClient.tsx');
   const runner = read('lib/cue-generation/runner.server.ts');
   const musicRoute = read('app/api/music-analysis/route.ts');
   const musicStarter = read('lib/start-music-analysis.server.ts');
@@ -260,10 +260,10 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
 });
 
 test('user detail exposes credit balances and grant controls', () => {
-  const shell = read('components/admin/AdminShell.tsx');
+  const shell = read('components/shell/AdminShell.tsx');
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
-  const userHeaderActions = read('app/(admin)/admin/users/[id]/UserHeaderActions.tsx');
-  const grantDialog = read('app/(admin)/admin/users/[id]/GrantAiCreditsDialog.tsx');
+  const userHeaderActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
+  const grantDialog = read('app/(admin)/admin/users/[id]/_components/GrantAiCreditsDialog.tsx');
   const actions = read('app/actions/admin-users.ts');
   // The standalone AI billing tab was removed; credit management lives on the
   // user detail page.

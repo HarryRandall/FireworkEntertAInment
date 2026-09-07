@@ -18,7 +18,7 @@ test('public, app and admin chrome expose a working skip link target', () => {
     'app/(marketing)/layout.tsx',
     'app/(browse)/layout.tsx',
     'components/shell/AppShell.tsx',
-    'components/admin/AdminShell.tsx',
+    'components/shell/AdminShell.tsx',
   ]) {
     const source = read(path);
     assert.match(source, /<SkipLink \/>/, path);

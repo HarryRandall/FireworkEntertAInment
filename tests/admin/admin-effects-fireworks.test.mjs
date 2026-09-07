@@ -36,7 +36,7 @@ test('admin effects and fireworks routes are first-class admin pages', () => {
     assert.equal(existsSync(join(root, path)), true, `${path} exists`);
   }
 
-  const shell = read('components/admin/AdminShell.tsx');
+  const shell = read('components/shell/AdminShell.tsx');
   const overview = read('app/(admin)/admin/page.tsx');
   assert.match(shell, /\/admin\/effects/);
   assert.match(shell, /\/admin\/fireworks/);
@@ -292,9 +292,9 @@ test('editor version history migration is permission-gated and typed', () => {
 
 test('admin effects UI is wired to base effect fields', () => {
   const page = read('app/(admin)/admin/effects/page.tsx');
-  const browser = read('app/(admin)/admin/effects/EffectsBrowser.tsx');
-  const editor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
+  const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const shell = read('components/admin/FireworkEditorShell.tsx');
   const inspectorPanels = read('components/admin/EditorInspectorPanels.tsx');
   const routeSkeletons = read('components/shell/RouteSkeletons.tsx');
@@ -493,9 +493,11 @@ test('admin effects UI is wired to base effect fields', () => {
 
 test('admin replay previews opt into FPS diagnostics', () => {
   const canvas = read('components/replay/FireworkReplayCanvas.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const importPreview = read('app/(admin)/admin/imports/[id]/FireworkImportPreview.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const importPreview = read(
+    'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
+  );
   const appReplayViewer = read('components/replay/FireworkReplayViewer.tsx');
   const templatePreview = read('components/replay/TemplateReplayPreview.tsx');
 

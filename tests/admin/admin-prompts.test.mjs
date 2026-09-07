@@ -14,14 +14,14 @@ test('admin prompt route and navigation are present', () => {
 
   const page = readFileSync(join(root, 'app/(admin)/admin/prompts/page.tsx'), 'utf8');
   const productFieldsDialog = readFileSync(
-    join(root, 'app/(admin)/admin/prompts/ProductCatalogueFieldsControl.tsx'),
+    join(root, 'app/(admin)/admin/prompts/_components/ProductCatalogueFieldsControl.tsx'),
     'utf8',
   );
   const promptForm = readFileSync(
-    join(root, 'app/(admin)/admin/prompts/PromptConfigForm.tsx'),
+    join(root, 'app/(admin)/admin/prompts/_components/PromptConfigForm.tsx'),
     'utf8',
   );
-  const shell = readFileSync(join(root, 'components/admin/AdminShell.tsx'), 'utf8');
+  const shell = readFileSync(join(root, 'components/shell/AdminShell.tsx'), 'utf8');
   assert.match(page, /PromptTabs/);
   assert.match(page, /Suspense/);
   assert.match(page, /PromptContentSkeleton/);

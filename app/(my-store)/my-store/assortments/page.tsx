@@ -22,7 +22,7 @@ import {
 } from '@/components/design-system/DataTable';
 import { formatBudget } from '@/lib/show-domain';
 import { listAssortments } from '@/lib/admin/assortments.server';
-import { RetailerNewAssortmentButton } from './RetailerNewAssortmentButton';
+import { NewAssortmentButton } from '@/components/assortments/NewAssortmentButton';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -34,7 +34,10 @@ export default async function RetailerAdminAssortmentsPage({ searchParams }: Pag
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
-      <FilterBar searchPlaceholder="Search assortments…" action={<RetailerNewAssortmentButton />} />
+      <FilterBar
+        searchPlaceholder="Search assortments…"
+        action={<NewAssortmentButton destination="/my-store/assortments" />}
+      />
       <Suspense
         fallback={
           <div className="min-h-0 flex-1 overflow-hidden">

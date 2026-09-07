@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { FilterBar } from '@/components/design-system/FilterBar';
 import { listRolePermissionMatrix } from '@/lib/admin.server';
 import type { Permission } from '@/lib/admin.types';
-import { RolePermissionMatrix } from './RolePermissionMatrix';
+import { RolePermissionMatrix } from '@/app/(admin)/admin/roles/_components/RolePermissionMatrix';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; category?: string; role?: string }>;

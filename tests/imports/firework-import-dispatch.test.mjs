@@ -140,7 +140,7 @@ test('production queue actions preflight before funding and persist dispatch res
   );
   const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
   const historyUi = readFileSync(
-    join(root, 'app/(admin)/admin/imports/[id]/ImportRunHistory.tsx'),
+    join(root, 'app/(admin)/admin/imports/[id]/_components/ImportRunHistory.tsx'),
     'utf8',
   );
 

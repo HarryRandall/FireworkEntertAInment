@@ -22,7 +22,11 @@ test('the shared sign-out helper treats returned and thrown failures as errors',
 });
 
 test('app and admin shells redirect only after confirmed sign-out', () => {
-  for (const path of ['components/shell/AppShell.tsx', 'components/admin/AdminShell.tsx']) {
+  for (const path of [
+    'components/shell/AppShell.tsx',
+    'components/shell/AdminShell.tsx',
+    'components/shell/MyStoreShell.tsx',
+  ]) {
     const shell = read(path);
 
     assert.match(shell, /signOutCurrentSession/);
@@ -31,14 +35,16 @@ test('app and admin shells redirect only after confirmed sign-out', () => {
       /const result = await signOutCurrentSession\(\);[\s\S]*?if \(!result\.ok\) \{[\s\S]*?toast\.error\(result\.error\);[\s\S]*?return;[\s\S]*?router\.replace\('\/login'\)/,
     );
     assert.doesNotMatch(shell, /auth\.signOut\(/);
-    assert.match(shell, /disabled=\{isSigningOut\}/);
-    assert.match(shell, /aria-busy=\{isSigningOut\}/);
-    assert.match(shell, /isSigningOut \? 'Signing out\.\.\.' : 'Log out'/);
+    const menu = read('components/shell/ProfileMenu.tsx');
+    assert.match(shell, /<ProfileMenu/);
+    assert.match(menu, /disabled=\{isSigningOut\}/);
+    assert.match(menu, /aria-busy=\{isSigningOut\}/);
+    assert.match(menu, /isSigningOut \? 'Signing out\.\.\.' : 'Log out'/);
   }
 });
 
 test('the settings sign-out button stays on the page and becomes retryable after failure', () => {
-  const button = read('app/(app)/settings/SignOutButton.tsx');
+  const button = read('components/shell/SignOutButton.tsx');
 
   assert.match(button, /signOutCurrentSession/);
   assert.match(

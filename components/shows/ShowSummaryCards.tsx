@@ -8,7 +8,7 @@ import { Button } from '@/components/design-system/Button';
 import { Card } from '@/components/design-system/Card';
 import { CueModelSelect } from '@/components/shows/CueModelSelect';
 import { Textarea } from '@/components/design-system/Input';
-import { RANDOM_BRIEFS } from '@/app/(app)/shows/new/constants';
+import { RANDOM_BRIEFS } from '@/lib/shows/briefs';
 import { FALLBACK_CUE_MODEL } from '@/lib/cue-models';
 import { formatBudget, formatDuration } from '@/lib/show-domain';
 import type { ShowSummaryCard, TemplateSummaryCard, VisualPalette } from '@/lib/show-summary';

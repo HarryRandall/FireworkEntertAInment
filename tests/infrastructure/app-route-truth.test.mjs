@@ -27,7 +27,7 @@ test('home and My shows retain one primary heading through loading', () => {
   const homeLoading = read('components/home/HomeLoadingSkeleton.tsx');
   const shows = read('app/(app)/shows/page.tsx');
   const showsLoading = read('app/(app)/shows/loading.tsx');
-  const showTabs = read('app/(app)/shows/[id]/ShowTabs.tsx');
+  const showTabs = read('app/(app)/shows/[id]/_components/ShowTabs.tsx');
   const showSections = read('app/(app)/shows/[id]/show-detail-sections.ts');
 
   assert.match(home, /<PromptHero headingLevel="h1"/);

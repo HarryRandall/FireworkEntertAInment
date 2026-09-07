@@ -56,9 +56,9 @@ test('clean replay consumers opt into the shared fullscreen dialog contract', ()
   const consumers = [
     'components/replay/FireworkReplayViewer.tsx',
     'components/replay/TemplateReplayPreview.tsx',
-    'app/(admin)/admin/imports/[id]/FireworkImportPreview.tsx',
-    'app/(admin)/admin/show-presets/[id]/ShowPresetEditor.tsx',
-    'app/(admin)/admin/multishots/[id]/MultishotEditor.tsx',
+    'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
+    'app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx',
   ];
 
   for (const path of consumers) {

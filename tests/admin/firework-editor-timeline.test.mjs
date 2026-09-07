@@ -10,8 +10,8 @@ function read(path) {
 }
 
 test('firework and effect editors share the master timeline panel', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
 
   for (const editor of [fireworkEditor, effectEditor]) {
     assert.match(editor, /id: 'timeline'/);
@@ -43,8 +43,8 @@ test('timeline panel exposes an accessible total and slider for every lifecycle 
 });
 
 test('timeline mutations materialise all affected presets in one parent update', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/EffectEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
+  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
 
   assert.match(
     fireworkEditor,
@@ -60,7 +60,7 @@ test('timeline mutations materialise all affected presets in one parent update',
 });
 
 test('firework timeline changes synchronise scheduling duration to the achieved render end', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/FireworkEditor.tsx');
+  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
   assert.match(fireworkEditor, /timelineDurationSyncPendingRef\.current = true/);
   assert.match(

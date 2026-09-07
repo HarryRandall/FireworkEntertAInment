@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation';
 import { getAdminShowPresetById } from '@/lib/admin.server';
 import { listFireworkProducts } from '@/lib/shows.server';
-import { ShowPresetEditor } from './ShowPresetEditor';
+import { ShowPresetEditor } from '@/app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor';
 
 type PageProps = {
   params: Promise<{ id: string }>;

@@ -16,17 +16,20 @@ import {
 } from '@/lib/import-review';
 import { getImportRunHistory } from '@/lib/import-review.server';
 import { parseImportReconstruction } from '@/lib/import-reconstruction';
-import { FireworkImportPreview } from './FireworkImportPreview';
-import { ImportAdvancedData } from './ImportAdvancedData';
-import { ImportCandidatePicker, type CandidatePickerOption } from './ImportCandidatePicker';
-import { ImportEngineValidationPanel } from './ImportEngineValidationPanel';
-import { ImportProgressWatcher } from './ImportProgressWatcher';
-import { ImportPublishPanel } from './ImportPublishPanel';
-import { ImportReconstructionSummary } from './ImportReconstructionSummary';
-import { ImportRunControls } from './ImportRunControls';
-import { ImportRunHistory } from './ImportRunHistory';
-import { ImportStageHeader } from './ImportStageHeader';
-import { ImportValidationPanel } from './ImportValidationPanel';
+import { FireworkImportPreview } from '@/app/(admin)/admin/imports/[id]/_components/FireworkImportPreview';
+import { ImportAdvancedData } from '@/app/(admin)/admin/imports/[id]/_components/ImportAdvancedData';
+import {
+  ImportCandidatePicker,
+  type CandidatePickerOption,
+} from '@/app/(admin)/admin/imports/[id]/_components/ImportCandidatePicker';
+import { ImportEngineValidationPanel } from '@/app/(admin)/admin/imports/[id]/_components/ImportEngineValidationPanel';
+import { ImportProgressWatcher } from '@/app/(admin)/admin/imports/[id]/_components/ImportProgressWatcher';
+import { ImportPublishPanel } from '@/app/(admin)/admin/imports/[id]/_components/ImportPublishPanel';
+import { ImportReconstructionSummary } from '@/app/(admin)/admin/imports/[id]/_components/ImportReconstructionSummary';
+import { ImportRunControls } from '@/app/(admin)/admin/imports/[id]/_components/ImportRunControls';
+import { ImportRunHistory } from '@/app/(admin)/admin/imports/[id]/_components/ImportRunHistory';
+import { ImportStageHeader } from '@/app/(admin)/admin/imports/[id]/_components/ImportStageHeader';
+import { ImportValidationPanel } from '@/app/(admin)/admin/imports/[id]/_components/ImportValidationPanel';
 
 type PageProps = { params: Promise<{ id: string }> };
 
