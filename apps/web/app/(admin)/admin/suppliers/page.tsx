@@ -10,7 +10,7 @@ import {
   tableHeadClasses,
   tableHeaderCellClasses,
 } from '@/ui/patterns/DataTable';
-import { listSuppliers } from '@/lib/admin.server';
+import { listSuppliers } from '@/lib/admin/suppliers.server';
 import { SupplierFormDialog } from '@/app/(admin)/admin/suppliers/_components/SupplierFormDialog';
 import { SuppliersTableBody } from '@/app/(admin)/admin/suppliers/_components/SuppliersTableBody';
 

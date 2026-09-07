@@ -11,8 +11,8 @@ import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminStyleDefaultsCache,
-  requirePermission,
-} from '@/lib/admin.server';
+} from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import type { AdminEditorVersion, CurrentProfile } from '@/lib/admin.types';
 import {
   makeStyleDefaultEditorSnapshot,

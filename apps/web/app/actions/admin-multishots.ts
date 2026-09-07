@@ -11,8 +11,8 @@ import {
   getAdminMultishotCacheKey,
   invalidateAdminCatalogueCache,
   invalidateAdminMultishotsCache,
-  requirePermission,
-} from '@/lib/admin.server';
+} from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import {
   MULTISHOT_CALIBER_MAX_LENGTH,
   MULTISHOT_DESCRIPTION_MAX_LENGTH,

@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
 import { parseCover, randomCover } from '@/lib/cover';
 import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { DEFAULT_SHOW_STYLE, SHOW_STYLES, SHOW_STYLE_KEYS } from '@/lib/cue-generation/show-styles';

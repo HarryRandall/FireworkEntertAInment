@@ -10,12 +10,12 @@ import {
   buildAuthPageHref,
   getAuthCallbackDestination,
   getSafeAuthNextPath,
-} from '../../lib/auth-redirect.js';
+} from '../../lib/auth/auth-redirect.js';
 import {
   createPasswordRecoveryProof,
   verifyPasswordRecoveryProof,
-} from '../../lib/password-recovery-proof.js';
-import { isValidPasswordRecoveryTokenHash } from '../../lib/password-recovery-token.js';
+} from '../../lib/auth/password-recovery-proof.js';
+import { isValidPasswordRecoveryTokenHash } from '../../lib/auth/password-recovery-token.js';
 
 const root = process.cwd();
 
@@ -111,12 +111,12 @@ test('password recovery requires a verified recovery token hash, not any session
   const callback = read('app/auth/callback/route.ts');
   const confirm = read('app/auth/confirm/route.ts');
   const confirmPage = read('app/(marketing)/reset-password/confirm/page.tsx');
-  const recovery = read('lib/password-recovery.server.ts');
-  const recoveryEmail = read('lib/password-recovery-email.server.ts');
+  const recovery = read('lib/auth/password-recovery.server.ts');
+  const recoveryEmail = read('lib/auth/password-recovery-email.server.ts');
   const recoveryTemplate = read('../../supabase/templates/recovery.html');
   const page = read('app/(marketing)/reset-password/page.tsx');
   const action = read('app/actions/password-recovery.ts');
-  const rateLimit = read('lib/password-recovery-rate-limit.server.ts');
+  const rateLimit = read('lib/auth/password-recovery-rate-limit.server.ts');
   const serverCache = read('lib/server-cache.ts');
   const appOrigin = read('lib/app-origin.ts');
   const confirmButton = read(

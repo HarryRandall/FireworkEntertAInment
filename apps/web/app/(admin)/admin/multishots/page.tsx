@@ -8,7 +8,7 @@ import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { FilterBar } from '@/ui/patterns/FilterBar';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
-import { listMultishots } from '@/lib/admin.server';
+import { listMultishots } from '@/lib/admin/multishots.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
 import { NewMultishotButton } from '@/app/(admin)/admin/multishots/_components/NewMultishotButton';

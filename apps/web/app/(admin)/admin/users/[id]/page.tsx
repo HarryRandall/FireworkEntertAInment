@@ -13,13 +13,9 @@ import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
 import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';
 import { StatTile } from '@/ui/patterns/StatTile';
-import {
-  getAdminUserById,
-  getCurrentProfile,
-  getUserActivity,
-  listRolePermissionMatrix,
-  listRoles,
-} from '@/lib/admin.server';
+import { getAdminUserById, getUserActivity } from '@/lib/admin/users.server';
+import { getCurrentProfile } from '@/lib/admin/current-user.server';
+import { listRolePermissionMatrix, listRoles } from '@/lib/admin/roles.server';
 import {
   getAiCreditSummaryForUser,
   signedAiCreditAmount,

@@ -11,12 +11,13 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
-import { invalidateAdminUsersCache, requirePermission } from '@/lib/admin.server';
+import { invalidateAdminUsersCache } from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
 import { grantAiCredits } from '@/lib/ai-credits.server';
 import { getTrustedAppOrigin } from '@/lib/app-origin';
-import { sendPasswordRecoveryEmail } from '@/lib/password-recovery-email.server';
-import { reservePasswordRecoveryEmailRequest } from '@/lib/password-recovery-rate-limit.server';
+import { sendPasswordRecoveryEmail } from '@/lib/auth/password-recovery-email.server';
+import { reservePasswordRecoveryEmailRequest } from '@/lib/auth/password-recovery-rate-limit.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 

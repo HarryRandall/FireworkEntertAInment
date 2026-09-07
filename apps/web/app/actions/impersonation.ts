@@ -3,7 +3,7 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { requirePermission } from '@/lib/admin.server';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import {
   createReturnToken,
   hashReturnToken,

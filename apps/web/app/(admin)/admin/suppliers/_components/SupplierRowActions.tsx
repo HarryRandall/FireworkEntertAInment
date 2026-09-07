@@ -5,7 +5,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2 } from 'lucide-react';
-import { RowActionsMenu, toast } from '@/ui/patterns';
+import { RowActionsMenu } from '@/ui/patterns/RowActionsMenu';
+import { toast } from '@/ui/patterns/toast';
 import {
   AlertDialog,
   AlertDialogAction,

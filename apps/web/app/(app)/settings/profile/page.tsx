@@ -6,7 +6,7 @@ import { PersonalDetailsForm } from '@/app/(app)/settings/profile/_components/Pe
 import { SignOutButton } from '@/ui/shell/SignOutButton';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
-import { getCurrentProfile } from '@/lib/admin.server';
+import { getCurrentProfile } from '@/lib/admin/current-user.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 
 export default async function ProfileSettingsPage() {

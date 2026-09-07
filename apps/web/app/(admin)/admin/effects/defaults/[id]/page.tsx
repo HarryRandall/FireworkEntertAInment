@@ -1,7 +1,7 @@
 /** Admin editor for reusable live firework style defaults. */
 
 import { notFound } from 'next/navigation';
-import { getAdminStyleDefaultById } from '@/lib/admin.server';
+import { getAdminStyleDefaultById } from '@/lib/admin/style-defaults.server';
 import { StyleDefaultEditor } from '@/app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor';
 
 type PageProps = { params: Promise<{ id: string }> };

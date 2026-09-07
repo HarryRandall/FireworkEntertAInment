@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Undo2 } from 'lucide-react';
 import { stopImpersonationAction } from '@/app/actions/impersonation';
 import { signOutCurrentSession } from '@/ui/shell/sign-out.client';
-import { Button, toast } from '@/ui/patterns';
+import { Button } from '@/ui/patterns/Button';
+import { toast } from '@/ui/patterns/toast';
 
 export function SignOutButton({ impersonating = false }: { impersonating?: boolean }) {
   const router = useRouter();

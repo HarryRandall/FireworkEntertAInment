@@ -15,7 +15,7 @@ import {
 import { FilterBar, type FilterConfig } from '@/ui/patterns/FilterBar';
 import { FilterSkeleton, TableSkeleton } from '@/ui/shell/RouteSkeletons';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
-import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin.server';
+import { listAdminShowPresetImportShows, listAdminShowPresets } from '@/lib/admin/templates.server';
 import { listShowPresetsForCoverBackfill } from '@/lib/admin/cover-posters.server';
 import { formatDuration, formatStableDateTime } from '@/lib/show-domain';
 import {

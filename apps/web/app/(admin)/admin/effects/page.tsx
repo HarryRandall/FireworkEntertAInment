@@ -1,6 +1,7 @@
 /** Admin effects page listing colourless base firework effects and style defaults. */
 
-import { listAdminEffects, listAdminStyleDefaults } from '@/lib/admin.server';
+import { listAdminEffects } from '@/lib/admin/effects.server';
+import { listAdminStyleDefaults } from '@/lib/admin/style-defaults.server';
 import { parseAdminEffectsView } from '@/lib/admin-effects-navigation';
 import { EffectsBrowser } from '@/app/(admin)/admin/effects/_components/EffectsBrowser';
 

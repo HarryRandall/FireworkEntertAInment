@@ -1,6 +1,7 @@
 /** Retailer-admin credits: balance + top-up tiers that every in-store show draws from. Static preview data (see FIR-166). */
 
-import { Card, SectionHeader } from '@/ui/patterns';
+import { Card } from '@/ui/patterns/Card';
+import { SectionHeader } from '@/ui/patterns/SectionHeader';
 import { PreviewNotice } from '../_components/PreviewNotice';
 import { DUMMY_CREDIT_BALANCE, DUMMY_CREDIT_TIERS } from '../_lib/dummy-data';
 import { CreditsTopUp } from '@/app/(my-store)/my-store/credits/_components/CreditsTopUp';

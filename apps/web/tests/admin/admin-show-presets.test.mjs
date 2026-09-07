@@ -68,7 +68,6 @@ test('public reads only use published presets while admin helpers include drafts
   const templates = read('lib/admin/templates.server.ts');
   const timing = read('lib/show-preset-timing.server.ts');
   const actions = read('app/actions/admin-show-presets.ts');
-  const index = read('lib/admin/index.ts');
   const homePage = read('app/(app)/home/page.tsx');
   const homeDiscovery = read('ui/home/HomeDiscoverySections.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
@@ -106,9 +105,6 @@ test('public reads only use published presets while admin helpers include drafts
   ]) {
     assert.match(actions, new RegExp(`export async function ${action}`));
   }
-  assert.match(index, /getAdminShowPresetById/);
-  assert.match(index, /listAdminShowPresets/);
-  assert.match(index, /listAdminShowPresetImportShows/);
   assert.match(actions, /validatePublishablePreset/);
   assert.match(
     actions,

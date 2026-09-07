@@ -15,7 +15,7 @@ import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
 import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
 import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
-import { getShowTemplateBySlug } from '@/lib/admin.server';
+import { getShowTemplateBySlug } from '@/lib/admin/templates.server';
 import { randomCover } from '@/lib/cover';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

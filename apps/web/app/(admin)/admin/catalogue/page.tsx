@@ -20,7 +20,7 @@ import {
   MANUFACTURER_FILTER_NONE,
   matchesManufacturerFilter,
 } from '@/lib/show-domain';
-import { listCatalogueProducts } from '@/lib/admin.server';
+import { listCatalogueProducts } from '@/lib/admin/catalogue.server';
 import { ProductRowActions } from '@/app/(admin)/admin/catalogue/_components/ProductRowActions';
 
 const KIND_LABELS: Record<string, string> = {

@@ -6,7 +6,7 @@
  * deterministic given the same analyser input so re-running cue generation
  * never reshuffles slot timing.
  *
- * Consumed by the cue-generation pipeline (`lib/cue-generation.server.ts`).
+ * Consumed by the cue-generation pipeline in `lib/cue-generation/`.
  */
 import 'server-only';
 

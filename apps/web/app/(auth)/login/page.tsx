@@ -11,7 +11,7 @@ import { Button } from '@/ui/patterns/Button';
 import { createClient } from '@/lib/supabase/client';
 import { AuthShell } from '@/app/(auth)/_components/AuthShell';
 import { FormError } from '@/ui/patterns/FormError';
-import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth-redirect';
+import { buildAuthPageHref, getAuthCallbackDestination } from '@/lib/auth/auth-redirect';
 
 type Step = 'email' | 'password';
 type LoginError = {

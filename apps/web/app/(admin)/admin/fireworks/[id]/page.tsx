@@ -1,7 +1,7 @@
 /** Product-level firework editor. */
 
 import { notFound } from 'next/navigation';
-import { getAdminFireworkById } from '@/lib/admin.server';
+import { getAdminFireworkById } from '@/lib/admin/fireworks.server';
 import { FireworkEditor } from '@/app/(admin)/admin/fireworks/[id]/_components/FireworkEditor';
 
 type PageProps = {

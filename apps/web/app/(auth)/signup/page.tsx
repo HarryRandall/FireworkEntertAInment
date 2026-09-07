@@ -15,7 +15,7 @@ import {
   buildAuthCallbackUrl,
   buildAuthPageHref,
   getAuthCallbackDestination,
-} from '@/lib/auth-redirect';
+} from '@/lib/auth/auth-redirect';
 
 type Step = 'email' | 'details' | 'confirm';
 type SignupErrorField = 'email' | 'fullName' | 'password' | 'confirmPassword';

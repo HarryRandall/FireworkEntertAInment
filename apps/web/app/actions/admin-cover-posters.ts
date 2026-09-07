@@ -9,7 +9,7 @@
  * client write policy by design.
  */
 import { revalidatePath } from 'next/cache';
-import { requirePermission } from '@/lib/admin.server';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 export type BackfillPresetCoverResult = { ok: true; path: string } | { ok: false; error: string };

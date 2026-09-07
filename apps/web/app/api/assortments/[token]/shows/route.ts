@@ -11,7 +11,7 @@ import {
 } from '@/lib/assortments/public.server';
 import { consumeAssortmentPublicRateLimit } from '@/lib/assortments/request-security.server';
 import { creditActionForGenerationMode } from '@/lib/ai-credits.server';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
 import { randomCover } from '@/lib/cover';
 import type { Json } from '@/lib/database.types';
 import { DEFAULT_CUE_MODEL } from '@/lib/openrouter.server';

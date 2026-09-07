@@ -1,7 +1,7 @@
 /** Admin effect detail editor with live preview and AI draft refinement. */
 
 import { notFound } from 'next/navigation';
-import { getAdminEffectById } from '@/lib/admin.server';
+import { getAdminEffectById } from '@/lib/admin/effects.server';
 import { EffectEditor } from '@/app/(admin)/admin/effects/[id]/_components/EffectEditor';
 
 // Effect save/restore actions write full model_json payloads through RLS checks, so

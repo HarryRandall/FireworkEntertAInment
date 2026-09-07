@@ -16,7 +16,7 @@ import {
 import { EmptyState, Skeleton } from '@/ui/patterns/Feedback';
 import { FilterBar, type FilterConfig } from '@/ui/patterns/FilterBar';
 import { TablePagination, TABLE_PAGE_SIZE } from '@/ui/patterns/TablePagination';
-import { listImportJobs } from '@/lib/admin.server';
+import { listImportJobs } from '@/lib/admin/imports.server';
 import { importStageLabel, importStatusTone } from '@/lib/import-review';
 import { ImportJobCard } from '@/app/(admin)/admin/imports/_components/ImportJobCard';
 import { ImportJobRowActions } from '@/app/(admin)/admin/imports/_components/ImportJobRowActions';

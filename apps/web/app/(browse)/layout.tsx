@@ -6,7 +6,7 @@ import { AppShell } from '@/ui/shell/AppShell';
 import { MarketingFooter } from '@/ui/marketing/Footer';
 import { MarketingNavBar } from '@/ui/marketing/NavBar';
 import { SkipLink } from '@/ui/patterns/SkipLink';
-import { getCurrentProfile } from '@/lib/admin.server';
+import { getCurrentProfile } from '@/lib/admin/current-user.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 import {

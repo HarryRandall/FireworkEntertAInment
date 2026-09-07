@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { confirmPasswordRecoveryAction } from '@/app/actions/password-recovery';
 import { FormError } from '@/ui/patterns/FormError';
-import { PASSWORD_RECOVERY_TOKEN_COOKIE } from '@/lib/password-recovery.server';
+import { PASSWORD_RECOVERY_TOKEN_COOKIE } from '@/lib/auth/password-recovery.server';
 import { ResetPasswordShell } from '@/app/(marketing)/reset-password/_components/ResetPasswordShell';
 import { ConfirmRecoveryButton } from '@/app/(marketing)/reset-password/confirm/_components/ConfirmRecoveryButton';
 

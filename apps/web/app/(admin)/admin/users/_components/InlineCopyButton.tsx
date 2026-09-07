@@ -1,7 +1,7 @@
 'use client';
 
 import { Copy } from 'lucide-react';
-import { toast } from '@/ui/patterns';
+import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';
 
 type InlineCopyButtonProps = {

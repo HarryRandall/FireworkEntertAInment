@@ -7,7 +7,7 @@ import { LibraryCardsSkeleton, LibraryGridSkeleton } from '@/ui/shell/RouteSkele
 import { ExploreCard } from '@/ui/explore/ExploreCard';
 import { ExploreRow } from '@/ui/explore/ExploreRow';
 import { ExplorePreviewProvider } from '@/ui/explore/ExplorePreviewContext';
-import { listShowTemplates } from '@/lib/admin.server';
+import { listShowTemplates } from '@/lib/admin/templates.server';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 type Shelf = {

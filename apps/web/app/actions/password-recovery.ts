@@ -4,11 +4,11 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getTrustedAppOrigin } from '@/lib/app-origin';
-import { sendPasswordRecoveryEmail } from '@/lib/password-recovery-email.server';
+import { sendPasswordRecoveryEmail } from '@/lib/auth/password-recovery-email.server';
 import {
   reservePasswordRecoveryEmailRequest,
   reservePasswordRecoveryVerification,
-} from '@/lib/password-recovery-rate-limit.server';
+} from '@/lib/auth/password-recovery-rate-limit.server';
 import {
   clearPasswordRecoveryCookie,
   clearPasswordRecoveryTokenCookie,
@@ -17,8 +17,8 @@ import {
   PASSWORD_RECOVERY_COOKIE,
   PASSWORD_RECOVERY_TOKEN_COOKIE,
   passwordRecoveryCookieOptions,
-} from '@/lib/password-recovery.server';
-import { isValidPasswordRecoveryTokenHash } from '@/lib/password-recovery-token';
+} from '@/lib/auth/password-recovery.server';
+import { isValidPasswordRecoveryTokenHash } from '@/lib/auth/password-recovery-token';
 import { createClient } from '@/lib/supabase/server';
 
 const PasswordRecoveryEmailSchema = z.string().trim().email().max(320);

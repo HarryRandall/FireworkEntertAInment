@@ -48,7 +48,6 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
   const cacheKeys = read('lib/admin/cache-keys.ts');
   const effectsServer = read('lib/admin/effects.server.ts');
   const fireworksServer = read('lib/admin/fireworks.server.ts');
-  const index = read('lib/admin/index.ts');
 
   assert.match(cacheKeys, /getAdminEffectsCacheKey/);
   assert.match(cacheKeys, /getAdminEffectCacheKey/);
@@ -62,8 +61,6 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
   assert.doesNotMatch(effectsServer, /\.from\('effect_specs'\)/);
   assert.match(fireworksServer, /requirePermission\('admin\.manage_catalogue'\)/);
   assert.match(fireworksServer, /setCachedJson\(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS\)/);
-  assert.match(index, /listAdminEffects/);
-  assert.match(index, /listAdminFireworks/);
 });
 
 test('base effect edits validate model JSON and use conflict detection', () => {

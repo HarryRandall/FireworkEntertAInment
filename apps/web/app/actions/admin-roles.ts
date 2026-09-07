@@ -9,12 +9,9 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { isLockedRolePermission } from '@/lib/admin/role-permissions';
-import {
-  asPermissionKey,
-  asRoleKey,
-  invalidateAdminRolePermissionsCache,
-  requirePermission,
-} from '@/lib/admin.server';
+import { asPermissionKey, asRoleKey } from '@/lib/admin/mappers';
+import { invalidateAdminRolePermissionsCache } from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 

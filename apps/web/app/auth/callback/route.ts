@@ -7,11 +7,11 @@ import {
   getAuthCallbackDestination,
   getSafeAuthNextPath,
   isPasswordRecoveryPath,
-} from '@/lib/auth-redirect';
+} from '@/lib/auth/auth-redirect';
 import {
   PASSWORD_RECOVERY_COOKIE,
   passwordRecoveryCookieOptions,
-} from '@/lib/password-recovery.server';
+} from '@/lib/auth/password-recovery.server';
 import { createClient } from '@/lib/supabase/server';
 
 function noStoreRedirect(url: URL) {

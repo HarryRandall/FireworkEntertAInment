@@ -9,7 +9,7 @@ import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { FilterBar } from '@/ui/patterns/FilterBar';
 import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
-import { listAdminFireworks, listEffectOptions } from '@/lib/admin.server';
+import { listAdminFireworks, listEffectOptions } from '@/lib/admin/fireworks.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
 import { NewFireworkButton } from '@/app/(admin)/admin/fireworks/_components/NewFireworkButton';

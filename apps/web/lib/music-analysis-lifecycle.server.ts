@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
 
 type AppSupabaseClient = SupabaseClient<Database>;

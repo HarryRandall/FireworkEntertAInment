@@ -39,8 +39,8 @@ import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminImportsCache,
-  requirePermission,
-} from '@/lib/admin.server';
+} from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import { invalidateUserProfileCache } from '@/lib/admin/current-user.server';
 import {
   DEFAULT_OPENROUTER_MODEL,

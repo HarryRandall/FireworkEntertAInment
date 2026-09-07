@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { listShowTemplates } from '@/lib/admin.server';
+import { listShowTemplates } from '@/lib/admin/templates.server';
 import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { mapShow } from '@/lib/shows/mappers';

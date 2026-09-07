@@ -10,7 +10,7 @@ import { Card } from '@/ui/patterns/Card';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Skeleton } from '@/ui/patterns/Feedback';
 import { Textarea } from '@/ui/patterns/Input';
-import { getAdminPromptControlData } from '@/lib/admin.server';
+import { getAdminPromptControlData } from '@/lib/admin/prompts.server';
 import { type GenerationSetting, type PromptConfig } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
 import { GenerationModeControl } from '@/app/(admin)/admin/prompts/_components/GenerationModeControl';

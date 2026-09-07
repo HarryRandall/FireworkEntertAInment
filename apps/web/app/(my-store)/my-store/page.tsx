@@ -7,7 +7,9 @@
  * tracking is wired to assortments yet (see FIR-166).
  */
 
-import { Card, SectionHeader, StatTile } from '@/ui/patterns';
+import { Card } from '@/ui/patterns/Card';
+import { SectionHeader } from '@/ui/patterns/SectionHeader';
+import { StatTile } from '@/ui/patterns/StatTile';
 import { listAssortments } from '@/lib/admin/assortments.server';
 import { PreviewNotice } from './_components/PreviewNotice';
 import { DUMMY_OVERVIEW_STATS, DUMMY_SHOWS_LAST_14_DAYS } from './_lib/dummy-data';

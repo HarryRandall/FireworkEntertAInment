@@ -14,11 +14,8 @@ import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
 import { InlineAlert, Skeleton } from '@/ui/patterns/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
-import {
-  getCurrentProfile,
-  getCurrentShowPresetLikeState,
-  getShowTemplateBySlug,
-} from '@/lib/admin.server';
+import { getCurrentProfile } from '@/lib/admin/current-user.server';
+import { getCurrentShowPresetLikeState, getShowTemplateBySlug } from '@/lib/admin/templates.server';
 import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
 import type { ShowTemplate } from '@/lib/admin.types';
 import { CloneTemplateSubmitButton } from '@/app/(browse)/library/[id]/_components/CloneTemplateSubmitButton';

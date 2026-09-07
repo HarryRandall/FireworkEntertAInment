@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/ui/shell/AppShell';
-import { getCurrentProfile } from '@/lib/admin.server';
+import { getCurrentProfile } from '@/lib/admin/current-user.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
 import { measureServerTask } from '@/lib/perf.server';

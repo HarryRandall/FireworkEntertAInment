@@ -163,7 +163,7 @@ test('show song context exposes stored analysis context', () => {
   const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');
   const timeline = readFileSync(join(root, 'ui/shows/AudioAnalysisTimeline.tsx'), 'utf8');
   const splashPath = join(root, 'ui/shows/GeneratingShowAnimation.tsx');
-  const generatorPath = join(root, 'lib/cue-generation.server.ts');
+  const generatorPath = join(root, 'lib/cue-generation/runner.server.ts');
   assert.equal(existsSync(splashPath), true);
   assert.equal(existsSync(generatorPath), true);
 

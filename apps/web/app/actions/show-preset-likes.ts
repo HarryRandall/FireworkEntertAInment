@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { invalidateShowTemplatesCache } from '@/lib/admin.server';
+import { invalidateShowTemplatesCache } from '@/lib/admin/cache-keys';
 import { createClient } from '@/lib/supabase/server';
 
 type ToggleLikeResult =

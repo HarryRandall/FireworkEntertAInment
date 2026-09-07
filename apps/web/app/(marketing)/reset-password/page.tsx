@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FormError } from '@/ui/patterns/FormError';
-import { getPasswordRecoverySession } from '@/lib/password-recovery.server';
+import { getPasswordRecoverySession } from '@/lib/auth/password-recovery.server';
 import { ResetPasswordForm } from '@/app/(marketing)/reset-password/_components/ResetPasswordForm';
 import { ResetPasswordShell } from '@/app/(marketing)/reset-password/_components/ResetPasswordShell';
 

@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
-import { generateCuesForShow } from '@/lib/cue-generation.server';
+import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
 import { markLinkedShowGenerationFailed } from '@/lib/music-analysis-lifecycle.server';
 
 export const dynamic = 'force-dynamic';

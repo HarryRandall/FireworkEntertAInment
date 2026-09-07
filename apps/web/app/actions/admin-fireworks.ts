@@ -12,8 +12,8 @@ import {
   invalidateAdminFireworksCache,
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
-  requirePermission,
-} from '@/lib/admin.server';
+} from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import type {
   AdminEditorVersion,
   AdminStyleDefaultOption,

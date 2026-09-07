@@ -5,7 +5,7 @@ import {
   createPasswordRecoveryProof,
   PASSWORD_RECOVERY_PROOF_TTL_SECONDS,
   verifyPasswordRecoveryProof,
-} from '@/lib/password-recovery-proof';
+} from '@/lib/auth/password-recovery-proof';
 import { createClient } from '@/lib/supabase/server';
 
 export const PASSWORD_RECOVERY_COOKIE = 'showcrafter_password_recovery';

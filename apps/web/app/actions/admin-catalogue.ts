@@ -17,8 +17,8 @@ import {
   invalidateAdminCatalogueCache,
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
-  requirePermission,
-} from '@/lib/admin.server';
+} from '@/lib/admin/cache-keys';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
 
 type Result = { ok: true } | { ok: false; error: string };

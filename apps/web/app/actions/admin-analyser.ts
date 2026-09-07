@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { requirePermission } from '@/lib/admin.server';
+import { requirePermission } from '@/lib/admin/current-user.server';
 import {
   disableAnalyserWarmth,
   enableAnalyserWarmth,

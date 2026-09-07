@@ -4,8 +4,8 @@ import {
   PASSWORD_RECOVERY_TOKEN_COOKIE,
   passwordRecoveryCookieOptions,
   passwordRecoveryTokenCookieOptions,
-} from '@/lib/password-recovery.server';
-import { isValidPasswordRecoveryTokenHash } from '@/lib/password-recovery-token';
+} from '@/lib/auth/password-recovery.server';
+import { isValidPasswordRecoveryTokenHash } from '@/lib/auth/password-recovery-token';
 
 function noStoreRedirect(url: URL) {
   const response = NextResponse.redirect(url);
