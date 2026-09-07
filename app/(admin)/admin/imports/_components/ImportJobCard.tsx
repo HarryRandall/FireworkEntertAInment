@@ -102,7 +102,7 @@ export function ImportJobCard({
   }
 
   return (
-    <Card elevation="low" radius="md" className="p-5">
+    <Card radius="md" className="p-5">
       <form onSubmit={saveJob} className="space-y-4" aria-busy={isBusy}>
         <input type="hidden" name="id" value={job.id} />
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">

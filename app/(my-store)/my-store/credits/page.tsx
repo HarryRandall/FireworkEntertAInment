@@ -9,6 +9,7 @@ export default function RetailerAdminCreditsPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <SectionHeader
+        as="h1"
         title="Credits"
         description="Shoppers never pay. This is where the store tops up the balance every show draws down."
       />

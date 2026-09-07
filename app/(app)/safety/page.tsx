@@ -68,7 +68,7 @@ export default function SafetyPage() {
         {BOUNDARIES.map((boundary) => {
           const Icon = boundary.icon;
           return (
-            <Card key={boundary.title} elevation="low" radius="md" className="p-5 sm:p-6">
+            <Card key={boundary.title} radius="md" className="p-5 sm:p-6">
               <span className="bg-primary/15 text-primary inline-flex size-10 items-center justify-center rounded-xl">
                 <Icon aria-hidden="true" size={18} />
               </span>
@@ -81,7 +81,7 @@ export default function SafetyPage() {
         })}
       </section>
 
-      <Card elevation="low" radius="md" className="p-5 sm:p-6">
+      <Card radius="md" className="p-5 sm:p-6">
         <h2 className="text-on-surface text-lg font-semibold">Official Queensland resources</h2>
         <p className="text-on-surface-variant mt-2 max-w-3xl text-sm leading-relaxed">
           These links are starting points for the Queensland project context. Use the regulator for

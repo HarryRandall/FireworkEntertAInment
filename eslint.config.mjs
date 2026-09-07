@@ -1,5 +1,6 @@
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTypescript from 'eslint-config-next/typescript';
+import architecture from './tooling/eslint/architecture.mjs';
 
 const eslintConfig = [
   ...nextVitals,
@@ -12,6 +13,15 @@ const eslintConfig = [
       'services/**/.venv/**',
       'next-env.d.ts',
     ],
+  },
+  {
+    files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
+    plugins: { architecture },
+    rules: { 'architecture/boundaries': 'error' },
+  },
+  {
+    files: ['components/design-system/**/*.{ts,tsx}', 'components/shell/**/*.{ts,tsx}'],
+    rules: { 'architecture/semantic-colours': 'error' },
   },
   {
     rules: {

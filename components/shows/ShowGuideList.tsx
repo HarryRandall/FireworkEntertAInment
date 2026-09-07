@@ -23,7 +23,7 @@ function formatCueTime(seconds: number | null): string {
 
 export function ShowGuideList({ steps }: ShowGuideListProps) {
   return (
-    <Card elevation="low" radius="md" className="space-y-6 p-8">
+    <Card radius="md" className="space-y-6 p-8">
       <SectionHeader
         title="Show Guide"
         description="A cue-by-cue plan, timestamped to your song for review with your operator."

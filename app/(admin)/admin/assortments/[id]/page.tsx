@@ -1,21 +1,10 @@
-/** Admin assortment editor: name/description/price/active, plus the member catalogue-item picker. */
+import { AssortmentDetail } from '@/components/assortments/AssortmentDetail';
 
-import { notFound } from 'next/navigation';
-import { getTrustedAppOrigin } from '@/lib/app-origin';
-import { getAssortmentById } from '@/lib/admin/assortments.server';
-import { AssortmentEditor } from '@/components/assortments/AssortmentEditor';
-
-type PageProps = {
+export default async function AssortmentDetailPage({
+  params,
+}: {
   params: Promise<{ id: string }>;
-};
-
-export default async function AdminAssortmentDetailPage({ params }: PageProps) {
+}) {
   const { id } = await params;
-  const assortment = await getAssortmentById(id);
-  if (!assortment) notFound();
-  const origin = getTrustedAppOrigin();
-  const publicUrl =
-    origin && assortment.publicLink ? `${origin}/a/${assortment.publicLink.publicToken}` : null;
-
-  return <AssortmentEditor assortment={assortment} publicUrl={publicUrl} />;
+  return <AssortmentDetail id={id} />;
 }

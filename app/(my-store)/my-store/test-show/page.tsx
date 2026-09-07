@@ -12,6 +12,7 @@ export default async function RetailerAdminTestShowPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <SectionHeader
+        as="h1"
         title="Test a show"
         description="Pick a live assortment and open its real QR entry in a new tab, exactly what a shopper sees after scanning the code in-store."
       />

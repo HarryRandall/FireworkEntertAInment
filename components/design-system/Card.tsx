@@ -15,8 +15,6 @@ type CardProps = ComponentPropsWithoutRef<'div'> & {
   bordered?: boolean;
   hoverable?: boolean;
   shadow?: boolean;
-  /** @deprecated kept for backwards compatibility — no longer affects styling */
-  elevation?: 'low' | 'high';
 };
 
 export function Card({
@@ -26,10 +24,8 @@ export function Card({
   shadow = false,
   className,
   children,
-  elevation: _elevation,
   ...rest
 }: CardProps) {
-  void _elevation;
   return (
     <div
       className={cn(

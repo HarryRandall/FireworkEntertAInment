@@ -32,7 +32,7 @@ test('show detail chrome keeps an accessible heading without visible title chrom
 
 test('client navigation moves focus to the updated show heading', () => {
   const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
-  const tabs = read('app/(app)/shows/[id]/_components/ShowTabs.tsx');
+  const tabs = read('app/(app)/shows/_components/ShowTabs.tsx');
 
   assert.match(chrome, /const routeKey = `\$\{showSlug\}:\$\{segment \?\? section\.segment\}/);
   assert.match(chrome, /previousRouteKeyRef\.current === routeKey/);
@@ -80,7 +80,7 @@ test('show loading boundaries preserve real route chrome without redrawing it', 
 });
 
 test('show loading content matches the active section', () => {
-  const skeleton = read('app/(app)/shows/[id]/_components/ShowDetailContentSkeleton.tsx');
+  const skeleton = read('app/(app)/shows/_components/ShowDetailContentSkeleton.tsx');
 
   assert.match(skeleton, /case 'shopping-list':[\s\S]*?<ShoppingListSkeleton \/>/);
   assert.match(skeleton, /case 'show-guide':[\s\S]*?<ListSkeleton rows=\{8\} \/>/);

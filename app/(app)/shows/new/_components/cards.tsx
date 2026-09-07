@@ -107,7 +107,7 @@ export function PositionDots({ count }: { count: 1 | 2 | 3 }) {
           className={cn(
             'h-2.5 w-2.5 rounded-full transition-colors',
             index < count
-              ? 'bg-[color:var(--color-accent)] shadow-[0_0_8px_-1px_var(--color-accent)]'
+              ? 'bg-primary shadow-[0_0_8px_-1px_var(--primary)]'
               : 'border border-[color:var(--color-border-default)]',
           )}
         />

@@ -35,6 +35,7 @@ export default async function RetailerAdminOverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <SectionHeader
+        as="h1"
         title="Overview"
         description="Where a retailer runs their in-store AI experience: assortments and credits."
       />

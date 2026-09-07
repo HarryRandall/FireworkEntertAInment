@@ -305,12 +305,7 @@ export function AudioAnalysisTimeline({
         {statusAnnouncement(hasAudio, analysis)}
       </p>
 
-      <Card
-        elevation="low"
-        radius="md"
-        className="relative p-6"
-        aria-busy={analysis?.status === 'running'}
-      >
+      <Card radius="md" className="relative p-6" aria-busy={analysis?.status === 'running'}>
         <div className="mb-5 space-y-2">
           <h2 className="text-on-surface text-xl font-extrabold">Song context</h2>
           {showStatusCopy ? (

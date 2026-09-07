@@ -17,10 +17,10 @@ import { ChevronDown, ListFilter, Search } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/components/shows/GeneratingShowAnimation';
 import { GENERATING_ROUTE_SPLASH_CLASS } from '@/components/shows/generatingSplashLayout';
 import { Skeleton } from '@/components/design-system/Feedback';
-import { ShowDetailContentSkeleton } from '@/app/(app)/shows/[id]/_components/ShowDetailContentSkeleton';
-import { ShowTabs } from '@/app/(app)/shows/[id]/_components/ShowTabs';
+import { ShowDetailContentSkeleton } from '@/app/(app)/shows/_components/ShowDetailContentSkeleton';
+import { ShowTabs } from '@/app/(app)/shows/_components/ShowTabs';
 import { getShowDetailSection } from './[id]/show-detail-sections';
-import { WizardLoading } from './new/_components/WizardLoading';
+import { WizardLoading } from '@/app/(app)/shows/_components/WizardLoading';
 
 const SHOWS_LIST_SKELETON_COUNT = 24;
 

@@ -178,7 +178,7 @@ export function AddPermissionOverrideDialog({ userId, permissions, onSaved, onFa
                     className={cn(
                       'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-left transition-colors last:border-b-0',
                       selected
-                        ? 'bg-[color:var(--color-accent-subtle)] ring-1 ring-[color:var(--color-accent)] ring-inset'
+                        ? 'ring-primary bg-[color:var(--color-accent-subtle)] ring-1 ring-inset'
                         : 'hover:bg-[color:var(--color-bg-muted)]',
                     )}
                   >

@@ -106,7 +106,7 @@ export function PermissionExceptionsPanel({
   };
 
   return (
-    <Card elevation="low" radius="lg" className="p-5">
+    <Card radius="lg" className="p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">

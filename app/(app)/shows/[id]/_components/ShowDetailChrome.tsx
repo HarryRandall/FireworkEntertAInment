@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { Button } from '@/components/design-system/Button';
 import { ShowExportButton } from '@/components/shows/ShowExportButton';
-import { ShowTabs } from '@/app/(app)/shows/[id]/_components/ShowTabs';
+import { ShowTabs } from '@/app/(app)/shows/_components/ShowTabs';
 import { getShowDetailSection } from '@/app/(app)/shows/[id]/show-detail-sections';
 import { OPEN_SHOW_REFINEMENT_EVENT } from '@/lib/show-detail-events';
 

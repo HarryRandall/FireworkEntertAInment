@@ -11,22 +11,22 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('solid badges avoid ambiguous accent foreground pairings', () => {
+test('solid brand badges pair a tinted primary surface with readable text', () => {
   const badge = read('components/design-system/Badge.tsx');
 
   assert.doesNotMatch(badge, /bg-accent\s+text-accent-foreground/);
-  assert.match(badge, /var\(--color-accent\)_14%,transparent/);
+  assert.match(badge, /var\(--primary\)_14%,transparent/);
   assert.match(badge, /var\(--color-content-emphasis\)/);
 });
 
-test('shared UI primitives do not mix semantic accent backgrounds with shadcn foregrounds', () => {
+test('shared brand controls do not use neutral accent foregrounds', () => {
   for (const path of [
     'components/design-system/Badge.tsx',
     'components/design-system/Button.tsx',
     'components/design-system/styles.ts',
   ]) {
     const source = read(path);
-    assert.doesNotMatch(source, /bg-accent\s+text-accent-foreground/, path);
+    assert.doesNotMatch(source, /bg-primary\s+text-accent-foreground/, path);
   }
 });
 

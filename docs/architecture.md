@@ -15,6 +15,7 @@ only useful when there is another application that actually consumes them.
 | `components/<domain>/`      | Features shared by multiple routes, such as assortments, music selection and replay      |
 | `components/shell/`         | App, admin and My Store navigation, account controls and workspace chrome                |
 | `lib/`                      | Domain transformations, validation, types and server integrations                        |
+| `styles/theme.css`          | Canonical light/dark colour values and legacy aliases                                    |
 | `hooks/`                    | Hooks shared across domains; feature-only hooks stay beside their feature                |
 | `utils/supabase/`           | Existing Supabase client factories and request/session adapters                          |
 | `services/`                 | Independently deployed Python services with their own requirements                       |
@@ -30,8 +31,10 @@ outside client bundles. Keep permission and ownership checks at server boundarie
 
 Route groups organise layouts without changing URLs. Use `_components` for
 route-local React components; keep `page`, `layout`, `loading`, `error` and route
-handlers at their Next.js locations. Shared features should take explicit inputs,
-such as an assortment destination, instead of inferring an admin persona.
+handlers at their Next.js locations. The import-render harness retains its
+fingerprinted path because a move invalidates sealed renderer evidence. Shared
+features should take explicit inputs, such as an assortment destination, instead
+of inferring an admin persona.
 
 ## Reuse and presentation
 
@@ -44,9 +47,10 @@ must add a real behaviour or composition; do not duplicate the underlying styles
 
 Keep the established compact layout, Geist typography, neutral surfaces, thin
 borders and restrained shadows. Use green for ShowCrafter's primary actions and
-brand highlights. Colours for success, warning, danger and information have
-semantic meanings. Firework/show palettes and marketing artwork are content,
-and may have their own colours.
+brand highlights. The `accent` token is the neutral hover/selection surface;
+`primary` is the brand action colour. Colours for success, warning, danger and
+information have semantic meanings. Firework/show palettes and marketing artwork
+are content, and may have their own colours.
 
 | Purpose                 | Tailwind tokens                                                                        |
 | ----------------------- | -------------------------------------------------------------------------------------- |
@@ -57,16 +61,21 @@ and may have their own colours.
 | Brand highlight         | `bg-hl`, `bg-hl-soft`, `text-hl-ink`                                                   |
 | Status                  | `text-status-success`, `text-status-warning`, `text-status-danger`, `text-status-info` |
 
-Maintain colour values and their light/dark counterparts together in the theme
-stylesheet. Prefer semantic tokens over literal hex values and palette classes
-in application UI. Legacy colour aliases are compatibility mappings, not a second
-palette. Check light, dark, mobile, focus, disabled/loading and reduced-motion
-states when changing a shared primitive.
+Maintain colour values and their light/dark counterparts together in
+`styles/theme.css`. Prefer semantic tokens over literal hex values and palette
+classes in application UI. Legacy colour aliases are compatibility mappings, not
+a second palette. Check light, dark, mobile, focus, disabled/loading and
+reduced-motion states when changing a shared primitive.
 
+Use `SectionHeader as="h1"` for a page heading and its default `h2` for sections.
 Every page needs a meaningful heading, honest empty/error/loading states, and
 an intentional access boundary. A navigation item does not grant permission.
 Preview-only My Store metrics and credit top-ups must remain labelled as previews.
 Keep old redirect URLs working when consolidating pages.
+
+ESLint blocks imports from another route subtree, upward dependencies from UI
+primitives/patterns, and literal colour utilities in shared controls and shells.
+The tests exercise these boundaries, including relative and dynamic imports.
 
 ## Reference and maintenance
 

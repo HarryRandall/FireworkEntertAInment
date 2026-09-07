@@ -23,22 +23,42 @@ Sources: [Dub feature UI](https://github.com/dubinc/dub/tree/main/apps/web/ui),
 and the installed Next.js 16 project-structure documentation. `app.dub.co`
 redirected to login, so authenticated Dub screens were not inspected.
 
-## Findings and implementation scope
+## Findings and completed changes
 
-| Finding                                                             | Decision                                                                                                              |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Admin and My Store contain almost identical new-assortment dialogs  | One assortment feature with an explicit destination                                                                   |
-| My Store imports the editor from an admin route                     | Move the shared editor to `components/assortments`                                                                    |
-| Kiosk imports music search from the show wizard                     | Move music search to `components/music`                                                                               |
-| Account-unavailable imports sign-out from settings                  | Move sign-out to `components/shell`                                                                                   |
-| Show summary imports random briefs from a route                     | Put shared brief data in `lib/shows`                                                                                  |
-| App/admin duplicate profile menus, theme picker and brand controls  | Extract shared shell components and reuse them in My Store                                                            |
-| Route-only components live beside route entrypoints inconsistently  | Colocate them in `_components` and update callers/tests                                                               |
-| Button and Input duplicate low-level implementations                | Compose the existing UI primitives while keeping public behaviour                                                     |
-| Four component modules have no runtime importers                    | Remove after checking tests and references: EffectPreviewIcon, ShowTemplatePreview, ThemePreferenceField, ThemeToggle |
-| Multiple colour blocks independently define overlapping values      | Centralise theme values and map legacy aliases to canonical tokens                                                    |
-| Root README and contributing guide duplicate setup and verification | README owns quick start; contributing owns workflow and service setup                                                 |
-| My Store and kiosk are missing from the root project overview       | Document their routes, ownership and preview limitations                                                              |
+| Finding                                                             | Decision                                                                                                                                                                         |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin and My Store contain almost identical new-assortment dialogs  | One assortment feature with an explicit destination                                                                                                                              |
+| My Store imports the editor from an admin route                     | Move the shared editor to `components/assortments`                                                                                                                               |
+| Kiosk imports music search from the show wizard                     | Move music search to `components/music`                                                                                                                                          |
+| Account-unavailable imports sign-out from settings                  | Move sign-out to `components/shell`                                                                                                                                              |
+| Show summary imports random briefs from a route                     | Put shared brief data in `lib/shows`                                                                                                                                             |
+| App/admin duplicate profile menus, theme picker and brand controls  | Extract shared shell components and reuse them in My Store                                                                                                                       |
+| Route-only components live beside route entrypoints inconsistently  | Colocate them in `_components` and update callers/tests                                                                                                                          |
+| Button and Input duplicate low-level implementations                | Compose the existing UI primitives while keeping public behaviour                                                                                                                |
+| Four component modules initially had no runtime importers           | Removed after checking tests and references: EffectPreviewIcon, ShowTemplatePreview, ThemePreferenceField, ThemeToggle. Their unused CardBorderTrace dependency was also removed |
+| Multiple colour blocks independently define overlapping values      | Centralise theme values and map legacy aliases to canonical tokens                                                                                                               |
+| Root README and contributing guide duplicate setup and verification | README owns quick start; contributing owns workflow and service setup                                                                                                            |
+| My Store and kiosk are missing from the root project overview       | Document their routes, ownership and preview limitations                                                                                                                         |
+
+The first structure checkpoint removed 832 net lines while preserving all 74
+URLs. App/admin/My Store now share `ProfileMenu` and `SidebarBrand`; My Store
+and admin also share the assortment detail query, heading, editor and creation
+dialog. A second lint pass found loading UI shared by parent and child show routes;
+those components now live at their common `shows/_components` owner.
+
+`styles/theme.css` now owns the light/dark palette. Compatibility names map to the
+canonical surface, text and primary-action values. The dark sidebar's old blue
+primary now follows ShowCrafter green. Status text has tested contrast against
+its tinted surface in both themes. Button styling comes from the base UI variants,
+Input/Textarea compose the base controls, and the unused Card elevation prop and
+its callers are removed. Shared replay backgrounds use the stage token.
+
+The root guides now have distinct roles: README for quick start and project
+orientation, CONTRIBUTING for workflow/service setup, and architecture for UI
+ownership, colour and page rules. AGENTS links to these rules. The new ESLint
+checks reject upward UI dependencies, imports across private route subtrees and
+raw colour utilities in shared controls/shells. Existing mock-ups remain reference
+material, not production components.
 
 ## Boundaries and follow-up work
 
@@ -46,6 +66,11 @@ The 5,951-line renderer control file, large visual editors, replay canvas and
 cover renderer have tightly coupled timing and persistence behaviour. A file's
 length is a review signal, not sufficient reason to split its engine. They need
 separate behaviour-led changes with renderer and persistence validation.
+
+The import-render harness remains at `app/internal/import-render/ImportRenderHarness.tsx`.
+Its path is hashed into sealed renderer evidence; moving it would require an
+intentional app/worker/database contract update. This structural change leaves
+that contract unchanged.
 
 `RouteSkeletons` contains several domain-specific loading shapes. Preserve those
 shapes; share a skeleton only when it represents the same content. Marketing,
@@ -142,6 +167,24 @@ redirect classification includes normal pages that redirect for invalid input.
 
 ## Verification record
 
-Implementation and rendered-check results are recorded here as each change is
-completed. The pre-change `npm run check` passed all 677 tests and the production
-build during the main synchronisation in this task.
+- Baseline: `npm run check` passed 677 tests and the production build.
+- Structure checkpoint: TypeScript, lint, all 679 application tests and all 68
+  firework worker tests passed. The route URLs are unchanged.
+- Browser: the real shared components rendered in an isolated, temporary local
+  fixture. Checked app/admin/My Store shells, light/dark themes, 390px mobile
+  layout, sidebar drawer, account menu, input/error states, dialog open/close,
+  field entry and create-button enablement. The actual `/login` route and its
+  relocated stylesheet also rendered correctly. No assortment was created.
+- The disabled-link keyboard interaction could not be driven by the browser
+  tool, which timed out on the disabled control. Its busy/disabled rendering was
+  visible, and the existing source-level interaction guard still passes.
+- Browser coverage used fixture identities, not a live authenticated account.
+  Full catalogue, generation, billing and retailer data workflows were not
+  exercised. These changes do not deploy services or apply migrations.
+- Final: `npm run check` passed formatting, ESLint, TypeScript, all 686 application
+  tests and the production build. The worker contract and generated UI files are
+  unchanged.
+- Final inventory: 567 source modules, 130 shared component modules and 74 pages.
+  No component modules lack importers, and there are no cross-route-group imports.
+  The complete URL list matches the baseline. Referenced modules may still contain
+  unused exports; the audit does not prove every export is needed.

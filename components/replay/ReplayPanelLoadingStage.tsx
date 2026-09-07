@@ -24,7 +24,7 @@ export function ReplayPanelLoadingStage({ className }: { className?: string }) {
 
   return (
     <div
-      className={cn('absolute inset-0 overflow-hidden rounded-[inherit] bg-[#020409]', className)}
+      className={cn('bg-stage-night absolute inset-0 overflow-hidden rounded-[inherit]', className)}
     >
       <ReplayStageBackdrop
         className={cn('transition-opacity duration-500', sceneReady && 'opacity-0')}

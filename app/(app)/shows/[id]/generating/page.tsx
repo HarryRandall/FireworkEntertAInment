@@ -79,7 +79,7 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
       error: show.generationError,
     });
     return (
-      <Card elevation="high" radius="lg" className="mx-auto max-w-2xl p-8">
+      <Card radius="lg" className="mx-auto max-w-2xl p-8">
         <div className="flex items-start gap-4">
           <span className="bg-destructive/10 text-destructive rounded-lg p-3">
             <AlertTriangle size={22} aria-hidden="true" />

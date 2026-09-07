@@ -51,7 +51,7 @@ export function TemplateCurrentFireworkCard({
   const nextCue = activeCueIndex >= 0 ? (cues[activeCueIndex + 1] ?? null) : null;
 
   return (
-    <Card elevation="low" radius="md" className="p-4">
+    <Card radius="md" className="p-4">
       <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
 
       {activeCue ? (

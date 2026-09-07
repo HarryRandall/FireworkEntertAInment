@@ -151,7 +151,7 @@ async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
   const summary = await getAiCreditSummaryForUser(userId);
 
   return (
-    <Card elevation="low" radius="lg" className="p-5">
+    <Card radius="lg" className="p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ async function AdminUserActivity({ userId }: { userId: string }) {
         <StatTile label="Shows last 30d" value={activity?.stats.shows30dCount ?? 0} />
       </section>
 
-      <Card elevation="low" radius="lg" className="p-5">
+      <Card radius="lg" className="p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
             Activity (last 30 days)
@@ -258,7 +258,7 @@ async function AdminUserRoleCard({ user }: { user: AdminUser }) {
   const primaryRole = user.roles[0] ?? 'user';
   const primaryRoleRow = roles.find((r) => r.key === primaryRole) ?? roles[0];
   return (
-    <Card elevation="low" radius="lg" className="p-5">
+    <Card radius="lg" className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">Role</h2>

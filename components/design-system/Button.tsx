@@ -1,41 +1,31 @@
 'use client';
 
-/** Primary button primitive (CVA variants) - use for all clickable actions and links rendered as buttons. */
+/** Product actions add link and loading behaviour to the shared UI button variants. */
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const button = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent bg-clip-padding text-sm font-medium transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-150 focus:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-  {
-    variants: {
-      variant: {
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/80',
-        secondary:
-          'border-border bg-background text-foreground shadow-xs hover:bg-muted hover:text-foreground',
-        ghost: 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
-        accent:
-          'bg-[color:var(--accent)] text-[color:var(--accent-foreground)] hover:bg-[color-mix(in_srgb,var(--accent)_84%,var(--foreground)_16%)]',
-        destructive:
-          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20',
-      },
-      size: {
-        sm: 'h-8 px-3',
-        md: 'h-10 px-4',
-        lg: 'h-12 px-6',
-        icon: 'h-10 w-10',
-      },
-    },
-    defaultVariants: {
-      variant: 'primary',
-      size: 'md',
-    },
-  },
-);
+const variants = {
+  primary: 'default',
+  secondary: 'outline',
+  ghost: 'ghost',
+  accent: 'secondary',
+  destructive: 'destructive',
+} as const satisfies Record<string, NonNullable<VariantProps<typeof buttonVariants>['variant']>>;
 
-type CommonProps = VariantProps<typeof button> & {
+const sizes = {
+  sm: 'h-8 px-3',
+  md: 'h-10 px-4',
+  lg: 'h-12 px-6',
+  icon: 'h-10 w-10',
+} as const;
+
+type CommonProps = {
+  variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
   children: ReactNode;
   className?: string;
   loading?: boolean;
@@ -55,9 +45,15 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 export function Button(props: ButtonProps) {
   const { variant = 'primary', size = 'md', className, children, loading = false } = props;
-  const classes = cn(button({ variant, size }), className);
+  const classes = cn(
+    buttonVariants({ variant: variants[variant], size: null }),
+    'cursor-pointer gap-2 duration-150 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:translate-y-0',
+    sizes[size],
+    variant === 'ghost' && 'text-muted-foreground',
+    className,
+  );
 
-  if ('href' in props && props.href !== undefined) {
+  if (props.href !== undefined) {
     const {
       href,
       variant: _v,
@@ -109,7 +105,7 @@ export function Button(props: ButtonProps) {
     type = 'button',
     'aria-busy': ariaBusy,
     ...rest
-  } = props as ButtonAsButton;
+  } = props;
   void _v;
   void _s;
   void _c;

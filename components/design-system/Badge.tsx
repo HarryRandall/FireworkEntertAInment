@@ -45,28 +45,24 @@ const dotClasses: Record<Tone, string> = {
   wow: 'bg-primary',
 };
 
-// Coloured pill chips — Dub StatusBadge pattern: tinted subtle background,
-// saturated tone-coloured text, leading tone icon. Uses explicit color-mix so
-// the background opacity renders reliably on every theme. Applied when `solid` is true.
+// Status colours pair with tested subtle surfaces. Brand/category chips keep
+// their tinted fills and readable foregrounds in both themes.
 const solidClasses: Record<Tone, string> = {
   neutral:
     'border-transparent bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]',
-  success:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  danger:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-status-danger)_18%,transparent)] text-[color:var(--color-status-danger)]',
-  warning:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-status-warning)_18%,transparent)] text-[color:var(--color-status-warning)]',
-  info: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-info)_18%,transparent)] text-[color:var(--color-status-info)]',
+  success: 'border-transparent bg-status-success-subtle text-status-success',
+  danger: 'border-transparent bg-status-danger-subtle text-status-danger',
+  warning: 'border-transparent bg-status-warning-subtle text-status-warning',
+  info: 'border-transparent bg-status-info-subtle text-status-info',
   accent:
-    'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
+    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
   violet: 'border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300',
   sky: 'border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300',
   'amber-soft': 'border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300',
   primary:
     'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
-  live: 'border-transparent bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]',
-  wow: 'border-transparent bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
+  live: 'border-transparent bg-status-success-subtle text-status-success',
+  wow: 'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
 };
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;

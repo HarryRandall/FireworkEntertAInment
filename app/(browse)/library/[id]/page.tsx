@@ -67,7 +67,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
         </Suspense>
 
         <aside className="space-y-3 xl:sticky xl:top-20 xl:self-start">
-          <Card elevation="high" radius="md" className="p-4">
+          <Card radius="md" className="p-4">
             <p className="text-primary text-sm font-semibold">{template.theme}</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {template.moodTags.map((tag) => (
@@ -83,7 +83,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
             </div>
           </Card>
 
-          <Card elevation="low" radius="md" className="p-4">
+          <Card radius="md" className="p-4">
             <h2 className="text-on-surface text-sm font-semibold">Show details</h2>
             <dl className="mt-3 space-y-2 text-[13px]">
               <DetailRow icon={<Clock size={14} />} label="Duration">
@@ -201,7 +201,7 @@ async function LibraryDetailCurrentFirework({
 
 function CurrentFireworkCardSkeleton() {
   return (
-    <Card elevation="low" radius="md" className="p-4">
+    <Card radius="md" className="p-4">
       <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
       <div className="mt-3 space-y-4">
         <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">

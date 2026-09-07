@@ -44,10 +44,14 @@ function composite(foreground, background, opacity) {
   return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 }
 
-function lightToken(css, name) {
-  const match = new RegExp(`--${name}:\\s*(#[0-9a-f]{6});`, 'i').exec(css);
+function lightToken(css, name, seen = new Set()) {
+  assert.ok(!seen.has(name), `Circular colour alias --${name}`);
+  seen.add(name);
+  const match = new RegExp(`--${name}:\\s*([^;]+);`, 'i').exec(css);
   assert.ok(match, `Missing light theme token --${name}`);
-  return match[1];
+  const value = match[1].trim();
+  const alias = /^var\(--([\w-]+)\)$/.exec(value);
+  return alias ? lightToken(css, alias[1], seen) : value;
 }
 
 test('repository guidance stays concise and has one source of truth', () => {
@@ -68,7 +72,7 @@ test('repository guidance stays concise and has one source of truth', () => {
 });
 
 test('global tokens preserve visible focus and real monospace metadata', () => {
-  const css = readProject('app/globals.css');
+  const css = readProject('app/globals.css') + readProject('styles/theme.css');
   const layout = readProject('app/layout.tsx');
 
   assert.doesNotMatch(css, /:where\(\*\):focus/);
@@ -91,7 +95,7 @@ test('brand count badges pair marker green with its semantic ink token', () => {
 });
 
 test('light theme text and focus tokens retain accessible contrast', () => {
-  const css = readProject('app/globals.css');
+  const css = readProject('app/globals.css') + readProject('styles/theme.css');
   const background = lightToken(css, 'background');
   const mutedSurface = lightToken(css, 'muted');
   const primary = lightToken(css, 'primary');
@@ -114,9 +118,42 @@ test('light theme text and focus tokens retain accessible contrast', () => {
 
 test('the manifest retains packages imported by global styles', () => {
   const pkg = JSON.parse(readProject('package.json'));
-  const css = readProject('app/globals.css');
+  const css = readProject('app/globals.css') + readProject('styles/theme.css');
 
   assert.match(css, /@import 'shadcn\/tailwind\.css';/);
   assert.equal(typeof pkg.dependencies.shadcn, 'string');
   assert.equal(existsSync(join(repoRoot, 'components/design-system/tokens.ts')), false);
+});
+
+test('semantic status text is legible on its corresponding light surface', () => {
+  const css = readProject('styles/theme.css');
+  for (const status of ['success', 'danger', 'warning', 'info']) {
+    assert.ok(
+      contrast(lightToken(css, `status-${status}`), lightToken(css, `status-${status}-subtle`)) >=
+        4.5,
+      status,
+    );
+  }
+});
+
+test('compatibility colours resolve to the primary palette and theme is imported once', () => {
+  const css = readProject('styles/theme.css');
+  const global = readProject('app/globals.css');
+  assert.equal((global.match(/@import '\.\.\/styles\/theme\.css';/g) ?? []).length, 1);
+  assert.equal(lightToken(css, 'color-accent'), lightToken(css, 'accent'));
+  assert.equal(lightToken(css, 'color-content-default'), lightToken(css, 'foreground'));
+  assert.equal(lightToken(css, 'sidebar-primary'), lightToken(css, 'primary'));
+});
+
+test('dark status colours remain legible against their semantic surfaces', () => {
+  const source = readProject('styles/theme.css');
+  const css = source.slice(source.lastIndexOf(".dark,\n[data-theme='dark']"));
+  for (const status of ['success', 'danger', 'warning', 'info']) {
+    assert.ok(
+      contrast(lightToken(css, `status-${status}`), lightToken(css, `status-${status}-subtle`)) >=
+        4.5,
+      status,
+    );
+  }
+  assert.ok(contrast(lightToken(css, 'primary'), lightToken(css, 'primary-foreground')) >= 4.5);
 });

@@ -24,7 +24,8 @@ test('replay loading layers preserve the same rounded clipping', () => {
   const loadingStage = read('components/replay/ReplayPanelLoadingStage.tsx');
   const skeletons = read('components/shell/RouteSkeletons.tsx');
 
-  assert.match(backdrop, /overflow-hidden rounded-\[inherit\] bg-\[#020409\]/);
-  assert.match(loadingStage, /overflow-hidden rounded-\[inherit\] bg-\[#020409\]/);
-  assert.match(skeletons, /min-h-\[520px\] overflow-hidden rounded-\[inherit\] bg-\[#020409\]/);
+  for (const source of [backdrop, loadingStage, skeletons]) assert.match(source, /bg-stage-night/);
+  assert.match(backdrop, /overflow-hidden rounded-\[inherit\]/);
+  assert.match(loadingStage, /overflow-hidden rounded-\[inherit\]/);
+  assert.match(skeletons, /min-h-\[520px\] overflow-hidden rounded-\[inherit\]/);
 });

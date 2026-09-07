@@ -2,17 +2,8 @@
 
 ## Set up the repository
 
-Use Node 24 and npm 11:
-
-```bash
-nvm use
-npm ci
-cp .env.example .env.local
-npm run dev
-```
-
-Fill `.env.local` with development credentials. Never commit secrets. The
-variable descriptions and optional integrations live in `.env.example`.
+Follow the [README quick start](README.md#local-development) for Node 24, npm 11
+and environment setup. `.env.example` documents the supported integrations.
 
 The Python services use Python 3.11 and separate virtual environments:
 
@@ -43,8 +34,11 @@ services/firework-import-worker/.venv/bin/python -m pip install -r services/fire
 - Add comments only for non-obvious rationale or contracts.
 - Add or update tests for behavioural changes.
 
-Detailed agent guidance lives in [AGENTS.md](AGENTS.md). Keep the root README
-brief and put service-specific setup beside the service it describes.
+[Architecture](docs/architecture.md) owns component placement, shared primitives,
+colour tokens and page conventions. [AGENTS.md](AGENTS.md) summarises the rules
+for agents. The README owns quick start and project orientation; service-specific
+instructions stay beside their service. Update the existing source of truth
+instead of adding another overlapping guide.
 
 ## Database changes
 
@@ -57,7 +51,9 @@ brief and put service-specific setup beside the service it describes.
 
 ## Verify
 
-Run the web application gate:
+Run `npm run audit:ui` when adding pages or moving components. Its candidates
+need review before deletion. ESLint checks route ownership and shared UI colour
+conventions as part of the web application gate:
 
 ```bash
 npm run check

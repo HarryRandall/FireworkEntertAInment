@@ -1,10 +1,10 @@
 /** Text Input / Textarea / native Select primitives — use these for all plain form fields. */
 import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { Input as BaseInput } from '@/components/ui/input';
+import { Textarea as BaseTextarea } from '@/components/ui/textarea';
+import { fieldControlClasses } from './styles';
 import { SelectField, type SelectOption } from '@/components/design-system/SelectField';
-
-const controlBase =
-  'h-10 w-full rounded-md border bg-background text-sm text-foreground shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-3';
 
 type InputProps = ComponentPropsWithoutRef<'input'> & {
   iconLeft?: ReactNode;
@@ -20,14 +20,11 @@ export function Input({ className, iconLeft, invalid = false, ...rest }: InputPr
           {iconLeft}
         </div>
       ) : null}
-      <input
+      <BaseInput
         {...rest}
         aria-invalid={invalid || rest['aria-invalid'] || undefined}
         className={cn(
-          controlBase,
-          invalid
-            ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
-            : 'border-input focus-visible:border-ring focus-visible:ring-ring',
+          fieldControlClasses(undefined, invalid),
           iconLeft ? 'pr-3 pl-10' : 'px-3',
           className,
         )}
@@ -41,16 +38,10 @@ type TextareaProps = ComponentPropsWithoutRef<'textarea'> & { invalid?: boolean 
 /** Styled `<textarea>` matching the Input visual. */
 export function Textarea({ className, invalid = false, ...rest }: TextareaProps) {
   return (
-    <textarea
+    <BaseTextarea
       {...rest}
       aria-invalid={invalid || rest['aria-invalid'] || undefined}
-      className={cn(
-        'bg-background text-foreground placeholder:text-muted-foreground w-full resize-y rounded-md border p-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
-        invalid
-          ? 'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20'
-          : 'border-input focus-visible:border-ring focus-visible:ring-ring',
-        className,
-      )}
+      className={cn(fieldControlClasses('h-auto resize-y p-3', invalid), className)}
     />
   );
 }

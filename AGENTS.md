@@ -29,13 +29,23 @@ Use Node 24 from `.nvmrc`. Python services use Python 3.11 and their own
 ## Structure
 
 - `app/`: routes, layouts, API handlers and server actions.
-- `components/`: shared UI grouped by product domain.
+- `app/**/_components/`: UI private to that route subtree.
+- `components/`: features shared across routes, grouped by product domain.
+- `components/shell/`: shared workspace navigation and account controls.
+- `components/design-system/`: ShowCrafter controls composed from UI primitives.
 - `components/ui/`: lower-level Radix and shadcn primitives. Inspect headers
   before editing because only explicitly generated files are non-editable.
+- `styles/theme.css`: canonical light/dark colours and compatibility aliases.
 - `lib/`: domain, server, renderer and integration code.
 - `services/`: independently deployed Python services.
 - `supabase/`: migrations, templates, catalogue tooling and database tests.
 - `tests/`: Node test suites for application and cross-service contracts.
+
+Use [docs/architecture.md](docs/architecture.md) for component ownership, theme
+and page conventions. Run `npm run audit:ui` before a broad UI reorganisation.
+ESLint enforces import boundaries and semantic colours in shared UI. Promote
+reused route code to a shared domain; keep the import-render harness at its
+fingerprinted path. Reuse controls before adding a new wrapper.
 
 ## TypeScript and React
 

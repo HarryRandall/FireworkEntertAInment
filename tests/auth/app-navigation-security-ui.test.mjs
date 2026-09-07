@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('show tabs identify the current page and preserve keyboard focus', () => {
-  const tabs = read('app/(app)/shows/[id]/_components/ShowTabs.tsx');
+  const tabs = read('app/(app)/shows/_components/ShowTabs.tsx');
 
   assert.match(tabs, /aria-label="Show sections"/);
   assert.match(tabs, /aria-current=\{active \? 'page' : undefined\}/);

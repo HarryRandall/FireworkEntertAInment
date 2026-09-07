@@ -52,7 +52,7 @@ export function ReplayCanvasSkeleton({
   return (
     <div
       aria-hidden={showLoadingBar ? undefined : true}
-      className={cn('absolute inset-0 h-full w-full overflow-hidden bg-[#020409]', className)}
+      className={cn('bg-stage-night absolute inset-0 h-full w-full overflow-hidden', className)}
     >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element

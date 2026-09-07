@@ -9,7 +9,7 @@ import { ChevronDown, Copy, Download, QrCode, Trash2 } from 'lucide-react';
 import { Button } from '@/components/design-system/Button';
 import { Card } from '@/components/design-system/Card';
 import { Field, FieldLabel } from '@/components/design-system/Field';
-import { Input } from '@/components/design-system/Input';
+import { Input, Textarea } from '@/components/design-system/Input';
 import { NumberInput } from '@/components/design-system/NumberInput';
 import { Toggle } from '@/components/design-system/Toggle';
 import { toast } from '@/components/design-system/toast';
@@ -77,12 +77,12 @@ export function AssortmentEditor({
           </Field>
           <Field>
             <FieldLabel htmlFor="assortment-description">Description</FieldLabel>
-            <textarea
+            <Textarea
               id="assortment-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="border-border bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-3 focus-visible:outline-none"
+              className="px-3 py-2"
             />
           </Field>
           <div className="flex flex-wrap items-end gap-6">

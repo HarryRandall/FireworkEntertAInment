@@ -43,7 +43,7 @@ export default function LibraryDetailLoading() {
         <TemplateReplaySkeleton />
 
         <aside className="space-y-3">
-          <Card elevation="high" radius="md" className="p-4">
+          <Card radius="md" className="p-4">
             <Skeleton className="h-5 w-40" aria-label="Loading show theme" />
             <div className="mt-3 flex flex-wrap gap-1.5">
               {Array.from({ length: 4 }).map((_, index) => (
@@ -61,7 +61,7 @@ export default function LibraryDetailLoading() {
             </button>
           </Card>
 
-          <Card elevation="low" radius="md" className="p-4">
+          <Card radius="md" className="p-4">
             <h2 className="text-on-surface text-sm font-semibold">Show details</h2>
             <div className="mt-3 space-y-2">
               {DETAIL_ROWS.map(({ label, icon: Icon, valueWidth }) => (
@@ -76,7 +76,7 @@ export default function LibraryDetailLoading() {
             </div>
           </Card>
 
-          <Card elevation="low" radius="md" className="p-4">
+          <Card radius="md" className="p-4">
             <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
             <div className="mt-3 space-y-4">
               <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">

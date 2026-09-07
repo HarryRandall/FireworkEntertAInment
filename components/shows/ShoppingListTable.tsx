@@ -79,11 +79,7 @@ export function ShoppingListTable({ items }: ShoppingListTableProps) {
   }
 
   return (
-    <Card
-      elevation="low"
-      radius="md"
-      className="space-y-6 p-4 sm:p-6 lg:p-8 print:border-none print:shadow-none"
-    >
+    <Card radius="md" className="space-y-6 p-4 sm:p-6 lg:p-8 print:border-none print:shadow-none">
       <SectionHeader
         title="Shopping List"
         description="Products needed for this show, derived from your show cues."

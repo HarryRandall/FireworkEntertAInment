@@ -12,6 +12,8 @@ Fireworks.
 - A guided show builder with optional music analysis.
 - Deterministic cue generation with an optional LLM assignment path.
 - A Three.js firework renderer and timeline editor.
+- My Store assortment management and public QR entry for fixed-bundle shows.
+  Store analytics and credit top-ups currently include labelled preview data.
 - Admin tools for catalogue, effects, imports, users, roles and AI credits.
 
 ## Stack
@@ -23,7 +25,8 @@ Vercel.
 
 ```text
 app/                              Next.js routes and server actions
-components/                       Shared UI grouped by product domain
+components/                       UI primitives, product patterns and shared features
+styles/theme.css                  Light/dark theme and semantic colour tokens
 lib/                              Domain, server and renderer code
 public/                           Runtime assets
 services/music-analyser/          Modal music-analysis service
@@ -31,6 +34,10 @@ services/firework-import-worker/  Modal firework-video import service
 supabase/                         Migrations, templates and database tests
 tests/                            Application tests grouped by domain
 ```
+
+Component placement and UI rules live in [Architecture](docs/architecture.md).
+The [UI audit](docs/audits/2026-09-08-ui-structure.md) inventories all pages,
+including My Store, the kiosk, redirects and placeholders.
 
 ## Local development
 
@@ -53,22 +60,14 @@ credentials or service-role keys.
 ## Verification
 
 ```bash
-npm run format:check
-npm run lint
-npm run typecheck
-npm test
-npm run build
+npm run check       # Formatting, lint, TypeScript, application tests and build
+npm run audit:ui    # Page inventory and component import review
 ```
 
-The full web gate is available as `npm run check`. Python service tests are run
-separately:
+Use `npm run typecheck` for a focused TypeScript check.
 
-```bash
-npm run test:analyser
-npm run test:worker
-```
-
-Install each service's Python requirements before running its tests.
+Service tests run separately with `npm run test:analyser` and
+`npm run test:worker`. See [Contributing](CONTRIBUTING.md) for their setup.
 
 ## Project policies
 

@@ -128,7 +128,7 @@ const EMPTY_SPECS: FireworkSpecification[] = [];
 function ReplayCanvasPlaceholder() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden bg-[#020409]"
+      className="bg-stage-night pointer-events-none absolute inset-0 z-[1] overflow-hidden"
       aria-label="Loading preview"
     >
       <ReplayStageBackdrop />
@@ -770,7 +770,6 @@ export function FireworkReplayViewer({
       </Suspense>
       <div className="space-y-6">
         <Card
-          elevation="low"
           radius="lg"
           bordered={!isFullscreen}
           className={cn(
@@ -851,7 +850,7 @@ export function FireworkReplayViewer({
         </Card>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3 xl:items-stretch">
-          <Card elevation="high" radius="md" className="space-y-5 p-6 xl:col-span-2">
+          <Card radius="md" className="space-y-5 p-6 xl:col-span-2">
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
               <div>
                 <Eyebrow tone="muted">Cue builder</Eyebrow>
@@ -1111,7 +1110,7 @@ export function FireworkReplayViewer({
                                 cn(
                                   'cursor-pointer',
                                   isActive &&
-                                    'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--color-accent)]',
+                                    'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--primary)]',
                                 ),
                               )}
                             >
@@ -1250,11 +1249,7 @@ export function FireworkReplayViewer({
               <StatChip label="Fireworks" value={String(builderCues.length)} />
               <StatChip label="Length" value={formatDuration(duration)} />
             </div>
-            <Card
-              elevation="high"
-              radius="md"
-              className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1"
-            >
+            <Card radius="md" className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1">
               <div className="flex items-start gap-3">
                 <div className="bg-surface-container-highest text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                   <Sparkles size={16} strokeWidth={2} />

@@ -1155,7 +1155,7 @@ function AdminFormCardSkeleton({ rows }: { rows: number }) {
 export function TemplateReplaySkeleton() {
   return (
     <div
-      className="border-border relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-2xl border bg-[#020409] shadow-[var(--shadow-card-hover)]"
+      className="border-border bg-stage-night relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-2xl border shadow-[var(--shadow-card-hover)]"
       aria-label="Loading show replay"
     >
       <ReplayPanelLoadingStage />
@@ -1168,7 +1168,7 @@ export function ReplayPanelSkeleton() {
   return (
     <div className="space-y-6" aria-label="Loading replay">
       <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xs">
-        <div className="relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-[inherit] bg-[#020409]">
+        <div className="bg-stage-night relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-[inherit]">
           <ReplayPanelLoadingStage />
           <Skeleton className="absolute top-6 right-6 z-20 h-9 w-9 rounded-full bg-white/12" />
         </div>

@@ -1568,7 +1568,7 @@ function Timeline({
                     />
                   ))}
                   <div
-                    className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-[color:var(--color-accent,#22d3ee)]"
+                    className="bg-primary pointer-events-none absolute top-0 bottom-0 z-10 w-px"
                     style={{ left: scrubElapsed * PX_PER_SECOND }}
                   />
                 </div>
