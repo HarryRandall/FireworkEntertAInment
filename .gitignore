@@ -32,10 +32,10 @@ dist/
 build/
 
 # Next.js
-.next/
+.next*/
 out/
 next-env.d.ts
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # Logs and scratch files
 *.log

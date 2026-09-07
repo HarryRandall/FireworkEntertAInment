@@ -6,10 +6,15 @@ repo_root="$(cd "${script_dir}/../.." && pwd)"
 
 cd "$script_dir"
 
-if [ -f "${repo_root}/.env.local" ]; then
+app_env="${repo_root}/apps/web/.env.local"
+if [ ! -f "$app_env" ]; then
+  app_env="${repo_root}/apps/web/.env"
+fi
+
+if [ -f "$app_env" ]; then
   set -a
   # Load the app's local environment so the worker picks up Supabase/OpenRouter settings.
-  . "${repo_root}/.env.local"
+  . "$app_env"
   set +a
 fi
 

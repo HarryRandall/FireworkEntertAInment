@@ -1,8 +1,10 @@
 # Architecture and UI conventions
 
-ShowCrafter has one Next.js application and two independently deployed Python
-services. Keep the web application at the repository root. Shared packages are
-only useful when there is another application that actually consumes them.
+ShowCrafter is a pnpm workspace with one Next.js application in `apps/web` and
+two independently deployed Python services. The repository root owns shared
+workflow configuration, documentation and the lockfile. App configuration stays
+with the app. Add packages only when independently owned or shared code justifies
+them; one app does not need a placeholder package hierarchy.
 
 ## Where code belongs
 
@@ -17,11 +19,16 @@ only useful when there is another application that actually consumes them.
 | `lib/`                      | Domain transformations, validation, types and server integrations                        |
 | `styles/theme.css`          | Canonical light/dark colour values and legacy aliases                                    |
 | `hooks/`                    | Hooks shared across domains; feature-only hooks stay beside their feature                |
-| `utils/supabase/`           | Existing Supabase client factories and request/session adapters                          |
+| `lib/supabase/`             | Existing Supabase client factories and request/session adapters                          |
 | `services/`                 | Independently deployed Python services with their own requirements                       |
 | `supabase/`                 | Migrations, templates, catalogue tooling and database tests                              |
 | `tests/`                    | Behaviour and contract tests grouped by domain                                           |
-| `docs/`                     | Architecture, dated audit evidence and reference mock-ups                                |
+| `docs/`                     | Maintained architecture and development guidance                                         |
+
+Paths in this table are relative to `apps/web`, except `services`, `supabase`
+and `docs`, which are repository folders. App scripts, including the audit and
+ESLint rules, live together in `apps/web/scripts`. Project-specific agent
+workflows live in `.agents/skills`.
 
 Dependencies flow from routes to features to design-system components to UI
 primitives. Shared components must not import a route's implementation. Move a
@@ -86,11 +93,10 @@ Dub's components and neutral visual hierarchy inform the organisation; ShowCraft
 keeps its own brand and the existing Radix/shadcn foundation.
 
 Next.js 16's version-matched project-structure documentation is installed at
-`node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`.
+`apps/web/node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`.
 Read it before changing route conventions.
 
-Run `npm run audit:ui` for the page inventory and import review, or add `-- --json`
+Run `pnpm audit:ui` for the page inventory and import review, or add `-- --json`
 for machine-readable paths. The audit identifies candidates, not safe deletions:
 check runtime imports, re-exports and tests before removing a component. Use
-`npm run check` for the delivery gate. See [the September audit](audits/2026-09-08-ui-structure.md)
-for the baseline, decisions and remaining product-specific work.
+`pnpm check` for the delivery gate.

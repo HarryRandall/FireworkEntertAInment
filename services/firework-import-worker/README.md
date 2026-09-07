@@ -33,7 +33,7 @@ dispatch endpoint. The dispatch secret and worker secret remain separate.
 From the repository root:
 
 ```bash
-npm run worker:firework-import
+pnpm worker:firework-import
 ```
 
 The helper creates `services/firework-import-worker/.venv`, installs the Python
