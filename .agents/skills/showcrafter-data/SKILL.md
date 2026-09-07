@@ -25,7 +25,7 @@ change. Regenerate database types after schema changes. Catalogue generation
 lives in `apps/web/scripts/generate-firework-catalogue-migration.mjs`; inspect its
 output destination before running it because it writes migration SQL.
 
-Use [development guidance](../../../../docs/development.md) for local database and
+Use [development guidance](../../../docs/development.md) for local database and
 service checks. Exercise changed SQL/policies with the relevant tests and verify
 both allowed and denied access. Distinguish local validation from linked/production
 work; a code refactor does not itself require a remote database change.

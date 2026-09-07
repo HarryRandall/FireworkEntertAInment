@@ -67,6 +67,10 @@ The catalogue generator is app-owned tooling in
 before running it because it writes migration SQL. Seeds and local fixtures are
 not production migration instructions.
 
+Supabase's ignored `.temp` folder contains CLI caches and the local project link.
+After clearing it, run `supabase link` with the intended project before linked CLI
+operations. Clearing local metadata does not modify the hosted database.
+
 ## Deployment
 
 For Vercel, set the project Root Directory to `apps/web` and include files outside

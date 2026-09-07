@@ -19,6 +19,8 @@ Use Node 24 (`nvm use`) and the pinned pnpm version. From the repository root:
 Read the matching skill before working in its area:
 
 - Web code, UI or routes: [.agents/skills/showcrafter-web/SKILL.md](.agents/skills/showcrafter-web/SKILL.md).
+- UI, shared shells and visual checks: [.agents/skills/showcrafter-ui/SKILL.md](.agents/skills/showcrafter-ui/SKILL.md).
+- File structure, tooling and cleanup: [.agents/skills/showcrafter-repository/SKILL.md](.agents/skills/showcrafter-repository/SKILL.md).
 - Analysis, rendering or app/worker contracts: [.agents/skills/showcrafter-contracts/SKILL.md](.agents/skills/showcrafter-contracts/SKILL.md).
 - Database schema, queries or permissions: [.agents/skills/showcrafter-data/SKILL.md](.agents/skills/showcrafter-data/SKILL.md).
 

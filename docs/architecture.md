@@ -30,6 +30,12 @@ and `docs`, which are repository folders. App scripts, including the audit and
 ESLint rules, live together in `apps/web/scripts`. Project-specific agent
 workflows live in `.agents/skills`.
 
+Within `lib`, `auth` owns session, redirect and recovery helpers; `supabase` owns
+client construction; `admin` owns permission-checked management queries; and
+`cue-generation`, `fireworks`, `assortments` and `shows` own their domain logic.
+Import the owning module directly. Do not restore compatibility forwarding files
+or broad barrels that pull unrelated server and client modules into one API.
+
 Both Python services are active application dependencies. Music upload and
 generation call `ANALYSER_URL` through `lib/show-analysis-runner.server.ts`;
 video imports call `FIREWORK_IMPORT_URL` through
