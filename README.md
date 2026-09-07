@@ -1,81 +1,56 @@
 # ShowCrafter
 
-ShowCrafter helps people design consumer firework shows around music, preview the
-result, and turn the final timeline into a practical shopping list.
+Design consumer firework shows from a catalogue, build a timed sequence with
+optional music analysis, and preview it in the browser. Retailers can manage
+assortments and offer public QR entry for fixed-bundle shows.
 
-Built for COMP3500 with ICON Pyrotechnics International and International
-Fireworks.
+The web app uses Next.js 16, React 19, TypeScript, Tailwind and Supabase. Python
+services handle music analysis and firework video imports on Modal.
 
-## What it includes
+## Development
 
-- A public firework catalogue and curated show templates.
-- A guided show builder with optional music analysis.
-- Deterministic cue generation with an optional LLM assignment path.
-- A Three.js firework renderer and timeline editor.
-- Admin tools for catalogue, effects, imports, users, roles and AI credits.
+Use Node 24 and pnpm 12.3.4:
 
-## Stack
+```bash
+nvm use
+corepack enable pnpm
+pnpm install --frozen-lockfile
+cp apps/web/.env.example apps/web/.env.local
+pnpm dev
+```
 
-Next.js 16, React 19, TypeScript, Tailwind CSS, Supabase, Three.js, Modal and
-Vercel.
+Fill the app's environment file with development credentials. Service setup,
+verification and deployment instructions live in [Development](docs/development.md).
+
+```bash
+pnpm typecheck      # Focused TypeScript check
+pnpm check          # Formatting, lint, types, application tests and build
+pnpm audit:ui       # Page inventory and component import review
+```
 
 ## Repository
 
 ```text
-app/                              Next.js routes and server actions
-components/                       Shared UI grouped by product domain
-lib/                              Domain, server and renderer code
-public/                           Runtime assets
-services/music-analyser/          Modal music-analysis service
-services/firework-import-worker/  Modal firework-video import service
-supabase/                         Migrations, templates and database tests
-tests/                            Application tests grouped by domain
+.agents/skills/     Project workflows for coding agents
+apps/web/          Web code, assets, tests and Next.js configuration
+services/          Independently deployed Python services
+supabase/          Database migrations, seeds, templates and SQL tests
+docs/              Architecture and development guidance
 ```
 
-## Local development
+[Architecture](docs/architecture.md) explains file ownership, shared UI and the
+colour scheme. My Store analytics and credit top-ups currently include labelled
+preview data. [Security](SECURITY.md) describes private vulnerability reporting.
 
-Requirements:
+## UI
 
-- Node.js 24 and npm 11
-- Python 3.11 for the two Python services
-- A Supabase project or local Supabase environment
-
-```bash
-nvm use
-npm ci
-cp .env.example .env.local
-npm run dev
+```text
+apps/web/ui/primitives/   Radix and shadcn controls
+apps/web/ui/patterns/     Forms, tables, feedback and other reusable compositions
+apps/web/ui/shell/        Shared workspace layout and navigation
+apps/web/ui/<domain>/     Features used across routes
+apps/web/ui/theme.css     Semantic colours for light and dark themes
 ```
 
-Populate `.env.local` using the descriptions in `.env.example`. Never commit
-credentials or service-role keys.
-
-## Verification
-
-```bash
-npm run format:check
-npm run lint
-npm run typecheck
-npm test
-npm run build
-```
-
-The full web gate is available as `npm run check`. Python service tests are run
-separately:
-
-```bash
-npm run test:analyser
-npm run test:worker
-```
-
-Install each service's Python requirements before running its tests.
-
-## Project policies
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-
-## Deployment
-
-Vercel deploys the Next.js application from the repository root. The music
-analyser and firework import worker are deployed independently to Modal.
+Keep page-specific UI beside its route in `app/**/_components/`. Reuse the shared
+controls and shells; ESLint enforces the direction of imports.

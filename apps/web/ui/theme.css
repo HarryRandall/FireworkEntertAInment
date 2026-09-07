@@ -1,0 +1,357 @@
+/* ShowCrafter theme. Canonical light/dark values and compatibility aliases live together. */
+
+@theme {
+  /* Type */
+  --font-sans:
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-body:
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-headline:
+    var(--font-geist-sans, 'Geist'), 'ui-sans-serif', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  --font-mono:
+    var(--font-geist-mono, 'Geist Mono'), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+
+  /* ---------- Semantic tokens (light defaults) ---------- */
+  /* Surfaces */
+  --color-bg-default: var(--card);
+  --color-bg-muted: var(--muted);
+  --color-bg-subtle: var(--secondary);
+  --color-bg-emphasis: var(--accent);
+  --color-bg-elevated: var(--popover);
+  --color-bg-inverted: var(--foreground);
+  /* Compatibility alias for editor surfaces. New UI should prefer `bg-card`. */
+  --color-bg-surface: var(--color-bg-default);
+
+  /* Borders */
+  --color-border-subtle: var(--border);
+  --color-border-default: var(--input);
+  --color-border-emphasis: var(--border-emphasis);
+  /* Compatibility alias for stronger focus and hover borders. */
+  --color-border-strong: var(--color-border-emphasis);
+
+  /* Content (text/icons) */
+  --color-content-emphasis: var(--foreground);
+  --color-content-default: var(--foreground);
+  --color-content-subtle: var(--muted-foreground);
+  --color-content-muted: var(--muted-foreground);
+  --color-content-inverted: var(--background);
+
+  /* Accent is the neutral interaction surface; primary is the brand action colour. */
+  --color-accent: var(--accent);
+  --color-accent-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --color-accent-subtle: var(--accent);
+  --color-accent-emphasis: var(--accent-foreground);
+  --color-on-accent: var(--accent-foreground);
+
+  /* Sparse Dub-style rainbow wash for marketing backdrops. */
+  --rainbow-hero-wash: conic-gradient(
+    from -81deg,
+    #3a8bfd -72deg,
+    #855afc 33deg,
+    #f00 70deg,
+    #eab308 136deg,
+    #5cff80 214deg,
+    #00fff9 259deg,
+    #3a8bfd 288deg,
+    #855afc 393deg
+  );
+
+  /* Semantic status */
+  --color-status-success: var(--status-success);
+  --color-status-success-subtle: var(--status-success-subtle);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-subtle: var(--status-danger-subtle);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-subtle: var(--status-warning-subtle);
+  --color-status-info: var(--status-info);
+  --color-status-info-subtle: var(--status-info-subtle);
+
+  /* ---------- Compatibility aliases ---------- */
+  /* Existing components reference these - kept so the sweep can happen incrementally. */
+  --color-background: var(--background);
+  --color-surface: var(--color-bg-default);
+  --color-surface-dim: var(--color-bg-muted);
+  --color-surface-bright: var(--color-bg-default);
+  --color-surface-container-lowest: var(--color-bg-default);
+  --color-surface-container-low: var(--color-bg-default);
+  --color-surface-container: var(--color-bg-muted);
+  --color-surface-container-high: var(--color-bg-subtle);
+  --color-surface-container-highest: var(--color-bg-emphasis);
+  --color-surface-variant: var(--color-bg-emphasis);
+  --color-surface-tint: var(--color-accent);
+
+  --color-on-surface: var(--color-content-emphasis);
+  --color-on-surface-variant: var(--color-content-subtle);
+  --color-on-background: var(--color-content-emphasis);
+
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary);
+  --color-primary-fixed: var(--color-bg-emphasis);
+  --color-primary-fixed-dim: var(--color-border-default);
+  --color-on-primary: var(--primary-foreground);
+  --color-on-primary-container: var(--primary-foreground);
+  --color-on-primary-fixed: var(--color-content-emphasis);
+  --color-on-primary-fixed-variant: var(--color-content-default);
+  --color-inverse-primary: var(--color-bg-default);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary);
+  --color-secondary-fixed: var(--color-bg-emphasis);
+  --color-secondary-fixed-dim: var(--color-border-default);
+  --color-on-secondary: var(--secondary-foreground);
+  --color-on-secondary-container: var(--secondary-foreground);
+  --color-on-secondary-fixed: var(--color-content-emphasis);
+  --color-on-secondary-fixed-variant: var(--color-content-default);
+
+  --color-tertiary: var(--color-accent);
+  --color-tertiary-container: var(--color-accent-subtle);
+  --color-tertiary-fixed: var(--color-accent-subtle);
+  --color-tertiary-fixed-dim: var(--color-accent-subtle);
+  --color-on-tertiary: var(--color-on-accent);
+  --color-on-tertiary-container: var(--color-accent-emphasis);
+  --color-on-tertiary-fixed: var(--color-accent-emphasis);
+  --color-on-tertiary-fixed-variant: var(--color-accent-emphasis);
+
+  --color-error: var(--color-status-danger);
+  --color-error-container: var(--color-status-danger-subtle);
+  --color-on-error: var(--color-content-inverted);
+  --color-on-error-container: var(--color-status-danger);
+  --color-success: var(--color-status-success);
+  --color-danger: var(--color-status-danger);
+  --color-highlight: var(--color-status-warning);
+
+  --color-outline: var(--color-border-default);
+  --color-outline-variant: var(--color-border-subtle);
+
+  --color-inverse-surface: var(--color-bg-inverted);
+  --color-inverse-on-surface: var(--color-content-inverted);
+
+  /* Radius scale */
+  --radius-pill: 9999px;
+  --radius-card: 12px;
+  --radius-card-lg: 16px;
+  --radius-hero: 16px;
+
+  /* Shadows - soft, dub-style */
+  --shadow-card: 0 1px 2px 0 rgba(15, 15, 20, 0.06);
+  --shadow-card-hover: 0 8px 20px -14px rgba(15, 15, 20, 0.2);
+  --shadow-cta: 0 1px 2px 0 rgba(15, 15, 20, 0.12);
+  --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
+
+  /* Preview chrome (kept for WebGL preview card surround) */
+  --preview-card-bg: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  --preview-card-fade: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95));
+}
+[data-theme='dark'],
+.dark {
+  /* Surfaces - tables, cards, dialogs, and panels should read black, not grey. */
+  --color-bg-default: var(--card);
+  --color-bg-muted: var(--muted);
+  --color-bg-subtle: var(--secondary);
+  --color-bg-emphasis: var(--accent);
+  --color-bg-elevated: var(--popover);
+  --color-bg-inverted: var(--foreground);
+
+  /* Borders */
+  --color-border-subtle: var(--border);
+  --color-border-default: var(--input);
+  --color-border-emphasis: var(--border-emphasis);
+
+  /* Content */
+  --color-content-emphasis: var(--foreground);
+  --color-content-default: var(--foreground);
+  --color-content-subtle: var(--muted-foreground);
+  --color-content-muted: var(--muted-foreground);
+  --color-content-inverted: var(--background);
+
+  /* Neutral interaction surface. */
+  --color-accent: var(--accent);
+  --color-accent-hover: color-mix(in srgb, var(--accent) 88%, var(--foreground));
+  --color-accent-subtle: var(--accent);
+  --color-accent-emphasis: var(--accent-foreground);
+  --color-on-accent: var(--accent-foreground);
+
+  --color-status-success: var(--status-success);
+  --color-status-success-subtle: var(--status-success-subtle);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-subtle: var(--status-danger-subtle);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-subtle: var(--status-warning-subtle);
+  --color-status-info: var(--status-info);
+  --color-status-info-subtle: var(--status-info-subtle);
+
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+
+  --preview-card-bg: linear-gradient(180deg, #0a0a0a 0%, #111 100%);
+  --preview-card-fade: linear-gradient(180deg, transparent, rgba(10, 10, 10, 0.95));
+}
+[data-theme='dark'],
+.dark {
+  color-scheme: dark;
+}
+@theme inline {
+  --font-heading: var(--font-sans);
+  --color-hl: var(--hl);
+  --color-hl-soft: var(--hl-soft);
+  --color-hl-ink: var(--hl-ink);
+  --color-hl-contrast: var(--hl-contrast);
+  --color-stage-night: var(--stage-night);
+  --color-show-gold: var(--show-gold);
+  --color-show-green: var(--show-green);
+  --color-show-violet: var(--show-violet);
+  --color-show-sky: var(--show-sky);
+  --color-show-rose: var(--show-rose);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
+}
+:root,
+[data-theme='light'] {
+  --background: #ffffff;
+  --foreground: #24242a;
+  --card: #ffffff;
+  --card-foreground: #24242a;
+  --popover: #ffffff;
+  --popover-foreground: #24242a;
+  --primary: #075f40;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f6;
+  --secondary-foreground: #24242a;
+  --muted: #f4f4f6;
+  --muted-foreground: #6b6d76;
+  --accent: #e1e1e7;
+  --accent-foreground: #24242a;
+  --destructive: var(--status-danger);
+  --border: #e5e5ea;
+  --input: #d9d9e2;
+  --ring: #002f20;
+
+  /* Brand highlight (marker green) + per-show palette accents */
+  --hl: #15bd8b;
+  --hl-soft: #d7f3e9;
+  --hl-ink: #075f40;
+  --hl-contrast: #05231a;
+  --stage-night: #05070d;
+  --show-gold: #efb93f;
+  --show-green: #2ec487;
+  --show-violet: #8f7be8;
+  --show-sky: #38bdf8;
+  --show-rose: #fb7185;
+  --chart-1: #09090b;
+  --chart-2: #747680;
+  --chart-3: #9b9da7;
+  --chart-4: #c8c9d1;
+  --chart-5: #e1e1e7;
+  --radius: var(--radius-card);
+  --sidebar: #f4f4f6;
+  --sidebar-foreground: #62646d;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #e1e1e7;
+  --sidebar-accent-foreground: #24242a;
+  --sidebar-border: #e5e5ea;
+  --sidebar-ring: var(--ring);
+  --border-emphasis: #b9bbc6;
+  --status-success: #15803d;
+  --status-success-subtle: #f0fdf4;
+  --status-danger: #b91c1c;
+  --status-danger-subtle: #fef2f2;
+  --status-warning: #b45309;
+  --status-warning-subtle: #fffbeb;
+  --status-info: #2563eb;
+  --status-info-subtle: #eff6ff;
+}
+
+.dark,
+[data-theme='dark'] {
+  --background: #050507;
+  --foreground: oklch(0.985 0 0);
+  --card: #09090b;
+  --card-foreground: oklch(0.985 0 0);
+  --popover: #09090b;
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: #1fd093;
+  --primary-foreground: #053024;
+  --secondary: #171719;
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: #171719;
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: #171719;
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: var(--status-danger);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #2ee0a3;
+
+  /* Brand highlight (marker green) + per-show palette accents */
+  --hl: #2ee0a3;
+  --hl-soft: #0f3026;
+  --hl-ink: #46e7b0;
+  --hl-contrast: #05231a;
+  --stage-night: #05070d;
+  --show-gold: #efb93f;
+  --show-green: #2ec487;
+  --show-violet: #8f7be8;
+  --show-sky: #38bdf8;
+  --show-rose: #fb7185;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: #171719;
+  --radius: var(--radius-card);
+  --sidebar: #09090b;
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #171719;
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--ring);
+  --border-emphasis: oklch(0.556 0 0);
+  --status-success: #4ade80;
+  --status-success-subtle: #052e16;
+  --status-danger: #f87171;
+  --status-danger-subtle: #2a0a0a;
+  --status-warning: #fbbf24;
+  --status-warning-subtle: #2a1a05;
+  --status-info: #60a5fa;
+  --status-info-subtle: #0a1a2e;
+}

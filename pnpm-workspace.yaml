@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+
+# Preserve the dependency fixes from the npm lockfile.
+overrides:
+  postcss: 8.5.26
+  'minimatch@>=10>brace-expansion': 5.0.9
+
+# These native dependencies need their installation scripts.
+allowBuilds:
+  '@tailwindcss/oxide': true
+  sharp: true
+  unrs-resolver: true

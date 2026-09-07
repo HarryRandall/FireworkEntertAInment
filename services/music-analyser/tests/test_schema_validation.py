@@ -18,6 +18,7 @@ except ModuleNotFoundError as exc:
 
 ANALYSER_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = ANALYSER_DIR.parents[1]
+WEB_ROOT = REPO_ROOT / "apps" / "web"
 SCHEMA_MUTATIONS = json.loads(
     (Path(__file__).parent / "fixtures" / "schema-mutations.json").read_text(encoding="utf-8")
 )
@@ -349,10 +350,10 @@ class SchemaValidationTests(unittest.TestCase):
             sf.write(path, audio, sr)
             result = analyse_song(str(path))
 
-        helper = REPO_ROOT / "tests" / "helpers" / "analyser-pipeline-helper.mjs"
+        helper = WEB_ROOT / "tests" / "helpers" / "analyser-pipeline-helper.mjs"
         completed = subprocess.run(
             [node_binary, "--experimental-strip-types", str(helper)],
-            cwd=REPO_ROOT,
+            cwd=WEB_ROOT,
             input=json.dumps(result),
             capture_output=True,
             text=True,

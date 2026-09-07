@@ -1,0 +1,177 @@
+import { notFound } from 'next/navigation';
+import { Package } from 'lucide-react';
+import { Card } from '@/ui/patterns/Card';
+import { TemplateReplayPreview } from '@/ui/replay/TemplateReplayPreview';
+import {
+  getAssortmentServiceClient,
+  getPublicAssortmentByToken,
+  resolvePublicAssortmentShow,
+} from '@/lib/assortments/public.server';
+import type { ShowTemplate } from '@/lib/admin.types';
+import { parseStoredAnalyserResult } from '@/lib/show-analysis-validation';
+import { formatBudget } from '@/lib/show-domain';
+import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows.server';
+import {
+  KioskGeneratingShow,
+  RegenerateAssortmentShow,
+} from '@/app/(kiosk)/a/[token]/show/[showToken]/_components/KioskShowActions';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AssortmentShowPage({
+  params,
+}: {
+  params: Promise<{ token: string; showToken: string }>;
+}) {
+  const { token, showToken } = await params;
+  const assortment = await getPublicAssortmentByToken(token);
+  if (!assortment) notFound();
+  const show = await resolvePublicAssortmentShow({
+    assortmentId: assortment.id,
+    showAccessToken: showToken,
+  });
+  if (!show) notFound();
+
+  if (show.generationStatus === 'running') {
+    return <KioskGeneratingShow token={token} showToken={showToken} showTitle={show.title} />;
+  }
+
+  if (show.generationStatus === 'failed') {
+    return (
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-xl items-center px-4 py-12 sm:px-6">
+        <Card className="w-full p-6 text-center">
+          <h1 className="text-2xl font-bold">This show could not be generated</h1>
+          <p className="text-on-surface-variant mt-2 text-sm leading-6">
+            {show.generationError || 'Try generating another design from the same assortment.'}
+          </p>
+          <div className="mt-6 flex justify-center">
+            <RegenerateAssortmentShow token={token} showToken={showToken} />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const supabase = getAssortmentServiceClient();
+  const [replayCues, allSpecifications, signedAudio, storedAnalysis] = await Promise.all([
+    listReplayCuesForShowWithClient(supabase, show.id),
+    listFireworkProducts(),
+    show.audioPath
+      ? supabase.storage.from('audio').createSignedUrl(show.audioPath, 30 * 60)
+      : Promise.resolve({ data: null, error: null }),
+    supabase.from('song_analyses').select('analysis_json').eq('id', show.musicAnalysisId).single(),
+  ]);
+  if (signedAudio.error) {
+    console.error('[assortment-qr] soundtrack signing failed:', signedAudio.error);
+    throw new Error('The show soundtrack could not be loaded.');
+  }
+  if (storedAnalysis.error) {
+    console.error('[assortment-qr] playback analysis lookup failed:', storedAnalysis.error);
+    throw new Error('The show timing could not be loaded.');
+  }
+  const analysis = parseStoredAnalyserResult(storedAnalysis.data.analysis_json);
+  const playbackDuration = show.durationSeconds ?? analysis.duration_seconds;
+  const assortmentProductIds = new Set(show.snapshotItems.map((item) => item.catalogueItemId));
+  const specifications = allSpecifications.filter((product) =>
+    assortmentProductIds.has(product.id),
+  );
+  const now = new Date().toISOString();
+  const template: ShowTemplate = {
+    id: show.id,
+    slug: `qr-${show.id}`,
+    title: show.title,
+    theme: 'Assortment QR',
+    description: `Generated from ${assortment.name}`,
+    durationSeconds: playbackDuration,
+    budgetCents: show.budgetCents,
+    totalCents: show.budgetCents ?? show.totalCents,
+    effectsCount: show.effectsCount,
+    timeOfDay: 'night',
+    moodTags: [],
+    previewCues: replayCues.flatMap((cue) =>
+      cue.productId
+        ? [
+            {
+              timeSeconds: cue.timeSeconds ?? 0,
+              description: cue.description,
+              catalogueItemId: cue.productId,
+              launchPositionIndex: cue.launchPositionIndex,
+              emphasis: cue.emphasis ?? 'normal',
+            },
+          ]
+        : [],
+    ),
+    coverShader: null,
+    coverImagePath: null,
+    isFeatured: false,
+    isPublished: false,
+    publishedAt: null,
+    sortOrder: 0,
+    likeCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const pieceCount = show.snapshotItems.reduce((total, item) => total + item.quantity, 0);
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Your show is ready</h1>
+          <p className="text-on-surface-variant mt-2">{assortment.name}</p>
+        </div>
+        <p className="font-mono text-2xl font-semibold tabular-nums">
+          {formatBudget(show.budgetCents ?? show.totalCents)}
+        </p>
+      </div>
+
+      <div className="mt-6">
+        <TemplateReplayPreview
+          template={template}
+          specifications={specifications}
+          mode="detail"
+          detailAppearance="borderless"
+          audioUrl={signedAudio.data?.signedUrl}
+        />
+      </div>
+
+      <Card className="mt-6 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Package className="text-primary mt-0.5" size={20} aria-hidden="true" />
+            <div>
+              <h2 className="font-semibold">{assortment.name}</h2>
+              <p className="text-on-surface-variant mt-1 text-sm">
+                {pieceCount} included {pieceCount === 1 ? 'product' : 'products'}
+              </p>
+            </div>
+          </div>
+          <span className="font-mono text-sm tabular-nums">
+            {formatBudget(show.budgetCents ?? show.totalCents)}
+          </span>
+        </div>
+        <ul className="border-border mt-4 space-y-2 border-t pt-4">
+          {show.snapshotItems.map((item) => (
+            <li key={item.catalogueItemId} className="flex gap-3 text-sm">
+              <span className="text-on-surface-variant w-8 shrink-0 font-mono tabular-nums">
+                {item.quantity}x
+              </span>
+              <span>{item.name}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      <section aria-labelledby="not-happy-heading" className="mt-8">
+        <h2 id="not-happy-heading" className="text-lg font-semibold">
+          Not happy with this design?
+        </h2>
+        <p className="text-on-surface-variant mt-1 mb-4 text-sm leading-6">
+          Generate a different timeline using this exact assortment. The products and quantities
+          stay locked.
+        </p>
+        <RegenerateAssortmentShow token={token} showToken={showToken} />
+      </section>
+    </div>
+  );
+}
