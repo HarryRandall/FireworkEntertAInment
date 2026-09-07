@@ -77,6 +77,8 @@ For Vercel, set the project Root Directory to `apps/web` and include files outsi
 the root directory so the workspace lockfile and root formatting package are
 available. Use Node 24, install with `pnpm install --frozen-lockfile`, and build
 with `pnpm build`. The checked-in `apps/web/vercel.json` declares those commands.
+Set `ENABLE_EXPERIMENTAL_COREPACK=1` in Preview and Production so Vercel uses the
+pinned package manager from the root `package.json`.
 Environment variables remain configured in Vercel; local environment files are
 not uploaded. Changing the hosted project's Root Directory is required before
 releasing this layout; a local refactor does not update that setting.
