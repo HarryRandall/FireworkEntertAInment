@@ -151,6 +151,8 @@ set local request.jwt.claim.role = 'authenticated';
 select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000101', true);
 select public.ensure_assortment_public_link('92000000-0000-0000-0000-000000000201'::uuid);
 
+reset role;
+set local role authenticated;
 select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000102', true);
 do $$
 begin
@@ -166,6 +168,8 @@ begin
 end;
 $$;
 
+reset role;
+set local role authenticated;
 select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000101', true);
 do $$
 declare
