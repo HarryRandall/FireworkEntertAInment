@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
-import { approveImportJobAction } from '../../actions';
+import { approveImportJobAction } from '@/app/(admin)/admin/imports/actions';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';

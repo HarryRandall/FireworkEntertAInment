@@ -31,7 +31,7 @@ import {
   replaceShowPresetCues,
   setShowPresetPublished,
   updateShowPresetDetails,
-} from '../../actions';
+} from '@/app/(admin)/admin/show-presets/actions';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
 import { EditorPreviewTransport } from '@/ui/firework-editor/FireworkEditorShell';
 import {

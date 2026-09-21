@@ -57,7 +57,9 @@ primitives. Shared components must not import a route's implementation. Move a
 feature to its domain when a second route needs it. Keep route-specific Server
 Actions beside their route and shared Server Actions in the owning `lib` domain;
 do not recreate a central `app/actions` folder. Server-only modules must remain
-outside client bundles. Keep permission and ownership checks at server boundaries.
+outside client bundles. Use `./` or `../` for nearby files and the `@/` alias when
+an import would otherwise need multiple parent traversals. Keep permission and
+ownership checks at server boundaries.
 
 App, admin and My Store use `WorkspaceShell` and `WorkspaceContent` for the
 sidebar state, theme, skip target and scrolling frame. Each shell supplies its

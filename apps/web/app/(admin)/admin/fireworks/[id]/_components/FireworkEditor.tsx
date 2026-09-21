@@ -34,7 +34,7 @@ import {
   createStyleDefaultAndUpdateFirework,
   restoreFireworkEditorVersion,
   updateFirework,
-} from '../../actions';
+} from '@/app/(admin)/admin/fireworks/actions';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
 import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
 import {

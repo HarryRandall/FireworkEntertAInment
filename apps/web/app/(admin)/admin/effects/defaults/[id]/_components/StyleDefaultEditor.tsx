@@ -20,7 +20,7 @@ import {
   archiveStyleDefault,
   restoreStyleDefaultEditorVersion,
   updateStyleDefault,
-} from '../../../style-default-actions';
+} from '@/app/(admin)/admin/effects/style-default-actions';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,
