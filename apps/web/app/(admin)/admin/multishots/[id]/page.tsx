@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { getMultishotById } from '@/lib/admin/multishots.server';
-import { listFireworkSpecifications } from '@/lib/shows.server';
+import { listFireworkSpecifications } from '@/lib/shows/queries.server';
 import { MultishotEditor } from '@/app/(admin)/admin/multishots/[id]/_components/MultishotEditor';
 
 type PageProps = {

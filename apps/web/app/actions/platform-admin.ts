@@ -59,7 +59,7 @@ import {
   dispatchFireworkImportRun,
   getFireworkImportDispatchConfiguration,
 } from '@/lib/firework-import-trigger.server';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import type { Json } from '@/lib/database.types';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 

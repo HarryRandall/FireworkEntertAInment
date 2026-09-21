@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShowGuideList } from '@/ui/shows/ShowGuideList';
 import { ListSkeleton } from '@/ui/shell/RouteSkeletons';
-import { getShowBySlug, listCuesForShow } from '@/lib/shows.server';
+import { getShowBySlug, listCuesForShow } from '@/lib/shows/queries.server';
 import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };

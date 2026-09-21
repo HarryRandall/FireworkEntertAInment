@@ -7,7 +7,7 @@
  */
 import type { CueSlot } from '@/lib/beat-grid.server';
 import { asProductCatalogueFields, type ProductCatalogueField } from '@/lib/prompt-configs';
-import type { listFireworkProducts } from '@/lib/shows.server';
+import type { listFireworkProducts } from '@/lib/shows/queries.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { SHOW_STYLES, type ShowStyleKey } from './show-styles';
 

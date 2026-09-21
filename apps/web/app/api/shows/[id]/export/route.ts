@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import type { Json } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase/server';
-import { getShowBySlug } from '@/lib/shows.server';
+import { getShowBySlug } from '@/lib/shows/queries.server';
 import { buildFinale3dCsv } from '@/lib/finale3d';
 
 function productToSourcePayload(row: {

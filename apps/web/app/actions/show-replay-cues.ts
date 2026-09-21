@@ -6,7 +6,7 @@
  * card only fetches its own cues once the user has confirmed hover intent, so
  * grazing the grid never triggers a query or WebGL load.
  */
-import { listReplayCuesForShow, listReplayPreviewCuesForShow } from '@/lib/shows.server';
+import { listReplayCuesForShow, listReplayPreviewCuesForShow } from '@/lib/shows/queries.server';
 import type { ReplayCue } from '@/lib/show-domain';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 

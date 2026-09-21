@@ -5,12 +5,12 @@ import { Suspense } from 'react';
 import { FireworkReplayViewer } from '@/ui/replay/FireworkReplayViewer';
 import { ReplayPanelSkeleton } from '@/ui/shell/RouteSkeletons';
 import { getCurrentProfile } from '@/lib/admin/current-user.server';
+import { getAudioSignedUrl } from '@/lib/shows/audio.server';
 import {
-  getAudioSignedUrl,
   getShowBySlug,
   listFireworkProducts,
   listReplayCuesForShow,
-} from '@/lib/shows.server';
+} from '@/lib/shows/queries.server';
 
 type PageProps = {
   params: Promise<{ id: string }>;

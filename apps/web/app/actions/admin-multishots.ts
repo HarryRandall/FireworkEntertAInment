@@ -26,7 +26,7 @@ import {
 } from '@/lib/admin/multishot-constraints';
 import { MIN_PRODUCT_DURATION_SECONDS } from '@/lib/cue-overlap.server';
 import { deleteCachedKeys } from '@/lib/server-cache';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };

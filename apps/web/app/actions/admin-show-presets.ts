@@ -15,7 +15,7 @@ import type { Json } from '@/lib/database.types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
 import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };

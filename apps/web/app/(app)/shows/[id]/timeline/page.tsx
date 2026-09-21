@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { AudioAnalysisTimeline } from '@/ui/shows/AudioAnalysisTimeline';
 import { getLatestAnalysisForShow } from '@/lib/show-analyses.server';
 import { getSoundtrackAttribution } from '@/lib/shows/audio.server';
-import { getShowBySlug } from '@/lib/shows.server';
+import { getShowBySlug } from '@/lib/shows/queries.server';
 
 type PageProps = { params: Promise<{ id: string }> };
 

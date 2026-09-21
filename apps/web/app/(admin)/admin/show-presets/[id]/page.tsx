@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation';
 import { getAdminShowPresetById } from '@/lib/admin/templates.server';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 import { ShowPresetEditor } from '@/app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor';
 
 type PageProps = {

@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { slugifyTitle } from '@/lib/show-domain';
 import { parseCover, randomCover } from '@/lib/cover';
-import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows.server';
+import { invalidateShowCacheForUser, invalidateShowsCacheForUser } from '@/lib/shows/cache-keys';
 import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
 import { getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';

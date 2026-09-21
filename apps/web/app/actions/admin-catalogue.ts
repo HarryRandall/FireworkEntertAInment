@@ -19,7 +19,7 @@ import {
   invalidateAdminFireworksCache,
 } from '@/lib/admin/cache-keys';
 import { requirePermission } from '@/lib/admin/current-user.server';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 
 type Result = { ok: true } | { ok: false; error: string };
 const MAX_PRODUCT_DURATION_SECONDS = 60 * 60;

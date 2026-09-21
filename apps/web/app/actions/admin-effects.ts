@@ -29,7 +29,7 @@ import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   type FireworkStyleDefaultKind,
 } from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 
 type EffectRow = Database['public']['Tables']['firework_effects']['Row'];

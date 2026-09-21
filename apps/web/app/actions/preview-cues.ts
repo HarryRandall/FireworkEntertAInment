@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { syncShowDerivedFieldsForUser } from '@/lib/shows.server';
+import { syncShowDerivedFieldsForUser } from '@/lib/shows/mutations.server';
 import {
   invalidateSidebarAiUsageCache,
   refundAiCreditReservation,
