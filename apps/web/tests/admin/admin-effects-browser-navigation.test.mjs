@@ -40,8 +40,8 @@ test('effects category selection is URL-backed with a safe legacy fallback', () 
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
   const shell = read('ui/shell/AdminShell.tsx');
   const navigation = read('lib/admin-effects-navigation.ts');
-  const styleActions = read('app/actions/admin-style-defaults.ts');
-  const effectActions = read('app/actions/admin-effects.ts');
+  const styleActions = read('app/(admin)/admin/effects/style-default-actions.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
 
   assert.match(page, /searchParams: Promise<\{ view\?: string; tab\?: string \}>/);
   assert.match(page, /parseAdminEffectsView\(params\.view, params\.tab\)/);

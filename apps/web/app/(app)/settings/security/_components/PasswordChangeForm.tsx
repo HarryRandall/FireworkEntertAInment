@@ -4,7 +4,7 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
-import { updatePasswordAction, type PasswordActionState } from '@/app/actions/account';
+import { updatePasswordAction, type PasswordActionState } from '../../actions';
 import { Button } from '@/ui/patterns/Button';
 import { Input } from '@/ui/patterns/Input';
 import { InlineAlert } from '@/ui/patterns/Feedback';

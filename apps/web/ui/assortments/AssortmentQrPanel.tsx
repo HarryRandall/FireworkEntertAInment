@@ -11,7 +11,7 @@ import { Input } from '@/ui/patterns/Input';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { toast } from '@/ui/patterns/toast';
 import type { AdminAssortmentDetail } from '@/lib/admin/assortments.server';
-import { ensureAssortmentPublicLink } from '@/app/actions/admin-assortments';
+import { ensureAssortmentPublicLink } from '@/lib/assortments/actions.server';
 
 export function AssortmentQrPanel({
   assortment,

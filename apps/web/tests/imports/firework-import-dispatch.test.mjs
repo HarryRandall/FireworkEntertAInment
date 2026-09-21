@@ -126,7 +126,7 @@ test('non-202 and mismatched acknowledgements fail without unsafe retries', asyn
 });
 
 test('production queue actions preflight before funding and persist dispatch results', () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
   const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
   const historyUi = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/ImportRunHistory.tsx'),

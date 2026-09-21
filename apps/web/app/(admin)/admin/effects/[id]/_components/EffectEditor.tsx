@@ -22,7 +22,7 @@ import {
   createStyleDefaultAndUpdateEffect,
   restoreEffectEditorVersion,
   updateEffect,
-} from '@/app/actions/admin-effects';
+} from '../../actions';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
 import { EditorStyleDefaultControls } from '@/ui/admin/EditorSectionPanels';
 import { PREVIEW_LAUNCH_POSITIONS, estimatePreviewTicks } from '@/ui/admin/editor-preview-timing';

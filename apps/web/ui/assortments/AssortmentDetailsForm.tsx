@@ -3,7 +3,7 @@
 import { useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AdminAssortmentDetail } from '@/lib/admin/assortments.server';
-import { updateAssortment } from '@/app/actions/admin-assortments';
+import { updateAssortment } from '@/lib/assortments/actions.server';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { Field, FieldLabel } from '@/ui/patterns/Field';

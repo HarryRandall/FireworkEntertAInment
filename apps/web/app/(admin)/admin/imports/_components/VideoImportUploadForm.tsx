@@ -4,10 +4,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { FileVideo2, Trash2, UploadCloud } from 'lucide-react';
-import {
-  finalizeVideoImportJobAction,
-  type ImportUploadActionState,
-} from '@/app/actions/platform-admin';
+import { finalizeVideoImportJobAction, type ImportUploadActionState } from '../actions';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
 import { Input, Select } from '@/ui/patterns/Input';

@@ -4,8 +4,8 @@
 
 import { useMemo, useState } from 'react';
 import { ListFilter, Plus, Search } from 'lucide-react';
-import { createCustomStarEffect } from '@/app/actions/admin-effects';
-import { createStyleDefaultFromKind } from '@/app/actions/admin-style-defaults';
+import { createCustomStarEffect } from '../actions';
+import { createStyleDefaultFromKind } from '../style-default-actions';
 import { FireworkBrowseCard } from '@/ui/catalogue/FireworkBrowseCard';
 import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
 import { Badge } from '@/ui/patterns/Badge';

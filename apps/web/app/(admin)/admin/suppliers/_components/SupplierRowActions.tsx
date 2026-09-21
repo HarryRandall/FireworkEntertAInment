@@ -17,9 +17,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/ui/primitives/alert-dialog';
-import { deleteSupplier } from '@/app/actions/admin-suppliers';
+import { deleteSupplier } from '../actions';
 import { SupplierFormDialog } from '@/app/(admin)/admin/suppliers/_components/SupplierFormDialog';
-import type { SupplierInputType } from '@/app/actions/admin-suppliers';
+import type { SupplierInputType } from '../actions';
 
 type Props = {
   supplier: { id: string } & SupplierInputType;

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useTransition } from 'react';
 import { Check, Loader2 } from 'lucide-react';
-import { selectImportCandidateAction } from '@/app/actions/platform-admin';
+import { selectImportCandidateAction } from '../../actions';
 import { Badge } from '@/ui/patterns/Badge';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';

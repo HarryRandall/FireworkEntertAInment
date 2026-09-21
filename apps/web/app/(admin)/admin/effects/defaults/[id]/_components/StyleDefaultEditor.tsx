@@ -20,7 +20,7 @@ import {
   archiveStyleDefault,
   restoreStyleDefaultEditorVersion,
   updateStyleDefault,
-} from '@/app/actions/admin-style-defaults';
+} from '../../../style-default-actions';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,

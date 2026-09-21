@@ -18,7 +18,7 @@ test('impersonation migration adds a dedicated permission and audit table', () =
 });
 
 test('start impersonation is permission-gated, audited, and switches via Supabase magic link', () => {
-  const actions = read('app/actions/impersonation.ts');
+  const actions = read('lib/access/impersonation-actions.server.ts');
 
   assert.match(actions, /requirePermission\('admin\.impersonate_users'\)/);
   assert.match(actions, /createServiceRoleSupabase\(\)/);
@@ -35,7 +35,7 @@ test('start impersonation is permission-gated, audited, and switches via Supabas
 });
 
 test('stop impersonation restores the admin session and clears the return cookie', () => {
-  const actions = read('app/actions/impersonation.ts');
+  const actions = read('lib/access/impersonation-actions.server.ts');
 
   assert.match(actions, /export async function stopImpersonationAction/);
   assert.match(actions, /cookieStore\.get\(IMPERSONATION_RETURN_COOKIE\)/);
@@ -75,7 +75,7 @@ test('active impersonation reads fail closed when verification is unavailable', 
 });
 
 test('security mutations and UI are guarded while impersonating', () => {
-  const account = read('app/actions/account.ts');
+  const account = read('app/(app)/settings/actions.ts');
   const profilePage = read('app/(app)/settings/profile/page.tsx');
   const securityPage = read('app/(app)/settings/security/page.tsx');
   const signOut = read('ui/shell/SignOutButton.tsx');

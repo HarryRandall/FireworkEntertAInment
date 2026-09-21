@@ -28,7 +28,7 @@ test('show preview cue table displays the catalogue firework name', () => {
 
 test('manual and generated cues store catalogue names instead of custom labels', () => {
   const viewer = read('ui/replay/FireworkReplayViewer.tsx');
-  const action = read('app/actions/preview-cues.ts');
+  const action = read('lib/shows/cue-actions.server.ts');
   const runner = read('lib/cue-generation/runner.server.ts');
 
   assert.match(viewer, /formData\.set\('description', product\.name\);/);

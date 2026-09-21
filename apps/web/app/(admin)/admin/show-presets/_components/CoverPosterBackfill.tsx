@@ -9,7 +9,7 @@ import { Badge } from '@/ui/patterns/Badge';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { renderCoverToPng } from '@/lib/render-cover-poster';
-import { backfillPresetCoverPoster } from '@/app/actions/admin-cover-posters';
+import { backfillPresetCoverPoster } from '../cover-poster-actions';
 import type { CoverBackfillPreset } from '@/lib/admin/cover-posters.server';
 
 type ItemStatus = 'idle' | 'rendering' | 'done' | 'error';

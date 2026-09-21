@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useTheme } from 'next-themes';
 import { Check, Laptop, LockKeyhole, Mail, Moon, Phone, Sun, User } from 'lucide-react';
-import { updateProfileAction } from '@/app/actions/platform-admin';
+import { updateProfileAction } from '@/lib/access/profile-actions.server';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';

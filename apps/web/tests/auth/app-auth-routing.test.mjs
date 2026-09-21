@@ -96,7 +96,7 @@ test('(app) layout requires an authenticated user before rendering the app shell
 
 test('suspended profiles fail closed and access mutations invalidate authorisation caches', () => {
   const currentUser = read('lib/access/current-user.server.ts');
-  const actions = read('app/actions/admin-users.ts');
+  const actions = read('app/(admin)/admin/users/actions.ts');
 
   assert.match(currentUser, /profile\.status !== 'active'/);
   assert.match(currentUser, /profile\.status !== 'active' \|\| !profile\.permissions\.includes/);
@@ -155,7 +155,7 @@ test('AppShell is authenticated-only and keeps shipped navigation links', () => 
 });
 
 test('clone template action sends unauthenticated users to /login and back to the template', () => {
-  const action = read('app/actions/show-templates.ts');
+  const action = read('lib/show-templates/clone-actions.server.ts');
   assert.match(
     action,
     /redirect\(`\/login\?next=\$\{encodeURIComponent\(`\/library\/\$\{slug\}`\)\}`\)/,

@@ -20,7 +20,7 @@ test('the standalone admin AI billing route and nav entry are removed', () => {
 test('credit balances and grant controls survive on the user detail page', () => {
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
-  const actions = read('app/actions/admin-users.ts');
+  const actions = read('app/(admin)/admin/users/actions.ts');
 
   assert.match(userDetail, /AdminUserAiCreditsCard/);
   assert.match(userHeaderActions, /canManageBilling/);

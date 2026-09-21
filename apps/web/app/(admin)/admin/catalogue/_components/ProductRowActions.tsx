@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { RowActionsMenu } from '@/ui/patterns/RowActionsMenu';
 import { ProductFormDialog } from '@/app/(admin)/admin/catalogue/_components/ProductFormDialog';
-import type { ProductInputType } from '@/app/actions/admin-catalogue';
+import type { ProductInputType } from '../actions';
 
 type Props = {
   product: { id: string } & ProductInputType;

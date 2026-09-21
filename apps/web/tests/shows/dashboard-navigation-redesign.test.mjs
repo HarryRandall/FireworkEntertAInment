@@ -157,10 +157,6 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(showReplayProvider, /formatEditedAt\(mountedPreview\.show\.lastEditedAt\)/);
   assert.match(showReplayProvider, /<Play size=\{16\} fill="currentColor" \/>/);
 
-  const showReplayAction = read('app/actions/show-replay-cues.ts');
-  assert.match(showReplayAction, /listReplayPreviewCuesForShow/);
-  assert.match(showReplayAction, /SHOW_CARD_PREVIEW_WINDOW_SECONDS/);
-
   const showsQueries = read('lib/shows/queries.server.ts');
   assert.match(showsQueries, /listReplayPreviewCuesForShow/);
   assert.match(showsQueries, /firstData/);

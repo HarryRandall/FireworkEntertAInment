@@ -16,7 +16,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import { formatBudget } from '@/lib/show-domain';
 import type { AdminCatalogueItemOption } from '@/lib/admin/assortments.server';
-import { searchCatalogueItems, upsertAssortmentItem } from '@/app/actions/admin-assortments';
+import { searchCatalogueItems, upsertAssortmentItem } from '@/lib/assortments/actions.server';
 
 export function AddCatalogueItemPicker({
   assortmentId,

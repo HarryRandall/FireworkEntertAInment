@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 
 const root = process.cwd();
-const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
 const page = readFileSync(join(root, 'app/(admin)/admin/imports/page.tsx'), 'utf8');
 const loading = readFileSync(join(root, 'app/(admin)/admin/imports/loading.tsx'), 'utf8');
 const card = readFileSync(

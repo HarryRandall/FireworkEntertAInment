@@ -44,7 +44,7 @@ test('poster loading and pending states stay bounded and accessible', () => {
 });
 
 test('done status follows a bounded canonical database confirmation', () => {
-  const action = read('app/actions/admin-cover-posters.ts');
+  const action = read('app/(admin)/admin/show-presets/cover-poster-actions.ts');
 
   assert.match(
     action,

@@ -34,7 +34,7 @@ import {
   createStyleDefaultAndUpdateFirework,
   restoreFireworkEditorVersion,
   updateFirework,
-} from '@/app/actions/admin-fireworks';
+} from '../../actions';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
 import { EditorStyleDefaultControls } from '@/ui/admin/EditorSectionPanels';
 import { PREVIEW_LAUNCH_POSITIONS, estimatePreviewTicks } from '@/ui/admin/editor-preview-timing';

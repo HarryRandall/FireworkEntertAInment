@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 import { Loader2 } from 'lucide-react';
-import { deleteImportJobAction, updateImportJobAction } from '@/app/actions/platform-admin';
+import { deleteImportJobAction, updateImportJobAction } from '../actions';
 import { Badge } from '@/ui/patterns/Badge';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
