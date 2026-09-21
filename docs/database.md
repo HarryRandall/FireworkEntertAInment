@@ -136,8 +136,7 @@ old project until the new installation is accepted.
 
 Local catalogue browsing, editing, presets and fast show generation need no
 external provider. Fixtures select `fast` generation locally; the handover seed
-preserves production's `llm` setting. The development notice identifies missing
-configuration without showing secret values.
+preserves production's `llm` setting. Use the configuration checklist below to enable optional services locally.
 
 | Capability                    | Configuration                                                                                                                        |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |

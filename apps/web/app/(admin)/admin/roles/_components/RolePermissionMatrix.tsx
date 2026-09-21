@@ -1,9 +1,12 @@
+'use client';
+
 /** Custom permission matrix for editing role-level defaults. */
 
-import type { CSSProperties } from 'react';
+import { useId, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { Badge } from '@/ui/patterns/Badge';
+import { Button } from '@/ui/patterns/Button';
 import {
-  DataTableShell,
   tableCellClasses,
   tableClasses,
   tableHeadClasses,
@@ -37,146 +40,125 @@ function formatPermissionArea(category: string) {
 }
 
 export function RolePermissionMatrix({ groupedPermissions, roles, grantKeys }: Props) {
-  const permissionCount = groupedPermissions.reduce(
-    (total, [, permissions]) => total + permissions.length,
-    0,
-  );
-  const roleColumnWidth = 148;
-  const permissionColumnWidth = 340;
-  const tableMinWidth = Math.max(760, permissionColumnWidth + roles.length * roleColumnWidth);
-  const roleCountLabel = `${roles.length.toLocaleString()} ${roles.length === 1 ? 'role' : 'roles'}`;
-  const permissionCountLabel = `${permissionCount.toLocaleString()} ${
-    permissionCount === 1 ? 'permission' : 'permissions'
-  }`;
-
   return (
-    <DataTableShell
-      viewport
-      className="bg-card min-h-[420px] flex-1 lg:max-h-[calc(100dvh-14rem)]"
-      footer={
-        <div className="text-muted-foreground text-sm">
-          Viewing {permissionCountLabel} across {roleCountLabel}
-        </div>
-      }
-    >
-      <table className={tableClasses()} style={{ minWidth: `${tableMinWidth}px` } as CSSProperties}>
-        <colgroup>
-          <col style={{ width: `${permissionColumnWidth}px` }} />
-          {roles.map((role) => (
-            <col key={role.id} style={{ width: `${roleColumnWidth}px` }} />
-          ))}
-        </colgroup>
-        <thead className={tableHeadClasses()}>
-          <tr>
-            <th className={tableHeaderCellClasses()}>Permission</th>
-            {roles.map((role) => (
-              <th key={role.id} className={tableHeaderCellClasses('text-center')}>
-                <span className="inline-flex max-w-32 items-center justify-center gap-1.5 align-middle">
-                  <span className="truncate">{role.name}</span>
-                  {role.description ? <InfoTooltip text={role.description} /> : null}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {groupedPermissions.length > 0 ? (
-            groupedPermissions.map(([category, permissions]) => (
-              <RolePermissionGroup
-                key={category}
-                category={category}
-                permissions={permissions}
-                roles={roles}
-                grantKeys={grantKeys}
-              />
-            ))
-          ) : (
-            <tr className={tableRowClasses()}>
-              <td
-                colSpan={Math.max(1, roles.length + 1)}
-                className={tableCellClasses(
-                  'text-muted-foreground h-24 text-center whitespace-normal',
-                )}
-              >
-                No permissions match the current filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </DataTableShell>
+    <div className="space-y-3">
+      {groupedPermissions.map(([category, permissions], index) => (
+        <RolePermissionGroup
+          key={category}
+          defaultExpanded={index === 0}
+          category={category}
+          permissions={permissions}
+          roles={roles}
+          grantKeys={grantKeys}
+        />
+      ))}
+      {groupedPermissions.length === 0 ? (
+        <p className="text-muted-foreground py-8 text-center text-sm">
+          No permissions match the current filters.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
 function RolePermissionGroup({
+  defaultExpanded,
   category,
   permissions,
   roles,
   grantKeys,
 }: {
+  defaultExpanded: boolean;
   category: string;
   permissions: Permission[];
   roles: Role[];
   grantKeys: Set<string>;
 }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const contentId = useId();
+  const headingId = useId();
+
   return (
-    <>
-      <tr className={tableRowClasses('bg-muted/45 hover:bg-muted/45')}>
-        <th
-          scope="rowgroup"
-          colSpan={roles.length + 1}
-          className={tableCellClasses(
-            'text-muted-foreground py-2 text-left font-medium whitespace-normal',
-          )}
+    <section
+      className="border-border bg-background overflow-hidden rounded-lg border"
+      aria-labelledby={headingId}
+    >
+      <h2 id={headingId}>
+        <Button
+          type="button"
+          variant="ghost"
+          aria-expanded={expanded}
+          aria-controls={contentId}
+          onClick={() => setExpanded((value) => !value)}
+          className="text-foreground bg-background aria-expanded:bg-background h-auto w-full justify-start rounded-none border-0 px-4 py-4 active:translate-y-0"
         >
-          <span className="flex items-center gap-2">
-            {formatPermissionArea(category)}
-            <Badge tone="neutral" className="bg-background/80 rounded-sm">
-              {permissions.length.toLocaleString()}
-            </Badge>
-          </span>
-        </th>
-      </tr>
-      {permissions.map((permission) => (
-        <tr key={permission.id} className={tableRowClasses('hover:bg-muted/35')}>
-          <th
-            scope="row"
-            className={cn(
-              tableCellClasses('text-left whitespace-normal'),
-              'align-middle font-normal',
-            )}
-          >
-            <div className="max-w-md min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-foreground text-sm font-medium">{permission.name}</span>
-                <InfoTooltip text={permission.description ?? permission.name} />
-              </div>
-              {permission.description ? (
-                <p className="text-muted-foreground mt-1 text-xs leading-5">
-                  {permission.description}
-                </p>
-              ) : null}
-            </div>
-          </th>
-          {roles.map((role) => {
-            const enabled = grantKeys.has(`${role.id}:${permission.id}`);
-            return (
-              <td key={role.id} className={tableCellClasses('text-center')}>
-                <div className="flex justify-center">
-                  <RolePermissionToggle
-                    roleId={role.id}
-                    roleName={role.name}
-                    permissionId={permission.id}
-                    permissionName={permission.name}
-                    initialEnabled={enabled}
-                    locked={isLockedRolePermission(role.key, permission.key)}
-                  />
-                </div>
-              </td>
-            );
-          })}
-        </tr>
-      ))}
-    </>
+          <ChevronRight aria-hidden className={cn('size-4 shrink-0', expanded && 'rotate-90')} />
+          {formatPermissionArea(category)}
+          <Badge tone="neutral">{permissions.length}</Badge>
+        </Button>
+      </h2>
+      <div id={contentId} hidden={!expanded} className="border-border overflow-x-auto border-t">
+        <table className={tableClasses('table-fixed')} aria-labelledby={headingId}>
+          <colgroup>
+            <col />
+            {roles.map((role) => (
+              <col key={role.id} className="w-32 lg:w-40" />
+            ))}
+          </colgroup>
+          <thead className={tableHeadClasses()}>
+            <tr>
+              <th scope="col" className={tableHeaderCellClasses()}>
+                Permission
+              </th>
+              {roles.map((role) => (
+                <th key={role.id} scope="col" className={tableHeaderCellClasses('text-center')}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {role.name}
+                    {role.description ? <InfoTooltip text={role.description} /> : null}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {permissions.map((permission) => (
+              <tr key={permission.id} className={tableRowClasses('hover:bg-muted/35')}>
+                <th
+                  scope="row"
+                  className={cn(
+                    tableCellClasses('text-left whitespace-normal'),
+                    'align-middle font-normal',
+                  )}
+                >
+                  <div className="max-w-md min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-foreground text-sm font-medium">{permission.name}</span>
+                      <InfoTooltip text={permission.description ?? permission.name} />
+                    </div>
+                  </div>
+                </th>
+                {roles.map((role) => {
+                  const enabled = grantKeys.has(`${role.id}:${permission.id}`);
+                  return (
+                    <td key={role.id} className={tableCellClasses('text-center')}>
+                      <div className="flex justify-center">
+                        <RolePermissionToggle
+                          roleId={role.id}
+                          roleName={role.name}
+                          permissionId={permission.id}
+                          permissionName={permission.name}
+                          initialEnabled={enabled}
+                          locked={isLockedRolePermission(role.key, permission.key)}
+                        />
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

@@ -4,7 +4,7 @@
  * mirrors the layout of a specific page so the swap to real content
  * does not cause large layout shifts.
  */
-import { Fragment, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -550,64 +550,64 @@ export function AdminRolesSkeleton() {
     >
       <AdminFilterControlsSkeleton searchPlaceholder="Search permissions by name or area..." />
 
-      <DataTableShell
-        viewport
-        className="bg-card min-h-[420px] flex-1 lg:max-h-[calc(100dvh-14rem)]"
-        footer={
-          <div>
-            <Skeleton className="h-4 w-56 max-w-full" />
-          </div>
-        }
-      >
-        <table className={tableClasses()} aria-label="Loading role defaults">
-          <thead className={tableHeadClasses()}>
-            <tr>
-              {['Permission', 'Admin', 'Supplier', 'User'].map((header) => (
-                <th
-                  key={header}
-                  className={tableHeaderCellClasses(
-                    header === 'Permission' ? undefined : 'text-center',
-                  )}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {['Platform access', 'Show builder'].map((group) => (
-              <Fragment key={group}>
-                <tr key={`${group}-group`} className={tableRowClasses('bg-muted/45')}>
-                  <th
-                    colSpan={4}
-                    className={tableCellClasses(
-                      'text-muted-foreground py-2 text-left font-medium whitespace-normal',
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      {group}
-                      <Skeleton className="h-5 w-7 rounded-sm" />
-                    </span>
-                  </th>
-                </tr>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <tr key={`${group}-${index}`} className={tableRowClasses()}>
-                    <td className={tableCellClasses('whitespace-normal')}>
-                      <Skeleton className="h-4 w-full max-w-[220px]" />
-                      <Skeleton className="mt-2 h-3 w-full max-w-[300px]" />
-                    </td>
-                    {[0, 1, 2].map((roleIndex) => (
-                      <td key={roleIndex} className={tableCellClasses('text-center')}>
-                        <Skeleton className="mx-auto h-8 w-24 rounded-md" />
-                      </td>
+      <div className="space-y-3">
+        {['Platform access', 'Show builder', 'Supplier workspace'].map((group, groupIndex) => (
+          <div
+            key={group}
+            className="border-border bg-background overflow-hidden rounded-lg border"
+          >
+            <div className="flex items-center gap-2 px-4 py-4 text-sm font-medium">
+              <ChevronRight
+                aria-hidden
+                className={groupIndex === 0 ? 'size-4 rotate-90' : 'size-4'}
+              />
+              {group}
+              <Skeleton className="h-5 w-7 rounded-sm" />
+            </div>
+            {groupIndex === 0 ? (
+              <div className="border-border overflow-x-auto border-t">
+                <table className={tableClasses('table-fixed')} aria-label="Loading role defaults">
+                  <colgroup>
+                    <col />
+                    {[0, 1, 2].map((role) => (
+                      <col key={role} className="w-32 lg:w-40" />
                     ))}
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </DataTableShell>
+                  </colgroup>
+                  <thead className={tableHeadClasses()}>
+                    <tr>
+                      {['Permission', 'Admin', 'Supplier', 'User'].map((header) => (
+                        <th
+                          key={header}
+                          scope="col"
+                          className={tableHeaderCellClasses(
+                            header === 'Permission' ? undefined : 'text-center',
+                          )}
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 9 }, (_, index) => (
+                      <tr key={index} className={tableRowClasses()}>
+                        <td className={tableCellClasses()}>
+                          <Skeleton className="h-4 w-full max-w-44" />
+                        </td>
+                        {[0, 1, 2].map((role) => (
+                          <td key={role} className={tableCellClasses('text-center')}>
+                            <Skeleton className="mx-auto h-8 w-24 rounded-md" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

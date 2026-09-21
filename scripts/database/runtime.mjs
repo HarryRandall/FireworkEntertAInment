@@ -40,8 +40,10 @@ export function query(target, sql) {
   const path = join(directory, 'query.sql');
   try {
     writeFileSync(path, sql, { mode: 0o600 });
-    const output = supabase(['db', 'query', ...target.flags, '--file', path]);
-    return output.trim() ? (JSON.parse(output).rows ?? []) : [];
+    const output = supabase(['db', 'query', ...target.flags, '--file', path, '--output', 'json']);
+    const result = output.trim() ? JSON.parse(output) : [];
+    // Interactive CLI output is an array; agent mode wraps the same rows.
+    return Array.isArray(result) ? result : (result.rows ?? []);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

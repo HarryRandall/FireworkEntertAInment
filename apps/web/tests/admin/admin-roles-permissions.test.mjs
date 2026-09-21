@@ -32,7 +32,6 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   assert.match(roleMatrix, /RolePermissionToggle/);
   assert.match(roleMatrix, /InfoTooltip/);
   assert.match(roleMatrix, /Show builder/);
-  assert.match(roleMatrix, /DataTableShell/);
   assert.match(roleMatrix, /tableClasses/);
   assert.match(roleMatrix, /tableHeadClasses/);
   assert.match(roleMatrix, /tableHeaderCellClasses/);
@@ -42,13 +41,11 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   assert.match(roleMatrix, /<thead/);
   assert.match(roleMatrix, /<tbody/);
   assert.match(roleMatrix, /scope="row"/);
-  assert.match(roleMatrix, /max-h-\[/);
   assert.doesNotMatch(roleMatrix, /Locked permissions remain required/);
   assert.doesNotMatch(roleMatrix, /Role defaults/);
   assert.match(roleToggle, /Disabled/);
   assert.match(roleToggle, /Disable/);
   assert.match(roleToggle, /cursor-pointer/);
-  assert.match(roleToggle, /backdrop-blur/);
   assert.match(roleToggle, /color-status-danger/);
   assert.doesNotMatch(rolesPage, /<table/);
   assert.match(roleAction, /role_permissions/);

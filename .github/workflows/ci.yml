@@ -6,14 +6,11 @@ on:
       - main
       - development
   pull_request:
-    branches:
-      - main
-      - development
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   web:
@@ -148,3 +145,88 @@ jobs:
 
       - name: Run worker unit tests
         run: python -m unittest discover -s services/firework-import-worker/tests -p "*test*.py"
+
+  database:
+    name: Fresh database and access checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:database-tooling
+      - name: Install and verify a fresh database
+        run: |
+          pnpm db:start
+          pnpm db:bootstrap --local
+          pnpm db:verify --local
+          pnpm db:test
+          pnpm db:types --check
+          pnpm db:lint
+      - name: Prove a second clean replay and repeatable fixtures
+        run: |
+          pnpm db:reset
+          pnpm db:bootstrap --local
+          pnpm db:verify --local
+          pnpm db:test
+          pnpm db:fixtures
+          pnpm db:fixtures
+          pnpm db:fixtures:check
+          pnpm db:bootstrap --local
+      - name: Stop the test database
+        if: always()
+        run: pnpm db:stop
+
+  deploy:
+    name: Migrate then deploy production
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [web, analyser, analyser-contract, worker, database]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Reject a superseded release
+        run: |
+          git fetch origin main
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "A newer commit is on main. Its checked release will deploy instead."
+            exit 1
+          fi
+      - name: Check deployment configuration
+        run: |
+          for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then echo "Missing deployment setting: $name"; exit 1; fi
+          done
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch the production application settings
+        run: pnpm dlx --allow-build=esbuild vercel@59.23.2 pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Check the database and application target
+        run: |
+          pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF"
+          node scripts/database/deployment-check.mjs
+      - name: Apply tested schema migrations
+        run: pnpm exec supabase db push --linked
+      - name: Build the tested commit
+        run: pnpm dlx --allow-build=esbuild vercel@59.23.2 build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy the tested build
+        run: pnpm dlx --allow-build=esbuild vercel@59.23.2 deploy --prebuilt --prod --token="$VERCEL_TOKEN"
