@@ -2655,10 +2655,6 @@ export type Database = {
         Args: { p_assortment_id: string }
         Returns: Json
       }
-      set_assortment_public_link_enabled: {
-        Args: { p_assortment_id: string; p_enabled: boolean }
-        Returns: boolean
-      }
       expire_exhausted_cue_generations: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
@@ -2916,6 +2912,10 @@ export type Database = {
       select_firework_import_candidate: {
         Args: { p_candidate_id: string; p_job_id: string }
         Returns: string
+      }
+      set_assortment_public_link_enabled: {
+        Args: { p_assortment_id: string; p_enabled: boolean }
+        Returns: boolean
       }
       set_user_permission_overrides: {
         Args: { p_overrides: Json; p_user_id: string }
