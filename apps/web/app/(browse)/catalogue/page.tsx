@@ -7,7 +7,7 @@ import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePrev
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { TablePagination } from '@/ui/patterns/TablePagination';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 import {
   formatDuration,
   formatManufacturerLabel,

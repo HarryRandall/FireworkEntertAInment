@@ -15,7 +15,7 @@ import {
   AnalyserOutputValidationError,
   parseStoredAnalyserResult,
 } from '@/lib/show-analysis-validation';
-import { invalidateShowCacheForUser } from '@/lib/shows.server';
+import { invalidateShowCacheForUser } from '@/lib/shows/cache-keys';
 import type { ShowBriefRow } from './schemas';
 import type { ProductQuantityLedger } from '@/lib/assortments/constraints';
 

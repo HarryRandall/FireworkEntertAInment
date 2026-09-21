@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShoppingListTable } from '@/ui/shows/ShoppingListTable';
 import { ShoppingListSkeleton } from '@/ui/shell/RouteSkeletons';
-import { getShowBySlug, listShoppingItemsForShow } from '@/lib/shows.server';
+import { getShowBySlug, listShoppingItemsForShow } from '@/lib/shows/queries.server';
 import type { Show } from '@/lib/show-domain';
 
 type PageProps = { params: Promise<{ id: string }> };

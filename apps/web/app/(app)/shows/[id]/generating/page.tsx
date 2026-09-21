@@ -8,7 +8,7 @@ import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
-import { getShowBySlug } from '@/lib/shows.server';
+import { getShowBySlug } from '@/lib/shows/queries.server';
 
 type PageProps = {
   params: Promise<{ id: string }>;

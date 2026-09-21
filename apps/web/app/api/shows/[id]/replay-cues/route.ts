@@ -8,7 +8,7 @@
  * `listReplayPreviewCuesForShow` (current-user check plus RLS).
  */
 import { NextResponse } from 'next/server';
-import { listReplayPreviewCuesForShow, ShowsNetworkError } from '@/lib/shows.server';
+import { listReplayPreviewCuesForShow, ShowsNetworkError } from '@/lib/shows/queries.server';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {

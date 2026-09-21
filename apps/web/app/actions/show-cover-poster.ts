@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { parseCover } from '@/lib/cover';
 import type { Json } from '@/lib/database.types';
-import { invalidateShowCacheForUser } from '@/lib/shows.server';
+import { invalidateShowCacheForUser } from '@/lib/shows/cache-keys';
 import { createClient } from '@/lib/supabase/server';
 
 export async function setShowCoverImagePath(

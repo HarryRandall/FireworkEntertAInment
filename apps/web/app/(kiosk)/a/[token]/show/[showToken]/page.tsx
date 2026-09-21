@@ -10,7 +10,7 @@ import {
 import type { ShowTemplate } from '@/lib/admin.types';
 import { parseStoredAnalyserResult } from '@/lib/show-analysis-validation';
 import { formatBudget } from '@/lib/show-domain';
-import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows.server';
+import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows/queries.server';
 import {
   KioskGeneratingShow,
   RegenerateAssortmentShow,

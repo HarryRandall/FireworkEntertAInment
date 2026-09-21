@@ -26,7 +26,7 @@ import {
   INITIAL_STYLE_DEFAULT_JSON,
   styleDefaultKindLabel,
 } from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows.server';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import type { AdminStyleDefaultOption } from '@/lib/admin.types';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 

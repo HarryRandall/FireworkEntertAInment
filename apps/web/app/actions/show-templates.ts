@@ -14,7 +14,8 @@ import type { Json } from '@/lib/database.types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { slugifyTitle } from '@/lib/show-domain';
 import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
-import { listFireworkProducts, syncShowDerivedFieldsForUser } from '@/lib/shows.server';
+import { syncShowDerivedFieldsForUser } from '@/lib/shows/mutations.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 import { getShowTemplateBySlug } from '@/lib/admin/templates.server';
 import { randomCover } from '@/lib/cover';
 

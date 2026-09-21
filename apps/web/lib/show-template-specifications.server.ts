@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { ShowTemplateCue } from '@/lib/admin.types';
 import type { FireworkSpecification } from '@/lib/show-domain';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 
 const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   chrysanthemum: 'gold-chrysanthemum',

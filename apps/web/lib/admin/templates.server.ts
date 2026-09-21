@@ -17,7 +17,7 @@ import type {
   ShowTemplateCue,
 } from '@/lib/admin.types';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
-import { listFireworkProducts } from '@/lib/shows.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 import { getShowTemplatesCacheKey, SHOW_TEMPLATES_TTL_SECONDS } from './cache-keys';
