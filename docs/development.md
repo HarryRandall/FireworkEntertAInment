@@ -77,6 +77,11 @@ releasing this layout; a local refactor does not update that setting.
 Modal services retain their existing deployment roots and manifests under
 `services/`. A web release does not deploy Python services or apply migrations.
 
+GitHub tags and releases are the public version source of truth. Use semantic
+versions, keep the README linked to the automatically resolved latest release,
+and create a release only from a fully merged, checked `main` commit. The private
+web package version is descriptive and must not become a competing release feed.
+
 The renderer fingerprint includes source paths and file bytes. Release the web
 app, import worker and database renderer contract together whenever it changes
 so all three agree on the current contract. Existing sealed evidence must be
