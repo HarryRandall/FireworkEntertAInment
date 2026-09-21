@@ -14,7 +14,7 @@ them; one app does not need a placeholder package hierarchy.
 | `app/**/_components/` | UI used only by that route or its descendants                                            |
 | `ui/primitives/`      | Low-level shadcn/Radix primitives; respect generated-file headers                        |
 | `ui/patterns/`        | ShowCrafter's reusable controls and patterns, built from primitives                      |
-| `ui/<domain>/`        | Features shared by multiple routes, such as assortments, music selection and replay      |
+| `ui/<domain>/`        | Features shared by multiple routes, such as assortments, firework editing and replay     |
 | `ui/shell/`           | App, admin and My Store navigation, account controls and workspace chrome                |
 | `lib/`                | Domain transformations, validation, types and server integrations                        |
 | `ui/theme.css`        | Canonical light/dark colour values and legacy aliases                                    |
@@ -38,6 +38,8 @@ their domain logic. Public template reads stay in `show-templates`; admin owns
 only draft and management reads.
 Import the owning module directly. Do not restore compatibility forwarding files
 or broad barrels that pull unrelated server and client modules into one API.
+Shared firework editor controls, history and fullscreen preview behaviour live in
+`ui/firework-editor`; the domain name reflects their reuse outside admin routes.
 
 Both Python services are active application dependencies. Music upload and
 generation call `ANALYSER_URL` through `lib/show-analysis-runner.server.ts`;

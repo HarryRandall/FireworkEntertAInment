@@ -8,7 +8,7 @@ import {
   calibratedToRaw,
   rawToCalibrated,
   type CalibratedRange,
-} from '@/ui/admin/firework-render-controls/calibrated-slider';
+} from '@/ui/firework-editor/firework-render-controls/calibrated-slider';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { SliderField } from '@/ui/patterns/SliderField';

@@ -124,7 +124,7 @@ test('firework audio separates launch and burst reports', () => {
   const design = read('lib/fireworks/design.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const effects = read('lib/fireworks/Effects.ts');
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
 
   assert.match(design, /launch: z\.boolean\(\)\.default\(true\)/);
   assert.match(design, /boom: z\.enum\(\['none', 'auto', 'light', 'heavy'\]\)\.default\('auto'\)/);
@@ -150,10 +150,10 @@ test('firework audio separates launch and burst reports', () => {
 });
 
 test('admin controls hide aerial-only fields for ground emitters', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const shell = read('ui/admin/FireworkEditorShell.tsx');
+  const shell = read('ui/firework-editor/FireworkEditorShell.tsx');
 
   for (const editor of [effectEditor, fireworkEditor]) {
     assert.match(editor, /const isGroundEmitter = isGroundFireworkEffect\(previewDesign\)/);
@@ -172,7 +172,7 @@ test('admin controls hide aerial-only fields for ground emitters', () => {
 });
 
 test('expanded renderer controls expose honest ranges, palettes, and budget guidance', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
 
   assert.match(controls, /const STAR_SPEED_MIN = 0/);
   assert.match(controls, /const STAR_SPEED_MAX = 20/);
@@ -301,7 +301,7 @@ test('renderer preserves named firework geometry and trail profiles', () => {
 });
 
 test('heart and five-point-star geometries consume their editable planar tuning', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
 
@@ -796,8 +796,8 @@ test('detonation only spawns designed stars and trails', () => {
 });
 
 test('outer and core star layers own their heads, burst physics, and trails', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
-  const controlFields = read('ui/admin/firework-render-controls/ControlFields.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
+  const controlFields = read('ui/firework-editor/firework-render-controls/ControlFields.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const starAppearance = controls.slice(
@@ -978,10 +978,10 @@ test('outer and core star layers own their heads, burst physics, and trails', ()
 });
 
 test('unified burst trails are validated, migrated, and exposed through shared controls', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
-  const controlFields = read('ui/admin/firework-render-controls/ControlFields.tsx');
-  const calibratedSlider = read('ui/admin/firework-render-controls/calibrated-slider.ts');
-  const controlSections = read('ui/admin/firework-render-controls/ControlSections.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
+  const controlFields = read('ui/firework-editor/firework-render-controls/ControlFields.tsx');
+  const calibratedSlider = read('ui/firework-editor/firework-render-controls/calibrated-slider.ts');
+  const controlSections = read('ui/firework-editor/firework-render-controls/ControlSections.tsx');
   const burstTrailControls = controls.slice(
     controls.indexOf('function renderBurstTrailControls'),
     controls.indexOf('function renderStarLayerControls'),
@@ -1174,7 +1174,7 @@ test('unified burst trails are validated, migrated, and exposed through shared c
 });
 
 test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolated', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const engine = read('lib/fireworks/FireworksEngine.ts');
@@ -1415,7 +1415,7 @@ test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolat
 });
 
 test('crackle customisation is schema-driven, editor-wired, and timestep-normalised', () => {
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const crackleSchemaStart = design.indexOf('  crackle: z');
@@ -1491,7 +1491,7 @@ test('crackle customisation is schema-driven, editor-wired, and timestep-normali
 
 test('effect editor canonicalises render defaults for shared controls', () => {
   const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const design = read('lib/fireworks/design.ts');
 
   assert.match(design, /export function canonicaliseEffectModelJson/);
@@ -1651,7 +1651,7 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   const engine = read('lib/fireworks/FireworksEngine.ts');
   const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
   const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
   const tuning = read('lib/fireworks/render-tuning.ts');
 
