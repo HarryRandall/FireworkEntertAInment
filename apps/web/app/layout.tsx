@@ -6,6 +6,7 @@ import './globals.css';
 import { ThemeProvider } from '@/ui/theme/ThemeProvider';
 import { TooltipProvider } from '@/ui/primitives/tooltip';
 import { Toaster } from '@/ui/primitives/sonner';
+import { LocalDevelopmentNotice } from '@/ui/shell/LocalDevelopmentNotice';
 
 const geistSans = Geist({
   subsets: ['latin'],
@@ -37,6 +38,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster position="top-right" closeButton />
+          <LocalDevelopmentNotice />
         </ThemeProvider>
       </body>
     </html>
