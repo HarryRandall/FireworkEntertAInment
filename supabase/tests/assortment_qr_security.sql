@@ -155,7 +155,17 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000102', true);
 do $$
+declare
+  actual_user_id uuid := auth.uid();
+  has_admin_permission boolean := public.current_user_has_permission('admin.manage_assortments');
 begin
+  if actual_user_id is distinct from '92000000-0000-0000-0000-000000000102'::uuid
+    or has_admin_permission
+  then
+    raise exception 'QR fixture identity mismatch: uid %, admin permission %',
+      actual_user_id,
+      has_admin_permission;
+  end if;
   begin
     perform public.set_assortment_public_link_enabled(
       '92000000-0000-0000-0000-000000000201'::uuid,
