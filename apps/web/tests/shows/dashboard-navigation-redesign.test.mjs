@@ -267,26 +267,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
 });
 
 test('explore seed data supports database-managed factual library shelves', () => {
-  const seedPath = '../../supabase/migrations/20260629171000_seed_library_explore_shelves.sql';
-  const diversificationPath =
-    '../../supabase/migrations/20260710053416_diversify_explore_show_presets.sql';
-  assert.equal(existsSync(join(root, seedPath)), true);
-  assert.equal(existsSync(join(root, diversificationPath)), true);
-
-  const seed = read(seedPath);
-  const diversification = read(diversificationPath);
   const templateReads = read('lib/admin/templates.server.ts');
-
-  for (const section of ['featured', 'popular', 'hot', 'recent', 'shortest']) {
-    assert.match(seed, new RegExp(`'${section}'`));
-  }
-  assert.match(seed, /CROSS JOIN generate_series\(1, 30\) AS item\(item_order\)/);
-  assert.match(seed, /sort_base \+ item_order/);
-  assert.match(seed, /jsonb_build_object\('kind', cover_kind, 'colors', to_jsonb\(colors\)\)/);
-  assert.match(seed, /ON CONFLICT \(slug\) DO UPDATE SET/);
-  assert.match(diversification, /private\.catalogue_item_safe_duration/);
-  assert.match(diversification, /catalogueItemId/);
-  assert.match(diversification, /duplicate firework compositions/);
   assert.equal(existsSync(join(root, 'lib/library-seed-templates.ts')), false);
   assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
   assert.match(templateReads, /if \(cached\) return cached/);

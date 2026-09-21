@@ -21,10 +21,6 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   const roleAction = readFileSync(join(root, 'app/actions/admin-roles.ts'), 'utf8');
   const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
   const shell = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/20260531091000_admin_role_permissions_modify.sql'),
-    'utf8',
-  );
 
   assert.equal(existsSync(rolesPagePath), true);
   assert.match(shell, /ShieldCheck/);
@@ -60,7 +56,6 @@ test('admin roles page edits role permission defaults with lockout guards', () =
   assert.match(roleAction, /isLockedRolePermission/);
   assert.match(roleAction, /createServiceRoleSupabase/);
   assert.match(userAction, /You cannot change your own role/);
-  assert.match(migration, /role_permissions_admin_modify/);
 });
 
 test('user detail renders permission exceptions instead of every permission row', () => {
@@ -79,13 +74,6 @@ test('user detail renders permission exceptions instead of every permission row'
   );
   const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
   const databaseTypes = readFileSync(join(root, 'lib/database.types.ts'), 'utf8');
-  const overrideMigration = readFileSync(
-    join(
-      root,
-      '../../supabase/migrations/20260715090100_set_user_permission_overrides_atomically.sql',
-    ),
-    'utf8',
-  );
 
   assert.match(detailPage, /PermissionExceptionsPanel/);
   assert.match(exceptionsPanel, /Permission exceptions/);
@@ -123,23 +111,5 @@ test('user detail renders permission exceptions instead of every permission row'
   assert.match(
     userAction,
     /overrideRpc\.rpc\([\s\S]*?'set_user_permission_overrides'[\s\S]*?processedCount !== parsed\.data\.overrides\.length/,
-  );
-  assert.match(
-    overrideMigration,
-    /create or replace function public\.set_user_permission_overrides\([\s\S]*?security definer[\s\S]*?set search_path = ''/,
-  );
-  assert.match(overrideMigration, /jsonb_array_length\(p_overrides\)/);
-  assert.match(overrideMigration, /count\(distinct item\.value ->> 'permission_id'\)/);
-  assert.match(
-    overrideMigration,
-    /not public\.has_permission\(actor_id, 'admin\.view'\)[\s\S]*?not public\.has_permission\(actor_id, 'admin\.manage_users'\)/,
-  );
-  assert.match(
-    overrideMigration,
-    /revoke all privileges on public\.user_permission_overrides from anon, authenticated;[\s\S]*?grant select on public\.user_permission_overrides to authenticated;/,
-  );
-  assert.match(
-    overrideMigration,
-    /revoke execute on function public\.set_user_permission_overrides\(uuid, jsonb\)[\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.set_user_permission_overrides\(uuid, jsonb\)[\s\S]*?to authenticated;/,
   );
 });

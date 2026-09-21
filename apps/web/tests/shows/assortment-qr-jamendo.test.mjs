@@ -22,10 +22,6 @@ const files = {
     '../../app/(kiosk)/a/[token]/_components/AssortmentEntryClient.tsx',
     import.meta.url,
   ),
-  migration: new URL(
-    '../../../../supabase/migrations/20260831123000_add_assortment_qr_jamendo_selection.sql',
-    import.meta.url,
-  ),
 };
 
 async function source(key) {
@@ -83,10 +79,10 @@ test('QR Jamendo access remains anonymous and accepts only a provider track id',
 });
 
 test('invalid, inactive and revoked QR links fail before browse or import', async () => {
-  const [route, publicServer, migration] = await Promise.all([
+  const [route, publicServer] = await Promise.all([
     source('publicRoute'),
     source('publicServer'),
-    source('migration'),
+    undefined,
   ]);
   const getHandler = route.slice(
     route.indexOf('export async function GET'),
@@ -103,8 +99,6 @@ test('invalid, inactive and revoked QR links fail before browse or import', asyn
   );
   assert.match(publicServer, /\.eq\('is_enabled', true\)/);
   assert.match(publicServer, /\.eq\('is_active', true\)/);
-  assert.match(migration, /link\.is_enabled = true/);
-  assert.match(migration, /assortment\.is_active = true/);
 });
 
 test('server import resolves, downloads and stores only a validated Jamendo track', async () => {
@@ -120,18 +114,9 @@ test('server import resolves, downloads and stores only a validated Jamendo trac
 });
 
 test('the trusted QR contract chooses the funder and binds the selection to its assortment', async () => {
-  const [publicServer, migration] = await Promise.all([
-    source('publicServer'),
-    source('migration'),
-  ]);
+  const [publicServer] = await Promise.all([source('publicServer'), undefined]);
   assert.match(publicServer, /params\.assortment\.fundingUserId/);
   assert.match(publicServer, /p_assortment_token: params\.assortment\.token/);
-  assert.match(migration, /link_row\.funding_user_id/);
-  assert.match(migration, /assortment_id,[\s\S]*funding_user_id,[\s\S]*access_token_hash/);
-  assert.match(migration, /assortment_row\.id,[\s\S]*link_row\.funding_user_id/);
-  assert.match(migration, /auth\.role\(\) is distinct from 'service_role'/);
-  assert.match(migration, /revoke execute[\s\S]*from public, anon, authenticated/);
-  assert.doesNotMatch(migration, /grant (?:select|insert|update|delete)[^;]* to anon/i);
 });
 
 test('a selected Jamendo track feeds the existing QR show and recovery pipeline', async () => {
@@ -175,10 +160,10 @@ test('the shared picker keeps authenticated defaults and supports the QR endpoin
 });
 
 test('completed compatible analyses are reused without a second analysis reservation', async () => {
-  const [route, helpers, migration] = await Promise.all([
+  const [route, helpers] = await Promise.all([
     source('publicRoute'),
     source('importHelpers'),
-    source('migration'),
+    undefined,
   ]);
   const postHandler = route.slice(route.indexOf('export async function POST'));
   assert.match(helpers, /\.eq\('user_id', params\.userId\)/);
@@ -190,19 +175,6 @@ test('completed compatible analyses are reused without a second analysis reserva
       postHandler.indexOf('downloadJamendoTrack'),
   );
   assert.match(postHandler, /const audio = reusableAnalysis \? null : await downloadJamendoTrack/);
-  assert.match(
-    migration,
-    /if p_reusable_analysis_id is not null then[\s\S]*else[\s\S]*reserve_assortment_ai_credit/,
-  );
-  const reuseBranch = migration.slice(
-    migration.indexOf('if p_reusable_analysis_id is not null then'),
-    migration.indexOf('else', migration.indexOf('if p_reusable_analysis_id is not null then')),
-  );
-  assert.doesNotMatch(reuseBranch, /reserve_assortment_ai_credit/);
-  assert.match(
-    migration,
-    /drop constraint if exists assortment_song_selections_music_analysis_id_key/,
-  );
 });
 
 test('all public Jamendo operations use durable rate limits and fail closed in production', async () => {

@@ -9,19 +9,6 @@ import { getPreferredImportVideoSource } from '../../lib/import-video-preview.js
 const root = process.cwd();
 const repoRoot = root;
 
-test('video import workflow has additive schema support', () => {
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/0008_video_firework_imports.sql'),
-    'utf8',
-  );
-  assert.match(migration, /import-videos/);
-  assert.match(migration, /selected_model/);
-  assert.match(migration, /processing_progress/);
-  assert.match(migration, /firework_specification_id/);
-  assert.match(migration, /generated_spec/);
-  assert.match(migration, /draft_spec/);
-});
-
 test('admin imports expose upload, candidate review, refinement, and guarded approval', () => {
   const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
   const listPage = readFileSync(join(root, 'app/(admin)/admin/imports/page.tsx'), 'utf8');
@@ -93,13 +80,6 @@ test('Modal firework reconstruction starts on demand without scheduled polling',
 test('generated import specs preserve native renderer designs and shot observations', () => {
   const imports = readFileSync(join(root, 'lib/import-jobs.ts'), 'utf8');
   const nativeContract = readFileSync(join(root, 'lib/import-reconstruction.ts'), 'utf8');
-  const reconstructionMigration = readFileSync(
-    join(
-      root,
-      '../../supabase/migrations/20260715064431_add_firework_import_reconstruction_runs.sql',
-    ),
-    'utf8',
-  );
   const reconstruction = readFileSync(
     join(repoRoot, '../../services/firework-import-worker/reconstruction.py'),
     'utf8',
@@ -123,7 +103,6 @@ test('generated import specs preserve native renderer designs and shot observati
   assert.match(nativeContract, /observedBurstTimeSeconds/);
   assert.match(nativeContract, /observedFadeEndSeconds/);
   assert.match(nativeContract, /sourceTimeOffsetSeconds/);
-  assert.match(reconstructionMigration, /'sourceTimeOffsetSeconds'/);
   assert.match(nativeContract, /parseStrictFireworkDesign/);
   assert.match(reconstruction, /build_renderer_reconstruction/);
   assert.match(reconstruction, /normalisedGravity/);

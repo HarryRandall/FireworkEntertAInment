@@ -285,7 +285,7 @@ export async function createAssortmentJamendoSelection(params: {
     p_source_url: params.track.sourceUrl,
     p_source_licence_name: params.track.licenceName,
     p_source_licence_url: params.track.licenceUrl,
-    p_reusable_analysis_id: params.reusableAnalysis?.id ?? null,
+    p_reusable_analysis_id: params.reusableAnalysis?.id,
   });
   if (error) {
     if (uploaded) {

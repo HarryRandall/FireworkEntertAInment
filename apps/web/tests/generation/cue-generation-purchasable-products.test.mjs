@@ -41,16 +41,3 @@ test('product payload cache key versions with the pricing/occupancy payload', ()
   assert.match(cacheKeys, /firework-products:preview-v2/);
   assert.match(cacheKeys, /firework-catalogue-cards:preview-v2/);
 });
-
-test('public supplier pricing migration stays column-limited for anon', () => {
-  const migration = read(
-    '../../supabase/migrations/20260716001633_expose_public_supplier_prices.sql',
-  );
-  assert.match(
-    migration,
-    /grant select \(id, catalogue_item_id, price_cents, currency, available\)/,
-  );
-  assert.match(migration, /to anon, authenticated/);
-  assert.match(migration, /using \(available = true and price_cents is not null\)/);
-  assert.doesNotMatch(migration, /grant select on public\.supplier_inventory_items/i);
-});

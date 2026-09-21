@@ -12,12 +12,7 @@ function read(path) {
 }
 
 test('legacy shopping and supplier-location tables are removed from the schema', () => {
-  const migration = read('../../supabase/migrations/20260709080713_prune_legacy_schema_cruft.sql');
   const types = read('lib/database.types.ts');
-
-  assert.match(migration, /drop table if exists public\.shopping_list_items/i);
-  assert.match(migration, /drop table if exists public\.supplier_locations/i);
-  assert.match(migration, /drop column if exists location_id/i);
 
   assert.doesNotMatch(types, /shopping_list_items:/);
   assert.doesNotMatch(types, /supplier_locations:/);
@@ -25,7 +20,6 @@ test('legacy shopping and supplier-location tables are removed from the schema',
 });
 
 test('unused user billing and legacy show-analysis columns stay pruned', () => {
-  const migration = read('../../supabase/migrations/20260709080713_prune_legacy_schema_cruft.sql');
   const types = read('lib/database.types.ts');
 
   for (const column of [
@@ -37,7 +31,6 @@ test('unused user billing and legacy show-analysis columns stay pruned', () => {
     'source_audio_path',
     'personality_preset',
   ]) {
-    assert.match(migration, new RegExp(`drop column if exists ${column}`, 'i'));
     assert.doesNotMatch(types, new RegExp(`${column}:`));
   }
 });

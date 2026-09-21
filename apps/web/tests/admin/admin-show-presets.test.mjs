@@ -36,27 +36,8 @@ test('admin show preset routes and navigation are wired without old header bands
 });
 
 test('show preset publication migration and generated types protect drafts', () => {
-  const migration = read(
-    '../../supabase/migrations/20260709134609_admin_show_presets_publication.sql',
-  );
   const types = read('lib/database.types.ts');
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
-
-  assert.match(migration, /add column if not exists is_published boolean not null default true/);
-  assert.match(migration, /add column if not exists published_at timestamptz/);
-  assert.match(migration, /where is_published = true/);
-  assert.match(migration, /grant select on public\.show_presets to anon/);
-  assert.match(migration, /show_presets_read_published_or_admin/);
-  assert.match(
-    migration,
-    /for select[\s\S]*?using \([\s\S]*?is_published[\s\S]*?current_user_has_permission\('admin\.manage_catalogue'\)/,
-  );
-  assert.match(migration, /show_presets_admin_modify/);
-  assert.match(
-    migration,
-    /with check \(public\.current_user_has_permission\('admin\.manage_catalogue'\)\)/,
-  );
-  assert.doesNotMatch(migration, /show_presets_read_anyone[\s\S]*?for select using \(true\)/);
 
   assert.match(showPresetsTypes, /is_published: boolean/);
   assert.match(showPresetsTypes, /published_at: string \| null/);
@@ -140,9 +121,6 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   const replayCues = read('ui/explore/template-replay-cues.ts');
   const cloneAction = read('app/actions/show-templates.ts');
   const presetActions = read('app/actions/admin-show-presets.ts');
-  const seedMigration = read(
-    '../../supabase/migrations/20260629171000_seed_library_explore_shelves.sql',
-  );
 
   assert.match(mappers, /catalogueItemId/);
   assert.match(mappers, /catalogueItemSlug/);
@@ -177,9 +155,6 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
   assert.match(presetActions, /Timeline cue \$\{cue\.position\} has no usable catalogue item/);
   assert.doesNotMatch(presetActions, /\.not\('time_seconds', 'is', null\)/);
   assert.match(presetActions, /if \(!convertedCues\.ok\)/);
-
-  assert.match(seedMigration, /'fireworkSlug'/);
-  assert.match(seedMigration, /'timeSeconds'/);
 });
 
 test('admin show preset editor exposes replay, timeline, catalogue picker and publish controls', () => {

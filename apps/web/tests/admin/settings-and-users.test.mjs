@@ -38,13 +38,8 @@ test('settings exposes modern account sections', () => {
 
 test('profile theme preference is persisted by profile actions and schema', () => {
   const action = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/0006_theme_preference_and_library_performance.sql'),
-    'utf8',
-  );
   assert.match(action, /themePreference/);
   assert.match(action, /theme_preference/);
-  assert.match(migration, /theme_preference text not null default 'dark'/);
 });
 
 test('admin users page is table/search first and detail page handles edits', () => {

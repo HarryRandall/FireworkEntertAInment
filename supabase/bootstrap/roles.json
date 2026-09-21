@@ -1,0 +1,29 @@
+[
+  {
+    "id": "0d13272e-6354-4fb8-8af0-2708a38ed2f0",
+    "key": "supplier",
+    "name": "Supplier",
+    "description": "Can manage supplier stock and catalogue availability.",
+    "sort_order": 20,
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "1b400364-3625-4084-b8be-758188685f9b",
+    "key": "admin",
+    "name": "Admin",
+    "description": "Can manage the platform, users, suppliers, imports, and catalogue data.",
+    "sort_order": 10,
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "674955c7-5d29-4d7b-b9b1-ac319543357c",
+    "key": "user",
+    "name": "User",
+    "description": "Can create and manage personal firework shows.",
+    "sort_order": 30,
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  }
+]

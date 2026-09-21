@@ -1,0 +1,4365 @@
+[
+  {
+    "id": "04a66f0d-6c22-4acd-81cd-d39e4f723641",
+    "slug": "blue-and-red-firework-trail-style-mqyq91ja",
+    "name": "Blue and Red Firework trail style",
+    "description": "Created from Blue and Red Firework.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1,
+            "density": 1.45,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.86,
+            "density": 1.1,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.48,
+            "density": 0.32,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 60,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 51,
+            "shrinkPercent": 100
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 4
+          },
+          "visibility": {
+            "revealPercent": 31,
+            "particlesPercent": 12,
+            "brightnessPercent": 32
+          }
+        },
+        "spacing": {
+          "curve": 0.2,
+          "jitterPercent": 22
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 1,
+          "baseSeconds": 1,
+          "afterglowSeconds": 0.12,
+          "variationPercent": 28
+        },
+        "intensity": {
+          "brightness": 1,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "gold",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 0.93,
+          "headScale": 2.4,
+          "tailScale": 1.55,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 633
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-06-29T04:38:12.859944+00:00",
+    "updated_at": "2026-06-29T04:38:12.859944+00:00"
+  },
+  {
+    "id": "05461de8-8801-40cc-ba6a-aec324ae1dee",
+    "slug": "standard-launch",
+    "name": "Standard launch",
+    "description": "Default lift speed, shell carrier, and lift-particle behaviour.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "circle",
+          "trail": {
+            "curve": 0.8,
+            "tailAngle": 58,
+            "frontAngle": 40,
+            "tubeDiameter": 90
+          },
+          "colour": {
+            "b": 0.94,
+            "g": 0.98,
+            "r": 1
+          },
+          "visible": true,
+          "sizeScale": 1.1,
+          "brightness": 1.35,
+          "glowStrength": 1.1
+        },
+        "liftParticles": {
+          "amount": 660,
+          "colour": {
+            "b": 0.46,
+            "g": 0.78,
+            "r": 1
+          },
+          "height": 94,
+          "motion": {
+            "drag": 2.35,
+            "spin": 0,
+            "driftX": 0.02,
+            "driftY": -0.04,
+            "driftZ": 0,
+            "gravity": -0.08,
+            "swirlRate": 0.22,
+            "turbulence": 0.34,
+            "swirlRadius": 96,
+            "swirlStrength": 3.2,
+            "swirlLoopCount": 2.3,
+            "swirlLoopHeight": 126,
+            "swirlLoopLength": 74,
+            "inheritedVelocity": 0.04
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.14,
+            "strength": 1.05,
+            "lifetimeMultiplier": 0.45
+          },
+          "spacing": {
+            "curve": 1.1,
+            "pathSamples": 12,
+            "jitterPercent": 72,
+            "clusterStrength": 36
+          },
+          "lifetime": {
+            "baseSeconds": 0.82,
+            "afterglowSeconds": 0.08,
+            "variationPercent": 56
+          },
+          "intensity": {
+            "brightness": 1.85,
+            "fadeSoftness": 0.68
+          },
+          "frontClump": 0.56,
+          "particleSize": {
+            "base": 12,
+            "headScale": 1.05,
+            "tailScale": 0.2,
+            "variationPercent": 72
+          },
+          "shapeWeights": {
+            "circle": 10,
+            "square": 90,
+            "triangle": 0
+          }
+        }
+      },
+      "liftVelocity": 20
+    },
+    "sort_order": 80,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-07-01T11:58:06.695305+00:00"
+  },
+  {
+    "id": "0812f53b-b0ef-4c5b-8f08-2336e0356b83",
+    "slug": "geometry-roman-candle-volley",
+    "name": "Roman candle volley",
+    "description": "A measured ground-launched sequence with controlled aim variation.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "roman_candle",
+      "geometryTuning": {
+        "romanCandle": {
+          "spread": 0.42,
+          "azimuth": 0.28,
+          "minShots": 6,
+          "riseBase": 1.15,
+          "speedBase": 1.05,
+          "depthScale": 0.16,
+          "dragPercent": 62,
+          "lifePercent": 96,
+          "lateralScale": 0.2,
+          "shotsPercent": 12,
+          "muzzleScatter": 8,
+          "riseVariation": 0.24,
+          "speedVariation": 0.24,
+          "durationPercent": 52,
+          "headSizePercent": 96,
+          "trailLifePercent": 92,
+          "durationMaxSeconds": 12,
+          "durationMinSeconds": 4
+        }
+      }
+    },
+    "sort_order": 320,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "08e21d82-09c8-41d6-956f-fc91615a599c",
+    "slug": "comet-tail-trail",
+    "name": "Comet tail trail",
+    "description": "Dense head-biased comet trails.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.28,
+            "density": 1.65,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 6,
+              "square": 84,
+              "triangle": 10
+            },
+            "sizeVariation": 20
+          },
+          {
+            "size": 0.86,
+            "density": 0.92,
+            "position": 42,
+            "shapeWeights": {
+              "circle": 8,
+              "square": 80,
+              "triangle": 12
+            },
+            "sizeVariation": 24
+          },
+          {
+            "size": 0.42,
+            "density": 0.22,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 18,
+              "square": 72,
+              "triangle": 10
+            },
+            "sizeVariation": 32
+          }
+        ],
+        "width": {
+          "tail": 0.8,
+          "curve": 0.72,
+          "front": 2.6
+        },
+        "motion": {
+          "drag": 1.3,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.018,
+          "driftZ": 0,
+          "gravity": -0.028,
+          "turbulence": 0.05,
+          "inheritedVelocity": 0.04
+        },
+        "preset": "cometTail",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.04,
+          "strength": 0.65,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1.25,
+          "jitterPercent": 18
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.22,
+          "baseSeconds": 1.25,
+          "afterglowSeconds": 0.14,
+          "variationPercent": 24
+        },
+        "intensity": {
+          "brightness": 1.15,
+          "fadeSoftness": 0.9
+        },
+        "placement": {
+          "headGapPercent": 70
+        },
+        "colourMode": "starFade",
+        "frontClump": 0.68,
+        "particleSize": {
+          "base": 1.05,
+          "headScale": 1.15,
+          "tailScale": 0.35,
+          "variationPercent": 20
+        },
+        "particlesPerStar": 96
+      }
+    },
+    "sort_order": 50,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T07:07:08.453882+00:00"
+  },
+  {
+    "id": "1db910ba-5a4f-495d-a1ed-6851f6199f2f",
+    "slug": "launch-silver-serpent",
+    "name": "Silver serpent launch",
+    "description": "A silver lift trail that coils twice around the carrier path.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "orb",
+          "trail": {
+            "curve": 1.35,
+            "tailAngle": 4,
+            "frontAngle": 2,
+            "tubeDiameter": 3
+          },
+          "colour": {
+            "b": 1,
+            "g": 0.92,
+            "r": 0.85
+          },
+          "visible": true,
+          "sizeScale": 0.9,
+          "brightness": 1.7,
+          "glowStrength": 2
+        },
+        "liftParticles": {
+          "amount": 220,
+          "colour": {
+            "b": 1,
+            "g": 0.92,
+            "r": 0.85
+          },
+          "height": 100,
+          "motion": {
+            "drag": 1.4,
+            "spin": 0.5,
+            "driftX": 0,
+            "driftY": -0.018,
+            "driftZ": 0,
+            "gravity": -0.08,
+            "swirlRate": 8,
+            "turbulence": 0.12,
+            "swirlRadius": 36,
+            "swirlStrength": 1.4,
+            "swirlLoopCount": 2,
+            "swirlLoopHeight": 45,
+            "swirlLoopLength": 80,
+            "inheritedVelocity": 0.025
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.18,
+            "strength": 1.1,
+            "lifetimeMultiplier": 0.4
+          },
+          "spacing": {
+            "curve": 1,
+            "pathSamples": 9,
+            "jitterPercent": 30,
+            "clusterStrength": 10
+          },
+          "lifetime": {
+            "baseSeconds": 1.15,
+            "afterglowSeconds": 0.2,
+            "variationPercent": 38
+          },
+          "intensity": {
+            "brightness": 1.45,
+            "fadeSoftness": 1.2
+          },
+          "frontClump": 0.58,
+          "particleSize": {
+            "base": 24,
+            "headScale": 1.1,
+            "tailScale": 0.28,
+            "variationPercent": 34
+          },
+          "shapeWeights": {
+            "circle": 54,
+            "square": 38,
+            "triangle": 8
+          },
+          "appearanceMode": "custom"
+        }
+      },
+      "liftVelocity": 14
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "1de2be92-ecd6-453d-b0c8-04987762acee",
+    "slug": "sound-light-report",
+    "name": "Light report",
+    "description": "A lift sound followed by a restrained consumer-shell report.",
+    "kind": "sound",
+    "defaults_json": {
+      "sound": {
+        "boom": "light",
+        "launch": true
+      },
+      "mortar": {
+        "sound": true
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "21a6299b-ac25-4b52-9c23-b08ba5ad9bd1",
+    "slug": "split-rapid-cross",
+    "name": "Rapid cross split",
+    "description": "A quick four-way split with fast fragments and short secondary trails.",
+    "kind": "split",
+    "defaults_json": {
+      "split": {
+        "speed": 2.4,
+        "enabled": true,
+        "fragments": 4,
+        "delayRatio": 0.22,
+        "headSizePercent": 42,
+        "lifeBaseSeconds": 0.38,
+        "trailLifePercent": 42,
+        "lifeVariationSeconds": 0.85
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "2c65c204-d1c9-42d9-b3a8-dfa55887825e",
+    "slug": "peony-star-style-mr1t64wc",
+    "name": "Peony star style",
+    "description": "Created from Peony.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "head": {
+            "size": 223,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "brightnessHoldPercent": 82,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 0.8,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              0.31,
+              5.33
+            ],
+            "speed": [
+              0.89,
+              1.99
+            ],
+            "gravity": [
+              -0.24,
+              -0.02
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 38,
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 170,
+            "closing": {
+              "size": {
+                "enabled": true,
+                "endPercent": 0,
+                "shrinkPercent": 55
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": true,
+                "fadePercent": 32
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 18,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": true,
+                "fadePercent": 16
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 70,
+            "glowSoftness": 100,
+            "glowStrength": 1,
+            "coreBrightness": 30,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 10,
+            "brightnessHoldPercent": 40,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 0.8,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              2.6,
+              3.8
+            ],
+            "speed": [
+              2.4,
+              4
+            ],
+            "gravity": [
+              -0.5,
+              0
+            ],
+            "flairColorMode": "bombColor"
+          },
+          "count": 80,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-07-01T08:23:14.833874+00:00",
+    "updated_at": "2026-07-01T08:23:14.833874+00:00"
+  },
+  {
+    "id": "2c8c5e94-70bf-45cf-bb67-f29fb7f65118",
+    "slug": "geometry-wide-waterfall-curtain",
+    "name": "Wide waterfall curtain",
+    "description": "A broad elevated curtain that hangs before pouring towards the ground.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "waterfall",
+      "geometryTuning": {
+        "waterfall": {
+          "scatterX": 34,
+          "scatterZ": 18,
+          "dropStart": 42,
+          "fallSpeed": 0.8,
+          "sideDrift": 0.18,
+          "depthDrift": 0.12,
+          "dragPercent": 24,
+          "gravityBase": -0.27,
+          "lifePercent": 160,
+          "countPercent": 94,
+          "curtainWidth": 3.2,
+          "headSizePercent": 70,
+          "gravityVariation": 0.22,
+          "fallSpeedVariation": 1.1
+        }
+      }
+    },
+    "sort_order": 290,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "3257dc64-420d-4345-9259-f006b817d045",
+    "slug": "geometry-wide-mine-fan",
+    "name": "Wide mine fan",
+    "description": "A dense ground-origin fan with a wide opening and shallow depth.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "upward_fan",
+      "geometryTuning": {
+        "upwardFan": {
+          "fanBase": 0.5,
+          "minCount": 48,
+          "riseBase": 18,
+          "riseSpeed": 1.35,
+          "depthScale": 0.3,
+          "dragPercent": 54,
+          "lifePercent": 82,
+          "countPercent": 120,
+          "fanVariation": 0.62,
+          "spawnScatter": 26,
+          "riseVariation": 16,
+          "headSizePercent": 78,
+          "trailLifePercent": 72,
+          "riseSpeedVariation": 0.65,
+          "spreadAngleDegrees": 190
+        }
+      }
+    },
+    "sort_order": 310,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "32e6b908-187f-4f49-8c73-cad3cd025026",
+    "slug": "launch-gold-comet",
+    "name": "Gold comet launch",
+    "description": "A dense golden lift trail concentrated around the rising shell.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "circle",
+          "trail": {
+            "curve": 1.15,
+            "tailAngle": 1,
+            "frontAngle": 3,
+            "tubeDiameter": 4
+          },
+          "colour": {
+            "b": 0.16,
+            "g": 0.68,
+            "r": 1
+          },
+          "visible": true,
+          "sizeScale": 1,
+          "brightness": 1.6,
+          "glowStrength": 1.9
+        },
+        "liftParticles": {
+          "amount": 180,
+          "colour": {
+            "b": 0.16,
+            "g": 0.68,
+            "r": 1
+          },
+          "height": 100,
+          "motion": {
+            "drag": 2.1,
+            "spin": 0.2,
+            "driftX": 0,
+            "driftY": -0.016,
+            "driftZ": 0,
+            "gravity": -0.08,
+            "swirlRate": 4,
+            "turbulence": 0.08,
+            "swirlRadius": 0,
+            "swirlStrength": 0,
+            "swirlLoopCount": 0,
+            "swirlLoopHeight": 0,
+            "swirlLoopLength": 100,
+            "inheritedVelocity": 0.03
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.12,
+            "strength": 0.95,
+            "lifetimeMultiplier": 0.42
+          },
+          "spacing": {
+            "curve": 1.2,
+            "pathSamples": 7,
+            "jitterPercent": 24,
+            "clusterStrength": 15
+          },
+          "lifetime": {
+            "baseSeconds": 1.05,
+            "afterglowSeconds": 0.16,
+            "variationPercent": 34
+          },
+          "intensity": {
+            "brightness": 1.35,
+            "fadeSoftness": 1.1
+          },
+          "frontClump": 0.68,
+          "particleSize": {
+            "base": 26,
+            "headScale": 1.15,
+            "tailScale": 0.3,
+            "variationPercent": 28
+          },
+          "shapeWeights": {
+            "circle": 12,
+            "square": 82,
+            "triangle": 6
+          },
+          "appearanceMode": "custom"
+        }
+      },
+      "liftVelocity": 15
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "34a9fe6c-dc7c-42de-8472-9f62f7bb094d",
+    "slug": "crackle-dragon-egg",
+    "name": "Dragon egg crackle",
+    "description": "A turbulent high-density crackle with bright irregular fragments and strong audio.",
+    "kind": "crackle",
+    "defaults_json": {
+      "crackle": {
+        "sound": "crackle",
+        "enabled": true,
+        "colourMode": "gold",
+        "probability": 0.16,
+        "soundChance": 0.35,
+        "soundVolume": 0.22,
+        "fragmentSize": 30,
+        "fragmentCount": 80,
+        "fragmentSpeed": 1.5,
+        "fragmentGravity": -0.24,
+        "fragmentLifeSeconds": 0.85,
+        "triggerWindowSeconds": 1.6,
+        "fragmentLifeVariationPercent": 90,
+        "fragmentSizeVariationPercent": 92,
+        "fragmentCountVariationPercent": 88,
+        "fragmentSpeedVariationPercent": 82
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "378a3d36-be51-42ba-80c2-8915ed6d8a4e",
+    "slug": "blue-sphere-trail-style-mqp323a6",
+    "name": "Blue Sphere trail style",
+    "description": "Created from Blue Sphere.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1,
+            "density": 1.45,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.86,
+            "density": 1.1,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.48,
+            "density": 0.32,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 60,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 51,
+            "shrinkPercent": 100
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 4
+          },
+          "visibility": {
+            "revealPercent": 31,
+            "particlesPercent": 12,
+            "brightnessPercent": 32
+          }
+        },
+        "spacing": {
+          "curve": 0.2,
+          "jitterPercent": 22
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 1,
+          "baseSeconds": 1,
+          "afterglowSeconds": 0.12,
+          "variationPercent": 28
+        },
+        "intensity": {
+          "brightness": 1,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "gold",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 0.93,
+          "headScale": 2.4,
+          "tailScale": 1.55,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 633
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-06-22T10:39:01.862981+00:00",
+    "updated_at": "2026-06-22T10:39:01.862981+00:00"
+  },
+  {
+    "id": "381dae2d-c329-47c8-8356-bb5ab41a47c9",
+    "slug": "split-delayed-eight-way",
+    "name": "Delayed eight-way split",
+    "description": "A late, wide eight-fragment crossette with long-burning secondary stars.",
+    "kind": "split",
+    "defaults_json": {
+      "split": {
+        "speed": 1.9,
+        "enabled": true,
+        "fragments": 8,
+        "delayRatio": 0.7,
+        "headSizePercent": 38,
+        "lifeBaseSeconds": 0.9,
+        "trailLifePercent": 82,
+        "lifeVariationSeconds": 2.2
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "382b1c79-a785-4224-b79b-eeaeb410eabb",
+    "slug": "smoke-dense-lingering",
+    "name": "Dense lingering smoke",
+    "description": "A heavy dark plume that expands slowly and remains visible after the break.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "size": 120,
+          "drift": 0.75,
+          "windX": 0,
+          "windZ": 0,
+          "colour": {
+            "b": 0.09,
+            "g": 0.08,
+            "r": 0.08
+          },
+          "height": 520,
+          "spread": 50,
+          "enabled": true,
+          "opacity": 0.78,
+          "particles": 260,
+          "turbulence": 1,
+          "lifeSeconds": 7.5,
+          "expansionPerSecond": 28,
+          "lifeVariationPercent": 35,
+          "sizeVariationPercent": 65
+        }
+      },
+      "mortar": {
+        "smokeParticles": 260
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "3a3988f0-4fd4-486d-81b8-0ad2c5068244",
+    "slug": "geometry-darting-fish-swarm",
+    "name": "Darting fish swarm",
+    "description": "A flattened school of bright stars with lively crossing movement.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "fish",
+      "geometryTuning": {
+        "fish": {
+          "wiggleRate": 13,
+          "dragPercent": 50,
+          "countPercent": 82,
+          "verticalScale": 0.22,
+          "gravityPercent": 48,
+          "wiggleStrength": 2.4,
+          "headSizePercent": 68,
+          "lifeBaseSeconds": 1,
+          "wiggleRateCross": 18,
+          "trailLifePercent": 68,
+          "lifeVariationSeconds": 2.2
+        }
+      }
+    },
+    "sort_order": 280,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "3e566dbb-13e2-4b49-a9db-e99c23ba4c28",
+    "slug": "geometry-corkscrew-whirl",
+    "name": "Corkscrew whirl",
+    "description": "A compact spinning shower with strong corkscrew motion and a long visible turn.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "whirl",
+      "geometryTuning": {
+        "whirl": {
+          "minCount": 40,
+          "spinRate": 15,
+          "dragPercent": 54,
+          "countPercent": 38,
+          "spinStrength": 3.3,
+          "verticalBias": -0.08,
+          "gravityPercent": 62,
+          "headSizePercent": 82,
+          "lifeBaseSeconds": 1.2,
+          "trailLifePercent": 82,
+          "lifeVariationSeconds": 2.4
+        }
+      }
+    },
+    "sort_order": 300,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "3fa14ac0-f04e-49c4-b268-f12e20c11c6a",
+    "slug": "crackle-heavy-report",
+    "name": "Heavy report crackle",
+    "description": "Large fast fragments with frequent light-report accents near the end of life.",
+    "kind": "crackle",
+    "defaults_json": {
+      "crackle": {
+        "sound": "lightBoom",
+        "enabled": true,
+        "colourMode": "silver",
+        "probability": 0.08,
+        "soundChance": 0.5,
+        "soundVolume": 0.35,
+        "fragmentSize": 42,
+        "fragmentCount": 32,
+        "fragmentSpeed": 2.2,
+        "fragmentGravity": -0.28,
+        "fragmentLifeSeconds": 0.55,
+        "triggerWindowSeconds": 0.65,
+        "fragmentLifeVariationPercent": 62,
+        "fragmentSizeVariationPercent": 65,
+        "fragmentCountVariationPercent": 55,
+        "fragmentSpeedVariationPercent": 58
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "42a1c3a0-239d-4c09-b1a4-306e805a18fb",
+    "slug": "square-star-fade-trail",
+    "name": "Square star-fade trail",
+    "description": "Calibrated square trail that fades from star colour into ember.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 2.68,
+            "density": 1,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 100,
+              "triangle": 0
+            },
+            "sizeVariation": 0
+          },
+          {
+            "size": 0.08,
+            "density": 1,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 100,
+              "triangle": 0
+            },
+            "sizeVariation": 0
+          }
+        ],
+        "width": {
+          "tail": 0,
+          "curve": 1,
+          "front": 20
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.8,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1,
+          "jitterPercent": 18
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.18,
+          "baseSeconds": 8,
+          "afterglowSeconds": 0.15,
+          "variationPercent": 30
+        },
+        "intensity": {
+          "brightness": 1,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 60
+        },
+        "colourMode": "starFade",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 1.2,
+          "headScale": 1,
+          "tailScale": 0.35,
+          "variationPercent": 8
+        },
+        "particlesPerStar": 178
+      }
+    },
+    "sort_order": 70,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T05:46:26.567635+00:00"
+  },
+  {
+    "id": "43390d18-5783-4156-ad9e-0d5e11e79623",
+    "slug": "star-dense-chrysanthemum",
+    "name": "Dense chrysanthemum stars",
+    "description": "A full, slower-burning sphere with a bright middle life and smooth fade.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 300,
+            "closing": {
+              "size": {
+                "enabled": true,
+                "endPercent": 0,
+                "shrinkPercent": 30
+              }
+            },
+            "visible": true,
+            "glowStrength": 1.65,
+            "brightnessHoldPercent": 76,
+            "brightnessHoldExponent": 1.35
+          },
+          "burst": {
+            "life": [
+              2.8,
+              5.8
+            ],
+            "speed": [
+              2.1,
+              3.8
+            ],
+            "gravity": [
+              -0.22,
+              -0.04
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 100,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "4551ac07-7ce6-4078-9cbb-b8b3f5139916",
+    "slug": "willow-hang-trail",
+    "name": "Willow hang trail",
+    "description": "Longer hanging trails for willow and falling effects.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 0.86,
+            "density": 1.2,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 8,
+              "square": 84,
+              "triangle": 8
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.72,
+            "density": 0.88,
+            "position": 48,
+            "shapeWeights": {
+              "circle": 12,
+              "square": 78,
+              "triangle": 10
+            },
+            "sizeVariation": 36
+          },
+          {
+            "size": 0.38,
+            "density": 0.28,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 22,
+              "square": 68,
+              "triangle": 10
+            },
+            "sizeVariation": 42
+          }
+        ],
+        "width": {
+          "tail": 2.2,
+          "curve": 1.6,
+          "front": 1.15
+        },
+        "motion": {
+          "drag": 0.85,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.08,
+          "driftZ": 0,
+          "gravity": -0.12,
+          "turbulence": 0.06,
+          "inheritedVelocity": 0.015
+        },
+        "preset": "willowHang",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.06,
+          "strength": 0.55,
+          "lifetimeMultiplier": 0.5
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1.35,
+          "jitterPercent": 24
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.32,
+          "baseSeconds": 2.25,
+          "afterglowSeconds": 0.2,
+          "variationPercent": 34
+        },
+        "intensity": {
+          "brightness": 0.9,
+          "fadeSoftness": 1.8
+        },
+        "placement": {
+          "headGapPercent": 55
+        },
+        "colourMode": "gold",
+        "frontClump": 0.46,
+        "particleSize": {
+          "base": 0.82,
+          "headScale": 1,
+          "tailScale": 0.45,
+          "variationPercent": 34
+        },
+        "particlesPerStar": 72
+      }
+    },
+    "sort_order": 40,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T07:07:08.453882+00:00"
+  },
+  {
+    "id": "471e1f2d-8a30-4004-9a23-eedd7da987fc",
+    "slug": "titanium-flash-trail",
+    "name": "Titanium flash trail",
+    "description": "A very bright, short-lived silver flash with violent scatter and rapid decay.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.8,
+            "density": 2.8,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 42,
+              "square": 38,
+              "triangle": 20
+            },
+            "sizeVariation": 58
+          },
+          {
+            "size": 0.92,
+            "density": 1.4,
+            "position": 35,
+            "shapeWeights": {
+              "circle": 58,
+              "square": 28,
+              "triangle": 14
+            },
+            "sizeVariation": 72
+          },
+          {
+            "size": 0.2,
+            "density": 0.18,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 82,
+              "square": 12,
+              "triangle": 6
+            },
+            "sizeVariation": 90
+          }
+        ],
+        "width": {
+          "tail": 5.5,
+          "curve": 0.65,
+          "front": 6.5
+        },
+        "motion": {
+          "drag": 3.2,
+          "spin": 2.8,
+          "driftX": 0,
+          "driftY": -0.12,
+          "driftZ": 0,
+          "gravity": -0.3,
+          "turbulence": 1.25,
+          "inheritedVelocity": 0.006
+        },
+        "preset": "titaniumFlash",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 0,
+            "shrinkPercent": 24
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.48,
+          "strength": 2.2,
+          "lifetimeMultiplier": 0.2
+        },
+        "opening": {
+          "size": {
+            "startPercent": 55
+          },
+          "visibility": {
+            "revealPercent": 8,
+            "particlesPercent": 100,
+            "brightnessPercent": 240
+          }
+        },
+        "spacing": {
+          "curve": 0.58,
+          "jitterPercent": 66
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "fixed",
+          "percent": 0.12,
+          "baseSeconds": 0.22,
+          "afterglowSeconds": 0.16,
+          "variationPercent": 58
+        },
+        "intensity": {
+          "brightness": 2.25,
+          "fadeSoftness": 0.55
+        },
+        "placement": {
+          "headGapPercent": 24
+        },
+        "colourMode": "silver",
+        "frontClump": 0.78,
+        "particleSize": {
+          "base": 1.45,
+          "headScale": 1.5,
+          "tailScale": 0.16,
+          "variationPercent": 62
+        },
+        "particlesPerStar": 180
+      }
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "48fe92f5-0eda-4c38-ae26-cee70f948bbc",
+    "slug": "smoke-crosswind",
+    "name": "Crosswind smoke",
+    "description": "A realistic plume pulled strongly sideways while continuing to rise and expand.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "size": 90,
+          "drift": 1.35,
+          "windX": 2.2,
+          "windZ": 0.6,
+          "colour": {
+            "b": 0.15,
+            "g": 0.14,
+            "r": 0.14
+          },
+          "height": 460,
+          "spread": 32,
+          "enabled": true,
+          "opacity": 0.62,
+          "particles": 160,
+          "turbulence": 0.8,
+          "lifeSeconds": 5,
+          "expansionPerSecond": 24,
+          "lifeVariationPercent": 44,
+          "sizeVariationPercent": 50
+        }
+      },
+      "mortar": {
+        "smokeParticles": 160
+      }
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "4b68fe12-b171-421c-a4eb-c98825e3ba3d",
+    "slug": "strobe-scattered-twinkle",
+    "name": "Scattered twinkle",
+    "description": "Only part of the burst flickers, with broad phase variation across the stars.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "desync": 0.85,
+        "enabled": true,
+        "dutyCycle": 0.32,
+        "dimPercent": 8,
+        "frequencyHz": 13,
+        "amountPercent": 48
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "4ecabdf3-5eaa-45d7-b914-2fdd4e1e75a6",
+    "slug": "strobe-synchronised-pulse",
+    "name": "Synchronised pulse",
+    "description": "Every star blinks together for a deliberate graphic pulse.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "desync": 0,
+        "enabled": true,
+        "dutyCycle": 0.4,
+        "dimPercent": 0,
+        "frequencyHz": 7,
+        "amountPercent": 100
+      }
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "505a6fd0-ca2a-4063-9b00-4c763af4fe20",
+    "slug": "blue-and-red-firework-trail-style-mqpvjycc",
+    "name": "Blue and Red Firework trail style",
+    "description": "Created from Blue and Red Firework.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1,
+            "density": 1.45,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.86,
+            "density": 1.1,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.48,
+            "density": 0.32,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 0,
+              "triangle": 100
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 60,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 51,
+            "shrinkPercent": 100
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 4
+          },
+          "visibility": {
+            "revealPercent": 31,
+            "particlesPercent": 12,
+            "brightnessPercent": 32
+          }
+        },
+        "spacing": {
+          "curve": 0.2,
+          "jitterPercent": 22
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 1,
+          "baseSeconds": 1,
+          "afterglowSeconds": 0.12,
+          "variationPercent": 28
+        },
+        "intensity": {
+          "brightness": 1,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "gold",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 0.93,
+          "headScale": 2.4,
+          "tailScale": 1.55,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 633
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-06-22T23:56:44.42364+00:00",
+    "updated_at": "2026-06-22T23:56:44.42364+00:00"
+  },
+  {
+    "id": "5246d8e8-d393-4e83-8804-1ddb9cac14fc",
+    "slug": "blue-sphere-star-style-mqklao3e",
+    "name": "Blue Sphere star style",
+    "description": "Created from Blue Sphere.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "head": {
+            "size": 161,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "backgroundGlowSoftness": 50,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              0.31,
+              5.33
+            ],
+            "speed": [
+              0.89,
+              1.99
+            ],
+            "gravity": [
+              -0.24,
+              -0.02
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 38,
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 260,
+            "closing": {
+              "size": {
+                "enabled": true,
+                "endPercent": 0,
+                "shrinkPercent": 29
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": true,
+                "growPercent": 13,
+                "startPercent": 20
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": true,
+                "fadePercent": 18
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "backgroundGlowSoftness": 50,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              1.55,
+              3.55
+            ],
+            "speed": [
+              2.2,
+              3.8
+            ],
+            "gravity": [
+              -1.3,
+              -0.1
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 97,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-06-19T07:10:44.230547+00:00",
+    "updated_at": "2026-06-19T07:10:44.230547+00:00"
+  },
+  {
+    "id": "54a9f84b-d1cd-497d-8a1b-06a5af959176",
+    "slug": "solid-streaks-trail",
+    "name": "Solid streaks trail",
+    "description": "Classic clean streak particles behind each star.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1,
+            "density": 1.45,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 4,
+              "square": 88,
+              "triangle": 8
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.86,
+            "density": 1.1,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 5,
+              "square": 86,
+              "triangle": 9
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.48,
+            "density": 0.32,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 8,
+              "square": 84,
+              "triangle": 8
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 1.35,
+          "curve": 1,
+          "front": 1.35
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "solidStreaks",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1,
+          "jitterPercent": 22
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.18,
+          "baseSeconds": 1,
+          "afterglowSeconds": 0.12,
+          "variationPercent": 28
+        },
+        "intensity": {
+          "brightness": 1,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 45
+        },
+        "colourMode": "gold",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 0.95,
+          "headScale": 1,
+          "tailScale": 0.55,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 84
+      }
+    },
+    "sort_order": 30,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T07:07:08.453882+00:00"
+  },
+  {
+    "id": "57a0dd18-81df-4dff-aeb3-bbc6630921f0",
+    "slug": "sound-heavy-display-report",
+    "name": "Heavy display report",
+    "description": "A lift sound followed by the renderer's strongest display-shell report.",
+    "kind": "sound",
+    "defaults_json": {
+      "sound": {
+        "boom": "heavy",
+        "launch": true
+      },
+      "mortar": {
+        "sound": true
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "580385d4-7b4a-4140-93a5-1b8396b7829f",
+    "slug": "standard-sound",
+    "name": "Standard sound",
+    "description": "Default launch and burst report behaviour.",
+    "kind": "sound",
+    "defaults_json": {
+      "sound": {
+        "boom": "auto",
+        "launch": true
+      },
+      "mortar": {
+        "sound": true
+      }
+    },
+    "sort_order": 130,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-06-18T08:33:43.416468+00:00"
+  },
+  {
+    "id": "5913f201-db7f-4965-85d2-9c396008d358",
+    "slug": "crackle-fine-silver",
+    "name": "Fine silver crackle",
+    "description": "Sparse, small silver crackles with restrained sound and short fragment lives.",
+    "kind": "crackle",
+    "defaults_json": {
+      "crackle": {
+        "sound": "crackle",
+        "enabled": true,
+        "colourMode": "silver",
+        "probability": 0.015,
+        "soundChance": 0.08,
+        "soundVolume": 0.06,
+        "fragmentSize": 14,
+        "fragmentCount": 24,
+        "fragmentSpeed": 0.75,
+        "fragmentGravity": -0.25,
+        "fragmentLifeSeconds": 0.38,
+        "triggerWindowSeconds": 0.7,
+        "fragmentLifeVariationPercent": 70,
+        "fragmentSizeVariationPercent": 70,
+        "fragmentCountVariationPercent": 70,
+        "fragmentSpeedVariationPercent": 60
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "5979a451-133e-4bb3-88e4-494e784e3f87",
+    "slug": "blue-sphere-stars",
+    "name": "Standard Star",
+    "description": "Standard star for use",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "outer": {
+          "head": {
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "backgroundGlowSoftness": 50,
+            "backgroundGlowOpacityFalloff": 75
+          }
+        }
+      }
+    },
+    "sort_order": 10,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-07-01T08:21:23.92276+00:00"
+  },
+  {
+    "id": "5bba3e68-00dd-4ab0-968d-1468dfd51f94",
+    "slug": "star-natural-peony",
+    "name": "Natural peony stars",
+    "description": "A clean, fast peony with visible speed and lifetime variation.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "head": {
+            "size": 223,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "brightnessHoldPercent": 82,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 0.8,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              0.31,
+              5.33
+            ],
+            "speed": [
+              0.89,
+              1.99
+            ],
+            "gravity": [
+              -0.24,
+              -0.02
+            ],
+            "flairColorMode": "mixed",
+            "terminalVelocity": 18,
+            "airResistancePercent": 100
+          },
+          "count": 38,
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 330,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.55,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "brightnessHoldPercent": 72,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 1.05,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              1.6,
+              3.6
+            ],
+            "speed": [
+              3.3,
+              3.5
+            ],
+            "gravity": [
+              -0.28,
+              -0.06
+            ],
+            "flairColorMode": "mixed",
+            "terminalVelocity": 18,
+            "airResistancePercent": 100
+          },
+          "count": 100,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-27T03:46:49.524564+00:00"
+  },
+  {
+    "id": "5e11180e-e6f5-4747-9c3b-f121f70ba54a",
+    "slug": "strobe-rapid-flicker",
+    "name": "Rapid flicker",
+    "description": "A sharp high-frequency blink with nearly black dark phases.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "desync": 0.18,
+        "enabled": true,
+        "dutyCycle": 0.25,
+        "dimPercent": 0,
+        "frequencyHz": 22,
+        "amountPercent": 100
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "5e2aacf5-fcfd-48df-9bb4-b198699b2a9b",
+    "slug": "crackle-dense-chrysanthemum",
+    "name": "Dense chrysanthemum crackle",
+    "description": "A broad late-life crackle cloud with medium fragments and natural variation.",
+    "kind": "crackle",
+    "defaults_json": {
+      "crackle": {
+        "sound": "crackle",
+        "enabled": true,
+        "colourMode": "gold",
+        "probability": 0.06,
+        "soundChance": 0.22,
+        "soundVolume": 0.14,
+        "fragmentSize": 24,
+        "fragmentCount": 58,
+        "fragmentSpeed": 1.2,
+        "fragmentGravity": -0.22,
+        "fragmentLifeSeconds": 0.68,
+        "triggerWindowSeconds": 1.2,
+        "fragmentLifeVariationPercent": 76,
+        "fragmentSizeVariationPercent": 78,
+        "fragmentCountVariationPercent": 72,
+        "fragmentSpeedVariationPercent": 65
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "609fbca7-83d5-450f-ba27-2ea30c3ad8ff",
+    "slug": "launch-clean-carrier",
+    "name": "Clean carrier launch",
+    "description": "A bright visible carrier with no lift-particle trail.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "orb",
+          "trail": {
+            "curve": 1,
+            "tailAngle": 0,
+            "frontAngle": 0,
+            "tubeDiameter": 0
+          },
+          "visible": true,
+          "sizeScale": 0.65,
+          "brightness": 1.4,
+          "glowStrength": 1.8
+        },
+        "liftParticles": {
+          "amount": 0,
+          "height": 100,
+          "motion": {
+            "drag": 2.55,
+            "spin": 0,
+            "driftX": 0,
+            "driftY": -0.012,
+            "driftZ": 0,
+            "gravity": -0.09,
+            "swirlRate": 4,
+            "turbulence": 0.04,
+            "swirlRadius": 0,
+            "swirlStrength": 0,
+            "swirlLoopCount": 0,
+            "swirlLoopHeight": 0,
+            "swirlLoopLength": 100,
+            "inheritedVelocity": 0.02
+          },
+          "enabled": false,
+          "flicker": {
+            "chance": 0.08,
+            "strength": 0.8,
+            "lifetimeMultiplier": 0.45
+          },
+          "spacing": {
+            "curve": 1,
+            "pathSamples": 5,
+            "jitterPercent": 35,
+            "clusterStrength": 0
+          },
+          "lifetime": {
+            "baseSeconds": 0.8,
+            "afterglowSeconds": 0.1,
+            "variationPercent": 35
+          },
+          "intensity": {
+            "brightness": 1,
+            "fadeSoftness": 1
+          },
+          "frontClump": 0.55,
+          "particleSize": {
+            "base": 30,
+            "headScale": 1,
+            "tailScale": 0.35,
+            "variationPercent": 20
+          },
+          "shapeWeights": {
+            "circle": 0,
+            "square": 100,
+            "triangle": 0
+          },
+          "appearanceMode": "inherit"
+        }
+      },
+      "liftVelocity": 17
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "61bdcf73-d623-4964-bfce-f6929554d64c",
+    "slug": "dense-brocade-trail",
+    "name": "Dense brocade trail",
+    "description": "Fuller brocade-style streak trails.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.15,
+            "density": 1.85,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 4,
+              "square": 88,
+              "triangle": 8
+            },
+            "sizeVariation": 22
+          },
+          {
+            "size": 0.92,
+            "density": 1.25,
+            "position": 25,
+            "shapeWeights": {
+              "circle": 5,
+              "square": 86,
+              "triangle": 9
+            },
+            "sizeVariation": 24
+          },
+          {
+            "size": 0.64,
+            "density": 0.62,
+            "position": 70,
+            "shapeWeights": {
+              "circle": 8,
+              "square": 82,
+              "triangle": 10
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.42,
+            "density": 0.24,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 14,
+              "square": 76,
+              "triangle": 10
+            },
+            "sizeVariation": 36
+          }
+        ],
+        "width": {
+          "tail": 2.7,
+          "curve": 0.86,
+          "front": 3.2
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0.05,
+          "inheritedVelocity": 0.018
+        },
+        "preset": "denseBrocade",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.1,
+          "strength": 0.95,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1.4,
+          "jitterPercent": 15
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.24,
+          "baseSeconds": 1.45,
+          "afterglowSeconds": 0.16,
+          "variationPercent": 22
+        },
+        "intensity": {
+          "brightness": 1.15,
+          "fadeSoftness": 1.1
+        },
+        "placement": {
+          "headGapPercent": 70
+        },
+        "colourMode": "gold",
+        "frontClump": 0.72,
+        "particleSize": {
+          "base": 1,
+          "headScale": 1.12,
+          "tailScale": 0.45,
+          "variationPercent": 18
+        },
+        "particlesPerStar": 120
+      }
+    },
+    "sort_order": 60,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T07:07:08.453882+00:00"
+  },
+  {
+    "id": "647c3550-26ee-481c-a2e0-1d88edfb08a1",
+    "slug": "geometry-palm-crown",
+    "name": "Palm crown",
+    "description": "Strong rising fronds that open broadly before falling away.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "crown",
+      "geometryTuning": {
+        "crown": {
+          "lift": 0.68,
+          "spread": 0.82,
+          "liftVariation": 0.45,
+          "spreadVariation": 0.26
+        }
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "6918230b-dc73-446f-9e57-db31dd7add7c",
+    "slug": "geometry-wide-bowtie",
+    "name": "Wide bowtie",
+    "description": "Two opposed fans forming a broad, flat figure-eight shell.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "bowtie",
+      "geometryTuning": {
+        "bowtie": {
+          "depthScale": 0.1,
+          "lengthBase": 0.94,
+          "countPercent": 88,
+          "verticalScale": 0.3,
+          "fanAngleDegrees": 126,
+          "lengthVariation": 0.14
+        }
+      }
+    },
+    "sort_order": 270,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "6a95e238-5425-4855-ac5d-70edd6d51b2c",
+    "slug": "star-dual-pistil",
+    "name": "Dual-layer pistil stars",
+    "description": "A large outer break wrapped around a slower, compact inner pistil.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "head": {
+            "size": 230,
+            "visible": true,
+            "glowStrength": 1.75
+          },
+          "burst": {
+            "life": [
+              2.4,
+              4.8
+            ],
+            "speed": [
+              0.8,
+              1.6
+            ],
+            "gravity": [
+              -0.18,
+              -0.04
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 34,
+          "enabled": true
+        },
+        "outer": {
+          "head": {
+            "size": 310,
+            "visible": true,
+            "glowStrength": 1.6
+          },
+          "burst": {
+            "life": [
+              2,
+              4.2
+            ],
+            "speed": [
+              2.5,
+              4.1
+            ],
+            "gravity": [
+              -0.25,
+              -0.05
+            ],
+            "flairColorMode": "bombColor"
+          },
+          "count": 92,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "7291734a-e353-481a-874d-ba34b2daeb04",
+    "slug": "smoke-light-mortar",
+    "name": "Light mortar smoke",
+    "description": "A short translucent puff suited to small consumer shells.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "size": 55,
+          "drift": 0.7,
+          "windX": 0,
+          "windZ": 0,
+          "colour": {
+            "b": 0.19,
+            "g": 0.18,
+            "r": 0.18
+          },
+          "height": 180,
+          "spread": 18,
+          "enabled": true,
+          "opacity": 0.38,
+          "particles": 45,
+          "turbulence": 0.2,
+          "lifeSeconds": 2.2,
+          "expansionPerSecond": 18,
+          "lifeVariationPercent": 30,
+          "sizeVariationPercent": 40
+        }
+      },
+      "mortar": {
+        "smokeParticles": 45
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "77a11ef4-e6fd-41c1-9eaf-b2281ad1962b",
+    "slug": "geometry-clean-ring",
+    "name": "Clean ring",
+    "description": "A crisp tilted ring with restrained depth wobble and a long readable outline.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "ring",
+      "geometryTuning": {
+        "ring": {
+          "wobble": 0.12,
+          "lifePercent": 92,
+          "countPercent": 76,
+          "tiltVariation": 0.75,
+          "verticalSquash": 0.98
+        }
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "7cc67249-6941-4a50-83c6-48f4668aa1cd",
+    "slug": "spark-dust-trail",
+    "name": "Spark dust trail",
+    "description": "Loose, glittery dust behind each star.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 0.74,
+            "density": 1.05,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 76,
+              "square": 16,
+              "triangle": 8
+            },
+            "sizeVariation": 55
+          },
+          {
+            "size": 0.55,
+            "density": 0.55,
+            "position": 55,
+            "shapeWeights": {
+              "circle": 82,
+              "square": 12,
+              "triangle": 6
+            },
+            "sizeVariation": 60
+          },
+          {
+            "size": 0.32,
+            "density": 0.16,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 90,
+              "square": 8,
+              "triangle": 2
+            },
+            "sizeVariation": 70
+          }
+        ],
+        "width": {
+          "tail": 2.1,
+          "curve": 1.15,
+          "front": 1.1
+        },
+        "motion": {
+          "drag": 2.4,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.018,
+          "driftZ": 0,
+          "gravity": -0.035,
+          "turbulence": 0.2,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "sparkDust",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.22,
+          "strength": 0.75,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1,
+          "jitterPercent": 55
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.14,
+          "baseSeconds": 0.82,
+          "afterglowSeconds": 0.1,
+          "variationPercent": 55
+        },
+        "intensity": {
+          "brightness": 0.72,
+          "fadeSoftness": 1.3
+        },
+        "placement": {
+          "headGapPercent": 35
+        },
+        "colourMode": "star",
+        "frontClump": 0.35,
+        "particleSize": {
+          "base": 0.65,
+          "headScale": 1,
+          "tailScale": 0.45,
+          "variationPercent": 55
+        },
+        "particlesPerStar": 24
+      }
+    },
+    "sort_order": 20,
+    "is_archived": false,
+    "created_at": "2026-06-18T05:46:26.567635+00:00",
+    "updated_at": "2026-06-18T07:07:08.453882+00:00"
+  },
+  {
+    "id": "7e64928e-c2a0-49ce-9186-c1c4da30591b",
+    "slug": "geometry-heart-outline",
+    "name": "Heart outline",
+    "description": "A front-facing heart outline with low depth scatter and a clean silhouette.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "heart",
+      "geometryTuning": {
+        "heart": {
+          "scaleX": 1,
+          "scaleY": 1.05,
+          "depthScale": 0.035,
+          "countPercent": 92,
+          "outlineJitter": 0.018,
+          "tiltVariation": 0.18,
+          "rotationDegrees": 0
+        }
+      }
+    },
+    "sort_order": 250,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "8395726b-f4fc-46a5-a85e-eabb86161e68",
+    "slug": "trail-clean-stars",
+    "name": "Clean stars",
+    "description": "No persistent trail, leaving only the star heads and their natural fade.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 0.6,
+            "density": 0,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 100,
+              "triangle": 0
+            },
+            "sizeVariation": 0
+          },
+          {
+            "size": 0.4,
+            "density": 0,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 0,
+              "square": 100,
+              "triangle": 0
+            },
+            "sizeVariation": 0
+          }
+        ],
+        "width": {
+          "tail": 0,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.6,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.014,
+          "turbulence": 0,
+          "inheritedVelocity": 0
+        },
+        "preset": "none",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": false,
+        "flicker": {
+          "chance": 0,
+          "strength": 0,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1,
+          "jitterPercent": 0
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.1,
+          "baseSeconds": 0.4,
+          "afterglowSeconds": 0,
+          "variationPercent": 20
+        },
+        "intensity": {
+          "brightness": 0,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "gold",
+        "frontClump": 0,
+        "particleSize": {
+          "base": 0.6,
+          "headScale": 1,
+          "tailScale": 0.6,
+          "variationPercent": 0
+        },
+        "particlesPerStar": 0
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "8518773b-929f-4f1d-a9a5-b58ca2eae3f2",
+    "slug": "silver-rain-trail",
+    "name": "Silver rain trail",
+    "description": "Long, cool silver trails that widen and fall like rain.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 0.94,
+            "density": 1.3,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 12,
+              "square": 80,
+              "triangle": 8
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.68,
+            "density": 0.84,
+            "position": 55,
+            "shapeWeights": {
+              "circle": 18,
+              "square": 72,
+              "triangle": 10
+            },
+            "sizeVariation": 34
+          },
+          {
+            "size": 0.3,
+            "density": 0.22,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 34,
+              "square": 58,
+              "triangle": 8
+            },
+            "sizeVariation": 45
+          }
+        ],
+        "width": {
+          "tail": 4.2,
+          "curve": 1.45,
+          "front": 1.2
+        },
+        "motion": {
+          "drag": 0.72,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.09,
+          "driftZ": 0,
+          "gravity": -0.16,
+          "turbulence": 0.08,
+          "inheritedVelocity": 0.012
+        },
+        "preset": "silverRain",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.14,
+          "strength": 0.8,
+          "lifetimeMultiplier": 0.5
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1.25,
+          "jitterPercent": 30
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.42,
+          "baseSeconds": 2.8,
+          "afterglowSeconds": 0.45,
+          "variationPercent": 36
+        },
+        "intensity": {
+          "brightness": 1.12,
+          "fadeSoftness": 1.7
+        },
+        "placement": {
+          "headGapPercent": 50
+        },
+        "colourMode": "silver",
+        "frontClump": 0.42,
+        "particleSize": {
+          "base": 0.78,
+          "headScale": 1,
+          "tailScale": 0.38,
+          "variationPercent": 32
+        },
+        "particlesPerStar": 112
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "8a25705b-0918-493e-8761-61508d1b7285",
+    "slug": "sound-launch-only",
+    "name": "Launch only",
+    "description": "Keeps the lift sound while suppressing the burst report.",
+    "kind": "sound",
+    "defaults_json": {
+      "sound": {
+        "boom": "none",
+        "launch": true
+      },
+      "mortar": {
+        "sound": true
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "8cf9d304-8e44-4b72-8744-b2d0f9664905",
+    "slug": "new-launch-style-mr1tw1hz",
+    "name": "New launch style",
+    "description": null,
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "circle",
+          "trail": {
+            "curve": 1,
+            "tailAngle": 0,
+            "frontAngle": 0,
+            "tubeDiameter": 0
+          },
+          "sizeScale": 1,
+          "brightness": 1,
+          "glowStrength": 1.5
+        },
+        "liftParticles": {
+          "amount": 100,
+          "height": 100,
+          "motion": {
+            "drag": 2.55,
+            "spin": 0,
+            "driftX": 0,
+            "driftY": -0.012,
+            "driftZ": 0,
+            "gravity": -0.09,
+            "swirlRate": 4,
+            "turbulence": 0.04,
+            "swirlRadius": 0,
+            "swirlStrength": 0,
+            "inheritedVelocity": 0.02
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.08,
+            "strength": 0.8,
+            "lifetimeMultiplier": 0.45
+          },
+          "spacing": {
+            "curve": 1,
+            "pathSamples": 5,
+            "jitterPercent": 35
+          },
+          "lifetime": {
+            "baseSeconds": 0.8,
+            "afterglowSeconds": 0.1,
+            "variationPercent": 35
+          },
+          "intensity": {
+            "brightness": 1,
+            "fadeSoftness": 1
+          },
+          "frontClump": 0.55,
+          "particleSize": {
+            "base": 30,
+            "headScale": 1,
+            "tailScale": 0.35,
+            "variationPercent": 20
+          },
+          "shapeWeights": {
+            "circle": 0,
+            "square": 100,
+            "triangle": 0
+          }
+        }
+      },
+      "liftVelocity": 15
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-07-01T08:43:23.416638+00:00",
+    "updated_at": "2026-07-01T08:43:23.416638+00:00"
+  },
+  {
+    "id": "91dc17b8-7237-442e-bb38-c40ab996bd43",
+    "slug": "geometry-weeping-willow",
+    "name": "Weeping willow",
+    "description": "Slow, wide fronds with a long hang and a deliberate downward pull.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "weeping",
+      "geometryTuning": {
+        "weeping": {
+          "lift": 0.28,
+          "spread": 0.76,
+          "dragPercent": 50,
+          "lifePercent": 150,
+          "liftVariation": 0.34,
+          "gravityPercent": 40,
+          "spreadVariation": 0.24
+        }
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "92dd4819-f231-4b5f-81d8-70faf5705a67",
+    "slug": "chrysanthemum-trail-style-mr1qb2jw",
+    "name": "Chrysanthemum trail style",
+    "description": "Created from Chrysanthemum.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.05,
+            "density": 1.5,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.9,
+            "density": 1.15,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.5,
+            "density": 0.34,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 30,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.4,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.02,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0,
+              "g": 0.16470588235294117,
+              "r": 0.5843137254901961
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 36
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 1
+          },
+          "visibility": {
+            "revealPercent": 25,
+            "particlesPercent": 100,
+            "brightnessPercent": 39
+          }
+        },
+        "spacing": {
+          "curve": 4,
+          "jitterPercent": 100
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 1,
+          "baseSeconds": 1.7,
+          "afterglowSeconds": 0.32,
+          "variationPercent": 0
+        },
+        "intensity": {
+          "brightness": 1.15,
+          "fadeSoftness": 3.2
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "ember",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 4.63,
+          "headScale": 1.25,
+          "tailScale": 0.3,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 280
+      }
+    },
+    "sort_order": 9000,
+    "is_archived": false,
+    "created_at": "2026-07-01T07:03:06.155176+00:00",
+    "updated_at": "2026-07-01T07:03:06.155176+00:00"
+  },
+  {
+    "id": "938d90e0-ca9a-4fde-826a-f3c45f63bcf0",
+    "slug": "geometry-eight-arm-spider",
+    "name": "Eight-arm spider",
+    "description": "Eight defined radial arms with tight angular scatter and a broad reach.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "radial_arms",
+      "geometryTuning": {
+        "radialArms": {
+          "arms": 8,
+          "lift": 0.1,
+          "armLength": 0.92,
+          "angleJitter": 0.06,
+          "dragPercent": 70,
+          "countPercent": 62,
+          "liftVariation": 0.25
+        }
+      }
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "a19162e7-ef8c-4d1b-ab64-1c89b960a4df",
+    "slug": "geometry-five-point-star-outline",
+    "name": "Five-point star outline",
+    "description": "A sharp five-point star with a compact inner radius and low planar noise.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "five_point_star",
+      "geometryTuning": {
+        "fivePointStar": {
+          "points": 5,
+          "scaleX": 1,
+          "scaleY": 1.08,
+          "depthScale": 0.035,
+          "innerRadius": 0.42,
+          "countPercent": 94,
+          "outlineJitter": 0.018,
+          "tiltVariation": 0.18,
+          "rotationDegrees": -90
+        }
+      }
+    },
+    "sort_order": 260,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "ad100443-1149-4261-a78a-5e026785cec2",
+    "slug": "standard-split",
+    "name": "Standard split",
+    "description": "Default crossette split fragments and speed.",
+    "kind": "split",
+    "defaults_json": {
+      "split": {
+        "speed": 1.55,
+        "enabled": false,
+        "fragments": 4,
+        "delayRatio": 0.42
+      }
+    },
+    "sort_order": 120,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-06-18T08:33:43.416468+00:00"
+  },
+  {
+    "id": "b241f919-7e1d-4f4b-8ab4-48e6ccd2dd04",
+    "slug": "standard-strobe",
+    "name": "Standard strobe",
+    "description": "Default blinking-star timing.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "enabled": false,
+        "dutyCycle": 0.45,
+        "frequencyHz": 12
+      }
+    },
+    "sort_order": 100,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-06-18T08:33:43.416468+00:00"
+  },
+  {
+    "id": "b24282c1-54b4-486f-ae48-df8edec0ec6d",
+    "slug": "geometry-tall-fountain",
+    "name": "Tall fountain",
+    "description": "A sustained narrow fountain with a tall, bright glitter cone.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "fountain",
+      "geometryTuning": {
+        "fountain": {
+          "speedBase": 0.7,
+          "dragPercent": 105,
+          "lifePercent": 72,
+          "ratePercent": 180,
+          "lateralScale": 0.42,
+          "spawnScatter": 7,
+          "speedVariation": 0.65,
+          "durationPercent": 42,
+          "headSizePercent": 44,
+          "coneAngleDegrees": 38,
+          "minRatePerSecond": 60,
+          "trailLifePercent": 58,
+          "durationMaxSeconds": 14,
+          "durationMinSeconds": 4
+        }
+      }
+    },
+    "sort_order": 330,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "bc5738c5-3322-4394-b83d-ba22b3d21214",
+    "slug": "smoke-natural-grey-plume",
+    "name": "Natural grey plume",
+    "description": "A varied medium-grey plume with gradual expansion and mild turbulence.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "size": 92,
+          "drift": 1.1,
+          "windX": 0,
+          "windZ": 0,
+          "colour": {
+            "b": 0.13,
+            "g": 0.12,
+            "r": 0.12
+          },
+          "height": 420,
+          "spread": 34,
+          "enabled": true,
+          "opacity": 0.68,
+          "particles": 140,
+          "turbulence": 0.7,
+          "lifeSeconds": 4.4,
+          "expansionPerSecond": 22,
+          "lifeVariationPercent": 45,
+          "sizeVariationPercent": 55
+        }
+      },
+      "mortar": {
+        "smokeParticles": 140
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "bce4a887-6a8e-4d8a-9d0f-f6e6c9552e18",
+    "slug": "ghost-fade-trail",
+    "name": "Ghost fade trail",
+    "description": "A cool trail that blooms from a small head and dissolves into a pale afterimage.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 0.84,
+            "density": 1.1,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 76,
+              "square": 20,
+              "triangle": 4
+            },
+            "sizeVariation": 22
+          },
+          {
+            "size": 0.5,
+            "density": 0.68,
+            "position": 60,
+            "shapeWeights": {
+              "circle": 86,
+              "square": 12,
+              "triangle": 2
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.18,
+            "density": 0.12,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 94,
+              "square": 6,
+              "triangle": 0
+            },
+            "sizeVariation": 36
+          }
+        ],
+        "width": {
+          "tail": 2.8,
+          "curve": 1.2,
+          "front": 1.6
+        },
+        "motion": {
+          "drag": 1.05,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.018,
+          "driftZ": 0,
+          "gravity": -0.045,
+          "turbulence": 0.035,
+          "inheritedVelocity": 0.025
+        },
+        "preset": "ghostFade",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 0,
+            "shrinkPercent": 42
+          },
+          "colour": {
+            "color": {
+              "b": 1,
+              "g": 0.72,
+              "r": 0.55
+            },
+            "enabled": true,
+            "fadePercent": 46
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 36,
+            "endOpacityPercent": 4
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.03,
+          "strength": 0.45,
+          "lifetimeMultiplier": 0.5
+        },
+        "opening": {
+          "size": {
+            "startPercent": 35
+          },
+          "visibility": {
+            "revealPercent": 18,
+            "particlesPercent": 72,
+            "brightnessPercent": 165
+          }
+        },
+        "spacing": {
+          "curve": 1.4,
+          "jitterPercent": 16
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "fixed",
+          "percent": 0.28,
+          "baseSeconds": 1.65,
+          "afterglowSeconds": 0.55,
+          "variationPercent": 22
+        },
+        "intensity": {
+          "brightness": 1.22,
+          "fadeSoftness": 2.25
+        },
+        "placement": {
+          "headGapPercent": 46
+        },
+        "colourMode": "starFade",
+        "frontClump": 0.58,
+        "particleSize": {
+          "base": 0.72,
+          "headScale": 1.08,
+          "tailScale": 0.2,
+          "variationPercent": 24
+        },
+        "particlesPerStar": 76
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "c34ee273-faab-40bf-b786-da1af534b45a",
+    "slug": "strobe-classic-white",
+    "name": "Classic strobe",
+    "description": "A balanced full-field strobe with mild phase separation between stars.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "desync": 0.05,
+        "enabled": true,
+        "dutyCycle": 0.42,
+        "dimPercent": 3,
+        "frequencyHz": 10,
+        "amountPercent": 100
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "c742e5bb-520e-4539-951a-bd26523f2419",
+    "slug": "launch-titanium-flare",
+    "name": "Titanium flare launch",
+    "description": "A short, brilliant silver lift with large irregular fragments and hard flicker.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "square",
+          "trail": {
+            "curve": 0.7,
+            "tailAngle": 5,
+            "frontAngle": 7,
+            "tubeDiameter": 8
+          },
+          "colour": {
+            "b": 1,
+            "g": 0.96,
+            "r": 0.92
+          },
+          "visible": true,
+          "sizeScale": 1.15,
+          "brightness": 2.2,
+          "glowStrength": 2.4
+        },
+        "liftParticles": {
+          "amount": 260,
+          "colour": {
+            "b": 1,
+            "g": 0.96,
+            "r": 0.92
+          },
+          "height": 86,
+          "motion": {
+            "drag": 3.4,
+            "spin": 2.5,
+            "driftX": 0,
+            "driftY": -0.09,
+            "driftZ": 0,
+            "gravity": -0.24,
+            "swirlRate": 4,
+            "turbulence": 1.1,
+            "swirlRadius": 0,
+            "swirlStrength": 0,
+            "swirlLoopCount": 0,
+            "swirlLoopHeight": 0,
+            "swirlLoopLength": 100,
+            "inheritedVelocity": 0.01
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.58,
+            "strength": 2.2,
+            "lifetimeMultiplier": 0.22
+          },
+          "spacing": {
+            "curve": 0.65,
+            "pathSamples": 5,
+            "jitterPercent": 72,
+            "clusterStrength": 48
+          },
+          "lifetime": {
+            "baseSeconds": 0.42,
+            "afterglowSeconds": 0.18,
+            "variationPercent": 62
+          },
+          "intensity": {
+            "brightness": 2.3,
+            "fadeSoftness": 0.58
+          },
+          "frontClump": 0.78,
+          "particleSize": {
+            "base": 42,
+            "headScale": 1.4,
+            "tailScale": 0.18,
+            "variationPercent": 68
+          },
+          "shapeWeights": {
+            "circle": 24,
+            "square": 48,
+            "triangle": 28
+          },
+          "appearanceMode": "custom"
+        }
+      },
+      "liftVelocity": 18
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "d1cf38b2-c3b0-437a-b99a-b9b743a6469b",
+    "slug": "split-classic-four-way",
+    "name": "Classic four-way crossette",
+    "description": "A balanced four-fragment split with a readable pause before separation.",
+    "kind": "split",
+    "defaults_json": {
+      "split": {
+        "speed": 1.55,
+        "enabled": true,
+        "fragments": 4,
+        "delayRatio": 0.42,
+        "headSizePercent": 50,
+        "lifeBaseSeconds": 0.65,
+        "trailLifePercent": 60,
+        "lifeVariationSeconds": 1.6
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "d48977aa-b1c9-4521-8233-d81471ac82af",
+    "slug": "split-six-way",
+    "name": "Six-way crossette",
+    "description": "A fuller six-fragment break with moderate separation speed.",
+    "kind": "split",
+    "defaults_json": {
+      "split": {
+        "speed": 1.7,
+        "enabled": true,
+        "fragments": 6,
+        "delayRatio": 0.46,
+        "headSizePercent": 44,
+        "lifeBaseSeconds": 0.6,
+        "trailLifePercent": 58,
+        "lifeVariationSeconds": 1.35
+      }
+    },
+    "sort_order": 210,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "d55e2a7f-4242-43fe-97ce-5d7463c79b1d",
+    "slug": "sound-silent",
+    "name": "Silent",
+    "description": "Disables launch and burst reports for visual-only previews.",
+    "kind": "sound",
+    "defaults_json": {
+      "sound": {
+        "boom": "none",
+        "launch": false
+      },
+      "mortar": {
+        "sound": false
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "dae480c8-d7b0-4d68-9bcd-a7d8f0b1d992",
+    "slug": "standard-smoke",
+    "name": "Standard smoke",
+    "description": "Default launch smoke puffs and rise height.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "size": 86,
+          "drift": 1,
+          "height": 110,
+          "spread": 0,
+          "enabled": true,
+          "particles": 40,
+          "lifeSeconds": 2.3
+        }
+      },
+      "mortar": {
+        "smokeParticles": 40
+      }
+    },
+    "sort_order": 90,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-07-01T05:43:52.586993+00:00"
+  },
+  {
+    "id": "dcfa6076-0146-4d9a-8cc0-b3a5304126a3",
+    "slug": "dragon-egg-trail",
+    "name": "Dragon egg trail",
+    "description": "A turbulent ember cloud with irregular particles, strong flicker and a short burn.",
+    "kind": "trail",
+    "defaults_json": {
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.4,
+            "density": 2.2,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 48,
+              "square": 32,
+              "triangle": 20
+            },
+            "sizeVariation": 65
+          },
+          {
+            "size": 0.92,
+            "density": 1.45,
+            "position": 45,
+            "shapeWeights": {
+              "circle": 58,
+              "square": 26,
+              "triangle": 16
+            },
+            "sizeVariation": 76
+          },
+          {
+            "size": 0.3,
+            "density": 0.38,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 76,
+              "square": 18,
+              "triangle": 6
+            },
+            "sizeVariation": 88
+          }
+        ],
+        "width": {
+          "tail": 7.5,
+          "curve": 0.82,
+          "front": 4.8
+        },
+        "motion": {
+          "drag": 2.8,
+          "spin": 1.6,
+          "driftX": 0,
+          "driftY": -0.08,
+          "driftZ": 0,
+          "gravity": -0.22,
+          "turbulence": 0.88,
+          "inheritedVelocity": 0.008
+        },
+        "preset": "dragonEgg",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 0,
+            "shrinkPercent": 34
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 12
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.62,
+          "strength": 1.7,
+          "lifetimeMultiplier": 0.28
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 0.72,
+          "jitterPercent": 78
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "fixed",
+          "percent": 0.2,
+          "baseSeconds": 0.58,
+          "afterglowSeconds": 0.24,
+          "variationPercent": 68
+        },
+        "intensity": {
+          "brightness": 1.5,
+          "fadeSoftness": 0.72
+        },
+        "placement": {
+          "headGapPercent": 38
+        },
+        "colourMode": "ember",
+        "frontClump": 0.64,
+        "particleSize": {
+          "base": 1.18,
+          "headScale": 1.3,
+          "tailScale": 0.3,
+          "variationPercent": 72
+        },
+        "particlesPerStar": 148
+      }
+    },
+    "sort_order": 230,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "e195a838-4a63-4c91-9b08-c2ac3fdd8777",
+    "slug": "star-ghost-colour-shift",
+    "name": "Ghost colour-shift stars",
+    "description": "Stars emerge cool and small, then fade towards a pale warm afterimage.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 290,
+            "closing": {
+              "size": {
+                "enabled": true,
+                "endPercent": 0,
+                "shrinkPercent": 36
+              },
+              "colour": {
+                "color": {
+                  "b": 0.68,
+                  "g": 0.88,
+                  "r": 1
+                },
+                "enabled": true,
+                "fadePercent": 38
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": true,
+                "growPercent": 25,
+                "startPercent": 28
+              },
+              "colour": {
+                "color": {
+                  "b": 1,
+                  "g": 0.72,
+                  "r": 0.55
+                },
+                "enabled": true,
+                "fadePercent": 42
+              }
+            },
+            "visible": true,
+            "glowStrength": 1.75,
+            "brightnessHoldPercent": 58,
+            "brightnessHoldExponent": 0.68
+          },
+          "burst": {
+            "life": [
+              2.8,
+              5
+            ],
+            "speed": [
+              2,
+              3.6
+            ],
+            "gravity": [
+              -0.18,
+              -0.04
+            ],
+            "flairColorMode": "bombColor"
+          },
+          "count": 84,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "e1a284d8-40c3-40fb-b8d3-8d87691070ea",
+    "slug": "star-long-hang-willow",
+    "name": "Long-hang willow stars",
+    "description": "Lower-energy stars with long burn times and a strong falling arc.",
+    "kind": "star",
+    "defaults_json": {
+      "stars": {
+        "core": {
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 250,
+            "closing": {
+              "size": {
+                "enabled": true,
+                "endPercent": 8,
+                "shrinkPercent": 44
+              }
+            },
+            "visible": true,
+            "glowStrength": 1.4,
+            "brightnessHoldPercent": 68,
+            "brightnessHoldExponent": 0.72
+          },
+          "burst": {
+            "life": [
+              4.2,
+              7.8
+            ],
+            "speed": [
+              1.1,
+              2.4
+            ],
+            "gravity": [
+              -0.35,
+              -0.14
+            ],
+            "flairColorMode": "bombColor"
+          },
+          "count": 82,
+          "enabled": true
+        }
+      }
+    },
+    "sort_order": 220,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "eaf4e922-005d-46d4-a006-fc3b041650a4",
+    "slug": "smoke-none",
+    "name": "No launch smoke",
+    "description": "Disables launch and mortar smoke for clean diagnostic previews.",
+    "kind": "smoke",
+    "defaults_json": {
+      "launch": {
+        "smoke": {
+          "enabled": false,
+          "particles": 0
+        }
+      },
+      "mortar": {
+        "smokeParticles": 0
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "ef483800-6165-42a1-8cb2-c331936a1c21",
+    "slug": "launch-heavy-shell",
+    "name": "Heavy shell launch",
+    "description": "A slower, larger carrier with a dense lift trail and lingering embers.",
+    "kind": "launch",
+    "defaults_json": {
+      "launch": {
+        "shell": {
+          "shape": "orb",
+          "trail": {
+            "curve": 1.4,
+            "tailAngle": 3,
+            "frontAngle": 2,
+            "tubeDiameter": 5
+          },
+          "visible": true,
+          "sizeScale": 1.5,
+          "brightness": 1.5,
+          "glowStrength": 1.8
+        },
+        "liftParticles": {
+          "amount": 140,
+          "height": 100,
+          "motion": {
+            "drag": 1.8,
+            "spin": 0.1,
+            "driftX": 0,
+            "driftY": -0.025,
+            "driftZ": 0,
+            "gravity": -0.11,
+            "swirlRate": 4,
+            "turbulence": 0.12,
+            "swirlRadius": 0,
+            "swirlStrength": 0,
+            "swirlLoopCount": 0,
+            "swirlLoopHeight": 0,
+            "swirlLoopLength": 100,
+            "inheritedVelocity": 0.035
+          },
+          "enabled": true,
+          "flicker": {
+            "chance": 0.1,
+            "strength": 0.85,
+            "lifetimeMultiplier": 0.45
+          },
+          "spacing": {
+            "curve": 1.35,
+            "pathSamples": 7,
+            "jitterPercent": 28,
+            "clusterStrength": 22
+          },
+          "lifetime": {
+            "baseSeconds": 1.3,
+            "afterglowSeconds": 0.28,
+            "variationPercent": 42
+          },
+          "intensity": {
+            "brightness": 1.2,
+            "fadeSoftness": 1.25
+          },
+          "frontClump": 0.62,
+          "particleSize": {
+            "base": 34,
+            "headScale": 1.15,
+            "tailScale": 0.38,
+            "variationPercent": 32
+          },
+          "shapeWeights": {
+            "circle": 14,
+            "square": 80,
+            "triangle": 6
+          },
+          "appearanceMode": "inherit"
+        }
+      },
+      "liftVelocity": 12
+    },
+    "sort_order": 240,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "f7ff2b95-3da7-4c82-9578-17b098cf0146",
+    "slug": "standard-crackle",
+    "name": "Standard crackle",
+    "description": "Default crackle pop probability and sound.",
+    "kind": "crackle",
+    "defaults_json": {
+      "crackle": {
+        "sound": "crackle",
+        "enabled": true,
+        "probability": 0.05
+      }
+    },
+    "sort_order": 110,
+    "is_archived": false,
+    "created_at": "2026-06-18T08:33:43.416468+00:00",
+    "updated_at": "2026-06-18T08:33:43.416468+00:00"
+  },
+  {
+    "id": "fc40a31e-d11f-4c28-8e04-5b7413926767",
+    "slug": "geometry-natural-sphere",
+    "name": "Natural sphere",
+    "description": "A balanced spherical burst with the current renderer's natural variation.",
+    "kind": "geometry",
+    "defaults_json": {
+      "geometry": "sphere"
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  },
+  {
+    "id": "fd1da35a-1224-48cd-967e-3aeef127c758",
+    "slug": "strobe-slow-shimmer",
+    "name": "Slow shimmer",
+    "description": "A slow, slightly desynchronised pulse that preserves each star's body.",
+    "kind": "strobe",
+    "defaults_json": {
+      "strobe": {
+        "desync": 0.12,
+        "enabled": true,
+        "dutyCycle": 0.5,
+        "dimPercent": 8,
+        "frequencyHz": 4.5,
+        "amountPercent": 100
+      }
+    },
+    "sort_order": 200,
+    "is_archived": false,
+    "created_at": "2026-07-15T11:58:04.235898+00:00",
+    "updated_at": "2026-07-15T11:58:04.235898+00:00"
+  }
+]

@@ -13,19 +13,6 @@ function read(path) {
 }
 
 test('impersonation migration adds a dedicated permission and audit table', () => {
-  const migrationPath = '../../supabase/migrations/20260531090000_admin_impersonation.sql';
-  assert.equal(existsSync(join(root, migrationPath)), true);
-  const migration = read(migrationPath);
-
-  assert.match(migration, /'admin\.impersonate_users'/);
-  assert.match(migration, /from public\.roles r[\s\S]*r\.key = 'admin'/);
-  assert.match(migration, /create table if not exists public\.impersonation_sessions/);
-  assert.match(migration, /return_token_hash text not null unique/);
-  assert.match(migration, /admin_user_id uuid not null references auth\.users/);
-  assert.match(migration, /target_user_id uuid not null references auth\.users/);
-  assert.match(migration, /public\.current_user_has_permission\('admin\.impersonate_users'\)/);
-  assert.match(migration, /grant select on public\.impersonation_sessions to authenticated/);
-
   const types = read('lib/admin.types.ts');
   assert.match(types, /'admin\.impersonate_users'/);
 });

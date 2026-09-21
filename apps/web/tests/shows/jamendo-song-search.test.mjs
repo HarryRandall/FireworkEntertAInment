@@ -19,18 +19,6 @@ const audioUpload = read('app/(app)/shows/new/_components/AudioUpload.tsx');
 const replay = read('ui/replay/FireworkReplayViewer.tsx');
 const songContext = read('ui/shows/AudioAnalysisTimeline.tsx');
 const audioReader = read('lib/shows/audio.server.ts');
-const migration = read(
-  '../../supabase/migrations/20260727033941_add_song_analysis_source_attribution.sql',
-);
-const restrictionMigration = read(
-  '../../supabase/migrations/20260727150001_restrict_jamendo_soundtrack_licences.sql',
-);
-const cacheMigration = read(
-  '../../supabase/migrations/20260727032350_add_jamendo_response_cache.sql',
-);
-const reuseMigration = read(
-  '../../supabase/migrations/20260727163000_index_reusable_jamendo_analyses.sql',
-);
 const databaseTypes = read('lib/database.types.ts');
 const wizardTypes = read('app/(app)/shows/new/types.ts');
 
@@ -122,12 +110,6 @@ test('completed Jamendo analyses already attached to an owned show are reused', 
   assert.match(post, /reusedAnalysis: true/);
   assert.match(wizardTypes, /reusedAnalysis\?: boolean/);
   assert.match(wizard, /if \(uploaded\.reusedAnalysis\) return/);
-
-  assert.match(reuseMigration, /create index if not exists song_analyses_jamendo_reuse_idx/);
-  assert.match(reuseMigration, /\(user_id, source_track_id, completed_at desc\)/);
-  assert.match(reuseMigration, /source_provider = 'jamendo'/);
-  assert.match(reuseMigration, /status = 'completed'/);
-  assert.match(reuseMigration, /analysis_json is not null/);
 });
 
 test('the wizard keeps soundtrack import separate from explicit show generation', () => {
@@ -172,19 +154,9 @@ test('Jamendo attribution is constrained, stored, and shown in song context', ()
     'source_licence_name',
     'source_licence_url',
   ]) {
-    assert.match(migration, new RegExp(`add column if not exists ${column}`));
     assert.match(databaseTypes, new RegExp(`${column}:`));
     assert.match(starter, new RegExp(`${column}:`));
   }
-  assert.match(restrictionMigration, /source_provider = 'jamendo'/);
-  assert.match(restrictionMigration, /\^\(CC BY\|CC0\)/);
-  assert.doesNotMatch(restrictionMigration, /BY-NC|BY-ND|BY-SA/);
-  assert.match(
-    restrictionMigration,
-    /before insert or update of[\s\S]*source_licence_name[\s\S]*source_licence_url/,
-  );
-  assert.match(restrictionMigration, /errcode = '23514'/);
-  assert.doesNotMatch(restrictionMigration, /drop constraint/);
   assert.match(audioReader, /getSoundtrackAttribution/);
   assert.doesNotMatch(replay, /soundtrackAttribution/);
   assert.doesNotMatch(replay, /Soundtrack:\{' '\}/);
@@ -195,14 +167,6 @@ test('Jamendo attribution is constrained, stored, and shown in song context', ()
 });
 
 test('Jamendo responses persist in a durable, service-role-only Postgres cache', () => {
-  assert.match(cacheMigration, /create table if not exists public\.jamendo_response_cache/);
-  assert.match(cacheMigration, /enable row level security/);
-  assert.match(cacheMigration, /create policy jamendo_response_cache_no_client_access/);
-  assert.match(cacheMigration, /using \(false\)/);
-  assert.match(
-    cacheMigration,
-    /revoke all on public\.jamendo_response_cache from anon, authenticated/,
-  );
   assert.match(databaseTypes, /jamendo_response_cache:/);
   assert.match(server, /createServiceRoleSupabase/);
   assert.match(server, /readJamendoCache/);

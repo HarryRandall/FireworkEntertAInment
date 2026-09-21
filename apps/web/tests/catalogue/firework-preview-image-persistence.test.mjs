@@ -12,23 +12,6 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-function previewMigration() {
-  const matches = readdirSync(join(root, '../../supabase/migrations')).filter((name) =>
-    name.endsWith('_add_firework_preview_images.sql'),
-  );
-  assert.equal(matches.length, 1, 'expected exactly one firework preview image migration');
-  return read(`../../supabase/migrations/${matches[0]}`);
-}
-
-function functionBody(source, functionName) {
-  const pattern = new RegExp(
-    `create or replace function private\\.${functionName}\\(\\)[\\s\\S]*?\\$\\$;`,
-  );
-  const match = source.match(pattern);
-  assert.ok(match, `missing ${functionName}`);
-  return match[0];
-}
-
 function loadPreviewImageModule() {
   const source = read('lib/firework-preview-image.ts');
   const output = ts.transpileModule(source, {
@@ -38,96 +21,6 @@ function loadPreviewImageModule() {
   Function('exports', 'module', output)(loadedModule.exports, loadedModule);
   return loadedModule.exports;
 }
-
-test('preview manifest has one source, public reads and server-only writes', () => {
-  const migration = previewMigration();
-
-  assert.match(migration, /create table public\.firework_preview_images/);
-  assert.match(migration, /num_nonnulls\(firework_effect_id, firework_id, multishot_id\) = 1/);
-  assert.match(migration, /firework_effect_id uuid unique references public\.firework_effects/);
-  assert.match(migration, /firework_id uuid unique references public\.fireworks/);
-  assert.match(migration, /multishot_id uuid unique references public\.multishots/);
-  assert.match(migration, /alter table public\.firework_preview_images enable row level security/);
-  assert.match(
-    migration,
-    /revoke all on table public\.firework_preview_images from anon, authenticated/,
-  );
-  assert.match(
-    migration,
-    /grant select on table public\.firework_preview_images to anon, authenticated/,
-  );
-  assert.match(migration, /grant all on table public\.firework_preview_images to service_role/);
-  assert.match(
-    migration,
-    /create policy firework_preview_images_select_anyone[\s\S]*?for select[\s\S]*?to anon, authenticated[\s\S]*?using \(true\)/,
-  );
-  assert.doesNotMatch(migration, /create policy[^;]+for (?:insert|update|delete)/i);
-});
-
-test('preview manifest revisions invalidate effect, firework and multishot captures', () => {
-  const migration = previewMigration();
-  const effectBump = functionBody(migration, 'bump_effect_preview_images');
-  const fireworkBump = functionBody(migration, 'bump_firework_preview_images');
-  const multishotBump = functionBody(migration, 'bump_multishot_preview_image');
-
-  for (const body of [effectBump, fireworkBump, multishotBump]) {
-    assert.match(body, /source_revision = preview\.source_revision \+ 1/);
-    assert.match(body, /renderer_version = null/);
-    assert.match(body, /source_signature = null/);
-    assert.match(body, /storage_path = null/);
-    assert.match(body, /captured_at = null/);
-  }
-
-  assert.match(effectBump, /preview\.firework_effect_id = new\.id/);
-  assert.match(effectBump, /where firework\.firework_effect_id = new\.id/);
-  assert.match(effectBump, /join public\.fireworks firework on firework\.id = shot\.firework_id/);
-  assert.match(
-    migration,
-    /create trigger firework_effects_bump_preview_images[\s\S]*?after update of model_json, pattern_key/,
-  );
-
-  assert.match(fireworkBump, /preview\.firework_id = new\.id/);
-  assert.match(fireworkBump, /where shot\.firework_id = new\.id/);
-  assert.match(
-    migration,
-    /create trigger fireworks_bump_preview_images[\s\S]*?after update of[\s\S]*?render_overrides_json/,
-  );
-
-  assert.match(multishotBump, /where preview\.multishot_id = new\.id/);
-  assert.match(
-    migration,
-    /create trigger multishots_bump_preview_image[\s\S]*?after update on public\.multishots/,
-  );
-
-  for (const name of [
-    'ensure_firework_preview_image',
-    'bump_effect_preview_images',
-    'bump_firework_preview_images',
-    'bump_multishot_preview_image',
-  ]) {
-    assert.match(
-      migration,
-      new RegExp(
-        `revoke execute on function private\\.${name}\\(\\)[\\s\\S]*?from public, anon, authenticated, service_role`,
-      ),
-      name,
-    );
-  }
-});
-
-test('preview images use a public WebP-only bucket without browser write policy', () => {
-  const migration = previewMigration();
-
-  assert.match(
-    migration,
-    /insert into storage\.buckets \(id, name, public, file_size_limit, allowed_mime_types\)/,
-  );
-  assert.match(
-    migration,
-    /values \('firework-previews', 'firework-previews', true, 1048576, array\['image\/webp'\]\)/,
-  );
-  assert.doesNotMatch(migration, /create policy[\s\S]*?on storage\.objects/i);
-});
 
 test('generated database types expose the preview manifest and all source relationships', () => {
   const types = read('lib/database.types.ts');

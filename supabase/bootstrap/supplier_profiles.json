@@ -1,0 +1,24 @@
+[
+  {
+    "id": "4460c147-bbf7-4649-b972-d98b8a4f0b4e",
+    "name": "Queen City Fireworks",
+    "slug": "queen-city-fireworks",
+    "contact_email": "eric@arthurrozzi.com",
+    "phone": "5132276291",
+    "website_url": "https://www.queencityfireworks.com/",
+    "status": "active",
+    "created_at": "2026-05-04T06:06:01.540921+00:00",
+    "updated_at": "2026-05-04T06:06:01.540921+00:00"
+  },
+  {
+    "id": "94edaf02-dc76-4b90-b1fb-5d6ca8a17f64",
+    "name": "Hammer & Anvil",
+    "slug": "hammer-and-anvil",
+    "contact_email": null,
+    "phone": null,
+    "website_url": "https://www.hammerfireworks.com/",
+    "status": "active",
+    "created_at": "2026-05-04T00:50:08.208196+00:00",
+    "updated_at": "2026-05-04T00:53:27.448268+00:00"
+  }
+]

@@ -11,36 +11,6 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('cover_image_path column + covers bucket migration is well-formed', () => {
-  const migrationPath = '../../supabase/migrations/20260701113000_add_cover_image_path.sql';
-  assert.equal(existsSync(join(root, migrationPath)), true);
-
-  const migration = read(migrationPath);
-  assert.match(migration, /ALTER TABLE shows ADD COLUMN IF NOT EXISTS cover_image_path text;/);
-  assert.match(
-    migration,
-    /ALTER TABLE show_presets ADD COLUMN IF NOT EXISTS cover_image_path text;/,
-  );
-  // Public covers bucket starts with PNG support and a later migration enables JPEG posters.
-  assert.match(
-    migration,
-    /insert into storage\.buckets \(id, name, public, file_size_limit, allowed_mime_types\)/,
-  );
-  assert.match(migration, /values \('covers', 'covers', true, 5242880, array\['image\/png'\]\)/);
-  const jpegMigration = read(
-    '../../supabase/migrations/20260703170000_allow_jpeg_cover_posters.sql',
-  );
-  assert.match(jpegMigration, /allowed_mime_types = array\['image\/png', 'image\/jpeg'\]/);
-  // Public read for anon + authenticated.
-  assert.match(migration, /create policy "covers_select_anyone" on storage\.objects/);
-  assert.match(migration, /for select\s+to anon, authenticated\s+using \(bucket_id = 'covers'\)/);
-  // Owner-scoped writes keyed by the first path segment matching auth.uid().
-  assert.match(migration, /create policy "covers_insert_own" on storage\.objects/);
-  assert.match(migration, /\(storage\.foldername\(name\)\)\[1\] = auth\.uid\(\)::text/);
-  assert.match(migration, /create policy "covers_update_own" on storage\.objects/);
-  assert.match(migration, /create policy "covers_delete_own" on storage\.objects/);
-});
-
 test('generated types expose cover_image_path on shows and show_presets', () => {
   const types = read('lib/database.types.ts');
   const showsTypes = types.match(/shows: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';

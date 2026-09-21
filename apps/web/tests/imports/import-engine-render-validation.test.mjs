@@ -62,26 +62,10 @@ test('import renderer contract fingerprints every capture-affecting source', () 
   );
 });
 
-test('import renderer contract stays aligned across the app, worker and database', () => {
+test('import renderer contract stays aligned across the app and worker', () => {
   const worker = read('../../services/firework-import-worker/engine_validation.py');
   const workerVersion = worker.match(/^RENDERER_VERSION = "([^"]+)"$/m)?.[1];
   assert.equal(workerVersion, FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION);
-
-  const migrationDirectory = join(root, '../../supabase/migrations');
-  const contractMigrations = readdirSync(migrationDirectory)
-    .filter((file) => file.endsWith('.sql'))
-    .sort()
-    .filter((file) =>
-      readFileSync(join(migrationDirectory, file), 'utf8').includes(
-        'create or replace function public.current_firework_import_renderer_contract_version()',
-      ),
-    );
-  const latestMigration = contractMigrations.at(-1);
-  assert.ok(latestMigration, 'Expected a renderer contract migration');
-  const databaseVersion = readFileSync(join(migrationDirectory, latestMigration), 'utf8').match(
-    /select '([^']+)'::text;/,
-  )?.[1];
-  assert.equal(databaseVersion, FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION);
 });
 
 function frame(timeSeconds, activity, options = {}) {

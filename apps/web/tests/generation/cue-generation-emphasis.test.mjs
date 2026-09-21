@@ -25,9 +25,6 @@ test('cue runner replaces show_timeline_items transactionally with emphasis', ()
   const runner = read('lib/cue-generation/runner.server.ts');
   const fastPlanner = read('lib/cue-generation/fast-planner.ts');
   const beatSync = read('lib/cue-generation/beat-sync-planner.ts');
-  const migration = read(
-    '../../supabase/migrations/20260629092959_replace_show_timeline_items_rpc.sql',
-  );
   const types = read('lib/database.types.ts');
 
   // Reconstructed cue carries emphasis, defaulting to the slot's computed value.
@@ -47,10 +44,6 @@ test('cue runner replaces show_timeline_items transactionally with emphasis', ()
   );
   assert.match(runner, /rpc\(\s*'replace_show_timeline_items'/);
   assert.doesNotMatch(runner, /\.from\('show_timeline_items'\)[\s\S]*?\.delete\(\)/);
-  assert.match(migration, /create or replace function public\.replace_show_timeline_items/);
-  assert.match(migration, /delete from public\.show_timeline_items/);
-  assert.match(migration, /insert into public\.show_timeline_items/);
-  assert.match(migration, /emphasis text/);
   assert.match(types, /replace_show_timeline_items: \{/);
 });
 

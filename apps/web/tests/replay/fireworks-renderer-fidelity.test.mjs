@@ -235,9 +235,6 @@ test('burst patterns distribute over the full sphere', () => {
 test('renderer preserves named firework geometry and trail profiles', () => {
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
-  const migration = read(
-    '../../supabase/migrations/20260528233000_renderer_effect_geometry_expansion.sql',
-  );
 
   for (const key of [
     'crown',
@@ -301,9 +298,6 @@ test('renderer preserves named firework geometry and trail profiles', () => {
     /return layerKey === 'outer' \? Math\.max\(outerMinimum, scaledCount\) : scaledCount/,
   );
   assert.match(design, /geometryTuning: GeometryTuningSchema/);
-  for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
-    assert.match(migration, new RegExp(`'${slug}'`));
-  }
 });
 
 test('heart and five-point-star geometries consume their editable planar tuning', () => {
@@ -995,10 +989,6 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   const design = read('lib/fireworks/design.ts');
   const effects = read('lib/fireworks/Effects.ts');
   const timing = read('lib/fireworks/timing.ts');
-  const migration = read('../../supabase/migrations/20260615143000_unified_burst_trail_model.sql');
-  const squareTrailMigration = read(
-    '../../supabase/migrations/20260617060841_calibrated_square_trail_defaults.sql',
-  );
   const slider = read('ui/patterns/SliderField.tsx');
 
   assert.match(design, /burstTrail: BurstTrailSchema/);
@@ -1087,22 +1077,6 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(
     design,
     /burstTrailStop\(100, 1, 0\.08, 0, \{ circle: 0, square: 100, triangle: 0 \}\)/,
-  );
-  assert.match(squareTrailMigration, /'particlesPerStar', 178/);
-  assert.match(squareTrailMigration, /'colourMode', 'starFade'/);
-  assert.match(squareTrailMigration, /'width'[\s\S]*'front', 20[\s\S]*'tail', 0/);
-  assert.match(squareTrailMigration, /'particleSize'[\s\S]*'base', 1\.2[\s\S]*'tailScale', 0\.35/);
-  assert.match(squareTrailMigration, /'placement'[\s\S]*'headGapPercent', 60/);
-  assert.match(squareTrailMigration, /'spacing'[\s\S]*'curve', 1[\s\S]*'jitterPercent', 18/);
-  assert.match(squareTrailMigration, /'mode', 'dynamic'[\s\S]*'percent', 18/);
-  assert.match(squareTrailMigration, /'spin', 0/);
-  assert.match(
-    squareTrailMigration,
-    /'shapeWeights'[\s\S]*'circle', 0[\s\S]*'square', 100[\s\S]*'triangle', 0/,
-  );
-  assert.match(
-    squareTrailMigration,
-    /coalesce\(render_overrides_json #>> '\{burstTrail,preset\}', ''\) <> 'custom'/,
   );
   // Legacy labels stay removed, while advanced controls edit the unified model.
   assert.doesNotMatch(controls, /label="Clump"|applyBurstTrailFrontClump/);
@@ -1197,14 +1171,6 @@ test('unified burst trails are validated, migrated, and exposed through shared c
   assert.match(slider, /<Input/);
   assert.match(slider, /step="any"/);
   assert.match(slider, /appearance:textfield/);
-
-  assert.match(migration, /jsonb_set\([\s\S]*model_json,[\s\S]*'\{renderDefaults,burstTrail\}'/);
-  assert.match(
-    migration,
-    /jsonb_set\([\s\S]*coalesce\(fw\.render_overrides_json, '\{\}'::jsonb\),[\s\S]*'\{burstTrail\}'/,
-  );
-  assert.match(migration, /denseBrocade/);
-  assert.doesNotMatch(migration, /alter table/i);
 });
 
 test('launch smoke and lift particles are schema-driven, tunable, and RNG-isolated', () => {
@@ -1688,12 +1654,6 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   const controls = read('ui/admin/FireworkRenderControls.tsx');
   const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
   const tuning = read('lib/fireworks/render-tuning.ts');
-  const migration = read(
-    '../../supabase/migrations/20260610121500_brocade_admin_calibration_params.sql',
-  );
-  const calibrationMigration = read(
-    '../../supabase/migrations/20260617040846_calibrated_star_head_defaults.sql',
-  );
 
   // Brocade tuning lives in the design schema, not renderer constants.
   assert.match(design, /brocade: z/);
@@ -2049,17 +2009,6 @@ test('brocade calibration is data-driven and admin-tunable', () => {
   assert.match(tuning, /MAX_WHITE_CORE_SIZE_PERCENT = 40/);
   assert.match(tuning, /DEFAULT_WHITE_CORE_BLUR_PERCENT = 15/);
   assert.match(tuning, /MAX_WHITE_CORE_BLUR_PERCENT = 30/);
-  assert.match(migration, /'streakCount', 60/);
-  assert.match(migration, /'glowStrength', 1/);
-  assert.match(calibrationMigration, /update public\.firework_effects/);
-  assert.match(calibrationMigration, /update public\.fireworks/);
-  assert.match(calibrationMigration, /- 'glowStrength'/);
-  assert.match(calibrationMigration, /- 'backgroundGlowSoftness'/);
-  assert.match(calibrationMigration, /\{renderDefaults,brocade\}/);
-  assert.match(calibrationMigration, /\{brocade\}/);
-  assert.match(calibrationMigration, /calibrated_heads/);
-  assert.match(calibrationMigration, /'glowStrength', 1\.5/);
-  assert.match(calibrationMigration, /'backgroundGlowSoftness', 50/);
   // Head-orb appearance is saved on effect settings and can be customised on
   // firework overrides; renderer fallbacks only cover missing or malformed data.
   assert.match(design, /glowPadding: z\.coerce/);

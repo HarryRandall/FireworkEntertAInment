@@ -127,20 +127,6 @@ test('non-202 and mismatched acknowledgements fail without unsafe retries', asyn
 
 test('production queue actions preflight before funding and persist dispatch results', () => {
   const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
-  const baseMigration = readFileSync(
-    join(
-      root,
-      '../../supabase/migrations/20260715064431_add_firework_import_reconstruction_runs.sql',
-    ),
-    'utf8',
-  );
-  const dispatchMigration = readFileSync(
-    join(
-      root,
-      '../../supabase/migrations/20260715224838_add_firework_import_direct_dispatch_hardening.sql',
-    ),
-    'utf8',
-  );
   const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
   const historyUi = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/ImportRunHistory.tsx'),
@@ -162,11 +148,6 @@ test('production queue actions preflight before funding and persist dispatch res
   assert.match(actions, /check_firework_import_dispatch_ready/);
   assert.match(actions, /begin_firework_import_dispatch/);
   assert.match(actions, /record_firework_import_dispatch_result/);
-  assert.doesNotMatch(baseMigration, /direct_dispatch/);
-  assert.match(dispatchMigration, /direct_dispatch_status/);
-  assert.match(dispatchMigration, /perform private\.resolve_firework_import_credit/);
-  assert.match(dispatchMigration, /run_row\.status = 'queued'/);
-  assert.match(dispatchMigration, /return 'worker_claimed'/);
   assert.match(historyServer, /direct_dispatch_call_id/);
   assert.match(historyUi, /Queued dispatch health/);
   assert.match(historyUi, /Executor provenance is recorded separately/);

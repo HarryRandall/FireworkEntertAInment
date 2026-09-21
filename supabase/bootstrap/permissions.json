@@ -1,0 +1,110 @@
+[
+  {
+    "id": "01990b81-bb50-4291-b463-bc00f8e5c366",
+    "key": "admin.view",
+    "name": "View admin dashboard",
+    "description": "Open the admin area.",
+    "category": "admin",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "0788ba6c-0de0-4bd4-9bcd-15a30817b31c",
+    "key": "admin.impersonate_users",
+    "name": "Impersonate users",
+    "description": "Start audited support sessions as active users.",
+    "category": "admin",
+    "created_at": "2026-05-31T06:09:53.127327+00:00",
+    "updated_at": "2026-05-31T06:17:10.183316+00:00"
+  },
+  {
+    "id": "153aaf12-721e-47a7-a1e4-dd79a61189c2",
+    "key": "admin.manage_billing",
+    "name": "Manage AI credits",
+    "description": "View AI credit balances, recent spend, and grant user credits.",
+    "category": "admin",
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "id": "1ee38844-a3da-4f40-bb7e-de913aaa8890",
+    "key": "supplier.view",
+    "name": "View supplier dashboard",
+    "description": "Open the supplier area.",
+    "category": "supplier",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "2536ebe0-0932-48e4-8424-f2d3e2c3d9fc",
+    "key": "admin.manage_users",
+    "name": "Manage users",
+    "description": "Edit app profiles, roles, and permission overrides.",
+    "category": "admin",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "2f4c9ff5-de34-4bc1-8596-361e70adfbe4",
+    "key": "admin.manage_assortments",
+    "name": "Manage assortments",
+    "description": "Create and edit priced in-store assortments (bundles of catalogue items) and their member products.",
+    "category": "admin",
+    "created_at": "2026-08-24T03:52:33.698456+00:00",
+    "updated_at": "2026-08-24T03:52:33.698456+00:00"
+  },
+  {
+    "id": "30070748-804c-4c6b-bfaf-f983dec365e8",
+    "key": "shows.create",
+    "name": "Create shows",
+    "description": "Create and manage personal show designs.",
+    "category": "shows",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "33446c0a-3d6e-46d2-82f7-0661c43573a0",
+    "key": "admin.manage_imports",
+    "name": "Manage imports",
+    "description": "View and manage VDL/video import jobs.",
+    "category": "admin",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "6025742d-f4a4-47e2-8b25-b16a4d662abc",
+    "key": "supplier.manage_stock",
+    "name": "Manage supplier stock",
+    "description": "Create and update supplier stock records.",
+    "category": "supplier",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "afec91e8-8697-42d2-aa21-dccd11b33157",
+    "key": "admin.manage_catalogue",
+    "name": "Manage catalogue",
+    "description": "View and edit catalogue and firework specification records.",
+    "category": "admin",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  },
+  {
+    "id": "d7d262d2-8f34-4b66-a3ca-dbb79e5b41cc",
+    "key": "admin.manage_prompts",
+    "name": "Manage prompts",
+    "description": "View and edit OpenRouter prompts used by show generation and firework video reconstruction.",
+    "category": "admin",
+    "created_at": "2026-06-03T05:26:45.579526+00:00",
+    "updated_at": "2026-06-03T05:26:45.579526+00:00"
+  },
+  {
+    "id": "e1d82dd4-edc9-4a8e-a44f-b3a394a9c415",
+    "key": "admin.manage_suppliers",
+    "name": "Manage suppliers",
+    "description": "View and edit supplier records and locations.",
+    "category": "admin",
+    "created_at": "2026-05-01T06:26:45.405152+00:00",
+    "updated_at": "2026-05-01T06:26:45.405152+00:00"
+  }
+]

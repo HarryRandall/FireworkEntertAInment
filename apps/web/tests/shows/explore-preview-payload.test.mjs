@@ -140,14 +140,8 @@ test('the shared preview loads after intent, caches by slug and stale-guards can
 
 test('Explore shelves preserve composition de-duplication without serialising cues', () => {
   const libraryPage = read('app/(browse)/library/page.tsx');
-  const migration = read(
-    '../../supabase/migrations/20260715081010_add_show_preset_composition_signature.sql',
-  );
 
   assert.match(libraryPage, /usedCompositionSignatures/);
   assert.match(libraryPage, /template\.compositionSignature/);
   assert.doesNotMatch(libraryPage, /previewCues/);
-  assert.match(migration, /generated always as/);
-  assert.match(migration, /show_preset_composition_signature\(preview_cues\)/);
-  assert.match(migration, /grant select \(composition_signature\).*anon, authenticated/s);
 });

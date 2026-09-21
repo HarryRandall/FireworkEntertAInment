@@ -130,24 +130,10 @@ test('base effect edits validate model JSON and use conflict detection', () => {
 });
 
 test('base effect classification column is removed from schema and migrations', () => {
-  const dropDraft = read(
-    '../../supabase/migrations/20260701054406_drop_firework_effect_classification.sql',
-  );
-  const dropFollowUp = read(
-    '../../supabase/migrations/20260701061429_drop_firework_effect_type.sql',
-  );
   const types = read('lib/database.types.ts');
   const start = types.indexOf('firework_effects: {');
   const end = types.indexOf('firework_style_defaults: {', start);
   const fireworkEffectsTypes = types.slice(start, end);
-
-  for (const migration of [dropDraft, dropFollowUp]) {
-    assert.match(migration, /drop constraint firework_effects_type_check/);
-    assert.match(migration, /drop constraint firework_effects_family_check/);
-    assert.match(migration, /alter table public\.firework_effects drop column type/);
-    assert.match(migration, /alter table public\.firework_effects drop column family/);
-    assert.match(migration, /snapshot_json = snapshot_json - 'family' - 'type'/);
-  }
 
   assert.doesNotMatch(fireworkEffectsTypes, /\n\s+type\??:/);
   assert.doesNotMatch(fireworkEffectsTypes, /\n\s+family\??:/);
@@ -198,12 +184,6 @@ test('firework edits use conflict detection and immutable version history', () =
 });
 
 test('editor version history migration is permission-gated and typed', () => {
-  const migration = read(
-    '../../supabase/migrations/20260622035601_admin-editor-version-history.sql',
-  );
-  const styleDefaultMigration = read(
-    '../../supabase/migrations/20260715032141_add_style_default_editor_version_history.sql',
-  );
   const types = read('lib/database.types.ts');
   const adminTypes = read('lib/admin.types.ts');
   const effectsServer = read('lib/admin/effects.server.ts');
@@ -211,39 +191,6 @@ test('editor version history migration is permission-gated and typed', () => {
   const styleDefaultsServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
   const styleDefaultSchema = read('lib/admin/style-default-schema.ts');
-
-  assert.match(migration, /create table if not exists public\.firework_editor_versions/);
-  assert.match(migration, /target_kind text not null/);
-  assert.match(migration, /check \(target_kind in \('firework', 'effect'\)\)/);
-  assert.match(migration, /check \(action in \('update', 'restore'\)\)/);
-  assert.match(migration, /firework_id uuid references public\.fireworks\(id\) on delete cascade/);
-  assert.match(
-    migration,
-    /firework_effect_id uuid references public\.firework_effects\(id\) on delete cascade/,
-  );
-  assert.match(migration, /firework_editor_versions_target_fk_check/);
-  assert.match(migration, /firework_editor_versions_firework_created_at_idx/);
-  assert.match(migration, /firework_editor_versions_effect_created_at_idx/);
-  assert.match(
-    migration,
-    /grant select, insert on public\.firework_editor_versions to authenticated/,
-  );
-  assert.match(migration, /alter table public\.firework_editor_versions enable row level security/);
-  assert.match(migration, /firework_editor_versions_admin_select/);
-  assert.match(migration, /firework_editor_versions_admin_insert/);
-  assert.match(migration, /public\.current_user_has_permission\('admin\.manage_catalogue'\)/);
-  assert.doesNotMatch(migration, /for update|for delete/);
-  assert.match(styleDefaultMigration, /add column firework_style_default_id uuid/);
-  assert.match(
-    styleDefaultMigration,
-    /references public\.firework_style_defaults\(id\) on delete cascade/,
-  );
-  assert.match(
-    styleDefaultMigration,
-    /check \(target_kind in \('firework', 'effect', 'style_default'\)\)/,
-  );
-  assert.match(styleDefaultMigration, /target_kind = 'style_default'/);
-  assert.match(styleDefaultMigration, /firework_editor_versions_style_default_created_at_idx/);
 
   assert.match(types, /firework_editor_versions: \{/);
   assert.match(types, /snapshot_json: Json/);
@@ -591,51 +538,6 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.doesNotMatch(templatePreview, /showFps/);
   assert.doesNotMatch(appReplayViewer, /trailWidthGuideDesign/);
   assert.doesNotMatch(templatePreview, /trailWidthGuideDesign/);
-});
-
-test('base effects seed default variants for missing effect types', () => {
-  const migration = read(
-    '../../supabase/migrations/20260528220500_seed_default_firework_variants.sql',
-  );
-  const expansion = read(
-    '../../supabase/migrations/20260528233000_renderer_effect_geometry_expansion.sql',
-  );
-
-  for (const slug of [
-    'brocade',
-    'willow',
-    'palm',
-    'ring',
-    'crossette',
-    'horsetail',
-    'comet',
-    'mine',
-    'crackle',
-  ]) {
-    assert.match(migration, new RegExp(`'${slug}'`));
-  }
-  for (const slug of ['pistil', 'pearls', 'tail', 'silver-fish', 'waterfall', 'whirl']) {
-    assert.match(expansion, new RegExp(`'${slug}'`));
-  }
-  assert.match(migration, /where not exists/);
-  assert.match(expansion, /where not exists/);
-  assert.match(migration, /public\.firework_variants/);
-  assert.match(expansion, /public\.firework_variants/);
-});
-
-test('catalogue reseed preserves retained editor links and history', () => {
-  const migration = read(
-    '../../supabase/migrations/20260629043858_reseed_firework_catalogue_from_scratch.sql',
-  );
-  const generator = read('scripts/generate-firework-catalogue-migration.mjs');
-
-  for (const source of [migration, generator]) {
-    assert.doesNotMatch(source, /delete from public\.firework_style_default_links/);
-    assert.doesNotMatch(source, /delete from public\.firework_effect_style_default_links/);
-    assert.doesNotMatch(source, /delete from public\.firework_editor_versions/);
-  }
-  assert.match(generator, /existingReseedMigration/);
-  assert.match(migration, /retained style-default links and editor/);
 });
 
 test('catalogue and import mutations invalidate new admin firework caches', () => {

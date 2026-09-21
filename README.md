@@ -15,12 +15,15 @@ Use Node 24 and pnpm 12.3.4:
 nvm use
 corepack enable pnpm
 pnpm install --frozen-lockfile
-cp apps/web/.env.example apps/web/.env.local
+pnpm db:setup
+pnpm db:env
 pnpm dev
 ```
 
-Fill the app's environment file with development credentials. Service setup,
-verification and deployment instructions live in [Development](docs/development.md).
+Start Docker before `db:setup`. This installs the local catalogue, accounts and
+example shows. See [Database](docs/database.md) for credentials, reset commands
+and fresh hosted installations, and [Development](docs/development.md) for
+service setup, verification and deployment.
 
 ```bash
 pnpm typecheck      # Focused TypeScript check

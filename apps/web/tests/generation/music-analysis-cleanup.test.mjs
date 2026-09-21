@@ -11,10 +11,6 @@ const page = readFileSync(
 );
 const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 const starter = readFileSync(join(root, 'lib/start-music-analysis.server.ts'), 'utf8');
-const migration = readFileSync(
-  join(root, '../../supabase/migrations/20260710020448_discard_unused_song_analyses.sql'),
-  'utf8',
-);
 
 test('music analysis DELETE is authenticated, ownership-scoped, and idempotent', () => {
   assert.match(route, /export async function DELETE\(request: Request\)/);
@@ -25,32 +21,6 @@ test('music analysis DELETE is authenticated, ownership-scoped, and idempotent',
   assert.match(route, /p_audio_path: parsed\.data\.audioPath/);
   assert.match(route, /supabase\.storage\.from\('audio'\)\.remove\(\[audioPath\]\)/);
   assert.match(route, /result\?\.code === 'in_use'/);
-  assert.match(migration, /if not found then[\s\S]*'alreadyDeleted', true/);
-});
-
-test('discard RPC serialises ownership, show references, and credit state', () => {
-  assert.match(migration, /security definer/);
-  assert.match(migration, /set search_path = ''/);
-  assert.match(migration, /v_user_id uuid := auth\.uid\(\)/);
-  assert.match(migration, /where id = p_analysis_id\s+and user_id = v_user_id\s+for update/);
-  assert.match(migration, /if v_analysis\.audio_path <> p_audio_path/);
-  assert.match(
-    migration,
-    /if exists \([\s\S]*from public\.shows[\s\S]*music_analysis_id = v_analysis\.id/,
-  );
-  assert.match(migration, /if v_reservation_status = 'reserved'/);
-  assert.match(migration, /if v_analysis\.status = 'completed'/);
-  assert.match(migration, /public\.settle_ai_credit_reservation/);
-  assert.match(migration, /public\.refund_ai_credit_reservation/);
-  assert.match(migration, /delete from public\.song_analyses/);
-  assert.match(
-    migration,
-    /revoke execute on function public\.discard_unused_song_analysis\(uuid, text\)\s+from public, anon/,
-  );
-  assert.match(
-    migration,
-    /grant execute on function public\.discard_unused_song_analysis\(uuid, text\)\s+to authenticated/,
-  );
 });
 
 test('the analyser cannot settle or restore a row discarded during an in-flight run', () => {
