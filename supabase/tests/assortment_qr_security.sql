@@ -151,7 +151,7 @@ begin
 
   set local role authenticated;
   set local request.jwt.claim.role = 'authenticated';
-  set local request.jwt.claim.sub = admin_id::text;
+  perform set_config('request.jwt.claim.sub', admin_id::text, true);
   perform public.ensure_assortment_public_link(target_assortment_id);
 
   select link.public_token, link.funding_user_id
@@ -159,7 +159,7 @@ begin
   from public.assortment_public_links link
   where link.assortment_id = target_assortment_id;
 
-  set local request.jwt.claim.sub = member_id::text;
+  perform set_config('request.jwt.claim.sub', member_id::text, true);
   begin
     perform public.set_assortment_public_link_enabled(target_assortment_id, false);
   exception
@@ -169,7 +169,7 @@ begin
     raise exception 'Unauthorised authenticated caller toggled a QR link.';
   end if;
 
-  set local request.jwt.claim.sub = admin_id::text;
+  perform set_config('request.jwt.claim.sub', admin_id::text, true);
   enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, false);
   if enabled_value is distinct from false then
     raise exception 'Admin disable did not return false.';
