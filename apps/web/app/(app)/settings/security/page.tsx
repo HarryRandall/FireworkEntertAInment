@@ -2,7 +2,7 @@
 
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
-import { getActiveImpersonation } from '@/lib/impersonation.server';
+import { getActiveImpersonation } from '@/lib/access/impersonation.server';
 import { PasswordChangeForm } from '@/app/(app)/settings/security/_components/PasswordChangeForm';
 import { RecentSecurityActivity } from '@/app/(app)/settings/security/_components/RecentSecurityActivity';
 

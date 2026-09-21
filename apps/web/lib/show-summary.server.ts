@@ -3,7 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import { listShowTemplates } from '@/lib/show-templates/queries.server';
 import type { Database } from '@/lib/database.types';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { mapShow } from '@/lib/shows/mappers';
 import { getServerClient } from '@/lib/shows/supabase';
 import { SHOW_SELECT, type ShowProjection } from '@/lib/shows/types';

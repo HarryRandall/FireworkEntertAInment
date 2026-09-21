@@ -6,7 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Card } from '@/ui/patterns/Card';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { getImportJobDetail } from '@/lib/admin/imports.server';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { DEFAULT_OPENROUTER_MODEL } from '@/lib/firework-import/jobs';
 import {
   buildImportReview,

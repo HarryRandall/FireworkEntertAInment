@@ -14,7 +14,7 @@ import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
 import { InlineAlert, Skeleton } from '@/ui/patterns/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
 import {
   getCurrentShowPresetLikeState,
   getShowTemplateBySlug,

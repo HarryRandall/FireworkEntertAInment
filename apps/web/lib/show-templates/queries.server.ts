@@ -1,7 +1,7 @@
 /** Public and signed-in reads for published show templates. */
 import 'server-only';
 
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';

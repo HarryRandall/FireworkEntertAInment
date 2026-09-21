@@ -30,7 +30,7 @@ import {
   invalidateAdminFireworksCache,
   invalidateAdminImportsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,

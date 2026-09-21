@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from 'react';
-import type { ThemePreference } from '@/lib/admin.types';
+import type { ThemePreference } from '@/lib/access/types';
 import { cn } from '@/lib/utils';
 import { SkipLink } from '@/ui/patterns/SkipLink';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/ui/primitives/sidebar';

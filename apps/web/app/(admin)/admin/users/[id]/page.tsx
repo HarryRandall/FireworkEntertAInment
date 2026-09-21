@@ -14,14 +14,15 @@ import { Card } from '@/ui/patterns/Card';
 import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';
 import { StatTile } from '@/ui/patterns/StatTile';
 import { getAdminUserById, getUserActivity } from '@/lib/admin/users.server';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
 import { listRolePermissionMatrix, listRoles } from '@/lib/admin/roles.server';
 import {
   getAiCreditSummaryForUser,
   signedAiCreditAmount,
   type AiCreditTransactionSummary,
 } from '@/lib/ai-credits.server';
-import type { AdminUser, ProfileStatus, RoleKey } from '@/lib/admin.types';
+import type { AdminUser } from '@/lib/admin.types';
+import type { ProfileStatus, RoleKey } from '@/lib/access/types';
 import type { PermissionOverrideOption } from '@/app/(admin)/admin/users/[id]/_components/AddPermissionOverrideDialog';
 import {
   PermissionExceptionsPanel,

@@ -18,8 +18,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/ui/primitives/sidebar';
-import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
-import type { ActiveImpersonation } from '@/lib/impersonation.types';
+import type { CurrentProfile, PermissionKey } from '@/lib/access/types';
+import type { ActiveImpersonation } from '@/lib/access/impersonation.types';
 import {
   ArrowLeft,
   CreditCard,

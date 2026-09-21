@@ -29,7 +29,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   const templateMapper = read('lib/show-templates/mappers.ts');
   const showMapper = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
-  const templates = read('lib/admin/templates.server.ts');
+  const templates = read('app/(admin)/admin/show-presets/queries.server.ts');
   const cloneAction = read('lib/show-templates/clone-actions.server.ts');
 
   assert.match(templateTypes, /coverImagePath: string \| null/);
@@ -42,7 +42,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   assert.match(showTypes, /cover_shader[^']*cover_image_path/);
   assert.match(
     templates,
-    /SHOW_TEMPLATES_SELECT = `\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,
+    /SHOW_PRESETS_SELECT = `\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,
   );
   // Cloning a template copies its poster path onto the new show.
   assert.match(

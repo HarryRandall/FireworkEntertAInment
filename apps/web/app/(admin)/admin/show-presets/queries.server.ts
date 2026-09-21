@@ -6,7 +6,7 @@ import type {
   AdminShowPresetImportShow,
   AdminShowPresetSummary,
 } from '@/lib/admin.types';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import {
   isOptionalShowPresetSchemaError,
@@ -16,31 +16,31 @@ import {
 import { mapShowTemplate, type ShowTemplateRow } from '@/lib/show-templates/mappers';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
-import { describeSupabaseError } from './style-default-schema';
-import { getServerClient } from './supabase';
+import { describeSupabaseError } from '@/lib/admin/style-default-schema';
+import { getServerClient } from '@/lib/supabase/server-client';
 
-const SHOW_TEMPLATES_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path`;
-const SHOW_TEMPLATES_CORE_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_CORE_SELECT}, cover_shader, cover_image_path`;
-const SHOW_TEMPLATES_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`;
-const SHOW_TEMPLATES_FALLBACK_SELECTS = [
-  SHOW_TEMPLATES_WITH_COVERS_SELECT,
-  SHOW_TEMPLATES_CORE_WITH_COVERS_SELECT,
+const SHOW_PRESETS_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path`;
+const SHOW_PRESETS_CORE_WITH_COVERS_SELECT = `${SHOW_TEMPLATES_CORE_SELECT}, cover_shader, cover_image_path`;
+const SHOW_PRESETS_SELECT = `${SHOW_TEMPLATES_BASE_SELECT}, cover_shader, cover_image_path, show_preset_like_counts(like_count)`;
+const SHOW_PRESETS_FALLBACK_SELECTS = [
+  SHOW_PRESETS_WITH_COVERS_SELECT,
+  SHOW_PRESETS_CORE_WITH_COVERS_SELECT,
   SHOW_TEMPLATES_CORE_SELECT,
 ] as const;
 
-function throwAdminTemplateReadError(operation: string, error: unknown): never {
-  console.error(`[admin.templates] ${operation} failed:`, describeSupabaseError(error));
+function throwAdminShowPresetReadError(operation: string, error: unknown): never {
+  console.error(`[admin.show-presets] ${operation} failed:`, describeSupabaseError(error));
   throw new Error('Admin show preset data could not be loaded.', { cause: error });
 }
 
 async function selectShowPresetsForAdmin(supabase: Awaited<ReturnType<typeof getServerClient>>) {
   let result: { data: unknown[] | null; error: unknown } = await supabase
     .from('show_presets')
-    .select(SHOW_TEMPLATES_SELECT)
+    .select(SHOW_PRESETS_SELECT)
     .order('is_published', { ascending: false })
     .order('is_featured', { ascending: false })
     .order('sort_order', { ascending: true });
-  for (const select of SHOW_TEMPLATES_FALLBACK_SELECTS) {
+  for (const select of SHOW_PRESETS_FALLBACK_SELECTS) {
     if (!result.error || !isOptionalShowPresetSchemaError(result.error)) return result;
     result = await supabase
       .from('show_presets')
@@ -58,10 +58,10 @@ async function selectShowPresetByIdForAdmin(
 ) {
   let result: { data: unknown | null; error: unknown } = await supabase
     .from('show_presets')
-    .select(SHOW_TEMPLATES_SELECT)
+    .select(SHOW_PRESETS_SELECT)
     .eq('id', presetId)
     .maybeSingle();
-  for (const select of SHOW_TEMPLATES_FALLBACK_SELECTS) {
+  for (const select of SHOW_PRESETS_FALLBACK_SELECTS) {
     if (!result.error || !isOptionalShowPresetSchemaError(result.error)) return result;
     result = await supabase.from('show_presets').select(select).eq('id', presetId).maybeSingle();
   }
@@ -93,12 +93,12 @@ function mapAdminSummary(
   row: ShowTemplateRow,
   resolutionKeys: ReadonlySet<string>,
 ): AdminShowPresetSummary {
-  const template = mapShowTemplate(row);
+  const preset = mapShowTemplate(row);
   return {
-    ...template,
+    ...preset,
     sourceShowId: row.source_show_id ?? null,
-    cueCount: template.previewCues.length,
-    resolvableCueCount: resolvableCueCount(template.previewCues, resolutionKeys),
+    cueCount: preset.previewCues.length,
+    resolvableCueCount: resolvableCueCount(preset.previewCues, resolutionKeys),
   };
 }
 
@@ -125,7 +125,7 @@ export async function listAdminShowPresetImportShows(): Promise<AdminShowPresetI
     { source: 'imported preset sources', error: importedPresetsError },
   ].filter((failure) => failure.error !== null);
   if (sourceFailures.length > 0) {
-    throwAdminTemplateReadError('listAdminShowPresetImportShows sources', sourceFailures);
+    throwAdminShowPresetReadError('listAdminShowPresetImportShows sources', sourceFailures);
   }
 
   const importedShowIds = new Set(
@@ -138,7 +138,7 @@ export async function listAdminShowPresetImportShows(): Promise<AdminShowPresetI
     ? await service.from('users').select('id, email').in('id', userIds)
     : { data: [], error: null };
   if (usersError) {
-    throwAdminTemplateReadError('listAdminShowPresetImportShows owners', usersError);
+    throwAdminShowPresetReadError('listAdminShowPresetImportShows owners', usersError);
   }
   const emailByUserId = new Map((users ?? []).map((user) => [user.id, user.email]));
 
@@ -165,7 +165,7 @@ export async function listAdminShowPresets(): Promise<AdminShowPresetSummary[]> 
   ]);
 
   if (error) {
-    throwAdminTemplateReadError('listAdminShowPresets', error);
+    throwAdminShowPresetReadError('listAdminShowPresets', error);
   }
 
   const resolutionKeys = catalogueResolutionKeys(products);
@@ -181,7 +181,7 @@ export async function getAdminShowPresetById(
   const supabase = await getServerClient();
   const { data, error } = await selectShowPresetByIdForAdmin(supabase, presetId);
   if (error) {
-    throwAdminTemplateReadError('getAdminShowPresetById', error);
+    throwAdminShowPresetReadError('getAdminShowPresetById', error);
   }
   if (!data) return null;
 

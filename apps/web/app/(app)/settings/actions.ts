@@ -9,7 +9,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { hasImpersonationCookie } from '@/lib/impersonation.server';
+import { hasImpersonationCookie } from '@/lib/access/impersonation.server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 

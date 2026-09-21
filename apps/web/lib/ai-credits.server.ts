@@ -2,8 +2,8 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
-import { requirePermission } from '@/lib/access/current-user.server';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { deleteCachedKeys, getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AiUsageSummary } from '@/lib/show-summary';
 import { getServerClient } from '@/lib/supabase/server-client';

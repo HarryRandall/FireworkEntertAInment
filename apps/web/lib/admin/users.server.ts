@@ -11,7 +11,7 @@ import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AdminUser } from '@/lib/admin.types';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminUserCacheKey, getAdminUsersCacheKey } from './cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   mapAdminUsersFromRows,
   type PermissionRow,

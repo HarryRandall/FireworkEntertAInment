@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { invalidateUserProfileCache } from '@/lib/access/current-user.server';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { invalidateUserProfileCache } from '@/lib/access/current-profile.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { createClient } from '@/lib/supabase/server';
 
 const ProfileSchema = z.object({

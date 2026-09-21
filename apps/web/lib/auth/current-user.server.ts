@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 import { getServerClient } from '@/lib/supabase/server-client';
 
 /** Returns the Supabase Auth user object for the request, or `null` when unauthenticated. */
-export const getCurrentUser = cache(async () => {
+const getCurrentUser = cache(async () => {
   const supabase = await getServerClient();
   const {
     data: { user },

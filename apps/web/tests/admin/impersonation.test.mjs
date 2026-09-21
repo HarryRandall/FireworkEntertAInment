@@ -2,7 +2,7 @@ import { withWorkspaceSource } from '../helpers/workspace-source.mjs';
 /** Static guards for audited admin impersonation. */
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
@@ -13,7 +13,7 @@ function read(path) {
 }
 
 test('impersonation migration adds a dedicated permission and audit table', () => {
-  const types = read('lib/admin.types.ts');
+  const types = read('lib/access/types.ts');
   assert.match(types, /'admin\.impersonate_users'/);
 });
 
@@ -55,7 +55,7 @@ test('stop impersonation restores the admin session and clears the return cookie
 });
 
 test('active impersonation reads fail closed when verification is unavailable', () => {
-  const session = read('lib/impersonation.server.ts');
+  const session = read('lib/access/impersonation.server.ts');
 
   assert.match(session, /function throwImpersonationReadError/);
   assert.match(

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   FireworkCardPreviewReadError,
   loadAdminFireworkCardPreview,

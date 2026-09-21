@@ -30,7 +30,7 @@ test('Explore likes persist without exposing user identities', () => {
 test('imported Explore presets retain durable generated-show provenance', () => {
   const actions = read('app/(admin)/admin/show-presets/actions.ts');
   const templates = read('lib/show-templates/queries.server.ts');
-  const adminTemplates = read('lib/admin/templates.server.ts');
+  const adminTemplates = read('app/(admin)/admin/show-presets/queries.server.ts');
   const types = read('lib/show-templates/types.ts');
   const adminPage = read('app/(admin)/admin/show-presets/page.tsx');
   assert.match(actions, /source_show_id: show\.id/);

@@ -5,7 +5,7 @@ import { Loader2, ShieldAlert, Undo2 } from 'lucide-react';
 import { stopImpersonationAction } from '@/lib/access/impersonation-actions.server';
 import { toast } from '@/ui/patterns/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
-import type { ActiveImpersonation } from '@/lib/impersonation.types';
+import type { ActiveImpersonation } from '@/lib/access/impersonation.types';
 import { cn } from '@/lib/utils';
 
 function identityLabel(identity: ActiveImpersonation['target']) {

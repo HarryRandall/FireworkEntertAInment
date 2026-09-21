@@ -22,7 +22,7 @@ test('admin management subtrees guard their index and nested routes', () => {
     assert.equal(existsSync(layoutPath), true, `${segment} has a nested route layout`);
 
     const layout = readFileSync(layoutPath, 'utf8');
-    assert.match(layout, /from '@\/lib\/access\/current-user\.server'/);
+    assert.match(layout, /from '@\/lib\/access\/current-profile\.server'/);
     assert.match(layout, new RegExp(`await requirePermission\\('${permission}'\\)`));
     assert.match(layout, /if \(!profile\) redirect\('\/admin'\)/);
     assert.match(layout, /return children/);

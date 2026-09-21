@@ -9,23 +9,18 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getCachedJson, setCachedJson, deleteCachedKeys } from '@/lib/server-cache';
-import type { CurrentProfile, PermissionKey, RoleKey } from '@/lib/admin.types';
+import type { CurrentProfile, PermissionKey, RoleKey } from '@/lib/access/types';
 import type { Json } from '@/lib/database.types';
 import {
   asPermissionKey,
   asProfileStatus,
   asRoleKey,
   isRecord,
-  mapPermission,
-  mapRole,
   unique,
-  type RolePermissionRow,
-  type UserPermissionOverrideRow,
-  type UserRoleRow,
-} from '@/lib/admin/mappers';
-import { getServerClient } from '@/lib/admin/supabase';
+} from '@/lib/access/mappers';
+import { getServerClient } from '@/lib/supabase/server-client';
 
 // Cross-request cache for the RBAC profile. The `current_user_access` RPC takes
 // ~1s and runs on every (app) navigation via the layout; caching it for 30s
@@ -139,7 +134,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   ].filter(({ error }) => error !== null);
 
   if (fallbackErrors.length > 0) {
-    console.error('[access.current-user] fallback access reads failed:', fallbackErrors);
+    console.error('[access.current-profile] fallback access reads failed:', fallbackErrors);
     throw new Error('Current user access could not be loaded.', {
       cause: fallbackErrors[0]?.error,
     });
@@ -155,14 +150,14 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   if (!profile) return null;
   if (profile.status !== 'active' && profile.status !== 'suspended') return null;
 
-  const rolesById = new Map((allRoles ?? []).map((role) => [role.id, mapRole(role)]));
+  const rolesById = new Map((allRoles ?? []).map((role) => [role.id, asRoleKey(role.key)]));
   const permissionsById = new Map(
-    (allPermissions ?? []).map((permission) => [permission.id, mapPermission(permission)]),
+    (allPermissions ?? []).map((permission) => [permission.id, asPermissionKey(permission.key)]),
   );
-  const roleIds = new Set(((userRoles ?? []) as UserRoleRow[]).map((row) => row.role_id));
+  const roleIds = new Set((userRoles ?? []).map((row) => row.role_id));
   const roleKeys = unique(
     Array.from(roleIds)
-      .map((roleId) => rolesById.get(roleId)?.key)
+      .map((roleId) => rolesById.get(roleId))
       .filter((key): key is RoleKey => Boolean(key)),
   );
 
@@ -170,16 +165,16 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   // overrides applied last (an `enabled=false` override removes a granted
   // permission, an `enabled=true` override grants one not in any role).
   const granted = new Set<PermissionKey>();
-  for (const row of (rolePermissions ?? []) as RolePermissionRow[]) {
+  for (const row of rolePermissions ?? []) {
     if (!roleIds.has(row.role_id)) continue;
     const permission = permissionsById.get(row.permission_id);
-    if (permission) granted.add(permission.key);
+    if (permission) granted.add(permission);
   }
-  for (const override of (overrides ?? []) as UserPermissionOverrideRow[]) {
+  for (const override of overrides ?? []) {
     const permission = permissionsById.get(override.permission_id);
     if (!permission) continue;
-    if (override.enabled) granted.add(permission.key);
-    else granted.delete(permission.key);
+    if (override.enabled) granted.add(permission);
+    else granted.delete(permission);
   }
 
   const result: CurrentProfile = {

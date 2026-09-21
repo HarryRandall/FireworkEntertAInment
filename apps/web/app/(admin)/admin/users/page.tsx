@@ -15,9 +15,9 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from '@/ui/patterns/DataTable';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
 import { listAdminUsers } from '@/lib/admin/users.server';
-import type { ProfileStatus, RoleKey } from '@/lib/admin.types';
+import type { ProfileStatus, RoleKey } from '@/lib/access/types';
 import { InlineCopyButton } from '@/app/(admin)/admin/users/_components/InlineCopyButton';
 import { UserRowActions } from '@/app/(admin)/admin/users/_components/UserRowActions';
 

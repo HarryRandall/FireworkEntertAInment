@@ -35,7 +35,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
 import { isThemePreference } from './shell-utils';
 import { cn } from '@/lib/utils';
-import type { ThemePreference } from '@/lib/admin.types';
+import type { ThemePreference } from '@/lib/access/types';
 
 export type ProfileSummary = {
   displayName: string;

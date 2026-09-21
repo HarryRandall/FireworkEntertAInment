@@ -6,9 +6,9 @@ import { AppShell } from '@/ui/shell/AppShell';
 import { MarketingFooter } from '@/ui/marketing/Footer';
 import { MarketingNavBar } from '@/ui/marketing/NavBar';
 import { SkipLink } from '@/ui/patterns/SkipLink';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
-import { getCurrentUserId } from '@/lib/current-user.server';
-import { getActiveImpersonation } from '@/lib/impersonation.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
+import { getActiveImpersonation } from '@/lib/access/impersonation.server';
 import {
   parseSidebarCollapsedPreference,
   sidebarCollapsedCookieName,

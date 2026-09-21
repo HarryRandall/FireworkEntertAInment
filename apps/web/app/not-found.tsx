@@ -3,7 +3,7 @@
 import { Home } from 'lucide-react';
 import { Button } from '@/ui/patterns/Button';
 import { Container } from '@/ui/patterns/Container';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 
 export default async function NotFound() {
   const userId = await getCurrentUserId();

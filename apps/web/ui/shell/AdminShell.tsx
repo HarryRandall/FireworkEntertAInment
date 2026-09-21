@@ -35,8 +35,8 @@ import {
   parseAdminEffectsView,
   type AdminEffectsView,
 } from '@/lib/admin-effects-navigation';
-import type { CurrentProfile, PermissionKey } from '@/lib/admin.types';
-import type { ActiveImpersonation } from '@/lib/impersonation.types';
+import type { CurrentProfile, PermissionKey } from '@/lib/access/types';
+import type { ActiveImpersonation } from '@/lib/access/impersonation.types';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft,

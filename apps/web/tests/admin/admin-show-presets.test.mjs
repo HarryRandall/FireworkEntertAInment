@@ -46,7 +46,7 @@ test('show preset publication migration and generated types protect drafts', () 
 });
 
 test('public reads only use published presets while admin helpers include drafts', () => {
-  const templates = read('lib/admin/templates.server.ts');
+  const templates = read('app/(admin)/admin/show-presets/queries.server.ts');
   const publicTemplates = read('lib/show-templates/queries.server.ts');
   const timing = read('lib/show-preset-timing.server.ts');
   const actions = read('app/(admin)/admin/show-presets/actions.ts');
@@ -63,7 +63,7 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(templates, /catalogueResolutionKeys/);
   assert.doesNotMatch(templates, /async function mapAdminSummary/);
   assert.match(templates, /requirePermission\('admin\.manage_catalogue'\)/);
-  assert.match(templates, /SHOW_TEMPLATES_FALLBACK_SELECTS/);
+  assert.match(templates, /SHOW_PRESETS_FALLBACK_SELECTS/);
   assert.doesNotMatch(templates, /SHOW_TEMPLATES_LEGACY_SELECT/);
   assert.ok(
     (publicTemplates.match(/\.eq\('is_published', true\)/g) ?? []).length >= 4,

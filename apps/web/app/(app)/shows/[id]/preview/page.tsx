@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { FireworkReplayViewer } from '@/ui/replay/FireworkReplayViewer';
 import { ReplayPanelSkeleton } from '@/ui/shell/RouteSkeletons';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
 import { getAudioSignedUrl } from '@/lib/shows/audio.server';
 import {
   getShowBySlug,

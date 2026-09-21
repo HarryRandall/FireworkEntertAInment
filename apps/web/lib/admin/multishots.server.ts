@@ -18,7 +18,7 @@ import {
   getAdminMultishotsCacheKey,
 } from './cache-keys';
 import { buildEffectPreview } from './effect-preview';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { getServerClient } from './supabase';
 
 type FireworkLite = {
