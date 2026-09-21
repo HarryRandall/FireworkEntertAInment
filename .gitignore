@@ -46,6 +46,9 @@ next-env.d.ts
 logs/
 .tmp*/
 .tmp_*/
+/output/
+/repo-snapshot.txt
+/post-refactor-audit.txt
 
 # Coverage & testing
 .coverage
