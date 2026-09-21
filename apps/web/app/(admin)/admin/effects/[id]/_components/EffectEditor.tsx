@@ -23,20 +23,26 @@ import {
   restoreEffectEditorVersion,
   updateEffect,
 } from '../../actions';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/ui/admin/EditorSectionPanels';
-import { PREVIEW_LAUNCH_POSITIONS, estimatePreviewTicks } from '@/ui/admin/editor-preview-timing';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
+import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
+import {
+  PREVIEW_LAUNCH_POSITIONS,
+  estimatePreviewTicks,
+} from '@/ui/firework-editor/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
-} from '@/ui/admin/FireworkEditorShell';
-import { makeOptimisticEditorVersion, useEditorHistory } from '@/ui/admin/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+} from '@/ui/firework-editor/FireworkEditorShell';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/ui/firework-editor/useEditorHistory';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
 import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/ui/admin/FireworkRenderControls';
-import { FireworkTimelineControls } from '@/ui/admin/FireworkTimelineControls';
+import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input, Textarea } from '@/ui/patterns/Input';
 import type { SelectOption } from '@/ui/patterns/SelectField';

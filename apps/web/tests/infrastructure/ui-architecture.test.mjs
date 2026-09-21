@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { test } from 'node:test';
 import { Linter } from 'eslint';
 import architecture, { importBoundaryViolation } from '../../scripts/eslint-rules.mjs';
+
+test('shared firework editor UI has a domain name rather than an admin persona', () => {
+  assert.equal(existsSync('ui/admin'), false);
+  assert.equal(existsSync('ui/firework-editor/FireworkEditorShell.tsx'), true);
+});
 
 test('shared UI cannot reach up into features or route implementations', () => {
   for (const [importer, target] of [

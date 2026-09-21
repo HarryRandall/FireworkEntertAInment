@@ -12,7 +12,10 @@ import { Heart } from 'lucide-react';
 import type { ShowTemplate, ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { formatBudget } from '@/lib/show-domain';
-import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/ui/firework-editor/previewFullscreen';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
 import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';
 import {

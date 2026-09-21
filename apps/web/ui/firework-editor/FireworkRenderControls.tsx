@@ -11,18 +11,18 @@
  * visibility flags decide which sections an editor exposes.
  */
 import { useId, useState, type ReactNode } from 'react';
-import { ColorField } from '@/ui/admin/ColorField';
+import { ColorField } from '@/ui/firework-editor/ColorField';
 import {
   AdvancedControls,
   CONTROL_GRID_CLASS,
   PanelSection,
   SubSection,
-} from '@/ui/admin/firework-render-controls/ControlSections';
+} from '@/ui/firework-editor/firework-render-controls/ControlSections';
 import {
   CalibratedSliderField,
   SwitchField,
-} from '@/ui/admin/firework-render-controls/ControlFields';
-import { withCalibrationDefault } from '@/ui/admin/firework-render-controls/calibrated-slider';
+} from '@/ui/firework-editor/firework-render-controls/ControlFields';
+import { withCalibrationDefault } from '@/ui/firework-editor/firework-render-controls/calibrated-slider';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { SelectField } from '@/ui/patterns/SelectField';
